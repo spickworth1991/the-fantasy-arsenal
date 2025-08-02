@@ -70,7 +70,7 @@ export const SleeperProvider = ({ children }) => {
   };
 
   /** ✅ Player DB caching and merging FC + DP values */
-  const CACHE_KEY = "playerDB_v4"; // bump version when logic changes
+  const CACHE_KEY = "playerDB_v5.08"; // bump version when logic changes
 
   const preloadPlayers = async () => {
     try {
@@ -97,6 +97,12 @@ export const SleeperProvider = ({ children }) => {
       const dpRes = await fetch("/dynastyprocess_cache.json");
       const dpData = await dpRes.json();
 
+      const ktcRes = await fetch("/ktc_cache.json");
+      const ktcData = await ktcRes.json();
+
+      const fnRes = await fetch("/fantasynav_cache.json");
+      const fnData = await fnRes.json();
+
       // ✅ FantasyCalc mapping
       const mapBySleeperId = (arr) => {
         const map = {};
@@ -121,14 +127,63 @@ export const SleeperProvider = ({ children }) => {
           .replace(/\s+/g, " ")
           .trim();
 
-      // ✅ Build DP lookup with normalized names
+      // ✅ Build DP lookup
       const normalizedDPMap = {};
       Object.keys(dpData).forEach((name) => {
         const normName = normalizeName(name);
         normalizedDPMap[normName] = dpData[name];
       });
 
+      // ✅ Build KTC lookup
+      const normalizedKTCMap = {};
+      (ktcData.OneQB || []).forEach((player) => {
+        const normName = normalizeName(player.name);
+        if (!normalizedKTCMap[normName]) {
+          normalizedKTCMap[normName] = { one_qb: player.value, superflex: 0 };
+        } else {
+          normalizedKTCMap[normName].one_qb = player.value;
+        }
+      });
+      (ktcData.Superflex || []).forEach((player) => {
+        const normName = normalizeName(player.name);
+        if (!normalizedKTCMap[normName]) {
+          normalizedKTCMap[normName] = { one_qb: 0, superflex: player.value };
+        } else {
+          normalizedKTCMap[normName].superflex = player.value;
+        }
+      });
+
+      // ✅ Build FantasyNavigator lookup
+        const normalizedFNMap = {};
+        const addFNGroup = (list, key) => {
+          (list || []).forEach((p) => {
+            const normName = normalizeName(p.name || "");
+            if (!normalizedFNMap[normName]) {
+              normalizedFNMap[normName] = {
+                dynasty_sf: 0,
+                dynasty_1qb: 0,
+                redraft_sf: 0,
+                redraft_1qb: 0,
+                position: (p.position || "").toUpperCase(),
+                team: (p.team || "").toUpperCase(),
+              };
+            }
+            normalizedFNMap[normName][key] = p.value || 0;
+          });
+        };
+
+        addFNGroup(fnData.Dynasty_SF || [], "dynasty_sf");
+        addFNGroup(fnData.Dynasty_1QB || [], "dynasty_1qb");
+        addFNGroup(fnData.Redraft_SF || [], "redraft_sf");
+        addFNGroup(fnData.Redraft_1QB || [], "redraft_1qb");
+
+
+      console.log("✅ KTC normalized map size:", Object.keys(normalizedKTCMap).length);
+      console.log("✅ FantasyNavigator normalized size:", Object.keys(normalizedFNMap).length);
+
       let dpMatchCount = 0;
+      let ktcMatchCount = 0;
+      let fnMatchCount = 0;
       const finalPlayers = {};
 
       Object.keys(playersData).forEach((id) => {
@@ -145,14 +200,12 @@ export const SleeperProvider = ({ children }) => {
           redraft_1qb: redraft1QBMap[id] || 0,
         };
 
-        // ✅ Match DynastyProcess: check name + position + optional team
+        // ✅ DynastyProcess values
         let dp_values = { one_qb: 0, superflex: 0 };
         const dpCandidate = normalizedDPMap[normName];
-
         if (dpCandidate) {
           const dpPos = (dpCandidate.pos || "").toUpperCase();
           const dpTeam = (dpCandidate.team || "").toUpperCase();
-
           if (dpPos === pos && (!dpTeam || dpTeam === team)) {
             dp_values = {
               one_qb: dpCandidate.one_qb || 0,
@@ -162,21 +215,55 @@ export const SleeperProvider = ({ children }) => {
           }
         }
 
+        // ✅ KeepTradeCut values
+        let ktc_values = { one_qb: 0, superflex: 0 };
+        const ktcCandidate = normalizedKTCMap[normName];
+        if (ktcCandidate && ["QB", "RB", "WR", "TE"].includes(pos)) {
+          ktc_values = {
+            one_qb: ktcCandidate.one_qb || 0,
+            superflex: ktcCandidate.superflex || 0,
+          };
+          ktcMatchCount++;
+        }
+
+       // ✅ FantasyNavigator values with position/team validation
+        let fn_values = { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+        const fnCandidate = normalizedFNMap[normName];
+        if (
+          fnCandidate &&
+          fnCandidate.position === pos && // ensure position matches
+          (!fnCandidate.team || fnCandidate.team === team) // team check if available
+        ) {
+          fn_values = {
+            dynasty_sf: fnCandidate.dynasty_sf || 0,
+            dynasty_1qb: fnCandidate.dynasty_1qb || 0,
+            redraft_sf: fnCandidate.redraft_sf || 0,
+            redraft_1qb: fnCandidate.redraft_1qb || 0,
+          };
+          fnMatchCount++;
+        }
+
         // ✅ Include only if any value > 0
         if (
           Object.values(fc_values).some((v) => v > 0) ||
-          Object.values(dp_values).some((v) => v > 0)
+          Object.values(dp_values).some((v) => v > 0) ||
+          Object.values(ktc_values).some((v) => v > 0) ||
+          Object.values(fn_values).some((v) => v > 0)
         ) {
           finalPlayers[id] = {
             ...p,
             fc_values,
             dp_values,
+            ktc_values,
+            fn_values,
           };
         }
       });
 
       console.log(`✅ Player DB built: ${Object.keys(finalPlayers).length}`);
       console.log(`✅ DynastyProcess matched: ${dpMatchCount}`);
+      console.log(`✅ KeepTradeCut matched: ${ktcMatchCount}`);
+      console.log(`✅ FantasyNavigator matched: ${fnMatchCount}`);
 
       await set(CACHE_KEY, finalPlayers);
       setPlayers(finalPlayers);
@@ -187,6 +274,7 @@ export const SleeperProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
 
   /** ✅ Fetch rosters dynamically for one league */
   const fetchLeagueRosters = async (leagueId) => {

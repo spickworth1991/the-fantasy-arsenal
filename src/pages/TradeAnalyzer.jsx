@@ -5,6 +5,7 @@ import SearchBox from "../components/SearchBox";
 import PlayerCard from "../components/PlayerCard";
 import Navbar from "../components/Navbar";
 import BackgroundParticles from "../components/BackgroundParticles";
+import ValueSourceDropdown from "../components/ValueSourceDropdown";
 
 const VALUE_SOURCES = {
   FantasyCalc: {
@@ -15,7 +16,17 @@ const VALUE_SOURCES = {
     label: "DynastyProcess",
     supports: { dynasty: true, redraft: false, qbToggle: true },
   },
+  KeepTradeCut: {
+    label: "KeepTradeCut",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  FantasyNavigator: {
+    label: "FantasyNavigator",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
 };
+
+
 
 export default function TradeAnalyzer() {
   const {
@@ -76,22 +87,28 @@ export default function TradeAnalyzer() {
     return side === "A" ? "Side A" : "Side B";
   };
 
-  /** ✅ Player Value */
-  const getPlayerValue = (p) => {
-    if (!p) return 0;
-    if (valueSource === "FantasyCalc") {
-      return format === "dynasty"
-        ? qbType === "sf"
-          ? p.fc_values.dynasty_sf
-          : p.fc_values.dynasty_1qb
-        : qbType === "sf"
-        ? p.fc_values.redraft_sf
-        : p.fc_values.redraft_1qb;
-    } else if (valueSource === "DynastyProcess") {
-      return qbType === "sf" ? p.dp_values.superflex : p.dp_values.one_qb;
-    }
-    return 0;
-  };
+
+// ✅ Update getPlayerValue:
+const getPlayerValue = (p) => {
+  if (!p) return 0;
+
+  if (valueSource === "FantasyCalc") {
+    return format === "dynasty"
+      ? qbType === "sf" ? p.fc_values.dynasty_sf : p.fc_values.dynasty_1qb
+      : qbType === "sf" ? p.fc_values.redraft_sf : p.fc_values.redraft_1qb;
+  } else if (valueSource === "DynastyProcess") {
+    return qbType === "sf" ? (p.dp_values?.superflex || 0) : (p.dp_values?.one_qb || 0);
+  } else if (valueSource === "KeepTradeCut") {
+    return qbType === "sf" ? (p.ktc_values?.superflex || 0) : (p.ktc_values?.one_qb || 0);
+  } else if (valueSource === "FantasyNavigator") {
+    return format === "dynasty"
+      ? qbType === "sf" ? p.fn_values?.dynasty_sf : p.fn_values?.dynasty_1qb
+      : qbType === "sf" ? p.fn_values?.redraft_sf : p.fn_values?.redraft_1qb;
+  }
+  return 0;
+};
+
+
 
   /** ✅ Totals + Recommendation */
   const tradeValueA = sideA.reduce((sum, p) => sum + getPlayerValue(p), 0);
@@ -220,22 +237,15 @@ export default function TradeAnalyzer() {
               {/* Value Source */}
               <div className="flex flex-col items-center sm:flex-row gap-2">
                 <label className="font-semibold">Value Source:</label>
-                <select
-                  value={valueSource}
-                  onChange={(e) => setValueSource(e.target.value)}
-                  className="bg-gray-800 text-white px-3 py-2 rounded"
-                >
-                  {Object.keys(VALUE_SOURCES).map((key) => (
-                    <option key={key} value={key}>
-                      {VALUE_SOURCES[key].label}
-                    </option>
-                  ))}
-                </select>
+                <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
               </div>
+
+
+
 
               {/* Format Toggle */}
               {supports.dynasty && supports.redraft && (
-                <div className="flex items-center gap-2">
+                <div className="flex justify-center items-center  gap-2">
                   <label className="font-semibold">Format:</label>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -252,7 +262,7 @@ export default function TradeAnalyzer() {
 
               {/* QB Toggle */}
               {supports.qbToggle && (
-                <div className="flex items-center gap-2">
+                <div className="flex justify-center items-center gap-2">
                   <label className="font-semibold">QB:</label>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
