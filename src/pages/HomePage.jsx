@@ -17,9 +17,9 @@ export default function HomePage() {
   const isLoggedIn = !!username;
 
   const tools = [
-    { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using FantasyCalc values" },
-    { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time" },
-    { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available" },
+    { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using differnet value sources. Select a league for personalized trades." },
+    { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time", comingSoon: true },
+    { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available",comingSoon: true },
     { name: "Power Rankings", link: "#", description: "See where you rank amongst your league.", comingSoon: true },
   ];
 
