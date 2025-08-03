@@ -24,6 +24,11 @@ const VALUE_SOURCES = {
     label: "FantasyNavigator",
     supports: { dynasty: true, redraft: true, qbToggle: true },
   },
+  IDynastyP: {
+  label: "IDynastyP",
+  supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+
 };
 
 
@@ -105,6 +110,10 @@ const getPlayerValue = (p) => {
       ? qbType === "sf" ? p.fn_values?.dynasty_sf : p.fn_values?.dynasty_1qb
       : qbType === "sf" ? p.fn_values?.redraft_sf : p.fn_values?.redraft_1qb;
   }
+    else if (valueSource === "IDynastyP") {
+    return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
+  }
+
   return 0;
 };
 
@@ -337,7 +346,14 @@ const getPlayerValue = (p) => {
                   getPlayerValue={getPlayerValue}
                   suggestedPlayers={recSide === "A" ? recommendedPlayers : []}
                   addPlayerToSide={(p) => addPlayer("A", p)}
-                  searchBox={<SearchBox players={filteredPlayers("A")} onSelect={(p) => addPlayer("A", p)} />}
+                  searchBox={
+                    <SearchBox
+                      players={filteredPlayers("A")}
+                      onSelect={(p) => addPlayer("A", p)}
+                      getPlayerValue={getPlayerValue} // ✅ clearly pass getPlayerValue
+                    />
+                  }
+
                 />
               </div>
 
@@ -363,7 +379,14 @@ const getPlayerValue = (p) => {
                   getPlayerValue={getPlayerValue}
                   suggestedPlayers={recSide === "B" ? recommendedPlayers : []}
                   addPlayerToSide={(p) => addPlayer("B", p)}
-                  searchBox={<SearchBox players={filteredPlayers("B")} onSelect={(p) => addPlayer("B", p)} />}
+                  searchBox={
+                    <SearchBox
+                      players={filteredPlayers("B")}
+                      onSelect={(p) => addPlayer("B", p)}
+                      getPlayerValue={getPlayerValue} // ✅ clearly pass getPlayerValue
+                    />
+                  }
+
                 />
               </div>
             </div>

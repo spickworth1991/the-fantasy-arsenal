@@ -3,12 +3,14 @@ import fantasyCalcLogo from "../assets/icons/fantasycalc-logo.png";
 import dpLogo from "../assets/icons/dp-logo.png";
 import ktcLogo from "../assets/icons/ktc-logo.png";
 import fnLogo from "../assets/icons/fantasynav-logo.png";
+import idpLogo from "../assets/icons/idp-logo.png";
 
 const VALUE_OPTIONS = [
   { key: "FantasyCalc", logo: fantasyCalcLogo },
   { key: "DynastyProcess", logo: dpLogo },
   { key: "KeepTradeCut", logo: ktcLogo },
   { key: "FantasyNavigator", label: "FantasyNavigator", logo: fnLogo },
+  { key: "IDynastyP", label: "IDynastyP", logo: idpLogo },
 ];
 
 export default function ValueSourceDropdown({ valueSource, setValueSource }) {

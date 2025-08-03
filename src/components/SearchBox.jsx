@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function SearchBox({ players, onSelect }) {
+export default function SearchBox({ players, onSelect, getPlayerValue }) {
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
 
@@ -9,7 +9,13 @@ export default function SearchBox({ players, onSelect }) {
     setSearch(val);
     if (val.length > 1) {
       const results = Object.values(players || {})
-        .filter((p) => p && p.full_name && p.full_name.toLowerCase().includes(val.toLowerCase()))
+        .filter(
+          (p) =>
+            p &&
+            p.full_name &&
+            p.full_name.toLowerCase().includes(val.toLowerCase()) &&
+            getPlayerValue(p) > 0  // ✅ Only show players/picks with values > 0
+        )
         .slice(0, 8);
       setFiltered(results);
     } else {

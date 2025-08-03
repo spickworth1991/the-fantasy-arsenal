@@ -15,6 +15,7 @@ const FC_OUT_PATH = path.join(__dirname, "../public/fantasycalc_cache.json");
 const DP_OUT_PATH = path.join(__dirname, "../public/dynastyprocess_cache.json");
 const KTC_OUT_PATH = path.join(__dirname, "../public/ktc_cache.json");
 const FN_OUT_PATH = path.join(__dirname, "../public/fantasynav_cache.json");
+const IDP_OUT_PATH = path.join(__dirname, "../public/idynastyp_cache.json");
 
 // FantasyCalc combinations
 const combinations = [
@@ -143,7 +144,7 @@ async function updateKTC() {
 }
 
 // ✅ Update FantasyNavigator (download & parse 4 CSVs)
-// ✅ Update FantasyNavigator
+
 async function updateFantasyNavigator() {
   const FN_OUT_PATH = path.join(__dirname, "../public/fantasynav_cache.json");
   const url = "https://fantasy-navigator-latest.onrender.com/ranks?platform=sf";
@@ -189,6 +190,36 @@ async function updateFantasyNavigator() {
   console.log("✅ fantasynav_cache.json updated.");
 }
 
+
+// ✅ Update IDynastyP
+async function updateIDynastyP() {
+  const idpUrl = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhvQECWwDmYCHgmBpi0kD7buPur9ToFc6ssnEqrFLAH24azxxAHP8jO7p0PSq6J6UkZrK0drR0-qnxmBnf2NSFW8s9cQ59sryzufM0iYCM-ZnOF9GidRgV3TUNKq8edwkDaJsm9t-hS7BOsYFIHMfN0GKNyBYzKU45mPR1NIEgk1-2HfDh5wevSPCe8FKmvxEU6u0QBtkD9d6aCV9j22mWF5tsMSdiEbpX80Axls6d06EPOoaSkscgi4yO8ds5zHarOCYIJgEgAzqH2XN0B2RM9tjkg9A&lib=MknHs2mWMhCl6DOSqHwTywMicp6k4geWO";
+
+  console.log("Fetching IDynastyP data:", idpUrl);
+  const res = await axios.get(idpUrl);
+  const data = res.data;
+
+  if (!data || !data.Sheet1) {
+    throw new Error("Unexpected IDynastyP response format.");
+  }
+
+  // Combine all sheets (players and picks)
+  const combined = [...(data.Sheet1 || []), ...(data.Sheet2 || []), ...(data.Sheet3 || [])];
+
+  const normalized = combined.map((row) => ({
+    name: row.name || "",
+    team: row.team || "",
+    position: row.position || "",
+    one_qb: Number(row.value_1qb) || 0,
+    superflex: Number(row.value_sf) || 0,
+    // Optional: keep TEP and SFTEP if needed later
+  }));
+
+  fs.writeFileSync(IDP_OUT_PATH, JSON.stringify(normalized, null, 2));
+  console.log(`✅ idynastyp_cache.json updated with ${normalized.length} entries.`);
+}
+
+
 // ✅ Interactive menu
 (async () => {
   try {
@@ -201,7 +232,8 @@ async function updateFantasyNavigator() {
           { name: "FantasyCalc", value: "fc" },
           { name: "DynastyProcess", value: "dp" },
           { name: "KeepTradeCut (KTC)", value: "ktc" },
-          { name: "FantasyNavigator", value: "fn" }, // ✅ New option
+          { name: "FantasyNavigator", value: "fn" },
+          { name: "IDynastyP", value: "idp" }, // ✅ New option
         ],
         validate: (input) => (input.length === 0 ? "Please select at least one." : true),
       },
@@ -213,6 +245,8 @@ async function updateFantasyNavigator() {
     if (sources.includes("dp")) await updateDynastyProcess();
     if (sources.includes("ktc")) await updateKTC();
     if (sources.includes("fn")) await updateFantasyNavigator();
+    if (sources.includes("idp")) await updateIDynastyP();
+
 
     console.log("\n✅ All selected updates completed!");
   } catch (err) {
