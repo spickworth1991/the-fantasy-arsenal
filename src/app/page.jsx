@@ -1,8 +1,10 @@
+"use client";
 import { useState } from "react";
 import { useSleeper } from "../context/SleeperContext";
-import BackgroundParticles from "../components/BackgroundParticles";
+import dynamic from "next/dynamic";
+const BackgroundParticles = dynamic(() => import("../components/BackgroundParticles"), { ssr: false });
 import Navbar from "../components/Navbar";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 export default function HomePage() {
   const { username, year, login, loading, error } = useSleeper();
@@ -18,17 +20,18 @@ export default function HomePage() {
 
   const tools = [
     { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using differnet value sources. Select a league for personalized trades." },
-    { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time", comingSoon: true },
+    { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time" },
     { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available",comingSoon: true },
     { name: "Power Rankings", link: "#", description: "See where you rank amongst your league.", comingSoon: true },
   ];
 
   return (
-     <div className="max-w-6xl mx-auto px-4">
+    <div className="max-w-6xl mx-auto px-4">
+        <div aria-hidden className="h-[72px]" />
       <BackgroundParticles />
       <Navbar pageTitle="Home" />
       <main className="flex flex-col items-center px-4">
-        <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-center animate-fadeIn">
+        <h1 className="text-4xl text-white sm:text-6xl font-bold mb-4 text-center animate-fadeIn">
           The Fantasy Arsenal <span className="text-blue-400">by StickyPicky</span>
         </h1>
         <p className="text-gray-400 mb-8 text-center">
@@ -65,7 +68,7 @@ export default function HomePage() {
               {loading ? "Logging in..." : "Login"}
             </button>
 
-            {error && <p className="text-red-500 mt-4">{error}</p>}
+            {error && <p className="text-red-500 mt-4">{String(error)}</p>}
           </form>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 w-full max-w-5xl">
@@ -82,7 +85,7 @@ export default function HomePage() {
 function ToolCard({ name, link, description, comingSoon, delay, disabled }) {
   return comingSoon || disabled ? (
     <div
-      className={`bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 animate-stagger opacity-50 cursor-not-allowed`}
+      className="bg-gray-900 p-6 text-white rounded-xl shadow-lg text-center relative transform transition hover:scale-105 animate-stagger opacity-50 cursor-not-allowed"
       style={{ animationDelay: `${delay}ms` }}
     >
       {comingSoon && (
@@ -95,11 +98,11 @@ function ToolCard({ name, link, description, comingSoon, delay, disabled }) {
     </div>
   ) : (
     <Link
-      to={link}
-      className={`bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 hover:neon-hover hover:bg-gray-800 animate-stagger`}
+      href={link}
+      className="bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 hover:neon-hover hover:bg-gray-800 animate-stagger"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <h2 className="text-2xl font-bold mb-2">{name}</h2>
+      <h2 className="text-2xl text-white font-bold mb-2">{name}</h2>
       <p className="text-gray-400">{description}</p>
     </Link>
   );

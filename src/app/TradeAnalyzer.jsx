@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useSleeper } from "../context/SleeperContext";
 import TradeSide from "../components/TradeSide";
@@ -6,7 +7,6 @@ import PlayerCard from "../components/PlayerCard";
 import Navbar from "../components/Navbar";
 import BackgroundParticles from "../components/BackgroundParticles";
 import ValueSourceDropdown from "../components/ValueSourceDropdown";
-
 const VALUE_SOURCES = {
   FantasyCalc: {
     label: "FantasyCalc",
@@ -230,7 +230,7 @@ const getPlayerValue = (p) => {
     <>
       <BackgroundParticles />
       <Navbar pageTitle="Trade Analyzer" />
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4 pt-14 -mt-2">
         {!username ? (
           <div className="text-center text-gray-400 mt-20">
             Please log in on the{" "}
@@ -242,7 +242,7 @@ const getPlayerValue = (p) => {
         ) : (
           <>
             {/* ✅ Control Panel */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6 bg-gray-900 p-4 rounded-lg">
+            <div className="mt-0 flex flex-col sm:flex-row justify-center gap-4 mb-6 bg-gray-900 p-4 rounded-lg">
               {/* Value Source */}
               <div className="flex flex-col items-center sm:flex-row gap-2">
                 <label className="font-semibold">Value Source:</label>
