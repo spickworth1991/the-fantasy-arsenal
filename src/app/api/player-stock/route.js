@@ -1,4 +1,8 @@
 // src/app/api/player-stock/route.js
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+// If you're on Cloudflare, edge runtime is great:
+export const runtime = "edge";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {

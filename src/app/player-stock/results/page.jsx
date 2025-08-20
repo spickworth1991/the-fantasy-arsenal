@@ -1,4 +1,23 @@
-"use client";
+// app/player-stock/results/page.jsx
+import { Suspense } from "react";
+import LoadingScreen from "../../../components/LoadingScreen";
+
+// Tell Next this route is dynamic (prevents SSG/export attempts)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Server component wrapper
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={<LoadingScreen progress={10} text="Loading Player Stock…" />}>
+      <ClientResults />
+    </Suspense>
+  );
+}
+
+
+
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -9,6 +28,8 @@ import ValueSourceDropdown from "../../../components/ValueSourceDropdown";
 import { useSleeper } from "../../../context/SleeperContext";
 import AvatarImage from "../../../components/AvatarImage";
 import { getTeamByeWeek } from "../../../utils/nflByeWeeks";
+
+
 
 // value sources
 const VALUE_SOURCES = {
@@ -28,7 +49,9 @@ const leagueAvatarUrl = (avatarId) =>
 const TRENDING_LIMIT = 50;
 const LOOKBACK_OPTS = [1, 6, 12, 24, 48, 72, 168]; // hours
 
-export default function PlayerStockResults() {
+// --- Everything below is your existing page code, moved into a client component ---
+function ClientResults() {
+  "use client";
   const { username, year, players, format, qbType, setFormat, setQbType } = useSleeper();
   const params = useSearchParams();
 
@@ -1232,3 +1255,4 @@ export default function PlayerStockResults() {
     </>
   );
 }
+
