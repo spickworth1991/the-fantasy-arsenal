@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSleeper } from "../context/SleeperContext";
-import TradeSide from "../components/TradeSide";
-import SearchBox from "../components/SearchBox";
-import PlayerCard from "../components/PlayerCard";
-import Navbar from "../components/Navbar";
-import BackgroundParticles from "../components/BackgroundParticles";
-import ValueSourceDropdown from "../components/ValueSourceDropdown";
+import { useSleeper } from "../../context/SleeperContext";
+import TradeSide from "../../components/TradeSide";
+import SearchBox from "../../components/SearchBox";
+import PlayerCard from "../../components/PlayerCard";
+import Navbar from "../../components/Navbar";
+import BackgroundParticles from "../../components/BackgroundParticles";
+import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 const VALUE_SOURCES = {
   FantasyCalc: {
     label: "FantasyCalc",

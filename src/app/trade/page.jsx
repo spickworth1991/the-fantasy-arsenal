@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from "../../components/Navbar";
-import TradeAnalyzer from "../TradeAnalyzer.jsx";
+import TradeAnalyzer from "./TradeAnalyzer.jsx";
 
 export default function TradePage() {
   return (
