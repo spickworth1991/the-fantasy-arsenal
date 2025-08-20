@@ -2,30 +2,39 @@
   "name": "the-fantasy-arsenal",
   "private": true,
   "version": "1.0.0",
+  "engines": { "node": ">=20 <21" },
+
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:cf": "next-on-pages",
+    "preview:cf": "next-on-pages --serve",
+    "postinstall": "npx next telemetry disable || true"
   },
+
   "dependencies": {
     "axios": "^1.11.0",
     "idb-keyval": "^6.2.2",
+    "next": "14.2.13",
     "papaparse": "^5.5.3",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "next": "14.2.13"
+    "react-dom": "18.3.1"
   },
+
   "devDependencies": {
+    "@cloudflare/next-on-pages": "1.13.14",
+    "autoprefixer": "^10.4.21",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.13",
-    "tailwindcss": "^3.4.13",
     "postcss": "^8.5.6",
-    "autoprefixer": "^10.4.21"
-  }
-,
+    "tailwindcss": "^3.4.13",
+    "vercel": "46.0.2"
+  },
+
   "optionalDependencies": {
-    "puppeteer": "^24.15.0",
-    "inquirer": "^12.9.0"
+    "inquirer": "^12.9.0",
+    "puppeteer": "^24.15.0"
   }
 }
