@@ -1,0 +1,14 @@
+/*
+  X-Frame-Options: SAMEORIGIN
+
+# Don't cache HTML at the edge
+/ 
+  Cache-Control: no-store, must-revalidate
+/player-stock
+  Cache-Control: no-store, must-revalidate
+/player-stock/results
+  Cache-Control: no-store, must-revalidate
+
+# Cache Next static assets hard
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
