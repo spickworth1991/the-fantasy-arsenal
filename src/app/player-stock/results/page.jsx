@@ -1,8 +1,16 @@
-// app/player-stock/results/page.jsx  (SERVER)
-import ClientResults from "./ClientResults";
+// Server file (no "use client")
+// Force static, and override any parent edge runtime.
+export const dynamic = 'force-static';
+export const runtime = 'nodejs';
+export const revalidate = false;
 
-export default function Page({ searchParams }) {
-  // Static shell; no server data, no CF function call.
-  return <ClientResults initialSearchParams={searchParams} />;
+import { Suspense } from 'react';
+import ClientResults from './ClientResults';
+
+export default function ResultsPage({ searchParams }) {
+  return (
+    <Suspense fallback={null}>
+      <ClientResults initialSearchParams={searchParams} />
+    </Suspense>
+  );
 }
-
