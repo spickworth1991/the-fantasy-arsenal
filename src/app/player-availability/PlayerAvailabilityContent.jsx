@@ -663,12 +663,7 @@ const leaguesAvailableSorted = useMemo(() => {
 
                               <td className="px-3 py-2 text-center">
                                 <div className="flex gap-3 justify-center">
-                                  <a
-                                    href={`sleeper://league/${lg.league_id}`}
-                                    className="text-green-400 hover:underline"
-                                  >
-                                    App
-                                  </a>
+                                
                                   <a
                                     href={`https://www.sleeper.app/leagues/${lg.league_id}`}
                                     target="_blank"
