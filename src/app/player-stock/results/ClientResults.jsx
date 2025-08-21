@@ -685,17 +685,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("name")}>
                         Player <span className="ml-1 inline-block">{sortIndicator("name")}</span>
                       </th>
-                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("team")}>
-                        Team <span className="ml-1 inline-block">{sortIndicator("team")}</span>
-                      </th>
-                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("pos")}>
-                        Pos <span className="ml-1 inline-block">{sortIndicator("pos")}</span>
-                      </th>
                       <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("count")}>
                         Leagues <span className="ml-1 inline-block">{sortIndicator("count")}</span>
                       </th>
                       <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("value")}>
                         Value <span className="ml-1 inline-block">{sortIndicator("value")}</span>
+                      </th>
+                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("team")}>
+                        Team <span className="ml-1 inline-block">{sortIndicator("team")}</span>
+                      </th>
+                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("pos")}>
+                        Pos <span className="ml-1 inline-block">{sortIndicator("pos")}</span>
                       </th>
                     </tr>
                   </thead>
@@ -736,9 +736,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                               >
                                 {r._name}
                               </span>
-                              {Number.isFinite(r.bye) && (
+                              {/* {Number.isFinite(r.bye) && (
                                 <span className="ml-2 text-xs text-gray-400">W{r.bye}</span>
-                              )}
+                              )} */}
+                              {/* bye weeks after name */}
                               {addCount ? (
                                 <span
                                   className="ml-2 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70"
@@ -759,10 +760,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                               ) : null}
                             </div>
                           </td>
-                          <td className="px-4 py-2 text-gray-300">{r._team || "—"}</td>
-                          <td className="px-4 py-2 text-gray-300">{r._pos || "—"}</td>
                           <td className="px-4 py-2 text-right">{r.count}</td>
                           <td className="px-4 py-2 text-right">{r._value}</td>
+                          <td className="px-4 py-2 text-gray-300">{r._team || "—"}</td>
+                          <td className="px-4 py-2 text-gray-300">{r._pos || "—"}</td>
+                          
                         </tr>
                       );
                     })}

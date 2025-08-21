@@ -379,6 +379,33 @@ export const SleeperProvider = ({ children }) => {
     }
   };
 
+  /** ✅ Silent roster fetch: no global overlay, returns data, still updates context leagues */
+  const fetchLeagueRostersSilent = async (leagueId) => {
+    try {
+      const [rostersRes, usersRes] = await Promise.all([
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+      ]);
+      if (!rostersRes.ok) throw new Error(`Rosters fetch failed for ${leagueId}`);
+      if (!usersRes.ok) throw new Error(`Users fetch failed for ${leagueId}`);
+
+      const rosters = await rostersRes.json();
+      const users = await usersRes.json();
+
+      // Update leagues in context (same as the loud version)
+      const updatedLeagues = leagues.map((lg) =>
+        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
+      );
+      setLeagues(updatedLeagues);
+
+      return { rosters, users };
+    } catch (err) {
+      console.error("❌ Silent roster fetch error:", err);
+      throw err;
+    }
+  };
+
+
   const logout = () => {
     lsClear();
     setUsername(null);
@@ -404,6 +431,7 @@ export const SleeperProvider = ({ children }) => {
         login,
         logout,
         fetchLeagueRosters,
+        fetchLeagueRostersSilent,
         loading,
         progress,
         error,
