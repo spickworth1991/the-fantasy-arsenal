@@ -32,7 +32,7 @@ export default function Navbar({ pageTitle }) {
     clearPlayerStockSessionCache();
     logout();
     handleCloseSidebar();
-    router.push("/"); // redirect to homepage
+    router.replace("/"); // redirect to homepage
   };
 
   return (
@@ -66,12 +66,13 @@ export default function Navbar({ pageTitle }) {
             )}
             {username && (
               <button
-                onClick={logout}
+                onClick={handleLogout} // <- navigate home on logout
                 className="rounded-lg text-white border border-white/20 px-3 py-1 text-sm hover:bg-white/10"
               >
                 Logout
               </button>
             )}
+
           </div>
       </nav>
 
