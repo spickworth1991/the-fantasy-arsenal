@@ -637,17 +637,30 @@ const leaguesAvailableSorted = useMemo(() => {
                               </td>
                               {selectedPlayers.map((p) => {
                                 const r = results[p.id];
-                                const available = r?.availableLeagues?.some(
-                                (L) => String(L.league_id) === String(lg.league_id)
-                                );
+                                const lid = String(lg.league_id);
+
+                                const noData   = r?.noDataLeagues?.some((L) => String(L.league_id) === lid);
+                                const rostered = r?.rosteredLeagues?.some((L) => String(L.league_id) === lid);
+                                const available= r?.availableLeagues?.some((L) => String(L.league_id) === lid);
+
+                                let cell = "–";
+                                if (noData) {
+                                    cell = "–";
+                                } else if (rostered) {
+                                    cell = "❌";
+                                } else if (available) {
+                                    cell = "✅";
+                                } else {
+                                    cell = "–"; // fallback, but shouldn't happen in sorted list
+                                }
 
                                 return (
-                                <td key={`${lg.league_id}-${p.id}`} className="px-3 py-2 text-center">
-                                    {available ? "✅" : "–"}
-                                </td>
+                                    <td key={`${lg.league_id}-${p.id}`} className="px-3 py-2 text-center">
+                                    {cell}
+                                    </td>
                                 );
+                                })}
 
-                              })}
                               <td className="px-3 py-2 text-center">
                                 <div className="flex gap-3 justify-center">
                                   <a
