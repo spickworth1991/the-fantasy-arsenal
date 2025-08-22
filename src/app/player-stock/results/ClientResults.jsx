@@ -1271,9 +1271,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   />
                 </label>
 
-                <div className="text-xs text-gray-500 mt-2">
-                  These filters don’t rescan. They just change what’s shown from your one cached scan.
-                </div>
               </div>
             </div>
 
