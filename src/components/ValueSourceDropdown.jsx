@@ -1,12 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ICONS = {
   FantasyCalc: "/icons/fantasycalc-logo.png",
   DynastyProcess: "/icons/dp-logo.png",
   KeepTradeCut: "/icons/ktc-logo.png",
-  FantasyNavigator: "/icons/fantasynav-logo.png",
-  IDynastyP: "/icons/idp-logo.png", // if present; otherwise remove this line
+  FantasyNavigator: "/icons/fantasynav-logo.png", // square
+  IDynastyP: "/icons/idp-logo.png",
 };
 
 const LABELS = {
@@ -17,47 +17,116 @@ const LABELS = {
   IDynastyP: "IDynastyP",
 };
 
+// Per-brand sizes: "button" = closed control; "menu" = options in dropdown
+const ICON_SIZES = {
+  button: {
+    FantasyCalc:      { w: 64, h: 28 },
+    DynastyProcess:   { w: 84, h: 28 },
+    KeepTradeCut:     { w: 95, h: 28 },
+    FantasyNavigator: { w: 20,  h: 20 }, // square
+    IDynastyP:        { w: 60, h: 20 },
+  },
+  menu: {
+    FantasyCalc:      { w: 75,  h: 21 },
+    DynastyProcess:   { w: 120,  h: 21 },
+    KeepTradeCut:     { w: 120,  h: 21 },
+    FantasyNavigator: { w: 21,  h: 21 }, // square
+    IDynastyP:        { w: 82,  h: 21 },
+  },
+};
+
+function useClickAway(ref, onAway) {
+  useEffect(() => {
+    const handler = (e) => {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target)) onAway?.();
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [ref, onAway]);
+}
+
+const SHOW_TEXT = (key) => key === "FantasyNavigator";
+
 export default function ValueSourceDropdown({ valueSource, setValueSource }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  useClickAway(wrapRef, () => setOpen(false));
 
-  const options = Object.keys(LABELS);
+  const btnSize = ICON_SIZES.button[valueSource] ?? { w: 100, h: 28 };
 
   return (
-    <div className="relative inline-block text-left">
+    <div ref={wrapRef} className="relative inline-block text-left">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="inline-flex items-center bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg border border-white/10"
       >
+        {/* Selected logo */}
         {ICONS[valueSource] && (
-          <img src={ICONS[valueSource]} alt="" className="h-5 w-5 rounded-sm" />
+          <img
+            src={ICONS[valueSource]}
+            alt={`${LABELS[valueSource]} logo`}
+            width={btnSize.w}
+            height={btnSize.h}
+            className="object-contain"
+            loading="lazy"
+          />
         )}
-        <span>{LABELS[valueSource]}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-70">
+        {/* Only FantasyNavigator shows visible text */}
+        {SHOW_TEXT(valueSource) ? (
+          <span className="ml-2 whitespace-nowrap">{LABELS[valueSource]}</span>
+        ) : (
+          <span className="sr-only">{LABELS[valueSource]}</span>
+        )}
+        <svg width="16" height="16" viewBox="0 0 24 24" className="ml-2 opacity-70">
           <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
       </button>
 
       {open && (
         <div
-          className="absolute z-20 mt-2 w-56 rounded-lg border border-white/10 bg-[#0b0b0b] shadow-lg p-1"
-          onMouseLeave={() => setOpen(false)}
+          role="listbox"
+          className="absolute z-20 mt-2 w-64 rounded-lg border border-white/10 bg-opacity-95 bg-[#0e304e] shadow-lg p-1"
         >
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => {
-                setValueSource(opt);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 ${
-                opt === valueSource ? "bg-white/10" : ""
-              }`}
-            >
-              {ICONS[opt] && <img src={ICONS[opt]} alt="" className="h-5 w-5 rounded-sm" />}
-              <span>{LABELS[opt]}</span>
-            </button>
-          ))}
+          {Object.keys(LABELS).map((opt) => {
+            const size = ICON_SIZES.menu[opt] ?? { w: 80, h: 20 };
+            return (
+              <button
+                key={opt}
+                role="option"
+                aria-selected={opt === valueSource}
+                onClick={() => {
+                  setValueSource(opt);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 rounded-md hover:bg-white/10 ${
+                  opt === valueSource ? "bg-white/10" : ""
+                }`}
+              >
+                <img
+                  src={ICONS[opt]}
+                  alt={`${LABELS[opt]} logo`}
+                  width={size.w}
+                  height={size.h}
+                  className="object-contain shrink-0"
+                  loading="lazy"
+                />
+                {/* Only FantasyNavigator shows visible text in the menu */}
+                {SHOW_TEXT(opt) ? (
+                  <span className="ml-3 text-sm">{LABELS[opt]}</span>
+                ) : (
+                  <span className="sr-only">{LABELS[opt]}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
