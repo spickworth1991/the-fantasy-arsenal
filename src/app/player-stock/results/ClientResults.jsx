@@ -60,6 +60,19 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [highlightStarters, setHighlightStarters] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    try { mq.addEventListener("change", handler); } catch { mq.addListener(handler); }
+    return () => {
+      try { mq.removeEventListener("change", handler); } catch { mq.removeListener(handler); }
+    };
+  }, []);
+
+
   // Scan data
   const [leagueCount, setLeagueCount] = useState(0);
   const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,roster_positions,status,isBestBall}]
@@ -545,6 +558,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [chartMetric, setChartMetric] = useState("exposure"); // exposure | count | value
   const [chartTopN, setChartTopN] = useState(20);
 
+  const chartTopNInitRef = useRef(false);
+  useEffect(() => {
+    if (showChart && isMobile && !chartTopNInitRef.current) {
+      setChartTopN(10);
+      chartTopNInitRef.current = true;
+    }
+  }, [showChart, isMobile]);
+
+
   const chartData = useMemo(() => {
     const base = [...sorted].slice(0, Math.max(chartTopN, 1));
     const data = base.map((r) => ({
@@ -796,7 +818,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
               <div className="mt-4 bg-gray-900 rounded-lg border border-white/10 p-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="text-lg font-semibold">Player Stock (Top {chartTopN})</div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <label className="flex items-center gap-2 text-sm">
                       <span>Metric</span>
                       <select
@@ -809,6 +831,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         <option value="value">Value</option>
                       </select>
                     </label>
+
                     <label className="flex items-center gap-2 text-sm">
                       <span>Top</span>
                       <select
@@ -817,13 +840,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
                       >
                         {[10, 20, 30, 50].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
+                          <option key={n} value={n}>{n}</option>
                         ))}
                       </select>
                     </label>
+
+                    {isMobile && chartTopN > 10 && (
+                      <span className="text-xs text-yellow-300">
+                        Tip: 10 is recommended on mobile.
+                      </span>
+                    )}
                   </div>
+
                 </div>
 
                 <div className="mt-3 h-[320px]">
@@ -903,7 +931,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       >
                         Value <span className="ml-1 inline-block">{sortIndicator("value")}</span>
                       </th>
-                      <th className="text-left px-4 py-2">Teams</th>
+                      <th className="text-left px-4 py-2 hidden md:table-cell">Teams</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -977,7 +1005,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           <td className="px-4 py-2 text-right">
                             {players?.[r.player_id] ? getPlayerValue(players[r.player_id]) : 0}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 hidden md:table-cell">
                             <div className="flex -space-x-2">
                               {(r.leagues || [])
                                 .slice(0, 7)
