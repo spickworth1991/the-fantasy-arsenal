@@ -920,13 +920,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         Player <span className="ml-1 inline-block">{sortIndicator("name")}</span>
                       </th>
                       <th
-                        className="text-left px-4 py-2 cursor-pointer select-none"
+                        className="text-right px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort("count")}
                       >
                         Leagues <span className="ml-1 inline-block">{sortIndicator("count")}</span>
                       </th>
                       <th
-                        className="text-left px-4 py-2 cursor-pointer select-none"
+                        className="text-right px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort("value")}
                       >
                         Value <span className="ml-1 inline-block">{sortIndicator("value")}</span>
@@ -955,7 +955,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         >
                           <td className="px-4 py-2">
                             <button className="text-left w-full" onClick={() => setOpenPid(r.player_id)}>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
                                 <AvatarImage
                                   name={r._name}
                                   width={28}
@@ -1001,8 +1001,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
                               </div>
                             </button>
                           </td>
-                          <td className="px-4 py-2 text-left">{r.count}</td>
-                          <td className="px-4 py-2 text-left">
+                          <td className="px-4 py-2 text-right">{r.count}</td>
+                          <td className="px-4 py-2 text-right">
                             {players?.[r.player_id] ? getPlayerValue(players[r.player_id]) : 0}
                           </td>
                           <td className="px-4 py-2 hidden md:table-cell">
