@@ -132,6 +132,40 @@ export default function PlayerAvailabilityContent() {
   const [selectedPlayers, setSelectedPlayers] = useState([]); // [{id,name,pos,team}]
   const [results, setResults] = useState({});                 // { [id]: { availableLeagues, rosteredLeagues, pctAvailable, pctRostered } }
 
+  // ----- NEW: local leagues fallback + effective leagues -----
+  const [fallbackLeagues, setFallbackLeagues] = useState([]);
+  const [scanningLeagues, setScanningLeagues] = useState(false);
+  const effectiveLeagues = useMemo(
+    () => (Array.isArray(leagues) && leagues.length > 0 ? leagues : fallbackLeagues),
+    [leagues, fallbackLeagues]
+  );
+
+  // Auto-scan leagues from Sleeper if none present in context
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!username) return;
+      if (Array.isArray(leagues) && leagues.length > 0) return; // context already has them
+      setScanningLeagues(true);
+      try {
+        const uRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+        if (!uRes.ok) throw new Error("User not found");
+        const user = await uRes.json();
+        const yr = new Date().getFullYear();
+        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
+        const ls = (await lRes.json()) || [];
+        if (!cancelled) setFallbackLeagues(ls);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setFallbackLeagues([]);
+      } finally {
+        if (!cancelled) setScanningLeagues(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [username, leagues]);
+
   // Name index (name -> [{id,name,pos,team}])
   const playersMap = useMemo(() => players || {}, [players]);
   const normalizeName = (s = "") =>
@@ -164,7 +198,7 @@ export default function PlayerAvailabilityContent() {
     return idx;
   }, [playersMap]);
 
-  // Guards
+  // Guards (don’t error just because leagues aren’t in context; we auto-scan above)
   useEffect(() => {
     const init = async () => {
       try {
@@ -172,7 +206,6 @@ export default function PlayerAvailabilityContent() {
         setLoading(true);
         setLoadingDone(false);
         if (!username) return setError("Please log in on the Home page first.");
-        if (!leagues || leagues.length === 0) return setError("No leagues found. After login, make sure your leagues load.");
         if (!playersMap || Object.keys(playersMap).length === 0)
           return setError("Player database not loaded yet. Please wait a moment or re-login.");
       } catch (e) {
@@ -184,7 +217,7 @@ export default function PlayerAvailabilityContent() {
       }
     };
     init();
-  }, [username, leagues, playersMap]);
+  }, [username, playersMap]);
 
   // Restore last selection
   useEffect(() => {
@@ -199,7 +232,7 @@ export default function PlayerAvailabilityContent() {
 
   // League filtering
   const getFilteredLeagues = () =>
-    (leagues || []).filter((lg) => {
+    (effectiveLeagues || []).filter((lg) => {
       const isBestBall = lg?.settings?.best_ball === 1;
       if (onlyBestBall && !isBestBall) return false;
       if (excludeBestBall && isBestBall) return false;
@@ -221,10 +254,10 @@ export default function PlayerAvailabilityContent() {
       excludeBestBall ? 1 : 0,
       refreshNonce, // if you click Refresh rosters
       // encode visible league ids to catch changes
-      ...filteredLeagues.map((l) => l.league_id),
+      ...(filteredLeagues.map((l) => l.league_id)),
     ].join(":"),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onlyBestBall, excludeBestBall, refreshNonce, leagues] // triggers recompute; filteredLeagues is derived
+    [onlyBestBall, excludeBestBall, refreshNonce, effectiveLeagues] // effectiveLeagues drives filteredLeagues
   );
 
   // Prepare league sets once per filtersKey
@@ -259,7 +292,7 @@ export default function PlayerAvailabilityContent() {
               }
               if (typeof fetchLeagueRosters === "function") {
                 await fetchLeagueRosters(lg.league_id);
-                const updated = (leagues || []).find((L) => L.league_id === lg.league_id);
+                const updated = (effectiveLeagues || []).find((L) => L.league_id === lg.league_id);
                 return { lg, rosters: updated?.rosters || [] };
               }
               const res = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
@@ -344,92 +377,91 @@ export default function PlayerAvailabilityContent() {
     setRefreshNonce((n) => n + 1); // triggers filtersKey change
   };
 
-  // Compute availability (reuse cache, merge optionally) — FIXED to exclude empty sets
-const computeAvailability = async (
-  playersToCheck = selectedPlayers,
-  { merge = false, assumePrepared = false } = {}
-) => {
-  const list = Array.isArray(playersToCheck) && playersToCheck.length ? playersToCheck : selectedPlayers;
-  if (!list || list.length === 0) { setError("Add at least one player first."); return; }
+  // Compute availability (reuse cache, merge optionally) — excludes no-data leagues
+  const computeAvailability = async (
+    playersToCheck = selectedPlayers,
+    { merge = false, assumePrepared = false } = {}
+  ) => {
+    const list = Array.isArray(playersToCheck) && playersToCheck.length ? playersToCheck : selectedPlayers;
+    if (!list || list.length === 0) { setError("Add at least one player first."); return; }
 
-  try {
-    setError("");
-    setLoading(true);
-    setLoadingDone(false);
+    try {
+      setError("");
+      setLoading(true);
+      setLoadingDone(false);
 
-    const leagueSets = assumePrepared ? leagueSetsRef.current : await prepareLeagueSetsOnce();
+      const leagueSets = assumePrepared ? leagueSetsRef.current : await prepareLeagueSetsOnce();
 
-    const out = {};
-    for (const p of list) {
-      const availableLeagues = [];
-      const rosteredLeagues = [];
-      const noDataLeagues = [];
+      const out = {};
+      for (const p of list) {
+        const availableLeagues = [];
+        const rosteredLeagues = [];
+        const noDataLeagues = [];
 
-      for (const { league, set } of leagueSets) {
-        if (!set || set.size === 0) {           // ← key change: treat empty as no-data
-          noDataLeagues.push(league);
-          continue;
+        for (const { league, set } of leagueSets) {
+          if (!set || set.size === 0) {           // treat empty as no-data
+            noDataLeagues.push(league);
+            continue;
+          }
+          if (set.has(String(p.id))) rosteredLeagues.push(league);
+          else                       availableLeagues.push(league);
         }
-        if (set.has(String(p.id))) rosteredLeagues.push(league);
-        else                       availableLeagues.push(league);
+
+        const considered = availableLeagues.length + rosteredLeagues.length; // exclude no-data
+        const pctAvailable = considered ? Math.round((availableLeagues.length / considered) * 100) : 0;
+        const pctRostered  = considered ? 100 - pctAvailable : 0;
+
+        out[p.id] = { availableLeagues, rosteredLeagues, noDataLeagues, pctAvailable, pctRostered };
       }
 
-      const considered = availableLeagues.length + rosteredLeagues.length; // exclude no-data
-      const pctAvailable = considered ? Math.round((availableLeagues.length / considered) * 100) : 0;
-      const pctRostered  = considered ? 100 - pctAvailable : 0;
-
-      out[p.id] = { availableLeagues, rosteredLeagues, noDataLeagues, pctAvailable, pctRostered };
+      setResults((prev) => (merge ? { ...prev, ...out } : out));
+    } catch (e) {
+      console.error(e);
+      setError("Failed to check availability. Try again.");
+    } finally {
+      setLoadingDone(true);
+      setTimeout(() => setLoading(false), 60);
     }
-
-    setResults((prev) => (merge ? { ...prev, ...out } : out));
-  } catch (e) {
-    console.error(e);
-    setError("Failed to check availability. Try again.");
-  } finally {
-    setLoadingDone(true);
-    setTimeout(() => setLoading(false), 60);
-  }
-};
+  };
 
   // Derived
   const anySelected = selectedPlayers.length > 0;
   const totalFiltered = filteredLeagues.length;
 
   // Leagues sorted: (1) all players available first, (2) then by # of players available desc, (3) then by name
-const leaguesAvailableSorted = useMemo(() => {
-  if (!anySelected) return [];
+  const leaguesAvailableSorted = useMemo(() => {
+    if (!anySelected) return [];
 
-  // playerId -> Set(league_id) where that player is available
-  const availMap = Object.fromEntries(
-    selectedPlayers.map((p) => [
-      p.id,
-      new Set((results[p.id]?.availableLeagues || []).map((L) => String(L.league_id))),
-    ])
-  );
+    // playerId -> Set(league_id) where that player is available
+    const availMap = Object.fromEntries(
+      selectedPlayers.map((p) => [
+        p.id,
+        new Set((results[p.id]?.availableLeagues || []).map((L) => String(L.league_id))),
+      ])
+    );
 
-  // score leagues
-  const scored = filteredLeagues.map((lg) => {
-    const flags = selectedPlayers.map((p) => availMap[p.id]?.has(String(lg.league_id)) || false);
-    const availableCount = flags.reduce((acc, v) => acc + (v ? 1 : 0), 0);
-    const allAvailable = availableCount === selectedPlayers.length && selectedPlayers.length > 0;
-    return { lg, availableCount, allAvailable };
-  });
+    // score leagues
+    const scored = filteredLeagues.map((lg) => {
+      const flags = selectedPlayers.map((p) => availMap[p.id]?.has(String(lg.league_id)) || false);
+      const availableCount = flags.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+      const allAvailable = availableCount === selectedPlayers.length && selectedPlayers.length > 0;
+      return { lg, availableCount, allAvailable };
+    });
 
-  // keep only leagues where at least one selected player is available
-  const eligible = scored.filter((s) => s.availableCount > 0);
+    // keep only leagues where at least one selected player is available
+    const eligible = scored.filter((s) => s.availableCount > 0);
 
-  // sort: all-available first, then by count desc, then by name
-  eligible.sort((a, b) => {
-    if (a.allAvailable !== b.allAvailable) return a.allAvailable ? -1 : 1;
-    if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
-    const an = (a.lg.name || "").toLowerCase();
-    const bn = (b.lg.name || "").toLowerCase();
-    return an.localeCompare(bn);
-  });
+    // sort: all-available first, then by count desc, then by name
+    eligible.sort((a, b) => {
+      if (a.allAvailable !== b.allAvailable) return a.allAvailable ? -1 : 1;
+      if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
+      const an = (a.lg.name || "").toLowerCase();
+      const bn = (b.lg.name || "").toLowerCase();
+      return an.localeCompare(bn);
+    });
 
-  return eligible.map((s) => s.lg);
-}, [anySelected, filteredLeagues, selectedPlayers, results]);
-
+    return eligible.map((s) => s.lg);
+  }, [anySelected, filteredLeagues, selectedPlayers, results]);
 
   // Heuristic: warn if most league sets are empty (useful during early off-season or API hiccups)
   const emptySetCount = (leagueSetsRef.current || []).filter(({ set }) => set && set.size === 0).length;
@@ -453,8 +485,12 @@ const leaguesAvailableSorted = useMemo(() => {
           {/* Guards */}
           {!username ? (
             <p className="text-red-400">Please log in on the Home page.</p>
-          ) : !leagues || leagues.length === 0 ? (
-            <p className="text-red-400">No leagues found for your account.</p>
+          ) : (!effectiveLeagues || effectiveLeagues.length === 0) ? (
+            scanningLeagues ? (
+              <p className="text-gray-400">Looking for your leagues…</p>
+            ) : (
+              <p className="text-red-400">No leagues found for your account.</p>
+            )
           ) : !playersMap || Object.keys(playersMap).length === 0 ? (
             <p className="text-red-400">Player database not ready yet. One moment…</p>
           ) : (
@@ -591,7 +627,7 @@ const leaguesAvailableSorted = useMemo(() => {
                           />
                         </div>
                         <div className="mt-1 text-xs text-gray-500">
-                        Rostered {rostCount}/{availCount + rostCount} ({pctRostered}%) • {(results[p.id]?.noDataLeagues?.length || 0)} no-data
+                          Rostered {rostCount}/{availCount + rostCount} ({pctRostered}%) • {(results[p.id]?.noDataLeagues?.length || 0)} no-data
                         </div>
 
                       </div>
@@ -606,9 +642,7 @@ const leaguesAvailableSorted = useMemo(() => {
                   <h3 className="text-lg font-semibold mb-3">Availability by League</h3>
                   {leaguesAvailableSorted.length === 0 ? (
                     <p className="text-gray-500">No available leagues for your selected players with these filters.</p>
-                    ) : (
-
-
+                  ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full border-separate border-spacing-y-1">
                         <thead>
@@ -645,25 +679,24 @@ const leaguesAvailableSorted = useMemo(() => {
 
                                 let cell = "–";
                                 if (noData) {
-                                    cell = "–";
+                                  cell = "–";
                                 } else if (rostered) {
-                                    cell = "❌";
+                                  cell = "❌";
                                 } else if (available) {
-                                    cell = "✅";
+                                  cell = "✅";
                                 } else {
-                                    cell = "–"; // fallback, but shouldn't happen in sorted list
+                                  cell = "–"; // fallback, but shouldn't happen in sorted list
                                 }
 
                                 return (
-                                    <td key={`${lg.league_id}-${p.id}`} className="px-3 py-2 text-center">
+                                  <td key={`${lg.league_id}-${p.id}`} className="px-3 py-2 text-center">
                                     {cell}
-                                    </td>
+                                  </td>
                                 );
-                                })}
+                              })}
 
                               <td className="px-3 py-2 text-center">
                                 <div className="flex gap-3 justify-center">
-                                
                                   <a
                                     href={`https://www.sleeper.app/leagues/${lg.league_id}`}
                                     target="_blank"
