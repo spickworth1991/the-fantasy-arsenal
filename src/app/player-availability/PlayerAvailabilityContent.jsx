@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Navbar from "../../components/Navbar";
+import dynamic from "next/dynamic";
+const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
+const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
 import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
 
-/** One-input inline name picker with disambiguation */
+/** Helpers for league avatars (matches Player Stock) */
+const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
+const leagueAvatarUrl = (avatarId) =>
+  avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : DEFAULT_LEAGUE_IMG;
+
+/** One-input inline name picker with disambiguation (JSX version) */
 function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., Josh Allen)", className = "" }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -60,15 +67,29 @@ function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., J
         className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"
         placeholder={placeholder}
         value={q}
-        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setOpen(true);
+        }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
           if (!open && (e.key === "ArrowDown" || e.key === "Enter")) setOpen(true);
           if (!open) return;
-          if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((h) => Math.min(h + 1, Math.max(suggestions.length - 1, 0))); }
-          if (e.key === "ArrowUp")   { e.preventDefault(); setHighlight((h) => Math.max(h - 1, 0)); }
-          if (e.key === "Enter")     { e.preventDefault(); if (suggestions[highlight]) choose(suggestions[highlight]); }
-          if (e.key === "Escape")    { setOpen(false); }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setHighlight((h) => Math.min(h + 1, Math.max(suggestions.length - 1, 0)));
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setHighlight((h) => Math.max(h - 1, 0));
+          }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (suggestions[highlight]) choose(suggestions[highlight]);
+          }
+          if (e.key === "Escape") {
+            setOpen(false);
+          }
         }}
       />
       {open && suggestions.length > 0 && (
@@ -82,7 +103,10 @@ function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., J
             >
               <div className="flex justify-between">
                 <span className="text-gray-200">{s.name}</span>
-                <span className="text-gray-400">{s.pos}{s.team ? ` • ${s.team}` : ""}</span>
+                <span className="text-gray-400">
+                  {s.pos}
+                  {s.team ? ` • ${s.team}` : ""}
+                </span>
               </div>
             </button>
           ))}
@@ -100,7 +124,7 @@ function extractRosterIds(rosters) {
     const buckets = [
       Array.isArray(r?.players) ? r.players : [],
       Array.isArray(r?.starters) ? r.starters : [],
-      Array.isArray(r?.reserve) ? r.reserve : [],  // IR in some leagues
+      Array.isArray(r?.reserve) ? r.reserve : [], // IR
       Array.isArray(r?.taxi) ? r.taxi : [],
     ];
     for (const arr of buckets) {
@@ -111,62 +135,40 @@ function extractRosterIds(rosters) {
 }
 
 export default function PlayerAvailabilityContent() {
-  const {
-    username,
-    leagues,
-    players,
-    fetchLeagueRostersSilent, // optional helper
-    fetchLeagueRosters,       // existing function
-  } = useSleeper();
+  const { username, players, year } = useSleeper();
 
-  // UI state
-  const [loading, setLoading] = useState(true);
-  const [loadingDone, setLoadingDone] = useState(false);
+  // Page init loading (first paint) + Scan loading (live network pass)
+  const [initLoading, setInitLoading] = useState(true);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanProgressPct, setScanProgressPct] = useState(0);
+  const [scanProgressText, setScanProgressText] = useState("Preparing…");
   const [error, setError] = useState("");
 
-  // Filters
+  // Filters (match Player Stock)
   const [onlyBestBall, setOnlyBestBall] = useState(false);
   const [excludeBestBall, setExcludeBestBall] = useState(false);
+  const [includeDrafting, setIncludeDrafting] = useState(true);
 
   // Players & results
-  const [selectedPlayers, setSelectedPlayers] = useState([]); // [{id,name,pos,team}]
-  const [results, setResults] = useState({});                 // { [id]: { availableLeagues, rosteredLeagues, pctAvailable, pctRostered } }
+  const [selectedPlayers, setSelectedPlayers] = useState([]); // [{ id, name, pos, team }]
+  const [results, setResults] = useState({}); // { [playerId]: { availableLeagues, rosteredLeagues } }
 
-  // ----- NEW: local leagues fallback + effective leagues -----
-  const [fallbackLeagues, setFallbackLeagues] = useState([]);
-  const [scanningLeagues, setScanningLeagues] = useState(false);
-  const effectiveLeagues = useMemo(
-    () => (Array.isArray(leagues) && leagues.length > 0 ? leagues : fallbackLeagues),
-    [leagues, fallbackLeagues]
-  );
+  // Scan state
+  const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,isBestBall,status,roster_positions}]
+  const [leagueCount, setLeagueCount] = useState(0);
+  const [scanningError, setScanningError] = useState("");
+  const [showLeaguesModal, setShowLeaguesModal] = useState(false);
+  const [showVisibleLeaguesModal, setShowVisibleLeaguesModal] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Auto-scan leagues from Sleeper if none present in context
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (!username) return;
-      if (Array.isArray(leagues) && leagues.length > 0) return; // context already has them
-      setScanningLeagues(true);
-      try {
-        const uRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
-        if (!uRes.ok) throw new Error("User not found");
-        const user = await uRes.json();
-        const yr = new Date().getFullYear();
-        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
-        const ls = (await lRes.json()) || [];
-        if (!cancelled) setFallbackLeagues(ls);
-      } catch (e) {
-        console.error(e);
-        if (!cancelled) setFallbackLeagues([]);
-      } finally {
-        if (!cancelled) setScanningLeagues(false);
-      }
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [username, leagues]);
+  // Per-league roster sets
+  const rosterSetsRef = useRef(new Map());
 
-  // Name index (name -> [{id,name,pos,team}])
+  // Cache key (per user + season)
+  const yrStr = String(year || new Date().getFullYear());
+  const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
+
+  // ---------- Name index ----------
   const playersMap = useMemo(() => players || {}, [players]);
   const normalizeName = (s = "") =>
     s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/\s+/g, " ").trim();
@@ -198,28 +200,179 @@ export default function PlayerAvailabilityContent() {
     return idx;
   }, [playersMap]);
 
-  // Guards (don’t error just because leagues aren’t in context; we auto-scan above)
+  // ---------- Initial guard (page boot) ----------
   useEffect(() => {
-    const init = async () => {
-      try {
-        setError("");
-        setLoading(true);
-        setLoadingDone(false);
-        if (!username) return setError("Please log in on the Home page first.");
-        if (!playersMap || Object.keys(playersMap).length === 0)
-          return setError("Player database not loaded yet. Please wait a moment or re-login.");
-      } catch (e) {
-        console.error(e);
-        setError("Failed to initialize Player Availability.");
-      } finally {
-        setLoadingDone(true);
-        setTimeout(() => setLoading(false), 80);
-      }
-    };
-    init();
+    setError("");
+    setInitLoading(true);
+    if (!username) {
+      setError("Please log in on the Home page first.");
+      setInitLoading(false);
+      return;
+    }
+    if (!playersMap || Object.keys(playersMap).length === 0) {
+      setError("Player database not loaded yet. Please wait a moment or re-login.");
+      setInitLoading(false);
+      return;
+    }
+    setInitLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, playersMap]);
 
-  // Restore last selection
+  // ---------- Scan leagues with cache ----------
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateFromCache = () => {
+      if (!cacheKey) return false;
+      try {
+        const raw = sessionStorage.getItem(cacheKey);
+        if (!raw) return false;
+        const { leagues: cachedLeagues, rosterSets: cachedSets, ts } = JSON.parse(raw) || {};
+        if (!Array.isArray(cachedLeagues) || !cachedSets) return false;
+
+        const m = new Map();
+        for (const [lid, idsArr] of Object.entries(cachedSets)) {
+          if (Array.isArray(idsArr) && idsArr.length > 0) {
+            m.set(String(lid), new Set(idsArr.map(String)));
+          }
+        }
+        const kept = (cachedLeagues || []).filter((lg) => m.get(String(lg.id))?.size > 0);
+        if (kept.length === 0) return false;
+
+        rosterSetsRef.current = m;
+        setScanLeagues(kept);
+        setLeagueCount(kept.length);
+        setLastUpdated(ts ? new Date(ts) : null);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const saveToCache = (leaguesKept, setsMap) => {
+      if (!cacheKey) return;
+      try {
+        const obj = {};
+        setsMap.forEach((set, lid) => {
+          obj[String(lid)] = Array.from(set);
+        });
+        const payload = { leagues: leaguesKept, rosterSets: obj, ts: Date.now() };
+        sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+      } catch {
+        /* ignore quota errors */
+      }
+    };
+
+    const run = async () => {
+      if (!username) return;
+
+      // Try cache first; only scan if no cache or Refresh button forces it
+      if (hydrateFromCache()) return;
+
+      try {
+        setScanningError("");
+        setScanLoading(true);
+        setScanProgressPct(5);
+        setScanProgressText("Looking up user…");
+
+        // 1) user id
+        const uRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+        if (!uRes.ok) throw new Error("User not found");
+        const user = await uRes.json();
+
+        // 2) leagues for season
+        setScanProgressText("Fetching leagues…");
+        setScanProgressPct(12);
+        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`);
+        const leagues = (await lRes.json()) || [];
+        if (cancelled) return;
+
+        // 3) per-league rosters (keep only those with data, and where your roster has players)
+        const kept = [];
+        const setsMap = new Map();
+
+        for (let i = 0; i < leagues.length; i++) {
+          const lg = leagues[i];
+          try {
+            setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
+            setScanProgressPct(12 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
+
+            const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+            const rosters = rRes.ok ? await rRes.json() : [];
+            if (!Array.isArray(rosters) || rosters.length === 0) continue;
+
+            const mine = rosters.find((r) => r && String(r.owner_id) === String(user.user_id));
+            if (!mine || !Array.isArray(mine.players) || mine.players.length === 0) continue;
+
+            const set = extractRosterIds(rosters);
+            if (set.size === 0) continue;
+
+            const lid = String(lg.league_id);
+            setsMap.set(lid, set);
+
+            kept.push({
+              id: lid,
+              name: lg.name || "Unnamed League",
+              avatar: lg.avatar || null,
+              isBestBall: lg?.settings?.best_ball === 1,
+              status: lg?.status || "",
+              roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
+            });
+          } catch {
+            // skip league on error
+          }
+          if (cancelled) return;
+        }
+
+        if (!cancelled) {
+          rosterSetsRef.current = setsMap;
+          setScanLeagues(kept);
+          setLeagueCount(kept.length);
+          setLastUpdated(new Date());
+          saveToCache(kept, setsMap);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error(e);
+          setScanningError("Failed to scan leagues.");
+        }
+      } finally {
+        if (!cancelled) {
+          setScanProgressText("Done!");
+          setScanProgressPct(100);
+          setTimeout(() => setScanLoading(false), 90);
+        }
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, yrStr, cacheKey]);
+
+  // ---------- Visible leagues (filters, like Player Stock) ----------
+  const visibleLeagueIds = useMemo(() => {
+    if (!scanLeagues || scanLeagues.length === 0) return new Set();
+    const arr = scanLeagues
+      .filter((lg) => {
+        if (onlyBestBall && !lg.isBestBall) return false;
+        if (excludeBestBall && lg.isBestBall) return false;
+        if (!includeDrafting && lg.status === "drafting") return false;
+        return true;
+      })
+      .map((lg) => lg.id);
+    return new Set(arr);
+  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting]);
+
+  const visibleLeagueCount = visibleLeagueIds.size || 0;
+  const visibleLeaguesList = useMemo(
+    () => scanLeagues.filter((lg) => visibleLeagueIds.has(lg.id)),
+    [scanLeagues, visibleLeagueIds]
+  );
+
+  // ---------- Restore last selection ----------
   useEffect(() => {
     const saved = sessionStorage.getItem("availabilitySelectedPlayers");
     if (saved) {
@@ -230,114 +383,7 @@ export default function PlayerAvailabilityContent() {
     }
   }, []);
 
-  // League filtering
-  const getFilteredLeagues = () =>
-    (effectiveLeagues || []).filter((lg) => {
-      const isBestBall = lg?.settings?.best_ball === 1;
-      if (onlyBestBall && !isBestBall) return false;
-      if (excludeBestBall && isBestBall) return false;
-      return !lg?.status || ["in_season", "drafting", "complete"].includes(lg.status);
-    });
-
-  const filteredLeagues = getFilteredLeagues();
-
-  // ---------- Cached league sets ----------
-  const rosterCacheRef = useRef(new Map()); // league_id -> { set:Set<string>, fetched:boolean, size:number }
-  const leagueSetsRef = useRef(null);       // [{league, set}]
-  const leagueSetsKeyRef = useRef("");      // filter sig
-  const [preparing, setPreparing] = useState(false);
-  const [refreshNonce, setRefreshNonce] = useState(0); // force clear + refetch
-
-  const filtersKey = useMemo(
-    () => [
-      onlyBestBall ? 1 : 0,
-      excludeBestBall ? 1 : 0,
-      refreshNonce, // if you click Refresh rosters
-      // encode visible league ids to catch changes
-      ...(filteredLeagues.map((l) => l.league_id)),
-    ].join(":"),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onlyBestBall, excludeBestBall, refreshNonce, effectiveLeagues] // effectiveLeagues drives filteredLeagues
-  );
-
-  // Prepare league sets once per filtersKey
-  const prepareLeagueSetsOnce = async () => {
-    if (leagueSetsRef.current && leagueSetsKeyRef.current === filtersKey) {
-      return leagueSetsRef.current;
-    }
-    try {
-      setPreparing(true);
-
-      // Decide which leagues need fetching
-      const toFetch = [];
-      for (const lg of filteredLeagues) {
-        const cached = rosterCacheRef.current.get(lg.league_id);
-        if (cached?.set instanceof Set && cached.size > 0) continue;
-
-        if (Array.isArray(lg?.rosters) && lg.rosters.length > 0) {
-          const set = extractRosterIds(lg.rosters);
-          rosterCacheRef.current.set(lg.league_id, { set, fetched: true, size: set.size });
-        } else {
-          toFetch.push(lg);
-        }
-      }
-
-      if (toFetch.length) {
-        const results = await Promise.all(
-          toFetch.map(async (lg) => {
-            try {
-              if (typeof fetchLeagueRostersSilent === "function") {
-                const { rosters } = await fetchLeagueRostersSilent(lg.league_id);
-                return { lg, rosters };
-              }
-              if (typeof fetchLeagueRosters === "function") {
-                await fetchLeagueRosters(lg.league_id);
-                const updated = (effectiveLeagues || []).find((L) => L.league_id === lg.league_id);
-                return { lg, rosters: updated?.rosters || [] };
-              }
-              const res = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-              const rosters = res.ok ? await res.json() : [];
-              return { lg, rosters };
-            } catch {
-              return { lg, rosters: [] };
-            }
-          })
-        );
-
-        results.forEach(({ lg, rosters }) => {
-          const set = extractRosterIds(rosters);
-          rosterCacheRef.current.set(lg.league_id, { set, fetched: true, size: set.size });
-        });
-      }
-
-      const leagueSets = filteredLeagues.map((lg) => {
-        const cached = rosterCacheRef.current.get(lg.league_id);
-        return { league: lg, set: cached?.set || new Set() };
-      });
-
-      leagueSetsRef.current = leagueSets;
-      leagueSetsKeyRef.current = filtersKey;
-      return leagueSets;
-    } finally {
-      setPreparing(false);
-    }
-  };
-
-  // Auto recompute when filters change (if you already selected players)
-  useEffect(() => {
-    let did = false;
-    (async () => {
-      if (selectedPlayers.length === 0) return;
-      await prepareLeagueSetsOnce();
-      did = true;
-      // recompute for all selected with cached sets
-      await computeAvailability(selectedPlayers, { merge: false, assumePrepared: true });
-    })();
-    return () => { if (!did) setPreparing(false); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey]);
-
-  // Selection handlers
+  // ---------- Actions ----------
   const addResolved = (t) => {
     if (!t || !t.id || !t.name) return;
     setSelectedPlayers((prev) => {
@@ -346,7 +392,6 @@ export default function PlayerAvailabilityContent() {
       sessionStorage.setItem("availabilitySelectedPlayers", JSON.stringify(next));
       return next;
     });
-    // compute just for this player; merge into results
     setTimeout(() => computeAvailability([t], { merge: true }), 0);
   };
 
@@ -369,130 +414,254 @@ export default function PlayerAvailabilityContent() {
     sessionStorage.removeItem("availabilitySelectedPlayers");
   };
 
-  const refreshRosters = () => {
-    rosterCacheRef.current = new Map();
-    leagueSetsRef.current = null;
-    leagueSetsKeyRef.current = "";
-    setResults({});
-    setRefreshNonce((n) => n + 1); // triggers filtersKey change
-  };
-
-  // Compute availability (reuse cache, merge optionally) — excludes no-data leagues
-  const computeAvailability = async (
-    playersToCheck = selectedPlayers,
-    { merge = false, assumePrepared = false } = {}
-  ) => {
-    const list = Array.isArray(playersToCheck) && playersToCheck.length ? playersToCheck : selectedPlayers;
-    if (!list || list.length === 0) { setError("Add at least one player first."); return; }
-
+  const refreshScan = () => {
+    // Only this button triggers a rescan: clear cache and run scan effect again
     try {
-      setError("");
-      setLoading(true);
-      setLoadingDone(false);
+      if (cacheKey) sessionStorage.removeItem(cacheKey);
+    } catch {}
+    setResults({});
+    // Manually kick the scan effect by toggling a dummy key in cache (or refire by changing lastUpdated)
+    // Easiest: write a temp and remove to bump read -> then call scan directly:
+    (async () => {
+      // Force a rescan path by calling the same logic: fake “no cache” by removing it,
+      // then just re-run scan effect by setting a guard state:
+      setScanLoading(true);
+      setScanProgressPct(0);
+      setScanProgressText("Refreshing leagues…");
+      // Let the scan run by calling the effect's core via a tiny trick: clear data and call fetch block here.
+      try {
+        // Re-run the fetching block inline for a deterministic refresh
+        const uRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+        if (!uRes.ok) throw new Error("User not found");
+        const user = await uRes.json();
 
-      const leagueSets = assumePrepared ? leagueSetsRef.current : await prepareLeagueSetsOnce();
+        setScanProgressText("Fetching leagues…");
+        setScanProgressPct(10);
+        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`);
+        const leagues = (await lRes.json()) || [];
 
-      const out = {};
-      for (const p of list) {
-        const availableLeagues = [];
-        const rosteredLeagues = [];
-        const noDataLeagues = [];
+        const kept = [];
+        const setsMap = new Map();
+        for (let i = 0; i < leagues.length; i++) {
+          const lg = leagues[i];
+          setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
+          setScanProgressPct(10 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
 
-        for (const { league, set } of leagueSets) {
-          if (!set || set.size === 0) {           // treat empty as no-data
-            noDataLeagues.push(league);
-            continue;
+          try {
+            const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+            const rosters = rRes.ok ? await rRes.json() : [];
+            if (!Array.isArray(rosters) || rosters.length === 0) continue;
+
+            const mine = rosters.find((r) => r && String(r.owner_id) === String(user.user_id));
+            if (!mine || !Array.isArray(mine.players) || mine.players.length === 0) continue;
+
+            const set = extractRosterIds(rosters);
+            if (set.size === 0) continue;
+
+            const lid = String(lg.league_id);
+            setsMap.set(lid, set);
+
+            kept.push({
+              id: lid,
+              name: lg.name || "Unnamed League",
+              avatar: lg.avatar || null,
+              isBestBall: lg?.settings?.best_ball === 1,
+              status: lg?.status || "",
+              roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
+            });
+          } catch {
+            // skip league on error
           }
-          if (set.has(String(p.id))) rosteredLeagues.push(league);
-          else                       availableLeagues.push(league);
         }
 
-        const considered = availableLeagues.length + rosteredLeagues.length; // exclude no-data
-        const pctAvailable = considered ? Math.round((availableLeagues.length / considered) * 100) : 0;
-        const pctRostered  = considered ? 100 - pctAvailable : 0;
+        rosterSetsRef.current = setsMap;
+        setScanLeagues(kept);
+        setLeagueCount(kept.length);
+        setLastUpdated(new Date());
 
-        out[p.id] = { availableLeagues, rosteredLeagues, noDataLeagues, pctAvailable, pctRostered };
+        // Save fresh cache
+        try {
+          const obj = {};
+          setsMap.forEach((set, lid) => (obj[String(lid)] = Array.from(set)));
+          sessionStorage.setItem(cacheKey, JSON.stringify({ leagues: kept, rosterSets: obj, ts: Date.now() }));
+        } catch {}
+
+        setScanProgressText("Done!");
+        setScanProgressPct(100);
+      } catch (e) {
+        console.error(e);
+        setScanningError("Failed to refresh leagues.");
+      } finally {
+        setTimeout(() => setScanLoading(false), 90);
+        // Recompute with the new sets so the UI updates immediately
+        if (selectedPlayers.length) computeAvailability(selectedPlayers, { merge: false });
       }
-
-      setResults((prev) => (merge ? { ...prev, ...out } : out));
-    } catch (e) {
-      console.error(e);
-      setError("Failed to check availability. Try again.");
-    } finally {
-      setLoadingDone(true);
-      setTimeout(() => setLoading(false), 60);
-    }
+    })();
   };
 
-  // Derived
-  const anySelected = selectedPlayers.length > 0;
-  const totalFiltered = filteredLeagues.length;
+  // ---------- Compute availability over *visible* leagues only ----------
+  async function computeAvailability(playersToCheck = selectedPlayers, { merge = false } = {}) {
+    const list = Array.isArray(playersToCheck) && playersToCheck.length ? playersToCheck : selectedPlayers;
+    if (!list || list.length === 0) return;
 
-  // Leagues sorted: (1) all players available first, (2) then by # of players available desc, (3) then by name
+    const out = {};
+    for (const p of list) {
+      const availableLeagues = [];
+      const rosteredLeagues = [];
+
+      for (const lg of visibleLeaguesList) {
+        const set = rosterSetsRef.current.get(lg.id);
+        if (!set || set.size === 0) continue; // safety
+        if (set.has(String(p.id))) rosteredLeagues.push(lg);
+        else availableLeagues.push(lg);
+      }
+      out[p.id] = { availableLeagues, rosteredLeagues };
+    }
+    setResults((prev) => (merge ? { ...prev, ...out } : out));
+  }
+
+  // Auto-recompute when filters change and we already have scan data
+  useEffect(() => {
+    if (!selectedPlayers.length) return;
+    if (scanLoading) return;
+    computeAvailability(selectedPlayers, { merge: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleLeagueCount, scanLoading]);
+
+  // Sort leagues by (1) # selected players available desc, (2) name asc
+  const anySelected = selectedPlayers.length > 0;
+  // Replace your current leaguesAvailableSorted with this:
   const leaguesAvailableSorted = useMemo(() => {
     if (!anySelected) return [];
 
-    // playerId -> Set(league_id) where that player is available
-    const availMap = Object.fromEntries(
-      selectedPlayers.map((p) => [
-        p.id,
-        new Set((results[p.id]?.availableLeagues || []).map((L) => String(L.league_id))),
-      ])
-    );
+    // Keep only leagues where at least one selected player is available
+    const scored = [];
+    for (const lg of visibleLeaguesList) {
+      let availableCount = 0;
+      for (const p of selectedPlayers) {
+        const isAvailableHere = results[p.id]?.availableLeagues?.some((L) => L.id === lg.id);
+        if (isAvailableHere) availableCount++;
+      }
+      if (availableCount > 0) {
+        scored.push({ lg, availableCount });
+      }
+    }
 
-    // score leagues
-    const scored = filteredLeagues.map((lg) => {
-      const flags = selectedPlayers.map((p) => availMap[p.id]?.has(String(lg.league_id)) || false);
-      const availableCount = flags.reduce((acc, v) => acc + (v ? 1 : 0), 0);
-      const allAvailable = availableCount === selectedPlayers.length && selectedPlayers.length > 0;
-      return { lg, availableCount, allAvailable };
-    });
-
-    // keep only leagues where at least one selected player is available
-    const eligible = scored.filter((s) => s.availableCount > 0);
-
-    // sort: all-available first, then by count desc, then by name
-    eligible.sort((a, b) => {
-      if (a.allAvailable !== b.allAvailable) return a.allAvailable ? -1 : 1;
+    // Sort by: more available players first, then by league name
+    scored.sort((a, b) => {
       if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
-      const an = (a.lg.name || "").toLowerCase();
-      const bn = (b.lg.name || "").toLowerCase();
-      return an.localeCompare(bn);
+      return (a.lg.name || "").localeCompare(b.lg.name || "");
     });
 
-    return eligible.map((s) => s.lg);
-  }, [anySelected, filteredLeagues, selectedPlayers, results]);
+    return scored.map((s) => s.lg);
+  }, [anySelected, visibleLeaguesList, selectedPlayers, results]);
 
-  // Heuristic: warn if most league sets are empty (useful during early off-season or API hiccups)
-  const emptySetCount = (leagueSetsRef.current || []).filter(({ set }) => set && set.size === 0).length;
-  const shouldWarnEmpty = leagueSetsRef.current && leagueSetsRef.current.length > 0 && emptySetCount > leagueSetsRef.current.length * 0.6;
+
+  // ---------- Render ----------
+  const showLoadingScreen = initLoading || scanLoading;
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen text-white">
       <Navbar pageTitle="Player Availability" />
+      <BackgroundParticles />
 
-      {loading && !loadingDone ? (
-        <LoadingScreen />
+      {showLoadingScreen ? (
+        <LoadingScreen
+          progress={scanLoading ? scanProgressPct : undefined}
+          text={scanLoading ? scanProgressText : undefined}
+        />
       ) : (
         <div className="max-w-6xl mx-auto px-4 pb-12 pt-20">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Player Availability</h1>
             <p className="text-gray-400">
-              Search by name. We fetch each league’s rosters once per filter and reuse them for all players.
+              Search by name. We reuse your last scan and only rescan if you click Refresh.
             </p>
+          </div>
+
+          {/* Scan summary (mimics Player Stock) */}
+          <div className="bg-gray-900 rounded-lg border border-white/10 p-4 mb-6">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+              <span>
+                Scanned{" "}
+                <button
+                  type="button"
+                  className="underline decoration-dotted hover:text-white"
+                  onClick={() => setShowLeaguesModal(true)}
+                  title="All leagues included in this scan"
+                >
+                  <span className="text-white font-semibold">{leagueCount}</span>
+                </button>{" "}
+                leagues
+              </span>
+              <span>•</span>
+              <span>
+                Showing{" "}
+                <button
+                  type="button"
+                  className="underline decoration-dotted hover:text-white"
+                  onClick={() => setShowVisibleLeaguesModal(true)}
+                  title="Leagues currently visible by filters"
+                >
+                  <span className="text-white font-semibold">{visibleLeagueCount}</span>
+                </button>
+              </span>
+              {lastUpdated && (
+                <span className="ml-3 text-xs text-gray-500" suppressHydrationWarning>
+                  Last scan: {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+              <span className="ml-auto">
+                {scanningError ? <span className="text-red-400">{scanningError}</span> : null}
+                <button
+                  className="ml-3 text-xs rounded px-2 py-0.5 border border-white/20 hover:bg-white/10"
+                  onClick={refreshScan}
+                  title="Rescan now"
+                >
+                  Refresh
+                </button>
+              </span>
+            </div>
+
+            {/* Filters row like Stock */}
+            <div className="mt-3 flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="accent-cyan-400"
+                  checked={onlyBestBall}
+                  onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))}
+                />
+                Only Best Ball
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="accent-cyan-400"
+                  checked={excludeBestBall}
+                  onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))}
+                />
+                Exclude Best Ball
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="accent-cyan-400"
+                  checked={includeDrafting}
+                  onChange={() => setIncludeDrafting((v) => !v)}
+                />
+                Include drafting leagues
+              </label>
+            </div>
           </div>
 
           {/* Guards */}
           {!username ? (
             <p className="text-red-400">Please log in on the Home page.</p>
-          ) : (!effectiveLeagues || effectiveLeagues.length === 0) ? (
-            scanningLeagues ? (
-              <p className="text-gray-400">Looking for your leagues…</p>
-            ) : (
-              <p className="text-red-400">No leagues found for your account.</p>
-            )
-          ) : !playersMap || Object.keys(playersMap).length === 0 ? (
+          ) : Object.keys(playersMap).length === 0 ? (
             <p className="text-red-400">Player database not ready yet. One moment…</p>
+          ) : leagueCount === 0 ? (
+            <p className="text-red-400">No leagues matched the scan rules for your account.</p>
           ) : (
             <>
               {/* Controls */}
@@ -510,7 +679,8 @@ export default function PlayerAvailabilityContent() {
                           >
                             {p.name}
                             <span className="text-gray-400">
-                              ({p.pos}{p.team ? ` • ${p.team}` : ""})
+                              ({p.pos}
+                              {p.team ? ` • ${p.team}` : ""})
                             </span>
                             <button
                               className="ml-1 text-red-400 hover:text-red-300"
@@ -521,10 +691,7 @@ export default function PlayerAvailabilityContent() {
                             </button>
                           </span>
                         ))}
-                        <button
-                          onClick={clearAll}
-                          className="text-xs underline text-gray-400 hover:text-gray-200 ml-1"
-                        >
+                        <button onClick={clearAll} className="text-xs underline text-gray-400 hover:text-gray-200 ml-1">
                           Clear all
                         </button>
                       </div>
@@ -533,68 +700,34 @@ export default function PlayerAvailabilityContent() {
                     )}
                   </div>
 
-                  {/* Filters & actions */}
+                  {/* Actions */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm text-gray-400">Filters</label>
                     <div className="flex items-center gap-3 flex-wrap">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="accent-cyan-400"
-                          checked={onlyBestBall}
-                          onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))}
-                        />
-                        Only Best Ball
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="accent-cyan-400"
-                          checked={excludeBestBall}
-                          onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))}
-                        />
-                        Exclude Best Ball
-                      </label>
-
                       <button
                         onClick={() => computeAvailability(selectedPlayers, { merge: false })}
-                        className="px-3 py-2 bg-cyan-500 rounded hover:bg-cyan-600 transition ml-auto"
-                        disabled={!anySelected || preparing}
-                        title={preparing ? "Preparing leagues…" : anySelected ? "Re-check all" : "Add a player first"}
+                        className="px-3 py-2 bg-cyan-500 rounded hover:bg-cyan-600 transition"
+                        disabled={!anySelected}
+                        title={anySelected ? "Re-check all" : "Add a player first"}
                       >
-                        {preparing ? "Preparing…" : "Check"}
+                        Check
                       </button>
 
                       <button
-                        onClick={refreshRosters}
+                        onClick={refreshScan}
                         className="px-3 py-2 bg-gray-800 rounded border border-gray-700 hover:bg-gray-750 transition"
-                        title="Force re-download of league rosters"
+                        title="Rescan all leagues"
                       >
                         Refresh rosters
                       </button>
                     </div>
 
                     <div className="text-xs text-gray-500">
-                      Selected: {selectedPlayers.length} • Filtered leagues:{" "}
-                      <span className="font-medium text-gray-200">{totalFiltered}</span>{" "}
-                      {preparing ? "• preparing leagues…" : ""}
+                      Selected: {selectedPlayers.length} • Visible leagues used:{" "}
+                      <span className="font-medium text-gray-200">{visibleLeagueCount}</span>
                     </div>
-
-                    {shouldWarnEmpty && (
-                      <div className="text-xs text-yellow-300 mt-1">
-                        Many leagues returned empty rosters. Try <button onClick={refreshRosters} className="underline">Refresh rosters</button>.
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
-
-              {/* Error */}
-              {error && (
-                <div className="bg-red-950/40 border border-red-800 text-red-200 rounded-lg p-3 mb-6">
-                  {error}
-                </div>
-              )}
 
               {/* Ownership Summary */}
               {anySelected && (
@@ -602,21 +735,23 @@ export default function PlayerAvailabilityContent() {
                   <h3 className="text-lg font-semibold mb-3">Ownership Summary</h3>
                   {selectedPlayers.map((p) => {
                     const r = results[p.id];
-                    const pctAvail = r?.pctAvailable ?? 0;
-                    const pctRostered = r?.pctRostered ?? 0;
                     const availCount = r?.availableLeagues?.length ?? 0;
                     const rostCount = r?.rosteredLeagues?.length ?? 0;
+                    const denom = availCount + rostCount; // visible leagues only
+                    const pctAvail = denom ? Math.round((availCount / denom) * 100) : 0;
+                    const pctRostered = denom ? 100 - pctAvail : 0;
                     return (
                       <div key={p.id} className="mb-4">
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-200">
                             {p.name}{" "}
                             <span className="text-gray-400">
-                              ({p.pos}{p.team ? ` • ${p.team}` : ""})
+                              ({p.pos}
+                              {p.team ? ` • ${p.team}` : ""})
                             </span>
                           </span>
                           <span className="text-gray-400">
-                            Available {availCount}/{availCount + rostCount} ({pctAvail}%)
+                            Available {availCount}/{denom} ({pctAvail}%)
                           </span>
                         </div>
                         <div className="w-full bg-gray-800 rounded h-3 overflow-hidden">
@@ -627,9 +762,8 @@ export default function PlayerAvailabilityContent() {
                           />
                         </div>
                         <div className="mt-1 text-xs text-gray-500">
-                          Rostered {rostCount}/{availCount + rostCount} ({pctRostered}%) • {(results[p.id]?.noDataLeagues?.length || 0)} no-data
+                          Rostered {rostCount}/{denom} ({pctRostered}%)
                         </div>
-
                       </div>
                     );
                   })}
@@ -641,7 +775,7 @@ export default function PlayerAvailabilityContent() {
                 <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
                   <h3 className="text-lg font-semibold mb-3">Availability by League</h3>
                   {leaguesAvailableSorted.length === 0 ? (
-                    <p className="text-gray-500">No available leagues for your selected players with these filters.</p>
+                    <p className="text-gray-500">No leagues where any selected player is available with these filters.</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full border-separate border-spacing-y-1">
@@ -660,52 +794,50 @@ export default function PlayerAvailabilityContent() {
                         </thead>
                         <tbody>
                           {leaguesAvailableSorted.map((lg) => (
-                            <tr key={lg.league_id} className="bg-gray-800/40 hover:bg-gray-800/70">
+                            <tr key={lg.id} className="bg-gray-800/40 hover:bg-gray-800/70">
                               <td className="px-3 py-2 sticky left-0 bg-gray-900/90 backdrop-blur z-10">
-                                <div className="flex flex-col">
-                                  <span className="text-gray-100">{lg.name}</span>
-                                  <span className="text-xs text-gray-400">
-                                    {lg.settings?.best_ball === 1 ? "Best Ball" : "Standard"}
-                                  </span>
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={leagueAvatarUrl(lg.avatar || undefined)}
+                                    alt=""
+                                    className="w-5 h-5 rounded object-cover bg-gray-700"
+                                    onError={(e) => {
+                                      e.currentTarget.src = DEFAULT_LEAGUE_IMG;
+                                    }}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-100">{lg.name}</span>
+                                    <span className="text-xs text-gray-400">
+                                      {lg.isBestBall ? "Best Ball" : "Standard"}
+                                      {lg.status ? ` • ${lg.status}` : ""}
+                                    </span>
+                                  </div>
                                 </div>
                               </td>
+
                               {selectedPlayers.map((p) => {
                                 const r = results[p.id];
-                                const lid = String(lg.league_id);
-
-                                const noData   = r?.noDataLeagues?.some((L) => String(L.league_id) === lid);
-                                const rostered = r?.rosteredLeagues?.some((L) => String(L.league_id) === lid);
-                                const available= r?.availableLeagues?.some((L) => String(L.league_id) === lid);
-
+                                const rostered = r?.rosteredLeagues?.some((L) => L.id === lg.id);
+                                const available = r?.availableLeagues?.some((L) => L.id === lg.id);
                                 let cell = "–";
-                                if (noData) {
-                                  cell = "–";
-                                } else if (rostered) {
-                                  cell = "❌";
-                                } else if (available) {
-                                  cell = "✅";
-                                } else {
-                                  cell = "–"; // fallback, but shouldn't happen in sorted list
-                                }
-
+                                if (rostered) cell = "❌";
+                                else if (available) cell = "✅";
                                 return (
-                                  <td key={`${lg.league_id}-${p.id}`} className="px-3 py-2 text-center">
+                                  <td key={`${lg.id}-${p.id}`} className="px-3 py-2 text-center">
                                     {cell}
                                   </td>
                                 );
                               })}
 
                               <td className="px-3 py-2 text-center">
-                                <div className="flex gap-3 justify-center">
-                                  <a
-                                    href={`https://www.sleeper.app/leagues/${lg.league_id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-400 hover:underline"
-                                  >
-                                    Web
-                                  </a>
-                                </div>
+                                <a
+                                  href={`https://www.sleeper.app/leagues/${lg.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-400 hover:underline"
+                                >
+                                  Web
+                                </a>
                               </td>
                             </tr>
                           ))}
@@ -717,12 +849,117 @@ export default function PlayerAvailabilityContent() {
                     <span>Legend:</span>
                     <span>✅ Available</span>
                     <span>❌ Rostered</span>
-                    <span>– No data</span>
                   </div>
                 </div>
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* Scanned leagues modal (all kept by the scan) */}
+      {showLeaguesModal && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowLeaguesModal(false)}
+        >
+          <div
+            className="w-full max-w-xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-xl font-bold">Leagues in this scan</div>
+              <button
+                className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                onClick={() => setShowLeaguesModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-96 overflow-y-auto pr-1 flex flex-col gap-2">
+              {scanLeagues
+                .slice()
+                .sort((a, b) => {
+                  const av = visibleLeagueIds.has(a.id) ? 1 : 0;
+                  const bv = visibleLeagueIds.has(b.id) ? 1 : 0;
+                  if (av !== bv) return bv - av; // visible first
+                  return (a.name || "").localeCompare(b.name || "");
+                })
+                .map((lg) => (
+                  <div
+                    key={lg.id}
+                    className={`flex items-center gap-3 text-sm px-2 py-1 rounded border ${
+                      visibleLeagueIds.has(lg.id) ? "bg-gray-800 border-white/10" : "bg-gray-800/40 border-white/5 opacity-70"
+                    }`}
+                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
+                  >
+                    <img
+                      src={leagueAvatarUrl(lg.avatar || undefined)}
+                      alt=""
+                      className="w-5 h-5 rounded object-cover bg-gray-700"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_LEAGUE_IMG;
+                      }}
+                    />
+                    <span className="truncate">{lg.name}</span>
+                    <span className="ml-auto text-[10px] text-gray-400">
+                      {lg.isBestBall ? "BB" : "STD"}
+                      {lg.status ? ` • ${lg.status}` : ""}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visible leagues modal (filtered "Showing") */}
+      {showVisibleLeaguesModal && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowVisibleLeaguesModal(false)}
+        >
+          <div
+            className="w-full max-w-xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-xl font-bold">Leagues being shown</div>
+              <button
+                className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                onClick={() => setShowVisibleLeaguesModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-96 overflow-y-auto pr-1 flex flex-col gap-2">
+              {visibleLeaguesList
+                .slice()
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                .map((lg) => (
+                  <div
+                    key={lg.id}
+                    className="flex items-center gap-3 text-sm px-2 py-1 rounded bg-gray-800 border border-white/10"
+                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
+                  >
+                    <img
+                      src={leagueAvatarUrl(lg.avatar || undefined)}
+                      alt=""
+                      className="w-5 h-5 rounded object-cover bg-gray-700"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_LEAGUE_IMG;
+                      }}
+                    />
+                    <span className="truncate">{lg.name}</span>
+                    <span className="ml-auto text-[10px] text-gray-400">
+                      {lg.isBestBall ? "BB" : "STD"}
+                      {lg.status ? ` • ${lg.status}` : ""}
+                    </span>
+                  </div>
+                ))}
+              {visibleLeagueCount === 0 && <div className="text-sm text-gray-400">No leagues match the current filters.</div>}
+            </div>
+          </div>
         </div>
       )}
     </main>
