@@ -262,139 +262,156 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setProgressPct(8);
 
         // 2) leagues (no filtering here)
-        const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`);
-        const leagues = await leaguesRes.json();
+          const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`);
+          const leagues = await leaguesRes.json();
 
-        if (cancel) return;
+          if (cancel) return;
 
-        setLeagueCount(leagues.length);
-        setScanLeagues(
-          leagues.map((lg) => ({
-            id: lg.league_id,
-            name: lg.name,
-            avatar: lg.avatar || null,
-            roster_positions: lg.roster_positions || [],
-            status: lg.status || "",
-            isBestBall: lg?.settings?.best_ball === 1,
-          }))
-        );
-        if (leagues.length === 0) {
-          setRows([]);
-          setLeagueRosters({});
-          setProgressPct(100);
-          setProgressText("No leagues found.");
-          setLoading(false);
-          return;
-        }
+          if (leagues.length === 0) {
+            setRows([]);
+            setLeagueRosters({});
+            setLeagueCount(0);
+            setScanLeagues([]);
+            setProgressPct(100);
+            setProgressText("No leagues found.");
+            setLoading(false);
+            return;
+          }
 
-        // 3) iterate rosters with live progress
-        const playerCounts = {};
-        const playerLeagues = {};
-        const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
-        const catalog = await playersRes.json();
+          // 3) iterate rosters with live progress — include only leagues where you actually have a roster with players
+          const playerCounts = {};
+          const playerLeagues = {};
+          const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
+          const catalog = await playersRes.json();
 
-        const nextLeagueRosters = {};
+          const nextLeagueRosters = {};
+          const includedLeagues = [];
 
-        for (let i = 0; i < leagues.length; i++) {
-          const lg = leagues[i];
-          setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-          setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
+          for (let i = 0; i < leagues.length; i++) {
+            const lg = leagues[i];
+            setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
+            setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
 
-          const rostersRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-          const rosters = await rostersRes.json();
-          const mine = rosters.find((r) => r.owner_id === user.user_id);
-          if (!mine?.players) continue;
+            const rostersRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+            const rosters = await rostersRes.json();
+            const mine = rosters.find((r) => r.owner_id === userId);
 
-          const starters = new Set(mine.starters || []);
+            // ⛔ Skip this league if you don't have a roster or it's empty
+            if (!mine?.players || mine.players.length === 0) {
+              if (cancel) return;
+              continue;
+            }
 
-          // per-league roster build (for bye availability math)
-          const leaguePlayers = [];
-          for (const pid of mine.players) {
-            const base = catalog?.[pid] || {};
-            const team = (base.team || "").toUpperCase();
-            const pos = (base.position || "").toUpperCase();
-            const bye = getTeamByeWeek(team, Number(yr) || new Date().getFullYear());
-
-            // global aggregates
-            playerCounts[pid] = (playerCounts[pid] || 0) + 1;
-            if (!playerLeagues[pid]) playerLeagues[pid] = [];
-            playerLeagues[pid].push({
+            // ✅ Track this league as included
+            includedLeagues.push({
               id: lg.league_id,
               name: lg.name,
-              isStarter: starters.has(pid),
               avatar: lg.avatar || null,
+              roster_positions: lg.roster_positions || [],
               status: lg.status || "",
               isBestBall: lg?.settings?.best_ball === 1,
             });
 
-            // per-league roster entry
-            leaguePlayers.push({
-              pid: String(pid),
-              pos,
-              team,
-              bye,
-              isStarter: starters.has(pid),
-            });
+            const starters = new Set(mine.starters || []);
+
+            // per-league roster build (for bye availability math)
+            const leaguePlayers = [];
+            for (const pid of mine.players) {
+              const base = catalog?.[pid] || {};
+              const team = (base.team || "").toUpperCase();
+              const pos = (base.position || "").toUpperCase();
+              const bye = getTeamByeWeek(team, Number(yr) || new Date().getFullYear());
+
+              // global aggregates
+              playerCounts[pid] = (playerCounts[pid] || 0) + 1;
+              if (!playerLeagues[pid]) playerLeagues[pid] = [];
+              playerLeagues[pid].push({
+                id: lg.league_id,
+                name: lg.name,
+                isStarter: starters.has(pid),
+                avatar: lg.avatar || null,
+                status: lg.status || "",
+                isBestBall: lg?.settings?.best_ball === 1,
+              });
+
+              // per-league roster entry
+              leaguePlayers.push({
+                pid: String(pid),
+                pos,
+                team,
+                bye,
+                isStarter: starters.has(pid),
+              });
+            }
+
+            nextLeagueRosters[lg.league_id] = {
+              id: lg.league_id,
+              name: lg.name,
+              roster_positions: lg.roster_positions || [],
+              players: leaguePlayers,
+            };
+
+            if (cancel) return;
           }
 
-          nextLeagueRosters[lg.league_id] = {
-            id: lg.league_id,
-            name: lg.name,
-            roster_positions: lg.roster_positions || [],
-            players: leaguePlayers,
-          };
+          // If none of the leagues had your roster, exit gracefully
+          if (includedLeagues.length === 0) {
+            setRows([]);
+            setLeagueRosters({});
+            setLeagueCount(0);
+            setScanLeagues([]);
+            setLastUpdated(new Date());
+            setProgressPct(100);
+            setProgressText("No leagues with a roster found.");
+            setLoading(false);
+            return;
+          }
+
+          // 4) shape rows (from included leagues only)
+          const seasonNumber = Number(yr) || new Date().getFullYear();
+          const built = Object.entries(playerCounts)
+            .map(([pid, count]) => {
+              const base = catalog?.[pid] || {};
+              const team = (base.team || "").toUpperCase();
+              const name =
+                base.full_name ||
+                `${base.first_name || ""} ${base.last_name || ""}`.trim() ||
+                "Unknown";
+
+              const bye = getTeamByeWeek(team, seasonNumber);
+
+              return {
+                player_id: pid,
+                name,
+                team,
+                position: (base.position || "").toUpperCase(),
+                bye,
+                count,
+                leagues: playerLeagues[pid] || [],
+              };
+            })
+            .sort((a, b) => b.count - a.count);
 
           if (cancel) return;
-        }
 
-        // 4) shape rows
-        const seasonNumber = Number(yr) || new Date().getFullYear();
-        const built = Object.entries(playerCounts)
-          .map(([pid, count]) => {
-            const base = catalog?.[pid] || {};
-            const team = (base.team || "").toUpperCase();
-            const name =
-              base.full_name ||
-              `${base.first_name || ""} ${base.last_name || ""}`.trim() ||
-              "Unknown";
+          // 🆕 Save only included leagues to cache/state
+          const payload = {
+            rows: built,
+            leagueCount: includedLeagues.length,
+            leagues: includedLeagues,
+            leagueRosters: nextLeagueRosters,
+            ts: Date.now(),
+          };
+          sessionStorage.setItem(cacheKey, JSON.stringify(payload));
 
-            const bye = getTeamByeWeek(team, seasonNumber);
+          setRows(built);
+          setLeagueRosters(nextLeagueRosters);
+          setLeagueCount(includedLeagues.length);
+          setScanLeagues(includedLeagues);
+          setLastUpdated(new Date());
+          setProgressPct(100);
+          setProgressText("Done!");
 
-            return {
-              player_id: pid,
-              name,
-              team,
-              position: (base.position || "").toUpperCase(),
-              bye,
-              count,
-              leagues: playerLeagues[pid] || [],
-            };
-          })
-          .sort((a, b) => b.count - a.count);
-
-        if (cancel) return;
-
-        const payload = {
-          rows: built,
-          leagueCount: leagues.length,
-          leagues: leagues.map((lg) => ({
-            id: lg.league_id,
-            name: lg.name,
-            avatar: lg.avatar || null,
-            roster_positions: lg.roster_positions || [],
-            status: lg.status || "",
-            isBestBall: lg?.settings?.best_ball === 1,
-          })),
-          leagueRosters: nextLeagueRosters,
-          ts: Date.now(),
-        };
-        sessionStorage.setItem(cacheKey, JSON.stringify(payload));
-
-        setRows(built);
-        setLeagueRosters(nextLeagueRosters);
-        setLastUpdated(new Date());
-        setProgressPct(100);
-        setProgressText("Done!");
       } catch (e) {
         if (!cancel) {
           setError(e?.message || "Scan failed");
