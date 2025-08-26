@@ -69,6 +69,29 @@ function StackedMini({ parts }) {
   );
 }
 
+/** Mobile accordion wrapper */
+function MobileAccordion({ title, children, defaultOpen=false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card className="p-0 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o=>!o)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <span className="font-semibold">{title}</span>
+        <svg
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 20 20" fill="currentColor"
+        >
+          <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.17l3.71-2.94a.75.75 0 01.92 1.18l-4.25 3.37a.75.75 0 01-.92 0L5.21 8.41a.75.75 0 01.02-1.2z"/>
+        </svg>
+      </button>
+      <div className={`${open ? "block" : "hidden"} border-t border-white/10 p-4`}>{children}</div>
+    </Card>
+  );
+}
+
 /* ===========================
    Values + ages
 =========================== */
@@ -145,21 +168,17 @@ function getPlayerAge(p) {
 /* ===========================
    Picks: Build current ownership
 =========================== */
-
 async function getOwnedPicksByRoster(leagueId) {
   const league   = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r => r.json());
   const rosters  = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r => r.json());
   const rounds   = league?.settings?.rounds || 4;
 
-  // Everyone gets an empty list by default (so UI is safe)
   const byRoster = {};
   for (const r of rosters) byRoster[r.roster_id] = [];
 
-  // 1) Pull league-level traded picks
   const traded = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).then(r => r.json()).catch(() => []);
   const tradedSeasons = new Set(traded.map(t => String(t.season)));
 
-  // 2) Pull drafts and their traded picks
   const drafts = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).then(r => r.json()).catch(() => []);
   const inDraftAll = [];
   for (const d of drafts) {
@@ -170,11 +189,9 @@ async function getOwnedPicksByRoster(leagueId) {
   }
   const inDraftSeasons = new Set(inDraftAll.map(t => String(t.season)));
 
-  // 3) Decide which seasons actually exist. If none, return empty (no picks).
   const seasonsSet = new Set([...tradedSeasons, ...inDraftSeasons]);
   if (seasonsSet.size === 0) return byRoster;
 
-  // 4) Seed a base grid ONLY for seasons we actually saw in the data above
   const seasons = [...seasonsSet].sort();
   for (const r of rosters) {
     for (const yr of seasons) {
@@ -189,7 +206,6 @@ async function getOwnedPicksByRoster(leagueId) {
     }
   }
 
-  // Helper
   const movePick = ({ season: s, round: rd, fromRoster, toRoster }) => {
     s = String(s);
     const arr = byRoster[fromRoster] || [];
@@ -652,7 +668,91 @@ export default function PowerRankingsPage() {
               </div>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* ===== MOBILE TOP META (accordions) ===== */}
+            <div className="space-y-4 mt-6 lg:hidden">
+              <MobileAccordion title="Team Tiers">
+                {(!league || !league.rosters) ? (
+                  <div className="text-center text-gray-400 py-4">Choose a league to see tiers.</div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {["Contender","Playoff Lock","Fringe","Rebuilder"].map((tier) => (
+                      <div key={tier} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                        <div className="font-semibold mb-2">{tier}</div>
+                        <div className="space-y-1">
+                          {(leagueMeta?.tiers || []).filter(t => t.tier === tier).map((t,i) => (
+                            <div key={t.teamId} className="flex items-center justify-between text-sm">
+                              <div className="truncate">{i+1}. {t.name}</div>
+                              <div className="opacity-70">{t.rating.toLocaleString()}</div>
+                            </div>
+                          ))}
+                          {(!leagueMeta?.tiers || leagueMeta?.tiers.filter(t=>t.tier===tier).length===0) && (
+                            <div className="text-sm opacity-60">—</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </MobileAccordion>
+
+              <MobileAccordion title="Leaderboards">
+                {(!league || !league.rosters) ? (
+                  <div className="text-center text-gray-400 py-4">Choose a league to see leaderboards.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {[
+                      { title:"Top QB Rooms",  list: leagueMeta?.topQB },
+                      { title:"Top RB Rooms",  list: leagueMeta?.topRB },
+                      { title:"Top WR Rooms",  list: leagueMeta?.topWR },
+                      { title:"Top TE Rooms",  list: leagueMeta?.topTE },
+                      { title:"Pick Leaderboard", list: leagueMeta?.pickLeaders },
+                    ].map((col, idx) => (
+                      <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                        <div className="font-semibold mb-2">{col.title}</div>
+                        <div className="space-y-1">
+                          {(col.list || []).map((row, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <div className="opacity-70">{i+1}.</div>
+                              <div className="flex-1 px-2 truncate">{row.team}</div>
+                              <div className="text-sm font-semibold">{Math.round(row.val).toLocaleString()}</div>
+                            </div>
+                          ))}
+                          {(!col.list || col.list.length === 0) && <div className="text-sm opacity-60">—</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </MobileAccordion>
+
+              <MobileAccordion title="League Summary">
+                {(!league || !league.rosters) ? (
+                  <div className="text-center text-gray-400 py-4">Choose a league to populate summary.</div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {[
+                      { label: "Best QB Room", value: leagueMeta?.bestQB?.name },
+                      { label: "Best RB Room", value: leagueMeta?.bestRB?.name },
+                      { label: "Best WR Room", value: leagueMeta?.bestWR?.name },
+                      { label: "Best TE Room", value: leagueMeta?.bestTE?.name },
+                      { label: "Deepest Bench", value: leagueMeta?.deepestBench?.name },
+                      { label: "Most Picks", value: leagueMeta?.mostPicks?.name },
+                      { label: "Youngest Team", value: leagueMeta?.youngest?.name },
+                      { label: "Oldest Team", value: leagueMeta?.oldest?.name },
+                      { label: "Biggest Stars-Depth Gap", value: leagueMeta?.biggestGap?.name },
+                    ].map((x, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <div className="opacity-70 text-sm">{x.label}</div>
+                        <div className="font-semibold">{x.value || "—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </MobileAccordion>
+            </div>
+            {/* ===== END MOBILE META ===== */}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
               {/* MAIN COLUMN */}
               <main className="lg:col-span-8 space-y-8">
                 {/* Comparison */}
@@ -901,8 +1001,8 @@ export default function PowerRankingsPage() {
                 )}
               </main>
 
-              {/* SIDEBAR */}
-              <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+              {/* DESKTOP SIDEBAR ONLY */}
+              <aside className="hidden lg:block lg:col-span-4 space-y-6 lg:sticky lg:top-20">
                 <div>
                   <SectionTitle subtitle="Auto-bucketed by rating percentiles.">Team Tiers</SectionTitle>
                   <Card className="p-4">
