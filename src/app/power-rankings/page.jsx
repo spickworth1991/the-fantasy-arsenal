@@ -13,7 +13,6 @@ const VALUE_SOURCES = {
   KeepTradeCut:       { label: "KeepTradeCut",       supports: { dynasty: true,  redraft: false, qbToggle: true  } },
   FantasyNavigator:   { label: "FantasyNavigator",   supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
   IDynastyP:          { label: "IDynastyP",          supports: { dynasty: true,  redraft: false, qbToggle: true  } },
-  TheFantasyArsenal:  { label: "TheFantasyArsenal",  supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
 };
 
 const OFF_POS = ["QB","RB","WR","TE"];
@@ -29,26 +28,29 @@ const toOrdinal = (n) => ORD[n] || `${n}th`;
 
 function SectionTitle({ children, subtitle }) {
   return (
-    <div className="mt-10 mb-4">
-      <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+    <div className="mt-8 mb-3">
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
         {children}
       </h2>
-      {subtitle ? <div className="text-sm opacity-70 mt-1">{subtitle}</div> : null}
+      {subtitle ? <div className="text-xs sm:text-sm opacity-70 mt-1">{subtitle}</div> : null}
     </div>
   );
 }
 function Card({ children, className = "" }) {
   return <div className={`rounded-xl border border-white/10 bg-gray-900 ${className}`}>{children}</div>;
 }
-function StatPill({ label, value, hint }) {
+
+/** Compact, responsive pill; can be hidden via className on breakpoints */
+function StatPill({ label, value, hint, className = "" }) {
   return (
-    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-1 py-1">
-      <span className="text-xs uppercase tracking-wide opacity-70">{label}</span>
-      <span className="font-semibold">{(value ?? 0).toLocaleString()}</span>
-      {hint ? <span className="text-xs opacity-60">({hint})</span> : null}
+    <div className={`min-w-0 flex items-center justify-between gap-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[11px] sm:text-xs ${className}`}>
+      <span className="uppercase tracking-wide opacity-70 truncate">{label}</span>
+      <span className="font-semibold shrink-0">{(value ?? 0).toLocaleString()}</span>
+      {hint ? <span className="opacity-60 shrink-0">({hint})</span> : null}
     </div>
   );
 }
+
 function Bar({ pct, from="from-blue-500", to="to-cyan-400" }) {
   return (
     <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
@@ -105,7 +107,7 @@ function makeGetPlayerValue(valueSource, format, qbType) {
 function getAnyPickValue(p, valueSource, format, qbType) {
   if (!p) return 0;
   const tryOrder = [
-    valueSource,                 // respect the user's selected source first
+    valueSource,
     "TheFantasyArsenal",
     "FantasyCalc",
     "DynastyProcess",
@@ -119,7 +121,6 @@ function getAnyPickValue(p, valueSource, format, qbType) {
   }
   return 0;
 }
-
 
 function getPlayerAge(p) {
   if (!p) return null;
@@ -165,18 +166,13 @@ async function getOwnedPicksByRoster(leagueId) {
     try {
       const inDraft = await fetch(`https://api.sleeper.app/v1/draft/${d.draft_id}/traded_picks`).then(r => r.json());
       inDraftAll.push(...inDraft);
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }
   const inDraftSeasons = new Set(inDraftAll.map(t => String(t.season)));
 
   // 3) Decide which seasons actually exist. If none, return empty (no picks).
   const seasonsSet = new Set([...tradedSeasons, ...inDraftSeasons]);
-  if (seasonsSet.size === 0) {
-    // No sign of picks in this league — return empty map (prevents auto-adding picks)
-    return byRoster;
-  }
+  if (seasonsSet.size === 0) return byRoster;
 
   // 4) Seed a base grid ONLY for seasons we actually saw in the data above
   const seasons = [...seasonsSet].sort();
@@ -193,7 +189,7 @@ async function getOwnedPicksByRoster(leagueId) {
     }
   }
 
-  // Helper: move a pick from one roster to another (if it still sits with the original owner)
+  // Helper
   const movePick = ({ season: s, round: rd, fromRoster, toRoster }) => {
     s = String(s);
     const arr = byRoster[fromRoster] || [];
@@ -208,13 +204,10 @@ async function getOwnedPicksByRoster(leagueId) {
     }
   };
 
-  // 5) Apply league-level traded picks (pre-draft)
   traded.forEach(t => {
     if (!seasonsSet.has(String(t.season))) return;
     movePick({ season: t.season, round: t.round, fromRoster: t.roster_id, toRoster: t.owner_id });
   });
-
-  // 6) Apply in-draft traded picks
   inDraftAll.forEach(t => {
     if (!seasonsSet.has(String(t.season))) return;
     movePick({ season: t.season, round: t.round, fromRoster: t.roster_id, toRoster: t.owner_id });
@@ -224,8 +217,7 @@ async function getOwnedPicksByRoster(leagueId) {
 }
 
 function indexPickPlayers(playersMap) {
-  const idx = new Map(); // key: `${season}|${round}` -> best player card
-
+  const idx = new Map();
   const picks = Object.values(playersMap || {}).filter(p => isPick(p.position));
   const yearRegex  = /(20\d{2})/;
   const ordToNum   = { first:1, 1:1, "1st":1, second:2, 2:2, "2nd":2, third:3, 3:3, "3rd":3, fourth:4, 4:4, "4th":4, fifth:5, 5:5, "5th":5, sixth:6, 6:6, "6th":6, seventh:7, 7:7, "7th":7 };
@@ -245,15 +237,13 @@ function indexPickPlayers(playersMap) {
   };
   const bucketPriority = (b) => (b === "mid" ? 3 : b === "late" ? 2 : b === "early" ? 1 : 0);
 
-  // crude value guess to break ties inside same bucket
   const guess = (pl) =>
     (pl.sp_values?.dynasty_sf || pl.fc_values?.dynasty_sf || pl.fn_values?.dynasty_sf ||
      pl.dp_values?.superflex || pl.ktc_values?.superflex || 0);
 
   for (const p of picks) {
     const name = `${p.full_name || ""} ${p.first_name || ""} ${p.last_name || ""}`.trim();
-    const low  = norm(name.replace(/\(via[^)]+\)/g, "")); // strip "(via ...)"
-
+    const low  = norm(name.replace(/\(via[^)]+\)/g, ""));
     const y = low.match(yearRegex)?.[1];
     if (!y) continue;
 
@@ -277,20 +267,17 @@ function indexPickPlayers(playersMap) {
     if (!prev) {
       idx.set(key, p);
     } else {
-      const prevLow = norm((prev.full_name || "") + " " + (prev.first_name || "") + " " + (prev.last_name || ""));
+      const prevLow = norm([prev.full_name, prev.first_name, prev.last_name].filter(Boolean).join(" "));
       const prevBucket = bucketOf(prevLow);
       const prevPri = bucketPriority(prevBucket);
       const prevVal = guess(prev);
-
       if (candPri > prevPri || (candPri === prevPri && candVal > prevVal)) {
         idx.set(key, p);
       }
     }
   }
-
   return idx;
 }
-
 
 /* ===========================
    PAGE
@@ -306,7 +293,7 @@ export default function PowerRankingsPage() {
   } = useSleeper();
 
   // Controls
-  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
+  const [valueSource, setValueSource] = useState("FantasyCalc");
   const supports = VALUE_SOURCES[valueSource].supports;
   const [format, setFormat] = useState("dynasty");
   const [qbType, setQbType] = useState("sf");
@@ -319,8 +306,8 @@ export default function PowerRankingsPage() {
   const [teamBId, setTeamBId] = useState("");
   const [openTeamId, setOpenTeamId] = useState(null);
 
-  // 🔹 NEW: live pick ownership by roster_id
-  const [ownedPicks, setOwnedPicks] = useState(null); // { roster_id: [ {season, round, ...} ] }
+  // Picks ownership
+  const [ownedPicks, setOwnedPicks] = useState(null);
   const [picksLoading, setPicksLoading] = useState(false);
   const [picksError, setPicksError] = useState("");
 
@@ -329,7 +316,6 @@ export default function PowerRankingsPage() {
     [leagues, activeLeague]
   );
 
-  // Fetch rosters if needed
   useEffect(() => {
     if (league && !league.rosters) {
       fetchLeagueRosters(league.league_id).catch(()=>{});
@@ -342,13 +328,11 @@ export default function PowerRankingsPage() {
     [valueSource, format, qbType]
   );
 
-  /** Auto starters count from Sleeper roster settings */
   const startersCount = useMemo(() => {
     const rp = league?.roster_positions || [];
     return rp.filter((p) => !["BN","IR","TAXI"].includes((p||"").toUpperCase())).length || 8;
   }, [league?.roster_positions]);
 
-  /** 🔹 NEW: (Re)load owned picks whenever we have an active league */
   useEffect(() => {
     let cancelled = false;
     async function loadPicks() {
@@ -371,49 +355,37 @@ export default function PowerRankingsPage() {
     return () => { cancelled = true; };
   }, [league?.league_id]);
 
-  /** Build index of your PICK “players” for value lookups */
   const pickIndex = useMemo(() => indexPickPlayers(players || {}), [players]);
 
-
-const strengthBucket = useMemo(() => {
-  const map = new Map();
-  if (!league?.rosters || league.rosters.length === 0) return map;
-
-  // Build strength array from Sleeper standings fields
-  const strength = league.rosters.map(r => {
-    const fpts   = Number(r.settings?.fpts ?? 0);
-    const fdec   = Number(r.settings?.fpts_decimal ?? 0);
-    const wins   = Number(r.settings?.wins ?? 0);
-    // points first; if zero across the board, wins can help a bit
-    const score  = fpts + fdec / 1000 + wins * 0.001;
-    return { rid: r.roster_id, score };
-  });
-
-  // If everyone has zero, just return all "mid"
-  const allZero = strength.every(s => s.score === 0);
-  if (allZero) {
-    strength.forEach(s => map.set(s.rid, "mid"));
+  const strengthBucket = useMemo(() => {
+    const map = new Map();
+    if (!league?.rosters || league.rosters.length === 0) return map;
+    const strength = league.rosters.map(r => {
+      const fpts = Number(r.settings?.fpts ?? 0);
+      const fdec = Number(r.settings?.fpts_decimal ?? 0);
+      const wins = Number(r.settings?.wins ?? 0);
+      const score = fpts + fdec / 1000 + wins * 0.001;
+      return { rid: r.roster_id, score };
+    });
+    const allZero = strength.every(s => s.score === 0);
+    if (allZero) {
+      strength.forEach(s => map.set(s.rid, "mid"));
+      return map;
+    }
+    const sorted = [...strength].sort((a, b) => a.score - b.score);
+    const n = sorted.length;
+    const idxOf = new Map(sorted.map((s, i) => [s.rid, i]));
+    const loCut = Math.floor((n - 1) * (1/3));
+    const hiCut = Math.floor((n - 1) * (2/3));
+    for (const { rid } of strength) {
+      const i = idxOf.get(rid) ?? 0;
+      let bucket = "mid";
+      if (i <= loCut) bucket = "early";
+      else if (i >= hiCut) bucket = "late";
+      map.set(rid, bucket);
+    }
     return map;
-  }
-
-  // Rank by score (low -> likely early; high -> likely late)
-  const sorted = [...strength].sort((a, b) => a.score - b.score);
-  const n = sorted.length;
-  const idxOf = new Map(sorted.map((s, i) => [s.rid, i])); // 0..n-1
-  const loCut = Math.floor((n - 1) * (1/3));   // bottom ~33%
-  const hiCut = Math.floor((n - 1) * (2/3));   // top ~33%
-
-  for (const { rid } of strength) {
-    const i = idxOf.get(rid) ?? 0;
-    let bucket = "mid";
-    if (i <= loCut) bucket = "early";
-    else if (i >= hiCut) bucket = "late";
-    map.set(rid, bucket);
-  }
-
-  return map;
-}, [league?.rosters]);
-
+  }, [league?.rosters]);
 
   /** Compute team metrics */
   const teams = useMemo(() => {
@@ -425,7 +397,6 @@ const strengthBucket = useMemo(() => {
       const rosterIds = r.players || [];
       const roster = rosterIds.map((pid) => players[pid]).filter(Boolean);
 
-      // Players only (exclude picks here; we’ll pull picks from ownership map)
       const nonPicks = roster.filter((p) => !isPick(p.position));
       const rosterFiltered = nonPicks.filter((p) => includeIDP || !isIDP(p.position));
 
@@ -434,61 +405,50 @@ const strengthBucket = useMemo(() => {
         .filter((x) => x.v > 0)
         .sort((a, b) => b.v - a.v);
 
-      // Stars/depth split
       const starters = valued.slice(0, startersCount);
       const bench = valued.slice(startersCount);
 
       const stars = starters.reduce((s,x)=>s+x.v,0);
       const depth = bench.reduce((s,x)=>s+x.v,0);
 
-  // 🔹 Owned picks (from Sleeper), then match to PICK players (from your values files)
-    const rosterNameById = new Map(
-      (league.rosters || []).map(rr => {
-        const own = league.users?.find(u => u.user_id === rr.owner_id);
-        const nm = own?.metadata?.team_name || own?.display_name || `Team ${rr.roster_id}`;
-        return [rr.roster_id, nm];
-      })
-    );
+      const rosterNameById = new Map(
+        (league.rosters || []).map(rr => {
+          const own = league.users?.find(u => u.user_id === rr.owner_id);
+          const nm = own?.metadata?.team_name || own?.display_name || `Team ${rr.roster_id}`;
+          return [rr.roster_id, nm];
+        })
+      );
 
-    // 🔹 Map owned picks -> value card + bucketed label (Early/Mid/Late)
-    const owned = ownedPicks?.[r.roster_id] || [];
-    const matchedPicks = owned
-      .map(pk => {
-        const season = String(pk.season);
-        const round  = Number(pk.round);
-        const key = `${season}|${round}`;
-        const pickPlayer = pickIndex.get(key);
-        if (!pickPlayer) return null;
+      const owned = ownedPicks?.[r.roster_id] || [];
+      const matchedPicks = owned
+        .map(pk => {
+          const season = String(pk.season);
+          const round  = Number(pk.round);
+          const key = `${season}|${round}`;
+          const pickPlayer = pickIndex.get(key);
+          if (!pickPlayer) return null;
 
-        // value with fallback across sources
-        const value = getAnyPickValue(pickPlayer, valueSource, format, qbType);
-        if (!value) return null;
+          const value = getAnyPickValue(pickPlayer, valueSource, format, qbType);
+          if (!value) return null;
 
-        // Infer bucket from ORIGINAL owner's strength (standings-based)
-        const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
-        const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1); // Early/Mid/Late
+          const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
+          const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1);
 
-        const base = `${labelBucket} ${season} ${toOrdinal(round)}`;
-        const via =
-          pk.owner_roster_id !== pk.original_roster_id
-            ? ` (via ${rosterNameById.get(pk.original_roster_id) || `Team ${pk.original_roster_id}`})`
-            : "";
+          const base = `${labelBucket} ${season} ${toOrdinal(round)}`;
+          const via =
+            pk.owner_roster_id !== pk.original_roster_id
+              ? ` (via ${rosterNameById.get(pk.original_roster_id) || `Team ${pk.original_roster_id}`})`
+              : "";
 
-        return { player: pickPlayer, value, label: `${base}${via}` };
-      })
-      .filter(Boolean);
-
-
-
-
+          return { player: pickPlayer, value, label: `${base}${via}` };
+        })
+        .filter(Boolean);
 
       const picksValue = matchedPicks.reduce((s, x) => s + x.value, 0);
 
       const total = stars + depth + (includePicks ? picksValue : 0);
-      // Overall rating: Stars 70%, Depth 30%, Picks light weight
       const rating = Math.round(stars * 0.7 + depth * 0.3 + (includePicks ? picksValue * 0.15 : 0));
 
-      // Positional mix
       const posTotals = { QB:0, RB:0, WR:0, TE:0 };
       [...starters, ...bench].forEach(({p,v}) => {
         const tag = (p.position||"").toUpperCase();
@@ -497,7 +457,6 @@ const strengthBucket = useMemo(() => {
       const posSum = Object.values(posTotals).reduce((a,b)=>a+b,0) || 1;
       const mixPct = Object.fromEntries(Object.entries(posTotals).map(([k,v])=>[k, (100*v/posSum)]));
 
-      // Value-weighted age
       const ageNumer = valued.reduce((s,x)=> s + (x.age ? x.age * x.v : 0), 0);
       const ageDenom = valued.reduce((s,x)=> s + (x.v || 0), 0) || 1;
       const valueWeightedAge = Math.round((ageNumer / ageDenom) * 10) / 10;
@@ -508,16 +467,14 @@ const strengthBucket = useMemo(() => {
         name,
         displayName: owner?.display_name || "",
         starters, bench,
-        // expose matched picks for drilldown
         picksDetail: matchedPicks,
         stars, depth, picksValue, total, rating,
         mix: posTotals, mixPct,
         valueWeightedAge,
       };
     });
-  }, [league, players, getPlayerValue, includeIDP, includePicks, startersCount, ownedPicks, pickIndex]);
+  }, [league, players, getPlayerValue, includeIDP, includePicks, startersCount, ownedPicks, pickIndex, valueSource, format, qbType, strengthBucket]);
 
-  /** Per-position ranks (needs) */
   const positionRanks = useMemo(() => {
     const perTeam = teams.map(t => {
       const byPos = { QB:0, RB:0, WR:0, TE:0 };
@@ -534,7 +491,6 @@ const strengthBucket = useMemo(() => {
     return { QB: rankPos("QB"), RB: rankPos("RB"), WR: rankPos("WR"), TE: rankPos("TE") };
   }, [teams]);
 
-  /** Sort + ranks */
   const sortedTeams = useMemo(() => {
     const arr = [...teams];
     arr.sort((a, b) => {
@@ -546,7 +502,6 @@ const strengthBucket = useMemo(() => {
     return arr.map((t, i) => ({ ...t, rank: i + 1 }));
   }, [teams, sortKey]);
 
-  /** Maxes for bars */
   const maxes = useMemo(() => ({
     rating: Math.max(1, ...sortedTeams.map(t=>t.rating||0)),
     total:  Math.max(1, ...sortedTeams.map(t=>t.total||0)),
@@ -554,7 +509,6 @@ const strengthBucket = useMemo(() => {
     depth:  Math.max(1, ...sortedTeams.map(t=>t.depth||0)),
   }), [sortedTeams]);
 
-  /** League summary, leaderboards, tiers */
   const leagueMeta = useMemo(() => {
     if (sortedTeams.length === 0) return null;
 
@@ -602,7 +556,6 @@ const strengthBucket = useMemo(() => {
     };
   }, [sortedTeams]);
 
-  /** Comparison */
   const compA = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamAId)), [sortedTeams, teamAId]);
   const compB = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamBId)), [sortedTeams, teamBId]);
 
@@ -622,7 +575,7 @@ const strengthBucket = useMemo(() => {
             {/* Controls */}
             <Card className="p-4">
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">League:</span>
                     <select
@@ -679,18 +632,19 @@ const strengthBucket = useMemo(() => {
 
                 {/* Starters/picks status */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="text-sm opacity-80">
-                    <span className="font-semibold">Starters (auto):</span> {(() => {
+                  <div className="text-xs sm:text-sm opacity-80">
+                    <span className="font-semibold">Starters (auto):</span>{" "}
+                    {(() => {
                       const rp = league?.roster_positions || [];
                       return rp.filter((p) => !["BN","IR","TAXI"].includes((p||"").toUpperCase())).length || 8;
                     })()}{" "}
-                    <span className="opacity-60">(from Sleeper settings)</span>
+                    <span className="opacity-60">(from Sleeper)</span>
                   </div>
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={includeIDP} onChange={(e)=>setIncludeIDP(e.target.checked)} />
                     <span>Include IDP</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={includePicks} onChange={(e)=>setIncludePicks(e.target.checked)} />
                     <span>Include Picks</span>
                   </label>
@@ -698,70 +652,69 @@ const strengthBucket = useMemo(() => {
               </div>
             </Card>
 
-           
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* MAIN COLUMN */}
-            <main className="lg:col-span-8 space-y-8">
-              {/* Comparison (kept in main) */}
-              <SectionTitle subtitle="Pick two teams for a premium head-to-head snapshot.">
-                Comparison Mode
-              </SectionTitle>
-              <Card className="p-4">
-                {(!league || !league.rosters) ? (
-                  <div className="text-center text-gray-400 py-12">Choose a league to compare teams.</div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <select className="bg-gray-800 p-2 rounded" value={teamAId} onChange={e=>setTeamAId(e.target.value)}>
-                        <option value="">Select Team A</option>
-                        {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
-                      </select>
-                      <select className="bg-gray-800 p-2 rounded" value={teamBId} onChange={e=>setTeamBId(e.target.value)}>
-                        <option value="">Select Team B</option>
-                        {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
-                      </select>
-                    </div>
-                    {(compA && compB) ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[compA, compB].map((t, idx)=>(
-                          <div key={idx} className="rounded-xl p-4 bg-gradient-to-br from-[#0c2035] to-[#0f2741] border border-white/10">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="text-lg font-semibold">{t.name}</div>
-                              <div className="text-sm opacity-70">Rank #{t.rank}</div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2= mb-3">
-                              <StatPill label="Overall" value={t.rating} />
-                              <StatPill label="Total" value={t.total} />
-                              <StatPill label={`Top ${startersCount}`} value={t.stars} />
-                              <StatPill label="Depth" value={t.depth} />
-                              {includePicks && <StatPill label="Picks" value={t.picksValue} />}
-                              <StatPill label="Avg Age" value={t.valueWeightedAge} />
-                            </div>
-                            <div className="mb-2">
-                              <div className="flex justify-between text-xs opacity-70 mb-1">
-                                <span>Positional Balance (QB/RB/WR/TE)</span>
-                                <span>
-                                  QB {t.mixPct.QB.toFixed(0)}% · RB {t.mixPct.RB.toFixed(0)}% · WR {t.mixPct.WR.toFixed(0)}% · TE {t.mixPct.TE.toFixed(0)}%
-                                </span>
-                              </div>
-                              <StackedMini parts={[
-                                { value: t.mix.QB, className: "bg-cyan-400" },
-                                { value: t.mix.RB, className: "bg-blue-400" },
-                                { value: t.mix.WR, className: "bg-violet-400" },
-                                { value: t.mix.TE, className: "bg-fuchsia-400" },
-                              ]}/>
-                            </div>
-                          </div>
-                        ))}
+              {/* MAIN COLUMN */}
+              <main className="lg:col-span-8 space-y-8">
+                {/* Comparison */}
+                <SectionTitle subtitle="Pick two teams for a premium head-to-head snapshot.">
+                  Comparison Mode
+                </SectionTitle>
+                <Card className="p-4">
+                  {(!league || !league.rosters) ? (
+                    <div className="text-center text-gray-400 py-12">Choose a league to compare teams.</div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <select className="bg-gray-800 p-2 rounded" value={teamAId} onChange={e=>setTeamAId(e.target.value)}>
+                          <option value="">Select Team A</option>
+                          {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
+                        </select>
+                        <select className="bg-gray-800 p-2 rounded" value={teamBId} onChange={e=>setTeamBId(e.target.value)}>
+                          <option value="">Select Team B</option>
+                          {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
+                        </select>
                       </div>
-                    ) : (
-                      <div className="text-sm opacity-70">Select both teams to compare.</div>
-                    )}
-                  </>
-                )}
-              </Card>
+                      {(compA && compB) ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[compA, compB].map((t, idx)=>(
+                            <div key={idx} className="rounded-xl p-4 bg-gradient-to-br from-[#0c2035] to-[#0f2741] border border-white/10">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-lg font-semibold">{t.name}</div>
+                                <div className="text-sm opacity-70">Rank #{t.rank}</div>
+                              </div>
+                              <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-2 mb-3">
+                                <StatPill label="Overall" value={t.rating} />
+                                <StatPill label="Total" value={t.total} className="hidden sm:flex" />
+                                <StatPill label={`Top ${startersCount}`} value={t.stars} />
+                                <StatPill label="Depth" value={t.depth} />
+                                {includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
+                                <StatPill label="Avg Age" value={t.valueWeightedAge} className="hidden md:flex" />
+                              </div>
+                              <div className="mb-2">
+                                <div className="flex justify-between text-xs opacity-70 mb-1">
+                                  <span>Positional Balance (QB/RB/WR/TE)</span>
+                                  <span>
+                                    QB {t.mixPct.QB.toFixed(0)}% · RB {t.mixPct.RB.toFixed(0)}% · WR {t.mixPct.WR.toFixed(0)}% · TE {t.mixPct.TE.toFixed(0)}%
+                                  </span>
+                                </div>
+                                <StackedMini parts={[
+                                  { value: t.mix.QB, className: "bg-cyan-400" },
+                                  { value: t.mix.RB, className: "bg-blue-400" },
+                                  { value: t.mix.WR, className: "bg-violet-400" },
+                                  { value: t.mix.TE, className: "bg-fuchsia-400" },
+                                ]}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm opacity-70">Select both teams to compare.</div>
+                      )}
+                    </>
+                  )}
+                </Card>
 
-              {/* Power Rankings (kept in main) */}
+                {/* Power Rankings */}
                 <SectionTitle subtitle="Overall power with stars, depth, picks, and positional balance.">
                   Power Rankings
                 </SectionTitle>
@@ -771,8 +724,8 @@ const strengthBucket = useMemo(() => {
                   <div className="text-center text-gray-400 py-20">Loading league rosters…</div>
                 ) : (
                   <Card className="p-4">
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="opacity-70">Sort by:</span>
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <span className="opacity-70 text-sm">Sort by:</span>
                       <div className="flex gap-2">
                         {[
                           { k: "rating", lbl: `Overall (Top ${startersCount} / Depth / Picks)` },
@@ -783,7 +736,7 @@ const strengthBucket = useMemo(() => {
                           <button
                             key={k}
                             onClick={() => setSortKey(k)}
-                            className={`px-3 py-1 rounded-lg border ${sortKey === k ? "bg-white/10 border-white/20" : "border-white/10 hover:bg-white/5"}`}
+                            className={`px-3 py-1 rounded-lg border text-sm ${sortKey === k ? "bg-white/10 border-white/20" : "border-white/10 hover:bg-white/5"}`}
                           >
                             {lbl}
                           </button>
@@ -796,46 +749,46 @@ const strengthBucket = useMemo(() => {
                         const ratingPct = (t.rating / maxes.rating) * 100;
                         const starsPct  = (t.stars  / maxes.stars)  * 100;
                         const depthPct  = (t.depth  / maxes.depth)  * 100;
-                        const totalPct  = (t.total  / maxes.total)  * 100;
 
-                        // Needs
                         const ranks = {
                           QB: positionRanks.QB.get(t.teamId) || sortedTeams.length,
                           RB: positionRanks.RB.get(t.teamId) || sortedTeams.length,
                           WR: positionRanks.WR.get(t.teamId) || sortedTeams.length,
                           TE: positionRanks.TE.get(t.teamId) || sortedTeams.length,
                         };
-                        const weakest = Object.entries(ranks).sort((a,b)=> b[1]-a[1])[0]; // [pos, rank]
-
-                        // Tier
+                        const weakest = Object.entries(ranks).sort((a,b)=> b[1]-a[1])[0];
                         const tier = leagueMeta?.tiers.find(x => x.teamId === t.teamId)?.tier || "—";
 
                         return (
                           <div key={t.teamId} className="rounded-xl p-4 bg-gradient-to-br from-[#0c2035] to-[#0f2741] border border-white/10">
-                            <div className="flex items-center gap-4 mb-3">
-                              <div className="text-3xl font-black w-12 text-right pr-2 text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,.35)]">
-                                {t.rank}
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-lg font-semibold">{t.name}</div>
-                                {t.displayName ? <div className="text-sm opacity-70 -mt-0.5">{t.displayName}</div> : null}
-                                <div className="text-xs mt-1 opacity-80">
-                                  <span className="opacity-70">Needs:</span>{" "}
-                                  {weakest ? `${weakest[0]} room (rank ${weakest[1]})` : "—"} ·{" "}
-                                  <span className="opacity-70">Tier:</span> {tier}
+                            {/* header stacks on mobile */}
+                            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="text-3xl font-black w-12 text-right pr-2 text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,.35)]">
+                                  {t.rank}
+                                </div>
+                                <div>
+                                  <div className="text-base sm:text-lg font-semibold">{t.name}</div>
+                                  {t.displayName ? <div className="text-xs sm:text-sm opacity-70 -mt-0.5">{t.displayName}</div> : null}
+                                  <div className="text-[11px] sm:text-xs mt-1 opacity-80">
+                                    <span className="opacity-70">Needs:</span>{" "}
+                                    {weakest ? `${weakest[0]} room (rank ${weakest[1]})` : "—"} ·{" "}
+                                    <span className="opacity-70">Tier:</span> {tier}
+                                  </div>
                                 </div>
                               </div>
-                             {/* Responsive pills: 3 across on small screens, flow inline on md+ */}
-                              <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-2">
-                                <StatPill label="Overall" value={t.rating} />
-                                <StatPill label={`Top ${startersCount}`} value={t.stars} />
-                                <StatPill label="Depth" value={t.depth} />
-                                {includePicks && <StatPill label="Picks" value={t.picksValue} />}
-                                <StatPill label="Total" value={t.total} />
-                                <StatPill label="Avg Age" value={t.valueWeightedAge} />
-                              </div>
 
-                              
+                              {/* Responsive pills: 2–3 across on small, inline on md+ */}
+                              <div className="w-full md:flex-1 md:justify-end">
+                                <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-2">
+                                  <StatPill label="Overall" value={t.rating} />
+                                  <StatPill label={`Top ${startersCount}`} value={t.stars} />
+                                  <StatPill label="Depth" value={t.depth} />
+                                  {includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
+                                  <StatPill label="Total" value={t.total} className="hidden sm:flex" />
+                                  <StatPill label="Avg Age" value={t.valueWeightedAge} className="hidden md:flex" />
+                                </div>
+                              </div>
                             </div>
 
                             {/* Overall */}
@@ -854,7 +807,7 @@ const strengthBucket = useMemo(() => {
                                   <span>{`Top ${startersCount}`}</span>
                                   <span>{Math.round(starsPct)}%</span>
                                 </div>
-                                <Bar pct={starsPct} from="from-cyan-400" to="to-blue-500" />
+                                <Bar pct={(t.stars / maxes.stars) * 100} from="from-cyan-400" to="to-blue-500" />
                               </div>
 
                               <div>
@@ -862,7 +815,7 @@ const strengthBucket = useMemo(() => {
                                   <span>Depth</span>
                                   <span>{Math.round(depthPct)}%</span>
                                 </div>
-                                <Bar pct={depthPct} from="from-violet-400" to="to-fuchsia-500" />
+                                <Bar pct={(t.depth / maxes.depth) * 100} from="from-violet-400" to="to-fuchsia-500" />
                               </div>
 
                               <div>
@@ -938,7 +891,6 @@ const strengthBucket = useMemo(() => {
                                     </div>
                                   </>
                                 )}
-
                               </div>
                             )}
                           </div>
@@ -946,111 +898,104 @@ const strengthBucket = useMemo(() => {
                       })}
                     </div>
                   </Card>
-                
-              )}
-            </main>
+                )}
+              </main>
 
-            {/* SIDEBAR */}
-            <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
-              {/* Team Tiers (moved to sidebar) */}
-              <div>
-                <SectionTitle subtitle="Auto-bucketed by rating percentiles.">Team Tiers</SectionTitle>
-                <Card className="p-4">
-                  {(!league || !league.rosters) ? (
-                    <div className="text-center text-gray-400 py-8">Choose a league to see tiers.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3">
-                      {["Contender","Playoff Lock","Fringe","Rebuilder"].map((tier) => (
-                        <div key={tier} className="rounded-lg bg-white/5 border border-white/10 p-3">
-                          <div className="font-semibold mb-2">{tier}</div>
-                          <div className="space-y-1">
-                            {(leagueMeta?.tiers || []).filter(t => t.tier === tier).map((t,i) => (
-                              <div key={t.teamId} className="flex items-center justify-between text-sm">
-                                <div className="truncate">{i+1}. {t.name}</div>
-                                <div className="opacity-70">{t.rating.toLocaleString()}</div>
-                              </div>
-                            ))}
-                            {(!leagueMeta?.tiers || leagueMeta?.tiers.filter(t=>t.tier===tier).length===0) && (
-                              <div className="text-sm opacity-60">—</div>
-                            )}
+              {/* SIDEBAR */}
+              <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+                <div>
+                  <SectionTitle subtitle="Auto-bucketed by rating percentiles.">Team Tiers</SectionTitle>
+                  <Card className="p-4">
+                    {(!league || !league.rosters) ? (
+                      <div className="text-center text-gray-400 py-8">Choose a league to see tiers.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {["Contender","Playoff Lock","Fringe","Rebuilder"].map((tier) => (
+                          <div key={tier} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                            <div className="font-semibold mb-2">{tier}</div>
+                            <div className="space-y-1">
+                              {(leagueMeta?.tiers || []).filter(t => t.tier === tier).map((t,i) => (
+                                <div key={t.teamId} className="flex items-center justify-between text-sm">
+                                  <div className="truncate">{i+1}. {t.name}</div>
+                                  <div className="opacity-70">{t.rating.toLocaleString()}</div>
+                                </div>
+                              ))}
+                              {(!leagueMeta?.tiers || leagueMeta?.tiers.filter(t=>t.tier===tier).length===0) && (
+                                <div className="text-sm opacity-60">—</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
 
-              {/* Leaderboards (moved to sidebar) */}
-              <div>
-                <SectionTitle subtitle="Who dominates each position and the draft chest.">Leaderboards</SectionTitle>
-                <Card className="p-4">
-                  {(!league || !league.rosters) ? (
-                    <div className="text-center text-gray-400 py-8">Choose a league to see leaderboards.</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {[
-                        { title:"Top QB Rooms",  list: leagueMeta?.topQB },
-                        { title:"Top RB Rooms",  list: leagueMeta?.topRB },
-                        { title:"Top WR Rooms",  list: leagueMeta?.topWR },
-                        { title:"Top TE Rooms",  list: leagueMeta?.topTE },
-                        { title:"Pick Leaderboard", list: leagueMeta?.pickLeaders },
-                      ].map((col, idx) => (
-                        <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
-                          <div className="font-semibold mb-2">{col.title}</div>
-                          <div className="space-y-1">
-                            {(col.list || []).map((row, i) => (
-                              <div key={i} className="flex items-center justify-between">
-                                <div className="opacity-70">{i+1}.</div>
-                                <div className="flex-1 px-2 truncate">{row.team}</div>
-                                <div className="text-sm font-semibold">{Math.round(row.val).toLocaleString()}</div>
-                              </div>
-                            ))}
-                            {(!col.list || col.list.length === 0) && <div className="text-sm opacity-60">—</div>}
+                <div>
+                  <SectionTitle subtitle="Who dominates each position and the draft chest.">Leaderboards</SectionTitle>
+                  <Card className="p-4">
+                    {(!league || !league.rosters) ? (
+                      <div className="text-center text-gray-400 py-8">Choose a league to see leaderboards.</div>
+                    ) : (
+                      <div className="space-y-4">
+                        {[
+                          { title:"Top QB Rooms",  list: leagueMeta?.topQB },
+                          { title:"Top RB Rooms",  list: leagueMeta?.topRB },
+                          { title:"Top WR Rooms",  list: leagueMeta?.topWR },
+                          { title:"Top TE Rooms",  list: leagueMeta?.topTE },
+                          { title:"Pick Leaderboard", list: leagueMeta?.pickLeaders },
+                        ].map((col, idx) => (
+                          <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                            <div className="font-semibold mb-2">{col.title}</div>
+                            <div className="space-y-1">
+                              {(col.list || []).map((row, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                  <div className="opacity-70">{i+1}.</div>
+                                  <div className="flex-1 px-2 truncate">{row.team}</div>
+                                  <div className="text-sm font-semibold">{Math.round(row.val).toLocaleString()}</div>
+                                </div>
+                              ))}
+                              {(!col.list || col.list.length === 0) && <div className="text-sm opacity-60">—</div>}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              </div>
-              {/* League Summary (moved to sidebar) */}
-              <div>
-                <SectionTitle subtitle="At-a-glance honors across the league.">League Summary</SectionTitle>
-                <Card className="p-4">
-                  {(!league || !league.rosters) ? (
-                    <div className="text-center text-gray-400 py-8">Choose a league to populate summary.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3">
-                      {[
-                        { label: "Best QB Room", value: leagueMeta?.bestQB?.name },
-                        { label: "Best RB Room", value: leagueMeta?.bestRB?.name },
-                        { label: "Best WR Room", value: leagueMeta?.bestWR?.name },
-                        { label: "Best TE Room", value: leagueMeta?.bestTE?.name },
-                        { label: "Deepest Bench", value: leagueMeta?.deepestBench?.name },
-                        { label: "Most Picks", value: leagueMeta?.mostPicks?.name },
-                        { label: "Youngest Team", value: leagueMeta?.youngest?.name },
-                        { label: "Oldest Team", value: leagueMeta?.oldest?.name },
-                        { label: "Biggest Stars-Depth Gap", value: leagueMeta?.biggestGap?.name },
-                      ].map((x, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-white/5 border border-white/10">
-                          <div className="opacity-70 text-sm">{x.label}</div>
-                          <div className="font-semibold">{x.value || "—"}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              </div>
-            </aside>
-          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+
+                <div>
+                  <SectionTitle subtitle="At-a-glance honors across the league.">League Summary</SectionTitle>
+                  <Card className="p-4">
+                    {(!league || !league.rosters) ? (
+                      <div className="text-center text-gray-400 py-8">Choose a league to populate summary.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {[
+                          { label: "Best QB Room", value: leagueMeta?.bestQB?.name },
+                          { label: "Best RB Room", value: leagueMeta?.bestRB?.name },
+                          { label: "Best WR Room", value: leagueMeta?.bestWR?.name },
+                          { label: "Best TE Room", value: leagueMeta?.bestTE?.name },
+                          { label: "Deepest Bench", value: leagueMeta?.deepestBench?.name },
+                          { label: "Most Picks", value: leagueMeta?.mostPicks?.name },
+                          { label: "Youngest Team", value: leagueMeta?.youngest?.name },
+                          { label: "Oldest Team", value: leagueMeta?.oldest?.name },
+                          { label: "Biggest Stars-Depth Gap", value: leagueMeta?.biggestGap?.name },
+                        ].map((x, i) => (
+                          <div key={i} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div className="opacity-70 text-sm">{x.label}</div>
+                            <div className="font-semibold">{x.value || "—"}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </aside>
+            </div>
           </>
         )}
       </div>
     </>
   );
 }
-
-
-
-

@@ -12,6 +12,7 @@ const ICONS = {
   trade: "/icons/trade-icon.png",
   stock: "/icons/stock-icon.png",
   availability: "/icons/availability-icon.png",
+  powerrank:"/icons/power-icon.png"
 };
 
 export default function Navbar({ pageTitle }) {
@@ -136,6 +137,13 @@ export default function Navbar({ pageTitle }) {
                 onClick={handleCloseSidebar}
               >
                 <img src={ICONS.availability} alt="Availability" className="w-8 h-8" /> Player Availability
+              </Link>
+              <Link
+                href="/power-rankings"
+                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
+                onClick={handleCloseSidebar}
+              >
+                <img src={ICONS.powerrank} alt="powerrank" className="w-11 h-11" /> Power Rankings
               </Link>
             </nav>
 

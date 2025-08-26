@@ -29,7 +29,7 @@ const VALUE_SOURCES = {
   KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
+  // TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
 
 };
 

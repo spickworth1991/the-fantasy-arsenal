@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const ICONS = {
-  TheFantasyArsenal: "/icons/TFA.png",
+  // TheFantasyArsenal: "/icons/TFA.png",
   FantasyCalc: "/icons/fantasycalc-logo.png",
   DynastyProcess: "/icons/dp-logo.png",
   KeepTradeCut: "/icons/ktc-logo.png",
@@ -13,7 +13,7 @@ const ICONS = {
 };
 
 const LABELS = {
-  TheFantasyArsenal: "The Fantasy Arsenal",
+  // TheFantasyArsenal: "The Fantasy Arsenal",
   FantasyCalc: "FantasyCalc",
   DynastyProcess: "DynastyProcess",
   KeepTradeCut: "KeepTradeCut",
@@ -24,7 +24,7 @@ const LABELS = {
 // Per-brand sizes: "button" = closed control; "menu" = options in dropdown
 const ICON_SIZES = {
   button: {
-    TheFantasyArsenal:{ w: 100, h: 10 }, 
+    // TheFantasyArsenal:{ w: 100, h: 10 }, 
     FantasyCalc:      { w: 64, h: 28 },
     DynastyProcess:   { w: 84, h: 28 },
     KeepTradeCut:     { w: 95, h: 28 },
@@ -32,7 +32,7 @@ const ICON_SIZES = {
     IDynastyP:        { w: 60, h: 20 },
   },
   menu: {
-    TheFantasyArsenal:{ w: 75, h: 20 },
+    // TheFantasyArsenal:{ w: 75, h: 20 },
     FantasyCalc:      { w: 75,  h: 21 },
     DynastyProcess:   { w: 120,  h: 21 },
     KeepTradeCut:     { w: 120,  h: 21 },
