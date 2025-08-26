@@ -132,6 +132,9 @@ export const SleeperProvider = ({ children }) => {
       const fnData = await fnRes.json();
       const idpRes = await fetch("/idynastyp_cache.json");
       const idpData = await idpRes.json();
+      const spRes = await fetch("/stickypicky_cache.json");
+      const spData = await spRes.json();
+
 
       const mapBySleeperId = (arr) => {
         const map = {};
@@ -192,6 +195,26 @@ export const SleeperProvider = ({ children }) => {
         };
       });
 
+      const normalizedSPMap = {};
+        ["Dynasty_SF", "Dynasty_1QB", "Redraft_SF", "Redraft_1QB"].forEach((key) => {
+          (spData[key] || []).forEach((p) => {
+            const n = normalizeName(p.name);
+            const pos = (p.position || "").toUpperCase();
+            normalizedSPMap[n] = normalizedSPMap[n] || {
+              position: pos,
+              dynasty_sf: 0,
+              dynasty_1qb: 0,
+              redraft_sf: 0,
+              redraft_1qb: 0,
+            };
+            if (key === "Dynasty_SF")   normalizedSPMap[n].dynasty_sf   = p.value || 0;
+            if (key === "Dynasty_1QB")  normalizedSPMap[n].dynasty_1qb  = p.value || 0;
+            if (key === "Redraft_SF")   normalizedSPMap[n].redraft_sf   = p.value || 0;
+            if (key === "Redraft_1QB")  normalizedSPMap[n].redraft_1qb  = p.value || 0;
+          });
+        });
+
+
       const finalPlayers = {};
 
       Object.keys(playersData).forEach((id) => {
@@ -225,6 +248,24 @@ export const SleeperProvider = ({ children }) => {
             ? fnCandidate
             : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
 
+        const spCandidate = normalizedSPMap[normName];
+        const sp_values =
+          spCandidate &&
+          (
+            spCandidate.position === pos ||
+            spCandidate.position === "PICK" || // allow StickyPicky picks
+            // if StickyPicky lacks a position, still allow attach
+            !spCandidate.position
+          )
+            ? {
+                dynasty_sf:  spCandidate.dynasty_sf  || 0,
+                dynasty_1qb: spCandidate.dynasty_1qb || 0,
+                redraft_sf:  spCandidate.redraft_sf  || 0,
+                redraft_1qb: spCandidate.redraft_1qb || 0,
+              }
+            : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+
+
         if (
           Object.values(fc_values).some((v) => v > 0) ||
           Object.values(dp_values).some((v) => v > 0) ||
@@ -232,7 +273,7 @@ export const SleeperProvider = ({ children }) => {
           Object.values(fn_values).some((v) => v > 0) ||
           Object.values(idp_values).some((v) => v > 0)
         ) {
-          finalPlayers[id] = { ...p, fc_values, dp_values, ktc_values, fn_values, idp_values };
+          finalPlayers[id] = { ...p, fc_values, dp_values, ktc_values, fn_values, idp_values, sp_values };
         }
       });
 
@@ -342,6 +383,22 @@ export const SleeperProvider = ({ children }) => {
           });
         }
       });
+
+      // Attach StickyPicky values to any remaining players (including synthetic picks) by normalized name
+      Object.values(finalPlayers).forEach((pl) => {
+        if (pl.sp_values) return;
+        const nm = normalizeName(pl.full_name || pl.first_name + " " + pl.last_name || "");
+        const sp = normalizedSPMap[nm];
+        if (sp) {
+          pl.sp_values = {
+            dynasty_sf:  sp.dynasty_sf  || 0,
+            dynasty_1qb: sp.dynasty_1qb || 0,
+            redraft_sf:  sp.redraft_sf  || 0,
+            redraft_1qb: sp.redraft_1qb || 0,
+          };
+        }
+      });
+
 
       await set(CACHE_KEY, finalPlayers);
       setPlayers(finalPlayers);

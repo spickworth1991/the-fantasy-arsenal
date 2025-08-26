@@ -16,6 +16,7 @@ const DP_OUT_PATH = path.join(__dirname, "../public/dynastyprocess_cache.json");
 const KTC_OUT_PATH = path.join(__dirname, "../public/ktc_cache.json");
 const FN_OUT_PATH = path.join(__dirname, "../public/fantasynav_cache.json");
 const IDP_OUT_PATH = path.join(__dirname, "../public/idynastyp_cache.json");
+const SP_OUT_PATH  = path.join(__dirname, "../public/stickypicky_cache.json");
 
 // FantasyCalc combinations
 const combinations = [
@@ -36,6 +37,45 @@ async function closePopupIfPresent(page) {
     console.log("No popup detected.");
   }
 }
+
+// ---------- StickyPicky helpers ----------
+const normName = (name) =>
+  (name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// rank -> percentile in [0,1]
+function percentilesFromList(items, getVal) {
+  const vals = items.map(getVal).filter((v) => Number.isFinite(v) && v > 0);
+  if (vals.length === 0) return () => 0;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const N = sorted.length;
+  return (v) => {
+    if (!Number.isFinite(v) || v <= 0) return 0;
+    // position where v would be inserted
+    let lo = 0, hi = N;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (sorted[mid] <= v) lo = mid + 1;
+      else hi = mid;
+    }
+    // rank percentile (0..1). Using (lo-1) to give equal values same pct.
+    if (N === 1) return 1;
+    return Math.max(0, Math.min(1, (lo - 1) / (N - 1)));
+  };
+}
+
+function pickMeta(metaSources) {
+  // prefer richer meta: FC -> FN -> DP -> KTC
+  for (const m of metaSources) {
+    if (m && (m.team || m.position)) return m;
+  }
+  return { team: "", position: "" };
+}
+
 
 // ✅ Scrape KTC rankings (Superflex or 1QB)
 async function scrapeKTC(superflex = true) {
@@ -219,6 +259,132 @@ async function updateIDynastyP() {
   console.log(`✅ idynastyp_cache.json updated with ${normalized.length} entries.`);
 }
 
+// ✅ Build StickyPicky by averaging normalized (percentile) scores across sources
+async function updateStickyPicky() {
+  console.log("\nBuilding StickyPicky (averaged, scale-free)…");
+
+  // Load existing caches from /public
+  const fcData  = JSON.parse(fs.readFileSync(FC_OUT_PATH,  "utf-8"));
+  const dpData  = JSON.parse(fs.readFileSync(DP_OUT_PATH,  "utf-8"));
+  const ktcData = JSON.parse(fs.readFileSync(KTC_OUT_PATH, "utf-8"));
+  const fnData  = JSON.parse(fs.readFileSync(FN_OUT_PATH,  "utf-8"));
+  const idpData = JSON.parse(fs.readFileSync(IDP_OUT_PATH, "utf-8"));
+
+  // Build per-format tables { name -> { value, team, position } } for each source
+  const tables = {
+    Dynasty_SF:    { FC: {}, FN: {}, KTC: {}, DP: {}, IDP: {} },
+    Dynasty_1QB:   { FC: {}, FN: {}, KTC: {}, DP: {}, IDP: {} },
+    Redraft_SF:    { FC: {}, FN: {}, /* KTC/DP not redraft */ },
+    Redraft_1QB:   { FC: {}, FN: {} },
+  };
+
+  // --- FantasyCalc -> 4 formats ---
+  for (const key of ["Dynasty_SF","Dynasty_1QB","Redraft_SF","Redraft_1QB"]) {
+    (fcData[key] || []).forEach((row) => {
+      const name = row.player?.name || row.name; // schema from cache
+      const team = row.player?.maybeTeam || row.team || "";
+      const position = (row.player?.position || row.position || "").replace(/\d+$/, "").trim();
+      tables[key].FC[normName(name)] = { name, value: row.value || 0, team, position };
+    });
+  }
+
+  // --- FantasyNavigator -> 4 formats ---
+  for (const key of ["Dynasty_SF","Dynasty_1QB","Redraft_SF","Redraft_1QB"]) {
+    (fnData[key] || []).forEach((row) => {
+      tables[key].FN[normName(row.name)] = {
+        name: row.name, value: row.value || 0, team: row.team || "", position: row.position || ""
+      };
+    });
+  }
+
+  // --- KeepTradeCut -> dynasty only ---
+  (ktcData.Superflex || []).forEach((p) => {
+    tables.Dynasty_SF.KTC[normName(p.name)] = { name: p.name, value: p.value || 0, team: p.team || "", position: p.position || "" };
+  });
+  (ktcData.OneQB || []).forEach((p) => {
+    tables.Dynasty_1QB.KTC[normName(p.name)] = { name: p.name, value: p.value || 0, team: p.team || "", position: p.position || "" };
+  });
+
+  // --- DynastyProcess -> dynasty only ---
+  Object.entries(dpData || {}).forEach(([name, v]) => {
+    const nn = normName(name);
+    if (v?.superflex) tables.Dynasty_SF.DP[nn]  = { name, value: v.superflex, team: v.team || "", position: v.pos || "" };
+    if (v?.one_qb)   tables.Dynasty_1QB.DP[nn] = { name, value: v.one_qb,   team: v.team || "", position: v.pos || "" };
+  });
+
+  // --- IDynastyP -> dynasty only (defense included) ---
+  (idpData || []).forEach((row) => {
+    const nn = normName(row.name);
+    if (row.superflex) tables.Dynasty_SF.IDP[nn]  = { name: row.name, value: row.superflex, team: row.team || "", position: row.position || "" };
+    if (row.one_qb)   tables.Dynasty_1QB.IDP[nn] = { name: row.name, value: row.one_qb,     team: row.team || "", position: row.position || "" };
+  });
+
+  // Normalize (rank-percentile) per source+format; then average per player
+  const out = { Dynasty_SF: [], Dynasty_1QB: [], Redraft_SF: [], Redraft_1QB: [] };
+
+  for (const formatKey of Object.keys(out)) {
+    const sources = tables[formatKey];
+    const sourceKeys = Object.keys(sources);
+
+    // Build percentile functions per source on that format
+    const pctFns = {};
+    for (const S of sourceKeys) {
+      const rows = Object.values(sources[S]);
+      pctFns[S] = percentilesFromList(rows, (r) => r.value);
+    }
+
+    // union of player names across available sources for the format
+    const nameSet = new Set();
+    for (const S of sourceKeys) Object.keys(sources[S]).forEach((nn) => nameSet.add(nn));
+
+    for (const nn of nameSet) {
+      const perSource = sourceKeys
+        .map((S) => sources[S][nn])
+        .filter(Boolean);
+
+      // average of available percentiles
+      const pcts = perSource.map((r, i) => {
+        const S = sourceKeys[sourceKeys.findIndex((s) => sources[s][nn] === r)];
+        return pctFns[S](r.value);
+      });
+      if (pcts.length === 0) continue;
+
+      const avgPct = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+      const stickyValue = Math.round(avgPct * 10000);
+
+      // choose best meta
+      const meta = pickMeta(
+        [
+          sources.FC?.[nn],
+          sources.FN?.[nn],
+          sources.DP?.[nn],
+          sources.KTC?.[nn],
+          sources.IDP?.[nn],
+        ].map((x) => (x ? { team: x.team, position: x.position } : null))
+      );
+
+      // keep original (pre-normalized) name when available
+      const displayName = (sources.FC?.[nn]?.name) || (sources.FN?.[nn]?.name) ||
+                          (sources.DP?.[nn]?.name) || (sources.KTC?.[nn]?.name) ||
+                          (sources.IDP?.[nn]?.name) || nn;
+
+      out[formatKey].push({
+        name: displayName,
+        team: meta.team || "",
+        position: meta.position || "",
+        value: stickyValue,
+      });
+    }
+
+    // sort descending like other caches
+    out[formatKey].sort((a, b) => (b.value - a.value));
+  }
+
+  fs.writeFileSync(SP_OUT_PATH, JSON.stringify(out, null, 2));
+  console.log("✅ stickypicky_cache.json updated.");
+}
+
+
 
 // ✅ Interactive menu
 (async () => {
@@ -233,7 +399,8 @@ async function updateIDynastyP() {
           { name: "DynastyProcess", value: "dp" },
           { name: "KeepTradeCut (KTC)", value: "ktc" },
           { name: "FantasyNavigator", value: "fn" },
-          { name: "IDynastyP", value: "idp" }, // ✅ New option
+          { name: "IDynastyP", value: "idp" },
+          { name: "StickyPicky (averaged)", value: "sp" },
         ],
         validate: (input) => (input.length === 0 ? "Please select at least one." : true),
       },
@@ -246,6 +413,7 @@ async function updateIDynastyP() {
     if (sources.includes("ktc")) await updateKTC();
     if (sources.includes("fn")) await updateFantasyNavigator();
     if (sources.includes("idp")) await updateIDynastyP();
+    if (sources.includes("sp"))  await updateStickyPicky();
 
 
     console.log("\n✅ All selected updates completed!");

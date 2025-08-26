@@ -28,6 +28,10 @@ const VALUE_SOURCES = {
   label: "IDynastyP",
   supports: { dynasty: true, redraft: false, qbToggle: true },
   },
+  TheFantasyArsenal: { 
+  label: "TheFantasyArsenal",
+  supports: { dynasty: true, redraft: true, qbToggle: true } 
+  },
 
 };
 
@@ -112,6 +116,11 @@ const getPlayerValue = (p) => {
   }
     else if (valueSource === "IDynastyP") {
     return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
+  
+  } else if (valueSource === "TheFantasyArsenal") {
+    return format === "dynasty"
+      ? (qbType === "sf" ? (p.sp_values?.dynasty_sf || 0) : (p.sp_values?.dynasty_1qb || 0))
+      : (qbType === "sf" ? (p.sp_values?.redraft_sf || 0) : (p.sp_values?.redraft_1qb || 0));
   }
 
   return 0;
@@ -230,7 +239,7 @@ const getPlayerValue = (p) => {
     <>
       <BackgroundParticles />
       <Navbar pageTitle="Trade Analyzer" />
-      <div className="max-w-6xl mx-auto px-4 pt-14 -mt-2">
+      <div className="max-w-6xl mx-auto px-4 pt-8 -mt-2">
         {!username ? (
           <div className="text-center text-gray-400 mt-20">
             Please log in on the{" "}

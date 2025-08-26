@@ -29,6 +29,8 @@ const VALUE_SOURCES = {
   KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
+  TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
+
 };
 
 // League avatar helpers
@@ -196,6 +198,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
         : p.fn_values?.redraft_1qb || 0;
     } else if (valueSource === "IDynastyP") {
       return qbType === "sf" ? p.idp_values?.superflex || 0 : p.idp_values?.one_qb || 0;
+    
+    } else if (valueSource === "TheFantasyArsenal") {
+      return format === "dynasty"
+        ? (qbType === "sf" ? (p.sp_values?.dynasty_sf || 0) : (p.sp_values?.dynasty_1qb || 0))
+        : (qbType === "sf" ? (p.sp_values?.redraft_sf || 0) : (p.sp_values?.redraft_1qb || 0));
     }
     return 0;
   };
@@ -718,7 +725,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
       <Navbar pageTitle="Player Stock" />
       {loading && <LoadingScreen progress={progressPct} text={progressText} />}
 
-      <div className="max-w-6xl mx-auto px-4 pt-14">
+      <div className="max-w-6xl mx-auto px-4 pt-20">
         {!username ? (
           <div className="text-center text-gray-400 mt-20">
             Please log in on the{" "}
