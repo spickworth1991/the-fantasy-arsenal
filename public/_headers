@@ -1,5 +1,7 @@
 /*
-  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors https://theballsvillegame.com https://www.theballsvillegame.com;
+  X-Frame-Options:
+
 
 # Don't cache HTML at the edge
 / 
