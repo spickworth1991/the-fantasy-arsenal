@@ -2,6 +2,7 @@
 
 import Navbar from "../../components/Navbar";
 import TradeAnalyzer from "./TradeAnalyzer.jsx";
+import TradeFinder from "./TradeFinder.jsx";
 
 export default function TradePage() {
   return (
@@ -12,6 +13,7 @@ export default function TradePage() {
       <main>
         <div className="max-w-6xl mx-auto px-4">
           <TradeAnalyzer />
+          <TradeFinder />
         </div>
       </main>
     </>

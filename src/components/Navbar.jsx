@@ -145,6 +145,11 @@ export default function Navbar({ pageTitle }) {
               >
                 <img src={ICONS.powerrank} alt="powerrank" className="w-11 h-11" /> Power Rankings
               </Link>
+              {/* <li><Link href="/lineup" className="hover:opacity-80">Lineup</Link></li>
+              <li><Link href="/sos" className="hover:opacity-80">SOS</Link></li>
+              <li><Link href="/playoff-odds" className="hover:opacity-80">Playoff Odds</Link></li> */}
+              
+
             </nav>
 
             <div className="border-t border-gray-700 my-4" />

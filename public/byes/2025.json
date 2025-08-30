@@ -1,0 +1,156 @@
+{
+  "season": 2025,
+  "source": "GridironGames (table scraped)",
+  "source_url": "https://gridirongames.com/nfl-bye-weeks-schedule/",
+  "generated_at": "2025-08-30T20:12:04.067Z",
+  "by_week": {
+    "5": [
+      "ATL",
+      "CHI",
+      "GB",
+      "PIT"
+    ],
+    "6": [
+      "HOU",
+      "MIN"
+    ],
+    "7": [
+      "BAL",
+      "BUF"
+    ],
+    "8": [
+      "ARI",
+      "DET",
+      "JAX",
+      "LAR",
+      "LV",
+      "SEA"
+    ],
+    "9": [
+      "CLE",
+      "NYJ",
+      "PHI",
+      "TB"
+    ],
+    "10": [
+      "CIN",
+      "DAL",
+      "KC",
+      "TEN"
+    ],
+    "11": [
+      "IND",
+      "NO"
+    ],
+    "12": [
+      "DEN",
+      "LAC",
+      "MIA",
+      "WAS"
+    ],
+    "14": [
+      "CAR",
+      "NE",
+      "NYG",
+      "SF"
+    ]
+  },
+  "by_team": {
+    "ATL": [
+      5
+    ],
+    "CHI": [
+      5
+    ],
+    "GB": [
+      5
+    ],
+    "PIT": [
+      5
+    ],
+    "HOU": [
+      6
+    ],
+    "MIN": [
+      6
+    ],
+    "BAL": [
+      7
+    ],
+    "BUF": [
+      7
+    ],
+    "ARI": [
+      8
+    ],
+    "DET": [
+      8
+    ],
+    "JAX": [
+      8
+    ],
+    "LAR": [
+      8
+    ],
+    "LV": [
+      8
+    ],
+    "SEA": [
+      8
+    ],
+    "CLE": [
+      9
+    ],
+    "NYJ": [
+      9
+    ],
+    "PHI": [
+      9
+    ],
+    "TB": [
+      9
+    ],
+    "CIN": [
+      10
+    ],
+    "DAL": [
+      10
+    ],
+    "KC": [
+      10
+    ],
+    "TEN": [
+      10
+    ],
+    "IND": [
+      11
+    ],
+    "NO": [
+      11
+    ],
+    "DEN": [
+      12
+    ],
+    "LAC": [
+      12
+    ],
+    "MIA": [
+      12
+    ],
+    "WAS": [
+      12
+    ],
+    "CAR": [
+      14
+    ],
+    "NE": [
+      14
+    ],
+    "NYG": [
+      14
+    ],
+    "SF": [
+      14
+    ]
+  }
+}
