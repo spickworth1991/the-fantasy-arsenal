@@ -233,6 +233,7 @@ export default function LineupTool() {
 
   return (
     <>
+    <div aria-hidden className="h-[35px]" />
       <Navbar pageTitle="Lineup — Start/Sit + Matchup" />
       <BackgroundParticles />
       {(loading || stateLoading) && <LoadingScreen text="Loading league & NFL week…" />}
@@ -275,7 +276,7 @@ export default function LineupTool() {
                 <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
 
                 {/* Scoring toggles (auto-inferred, but user can change) */}
-                <span className="font-semibold ml-4">Scoring:</span>
+                
                 <FormatQBToggles
                   league={league}
                   format={formatLocal}
@@ -294,11 +295,11 @@ export default function LineupTool() {
                   className="bg-gray-800 text-white p-2 rounded w-24"
                 />
 
-                <div className="text-xs opacity-70">Bye weeks scored as 0.</div>
+                
               </div>
             </Card>
 
-            <SectionTitle subtitle="Pick two owners (only non-empty rosters are listed).">Matchup Preview</SectionTitle>
+            <SectionTitle subtitle="chooose a league, then Pick two owners .">Matchup Preview</SectionTitle>
 
             {!activeLeague || !rosters.length ? (
               <Card className="p-6">

@@ -104,7 +104,7 @@ export const SleeperProvider = ({ children }) => {
   };
 
   /** ✅ Player DB caching and merging FC + DP values */
-  const CACHE_KEY = "playerDB_v1.14"; // bump version when logic changes
+  const CACHE_KEY = "playerDB_v1.16"; // bump version when logic changes
 
   const preloadPlayers = async () => {
     try {

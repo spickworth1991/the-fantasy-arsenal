@@ -12,7 +12,9 @@ const ICONS = {
   trade: "/icons/trade-icon.png",
   stock: "/icons/stock-icon.png",
   availability: "/icons/availability-icon.png",
-  powerrank:"/icons/power-icon.png"
+  powerrank:"/icons/power-icon.png",
+  sos:"/icons/sos-icon.png",
+
 };
 
 export default function Navbar({ pageTitle }) {
@@ -145,8 +147,14 @@ export default function Navbar({ pageTitle }) {
               >
                 <img src={ICONS.powerrank} alt="powerrank" className="w-11 h-11" /> Power Rankings
               </Link>
+              <Link
+                href="/sos"
+                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
+                onClick={handleCloseSidebar}
+              >
+                <img src={ICONS.sos} alt="sos" className="w-9 h-9" /> Strength of Schedule
+              </Link>
               {/* <li><Link href="/lineup" className="hover:opacity-80">Lineup</Link></li>
-              <li><Link href="/sos" className="hover:opacity-80">SOS</Link></li>
               <li><Link href="/playoff-odds" className="hover:opacity-80">Playoff Odds</Link></li> */}
               
 

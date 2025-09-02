@@ -74,23 +74,4 @@ export function getPlayerAge(p) {
   return Math.max(0, Math.round(years * 10) / 10);
 }
 
-// Strength proxy used by SOS/Playoff Odds/etc
-export function computeTeamStrength(roster, players, getValue, startersCount = 8) {
-  const ids = (roster?.players || []).filter(Boolean);
-  const objs = ids.map(pid => players?.[pid]).filter(Boolean);
 
-  const nonPicks = objs.filter(p => !isPick(p.position));
-  const valued = nonPicks
-    .map(p => ({ p, v: getValue(p) || 0 }))
-    .filter(x => x.v > 0)
-    .sort((a, b) => b.v - a.v);
-
-  const starters = valued.slice(0, startersCount);
-  const bench    = valued.slice(startersCount);
-
-  const stars = starters.reduce((s,x)=>s+x.v,0);
-  const depth = bench.reduce((s,x)=>s+x.v,0);
-
-  // match your PR weights
-  return stars + 0.35 * depth;
-}
