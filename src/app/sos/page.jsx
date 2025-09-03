@@ -47,6 +47,15 @@ function parseLeagueSlots(league) {
   return { strict, flexGroups };
 }
 
+// Detect CHOPPED from schedule: if across all sampled weeks there are no [a,b] pairs
+function isChoppedBySchedule(byWeek) {
+  // byWeek: array of weeks; each item is an array of pairs where pair = [a,b] or [solo]
+  return !(byWeek || []).some(weekPairs =>
+    (weekPairs || []).some(pair => Array.isArray(pair) && pair.length === 2)
+  );
+}
+
+
 /** ===== Auto-guess scoring ===== */
 function guessQbType(league) {
   const rp = (league?.roster_positions || []).map((x) => String(x || "").toUpperCase());
@@ -227,7 +236,7 @@ function wrapValuesAsWeekly(getValueRaw) {
     return getValueRaw(p) || 0;
   };
 }
-function HeatCell({ rid, week, margin, globalMaxAbs, onOpen }) {
+function HeatCell({ rid, week, margin, globalMaxAbs, onOpen, isChopped }) {
   const bg = (typeof margin === "number") ? heatColorMargin(margin, globalMaxAbs) : "transparent";
   const showDot = margin != null;
 
@@ -238,8 +247,8 @@ function HeatCell({ rid, week, margin, globalMaxAbs, onOpen }) {
         onClick={() => onOpen({ rid, week })}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen({ rid, week }); } }}
         tabIndex={0}
-        aria-label={`Open matchup details for week ${week}`}
-        title={`Week ${week} — tap to view matchup lineups`}
+        aria-label={`Open ${isChopped ? "lineup" : "matchup"} details for week ${week}`}
+        title={`Week ${week} — tap to view ${isChopped ? "team lineup" : "matchup lineups"}`}
         className="
           block w-full h-full text-center outline-none focus:ring-2 focus:ring-white/40
           min-w-[34px] min-h-[34px] md:min-w-[42px] md:min-h-[42px] rounded-sm
@@ -251,7 +260,6 @@ function HeatCell({ rid, week, margin, globalMaxAbs, onOpen }) {
     </td>
   );
 }
-
 
 
 
@@ -402,6 +410,8 @@ export default function SOSPage() {
   const [byeMap, setByeMap] = useState(null);
   const [busy, setBusy] = useState(false);
   const [heatmapMode, setHeatmapMode] = useState(true);
+  const [isChopped, setIsChopped] = useState(false);
+
 
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -465,82 +475,124 @@ export default function SOSPage() {
   const [heatData, setHeatData] = useState(null);
 
   const recompute = async () => {
-    if (!activeLeague || !rosters.length || !byeMap) { setRows(null); setHeatData(null); return; }
-    if (metricMode === "projections") {
-      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projMaps.CSV;
-      if (projLoading || !chosen) { setRows(null); setHeatData(null); return; }
-    }
+  if (!activeLeague || !rosters.length || !byeMap) { setRows(null); setHeatData(null); return; }
+  if (metricMode === "projections") {
+    const chosen =
+      projectionSource === "ESPN" ? projMaps.ESPN :
+      projectionSource === "CBS"  ? projMaps.CBS  :
+      projMaps.CSV;
+    if (projLoading || !chosen) { setRows(null); setHeatData(null); return; }
+  }
 
+  setBusy(true);
+  try {
+    const weeks = []; for (let w = week; w <= toWeek; w++) weeks.push(w);
+    const byWeek = await Promise.all(weeks.map(loadWeek));
 
-    setBusy(true);
-    try {
-      const weeks = []; for (let w = week; w <= toWeek; w++) weeks.push(w);
-      const byWeek = await Promise.all(weeks.map(loadWeek));
+    // Decide CHOPPED mode from schedule only
+    const choppedMode = isChoppedBySchedule(byWeek);
+    setIsChopped(choppedMode);
 
-      // per-week lineups and strength totals
-      const nextLineups = {};
-      const strengthsByWeek = {};
+    // Per-week lineups and total strengths (works for both modes)
+    const nextLineups = {};
+    const strengthsByWeek = {};
+    weeks.forEach((w) => {
+      nextLineups[w] = {};
+      strengthsByWeek[w] = Object.fromEntries(
+        rosters.map((r) => {
+          const L = computeWeeklyLineup({
+            roster: r,
+            players,
+            getMetricWeekly,
+            slots,
+            week: w,
+            byeMap
+          });
+          nextLineups[w][r.roster_id] = L;
+          return [r.roster_id, L.total];
+        })
+      );
+    });
+
+    // Who plays who (will be all byes in CHOPPED)
+    const nextMatchups = {};
+    weeks.forEach((w, idx) => {
+      nextMatchups[w] = {};
+      const matchups = byWeek[idx] || [];
+      const seen = new Set();
+      matchups.forEach((pair) => {
+        if (pair.length === 2) {
+          const [a, b] = pair;
+          nextMatchups[w][a.roster_id] = { oppRid: b.roster_id };
+          nextMatchups[w][b.roster_id] = { oppRid: a.roster_id };
+          seen.add(a.roster_id); seen.add(b.roster_id);
+        } else if (pair.length === 1) {
+          const solo = pair[0];
+          nextMatchups[w][solo.roster_id] = { bye: true };
+          seen.add(solo.roster_id);
+        }
+      });
+      ridList.forEach((rid) => { if (!seen.has(rid)) nextMatchups[w][rid] = { bye: true }; });
+    });
+
+    // ---------- Heatmap + table data ----------
+    if (choppedMode) {
+      // CHOPPED: show ELIMINATION RISK heatmap (no H2H)
+      const cells = new Map();       // `${rid}|${w}` -> (risk - 0.5) so it’s centered for coloring
+      const globalMaxAbs = 0.5;      // symmetric scale in [-0.5,+0.5]
+
       weeks.forEach((w) => {
-        nextLineups[w] = {};
-        strengthsByWeek[w] = Object.fromEntries(
-          rosters.map((r) => {
-            const L = computeWeeklyLineup({
-              roster: r,
-              players,
-              getMetricWeekly,
-              slots,
-              week: w,
-              byeMap
-            });
-            nextLineups[w][r.roster_id] = L;
-            return [r.roster_id, L.total];
-          })
-        );
-      });
+        const entries = ridList.map(rid => ({ rid, v: strengthsByWeek[w][rid] || 0 }));
+        entries.sort((a,b) => a.v - b.v); // ascending: weakest first
 
-      // map who plays who each week
-      const nextMatchups = {};
-      weeks.forEach((w, idx) => {
-        nextMatchups[w] = {};
-        const matchups = byWeek[idx] || [];
-        const seen = new Set();
-        matchups.forEach((pair) => {
-          if (pair.length === 2) {
-            const [a, b] = pair;
-            nextMatchups[w][a.roster_id] = { oppRid: b.roster_id };
-            nextMatchups[w][b.roster_id] = { oppRid: a.roster_id };
-            seen.add(a.roster_id); seen.add(b.roster_id);
-          } else if (pair.length === 1) {
-            const solo = pair[0];
-            nextMatchups[w][solo.roster_id] = { bye: true };
-            seen.add(solo.roster_id);
-          }
+        const N = entries.length;
+        entries.forEach((e, idx) => {
+          // Make weakest (idx=0) highest risk = 1, strongest (idx=N-1) lowest risk = 0
+          const risk = N <= 1 ? 0.5 : 1 - (idx / (N - 1));
+          const margin = risk - 0.5; // >0 => red (higher risk), <0 => green (safer)
+          cells.set(`${e.rid}|${w}`, margin);
         });
-        ridList.forEach((rid) => { if (!seen.has(rid)) nextMatchups[w][rid] = { bye: true }; });
       });
 
-      // per-week stats (min/max + percentiles) AND per-team weekly ease (weekPct)
-      // --- per-week stats & margins for coloring ---
-      const weekStats = {};            // { [w]: { min, max } } on margins
-      const cells = new Map();         // key: `${rid}|${w}` -> margin
-      let globalMaxAbs = 0;            // symmetric global scale around 0
+
+      // “Table” view summary: rank by *lowest average risk* (i.e., highest safety)
+      const teamSummaries = ridList.map((rid) => {
+        let s = 0, c = 0;
+        weeks.forEach((w) => { const m = cells.get(`${rid}|${w}`); if (m != null) { s += (m + 0.5); c++; } });
+        const avgRisk = c ? s / c : 0;                 // 0..1
+        const easePct = Math.round((1 - avgRisk) * 100); // 100 = safest
+        return {
+          rid, team: teamName(rid), easePct,
+          oppStrengthAvg: 0, oppStrengthSum: 0, games: c
+        };
+      }).sort((a,b) => b.easePct - a.easePct);
+
+      setRows(teamSummaries.map((e, i) => ({ ...e, rank: i + 1 })));
+      setHeatData({
+        weeks,
+        teams: ridList.map((rid) => ({ rid, name: teamName(rid) })),
+        cells,
+        statsByWeek: {},
+        globalMaxAbs,
+        mode: "chopped",
+      });
+    } else {
+      // NORMAL HEAD-TO-HEAD: your current margin-based heatmap
+      const weekStats = {};
+      const cells = new Map();
+      let globalMaxAbs = 0;
 
       weeks.forEach((w) => {
         const marginsThisWeek = [];
-
         ridList.forEach((rid) => {
           const self = strengthsByWeek[w][rid] || 0;
           const oppRid = nextMatchups[w][rid]?.oppRid;
           const opp = oppRid ? (strengthsByWeek[w][oppRid] || 0) : 0;
-
-          const margin = opp - self;           // **THIS is the key change**
+          const margin = opp - self; // >0 = harder week, <0 = easier
           cells.set(`${rid}|${w}`, margin);
           marginsThisWeek.push(margin);
-
           globalMaxAbs = Math.max(globalMaxAbs, Math.abs(margin));
         });
-
-        // per-week min/max of margins (useful for debugging / optional legend)
         if (marginsThisWeek.length) {
           const sorted = marginsThisWeek.sort((a,b) => a - b);
           weekStats[w] = { min: sorted[0], max: sorted[sorted.length - 1] };
@@ -549,30 +601,25 @@ export default function SOSPage() {
         }
       });
 
-
-      // Compute avgEase from margins using per-week min/max (0 = hardest, 1 = easiest)
+      // Ease by per-week min/max normalization
       const easeSum = Object.fromEntries(ridList.map((rid) => [rid, 0]));
       const easeCnt = Object.fromEntries(ridList.map((rid) => [rid, 0]));
-
       weeks.forEach((w) => {
         const { min, max } = weekStats[w] || { min: 0, max: 0 };
         const span = Math.max(1, (max - min) || 1);
         ridList.forEach((rid) => {
           const m = cells.get(`${rid}|${w}`);
           if (typeof m === "number" && isFinite(m)) {
-            const t = (m - min) / span; // 0 .. 1 (hard .. easy is inverted next)
-            const ease = 1 - t;         // 1 = easiest of the week, 0 = hardest
+            const t = (m - min) / span; // 0..1 (hard..easy inverted next)
+            const ease = 1 - t;         // 1 = easiest
             easeSum[rid] += ease;
             easeCnt[rid] += 1;
           }
         });
       });
 
-      // Build table entries
       const entries = ridList.map((rid) => {
         const avgEase = easeSum[rid] / Math.max(1, easeCnt[rid]);
-
-        // numeric refs (opponent strength aggregates still useful)
         let sumOpp = 0, count = 0;
         weeks.forEach((w) => {
           const oppRid = nextMatchups[w][rid]?.oppRid;
@@ -580,12 +627,8 @@ export default function SOSPage() {
           sumOpp += v; count += 1;
         });
         const avgOpp = sumOpp / Math.max(1, count);
-
         return { rid, team: teamName(rid), avgEase, totalOpp: sumOpp, avgOpp, games: count };
-      });
-
-
-      entries.sort((a, b) => b.avgEase - a.avgEase); // higher avgEase = easier
+      }).sort((a, b) => b.avgEase - a.avgEase);
 
       setRows(entries.map((e, i) => ({
         rank: i + 1,
@@ -599,18 +642,20 @@ export default function SOSPage() {
       setHeatData({
         weeks,
         teams: entries.map((e) => ({ rid: e.rid, name: e.team })),
-        cells,                // margins
+        cells,
         statsByWeek: weekStats,
-        globalMaxAbs,         // <— add this
+        globalMaxAbs,
+        mode: "h2h",
       });
-
-
-      setLineups(nextLineups);
-      setMatchupMeta(nextMatchups);
-    } finally {
-      setBusy(false);
     }
-  };
+
+    setLineups(nextLineups);
+    setMatchupMeta(nextMatchups);
+  } finally {
+    setBusy(false);
+  }
+};
+
 
   useEffect(() => {
     recompute();
@@ -802,10 +847,12 @@ export default function SOSPage() {
                               week={w}
                               margin={typeof margin === "number" ? margin : null}
                               globalMaxAbs={heatData?.globalMaxAbs || 0}
+                              isChopped={isChopped}
                               onOpen={({ rid, week }) => { setModalWeek(week); setModalRid(rid); setModalOpen(true); }}
                             />
                           );
                         })}
+
                       </tr>
                     ))}
                   </tbody>
@@ -814,9 +861,20 @@ export default function SOSPage() {
 
               {/* Tips & legend (mobile-friendly) */}
               <div className="text-[11px] sm:text-xs opacity-80 mt-3 space-y-1">
-                <div><b>Tip:</b> Tap any week cell to open that matchup’s projected lineups.</div>
-                <div>Colors compare <b>your weekly lineup vs opponent’s</b> (byes included). Green = you stronger · Yellow = even · Red = opponent stronger.</div>
+                <div><b>Tip:</b> Tap any week cell to open {isChopped ? "that team’s projected lineup" : "that matchup’s projected lineups"}.</div>
+                {!isChopped ? (
+                  <div>
+                    Colors compare <b>your weekly lineup vs opponent’s</b> (byes included).
+                    Green = you stronger · Yellow = even · Red = opponent stronger.
+                  </div>
+                ) : (
+                  <div>
+                    <b>CHOPPED mode:</b> Colors show <b>elimination risk</b> each week (no head-to-head).
+                    Green = safer week · Yellow = average risk · Red = higher risk.
+                  </div>
+                )}
               </div>
+
             </div>
           )
           }
@@ -826,7 +884,7 @@ export default function SOSPage() {
         <Modal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          title={modalWeek ? `Week ${modalWeek} Matchup` : "Matchup"}
+          title={modalWeek ? (isChopped ? `Week ${modalWeek} Lineup` : `Week ${modalWeek} Matchup`) : "Details"}
         >
           {(() => {
             if (!modalOpen || !modalWeek || !modalRid) return null;
@@ -840,6 +898,16 @@ export default function SOSPage() {
             const LA = lineups?.[w]?.[ridA];
             const LB = ridB ? lineups?.[w]?.[ridB] : null;
 
+            if (isChopped || !ridB) {
+              // CHOPPED: single lineup view
+              return (
+                <div className="grid md:grid-cols-1 gap-4">
+                  <LineupTable title={nameA} lineup={LA} />
+                </div>
+              );
+            }
+
+            // Normal H2H
             return (
               <div className="grid md:grid-cols-2 gap-4">
                 <LineupTable title={nameA} lineup={LA} />
@@ -848,6 +916,7 @@ export default function SOSPage() {
             );
           })()}
         </Modal>
+
       </div>
     </>
   );
