@@ -11,13 +11,14 @@ import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 /** ===== Shared trade prefs (sync Trade Analyzer & Finder on same page) ===== */
 const TRADE_PREFS_EVENT = "trade-prefs-change";
 const getInitialTradePrefs = () => {
-  if (typeof window === "undefined") return { metricMode: "projections", projectionSource: "CSV" };
+  if (typeof window === "undefined") return { metricMode: "values", projectionSource: "CSV" };
   const stored = window.__trade_prefs__ || {};
   return {
-    metricMode: stored.metricMode || "projections",
+    metricMode: stored.metricMode || "values",
     projectionSource: stored.projectionSource || "CSV",
   };
 };
+
 const setTradePrefs = (next) => {
   if (typeof window === "undefined") return;
   window.__trade_prefs__ = { ...(window.__trade_prefs__ || {}), ...next };

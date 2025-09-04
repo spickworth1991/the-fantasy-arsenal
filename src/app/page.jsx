@@ -19,7 +19,7 @@ export default function HomePage() {
   const isLoggedIn = !!username;
 
   const tools = [
-    { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using differnet value sources. Select a league for personalized trades." },
+    { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using multiple value sources. Select a league for personalized trades." },
     { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time" },
     { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available" },
     { name: "Power Rankings", link: "/power-rankings", description: "See where you rank amongst your league." },
