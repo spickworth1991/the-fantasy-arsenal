@@ -24,7 +24,7 @@ export default function HomePage() {
     { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available" },
     { name: "Power Rankings", link: "/power-rankings", description: "See where you rank amongst your league." },
     { name: "Strength of Schedule", link: "/sos", description: "Analyze team schedules based on various metrics." },
-    { name: "Lineup Optimizer", link: "/lineup", description: "Optimize your weekly lineup for maximum points.", comingSoon: true },
+    { name: "Lineup Optimizer", link: "/lineup", description: "Optimize your weekly lineup for maximum points." },
     { name: "Playoff Odds", link: "/playoff-odds", description: "Calculate your team's odds of making the playoffs.", comingSoon: true },
     // { name: "Draft Kit", link: "/draft-kit", description: "Prepare for your upcoming draft with rankings and cheat sheets.", comingSoon: true },
   ];

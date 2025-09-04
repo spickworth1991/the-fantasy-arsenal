@@ -693,7 +693,11 @@ export default function SOSPage() {
               <button
                 className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
                 onClick={() => setMetricMode("projections")}
-                disabled={!!projError || projLoading}
+                disabled={
+                  !!projError ||
+                  projLoading ||
+                  (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS) // only enable if any projections loaded
+                }
                 title={projError || ""}
               >
                 Projections{projLoading ? "…" : ""}
@@ -706,7 +710,7 @@ export default function SOSPage() {
               </button>
             </div>
 
-            {/* When using projections, let user pick source */}
+            {/* --- PROJECTIONS-ONLY --- */}
             {metricMode === "projections" && (
               <>
                 <span className="font-semibold ml-2">Projection Source:</span>
@@ -716,30 +720,29 @@ export default function SOSPage() {
                   onChange={(e) => setProjectionSource(e.target.value)}
                   disabled={projLoading}
                 >
-                  {/* Hide options that failed to load */}
-                  {projMaps.CSV && <option value="CSV">Fantasy Football Analytics</option>}
+                  {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
                   {projMaps.ESPN && <option value="ESPN">ESPN</option>}
-                  {projMaps.CBS && <option value="CBS">CBS Sports</option>}
+                  {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
                 </select>
               </>
             )}
 
-
-            {/* Only show value source when on Values */}
+            {/* --- VALUES-ONLY --- */}
             {metricMode === "values" && (
               <>
                 <span className="font-semibold ml-2">Source:</span>
                 <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                <div className="ml-2">
+                  <FormatQBToggles
+                    league={league}
+                    format={formatLocal}
+                    setFormat={setFormatWrapped}
+                    qbType={qbLocal}
+                    setQbType={setQbWrapped}
+                  />
+                </div>
               </>
             )}
-
-            <FormatQBToggles
-              league={league}
-              format={formatLocal}
-              setFormat={setFormatWrapped}
-              qbType={qbLocal}
-              setQbType={setQbWrapped}
-            />
 
             <span className="font-semibold ml-2">Weeks:</span>
             <input
@@ -758,6 +761,7 @@ export default function SOSPage() {
               {busy ? "Computing…" : projError ? "Projection file missing — using Values." : null}
             </span>
           </div>
+
         </Card>
 
         <SectionTitle subtitle={

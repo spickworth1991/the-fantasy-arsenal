@@ -9,6 +9,86 @@ import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
 
+/* === Projections setup (same scheme as your SOS/Lineup) === */
+const PROJ_JSON_URL      = "/projections_2025.json";
+const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
+const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";
+const REG_SEASON_WEEKS   = 17;
+
+function normNameForMap(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function normalizeTeamAbbr(x) {
+  const s = String(x || "").toUpperCase().trim();
+  const map = { JAX:"JAC", LA:"LAR", STL:"LAR", SD:"LAC", OAK:"LV", WFT:"WAS", WSH:"WAS" };
+  return map[s] || s;
+}
+function normalizePos(x) {
+  const p = String(x || "").toUpperCase().trim();
+  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
+  if (p === "PK") return "K";
+  return p;
+}
+function buildProjectionMapFromJSON(json) {
+  const rows = Array.isArray(json) ? json : (json?.rows || []);
+  const byId = Object.create(null);
+  const byName = Object.create(null);
+  const byNameTeam = Object.create(null);
+  const byNamePos = Object.create(null);
+
+  rows.forEach((r) => {
+    const pid = r.player_id != null ? String(r.player_id) : "";
+    const name = r.name || r.player || r.full_name || "";
+    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+
+    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
+    const team = normalizeTeamAbbr(rawTeam);
+    const rawPos = r.pos ?? r.position ?? r.player_position;
+    const pos = normalizePos(rawPos);
+
+    if (pid) byId[pid] = seasonPts;
+    if (name) {
+      const nn = normNameForMap(name);
+      byName[nn] = seasonPts;
+      byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
+      if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
+      if (pos)  byNamePos[`${nn}|${pos}`]   = seasonPts;
+    }
+  });
+
+  return { byId, byName, byNameTeam, byNamePos };
+}
+async function fetchProjectionMap(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const json = await res.json();
+  return buildProjectionMapFromJSON(json);
+}
+function getSeasonPointsForPlayer(map, p) {
+  if (!map || !p) return 0;
+
+  // Exact ID
+  const hit = map.byId?.[String(p.player_id)];
+  if (hit != null) return hit;
+
+  // Fallbacks
+  const nn   = normNameForMap(p.full_name || p.search_full_name || `${p.first_name||""} ${p.last_name||""}`);
+  const team = normalizeTeamAbbr(p.team);
+  const pos  = normalizePos(p.position);
+
+  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
+  if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
+  if (nn && map.byName?.[nn] != null) return map.byName[nn];
+
+  const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
+  return (k2 && map.byName?.[k2] != null) ? map.byName[k2] : 0;
+}
+
 /* === Visual === */
 function Card({ children, className = "" }) {
   return <div className={`rounded-xl border border-white/10 bg-gray-900 ${className}`}>{children}</div>;
@@ -56,8 +136,8 @@ function inferFormatFromLeague(league) {
   return name.includes("dynasty") || name.includes("keeper") || !!league?.previous_league_id ? "dynasty" : "redraft";
 }
 
-/* === Greedy starters from slots, zero if bye === */
-function teamStrength({ roster, players, getValue, slots, week, byeMap }) {
+/* === Greedy starters from slots, values/proj provided via getMetricWeekly (bye-handled there) === */
+function teamStrength({ roster, players, getMetricWeekly, slots, week, byeMap }) {
   if (!roster) return 0;
   const ids = (roster.players || []).filter(Boolean);
 
@@ -66,13 +146,8 @@ function teamStrength({ roster, players, getValue, slots, week, byeMap }) {
       const p = players?.[pid];
       if (!p) return null;
       const pos = String(p.position || "").toUpperCase();
-      const team = (p.team || "").toUpperCase();
-
-      const byeWeeks = byeMap?.by_team?.[team] || [];
-      const isOnBye = Array.isArray(byeWeeks) && byeWeeks.includes(week);
-
-      const v = isOnBye ? 0 : getValue(p) || 0;
-      return v > 0 ? { pos: pos === "DST" ? "DEF" : pos, val: v } : null;
+      const val = getMetricWeekly(p, week, byeMap) || 0;
+      return val > 0 ? { pos: pos === "DST" ? "DEF" : pos, val } : { pos: pos === "DST" ? "DEF" : pos, val: 0 };
     })
     .filter(Boolean)
     .sort((a, b) => b.val - a.val);
@@ -105,6 +180,7 @@ function teamStrength({ roster, players, getValue, slots, week, byeMap }) {
   return sum;
 }
 
+/* ===================== PAGE ===================== */
 export default function PlayoffOddsPage() {
   const { leagues = [], activeLeague, setActiveLeague, fetchLeagueRosters, players, format, qbType } = useSleeper();
   const league = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
@@ -114,14 +190,59 @@ export default function PlayoffOddsPage() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
-
   const handleSetFormat = (v) => { setUserTouchedFormat(true); setFormatLocal(v); };
-  const handleSetQbType = (v) => { setUserTouchedQB(true); setQbLocal(v); };
+  const handleSetQbType  = (v) => { setUserTouchedQB(true); setQbLocal(v); };
 
-  /* Value source */
+  /* Metric mode + sources */
+  const [metricMode, setMetricMode] = useState("projections"); // "projections" | "values"
+  const [projectionSource, setProjectionSource] = useState("CSV"); // "CSV" | "ESPN" | "CBS"
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projLoading, setProjLoading] = useState(false);
+  const [projError, setProjError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setProjError("");
+      setProjLoading(true);
+      try {
+        const [csv, espn, cbs] = await Promise.allSettled([
+          fetchProjectionMap(PROJ_JSON_URL),
+          fetchProjectionMap(PROJ_ESPN_JSON_URL),
+          fetchProjectionMap(PROJ_CBS_JSON_URL),
+        ]);
+        if (!mounted) return;
+        const next = { CSV: null, ESPN: null, CBS: null };
+        if (csv.status  === "fulfilled") next.CSV  = csv.value;
+        if (espn.status === "fulfilled") next.ESPN = espn.value;
+        if (cbs.status  === "fulfilled") next.CBS  = cbs.value;
+        setProjMaps(next);
+
+        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
+          setProjError("No projections available — using Values.");
+          setMetricMode("values");
+        } else {
+          if (projectionSource === "CBS"  && !next.CBS)  setProjectionSource(next.ESPN ? "ESPN" : "CSV");
+          if (projectionSource === "ESPN" && !next.ESPN) setProjectionSource(next.CSV ? "CSV" : "CBS");
+          if (projectionSource === "CSV"  && !next.CSV)  setProjectionSource(next.ESPN ? "ESPN" : "CBS");
+        }
+      } catch {
+        if (!mounted) return;
+        setProjError("Projections unavailable — using Values.");
+        setMetricMode("values");
+      } finally {
+        if (mounted) setProjLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Value source (used in values mode) */
   const [valueSource, setValueSource] = useState("FantasyCalc");
   const getValue = useMemo(() => makeGetPlayerValue(valueSource, formatLocal, qbLocal), [valueSource, formatLocal, qbLocal]);
 
+  /* Build unified weekly metric */
   const [week, setWeek] = useState(1);
   const [toWeek, setToWeek] = useState(14);
   const [runs, setRuns] = useState(2000);
@@ -175,6 +296,35 @@ export default function PlayoffOddsPage() {
 
   const slots = useMemo(() => parseLeagueSlots(league), [league]);
 
+  /* ---- Weekly metric getter (zeroes out byes) ---- */
+  const getMetricWeekly = useMemo(() => {
+    if (metricMode === "projections") {
+      const chosen =
+        projectionSource === "ESPN" ? projMaps.ESPN :
+        projectionSource === "CBS"  ? projMaps.CBS  :
+        projMaps.CSV;
+      if (!chosen) return () => 0;
+
+      return (p, wk, bye) => {
+        if (!p) return 0;
+        const team = (p.team || "").toUpperCase();
+        const byes = Array.isArray(bye?.by_team?.[team]) ? bye.by_team[team] : [];
+        if (byes.includes(wk)) return 0;
+        const seasonPts = getSeasonPointsForPlayer(chosen, p);
+        const games = Math.max(1, REG_SEASON_WEEKS - byes.length);
+        return seasonPts / games;
+      };
+    }
+    // Values mode
+    return (p, wk, bye) => {
+      if (!p) return 0;
+      const team = (p.team || "").toUpperCase();
+      const byes = Array.isArray(bye?.by_team?.[team]) ? bye.by_team[team] : [];
+      if (byes.includes(wk)) return 0;
+      return getValue(p) || 0;
+    };
+  }, [metricMode, projectionSource, projMaps, getValue]);
+
   /* ---- Dynamic schedule cache (supports any league size; fills missing rosters with bye rows) ---- */
   const [schedCache, setSchedCache] = useState({});
   const loadWeek = async (w) => {
@@ -215,11 +365,11 @@ export default function PlayoffOddsPage() {
 
       const baseWins = Object.fromEntries(rosters.map((r) => [r.roster_id, Number(r.settings?.wins || 0)]));
 
-      // strength map per week (bye-aware)
+      // strength map per week (bye-aware via getMetricWeekly)
       const strengthsByWeek = {};
       weeks.forEach((w) => {
         strengthsByWeek[w] = Object.fromEntries(
-          rosters.map((r) => [r.roster_id, teamStrength({ roster: r, players, getValue, slots, week: w, byeMap })])
+          rosters.map((r) => [r.roster_id, teamStrength({ roster: r, players, getMetricWeekly, slots, week: w, byeMap })])
         );
       });
 
@@ -239,7 +389,7 @@ export default function PlayoffOddsPage() {
               const [a, b] = g;
               const sA = strengthsByWeek[w][a.roster_id] || 1;
               const sB = strengthsByWeek[w][b.roster_id] || 1;
-              // logistic win prob, scale keeps outcomes reasonable across league sizes
+              // logistic win prob; scale keeps outcomes reasonable
               const scale = Math.max(50, (sA + sB) / 10);
               const pA = 1 / (1 + Math.exp(-(sA - sB) / scale));
               (Math.random() < pA) ? (wins[a.roster_id] += 1) : (wins[b.roster_id] += 1);
@@ -300,7 +450,12 @@ export default function PlayoffOddsPage() {
     debTimer.current = setTimeout(() => { simulate(); }, 350);
     return () => debTimer.current && clearTimeout(debTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLeague, week, toWeek, runs, valueSource, formatLocal, qbLocal, players, rosters.length, byeMap]);
+  }, [
+    activeLeague, week, toWeek, runs,
+    // metric bits
+    metricMode, projectionSource, projMaps, projLoading, valueSource, formatLocal, qbLocal,
+    players, rosters.length, byeMap
+  ]);
 
   return (
     <>
@@ -328,18 +483,62 @@ export default function PlayoffOddsPage() {
               ))}
             </select>
 
-            <span className="font-semibold ml-2">Values:</span>
-            <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+            {/* Metric switch */}
+            <span className="font-semibold ml-2">Metric:</span>
+            <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
+              <button
+                className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
+                onClick={() => setMetricMode("projections")}
+                disabled={
+                  !!projError ||
+                  projLoading ||
+                  (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS)
+                }
+                title={projError || ""}
+              >
+                Projections{projLoading ? "…" : ""}
+              </button>
+              <button
+                className={`px-3 py-1 ${metricMode === "values" ? "bg-white/10" : "hover:bg-white/5"}`}
+                onClick={() => setMetricMode("values")}
+              >
+                Values
+              </button>
+            </div>
 
-            {/* Scoring toggles (auto first, user override) */}
-            <span className="font-semibold ml-2">Scoring:</span>
-            <FormatQBToggles
-              league={league}
-              format={formatLocal}
-              setFormat={handleSetFormat}
-              qbType={qbLocal}
-              setQbType={handleSetQbType}
-            />
+            {/* --- PROJECTIONS-ONLY CONTROLS --- */}
+            {metricMode === "projections" && (
+              <>
+                <span className="font-semibold ml-2">Proj Source:</span>
+                <select
+                  className="bg-gray-800 text-white p-2 rounded"
+                  value={projectionSource}
+                  onChange={(e) => setProjectionSource(e.target.value)}
+                  disabled={projLoading}
+                >
+                  {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
+                  {projMaps.ESPN && <option value="ESPN">ESPN</option>}
+                  {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
+                </select>
+              </>
+            )}
+
+            {/* --- VALUES-ONLY CONTROLS --- */}
+            {metricMode === "values" && (
+              <>
+                <span className="font-semibold ml-2">Values:</span>
+                <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+
+                <span className="font-semibold ml-2">Scoring:</span>
+                <FormatQBToggles
+                  league={league}
+                  format={formatLocal}
+                  setFormat={handleSetFormat}
+                  qbType={qbLocal}
+                  setQbType={handleSetQbType}
+                />
+              </>
+            )}
 
             <span className="font-semibold ml-2">Weeks:</span>
             <input
@@ -350,7 +549,7 @@ export default function PlayoffOddsPage() {
               onChange={(e) => setWeek(parseInt(e.target.value || "1", 10))}
               className="bg-gray-800 text-white p-2 rounded w-20"
             />
-            <span>to</span>
+          <span>to</span>
             <input
               type="number"
               min={week}
@@ -360,18 +559,23 @@ export default function PlayoffOddsPage() {
               className="bg-gray-800 text-white p-2 rounded w-20"
             />
 
-            <span className="font-semibold ml-2">Runs:</span>
-            <input
-              type="number"
-              min={200}
-              max={10000}
-              step={100}
-              value={runs}
-              onChange={(e) => setRuns(parseInt(e.target.value || "2000", 10))}
-              className="bg-gray-800 text-white p-2 rounded w-24"
-            />
+        <span className="font-semibold ml-2">Runs:</span>
+        <input
+          type="number"
+          min={200}
+          max={10000}
+          step={100}
+          value={runs}
+          onChange={(e) => setRuns(parseInt(e.target.value || "2000", 10))}
+          className="bg-gray-800 text-white p-2 rounded w-24"
+        />
 
-            <span className="ml-auto text-sm opacity-80">{busy ? "Simulating…" : null}</span>
+        <span className="ml-auto text-sm opacity-80">
+          {busy
+            ? "Simulating…"
+            : (metricMode === "projections" && projError ? "Projection file missing — using Values." : null)}
+        </span>
+
           </div>
         </Card>
 

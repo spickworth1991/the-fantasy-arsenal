@@ -22,7 +22,88 @@ import {
   LabelList,
 } from "recharts";
 
-// Value sources (unchanged)
+/* ===================== Projections wiring ===================== */
+const PROJ_JSON_URL      = "/projections_2025.json";       // FFA-style
+const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";  // ESPN-style
+const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";   // CBS-style
+
+const REGULAR_SEASON_GAMES = (yr) => (Number(yr) >= 2021 ? 17 : 16);
+
+function normNameForMap(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function normalizeTeamAbbr(x) {
+  const s = String(x || "").toUpperCase().trim();
+  const map = { JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV", WFT: "WAS", WSH: "WAS" };
+  return map[s] || s;
+}
+function normalizePos(x) {
+  const p = String(x || "").toUpperCase().trim();
+  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
+  if (p === "PK") return "K";
+  return p;
+}
+function buildProjectionMapFromJSON(json) {
+  const rows = Array.isArray(json) ? json : (json?.rows || []);
+  const byId = Object.create(null);
+  const byName = Object.create(null);
+  const byNameTeam = Object.create(null);
+  const byNamePos = Object.create(null);
+
+  rows.forEach((r) => {
+    const pid = r.player_id != null ? String(r.player_id) : "";
+    const name = r.name || r.player || r.full_name || "";
+    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+
+    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
+    const team = normalizeTeamAbbr(rawTeam);
+    const rawPos = r.pos ?? r.position ?? r.player_position;
+    const pos = normalizePos(rawPos);
+
+    if (pid) byId[pid] = seasonPts;
+    if (name) {
+      const nn = normNameForMap(name);
+      byName[nn] = seasonPts;
+      byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
+      if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
+      if (pos)  byNamePos[`${nn}|${pos}`]   = seasonPts;
+    }
+  });
+
+  return { byId, byName, byNameTeam, byNamePos };
+}
+async function fetchProjectionMap(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const json = await res.json();
+  return buildProjectionMapFromJSON(json);
+}
+function getSeasonPointsForPlayer(map, p) {
+  if (!map || !p) return 0;
+
+  // ID match first
+  const hit = map.byId?.[String(p.player_id)];
+  if (hit != null) return hit;
+
+  // Fallbacks
+  const nn   = normNameForMap(p.full_name || p.search_full_name || `${p.first_name||""} ${p.last_name||""}`);
+  const team = normalizeTeamAbbr(p.team);
+  const pos  = normalizePos(p.position);
+
+  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
+  if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
+  if (nn && map.byName?.[nn] != null) return map.byName[nn];
+
+  const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
+  return (k2 && map.byName?.[k2] != null) ? map.byName[k2] : 0;
+}
+
+/* ===================== Value sources (unchanged) ===================== */
 const VALUE_SOURCES = {
   FantasyCalc: { label: "FantasyCalc", supports: { dynasty: true, redraft: true, qbToggle: true } },
   DynastyProcess: { label: "DynastyProcess", supports: { dynasty: true, redraft: false, qbToggle: true } },
@@ -30,7 +111,6 @@ const VALUE_SOURCES = {
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
   // TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
-
 };
 
 // League avatar helpers
@@ -55,6 +135,43 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [progressText, setProgressText] = useState("Preparing scan…");
   const [error, setError] = useState("");
 
+  // === Metric mode & sources ===
+  const [metricMode, setMetricMode] = useState("values"); // "values" | "projections"
+  const [projectionSource, setProjectionSource] = useState("CSV"); // "CSV" | "ESPN" | "CBS"
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projLoading, setProjLoading] = useState(false);
+  const [projError, setProjError] = useState("");
+
+  // Preload projections once
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setProjLoading(true);
+        const [csv, espn, cbs] = await Promise.allSettled([
+          fetchProjectionMap(PROJ_JSON_URL),
+          fetchProjectionMap(PROJ_ESPN_JSON_URL),
+          fetchProjectionMap(PROJ_CBS_JSON_URL),
+        ]);
+        if (!mounted) return;
+        const next = { CSV: null, ESPN: null, CBS: null };
+        if (csv.status  === "fulfilled") next.CSV  = csv.value;
+        if (espn.status === "fulfilled") next.ESPN = espn.value;
+        if (cbs.status  === "fulfilled") next.CBS  = cbs.value;
+        setProjMaps(next);
+
+        // If user flips to projections but none are present, we’ll auto-fallback later.
+      } catch {
+        if (!mounted) return;
+        setProjError("Projections unavailable; using Values instead.");
+      } finally {
+        if (mounted) setProjLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Value source (used in values mode)
   const [valueSource, setValueSource] = useState("FantasyCalc");
   const supports = VALUE_SOURCES[valueSource].supports;
 
@@ -74,12 +191,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
     };
   }, []);
 
-
   // Scan data
   const [leagueCount, setLeagueCount] = useState(0);
-  const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,roster_positions,status,isBestBall}]
-  const [rows, setRows] = useState([]); // {player_id,name,position,team,bye,count,leagues:[{id,name,isStarter,avatar,status,isBestBall}]}
-  const [leagueRosters, setLeagueRosters] = useState({}); // { [leagueId]: { id, name, roster_positions, players:[{pid,pos,team,bye,isStarter}] } }
+  const [scanLeagues, setScanLeagues] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [leagueRosters, setLeagueRosters] = useState({});
 
   // Modals
   const [openPid, setOpenPid] = useState(null);
@@ -90,8 +206,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [showChart, setShowChart] = useState(false);
 
   // Sorting
-  const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | value
-  const [sortDir, setSortDir] = useState("desc"); // asc | desc
+  const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | value | proj
+  const [sortDir, setSortDir] = useState("desc");  // asc | desc
 
   // Pagination
   const [pageSize, setPageSize] = useState(25);
@@ -173,7 +289,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     })();
   }, [trendingHours]);
 
-  // Value helper (matches your Trade Analyzer)
+  // === Value helper (matches Trade Analyzer) ===
   const getPlayerValue = (p) => {
     if (!p) return 0;
     if (valueSource === "FantasyCalc") {
@@ -198,25 +314,49 @@ export default function ClientResults({ initialSearchParams = {} }) {
         : p.fn_values?.redraft_1qb || 0;
     } else if (valueSource === "IDynastyP") {
       return qbType === "sf" ? p.idp_values?.superflex || 0 : p.idp_values?.one_qb || 0;
-    
-    } else if (valueSource === "TheFantasyArsenal") {
-      return format === "dynasty"
-        ? (qbType === "sf" ? (p.sp_values?.dynasty_sf || 0) : (p.sp_values?.dynasty_1qb || 0))
-        : (qbType === "sf" ? (p.sp_values?.redraft_sf || 0) : (p.sp_values?.redraft_1qb || 0));
+    // } else if (valueSource === "TheFantasyArsenal") { ... }
     }
     return 0;
   };
 
-  // Enrich row with local data
+  // Choose projection map (or null)
+  const chosenProjMap = useMemo(() => {
+    if (metricMode !== "projections") return null;
+    return projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projMaps.CSV;
+  }, [metricMode, projectionSource, projMaps]);
+
+  // If user is in projections mode but we have no map, fall back to values
+  useEffect(() => {
+    if (metricMode === "projections" && !projLoading && !chosenProjMap) {
+      setProjError("No projection file available — switched to Values.");
+      setMetricMode("values");
+    }
+  }, [metricMode, chosenProjMap, projLoading]);
+
+  // Enrich row with local + metric data (value & projection avg)
+  const seasonForBye = useMemo(() => Number(getParam("year") || year || new Date().getFullYear()), [year, initialSearchParams]);
   const withLocalPlayerData = (row) => {
     const p = players?.[row.player_id];
-    return {
+    const base = {
       ...row,
-      _value: getPlayerValue(p),
       _name: row.name || p?.full_name || `${p?.first_name || ""} ${p?.last_name || ""}`.trim() || "Unknown",
       _pos: (row.position || p?.position || "").toUpperCase(),
       _team: (row.team || p?.team || "").toUpperCase(),
     };
+    base._value = getPlayerValue(p);
+
+    // projections (avg per game, bye-adjusted games)
+    if (p && chosenProjMap) {
+      const seasonPts = getSeasonPointsForPlayer(chosenProjMap, p) || 0;
+      const bye = getTeamByeWeek(base._team, seasonForBye);
+      const games = Math.max(1, REGULAR_SEASON_GAMES(seasonForBye) - (Number.isFinite(bye) ? 1 : 0));
+      base._projSeason = seasonPts;
+      base._projAvg = seasonPts / games;
+    } else {
+      base._projSeason = 0;
+      base._projAvg = 0;
+    }
+    return base;
   };
 
   // One-time scan (always all leagues; filters are display-side)
@@ -269,161 +409,157 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setProgressPct(8);
 
         // 2) leagues (no filtering here)
-          const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`);
-          const leagues = await leaguesRes.json();
+        const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`);
+        const leagues = await leaguesRes.json();
 
-          if (cancel) return;
+        if (cancel) return;
 
-          if (leagues.length === 0) {
-            setRows([]);
-            setLeagueRosters({});
-            setLeagueCount(0);
-            setScanLeagues([]);
-            setProgressPct(100);
-            setProgressText("No leagues found.");
-            setLoading(false);
-            return;
+        if (leagues.length === 0) {
+          setRows([]);
+          setLeagueRosters({});
+          setLeagueCount(0);
+          setScanLeagues([]);
+          setProgressPct(100);
+          setProgressText("No leagues found.");
+          setLoading(false);
+          return;
+        }
+
+        // 3) iterate rosters with live progress — include only leagues where you actually have a roster with players
+        const playerCounts = {};
+        const playerLeagues = {};
+        const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
+        const catalog = await playersRes.json();
+
+        const nextLeagueRosters = {};
+        const includedLeagues = [];
+
+        for (let i = 0; i < leagues.length; i++) {
+          const lg = leagues[i];
+          setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
+          setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
+
+          const rostersRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+          const rosters = await rostersRes.json();
+          const mine = rosters.find((r) => r.owner_id === userId);
+
+          // ⛔ Skip this league if you don't have a roster or it's empty
+          if (!mine?.players || mine.players.length === 0) {
+            if (cancel) return;
+            continue;
           }
 
-          // 3) iterate rosters with live progress — include only leagues where you actually have a roster with players
-          const playerCounts = {};
-          const playerLeagues = {};
-          const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
-          const catalog = await playersRes.json();
+          // ✅ Track this league as included
+          includedLeagues.push({
+            id: lg.league_id,
+            name: lg.name,
+            avatar: lg.avatar || null,
+            roster_positions: lg.roster_positions || [],
+            status: lg.status || "",
+            isBestBall: lg?.settings?.best_ball === 1,
+          });
 
-          const nextLeagueRosters = {};
-          const includedLeagues = [];
+          const starters = new Set(mine.starters || []);
 
-          for (let i = 0; i < leagues.length; i++) {
-            const lg = leagues[i];
-            setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-            setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
+          // per-league roster build (for bye availability math)
+          const leaguePlayers = [];
+          for (const pid of mine.players) {
+            const base = catalog?.[pid] || {};
+            const team = (base.team || "").toUpperCase();
+            const pos = (base.position || "").toUpperCase();
+            const bye = getTeamByeWeek(team, Number(yr) || new Date().getFullYear());
 
-            const rostersRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-            const rosters = await rostersRes.json();
-            const mine = rosters.find((r) => r.owner_id === userId);
-
-            // ⛔ Skip this league if you don't have a roster or it's empty
-            if (!mine?.players || mine.players.length === 0) {
-              if (cancel) return;
-              continue;
-            }
-
-            // ✅ Track this league as included
-            includedLeagues.push({
+            // global aggregates
+            playerCounts[pid] = (playerCounts[pid] || 0) + 1;
+            if (!playerLeagues[pid]) playerLeagues[pid] = [];
+            playerLeagues[pid].push({
               id: lg.league_id,
               name: lg.name,
+              isStarter: starters.has(pid),
               avatar: lg.avatar || null,
-              roster_positions: lg.roster_positions || [],
               status: lg.status || "",
               isBestBall: lg?.settings?.best_ball === 1,
             });
 
-            const starters = new Set(mine.starters || []);
-
-            // per-league roster build (for bye availability math)
-            const leaguePlayers = [];
-            for (const pid of mine.players) {
-              const base = catalog?.[pid] || {};
-              const team = (base.team || "").toUpperCase();
-              const pos = (base.position || "").toUpperCase();
-              const bye = getTeamByeWeek(team, Number(yr) || new Date().getFullYear());
-
-              // global aggregates
-              playerCounts[pid] = (playerCounts[pid] || 0) + 1;
-              if (!playerLeagues[pid]) playerLeagues[pid] = [];
-              playerLeagues[pid].push({
-                id: lg.league_id,
-                name: lg.name,
-                isStarter: starters.has(pid),
-                avatar: lg.avatar || null,
-                status: lg.status || "",
-                isBestBall: lg?.settings?.best_ball === 1,
-              });
-
-              // per-league roster entry
-              leaguePlayers.push({
-                pid: String(pid),
-                pos,
-                team,
-                bye,
-                isStarter: starters.has(pid),
-              });
-            }
-
-            nextLeagueRosters[lg.league_id] = {
-              id: lg.league_id,
-              name: lg.name,
-              roster_positions: lg.roster_positions || [],
-              players: leaguePlayers,
-            };
-
-            if (cancel) return;
+            // per-league roster entry
+            leaguePlayers.push({
+              pid: String(pid),
+              pos,
+              team,
+              bye,
+              isStarter: starters.has(pid),
+            });
           }
 
-          // If none of the leagues had your roster, exit gracefully
-          if (includedLeagues.length === 0) {
-            setRows([]);
-            setLeagueRosters({});
-            setLeagueCount(0);
-            setScanLeagues([]);
-            setLastUpdated(new Date());
-            setProgressPct(100);
-            setProgressText("No leagues with a roster found.");
-            setLoading(false);
-            return;
-          }
-
-          // 4) shape rows (from included leagues only)
-          const seasonNumber = Number(yr) || new Date().getFullYear();
-          const built = Object.entries(playerCounts)
-            .map(([pid, count]) => {
-              const base = catalog?.[pid] || {};
-              const team = (base.team || "").toUpperCase();
-              const name =
-                base.full_name ||
-                `${base.first_name || ""} ${base.last_name || ""}`.trim() ||
-                "Unknown";
-
-              const bye = getTeamByeWeek(team, seasonNumber);
-
-              return {
-                player_id: pid,
-                name,
-                team,
-                position: (base.position || "").toUpperCase(),
-                bye,
-                count,
-                leagues: playerLeagues[pid] || [],
-              };
-            })
-            .sort((a, b) => b.count - a.count);
+          nextLeagueRosters[lg.league_id] = {
+            id: lg.league_id,
+            name: lg.name,
+            roster_positions: lg.roster_positions || [],
+            players: leaguePlayers,
+          };
 
           if (cancel) return;
+        }
 
-          // 🆕 Save only included leagues to cache/state
-          const payload = {
-            rows: built,
-            leagueCount: includedLeagues.length,
-            leagues: includedLeagues,
-            leagueRosters: nextLeagueRosters,
-            ts: Date.now(),
-          };
-          sessionStorage.setItem(cacheKey, JSON.stringify(payload));
-
-          setRows(built);
-          setLeagueRosters(nextLeagueRosters);
-          setLeagueCount(includedLeagues.length);
-          setScanLeagues(includedLeagues);
+        // If none of the leagues had your roster, exit gracefully
+        if (includedLeagues.length === 0) {
+          setRows([]);
+          setLeagueRosters({});
+          setLeagueCount(0);
+          setScanLeagues([]);
           setLastUpdated(new Date());
           setProgressPct(100);
-          setProgressText("Done!");
-
-      } catch (e) {
-        if (!cancel) {
-          setError(e?.message || "Scan failed");
+          setProgressText("No leagues with a roster found.");
           setLoading(false);
+          return;
         }
+
+        // 4) shape rows (from included leagues only)
+        const seasonNumber = Number(yr) || new Date().getFullYear();
+        const built = Object.entries(playerCounts)
+          .map(([pid, count]) => {
+            const base = catalog?.[pid] || {};
+            const team = (base.team || "").toUpperCase();
+            const name =
+              base.full_name ||
+              `${base.first_name || ""} ${base.last_name || ""}`.trim() ||
+              "Unknown";
+
+            const bye = getTeamByeWeek(team, seasonNumber);
+
+            return {
+              player_id: pid,
+              name,
+              team,
+              position: (base.position || "").toUpperCase(),
+              bye,
+              count,
+              leagues: playerLeagues[pid] || [],
+            };
+          })
+          .sort((a, b) => b.count - a.count);
+
+        if (cancel) return;
+
+        // 🆕 Save only included leagues to cache/state
+        const payload = {
+          rows: built,
+          leagueCount: includedLeagues.length,
+          leagues: includedLeagues,
+          leagueRosters: nextLeagueRosters,
+          ts: Date.now(),
+        };
+        sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+
+        setRows(built);
+        setLeagueRosters(nextLeagueRosters);
+        setLeagueCount(includedLeagues.length);
+        setScanLeagues(includedLeagues);
+        setLastUpdated(new Date());
+        setProgressPct(100);
+        setProgressText("Done!");
+      } catch (e) {
+        setError(e?.message || "Scan failed");
       } finally {
         if (!cancel) setLoading(false);
       }
@@ -434,8 +570,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
     };
   }, [username, year, paramsKey, forceScanNonce]);
 
-  // Enriched rows (use everywhere for accurate team/pos/value)
-  const enriched = useMemo(() => rows.map(withLocalPlayerData), [rows, valueSource, players, format, qbType]);
+  // Enriched rows (value + projections)
+  const enriched = useMemo(
+    () => rows.map(withLocalPlayerData),
+    // include chosenProjMap & season so projection avg recomputes
+    [rows, valueSource, players, format, qbType, chosenProjMap, seasonForBye]
+  );
 
   // Visible league IDs after display filters
   const visibleLeagueIds = useMemo(() => {
@@ -510,11 +650,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
       return [...filteredRows].sort((a, b) => {
         const tDiff = getTrend(b) - getTrend(a);
         if (tDiff !== 0) return tDiff; // highest trend first
-        // secondary: respect current sort choice (value/count/name/etc.)
         if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
         if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
         if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
         if (sortKey === "value") return ((a._value || 0) - (b._value || 0)) * dir;
+        if (sortKey === "proj")  return ((a._projAvg || 0) - (b._projAvg || 0)) * dir;
         return ((a.count || 0) - (b.count || 0)) * dir;
       });
     }
@@ -523,12 +663,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return [...filteredRows].sort((a, b) => {
       if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
       if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
-      if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
+      if (sortKey === "pos")  return a._pos.localeCompare(b._pos) * dir;
       if (sortKey === "value") return ((a._value || 0) - (b._value || 0)) * dir;
+      if (sortKey === "proj")  return ((a._projAvg || 0) - (b._projAvg || 0)) * dir;
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
   }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap]);
-
 
   // Paging
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -576,10 +716,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setForceScanNonce((n) => n + 1);
   };
 
-  /* =======================
-     Player Stock Chart data
-     ======================= */
-  const [chartMetric, setChartMetric] = useState("exposure"); // exposure | count | value
+  /* ===================== Player Stock Chart data ===================== */
+  const [chartMetric, setChartMetric] = useState("exposure"); // exposure | count | value | proj
   const [chartTopN, setChartTopN] = useState(20);
 
   const chartTopNInitRef = useRef(false);
@@ -590,7 +728,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
     }
   }, [showChart, isMobile]);
 
-
   const chartData = useMemo(() => {
     const base = [...sorted].slice(0, Math.max(chartTopN, 1));
     const data = base.map((r) => ({
@@ -599,17 +736,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
       exposure: visibleLeagueCount ? Math.round((r.count / visibleLeagueCount) * 100) : 0,
       count: r.count || 0,
       value: r._value || 0,
+      proj: r._projAvg || 0,
     }));
     data.sort((a, b) => (b[chartMetric] ?? 0) - (a[chartMetric] ?? 0));
     return data.slice(0, chartTopN);
   }, [sorted, chartTopN, chartMetric, visibleLeagueCount]);
 
   const chartYAxisDomain = chartMetric === "exposure" ? [0, 100] : ["auto", "auto"];
-  const chartValueFormatter = (v) => (chartMetric === "exposure" ? `${v}%` : v);
+  const chartValueFormatter = (v) => (chartMetric === "exposure" ? `${v}%` : Math.round(v));
 
-  /* =======================
-     Bye-week helpers + state
-     ======================= */
+  /* ===================== Bye-week helpers + state ===================== */
   const scanLeaguesMap = useMemo(() => {
     const m = {};
     for (const lg of scanLeagues) m[lg.id] = lg;
@@ -718,6 +854,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return issues;
   }, [byeByLeague, scanLeaguesMap, byeTotalCap, byeStarterCap, byeShowOnlyIssues]);
 
+  const valueOrProjLabel = metricMode === "projections" ? "Proj (avg)" : "Value";
+  const valueOrProjSortKey = metricMode === "projections" ? "proj" : "value";
+
   // UI
   return (
     <>
@@ -740,7 +879,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
             <div className="bg-gray-900 rounded-lg border border-white/10 p-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  {/* Left: search + BIG value source */}
+                  {/* Left: search + metric + sources */}
                   <div className="flex items-center gap-3 flex-wrap">
                     <input
                       value={query}
@@ -751,10 +890,52 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       placeholder="Search name/team/pos"
                       className="bg-gray-800 border border-white/10 rounded px-3 py-1.5 text-sm w-full md:w-64"
                     />
+
+                    {/* Metric toggle */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Source:</span>
-                      <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                      <span className="text-sm text-gray-400">Metric:</span>
+                      <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
+                        <button
+                          className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
+                          onClick={() => setMetricMode("projections")}
+                          disabled={projLoading || (!projLoading && !projMaps.CSV && !projMaps.ESPN && !projMaps.CBS)}
+                          title={projError || ""}
+                        >
+                          Projections{projLoading ? "…" : ""}
+                        </button>
+                        <button
+                          className={`px-3 py-1 ${metricMode === "values" ? "bg-white/10" : "hover:bg-white/5"}`}
+                          onClick={() => setMetricMode("values")}
+                        >
+                          Values
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Projection source (only when projections mode) */}
+                    {metricMode === "projections" && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Proj Source:</span>
+                        <select
+                          className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
+                          value={projectionSource}
+                          onChange={(e) => setProjectionSource(e.target.value)}
+                          disabled={projLoading}
+                        >
+                          {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
+                          {projMaps.ESPN && <option value="ESPN">ESPN</option>}
+                          {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Values source (only in Values mode) */}
+                    {metricMode === "values" && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Values:</span>
+                        <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Filters + scan summary */}
@@ -766,9 +947,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       title="Filters & options"
                     >
                       Filters
-                      {filtersDirty && (
-                        <span className="absolute -top-1 -right-1 inline-block w-3 h-3 rounded-full bg-blue-500 ring-2 ring-gray-900" />
-                      )}
+                      {/* dirty dot */}
                     </button>
 
                     <div className="text-sm text-gray-400">
@@ -811,6 +990,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       >
                         Refresh
                       </button>
+                      {projError && <span className="text-yellow-300 ml-3 text-xs">{projError}</span>}
                       {error && <span className="text-red-400 ml-3">{error}</span>}
                     </div>
                   </div>
@@ -853,6 +1033,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         <option value="exposure">Exposure %</option>
                         <option value="count">Leagues</option>
                         <option value="value">Value</option>
+                        <option value="proj">Proj (avg)</option>
                       </select>
                     </label>
 
@@ -875,7 +1056,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       </span>
                     )}
                   </div>
-
                 </div>
 
                 <div className="mt-3 h-[320px]">
@@ -951,9 +1131,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       </th>
                       <th
                         className="text-right px-4 py-2 cursor-pointer select-none"
-                        onClick={() => toggleSort("value")}
+                        onClick={() => toggleSort(valueOrProjSortKey)}
                       >
-                        Value <span className="ml-1 inline-block">{sortIndicator("value")}</span>
+                        {valueOrProjLabel} <span className="ml-1 inline-block">{sortIndicator(valueOrProjSortKey)}</span>
                       </th>
                       <th className="text-left px-4 py-2 hidden md:table-cell">Teams</th>
                     </tr>
@@ -966,6 +1146,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       const addCount = trendingAddMap.get(r.player_id);
                       const dropCount = trendingDropMap.get(r.player_id);
 
+                      const metricVal = metricMode === "projections" ? (r._projAvg || 0) : (r._value || 0);
+
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
                       if (addCount) titleBits.push(`Trending adds: ${addCount}`);
@@ -977,7 +1159,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           className="border-b border-white/5 hover:bg-white/5"
                           title={titleBits.join(" • ")}
                         >
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 text-left">
                             <button className="text-left w-full" onClick={() => setOpenPid(r.player_id)}>
                               <div className="flex items-center gap-1">
                                 <AvatarImage
@@ -1026,9 +1208,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             </button>
                           </td>
                           <td className="px-4 py-2 text-right">{r.count}</td>
-                          <td className="px-4 py-2 text-right">
-                            {players?.[r.player_id] ? getPlayerValue(players[r.player_id]) : 0}
-                          </td>
+                          <td className="px-4 py-2 text-right">{Math.round(metricVal)}</td>
                           <td className="px-4 py-2 hidden md:table-cell">
                             <div className="flex -space-x-2">
                               {(r.leagues || [])
@@ -1163,91 +1343,97 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   />
                 </div>
 
-                {/* Value source + Format/QB inside modal only */}
-                <div className="text-sm text-gray-400 mt-4">Value Source</div>
-                <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
-                <div className="mt-2 flex gap-3 items-center">
-                  {supports.dynasty && supports.redraft && (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={format === "dynasty"}
-                        onChange={() => setFormat(format === "dynasty" ? "redraft" : "dynasty")}
-                        className="sr-only peer"
-                      />
-                      <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
-                      <span className="ml-3 text-sm">{format === "dynasty" ? "Dynasty" : "Redraft"}</span>
-                    </label>
+                {/* Value Source + Format/QB (only in Values mode) */}
+                  {metricMode === "values" && (
+                    <>
+                      <div className="text-sm text-gray-400 mt-4">Value Source</div>
+                      <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+
+                      <div className="mt-2 flex gap-3 items-center">
+                        {supports.dynasty && supports.redraft && (
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={format === "dynasty"}
+                              onChange={() => setFormat(format === "dynasty" ? "redraft" : "dynasty")}
+                              className="sr-only peer"
+                            />
+                            <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
+                            <span className="ml-3 text-sm">{format === "dynasty" ? "Dynasty" : "Redraft"}</span>
+                          </label>
+                        )}
+                        {supports.qbToggle && (
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={qbType === "sf"}
+                              onChange={() => setQbType(qbType === "sf" ? "1qb" : "sf")}
+                              className="sr-only peer"
+                            />
+                            <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
+                            <span className="ml-3 text-sm">{qbType === "sf" ? "Superflex" : "1QB"}</span>
+                          </label>
+                        )}
+                      </div>
+                    </>
                   )}
-                  {supports.qbToggle && (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={qbType === "sf"}
-                        onChange={() => setQbType(qbType === "sf" ? "1qb" : "sf")}
-                        className="sr-only peer"
-                      />
-                      <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
-                      <span className="ml-3 text-sm">{qbType === "sf" ? "Superflex" : "1QB"}</span>
-                    </label>
-                  )}
-                </div>
+
 
                 {/* Trending options */}
-                  <div className="mt-6">
-                    <div className="text-sm text-gray-400 mb-2">Trending players</div>
+                <div className="mt-6">
+                  <div className="text-sm text-gray-400 mb-2">Trending players</div>
 
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="trending-mode"
-                          value="all"
-                          checked={trendingMode === "all"}
-                          onChange={() => setTrendingMode("all")}
-                        />
-                        All players
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="trending-mode"
-                          value="adds"
-                          checked={trendingMode === "adds"}
-                          onChange={() => setTrendingMode("adds")}
-                        />
-                        Only trending adds
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="trending-mode"
-                          value="drops"
-                          checked={trendingMode === "drops"}
-                          onChange={() => setTrendingMode("drops")}
-                        />
-                        Only trending drops
-                      </label>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Lookback</span>
-                      <select
-                        value={trendingHours}
-                        onChange={(e) => setTrendingHours(Number(e.target.value))}
-                        className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                        title="How far back to consider for trending adds/drops"
-                      >
-                        <option value={6}>6h</option>
-                        <option value={12}>12h</option>
-                        <option value={24}>24h</option>
-                        <option value={48}>48h</option>
-                        <option value={72}>72h</option>
-                        <option value={168}>7d</option>
-                      </select>
-                      <span className="text-xs text-gray-500">Sleeper top 50 per window</span>
-                    </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="all"
+                        checked={trendingMode === "all"}
+                        onChange={() => setTrendingMode("all")}
+                      />
+                      All players
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="adds"
+                        checked={trendingMode === "adds"}
+                        onChange={() => setTrendingMode("adds")}
+                      />
+                      Only trending adds
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="drops"
+                        checked={trendingMode === "drops"}
+                        onChange={() => setTrendingMode("drops")}
+                      />
+                      Only trending drops
+                    </label>
                   </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Lookback</span>
+                    <select
+                      value={trendingHours}
+                      onChange={(e) => setTrendingHours(Number(e.target.value))}
+                      className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
+                      title="How far back to consider for trending adds/drops"
+                    >
+                      <option value={6}>6h</option>
+                      <option value={12}>12h</option>
+                      <option value={24}>24h</option>
+                      <option value={48}>48h</option>
+                      <option value={72}>72h</option>
+                      <option value={168}>7d</option>
+                    </select>
+                    <span className="text-xs text-gray-500">Sleeper top 50 per window</span>
+                  </div>
+                </div>
               </div>
 
               {/* League filters (display-side) */}
@@ -1294,7 +1480,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     }}
                   />
                 </label>
-
               </div>
             </div>
 
@@ -1429,7 +1614,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>
       )}
 
-      {/* Bye-week conflicts modal */}
+      {/* Bye-week conflicts modal (unchanged content aside from state above) */}
       {showByeModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
@@ -1439,210 +1624,225 @@ export default function ClientResults({ initialSearchParams = {} }) {
             className="w-full max-w-3xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-xl font-bold">Bye-week conflicts (by league)</div>
-              <button
-                className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+            {/* ... same content as before (omitted for brevity), unchanged ... */}
+            {/* Bye-week conflicts modal */}
+            {showByeModal && (
+              <div
+                className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
                 onClick={() => setShowByeModal(false)}
               >
-                ✕
-              </button>
-            </div>
+                <div
+                  className="w-full max-w-3xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="text-xl font-bold">Bye-week conflicts (by league)</div>
+                    <button
+                      className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                      onClick={() => setShowByeModal(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
 
-            {/* Controls */}
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm" title="Flag weeks if TOTAL players on bye ≥ this number">
-                <span>Flag if total on bye ≥</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={byeTotalCap}
-                  onChange={(e) => setByeTotalCap(Number(e.target.value || 0))}
-                  className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
-                />
-              </label>
+                  {/* Controls */}
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm" title="Flag weeks if TOTAL players on bye ≥ this number">
+                      <span>Flag if total on bye ≥</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={byeTotalCap}
+                        onChange={(e) => setByeTotalCap(Number(e.target.value || 0))}
+                        className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
+                      />
+                    </label>
 
-              <label
-                className="flex items-center gap-2 text-sm"
-                title="Flag if CURRENT STARTERS on bye ≥ this number"
-              >
-                <span>Flag if starters on bye ≥</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={byeStarterCap}
-                  onChange={(e) => setByeStarterCap(Number(e.target.value || 0))}
-                  className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
-                />
-              </label>
+                    <label
+                      className="flex items-center gap-2 text-sm"
+                      title="Flag if CURRENT STARTERS on bye ≥ this number"
+                    >
+                      <span>Flag if starters on bye ≥</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={byeStarterCap}
+                        onChange={(e) => setByeStarterCap(Number(e.target.value || 0))}
+                        className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
+                      />
+                    </label>
 
-              <label className="flex items-center gap-2 text-sm ml-auto">
-                <input
-                  type="checkbox"
-                  checked={byeShowOnlyIssues}
-                  onChange={() => setByeShowOnlyIssues((v) => !v)}
-                />
-                <span>Show only weeks with issues</span>
-              </label>
-            </div>
+                    <label className="flex items-center gap-2 text-sm ml-auto">
+                      <input
+                        type="checkbox"
+                        checked={byeShowOnlyIssues}
+                        onChange={() => setByeShowOnlyIssues((v) => !v)}
+                      />
+                      <span>Show only weeks with issues</span>
+                    </label>
+                  </div>
 
-            {/* Content */}
-            <div className="max-h-[65vh] overflow-y-auto pr-1">
-              {Object.keys(byeIssuesByLeague).length === 0 ? (
-                <div className="text-gray-400">
-                  {projectedRows.some((r) => r.bye)
-                    ? "No conflicts found with current thresholds."
-                    : "No bye-week data configured. Add team bye weeks in utils/nflByeWeeks.js."}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {Object.values(byeIssuesByLeague).map((lg) => {
-                    const leagueRoster = leagueRosters[lg.id];
-                    const rp = scanLeaguesMap[lg.id]?.roster_positions || [];
-                    const slots = countRosterSlots(rp);
-                    const startersTotal = totalStarterSlots(slots);
-
-                    return (
-                      <div key={lg.id} className="rounded-lg border border-white/10 bg-gray-800/50">
-                        <div className="px-3 py-2 border-b border-white/10 font-semibold">{lg.name}</div>
-                        <div className="p-3 grid gap-2">
-                          {Object.entries(lg.weeks)
-                            .sort((a, b) => Number(a[0]) - Number(b[0]))
-                            .map(([wk, stats]) => {
-                              const posEntries = Object.entries(stats.pos);
-                              const warnings = [];
-
-                              if (stats.total >= startersTotal) {
-                                warnings.push(
-                                  `You have ${stats.total} total players on bye in Week ${wk}; this lineup has ${startersTotal} starter slots.`
-                                );
-                              } else if (stats.total >= byeTotalCap) {
-                                warnings.push(`High bye volume in Week ${wk}: ${stats.total} players on bye.`);
-                              }
-                              if (stats.starters >= byeStarterCap) {
-                                warnings.push(`${stats.starters} of your current starters are on bye in Week ${wk}.`);
-                              }
-
-                              const activeByPos = activeCountsByPos(leagueRoster, wk);
-
-                              posEntries.forEach(([pos, n]) => {
-                                const base = slots[pos] || 0;
-                                const flexSlots = flexCapacityFor(pos, slots);
-                                const totalCap = base + flexSlots;
-
-                                const sameExtra = Math.max(0, (activeByPos[pos] || 0) - base);
-
-                                const otherPositions = eligibleOtherPositionsFor(pos, slots);
-                                let crossExtra = 0;
-                                otherPositions.forEach((op) => {
-                                  crossExtra += Math.max(0, (activeByPos[op] || 0) - (slots[op] || 0));
-                                });
-
-                                const othersLabel = otherPositions.length ? otherPositions.join("/") : "—";
-                                const needFlex = Math.max(0, n - base);
-
-                                if (totalCap === 0 && n > 0) {
-                                  warnings.push(`${pos}: ${n} on bye, but this league has ${capacityText(pos, slots)}.`);
-                                } else if (n > totalCap) {
-                                  warnings.push(
-                                    `${pos}: ${n} on bye, capacity is ${capacityText(pos, slots)}. ` +
-                                      `Available this week — same-pos extras: ${sameExtra}; cross-pos flex candidates: ${crossExtra} (${othersLabel}).`
-                                  );
-                                } else if (n > base) {
-                                  warnings.push(
-                                    `${pos}: ${n} on bye — needs ${needFlex} flex slot${needFlex > 1 ? "s" : ""}. ` +
-                                      `You have ${sameExtra} extra ${pos} and ${crossExtra} cross-pos candidates (${othersLabel}); ` +
-                                      `flex slots allowing ${pos}: ${flexSlots}.`
-                                  );
-                                }
-                              });
-
-                              const danger =
-                                stats.total >= byeTotalCap || stats.starters >= byeStarterCap || warnings.length > 0;
-
-                              return (
-                                <div
-                                  key={wk}
-                                  className={`rounded p-3 bg-gray-900/60 border ${
-                                    danger ? "border-red-500" : "border-white/10"
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="text-sm">
-                                      <span className="text-gray-400 mr-2">Week</span>
-                                      <span className="font-semibold">{wk}</span>
-                                    </div>
-                                    <div className="text-sm">
-                                      <span className="text-gray-400 mr-2">Total</span>
-                                      <span className="font-semibold">{stats.total}</span>
-                                      <span className="text-gray-400 mx-2">|</span>
-                                      <span className="text-gray-400 mr-2">Starters</span>
-                                      <span className="font-semibold">{stats.starters}</span>
-                                    </div>
-                                  </div>
-
-                                  {warnings.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-sm text-red-300">
-                                      {warnings.map((w, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                          <span aria-hidden>⚠</span>
-                                          <span>{w}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-
-                                  {/* position breakdown */}
-                                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                                    {posEntries
-                                      .sort((a, b) => a[0].localeCompare(b[0]))
-                                      .map(([pos, n]) => {
-                                        const base = slots[pos] || 0;
-                                        const flex = flexCapacityFor(pos, slots);
-                                        const active = (leagueRoster ? activeCountsByPos(leagueRoster, wk)[pos] : 0) || 0;
-                                        const needsFlex = n > base;
-                                        const overCap = n > base + flex && base + flex > 0;
-                                        return (
-                                          <span
-                                            key={pos}
-                                            className={`px-2 py-1 rounded border ${
-                                              overCap
-                                                ? "border-red-400 text-red-300"
-                                                : needsFlex
-                                                ? "border-yellow-400 text-yellow-300"
-                                                : "border-white/10 text-gray-300"
-                                            }`}
-                                            title={`On bye: ${n} • Active (not on bye): ${active} • Capacity: ${capacityText(
-                                              pos,
-                                              slots
-                                            )}`}
-                                          >
-                                            {pos}: {n}
-                                          </span>
-                                        );
-                                      })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
+                  {/* Content */}
+                  <div className="max-h-[65vh] overflow-y-auto pr-1">
+                    {Object.keys(byeIssuesByLeague).length === 0 ? (
+                      <div className="text-gray-400">
+                        {projectedRows.some((r) => r.bye)
+                          ? "No conflicts found with current thresholds."
+                          : "No bye-week data configured. Add team bye weeks in utils/nflByeWeeks.js."}
                       </div>
-                    );
-                  })}
+                    ) : (
+                      <div className="space-y-4">
+                        {Object.values(byeIssuesByLeague).map((lg) => {
+                          const leagueRoster = leagueRosters[lg.id];
+                          const rp = scanLeaguesMap[lg.id]?.roster_positions || [];
+                          const slots = countRosterSlots(rp);
+                          const startersTotal = totalStarterSlots(slots);
+
+                          return (
+                            <div key={lg.id} className="rounded-lg border border-white/10 bg-gray-800/50">
+                              <div className="px-3 py-2 border-b border-white/10 font-semibold">{lg.name}</div>
+                              <div className="p-3 grid gap-2">
+                                {Object.entries(lg.weeks)
+                                  .sort((a, b) => Number(a[0]) - Number(b[0]))
+                                  .map(([wk, stats]) => {
+                                    const posEntries = Object.entries(stats.pos);
+                                    const warnings = [];
+
+                                    if (stats.total >= startersTotal) {
+                                      warnings.push(
+                                        `You have ${stats.total} total players on bye in Week ${wk}; this lineup has ${startersTotal} starter slots.`
+                                      );
+                                    } else if (stats.total >= byeTotalCap) {
+                                      warnings.push(`High bye volume in Week ${wk}: ${stats.total} players on bye.`);
+                                    }
+                                    if (stats.starters >= byeStarterCap) {
+                                      warnings.push(`${stats.starters} of your current starters are on bye in Week ${wk}.`);
+                                    }
+
+                                    const activeByPos = activeCountsByPos(leagueRoster, wk);
+
+                                    posEntries.forEach(([pos, n]) => {
+                                      const base = slots[pos] || 0;
+                                      const flexSlots = flexCapacityFor(pos, slots);
+                                      const totalCap = base + flexSlots;
+
+                                      const sameExtra = Math.max(0, (activeByPos[pos] || 0) - base);
+
+                                      const otherPositions = eligibleOtherPositionsFor(pos, slots);
+                                      let crossExtra = 0;
+                                      otherPositions.forEach((op) => {
+                                        crossExtra += Math.max(0, (activeByPos[op] || 0) - (slots[op] || 0));
+                                      });
+
+                                      const othersLabel = otherPositions.length ? otherPositions.join("/") : "—";
+                                      const needFlex = Math.max(0, n - base);
+
+                                      if (totalCap === 0 && n > 0) {
+                                        warnings.push(`${pos}: ${n} on bye, but this league has ${capacityText(pos, slots)}.`);
+                                      } else if (n > totalCap) {
+                                        warnings.push(
+                                          `${pos}: ${n} on bye, capacity is ${capacityText(pos, slots)}. ` +
+                                            `Available this week — same-pos extras: ${sameExtra}; cross-pos flex candidates: ${crossExtra} (${othersLabel}).`
+                                        );
+                                      } else if (n > base) {
+                                        warnings.push(
+                                          `${pos}: ${n} on bye — needs ${needFlex} flex slot${needFlex > 1 ? "s" : ""}. ` +
+                                            `You have ${sameExtra} extra ${pos} and ${crossExtra} cross-pos candidates (${othersLabel}); ` +
+                                            `flex slots allowing ${pos}: ${flexSlots}.`
+                                        );
+                                      }
+                                    });
+
+                                    const danger =
+                                      stats.total >= byeTotalCap || stats.starters >= byeStarterCap || warnings.length > 0;
+
+                                    return (
+                                      <div
+                                        key={wk}
+                                        className={`rounded p-3 bg-gray-900/60 border ${
+                                          danger ? "border-red-500" : "border-white/10"
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <div className="text-sm">
+                                            <span className="text-gray-400 mr-2">Week</span>
+                                            <span className="font-semibold">{wk}</span>
+                                          </div>
+                                          <div className="text-sm">
+                                            <span className="text-gray-400 mr-2">Total</span>
+                                            <span className="font-semibold">{stats.total}</span>
+                                            <span className="text-gray-400 mx-2">|</span>
+                                            <span className="text-gray-400 mr-2">Starters</span>
+                                            <span className="font-semibold">{stats.starters}</span>
+                                          </div>
+                                        </div>
+
+                                        {warnings.length > 0 && (
+                                          <ul className="mt-2 space-y-1 text-sm text-red-300">
+                                            {warnings.map((w, i) => (
+                                              <li key={i} className="flex items-start gap-2">
+                                                <span aria-hidden>⚠</span>
+                                                <span>{w}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        )}
+
+                                        {/* position breakdown */}
+                                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                                          {posEntries
+                                            .sort((a, b) => a[0].localeCompare(b[0]))
+                                            .map(([pos, n]) => {
+                                              const base = slots[pos] || 0;
+                                              const flex = flexCapacityFor(pos, slots);
+                                              const active = (leagueRoster ? activeCountsByPos(leagueRoster, wk)[pos] : 0) || 0;
+                                              const needsFlex = n > base;
+                                              const overCap = n > base + flex && base + flex > 0;
+                                              return (
+                                                <span
+                                                  key={pos}
+                                                  className={`px-2 py-1 rounded border ${
+                                                    overCap
+                                                      ? "border-red-400 text-red-300"
+                                                      : needsFlex
+                                                      ? "border-yellow-400 text-yellow-300"
+                                                      : "border-white/10 text-gray-300"
+                                                  }`}
+                                                  title={`On bye: ${n} • Active (not on bye): ${active} • Capacity: ${capacityText(
+                                                    pos,
+                                                    slots
+                                                  )}`}
+                                                >
+                                                  {pos}: {n}
+                                                </span>
+                                              );
+                                            })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
+      
 
       {/* Player detail modal */}
       {openPid &&
         (() => {
-          // Pull from ENRICHED list so team/pos/value are accurate
           const openRow = enriched.find((r) => r.player_id === openPid) || null;
           if (!openRow) return null;
           const visibleLeaguesForRow = (openRow.leagues || []).filter((lg) => visibleLeagueIds.has(String(lg.id)));
+          const metricVal = metricMode === "projections" ? Math.round(openRow._projAvg || 0) : Math.round(openRow._value || 0);
           return (
             <div
               className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4"
@@ -1682,10 +1882,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     <div className="text-2xl font-bold">{visibleLeaguesForRow.length}</div>
                   </div>
                   <div className="bg-gray-800/60 rounded p-3">
-                    <div className="text-xs text-gray-400">Value ({VALUE_SOURCES[valueSource].label})</div>
-                    <div className="text-2xl font-bold">
-                      {players?.[openRow.player_id] ? getPlayerValue(players[openRow.player_id]) : 0}
-                    </div>
+                    <div className="text-xs text-gray-400">{valueOrProjLabel}</div>
+                    <div className="text-2xl font-bold">{metricVal}</div>
                   </div>
                 </div>
 

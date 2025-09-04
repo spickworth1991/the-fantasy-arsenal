@@ -8,11 +8,11 @@ import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 
 /** Value sources support */
 const VALUE_SOURCES = {
-  FantasyCalc:        { label: "FantasyCalc",        supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
-  DynastyProcess:     { label: "DynastyProcess",     supports: { dynasty: true,  redraft: false, qbToggle: true  } },
-  KeepTradeCut:       { label: "KeepTradeCut",       supports: { dynasty: true,  redraft: false, qbToggle: true  } },
-  FantasyNavigator:   { label: "FantasyNavigator",   supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
-  IDynastyP:          { label: "IDynastyP",          supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  FantasyCalc:      { label: "FantasyCalc",      supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
+  DynastyProcess:   { label: "DynastyProcess",   supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  KeepTradeCut:     { label: "KeepTradeCut",     supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
+  IDynastyP:        { label: "IDynastyP",        supports: { dynasty: true,  redraft: false, qbToggle: true  } },
 };
 
 const OFF_POS = ["QB","RB","WR","TE"];
@@ -40,7 +40,7 @@ function Card({ children, className = "" }) {
   return <div className={`rounded-xl border border-white/10 bg-gray-900 ${className}`}>{children}</div>;
 }
 
-/** Compact, responsive pill; can be hidden via className on breakpoints */
+/** Compact pill */
 function StatPill({ label, value, hint, className = "" }) {
   return (
     <div className={`min-w-0 flex items-center justify-between gap-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[11px] sm:text-xs ${className}`}>
@@ -69,7 +69,7 @@ function StackedMini({ parts }) {
   );
 }
 
-/** Mobile accordion wrapper */
+/** Mobile accordion */
 function MobileAccordion({ title, children, defaultOpen=false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -296,6 +296,101 @@ function indexPickPlayers(playersMap) {
 }
 
 /* ===========================
+   PROJECTIONS (like SOS)
+=========================== */
+// Files in /public
+const PROJ_JSON_URL      = "/projections_2025.json";
+const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
+const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";
+
+function normNameForMap(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function normalizeTeamAbbr(x) {
+  const s = String(x || "").toUpperCase().trim();
+  const map = {
+    JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV",
+    WAS: "WAS", WFT: "WAS", WSH: "WAS",
+    DST: "DEF", D: "DEF", DEF: "DEF",
+  };
+  return map[s] || s;
+}
+function normalizePos(x) {
+  const p = String(x || "").toUpperCase().trim();
+  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
+  if (p === "PK") return "K";
+  return p;
+}
+
+function buildProjectionMapFromJSON(json) {
+  const rows = Array.isArray(json) ? json : (json?.rows || []);
+  const byId = Object.create(null);
+  const byName = Object.create(null);
+  const byNameTeam = Object.create(null);
+  const byNamePos  = Object.create(null);
+
+  rows.forEach((r) => {
+    const pid = r.player_id != null ? String(r.player_id) : "";
+    const name = r.name || r.player || r.full_name || "";
+    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+
+    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
+    const team = normalizeTeamAbbr(rawTeam);
+    const rawPos = r.pos ?? r.position ?? r.player_position;
+    const pos = normalizePos(rawPos);
+
+    if (pid) byId[pid] = seasonPts;
+
+    if (name) {
+      const nn = normNameForMap(name);
+      byName[nn] = seasonPts;
+      byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
+      if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
+      if (pos)  byNamePos[`${nn}|${pos}`]   = seasonPts;
+    }
+  });
+
+  return { byId, byName, byNameTeam, byNamePos };
+}
+
+async function fetchProjectionMap(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const json = await res.json();
+  return buildProjectionMapFromJSON(json);
+}
+
+function getSeasonPointsForPlayer(map, p) {
+  if (!map || !p) return 0;
+  if (isPick(p.position)) return 0; // picks have no projections
+  const hit = map.byId[String(p.player_id)];
+  if (hit != null) return hit;
+
+  const nn   = normNameForMap(p.full_name || p.search_full_name || p.first_name + " " + p.last_name || "");
+  const team = normalizeTeamAbbr(p.team);
+  const pos  = normalizePos(p.position);
+
+  if (nn && team) {
+    const k = `${nn}|${team}`;
+    if (map.byNameTeam[k] != null) return map.byNameTeam[k];
+  }
+  if (nn && pos) {
+    const k = `${nn}|${pos}`;
+    if (map.byNamePos[k] != null) return map.byNamePos[k];
+  }
+  if (nn && map.byName[nn] != null) return map.byName[nn];
+  const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
+  if (k2 && map.byName[k2] != null) return map.byName[k2];
+
+  return 0;
+}
+
+/* ===========================
    PAGE
 =========================== */
 export default function PowerRankingsPage() {
@@ -309,23 +404,78 @@ export default function PowerRankingsPage() {
   } = useSleeper();
 
   // Controls
+  // NEW: metric & projection source (default to projections like SOS)
+  const [metricMode, setMetricMode] = useState("projections"); // "projections" | "values"
+  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projLoading, setProjLoading] = useState(false);
+  const [projError, setProjError] = useState("");
+
+  // Values controls (unchanged)
   const [valueSource, setValueSource] = useState("FantasyCalc");
   const supports = VALUE_SOURCES[valueSource].supports;
   const [format, setFormat] = useState("dynasty");
   const [qbType, setQbType] = useState("sf");
+
+  // Picks toggle (disabled on projections)
   const [includeIDP, setIncludeIDP] = useState(true);
   const [includePicks, setIncludePicks] = useState(true);
-  const [sortKey, setSortKey] = useState("rating");
 
-  // Comparison + drilldown
+  const [sortKey, setSortKey] = useState("rating");
   const [teamAId, setTeamAId] = useState("");
   const [teamBId, setTeamBId] = useState("");
   const [openTeamId, setOpenTeamId] = useState(null);
 
-  // Picks ownership
   const [ownedPicks, setOwnedPicks] = useState(null);
   const [picksLoading, setPicksLoading] = useState(false);
   const [picksError, setPicksError] = useState("");
+
+  // Fetch projections once (like SOS) and auto-fallback
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setProjError("");
+      setProjLoading(true);
+      try {
+        const [csvMap, espnMap, cbsMap] = await Promise.allSettled([
+          fetchProjectionMap(PROJ_JSON_URL),
+          fetchProjectionMap(PROJ_ESPN_JSON_URL),
+          fetchProjectionMap(PROJ_CBS_JSON_URL),
+        ]);
+        const next = { CSV: null, ESPN: null, CBS: null };
+        if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
+        if (espnMap.status === "fulfilled") next.ESPN = espnMap.value;
+        if (cbsMap.status === "fulfilled") next.CBS = cbsMap.value;
+        if (!mounted) return;
+        setProjMaps(next);
+
+        // fallback selection
+        if (projectionSource === "CBS" && !next.CBS) {
+          setProjectionSource(next.ESPN ? "ESPN" : (next.CSV ? "CSV" : "CBS"));
+        }
+        if (projectionSource === "CSV" && !next.CSV) {
+          setProjectionSource(next.ESPN ? "ESPN" : (next.CBS ? "CBS" : "CSV"));
+        }
+        if (projectionSource === "ESPN" && !next.ESPN) {
+          setProjectionSource(next.CSV ? "CSV" : (next.CBS ? "CBS" : "ESPN"));
+        }
+
+        if (!next.CSV && !next.ESPN && !next.CBS) {
+          setProjError("No projections available — falling back to Values.");
+          setMetricMode("values");
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setProjMaps({ CSV: null, ESPN: null, CBS: null });
+        setProjError("Projections unavailable — falling back to Values.");
+        setMetricMode("values");
+      } finally {
+        if (mounted) setProjLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const league = useMemo(
     () => leagues.find((lg) => lg.league_id === activeLeague),
@@ -339,16 +489,34 @@ export default function PowerRankingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league?.league_id]);
 
-  const getPlayerValue = useMemo(
+  // Metric getter: projections (season points) OR values
+  const getValueRaw = useMemo(
     () => makeGetPlayerValue(valueSource, format, qbType),
     [valueSource, format, qbType]
   );
+
+  const getMetricRaw = useMemo(() => {
+    if (metricMode === "projections") {
+      const chosen =
+        projectionSource === "ESPN" ? projMaps.ESPN :
+        projectionSource === "CBS"  ? projMaps.CBS  :
+        projMaps.CSV;
+      if (chosen) {
+        return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
+      }
+      // If projections selected but not loaded yet, return 0s (UI will show loading)
+      return () => 0;
+    }
+    // Values mode
+    return (p) => getValueRaw(p) || 0;
+  }, [metricMode, projectionSource, projMaps, getValueRaw]);
 
   const startersCount = useMemo(() => {
     const rp = league?.roster_positions || [];
     return rp.filter((p) => !["BN","IR","TAXI"].includes((p||"").toUpperCase())).length || 8;
   }, [league?.roster_positions]);
 
+  // Picks ownership
   useEffect(() => {
     let cancelled = false;
     async function loadPicks() {
@@ -417,7 +585,7 @@ export default function PowerRankingsPage() {
       const rosterFiltered = nonPicks.filter((p) => includeIDP || !isIDP(p.position));
 
       const valued = rosterFiltered
-        .map((p) => ({ p, v: getPlayerValue(p) || 0, age: getPlayerAge(p) }))
+        .map((p) => ({ p, v: getMetricRaw(p) || 0, age: getPlayerAge(p) }))
         .filter((x) => x.v > 0)
         .sort((a, b) => b.v - a.v);
 
@@ -427,43 +595,50 @@ export default function PowerRankingsPage() {
       const stars = starters.reduce((s,x)=>s+x.v,0);
       const depth = bench.reduce((s,x)=>s+x.v,0);
 
-      const rosterNameById = new Map(
-        (league.rosters || []).map(rr => {
-          const own = league.users?.find(u => u.user_id === rr.owner_id);
-          const nm = own?.metadata?.team_name || own?.display_name || `Team ${rr.roster_id}`;
-          return [rr.roster_id, nm];
-        })
-      );
+      // Picks (Values mode only)
+      let picksValue = 0;
+      let matchedPicks = [];
 
-      const owned = ownedPicks?.[r.roster_id] || [];
-      const matchedPicks = owned
-        .map(pk => {
-          const season = String(pk.season);
-          const round  = Number(pk.round);
-          const key = `${season}|${round}`;
-          const pickPlayer = pickIndex.get(key);
-          if (!pickPlayer) return null;
+      if (metricMode === "values" && includePicks) {
+        const rosterNameById = new Map(
+          (league.rosters || []).map(rr => {
+            const own = league.users?.find(u => u.user_id === rr.owner_id);
+            const nm = own?.metadata?.team_name || own?.display_name || `Team ${rr.roster_id}`;
+            return [rr.roster_id, nm];
+          })
+        );
 
-          const value = getAnyPickValue(pickPlayer, valueSource, format, qbType);
-          if (!value) return null;
+        const owned = ownedPicks?.[r.roster_id] || [];
+        matchedPicks = owned
+          .map(pk => {
+            const season = String(pk.season);
+            const round  = Number(pk.round);
+            const key = `${season}|${round}`;
+            const pickPlayer = pickIndex.get(key);
+            if (!pickPlayer) return null;
 
-          const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
-          const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1);
+            const v = getAnyPickValue(pickPlayer, valueSource, format, qbType);
+            if (!v) return null;
 
-          const base = `${labelBucket} ${season} ${toOrdinal(round)}`;
-          const via =
-            pk.owner_roster_id !== pk.original_roster_id
-              ? ` (via ${rosterNameById.get(pk.original_roster_id) || `Team ${pk.original_roster_id}`})`
-              : "";
+            const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
+            const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1);
 
-          return { player: pickPlayer, value, label: `${base}${via}` };
-        })
-        .filter(Boolean);
+            const base = `${labelBucket} ${season} ${toOrdinal(round)}`;
+            const via =
+              pk.owner_roster_id !== pk.original_roster_id
+                ? ` (via ${rosterNameById.get(pk.original_roster_id) || `Team ${pk.original_roster_id}`})`
+                : "";
 
-      const picksValue = matchedPicks.reduce((s, x) => s + x.value, 0);
+            return { player: pickPlayer, value: v, label: `${base}${via}` };
+          })
+          .filter(Boolean);
 
+        picksValue = matchedPicks.reduce((s, x) => s + x.value, 0);
+      }
+
+      const includePicksWeight = metricMode === "values" && includePicks ? 0.15 : 0;
       const total = stars + depth + (includePicks ? picksValue : 0);
-      const rating = Math.round(stars * 0.7 + depth * 0.3 + (includePicks ? picksValue * 0.15 : 0));
+      const rating = Math.round(stars * 0.7 + depth * 0.3 + (includePicks ? picksValue * includePicksWeight : 0));
 
       const posTotals = { QB:0, RB:0, WR:0, TE:0 };
       [...starters, ...bench].forEach(({p,v}) => {
@@ -489,7 +664,11 @@ export default function PowerRankingsPage() {
         valueWeightedAge,
       };
     });
-  }, [league, players, getPlayerValue, includeIDP, includePicks, startersCount, ownedPicks, pickIndex, valueSource, format, qbType, strengthBucket]);
+  }, [
+    league, players, getMetricRaw, includeIDP, includePicks, startersCount,
+    ownedPicks, pickIndex, valueSource, format, qbType, strengthBucket,
+    metricMode
+  ]);
 
   const positionRanks = useMemo(() => {
     const perTeam = teams.map(t => {
@@ -533,7 +712,9 @@ export default function PowerRankingsPage() {
     const bestWR = [...sortedTeams].sort((a,b)=> (b.mix.WR||0)-(a.mix.WR||0))[0];
     const bestTE = [...sortedTeams].sort((a,b)=> (b.mix.TE||0)-(a.mix.TE||0))[0];
     const deepestBench = [...sortedTeams].sort((a,b)=> (b.depth||0)-(a.depth||0))[0];
-    const mostPicks    = [...sortedTeams].sort((a,b)=> (b.picksValue||0)-(a.picksValue||0))[0];
+    const mostPicks    = metricMode === "values"
+      ? [...sortedTeams].sort((a,b)=> (b.picksValue||0)-(a.picksValue||0))[0]
+      : null;
     const youngest     = [...sortedTeams].sort((a,b)=> (a.valueWeightedAge||99) - (b.valueWeightedAge||99))[0];
     const oldest       = [...sortedTeams].sort((a,b)=> (b.valueWeightedAge||0) - (a.valueWeightedAge||0))[0];
     const biggestGap   = [...sortedTeams].sort((a,b)=> ((b.stars - b.depth) - (a.stars - a.depth)))[0];
@@ -543,10 +724,12 @@ export default function PowerRankingsPage() {
       .sort((a,b)=> b.val - a.val)
       .slice(0,5);
 
-    const pickLeaders = [...sortedTeams]
-      .map(t => ({ team: t.name, val: t.picksValue || 0 }))
-      .sort((a,b)=> b.val - a.val)
-      .slice(0,5);
+    const pickLeaders = metricMode === "values"
+      ? [...sortedTeams]
+          .map(t => ({ team: t.name, val: t.picksValue || 0 }))
+          .sort((a,b)=> b.val - a.val)
+          .slice(0,5)
+      : [];
 
     const ratings = sortedTeams.map(t=>t.rating).sort((a,b)=>a-b);
     const pct = (x) => {
@@ -570,7 +753,7 @@ export default function PowerRankingsPage() {
       pickLeaders,
       tiers,
     };
-  }, [sortedTeams]);
+  }, [sortedTeams, metricMode]);
 
   const compA = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamAId)), [sortedTeams, teamAId]);
   const compB = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamBId)), [sortedTeams, teamBId]);
@@ -591,7 +774,7 @@ export default function PowerRankingsPage() {
             {/* Controls */}
             <Card className="p-4">
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">League:</span>
                     <select
@@ -608,12 +791,56 @@ export default function PowerRankingsPage() {
                     </select>
                   </div>
 
+                  {/* NEW: Metric switch */}
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">Values:</span>
-                    <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                    <span className="font-semibold">Metric:</span>
+                    <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
+                      <button
+                        className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
+                        onClick={() => setMetricMode("projections")}
+                        disabled={!!projError || projLoading}
+                        title={projError || ""}
+                      >
+                        Projections{projLoading ? "…" : ""}
+                      </button>
+                      <button
+                        className={`px-3 py-1 ${metricMode === "values" ? "bg-white/10" : "hover:bg-white/5"}`}
+                        onClick={() => setMetricMode("values")}
+                      >
+                        Values
+                      </button>
+                    </div>
                   </div>
 
-                  {supports.dynasty && supports.redraft && (
+                  {/* Projection source (only on projections) */}
+                  {metricMode === "projections" && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Proj Source:</span>
+                      <select
+                        className="bg-gray-800 text-white p-2 rounded"
+                        value={projectionSource}
+                        onChange={(e) => setProjectionSource(e.target.value)}
+                        disabled={projLoading}
+                      >
+                        {projMaps.CSV && <option value="CSV">Fantasy Football Analytics</option>}
+                        {projMaps.ESPN && <option value="ESPN">ESPN</option>}
+                        {projMaps.CBS && <option value="CBS">CBS Sports</option>}
+                      </select>
+                    </div>
+                  )}
+
+                  
+                  {/* Values source (only in Values mode) */}
+                  {metricMode === "values" && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Values:</span>
+                      <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                    </div>
+                  )}
+
+
+                  {/* Format (only in Values mode) */}
+                  {metricMode === "values" && supports.dynasty && supports.redraft && (
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">Format:</span>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -629,7 +856,9 @@ export default function PowerRankingsPage() {
                     </div>
                   )}
 
-                  {supports.qbToggle && (
+
+                 {/* QB (only in Values mode) */}
+                  {metricMode === "values" && supports.qbToggle && (
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">QB:</span>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -644,7 +873,6 @@ export default function PowerRankingsPage() {
                       </label>
                     </div>
                   )}
-                </div>
 
                 {/* Starters/picks status */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -656,19 +884,30 @@ export default function PowerRankingsPage() {
                     })()}{" "}
                     <span className="opacity-60">(from Sleeper)</span>
                   </div>
-                  <label className="flex items-center gap-2 text-sm">
+                  {/* <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={includeIDP} onChange={(e)=>setIncludeIDP(e.target.checked)} />
                     <span>Include IDP</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={includePicks} onChange={(e)=>setIncludePicks(e.target.checked)} />
-                    <span>Include Picks</span>
-                  </label>
+                  </label> */}
+                  {/* Include Picks (only in Values mode) */}
+                  {metricMode === "values" && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={includePicks}
+                        onChange={(e)=>setIncludePicks(e.target.checked)}
+                      />
+                      <span>Include Picks</span>
+                    </label>
+                  )}
+                  {projError && (
+                    <span className="text-xs text-yellow-300">{projError}</span>
+                  )}
                 </div>
+              </div>
               </div>
             </Card>
 
-            {/* ===== MOBILE TOP META (accordions) ===== */}
+            {/* ===== MOBILE META (unchanged except pick sections hide on projections) ===== */}
             <div className="space-y-4 mt-6 lg:hidden">
               <MobileAccordion title="Team Tiers">
                 {(!league || !league.rosters) ? (
@@ -705,7 +944,7 @@ export default function PowerRankingsPage() {
                       { title:"Top RB Rooms",  list: leagueMeta?.topRB },
                       { title:"Top WR Rooms",  list: leagueMeta?.topWR },
                       { title:"Top TE Rooms",  list: leagueMeta?.topTE },
-                      { title:"Pick Leaderboard", list: leagueMeta?.pickLeaders },
+                      ...(metricMode === "values" ? [{ title:"Pick Leaderboard", list: leagueMeta?.pickLeaders }] : []),
                     ].map((col, idx) => (
                       <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
                         <div className="font-semibold mb-2">{col.title}</div>
@@ -736,7 +975,7 @@ export default function PowerRankingsPage() {
                       { label: "Best WR Room", value: leagueMeta?.bestWR?.name },
                       { label: "Best TE Room", value: leagueMeta?.bestTE?.name },
                       { label: "Deepest Bench", value: leagueMeta?.deepestBench?.name },
-                      { label: "Most Picks", value: leagueMeta?.mostPicks?.name },
+                      ...(metricMode === "values" ? [{ label: "Most Picks", value: leagueMeta?.mostPicks?.name }] : []),
                       { label: "Youngest Team", value: leagueMeta?.youngest?.name },
                       { label: "Oldest Team", value: leagueMeta?.oldest?.name },
                       { label: "Biggest Stars-Depth Gap", value: leagueMeta?.biggestGap?.name },
@@ -787,7 +1026,7 @@ export default function PowerRankingsPage() {
                                 <StatPill label="Total" value={t.total} className="hidden sm:flex" />
                                 <StatPill label={`Top ${startersCount}`} value={t.stars} />
                                 <StatPill label="Depth" value={t.depth} />
-                                {includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
+                                {metricMode === "values" && includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
                                 <StatPill label="Avg Age" value={t.valueWeightedAge} className="hidden md:flex" />
                               </div>
                               <div className="mb-2">
@@ -815,23 +1054,30 @@ export default function PowerRankingsPage() {
                 </Card>
 
                 {/* Power Rankings */}
-                <SectionTitle subtitle="Overall power with stars, depth, picks, and positional balance.">
+                <SectionTitle subtitle={
+                  metricMode === "projections"
+                    ? "Overall power from projected season points (top starters + depth). Picks are disabled on Projections."
+                    : "Overall power with stars, depth, picks, and positional balance."
+                }>
                   Power Rankings
                 </SectionTitle>
+
                 {(!activeLeague) ? (
                   <div className="text-center text-gray-400 py-20">Choose a league to see power rankings.</div>
                 ) : !league?.rosters ? (
                   <div className="text-center text-gray-400 py-20">Loading league rosters…</div>
+                ) : metricMode === "projections" && (projLoading || !projMaps.CSV && !projMaps.ESPN && !projMaps.CBS) ? (
+                  <div className="text-center text-gray-400 py-20">Loading projections…</div>
                 ) : (
                   <Card className="p-4">
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="opacity-70 text-sm">Sort by:</span>
                       <div className="flex gap-2">
                         {[
-                          { k: "rating", lbl: `Overall (Top ${startersCount} / Depth / Picks)` },
-                          { k: "total",  lbl: "Total Value" },
-                          { k: "stars",  lbl: `Top ${startersCount} Value` },
-                          { k: "depth",  lbl: "Depth Value" },
+                          { k: "rating", lbl: `Overall (Top ${startersCount} / Depth${metricMode==='values' && includePicks ? " / Picks" : ""})` },
+                          { k: "total",  lbl: "Total" },
+                          { k: "stars",  lbl: `Top ${startersCount}` },
+                          { k: "depth",  lbl: "Depth" },
                         ].map(({ k, lbl }) => (
                           <button
                             key={k}
@@ -861,7 +1107,6 @@ export default function PowerRankingsPage() {
 
                         return (
                           <div key={t.teamId} className="rounded-xl p-4 bg-gradient-to-br from-[#0c2035] to-[#0f2741] border border-white/10">
-                            {/* header stacks on mobile */}
                             <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-3">
                               <div className="flex items-center gap-3">
                                 <div className="text-3xl font-black w-12 text-right pr-2 text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,.35)]">
@@ -878,20 +1123,18 @@ export default function PowerRankingsPage() {
                                 </div>
                               </div>
 
-                              {/* Responsive pills: 2–3 across on small, inline on md+ */}
                               <div className="w-full md:flex-1 md:justify-end">
                                 <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-2">
                                   <StatPill label="Overall" value={t.rating} />
                                   <StatPill label={`Top ${startersCount}`} value={t.stars} />
                                   <StatPill label="Depth" value={t.depth} />
-                                  {includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
+                                  {metricMode === "values" && includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
                                   <StatPill label="Total" value={t.total} className="hidden sm:flex" />
                                   <StatPill label="Avg Age" value={t.valueWeightedAge} className="hidden md:flex" />
                                 </div>
                               </div>
                             </div>
 
-                            {/* Overall */}
                             <div className="mb-2">
                               <div className="flex justify-between text-xs opacity-70 mb-1">
                                 <span>Overall Power</span>
@@ -900,7 +1143,6 @@ export default function PowerRankingsPage() {
                               <Bar pct={ratingPct} />
                             </div>
 
-                            {/* Detail bars */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               <div>
                                 <div className="flex justify-between text-xs opacity-70 mb-1">
@@ -934,7 +1176,6 @@ export default function PowerRankingsPage() {
                               </div>
                             </div>
 
-                            {/* Drilldown */}
                             <div className="mt-3">
                               <button
                                 onClick={() => setOpenTeamId(openTeamId === t.teamId ? null : t.teamId)}
@@ -954,7 +1195,7 @@ export default function PowerRankingsPage() {
                                         <span className="opacity-70 text-xs mr-2">{p.position}</span>
                                         <span className="font-medium">{p.full_name || `${p.first_name||""} ${p.last_name||""}`}</span>
                                       </div>
-                                      <div className="font-semibold">{v.toLocaleString()}</div>
+                                      <div className="font-semibold">{Math.round(v).toLocaleString()}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -967,12 +1208,12 @@ export default function PowerRankingsPage() {
                                         <span className="opacity-70 text-xs mr-2">{p.position}</span>
                                         <span className="font-medium">{p.full_name || `${p.first_name||""} ${p.last_name||""}`}</span>
                                       </div>
-                                      <div className="font-semibold">{v.toLocaleString()}</div>
+                                      <div className="font-semibold">{Math.round(v).toLocaleString()}</div>
                                     </div>
                                   ))}
                                 </div>
 
-                                {includePicks && (t.picksDetail?.length || 0) > 0 && (
+                                {metricMode === "values" && includePicks && (t.picksDetail?.length || 0) > 0 && (
                                   <>
                                     <div className="text-sm font-semibold mt-4 mb-2">Future Picks</div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -985,7 +1226,7 @@ export default function PowerRankingsPage() {
                                             <span className="opacity-70 text-xs mr-2">PICK</span>
                                             <span className="font-medium">{pd.label}</span>
                                           </div>
-                                          <div className="font-semibold">{pd.value.toLocaleString()}</div>
+                                          <div className="font-semibold">{Math.round(pd.value).toLocaleString()}</div>
                                         </div>
                                       ))}
                                     </div>
@@ -1001,7 +1242,7 @@ export default function PowerRankingsPage() {
                 )}
               </main>
 
-              {/* DESKTOP SIDEBAR ONLY */}
+              {/* SIDEBAR */}
               <aside className="hidden lg:block lg:col-span-4 space-y-6 lg:sticky lg:top-20">
                 <div>
                   <SectionTitle subtitle="Auto-bucketed by rating percentiles.">Team Tiers</SectionTitle>
@@ -1032,7 +1273,7 @@ export default function PowerRankingsPage() {
                 </div>
 
                 <div>
-                  <SectionTitle subtitle="Who dominates each position and the draft chest.">Leaderboards</SectionTitle>
+                  <SectionTitle subtitle="Who dominates each position (and picks on Values).">Leaderboards</SectionTitle>
                   <Card className="p-4">
                     {(!league || !league.rosters) ? (
                       <div className="text-center text-gray-400 py-8">Choose a league to see leaderboards.</div>
@@ -1043,7 +1284,7 @@ export default function PowerRankingsPage() {
                           { title:"Top RB Rooms",  list: leagueMeta?.topRB },
                           { title:"Top WR Rooms",  list: leagueMeta?.topWR },
                           { title:"Top TE Rooms",  list: leagueMeta?.topTE },
-                          { title:"Pick Leaderboard", list: leagueMeta?.pickLeaders },
+                          ...(metricMode === "values" ? [{ title:"Pick Leaderboard", list: leagueMeta?.pickLeaders }] : []),
                         ].map((col, idx) => (
                           <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
                             <div className="font-semibold mb-2">{col.title}</div>
@@ -1077,7 +1318,7 @@ export default function PowerRankingsPage() {
                           { label: "Best WR Room", value: leagueMeta?.bestWR?.name },
                           { label: "Best TE Room", value: leagueMeta?.bestTE?.name },
                           { label: "Deepest Bench", value: leagueMeta?.deepestBench?.name },
-                          { label: "Most Picks", value: leagueMeta?.mostPicks?.name },
+                          ...(metricMode === "values" ? [{ label: "Most Picks", value: leagueMeta?.mostPicks?.name }] : []),
                           { label: "Youngest Team", value: leagueMeta?.youngest?.name },
                           { label: "Oldest Team", value: leagueMeta?.oldest?.name },
                           { label: "Biggest Stars-Depth Gap", value: leagueMeta?.biggestGap?.name },

@@ -14,6 +14,8 @@ const ICONS = {
   availability: "/icons/availability-icon.png",
   powerrank:"/icons/power-icon.png",
   sos:"/icons/sos-icon.png",
+  playoff:"/icons/playoff-icon.png",
+  lineup:"/icons/lineup-icon.png",
 
 };
 
@@ -154,8 +156,21 @@ export default function Navbar({ pageTitle }) {
               >
                 <img src={ICONS.sos} alt="sos" className="w-9 h-9" /> Strength of Schedule
               </Link>
-              {/* <li><Link href="/lineup" className="hover:opacity-80">Lineup</Link></li>
-              <li><Link href="/playoff-odds" className="hover:opacity-80">Playoff Odds</Link></li> */}
+              <Link
+                href="/lineup"
+                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
+                onClick={handleCloseSidebar}
+              >
+                <img src={ICONS.lineup} alt="lineup" className="w-9 h-9" /> Lineup Optimizer
+              </Link>
+              {/* <Link
+                href="/playoff-odds"
+                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
+                onClick={handleCloseSidebar}
+              >
+                <img src={ICONS.playoff} alt="playoff-odds" className="w-9 h-9" /> Playoff Predicter
+              </Link> */}
+              {/* Future features */}
               
 
             </nav>
