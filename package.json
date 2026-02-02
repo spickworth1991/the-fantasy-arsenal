@@ -15,7 +15,7 @@
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
-    "git": "git add . && git commit -m \"updateDatabase\" && git push origin main"
+    "git": "git add . && git commit -m \"updateHeaders\" && git push origin main"
   },
   "dependencies": {
     "axios": "^1.11.0",
