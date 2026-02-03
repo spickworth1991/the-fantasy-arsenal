@@ -8,7 +8,7 @@ const BackgroundParticles = dynamic(() => import("../../components/BackgroundPar
 
 import LoadingScreen from "../../components/LoadingScreen";
 import AvatarImage from "../../components/AvatarImage";
-import ValueSourceDropdown from "../../components/ValueSourceDropdown";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 import { toSlug } from "../../utils/slugify";
 
@@ -432,16 +432,43 @@ export default function PlayerAvailabilityContent() {
   const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
 
   // Values + Projections sources (match Trade Analyzer)
+  const [sourceKey, setSourceKey] = useState("proj:sleeper");
+  const activeSource = useMemo(
+    () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
+    [sourceKey]
+  );
+
+  // Keep existing downstream logic (valueSource + projSource) but drive them from ONE selector.
   const [valueSource, setValueSource] = useState("FantasyCalc");
   const [projSource, setProjSource] = useState("CSV"); // CSV | ESPN | CBS
   const [projectionMaps, setProjectionMaps] = useState({ CSV: null, ESPN: null, CBS: null });
 
+  // Drive legacy source state from the single selector
+  useEffect(() => {
+    if (activeSource.type === "projection") {
+      const map = {
+        "proj:sleeper": "CSV",
+        "proj:espn": "ESPN",
+        "proj:cbs": "CBS",
+      };
+      setProjSource(map[activeSource.key] || "CSV");
+    } else {
+      // For values, our internal key is lowercased, but downstream logic uses the display label.
+      setValueSource(activeSource.label);
+    }
+  }, [activeSource]);
+
   // Best Available controls
-  const [bestMetric, setBestMetric] = useState("projection"); // projection | value
+  const bestMetric = activeSource.type === "projection" ? "projection" : "value"; // derived
   const [bestPos, setBestPos] = useState("ALL");
   const [bestSort, setBestSort] = useState("metric"); // metric | availability | position | name
   const [bestLimit, setBestLimit] = useState(25);
   const [bestMinOpenPct, setBestMinOpenPct] = useState(0);
+  const [minOpenSlots, setMinOpenSlots] = useState(1);
+
+
+  // Filters modal (desktop + mobile)
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Trending
   const [trendHours, setTrendHours] = useState(24);
@@ -905,6 +932,8 @@ export default function PlayerAvailabilityContent() {
       }
 
       if (availableLeagues.length === 0) continue;
+      if (availableLeagues.length < minOpenSlots) continue;
+
 
       const openPct = includedCount ? Math.round((availableLeagues.length / includedCount) * 100) : 0;
       if (openPct < bestMinOpenPct) continue;
@@ -959,7 +988,7 @@ export default function PlayerAvailabilityContent() {
     }
 
     return out;
-  }, [
+    }, [
     includedLeaguesList,
     playerList,
     bestMetric,
@@ -967,9 +996,11 @@ export default function PlayerAvailabilityContent() {
     bestSort,
     bestLimit,
     bestMinOpenPct,
+    minOpenSlots,
     activeProjMap,
     getPlayerValue,
   ]);
+
 
   // ---------- Row click → open leagues modal ----------
   const openPlayerModal = (player, openLeagues) => {
@@ -1230,86 +1261,30 @@ export default function PlayerAvailabilityContent() {
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <div className="text-xs text-white/60 mb-2">Best Available ranking</div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Segmented
-                          value={projSource}
-                          onChange={setProjSource}
-                          options={[
-                            { value: "CSV", label: "FFA Proj" },
-                            { value: "ESPN", label: "ESPN" },
-                            { value: "CBS", label: "CBS" },
-                          ]}
-                        />
-
-                        <Segmented
-                          value={bestMetric}
-                          onChange={setBestMetric}
-                          options={[
-                            { value: "projection", label: "Projections" },
-                            { value: "value", label: "Values" },
-                          ]}
-                        />
-
-                        {bestMetric === "value" ? (
-                          <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} className="min-w-[210px]" />
-                        ) : null}
-
-                        <Segmented
-                          value={bestPos}
-                          onChange={setBestPos}
-                          options={[
-                            { value: "ALL", label: "All" },
-                            { value: "QB", label: "QB" },
-                            { value: "RB", label: "RB" },
-                            { value: "WR", label: "WR" },
-                            { value: "TE", label: "TE" },
-                            { value: "K", label: "K" },
-                            { value: "DEF", label: "DEF" },
-                          ]}
-                        />
-
-                        <Segmented
-                          value={bestSort}
-                          onChange={setBestSort}
-                          options={[
-                            { value: "metric", label: "Metric" },
-                            { value: "availability", label: "Open %" },
-                            { value: "position", label: "Pos" },
-                            { value: "name", label: "Name" },
-                          ]}
-                        />
-
-                        <div className="flex items-center gap-2 ml-auto">
-                          <label className="text-xs text-white/70 flex items-center gap-2">
-                            Min open
-                            <select
-                              value={String(bestMinOpenPct)}
-                              onChange={(e) => setBestMinOpenPct(Number(e.target.value) || 0)}
-                              className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs"
-                            >
-                              <option value="0">0%</option>
-                              <option value="25">25%</option>
-                              <option value="50">50%</option>
-                              <option value="75">75%</option>
-                              <option value="90">90%</option>
-                            </select>
-                          </label>
-
-                          <label className="text-xs text-white/70 flex items-center gap-2">
-                            Show
-                            <select
-                              value={String(bestLimit)}
-                              onChange={(e) => setBestLimit(Number(e.target.value) || 25)}
-                              className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs"
-                            >
-                              <option value="25">25</option>
-                              <option value="50">50</option>
-                              <option value="100">100</option>
-                            </select>
-                          </label>
+                        <div className="flex flex-wrap items-center gap-2 z-1000 w-full">
+                          <div className="relative z-[80] min-w-[240px]">
+                            <SourceSelector
+                              sources={DEFAULT_SOURCES}
+                              value={sourceKey}
+                              onChange={setSourceKey}
+                              className="w-full"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                            onClick={() => setFiltersOpen(true)}
+                          >
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">⚙</span>
+                            Filters
+                            {(bestPos !== "ALL" || bestSort !== "metric" || minOpenSlots !== 1 || bestLimit !== 25 || bestMinOpenPct !== 0) ? (
+                              <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">Active</span>
+                            ) : null}
+                          </button>
 
                           <button
                             type="button"
-                            className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                            className="px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
                             onClick={() => setShowIncludedLeaguesModal(true)}
                           >
                             Included Leagues ({includedLeaguesList.length})
@@ -1397,244 +1372,362 @@ export default function PlayerAvailabilityContent() {
                 </div>
               )}
 
-              {/* Best Available Players */}
-              <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Best Available Players</h2>
-                    <div className="text-sm text-white/70 mt-1">Click a row to see open leagues.</div>
-                    <div className="text-xs text-white/50 mt-1">Scanning {includedLeaguesList.length} league(s) in this list.</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 overflow-x-auto">
-                  {bestAvailablePlayers.length === 0 ? (
-                    <div className="text-white/70 text-sm">No players found (try loosening filters, changing position, or switching metric).</div>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-white/70 border-b border-white/10">
-                          <th className="py-2 pr-2">Player</th>
-                          <th className="py-2 pr-2">Pos</th>
-                          <th className="py-2 pr-2">Team</th>
-                          <th className="py-2 pr-2">Proj</th>
-                          <th className="py-2 pr-2">Value</th>
-                          <th className="py-2 pr-2">Open</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bestAvailablePlayers.map((row) => {
-                          const openLabel = includedLeaguesList.length ? `${row.openCount}/${includedLeaguesList.length} (${row.openPct}%)` : `${row.openCount}`;
-                          return (
-                            <tr
-                              key={row.id}
-                              className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
-                              onClick={() => openPlayerModal({ id: row.id, name: row.name, pos: row.pos, team: row.team }, row.availableLeagues)}
-                              title="Click to view open leagues"
-                            >
-                              <td className="py-2 pr-2">
-                                <div className="flex items-center gap-2">
-                                  <AvatarImage
-                                    src={playerAvatarUrl(String(row.id))}
-                                    fallbackSrc={DEFAULT_PLAYER_IMG}
-                                    alt={row.name}
-                                    className="w-8 h-8 rounded-full"
-                                  />
-
-                                  <div className="min-w-0">
-                                    <div className="text-white font-semibold truncate">{row.name}</div>
-                                    <div className="text-xs text-white/60 truncate">Click to view open leagues</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-2 pr-2 text-white/80">{row.pos}</td>
-                              <td className="py-2 pr-2 text-white/80">{row.team || "—"}</td>
-                              <td className="py-2 pr-2 text-white/80">{row.proj > 0 ? row.proj.toFixed(1) : "–"}</td>
-                              <td className="py-2 pr-2 text-white/80">{row.value > 0 ? row.value.toFixed(1) : "–"}</td>
-                              <td className="py-2 pr-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
-                                    <div className="h-full bg-cyan-400/70" style={{ width: `${row.openPct}%` }} />
-                                  </div>
-                                  <span className="text-white/80 tabular-nums">{openLabel}</span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-
-
-
-
-              {/* Trending */}
-              <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0">
-                    <div className="text-lg font-semibold">Trending Players</div>
-                    <div className="text-xs text-white/50">Sleeper add/drop trends (with attribution). Click a row to see open leagues.</div>
-                  </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <label className="text-xs text-white/70 flex items-center gap-2">
-                      Lookback
-                      <select value={String(trendHours)} onChange={(e) => setTrendHours(Number(e.target.value) || 24)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+              {/* Best Available + Trending (desktop: hot | best | cold) */}
+              <div className="relative z-0 grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+                {/* HOT */}
+                <div className="relative z-0 lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-lg font-semibold text-white">🔥 Hot Adds</div>
+                      <div className="text-xs text-white/50">Sleeper add trends • click a row for open leagues</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={String(trendHours)}
+                        onChange={(e) => setTrendHours(Number(e.target.value) || 24)}
+                        className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/80"
+                        title="Lookback"
+                      >
                         <option value="6">6h</option>
                         <option value="12">12h</option>
                         <option value="24">24h</option>
                         <option value="48">48h</option>
                         <option value="72">72h</option>
                       </select>
-                    </label>
-                    <label className="text-xs text-white/70 flex items-center gap-2">
-                      Show
-                      <select value={String(trendLimit)} onChange={(e) => setTrendLimit(Number(e.target.value) || 12)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+                      <select
+                        value={String(trendLimit)}
+                        onChange={(e) => setTrendLimit(Number(e.target.value) || 12)}
+                        className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/80"
+                        title="Show"
+                      >
                         <option value="8">8</option>
                         <option value="12">12</option>
                         <option value="20">20</option>
                       </select>
-                    </label>
-                    <button className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10" onClick={refreshScan} title="Rescan rosters (affects open%)">
+                    </div>
+                  </div>
+
+                  {trendingLoading ? (
+                    <div className="mt-4 text-sm text-white/60">Loading…</div>
+                  ) : (
+                    <div className="mt-3 overflow-x-auto">
+                      {trendingAdds.length === 0 ? (
+                        <div className="text-sm text-white/60">No results.</div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-white/60 border-b border-white/10">
+                              <th className="py-2 pr-2">Player</th>
+                              <th className="py-2 pr-2">Cnt</th>
+                              <th className="py-2 pr-2">Open%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {trendingAdds.map((r) => (
+                              <tr
+                                key={`add-${r.id}`}
+                                className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                                onClick={() => {
+                                  const openLeagues = includedLeaguesList.filter((lg) => {
+                                    const set = rosterSetsRef.current.get(lg.id);
+                                    if (!set || !set.size) return false;
+                                    return !set.has(String(r.id));
+                                  });
+                                  openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
+                                }}
+                              >
+                                <td className="py-2 pr-2">
+                                  <div className="flex items-center gap-2">
+                                    <AvatarImage
+                                      src={playerAvatarUrl(String(r.id))}
+                                      fallbackSrc={DEFAULT_PLAYER_IMG}
+                                      alt={r.name}
+                                      className="w-7 h-7 rounded-full"
+                                    />
+                                    <div className="min-w-0">
+                                      <div className="text-white font-semibold truncate">{r.name}</div>
+                                      <div className="text-[11px] text-white/55">
+                                        {r.pos}
+                                        {r.team ? ` • ${r.team}` : ""}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">{includedLeaguesList.length ? `${r.openPct}%` : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* BEST */}
+                <div className="relative z-0 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Best Available Players</h2>
+                      <div className="text-sm text-white/70 mt-1">Click a row to see open leagues.</div>
+                      <div className="text-xs text-white/50 mt-1">Scanning {includedLeaguesList.length} league(s) in this list.</div>
+                    </div>
+                    <button
+                      className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
+                      onClick={refreshScan}
+                      title="Rescan rosters (affects open%)"
+                    >
                       Sync
                     </button>
                   </div>
+
+                  <div className="mt-4 overflow-x-auto">
+                    {bestAvailablePlayers.length === 0 ? (
+                      <div className="text-white/70 text-sm">No players found (try loosening filters, changing position, or switching source).</div>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-white/70 border-b border-white/10">
+                            <th className="py-2 pr-2">Player</th>
+                            <th className="py-2 pr-2">Pos</th>
+                            <th className="py-2 pr-2">Team</th>
+                            <th className="py-2 pr-2">{bestMetric === "projection" ? "Proj" : "Value"}</th>
+                            <th className="py-2 pr-2">Open</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bestAvailablePlayers.map((row) => {
+                            const openLabel = includedLeaguesList.length ? `${row.openCount}/${includedLeaguesList.length} (${row.openPct}%)` : `${row.openCount}`;
+                            const metricVal = bestMetric === "projection" ? row.proj : row.value;
+                            return (
+                              <tr
+                                key={row.id}
+                                className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                                onClick={() => openPlayerModal({ id: row.id, name: row.name, pos: row.pos, team: row.team }, row.availableLeagues)}
+                                title="Click to view open leagues"
+                              >
+                                <td className="py-2 pr-2">
+                                  <div className="flex items-center gap-2">
+                                    <AvatarImage
+                                      src={playerAvatarUrl(String(row.id))}
+                                      fallbackSrc={DEFAULT_PLAYER_IMG}
+                                      alt={row.name}
+                                      className="w-8 h-8 rounded-full"
+                                    />
+                                    <div className="min-w-0">
+                                      <div className="text-white font-semibold truncate">{row.name}</div>
+                                      <div className="text-xs text-white/60 truncate">Click to view open leagues</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-2 pr-2 text-white/80">{row.pos}</td>
+                                <td className="py-2 pr-2 text-white/80">{row.team || "—"}</td>
+                                <td className="py-2 pr-2 text-white/80">{metricVal > 0 ? metricVal.toFixed(1) : "–"}</td>
+                                <td className="py-2 pr-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
+                                      <div className="h-full bg-cyan-400/70" style={{ width: `${row.openPct}%` }} />
+                                    </div>
+                                    <span className="text-white/80 tabular-nums">{openLabel}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
 
-                {trendingLoading ? (
-                  <div className="mt-4 text-sm text-white/60">Loading trending…</div>
-                ) : (
-                  <div className="mt-4 grid md:grid-cols-2 gap-4">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-white">🔥 Hot Adds</div>
-                        <div className="text-xs text-white/50">{trendHours}h</div>
-                      </div>
-                      <div className="mt-3 overflow-x-auto">
-                        {trendingAdds.length === 0 ? (
-                          <div className="text-sm text-white/60">No results.</div>
-                        ) : (
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-left text-white/60 border-b border-white/10">
-                                <th className="py-2 pr-2">Player</th>
-                                <th className="py-2 pr-2">Cnt</th>
-                                <th className="py-2 pr-2">Open%</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {trendingAdds.map((r) => (
-                                <tr
-                                  key={`add-${r.id}`}
-                                  className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
-                                  onClick={() => {
-                                    const openLeagues = includedLeaguesList.filter((lg) => {
-                                      const set = rosterSetsRef.current.get(lg.id);
-                                      if (!set || !set.size) return false;
-                                      return !set.has(String(r.id));
-                                    });
-                                    openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
-                                  }}
-                                >
-                                  <td className="py-2 pr-2">
-                                    <div className="flex items-center gap-2">
-                                      <AvatarImage
-                                        src={playerAvatarUrl(String(r.id))}
-                                        fallbackSrc={DEFAULT_PLAYER_IMG}
-                                        alt={r.name}
-                                        className="w-7 h-7 rounded-full"
-                                      />
-
-                                      <div className="min-w-0">
-                                        <div className="text-white font-semibold truncate">{r.name}</div>
-                                        <div className="text-[11px] text-white/55">
-                                          {r.pos}
-                                          {r.team ? ` • ${r.team}` : ""}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
-                                  <td className="py-2 pr-2 text-white/80 tabular-nums">
-                                    {includedLeaguesList.length ? `${r.openPct}%` : "—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
+                {/* COLD */}
+                <div className="relative z-0 lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-lg font-semibold text-white">❄️ Cold Drops</div>
+                      <div className="text-xs text-white/50">Sleeper drop trends • click a row for open leagues</div>
                     </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-white">❄️ Cold Drops</div>
-                        <div className="text-xs text-white/50">{trendHours}h</div>
-                      </div>
-                      <div className="mt-3 overflow-x-auto">
-                        {trendingDrops.length === 0 ? (
-                          <div className="text-sm text-white/60">No results.</div>
-                        ) : (
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="text-left text-white/60 border-b border-white/10">
-                                <th className="py-2 pr-2">Player</th>
-                                <th className="py-2 pr-2">Cnt</th>
-                                <th className="py-2 pr-2">Open%</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {trendingDrops.map((r) => (
-                                <tr
-                                  key={`drop-${r.id}`}
-                                  className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
-                                  onClick={() => {
-                                    const openLeagues = includedLeaguesList.filter((lg) => {
-                                      const set = rosterSetsRef.current.get(lg.id);
-                                      if (!set || !set.size) return false;
-                                      return !set.has(String(r.id));
-                                    });
-                                    openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
-                                  }}
-                                >
-                                  <td className="py-2 pr-2">
-                                    <div className="flex items-center gap-2">
-                                     <AvatarImage
-                                        src={playerAvatarUrl(String(r.id))}
-                                        fallbackSrc={DEFAULT_PLAYER_IMG}
-                                        alt={r.name}
-                                        className="w-7 h-7 rounded-full"
-                                      />
-
-                                      <div className="min-w-0">
-                                        <div className="text-white font-semibold truncate">{r.name}</div>
-                                        <div className="text-[11px] text-white/55">
-                                          {r.pos}
-                                          {r.team ? ` • ${r.team}` : ""}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
-                                  <td className="py-2 pr-2 text-white/80 tabular-nums">
-                                    {includedLeaguesList.length ? `${r.openPct}%` : "—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    </div>
+                    <div className="text-xs text-white/50">{trendHours}h</div>
                   </div>
-                )}
+
+                  {trendingLoading ? (
+                    <div className="mt-4 text-sm text-white/60">Loading…</div>
+                  ) : (
+                    <div className="mt-3 overflow-x-auto">
+                      {trendingDrops.length === 0 ? (
+                        <div className="text-sm text-white/60">No results.</div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-white/60 border-b border-white/10">
+                              <th className="py-2 pr-2">Player</th>
+                              <th className="py-2 pr-2">Cnt</th>
+                              <th className="py-2 pr-2">Open%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {trendingDrops.map((r) => (
+                              <tr
+                                key={`drop-${r.id}`}
+                                className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                                onClick={() => {
+                                  const openLeagues = includedLeaguesList.filter((lg) => {
+                                    const set = rosterSetsRef.current.get(lg.id);
+                                    if (!set || !set.size) return false;
+                                    return !set.has(String(r.id));
+                                  });
+                                  openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
+                                }}
+                              >
+                                <td className="py-2 pr-2">
+                                  <div className="flex items-center gap-2">
+                                    <AvatarImage
+                                      src={playerAvatarUrl(String(r.id))}
+                                      fallbackSrc={DEFAULT_PLAYER_IMG}
+                                      alt={r.name}
+                                      className="w-7 h-7 rounded-full"
+                                    />
+                                    <div className="min-w-0">
+                                      <div className="text-white font-semibold truncate">{r.name}</div>
+                                      <div className="text-[11px] text-white/55">
+                                        {r.pos}
+                                        {r.team ? ` • ${r.team}` : ""}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">{includedLeaguesList.length ? `${r.openPct}%` : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               
             </>
           )}
+        </div>
+      )}
+
+      {/* Filters modal */}
+      {filtersOpen && (
+        <div
+          className="fixed inset-0 z-[75] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setFiltersOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-gray-950 rounded-3xl shadow-xl p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="text-xl font-bold">Filters</div>
+                <div className="text-sm text-white/70">Applies to the Best Available list.</div>
+              </div>
+              <button
+                className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
+                onClick={() => setFiltersOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-sm">
+                  <div className="mb-1 text-white/70">Position</div>
+                  <select
+                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-3 py-2"
+                    value={bestPos}
+                    onChange={(e) => setBestPos(e.target.value)}
+                  >
+                    <option value="ALL">All</option>
+                    <option value="QB">QB</option>
+                    <option value="RB">RB</option>
+                    <option value="WR">WR</option>
+                    <option value="TE">TE</option>
+                    <option value="K">K</option>
+                    <option value="DST">DST</option>
+                  </select>
+                </label>
+
+                <label className="text-sm">
+                  <div className="mb-1 text-white/70">Sort</div>
+                  <select
+                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-3 py-2"
+                    value={bestSort}
+                    onChange={(e) => setBestSort(e.target.value)}
+                  >
+                    <option value="metric">Metric</option>
+                    <option value="availability">Availability</option>
+                    <option value="position">Position</option>
+                    <option value="name">Name</option>
+                  </select>
+
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-sm">
+                  <div className="mb-1 text-white/70">Min open slots</div>
+                  <select
+                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-3 py-2"
+                    value={minOpenSlots}
+                    onChange={(e) => setMinOpenSlots(parseInt(e.target.value, 10))}
+                  >
+                    <option value={1}>1+</option>
+                    <option value={2}>2+</option>
+                    <option value={3}>3+</option>
+                    <option value={4}>4+</option>
+                    <option value={5}>5+</option>
+                    <option value={6}>6+</option>
+                  </select>
+                </label>
+
+                <label className="text-sm">
+                  <div className="mb-1 text-white/70">Show</div>
+                  <select
+                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-3 py-2"
+                    value={bestLimit}
+                    onChange={(e) => setBestLimit(parseInt(e.target.value, 10))}
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={75}>75</option>
+                    <option value={100}>100</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                onClick={() => {
+                  setBestPos("ALL");
+                  setBestSort("metric");
+                  setMinOpenSlots(1);
+                  setBestLimit(25);
+
+                }}
+              >
+                Clear all
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
+                onClick={() => setFiltersOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
