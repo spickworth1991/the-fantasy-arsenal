@@ -1,4 +1,5 @@
 "use client";
+
 import { createContext, useRef, useContext, useState, useEffect } from "react";
 import { get, set } from "idb-keyval";
 
@@ -19,11 +20,8 @@ const lsGet = (key, fallback = null) => {
 const lsSet = (key, value) => {
   if (!isBrowser) return;
   try {
-    if (value === undefined || value === null) {
-      window.localStorage.removeItem(key);
-    } else {
-      window.localStorage.setItem(key, String(value));
-    }
+    if (value === undefined || value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, String(value));
   } catch {}
 };
 const lsClear = () => {
@@ -33,26 +31,212 @@ const lsClear = () => {
   } catch {}
 };
 
+// ---- Normalization helpers ----
+const normalizeName = (name) =>
+  String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normPos = (pos) => String(pos || "").toUpperCase().trim();
+const normTeam = (team) => String(team || "").toUpperCase().trim();
+const keyName = (n) => normalizeName(n);
+
+// Safe number (handles "123", null, etc)
+const safeNum = (v) => {
+  const x = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(x) ? x : 0;
+};
+
+// Formats that exist in FN/SP caches
+const VALUE_KEYS = ["dynasty_sf", "dynasty_1qb", "redraft_sf", "redraft_1qb"];
+
+// Sleeper positions you typically want values for.
+// NOTE: we still use fantasy_positions as the main “is fantasy relevant” gate.
+const FANTASY_RELEVANT = new Set([
+  "QB",
+  "RB",
+  "WR",
+  "TE",
+  "K",
+  "DEF", // team D/ST on sleeper
+  // common IDP slots / labels
+  "DL",
+  "LB",
+  "DB",
+  "IDP",
+  // some sources may use these
+  "DE",
+  "DT",
+  "EDGE",
+  "CB",
+  "S",
+]);
+
+function getSleeperFantasyPosSet(p) {
+  const set = new Set();
+  const fp = Array.isArray(p?.fantasy_positions) ? p.fantasy_positions : [];
+  fp.forEach((x) => set.add(normPos(x)));
+  const pos = normPos(p?.position);
+  if (pos) set.add(pos);
+  return set;
+}
+
+function isFantasyRelevantSleeperPlayer(p) {
+  const set = getSleeperFantasyPosSet(p);
+  for (const x of set) {
+    if (FANTASY_RELEVANT.has(x)) return true;
+  }
+  return false;
+}
+
+// ---- Candidate-based matching (prevents name-only collisions) ----
+function createCandidateIndex4() {
+  // nameKey -> array of candidates: { pos, team, values: {dynasty_sf,...} }
+  const byName = Object.create(null);
+
+  function addCandidate({ name, pos, team, values }) {
+    const nn = keyName(name);
+    if (!nn) return;
+
+    const cand = {
+      pos: normPos(pos),
+      team: normTeam(team),
+      values: {},
+    };
+
+    VALUE_KEYS.forEach((k) => {
+      cand.values[k] = safeNum(values?.[k]);
+    });
+
+    const hasAny = VALUE_KEYS.some((k) => cand.values[k] > 0);
+    if (!hasAny) return;
+
+    if (!byName[nn]) byName[nn] = [];
+    byName[nn].push(cand);
+  }
+
+  function pickBest(name, pos, team) {
+    const nn = keyName(name);
+    if (!nn) return null;
+
+    const cands = byName[nn];
+    if (!Array.isArray(cands) || cands.length === 0) return null;
+
+    const pos0 = normPos(pos);
+    const team0 = normTeam(team);
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const c of cands) {
+      const candPos = c.pos;
+      const candTeam = c.team;
+
+      // Hard guard: if candidate declares pos and sleeper pos exists, must match.
+      if (candPos && pos0 && candPos !== pos0) continue;
+
+      let score = 0;
+      if (candPos && pos0 && candPos === pos0) score += 80;
+      if (candTeam && team0 && candTeam === team0) score += 20;
+      if (!candPos && candTeam && team0 && candTeam === team0) score += 10;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = c;
+      }
+    }
+
+    return bestScore >= 0 ? best : null;
+  }
+
+  return { addCandidate, pickBest, raw: byName };
+}
+
+function createCandidateIndex2() {
+  // nameKey -> array of candidates: { pos, team, one_qb, superflex }
+  const byName = Object.create(null);
+
+  function addCandidate({ name, pos, team, one_qb, superflex }) {
+    const nn = keyName(name);
+    if (!nn) return;
+
+    const cand = {
+      pos: normPos(pos),
+      team: normTeam(team),
+      one_qb: safeNum(one_qb),
+      superflex: safeNum(superflex),
+    };
+
+    if (!(cand.one_qb > 0 || cand.superflex > 0)) return;
+
+    if (!byName[nn]) byName[nn] = [];
+    byName[nn].push(cand);
+  }
+
+  function pickBest(name, pos, team) {
+    const nn = keyName(name);
+    if (!nn) return null;
+
+    const cands = byName[nn];
+    if (!Array.isArray(cands) || cands.length === 0) return null;
+
+    const pos0 = normPos(pos);
+    const team0 = normTeam(team);
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const c of cands) {
+      const candPos = c.pos;
+      const candTeam = c.team;
+
+      if (candPos && pos0 && candPos !== pos0) continue;
+
+      let score = 0;
+      if (candPos && pos0 && candPos === pos0) score += 80;
+      if (candTeam && team0 && candTeam === team0) score += 20;
+      if (!candPos && candTeam && team0 && candTeam === team0) score += 10;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = c;
+      }
+    }
+
+    return bestScore >= 0 ? best : null;
+  }
+
+  return { addCandidate, pickBest, raw: byName };
+}
+
 export const SleeperProvider = ({ children }) => {
-  // (Changed to lazy initializers so SSR won't touch localStorage)
   const [username, setUsername] = useState(() => lsGet("username", null));
   const [year, setYear] = useState(() => {
     const y = lsGet("year");
     return y != null && y !== "" ? Number(y) : new Date().getFullYear();
   });
+
   const [players, setPlayers] = useState({});
   const [leagues, setLeagues] = useState([]);
   const [format, setFormat] = useState("dynasty");
   const [qbType, setQbType] = useState("sf");
+
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [activeLeague, setActiveLeague] = useState(() => lsGet("activeLeague", null));
+
   const preloadCalled = useRef(false);
 
-  // Persist a few keys to localStorage on the client
-  useEffect(() => { lsSet("username", username); }, [username]);
-  useEffect(() => { lsSet("year", year); }, [year]);
+  useEffect(() => {
+    lsSet("username", username);
+  }, [username]);
+  useEffect(() => {
+    lsSet("year", year);
+  }, [year]);
   useEffect(() => {
     if (activeLeague) lsSet("activeLeague", activeLeague);
     else lsSet("activeLeague", null);
@@ -63,15 +247,17 @@ export const SleeperProvider = ({ children }) => {
       preloadCalled.current = true;
       preloadPlayers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
   const updateProgress = (value) => setProgress((prev) => Math.min(value, 100));
 
-  /** ✅ Login loads leagues + triggers preload */
   const login = async (uname, yr) => {
     try {
       setLoading(true);
       setProgress(5);
+      setError("");
+
       lsSet("username", uname);
       lsSet("year", yr);
       setUsername(uname);
@@ -82,14 +268,10 @@ export const SleeperProvider = ({ children }) => {
       const user = await userRes.json();
       updateProgress(20);
 
-      const leaguesRes = await fetch(
-        `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`
-      );
+      const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
       const leaguesData = await leaguesRes.json();
-      setLeagues(leaguesData);
+      setLeagues(Array.isArray(leaguesData) ? leaguesData : []);
       updateProgress(50);
-
-      console.log("✅ Login loaded leagues:", leaguesData.length);
 
       if (!preloadCalled.current) {
         preloadCalled.current = true;
@@ -97,314 +279,294 @@ export const SleeperProvider = ({ children }) => {
       }
     } catch (err) {
       console.error("❌ Login error:", err);
-      setError(err.message);
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  /** ✅ Player DB caching and merging FC + DP values */
-  const CACHE_KEY = "playerDB_v1.17"; // bump version when logic changes
+  /**
+   * ✅ Player DB caching and merging:
+   * - FantasyCalc: match by Sleeper ID
+   * - DP/KTC: strict position match
+   * - FN/SP: candidate-based (pos compatible required)
+   * - iDynastyP: candidate-based -> idp_values stays {one_qb, superflex}
+   */
+  const CACHE_KEY = "playerDB_v1.24"; // bump to invalidate old cache
 
   const preloadPlayers = async () => {
     try {
       setLoading(true);
       setProgress(60);
+      setError("");
 
       const cachedPlayers = await get(CACHE_KEY);
-      if (cachedPlayers) {
+      if (cachedPlayers && typeof cachedPlayers === "object") {
         console.log("✅ Loaded player DB from cache:", Object.keys(cachedPlayers).length);
         setPlayers(cachedPlayers);
         setProgress(100);
         return;
       }
 
+      // 1) Sleeper players
       const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
       const playersData = await playersRes.json();
+      updateProgress(68);
 
-      const fcRes = await fetch("/fantasycalc_cache.json");
-      const fcData = await fcRes.json();
-      const dpRes = await fetch("/dynastyprocess_cache.json");
-      const dpData = await dpRes.json();
-      const ktcRes = await fetch("/ktc_cache.json");
-      const ktcData = await ktcRes.json();
-      const fnRes = await fetch("/fantasynav_cache.json");
-      const fnData = await fnRes.json();
-      const idpRes = await fetch("/idynastyp_cache.json");
-      const idpData = await idpRes.json();
-      const spRes = await fetch("/stickypicky_cache.json");
-      const spData = await spRes.json();
+      // 2) Value/projection caches
+      const [fcRes, dpRes, ktcRes, fnRes, idpRes, spRes] = await Promise.all([
+        fetch("/fantasycalc_cache.json"),
+        fetch("/dynastyprocess_cache.json"),
+        fetch("/ktc_cache.json"),
+        fetch("/fantasynav_cache.json"),
+        fetch("/idynastyp_cache.json"),
+        fetch("/stickypicky_cache.json"),
+      ]);
 
+      const [fcData, dpData, ktcData, fnData, idpData, spData] = await Promise.all([
+        fcRes.json(),
+        dpRes.json(),
+        ktcRes.json(),
+        fnRes.json(),
+        idpRes.json(),
+        spRes.json(),
+      ]);
+      updateProgress(78);
 
+      // ---------- FantasyCalc maps (by Sleeper ID) ----------
       const mapBySleeperId = (arr) => {
         const map = {};
-        arr.forEach((item) => {
-          const sleeperId = item.player?.sleeperId;
-          if (sleeperId) map[sleeperId] = item.value || 0;
+        (Array.isArray(arr) ? arr : []).forEach((item) => {
+          const sleeperId = item?.player?.sleeperId;
+          if (!sleeperId) return;
+          map[String(sleeperId)] = safeNum(item?.value);
         });
         return map;
       };
 
-      const dynastySFMap = mapBySleeperId(fcData.Dynasty_SF || []);
-      const dynasty1QBMap = mapBySleeperId(fcData.Dynasty_1QB || []);
-      const redraftSFMap = mapBySleeperId(fcData.Redraft_SF || []);
-      const redraft1QBMap = mapBySleeperId(fcData.Redraft_1QB || []);
+      const dynastySFMap = mapBySleeperId(fcData?.Dynasty_SF);
+      const dynasty1QBMap = mapBySleeperId(fcData?.Dynasty_1QB);
+      const redraftSFMap = mapBySleeperId(fcData?.Redraft_SF);
+      const redraft1QBMap = mapBySleeperId(fcData?.Redraft_1QB);
 
-      const normalizeName = (name) =>
-        name
-          .toLowerCase()
-          .replace(/[^a-z0-9 ]/g, "")
-          .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const normalizedDPMap = {};
-      Object.keys(dpData).forEach((name) => {
-        normalizedDPMap[normalizeName(name)] = dpData[name];
-      });
-
-      const normalizedKTCMap = {};
-      (ktcData.OneQB || []).forEach((p) => {
-        normalizedKTCMap[normalizeName(p.name)] = { one_qb: p.value, superflex: 0 };
-      });
-      (ktcData.Superflex || []).forEach((p) => {
-        const normName = normalizeName(p.name);
-        normalizedKTCMap[normName] = normalizedKTCMap[normName] || { one_qb: 0 };
-        normalizedKTCMap[normName].superflex = p.value;
-      });
-
-      const normalizedFNMap = {};
-      ["Dynasty_SF", "Dynasty_1QB", "Redraft_SF", "Redraft_1QB"].forEach((key) => {
-        (fnData[key] || []).forEach((p) => {
-          normalizedFNMap[normalizeName(p.name)] = {
-            ...(normalizedFNMap[normalizeName(p.name)] || {}),
-            [key.toLowerCase()]: p.value,
-            position: p.position,
-            team: p.team,
-          };
+      // ---------- DynastyProcess ----------
+      const dpByName = {};
+      const dpByNamePos = {};
+      if (dpData && typeof dpData === "object") {
+        Object.keys(dpData).forEach((name) => {
+          const v = dpData[name];
+          const nn = keyName(name);
+          dpByName[nn] = v;
+          const p = normPos(v?.pos);
+          if (p) dpByNamePos[`${nn}|${p}`] = v;
         });
-      });
+      }
 
-      const normalizedIDPMap = {};
-      (idpData || []).forEach((p) => {
-        normalizedIDPMap[normalizeName(p.name)] = {
-          one_qb: p.one_qb || 0,
-          superflex: p.superflex || 0,
-          position: (p.position || "").toUpperCase(),
-          team: (p.team || "").toUpperCase(),
+      // ---------- KTC ----------
+      const ktcByName = {};
+      const ktcByNamePos = {};
+      const ingestKTC = (arr, which) => {
+        (Array.isArray(arr) ? arr : []).forEach((p) => {
+          const n = keyName(p?.name);
+          if (!n) return;
+
+          const pos = normPos(p?.position || p?.pos);
+          const value = safeNum(p?.value);
+
+          if (!ktcByName[n]) ktcByName[n] = { one_qb: 0, superflex: 0 };
+          if (which === "one_qb") ktcByName[n].one_qb = value;
+          if (which === "superflex") ktcByName[n].superflex = value;
+
+          if (pos) {
+            const k = `${n}|${pos}`;
+            if (!ktcByNamePos[k]) ktcByNamePos[k] = { one_qb: 0, superflex: 0 };
+            if (which === "one_qb") ktcByNamePos[k].one_qb = value;
+            if (which === "superflex") ktcByNamePos[k].superflex = value;
+          }
+        });
+      };
+      ingestKTC(ktcData?.OneQB, "one_qb");
+      ingestKTC(ktcData?.Superflex, "superflex");
+
+      // ---------- FantasyNavigator + StickyPicky (4-way candidate indexes) ----------
+      const fnIndex = createCandidateIndex4();
+      const spIndex = createCandidateIndex4();
+
+      const ingest4WayList = (data, index) => {
+        const KEY_MAP = {
+          Dynasty_SF: "dynasty_sf",
+          Dynasty_1QB: "dynasty_1qb",
+          Redraft_SF: "redraft_sf",
+          Redraft_1QB: "redraft_1qb",
         };
-      });
 
-      const normalizedSPMap = {};
-        ["Dynasty_SF", "Dynasty_1QB", "Redraft_SF", "Redraft_1QB"].forEach((key) => {
-          (spData[key] || []).forEach((p) => {
-            const n = normalizeName(p.name);
-            const pos = (p.position || "").toUpperCase();
-            normalizedSPMap[n] = normalizedSPMap[n] || {
-              position: pos,
-              dynasty_sf: 0,
-              dynasty_1qb: 0,
-              redraft_sf: 0,
-              redraft_1qb: 0,
-            };
-            if (key === "Dynasty_SF")   normalizedSPMap[n].dynasty_sf   = p.value || 0;
-            if (key === "Dynasty_1QB")  normalizedSPMap[n].dynasty_1qb  = p.value || 0;
-            if (key === "Redraft_SF")   normalizedSPMap[n].redraft_sf   = p.value || 0;
-            if (key === "Redraft_1QB")  normalizedSPMap[n].redraft_1qb  = p.value || 0;
+        Object.keys(KEY_MAP).forEach((k) => {
+          const outKey = KEY_MAP[k];
+          (Array.isArray(data?.[k]) ? data[k] : []).forEach((row) => {
+            const name = row?.name;
+            if (!name) return;
+
+            index.addCandidate({
+              name,
+              pos: row?.position || row?.pos,
+              team: row?.team,
+              values: { [outKey]: row?.value },
+            });
           });
         });
+      };
 
+      ingest4WayList(fnData, fnIndex);
+      ingest4WayList(spData, spIndex);
 
+      // ---------- iDynastyP (2-way candidate index) ----------
+      const idpIndex = createCandidateIndex2();
+
+      // tolerate different schemas / field names
+      const idpRows = Array.isArray(idpData)
+        ? idpData
+        : Array.isArray(idpData?.players)
+        ? idpData.players
+        : Array.isArray(idpData?.data)
+        ? idpData.data
+        : [];
+
+      idpRows.forEach((row) => {
+        const name = row?.name || row?.player || row?.player_name || row?.full_name;
+        if (!name) return;
+
+        const pos = row?.position || row?.pos;
+        const team = row?.team || row?.nfl_team;
+
+        const oneQb =
+          row?.one_qb ??
+          row?.oneQB ??
+          row?.oneqb ??
+          row?.one_qb_rank ??
+          row?.value_one_qb ??
+          row?.value_1qb ??
+          row?.one_qb_value;
+
+        const sf =
+          row?.superflex ??
+          row?.sf ??
+          row?.super_flex ??
+          row?.superflex_rank ??
+          row?.value_superflex ??
+          row?.value_sf ??
+          row?.sf_value;
+
+        idpIndex.addCandidate({
+          name,
+          pos,
+          team,
+          one_qb: oneQb,
+          superflex: sf,
+        });
+      });
+
+      // ---------- Helpers ----------
+      const getDPValues = (normName0, pos0) => {
+        const best = dpByNamePos[`${normName0}|${pos0}`] || dpByName[normName0] || null;
+        const dpPos = normPos(best?.pos);
+        if (dpPos && dpPos !== pos0) return { one_qb: 0, superflex: 0 };
+        return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
+      };
+
+      const getKTCValues = (normName0, pos0) => {
+        const best = ktcByNamePos[`${normName0}|${pos0}`] || ktcByName[normName0] || null;
+        return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
+      };
+
+      const get4WayFromIndex = (index, fullName, pos0, team0) => {
+        const cand = index.pickBest(fullName, pos0, team0);
+        const v = cand?.values || null;
+        return {
+          dynasty_sf: safeNum(v?.dynasty_sf),
+          dynasty_1qb: safeNum(v?.dynasty_1qb),
+          redraft_sf: safeNum(v?.redraft_sf),
+          redraft_1qb: safeNum(v?.redraft_1qb),
+        };
+      };
+
+      const getIDP2FromIndex = (index, fullName, pos0, team0) => {
+        const cand = index.pickBest(fullName, pos0, team0);
+        return {
+          one_qb: safeNum(cand?.one_qb),
+          superflex: safeNum(cand?.superflex),
+        };
+      };
+
+      // ---------- Build final players ----------
       const finalPlayers = {};
 
-      Object.keys(playersData).forEach((id) => {
+      Object.keys(playersData || {}).forEach((id) => {
         const p = playersData[id];
-        const normName = normalizeName(p.full_name || `${p.first_name} ${p.last_name}`);
-        const pos = (p.position || "").toUpperCase();
-        const team = (p.team || "").toUpperCase();
-        const idpCandidate = normalizedIDPMap[normName];
-        const idp_values =
-          idpCandidate
-            ? { one_qb: idpCandidate.one_qb, superflex: idpCandidate.superflex }
-            : { one_qb: 0, superflex: 0 };
+        if (!p) return;
+
+        const fullName = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
+        const nn = normalizeName(fullName);
+        const pos = normPos(p.position);
+        const team = normTeam(p.team);
 
         const fc_values = {
-          dynasty_sf: dynastySFMap[id] || 0,
-          dynasty_1qb: dynasty1QBMap[id] || 0,
-          redraft_sf: redraftSFMap[id] || 0,
-          redraft_1qb: redraft1QBMap[id] || 0,
+          dynasty_sf: safeNum(dynastySFMap[id]),
+          dynasty_1qb: safeNum(dynasty1QBMap[id]),
+          redraft_sf: safeNum(redraftSFMap[id]),
+          redraft_1qb: safeNum(redraft1QBMap[id]),
         };
 
-        const dpCandidate = normalizedDPMap[normName];
-        const dp_values = dpCandidate && dpCandidate.pos === pos ? dpCandidate : { one_qb: 0, superflex: 0 };
+        const fantasyRelevant = isFantasyRelevantSleeperPlayer(p);
 
-        const ktcCandidate = normalizedKTCMap[normName];
+        const dp_values = fantasyRelevant ? getDPValues(nn, pos) : { one_qb: 0, superflex: 0 };
+
         const ktc_values =
-          ktcCandidate && ["QB", "RB", "WR", "TE"].includes(pos) ? ktcCandidate : { one_qb: 0, superflex: 0 };
+          fantasyRelevant && ["QB", "RB", "WR", "TE"].includes(pos)
+            ? getKTCValues(nn, pos)
+            : { one_qb: 0, superflex: 0 };
 
-        const fnCandidate = normalizedFNMap[normName];
-        const fn_values =
-          fnCandidate && fnCandidate.position === pos && (!fnCandidate.team || fnCandidate.team === team)
-            ? fnCandidate
-            : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+        const fn_values = fantasyRelevant
+          ? get4WayFromIndex(fnIndex, fullName, pos, team)
+          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
 
-        const spCandidate = normalizedSPMap[normName];
-        const sp_values =
-          spCandidate &&
-          (
-            spCandidate.position === pos ||
-            spCandidate.position === "PICK" || // allow StickyPicky picks
-            // if StickyPicky lacks a position, still allow attach
-            !spCandidate.position
-          )
-            ? {
-                dynasty_sf:  spCandidate.dynasty_sf  || 0,
-                dynasty_1qb: spCandidate.dynasty_1qb || 0,
-                redraft_sf:  spCandidate.redraft_sf  || 0,
-                redraft_1qb: spCandidate.redraft_1qb || 0,
-              }
-            : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+        const sp_values = fantasyRelevant
+          ? get4WayFromIndex(spIndex, fullName, pos, team)
+          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
 
+        // ✅ iDynastyP stays 2-way
+        const idp_values = fantasyRelevant
+          ? getIDP2FromIndex(idpIndex, fullName, pos, team)
+          : { one_qb: 0, superflex: 0 };
 
-        if (
+        const keep =
           Object.values(fc_values).some((v) => v > 0) ||
           Object.values(dp_values).some((v) => v > 0) ||
           Object.values(ktc_values).some((v) => v > 0) ||
           Object.values(fn_values).some((v) => v > 0) ||
-          Object.values(idp_values).some((v) => v > 0)
-        ) {
-          finalPlayers[id] = { ...p, fc_values, dp_values, ktc_values, fn_values, idp_values, sp_values };
-        }
-      });
+          Object.values(sp_values).some((v) => v > 0) ||
+          Object.values(idp_values).some((v) => v > 0);
 
-      // 🚨🚨 STEP 2 - Explicitly Add Draft Picks 🚨🚨
-      const addDraftPick = (name, source, values) => {
-        const syntheticId = `pick_${normalizeName(name)}`;
-
-        if (!finalPlayers[syntheticId]) {
-          finalPlayers[syntheticId] = {
-            player_id: syntheticId,
-            full_name: name,
-            position: "PICK",
-            team: "",
-            fc_values: { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 },
-            dp_values: { one_qb: 0, superflex: 0 },
-            ktc_values: { one_qb: 0, superflex: 0 },
-            fn_values: { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 },
-            idp_values: { one_qb: 0, superflex: 0 },
-            sources: [source],
-            aliases: [name],
-          };
-        } else if (!finalPlayers[syntheticId].sources.includes(source)) {
-          finalPlayers[syntheticId].sources.push(source);
-        }
-
-        if (source === "fc") finalPlayers[syntheticId].fc_values = { ...finalPlayers[syntheticId].fc_values, ...values };
-        if (source === "dp") finalPlayers[syntheticId].dp_values = { ...finalPlayers[syntheticId].dp_values, ...values };
-        if (source === "ktc") finalPlayers[syntheticId].ktc_values = { ...finalPlayers[syntheticId].ktc_values, ...values };
-        if (source === "idp")
-          finalPlayers[syntheticId].idp_values = {
-            ...(finalPlayers[syntheticId].idp_values || { one_qb: 0, superflex: 0 }),
-            ...values,
-          };
-      };
-
-      // ✅ Build normalized FantasyCalc map first (combine all values)
-      const normalizedFCMap = {};
-      const addFCValue = (name, key, value) => {
-        const norm = normalizeName(name);
-        if (!normalizedFCMap[norm]) {
-          normalizedFCMap[norm] = {
-            originalName: name,
-            dynasty_sf: 0,
-            dynasty_1qb: 0,
-            redraft_sf: 0,
-            redraft_1qb: 0,
-          };
-        }
-        if (key === "Dynasty_SF") normalizedFCMap[norm].dynasty_sf = value || 0;
-        if (key === "Dynasty_1QB") normalizedFCMap[norm].dynasty_1qb = value || 0;
-        if (key === "Redraft_SF") normalizedFCMap[norm].redraft_sf = value || 0;
-        if (key === "Redraft_1QB") normalizedFCMap[norm].redraft_1qb = value || 0;
-      };
-
-      // Collect FC values into one structure
-      ["Dynasty_SF", "Dynasty_1QB", "Redraft_SF", "Redraft_1QB"].forEach((key) => {
-        (fcData[key] || []).forEach((item) => {
-          const name = item.player?.name;
-          if (name) addFCValue(name, key, item.value);
-        });
-      });
-
-      // Add combined FC picks to finalPlayers
-      Object.keys(normalizedFCMap).forEach((normName) => {
-        const pick = normalizedFCMap[normName];
-        const matchedSleeper = Object.values(playersData).some(
-          (p) => p.full_name && normalizeName(p.full_name) === normName
-        );
-
-        if (!matchedSleeper && /pick|round/.test(normName) && Object.values(pick).some((v) => v > 0)) {
-          addDraftPick(pick.originalName, "fc", {
-            dynasty_sf: pick.dynasty_sf,
-            dynasty_1qb: pick.dynasty_1qb,
-            redraft_sf: pick.redraft_sf,
-            redraft_1qb: pick.redraft_1qb,
-          });
-        }
-      });
-
-      Object.keys(dpData).forEach((name) => {
-        const normName = normalizeName(name);
-        const matchedSleeper = Object.values(playersData).some(
-          (p) => p.full_name && normalizeName(p.full_name) === normName
-        );
-        if (!matchedSleeper && /pick|early|mid|late|round/.test(normName)) {
-          addDraftPick(name, "dp", { one_qb: dpData[name].one_qb, superflex: dpData[name].superflex });
-        }
-      });
-
-      Object.keys(normalizedKTCMap).forEach((normName) => {
-        const matchedSleeper = Object.values(playersData).some(
-          (p) => p.full_name && normalizeName(p.full_name) === normName
-        );
-        if (!matchedSleeper && /pick|early|mid|late|round/.test(normName)) {
-          addDraftPick(normName, "ktc", normalizedKTCMap[normName]);
-        }
-      });
-
-      Object.keys(normalizedIDPMap).forEach((normName) => {
-        const matchedSleeper = Object.values(playersData).some(
-          (p) => p.full_name && normalizeName(p.full_name) === normName
-        );
-        if (!matchedSleeper && /pick|early|mid|late|round/.test(normName)) {
-          addDraftPick(normName, "idp", {
-            one_qb: normalizedIDPMap[normName].one_qb,
-            superflex: normalizedIDPMap[normName].superflex,
-          });
-        }
-      });
-
-      // Attach StickyPicky values to any remaining players (including synthetic picks) by normalized name
-      Object.values(finalPlayers).forEach((pl) => {
-        if (pl.sp_values) return;
-        const nm = normalizeName(pl.full_name || pl.first_name + " " + pl.last_name || "");
-        const sp = normalizedSPMap[nm];
-        if (sp) {
-          pl.sp_values = {
-            dynasty_sf:  sp.dynasty_sf  || 0,
-            dynasty_1qb: sp.dynasty_1qb || 0,
-            redraft_sf:  sp.redraft_sf  || 0,
-            redraft_1qb: sp.redraft_1qb || 0,
+        if (keep) {
+          finalPlayers[id] = {
+            ...p,
+            fc_values,
+            dp_values,
+            ktc_values,
+            fn_values,
+            sp_values,
+            idp_values,
           };
         }
       });
 
+      updateProgress(95);
 
       await set(CACHE_KEY, finalPlayers);
       setPlayers(finalPlayers);
       setProgress(100);
     } catch (err) {
       console.error("❌ Player preload error:", err);
+      setError("Failed to preload player database.");
     } finally {
       setLoading(false);
     }
@@ -415,6 +577,7 @@ export const SleeperProvider = ({ children }) => {
     try {
       setLoading(true);
       setProgress(10);
+
       const [rostersRes, usersRes] = await Promise.all([
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
@@ -423,12 +586,9 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) =>
-        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
-      );
+      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
       setLeagues(updatedLeagues);
       updateProgress(100);
-      console.log(`✅ Loaded rosters for league ${leagueId}`);
     } catch (err) {
       console.error("❌ Roster fetch error:", err);
     } finally {
@@ -443,16 +603,14 @@ export const SleeperProvider = ({ children }) => {
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
       ]);
+
       if (!rostersRes.ok) throw new Error(`Rosters fetch failed for ${leagueId}`);
       if (!usersRes.ok) throw new Error(`Users fetch failed for ${leagueId}`);
 
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      // Update leagues in context (same as the loud version)
-      const updatedLeagues = leagues.map((lg) =>
-        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
-      );
+      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
       setLeagues(updatedLeagues);
 
       return { rosters, users };
@@ -461,7 +619,6 @@ export const SleeperProvider = ({ children }) => {
       throw err;
     }
   };
-
 
   const logout = () => {
     lsClear();
