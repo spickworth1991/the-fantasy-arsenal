@@ -12,12 +12,45 @@ const ICONS = {
   trade: "/icons/trade-icon.png",
   stock: "/icons/stock-icon.png",
   availability: "/icons/availability-icon.png",
-  powerrank:"/icons/power-icon.png",
-  sos:"/icons/sos-icon.png",
-  playoff:"/icons/playoff-icon.png",
-  lineup:"/icons/lineup-icon.png",
-
+  powerrank: "/icons/power-icon.png",
+  sos: "/icons/sos-icon.png",
+  playoff: "/icons/playoff-icon.png",
+  lineup: "/icons/lineup-icon.png",
 };
+
+// Set badges for sidebar links here (optional).
+// Example:
+// "/trade": "UPDATED",
+// "/player-stock": "NEW",
+const NAV_BADGES = {
+  "/player-availability": "UPDATED",
+  // "/player-stock": "NEW",
+};
+
+const BADGE_STYLES = {
+  NEW: "bg-emerald-400 text-black",
+  UPDATED: "bg-purple-400 text-black",
+};
+
+function NavBadge({ text }) {
+  const key = String(text || "").toUpperCase();
+  const cls = BADGE_STYLES[key] || "bg-white/20 text-white";
+  return <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${cls}`}>{key}</span>;
+}
+
+function SidebarLink({ href, icon, label, onClick, badge }) {
+  return (
+    <Link
+      href={href}
+      className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+      onClick={onClick}
+    >
+      <img src={icon} alt={label} className="w-8 h-8" />
+      <span>{label}</span>
+      {badge ? <NavBadge text={badge} /> : null}
+    </Link>
+  );
+}
 
 export default function Navbar({ pageTitle }) {
   const { username, year, logout } = useSleeper();
@@ -51,7 +84,6 @@ export default function Navbar({ pageTitle }) {
             className="sm:flex items-center gap-2 text-white text-3xl hover:scale-110 transition-transform duration-200"
             aria-label="Open menu"
           >
-            {/* match your old size: w-30 h-12 -> use arbitrary width */}
             <img src={ICONS.football} alt="Menu" className="w-[100px] h-12" />
             <span className="text-lg font-bold"></span>
           </button>
@@ -64,29 +96,27 @@ export default function Navbar({ pageTitle }) {
 
         {/* Right: User Info */}
         <div className="flex items-center gap-3">
-            {username && (
-              <span className="hidden text-white sm:inline text-sm opacity-80">
-                {username}{year ? ` · ${year}` : ""}
-              </span>
-            )}
-            {username && (
-              <button
-                onClick={handleLogout} // <- navigate home on logout
-                className="rounded-lg text-white border border-white/20 px-3 py-1 text-sm hover:bg-white/10"
-              >
-                Logout
-              </button>
-            )}
-
-          </div>
+          {username && (
+            <span className="hidden text-white sm:inline text-sm opacity-80">
+              {username}
+              {year ? ` · ${year}` : ""}
+            </span>
+          )}
+          {username && (
+            <button
+              onClick={handleLogout}
+              className="rounded-lg text-white border border-white/20 px-3 py-1 text-sm hover:bg-white/10"
+            >
+              Logout
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* Sidebar Overlay */}
       {(sidebarOpen || sidebarClosing) && (
         <div
-          className={`fixed inset-0 z-50 flex ${
-            sidebarClosing ? "overlay-fadeOut" : "overlay-fadeIn"
-          } backdrop-blur-xl`}
+          className={`fixed inset-0 z-50 flex ${sidebarClosing ? "overlay-fadeOut" : "overlay-fadeIn"} backdrop-blur-xl`}
           onClick={handleCloseSidebar}
         >
           <div
@@ -111,68 +141,61 @@ export default function Navbar({ pageTitle }) {
 
             {/* Navigation Links */}
             <nav className="flex flex-col gap-4">
-              <Link
+              <SidebarLink
                 href="/"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+                icon={ICONS.home}
+                label="Home"
                 onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.home} alt="Home" className="w-8 h-8" /> Home
-              </Link>
+                badge={NAV_BADGES["/"]}
+              />
 
-              <Link
+              <SidebarLink
                 href="/trade"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+                icon={ICONS.trade}
+                label="Trade Analyzer"
                 onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.trade} alt="Trade" className="w-8 h-8" /> Trade Analyzer
-              </Link>
+                badge={NAV_BADGES["/trade"]}
+              />
 
-              <Link
+              <SidebarLink
                 href="/player-stock"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+                icon={ICONS.stock}
+                label="Player Stock"
                 onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.stock} alt="Stock" className="w-8 h-8" /> Player Stock
-              </Link>
+                badge={NAV_BADGES["/player-stock"]}
+              />
 
-              <Link
+              <SidebarLink
                 href="/player-availability"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+                icon={ICONS.availability}
+                label="Player Availability"
                 onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.availability} alt="Availability" className="w-8 h-8" /> Player Availability
-              </Link>
-              <Link
-                href="/power-rankings"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
-                onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.powerrank} alt="powerrank" className="w-11 h-11" /> Power Rankings
-              </Link>
-              <Link
-                href="/sos"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
-                onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.sos} alt="sos" className="w-9 h-9" /> Strength of Schedule
-              </Link>
-              <Link
-                href="/lineup"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
-                onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.lineup} alt="lineup" className="w-9 h-9" /> Lineup Optimizer
-              </Link>
-              {/* <Link
-                href="/playoff-odds"
-                className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center  hover:scale-105 transition-transform duration-200"
-                onClick={handleCloseSidebar}
-              >
-                <img src={ICONS.playoff} alt="playoff-odds" className="w-9 h-9" /> Playoff Predicter
-              </Link> */}
-              {/* Future features */}
-              
+                badge={NAV_BADGES["/player-availability"]}
+              />
 
+              <SidebarLink
+                href="/power-rankings"
+                icon={ICONS.powerrank}
+                label="Power Rankings"
+                onClick={handleCloseSidebar}
+                badge={NAV_BADGES["/power-rankings"]}
+              />
+
+              <SidebarLink
+                href="/sos"
+                icon={ICONS.sos}
+                label="Strength of Schedule"
+                onClick={handleCloseSidebar}
+                badge={NAV_BADGES["/sos"]}
+              />
+
+              <SidebarLink
+                href="/lineup"
+                icon={ICONS.lineup}
+                label="Lineup Optimizer"
+                onClick={handleCloseSidebar}
+                badge={NAV_BADGES["/lineup"]}
+              />
             </nav>
 
             <div className="border-t border-gray-700 my-4" />
@@ -196,7 +219,6 @@ export default function Navbar({ pageTitle }) {
           </div>
         </div>
       )}
-
     </>
   );
 }

@@ -54,20 +54,17 @@ const safeNum = (v) => {
 const VALUE_KEYS = ["dynasty_sf", "dynasty_1qb", "redraft_sf", "redraft_1qb"];
 
 // Sleeper positions you typically want values for.
-// NOTE: we still use fantasy_positions as the main “is fantasy relevant” gate.
 const FANTASY_RELEVANT = new Set([
   "QB",
   "RB",
   "WR",
   "TE",
   "K",
-  "DEF", // team D/ST on sleeper
-  // common IDP slots / labels
+  "DEF",
   "DL",
   "LB",
   "DB",
   "IDP",
-  // some sources may use these
   "DE",
   "DT",
   "EDGE",
@@ -84,20 +81,16 @@ function getSleeperFantasyPosSet(p) {
   return set;
 }
 
-// Some Sleeper records (notably dup-name entries) can have an empty `position`
-// while still having `fantasy_positions`. Use a stable primary position so
-// name-based matching can safely enforce pos compatibility.
+// Use a stable primary position so name-based matching can safely enforce pos compatibility.
 function getPrimaryPos(p) {
   const pos = normPos(p?.position);
   if (pos) return pos;
 
   const fp = Array.isArray(p?.fantasy_positions) ? p.fantasy_positions : [];
-  // Prefer a fantasy-relevant slot if present.
   for (const x of fp) {
     const nx = normPos(x);
     if (nx && FANTASY_RELEVANT.has(nx)) return nx;
   }
-  // Fall back to the first non-empty.
   for (const x of fp) {
     const nx = normPos(x);
     if (nx) return nx;
@@ -139,7 +132,7 @@ function createCandidateIndex4() {
     byName[nn].push(cand);
   }
 
-    function pickBest(name, pos, team) {
+  function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
 
@@ -149,12 +142,12 @@ function createCandidateIndex4() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // ✅ IMPORTANT:
-    // If the Sleeper record has no position, DO NOT name-match.
-    // This prevents duplicate-name “blank position” entries from stealing values.
+    // ✅ IMPORTANT (your “wrong player assigned” fix):
+    // If Sleeper record has no position, DO NOT name-match.
+    // Prevents duplicate-name blank-position entries from stealing values.
     if (!pos0) return null;
 
-    // Collision guard...
+    // If candidates have pos info, require exact pos match.
     const anyCandHasPos = cands.some((c) => !!c.pos);
     const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
@@ -206,7 +199,7 @@ function createCandidateIndex2() {
     byName[nn].push(cand);
   }
 
-    function pickBest(name, pos, team) {
+  function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
 
@@ -216,12 +209,9 @@ function createCandidateIndex2() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // ✅ IMPORTANT:
-    // If the Sleeper record has no position, DO NOT name-match.
-    // This prevents duplicate-name “blank position” entries from stealing values.
+    // ✅ IMPORTANT (your “wrong player assigned” fix):
     if (!pos0) return null;
 
-    // Collision guard...
     const anyCandHasPos = cands.some((c) => !!c.pos);
     const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
@@ -249,7 +239,6 @@ function createCandidateIndex2() {
     return bestScore >= 0 ? best : null;
   }
 
-
   return { addCandidate, pickBest, raw: byName };
 }
 
@@ -272,6 +261,9 @@ export const SleeperProvider = ({ children }) => {
 
   const preloadCalled = useRef(false);
 
+  // Prevent infinite "auto-recover" loops if storage/IDB gets cleared.
+  const recoveringRef = useRef(false);
+
   useEffect(() => {
     lsSet("username", username);
   }, [username]);
@@ -293,21 +285,89 @@ export const SleeperProvider = ({ children }) => {
 
   const updateProgress = (value) => setProgress((prev) => Math.min(value, 100));
 
+  // Validate a username without mutating state first.
+  const validateUsername = async (uname) => {
+    if (!uname) return null;
+    try {
+      const res = await fetch(`https://api.sleeper.app/v1/user/${uname}`);
+      if (!res.ok) return null;
+      const user = await res.json();
+      return user && user.user_id ? user : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const logout = () => {
+    lsClear();
+    setUsername(null);
+    setLeagues([]);
+    setPlayers({});
+    setActiveLeague(null);
+    preloadCalled.current = false;
+  };
+
+  // Auto-recover if storage/IDB gets cleared while UI still has a username.
+  useEffect(() => {
+    const hasUsername = !!username;
+    const missingPlayers = !players || Object.keys(players).length === 0;
+    const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
+
+    if (!hasUsername) return;
+    if (loading) return;
+    if (!(missingPlayers || missingLeagues)) return;
+    if (recoveringRef.current) return;
+
+    recoveringRef.current = true;
+
+    (async () => {
+      // 1) Make sure the stored username is still a real Sleeper user.
+      const user = await validateUsername(username);
+      if (!user) {
+        setError("Saved Sleeper username is invalid. Please log in again.");
+        recoveringRef.current = false;
+        logout();
+        return;
+      }
+
+      try {
+        // 2) Refresh leagues for stored year.
+        const leaguesRes = await fetch(
+          `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${year}`
+        );
+        const leaguesData = await leaguesRes.json();
+        setLeagues(Array.isArray(leaguesData) ? leaguesData : []);
+
+        // 3) Rebuild player DB if missing.
+        if (missingPlayers) {
+          preloadCalled.current = true;
+          await preloadPlayers();
+        }
+      } catch (e) {
+        console.error("❌ Auto-recover failed:", e);
+      } finally {
+        recoveringRef.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, year, players, leagues, loading]);
+
   const login = async (uname, yr) => {
     try {
       setLoading(true);
       setProgress(5);
       setError("");
 
+      // ✅ Validate first (don't mutate state/storage until confirmed)
+      const user = await validateUsername(uname);
+      if (!user) throw new Error("User not found");
+      updateProgress(20);
+
+      // Now persist username/year only after validation
       lsSet("username", uname);
       lsSet("year", yr);
       setUsername(uname);
       setYear(yr);
-
-      const userRes = await fetch(`https://api.sleeper.app/v1/user/${uname}`);
-      if (!userRes.ok) throw new Error("User not found");
-      const user = await userRes.json();
-      updateProgress(20);
 
       const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
       const leaguesData = await leaguesRes.json();
@@ -321,6 +381,12 @@ export const SleeperProvider = ({ children }) => {
     } catch (err) {
       console.error("❌ Login error:", err);
       setError(err?.message || "Login failed");
+
+      // Don't leave the app "half logged in" on bad username.
+      if (String(err?.message || "").toLowerCase().includes("user not found")) {
+        lsSet("username", null);
+        setUsername(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -329,11 +395,12 @@ export const SleeperProvider = ({ children }) => {
   /**
    * ✅ Player DB caching and merging:
    * - FantasyCalc: match by Sleeper ID
-   * - DP/KTC: strict position match
-   * - FN/SP: candidate-based (pos compatible required)
-   * - iDynastyP: candidate-based -> idp_values stays {one_qb, superflex}
+   * - DP: requires stable position (no pos => 0)
+   * - KTC: STRICT name+pos only (no name-only fallback)
+   * - FN/SP: candidate-based; requires Sleeper pos (no pos => null)
+   * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
-  const CACHE_KEY = "playerDB_v1.28"; // bump to invalidate old cache
+  const CACHE_KEY = "playerDB_v1.30"; // bump to invalidate old cache
 
   const preloadPlayers = async () => {
     try {
@@ -404,7 +471,6 @@ export const SleeperProvider = ({ children }) => {
       }
 
       // ---------- KTC ----------
-      const ktcByName = {};
       const ktcByNamePos = {};
       const ingestKTC = (arr, which) => {
         (Array.isArray(arr) ? arr : []).forEach((p) => {
@@ -413,17 +479,12 @@ export const SleeperProvider = ({ children }) => {
 
           const pos = normPos(p?.position || p?.pos);
           const value = safeNum(p?.value);
+          if (!pos) return;
 
-          if (!ktcByName[n]) ktcByName[n] = { one_qb: 0, superflex: 0 };
-          if (which === "one_qb") ktcByName[n].one_qb = value;
-          if (which === "superflex") ktcByName[n].superflex = value;
-
-          if (pos) {
-            const k = `${n}|${pos}`;
-            if (!ktcByNamePos[k]) ktcByNamePos[k] = { one_qb: 0, superflex: 0 };
-            if (which === "one_qb") ktcByNamePos[k].one_qb = value;
-            if (which === "superflex") ktcByNamePos[k].superflex = value;
-          }
+          const k = `${n}|${pos}`;
+          if (!ktcByNamePos[k]) ktcByNamePos[k] = { one_qb: 0, superflex: 0 };
+          if (which === "one_qb") ktcByNamePos[k].one_qb = value;
+          if (which === "superflex") ktcByNamePos[k].superflex = value;
         });
       };
       ingestKTC(ktcData?.OneQB, "one_qb");
@@ -463,7 +524,6 @@ export const SleeperProvider = ({ children }) => {
       // ---------- iDynastyP (2-way candidate index) ----------
       const idpIndex = createCandidateIndex2();
 
-      // tolerate different schemas / field names
       const idpRows = Array.isArray(idpData)
         ? idpData
         : Array.isArray(idpData?.players)
@@ -508,7 +568,9 @@ export const SleeperProvider = ({ children }) => {
 
       // ---------- Helpers ----------
       const getDPValues = (normName0, pos0) => {
+        // ✅ require Sleeper pos for DP lookups (prevents blank-pos collisions)
         if (!pos0) return { one_qb: 0, superflex: 0 };
+
         const best = dpByNamePos[`${normName0}|${pos0}`] || dpByName[normName0] || null;
         const dpPos = normPos(best?.pos);
         if (dpPos && dpPos !== pos0) return { one_qb: 0, superflex: 0 };
@@ -516,11 +578,11 @@ export const SleeperProvider = ({ children }) => {
       };
 
       const getKTCValues = (normName0, pos0) => {
+        // ✅ STRICT: name+pos only (no name-only fallback)
         if (!pos0) return { one_qb: 0, superflex: 0 };
         const best = ktcByNamePos[`${normName0}|${pos0}`] || null;
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
-
 
       const get4WayFromIndex = (index, fullName, pos0, team0) => {
         const cand = index.pickBest(fullName, pos0, team0);
@@ -577,34 +639,9 @@ export const SleeperProvider = ({ children }) => {
           ? get4WayFromIndex(spIndex, fullName, pos, team)
           : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
 
-        // ✅ iDynastyP stays 2-way
         const idp_values = fantasyRelevant
           ? getIDP2FromIndex(idpIndex, fullName, pos, team)
           : { one_qb: 0, superflex: 0 };
-        // ✅ DEBUG: log BOTH Sleeper entries that normalize to "kenneth walker"
-        if (normalizeName(fullName) === "kenneth walker") {
-          console.log("KW merged", {
-            id,
-            fullName,
-            pos,
-            team,
-            ktc: ktc_values,
-            dp: dp_values,
-            fn: fn_values,
-            sp: sp_values,
-            idp: idp_values,
-          });
-        }
-        if (normalizeName(fullName) === "kenneth walker") {
-        console.log("KW sleeper raw", {
-          id,
-          fullName,
-          position: p.position,
-          fantasy_positions: p.fantasy_positions,
-          team: p.team,
-          status: p.status,
-        });
-      }
 
         const keep =
           Object.values(fc_values).some((v) => v > 0) ||
@@ -617,8 +654,7 @@ export const SleeperProvider = ({ children }) => {
         if (keep) {
           finalPlayers[id] = {
             ...p,
-            // Ensure consumers see a consistent position even when Sleeper's
-            // raw `position` is blank for certain duplicate-name entries.
+            // Ensure consumers see a consistent position even when Sleeper's raw `position` is blank.
             position: pos || p.position,
             fc_values,
             dp_values,
@@ -629,7 +665,6 @@ export const SleeperProvider = ({ children }) => {
           };
         }
       });
-
 
       updateProgress(95);
 
@@ -690,15 +725,6 @@ export const SleeperProvider = ({ children }) => {
       console.error("❌ Silent roster fetch error:", err);
       throw err;
     }
-  };
-
-  const logout = () => {
-    lsClear();
-    setUsername(null);
-    setLeagues([]);
-    setPlayers({});
-    setActiveLeague(null);
-    preloadCalled.current = false;
   };
 
   return (
