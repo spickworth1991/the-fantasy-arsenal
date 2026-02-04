@@ -1,10 +1,27 @@
 "use client";
+
 import { useState } from "react";
 import { useSleeper } from "../context/SleeperContext";
 import dynamic from "next/dynamic";
 const BackgroundParticles = dynamic(() => import("../components/BackgroundParticles"), { ssr: false });
 import Navbar from "../components/Navbar";
 import Link from "next/link";
+
+const BADGE_STYLES = {
+  NEW: "bg-emerald-400 text-black",
+  UPDATED: "bg-purple-400 text-black",
+  "COMING SOON": "bg-yellow-500 text-black",
+};
+
+function Badge({ text }) {
+  const key = String(text || "").toUpperCase();
+  const cls = BADGE_STYLES[key] || "bg-white/20 text-white";
+  return (
+    <span className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold tracking-wide ${cls}`}>
+      {key}
+    </span>
+  );
+}
 
 export default function HomePage() {
   const { username, year, login, loading, error } = useSleeper();
@@ -18,35 +35,42 @@ export default function HomePage() {
 
   const isLoggedIn = !!username;
 
+  // Add `badge: "NEW"` or `badge: "UPDATED"` on any tool.
   const tools = [
-    { name: "Trade Analyzer", link: "/trade", description: "Analyze trades using multiple value sources. Select a league for personalized trades." },
-    { name: "Player Stock", link: "/player-stock", description: "Track player value changes over time" },
-    { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available" },
+    {
+      name: "Trade Analyzer",
+      link: "/trade",
+      description: "Analyze trades using multiple value sources. Select a league for personalized trades.",
+      // badge: "UPDATED",
+    },
+    {
+      name: "Player Stock",
+      link: "/player-stock",
+      description: "Track player value changes over time",
+      // badge: "NEW",
+    },
+    { name: "Player Availability", link: "/player-availability", description: "Find which leagues have a player available", badge: "UPDATED"},
     { name: "Power Rankings", link: "/power-rankings", description: "See where you rank amongst your league." },
     { name: "Strength of Schedule", link: "/sos", description: "Analyze team schedules based on various metrics." },
     { name: "Lineup Optimizer", link: "/lineup", description: "Optimize your weekly lineup for maximum points." },
-    { name: "Playoff Odds", link: "/playoff-odds", description: "Calculate your team's odds of making the playoffs.", comingSoon: true },
+    // { name: "Playoff Odds", link: "/playoff-odds", description: "Calculate your team's odds of making the playoffs.", comingSoon: true },
     // { name: "Draft Kit", link: "/draft-kit", description: "Prepare for your upcoming draft with rankings and cheat sheets.", comingSoon: true },
   ];
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-        <div aria-hidden className="h-[72px]" />
+      <div aria-hidden className="h-[72px]" />
       <BackgroundParticles />
       <Navbar pageTitle="Home" />
+
       <main className="flex flex-col items-center px-4">
         <h1 className="text-4xl text-white sm:text-6xl font-bold mb-4 text-center animate-fadeIn">
           The Fantasy Arsenal <span className="text-blue-400">by StickyPicky</span>
         </h1>
-        <p className="text-gray-400 mb-8 text-center">
-          Your all-in-one fantasy football toolkit
-        </p>
+        <p className="text-gray-400 mb-8 text-center">Your all-in-one fantasy football toolkit</p>
 
         {!isLoggedIn ? (
-          <form
-            onSubmit={handleLogin}
-            className="bg-gray-900 p-6 rounded-xl shadow-lg w-full max-w-md mb-10 animate-fadeIn"
-          >
+          <form onSubmit={handleLogin} className="bg-gray-900 p-6 rounded-xl shadow-lg w-full max-w-md mb-10 animate-fadeIn">
             <label className="block mb-2 font-semibold">Sleeper Username</label>
             <input
               type="text"
@@ -86,17 +110,15 @@ export default function HomePage() {
   );
 }
 
-function ToolCard({ name, link, description, comingSoon, delay, disabled }) {
+function ToolCard({ name, link, description, comingSoon, badge, delay, disabled }) {
+  const pill = comingSoon ? "COMING SOON" : badge;
+
   return comingSoon || disabled ? (
     <div
       className="bg-gray-900 p-6 text-white rounded-xl shadow-lg text-center relative transform transition hover:scale-105 animate-stagger opacity-50 cursor-not-allowed"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {comingSoon && (
-        <span className="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs">
-          Coming Soon
-        </span>
-      )}
+      {pill && <Badge text={pill} />}
       <h2 className="text-2xl font-bold mb-2">{name}</h2>
       <p className="text-gray-400">{description}</p>
     </div>
@@ -106,6 +128,7 @@ function ToolCard({ name, link, description, comingSoon, delay, disabled }) {
       className="bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 hover:neon-hover hover:bg-gray-800 animate-stagger"
       style={{ animationDelay: `${delay}ms` }}
     >
+      {pill && <Badge text={pill} />}
       <h2 className="text-2xl text-white font-bold mb-2">{name}</h2>
       <p className="text-gray-400">{description}</p>
     </Link>
