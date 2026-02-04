@@ -512,7 +512,8 @@ export const SleeperProvider = ({ children }) => {
       };
 
       const getKTCValues = (normName0, pos0) => {
-        const best = ktcByNamePos[`${normName0}|${pos0}`] || ktcByName[normName0] || null;
+        // KTC provides positions; name-only fallback can mis-assign values for duplicate names (e.g., Kenneth Walker).
+        const best = ktcByNamePos[`${normName0}|${pos0}`] || null;
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
 
