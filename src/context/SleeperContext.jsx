@@ -149,10 +149,20 @@ function createCandidateIndex4() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
+    // Collision guard: if ANY candidates have a declared position and the Sleeper
+    // player has a position, require an exact position match.
+    //
+    // This prevents name-only collisions where a different-position player with
+    // the same name (e.g. Kenneth Walker RB vs a Kenneth Walker WR) can steal
+    // values from sources that don't have Sleeper IDs.
+    const anyCandHasPos = pos0 ? cands.some((c) => !!c.pos) : false;
+    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
     let best = null;
     let bestScore = -1;
 
-    for (const c of cands) {
+    for (const c of candidatesToScore) {
       const candPos = c.pos;
       const candTeam = c.team;
 
@@ -207,10 +217,17 @@ function createCandidateIndex2() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
+    // Collision guard: if the source provides positions for any candidates and
+    // the Sleeper player has a position, only consider candidates with an exact
+    // position match. If none match, return null (don't mis-assign values).
+    const anyCandHasPos = pos0 ? cands.some((c) => !!c.pos) : false;
+    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
     let best = null;
     let bestScore = -1;
 
-    for (const c of cands) {
+    for (const c of candidatesToScore) {
       const candPos = c.pos;
       const candTeam = c.team;
 
