@@ -130,7 +130,8 @@ export default function DraftPickTrackerClient() {
     const [draftRes, picksRes, tradedRes, usersRes, rostersRes] = await Promise.all([
       fetch(`https://api.sleeper.app/v1/draft/${draftId}`),
       fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`),
-      fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`),
+      // Future pick ownership is a league-level concept.
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`),
       fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
       fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
     ]);
@@ -166,7 +167,15 @@ export default function DraftPickTrackerClient() {
   }
 
   function getUserRosterIdForLeague(users, rosters) {
-    const u = (users || []).find((x) => String(x?.display_name || "").toLowerCase() === String(username || "").toLowerCase());
+    const uname = String(username || "").toLowerCase().trim();
+    if (!uname) return null;
+
+    // Sleeper user objects in /league/<id>/users include both username + display_name.
+    // Username is the stable field to match what the user typed in our login.
+    const u =
+      (users || []).find((x) => String(x?.username || "").toLowerCase() === uname) ||
+      (users || []).find((x) => String(x?.display_name || "").toLowerCase() === uname);
+
     if (!u?.user_id) return null;
     const r = (rosters || []).find((x) => String(x?.owner_id) === String(u.user_id));
     return r?.roster_id ? String(r.roster_id) : null;
@@ -182,17 +191,16 @@ export default function DraftPickTrackerClient() {
 
     const currentPick = (picks?.length || 0) + 1;
 
-    // Draft order: maps roster_id -> slot (or vice versa). Sleeper uses draft_order: { roster_id: slot }
-    const draftOrder = draft?.draft_order || {};
-    const slotByRoster = new Map();
-    Object.keys(draftOrder || {}).forEach((rosterId) => {
-      slotByRoster.set(String(rosterId), safeNum(draftOrder[rosterId]));
-    });
-
-    // Build reverse mapping slot -> roster_id
+    // Sleeper draft endpoint uses:
+    // - draft_order: user_id -> draft slot
+    // - slot_to_roster_id: slot -> roster_id
+    // We want roster_id per slot for snake calculations.
+    const slotToRoster = draft?.slot_to_roster_id || {};
     const rosterBySlot = new Map();
-    slotByRoster.forEach((slot, rosterId) => {
-      if (slot) rosterBySlot.set(slot, rosterId);
+    Object.keys(slotToRoster || {}).forEach((slot) => {
+      const rosterId = slotToRoster[slot];
+      const s = safeNum(slot);
+      if (s && rosterId != null) rosterBySlot.set(s, String(rosterId));
     });
 
     // Determine next roster up:
@@ -258,11 +266,13 @@ export default function DraftPickTrackerClient() {
       timerSec,
       teams: s,
       rounds,
+      computedAt: Date.now(),
     };
   }
 
   function buildTradedPickRows({ league, draft, traded_picks, users, rosters }) {
     const rosterName = buildRosterNameMap(users, rosters);
+    const myRosterId = getUserRosterIdForLeague(users, rosters);
     const out = [];
 
     (traded_picks || []).forEach((tp) => {
@@ -271,6 +281,12 @@ export default function DraftPickTrackerClient() {
       const rosterId = tp?.roster_id != null ? String(tp.roster_id) : "";
       const prevOwnerId = tp?.previous_owner_id != null ? String(tp.previous_owner_id) : "";
       const ownerId = tp?.owner_id != null ? String(tp.owner_id) : "";
+
+      // Only show picks that involve the logged-in user (incoming/outgoing/original).
+      if (myRosterId) {
+        const mine = rosterId === myRosterId || prevOwnerId === myRosterId || ownerId === myRosterId;
+        if (!mine) return;
+      }
 
       // Only show future-ish picks (season >= current league season)
       const lgSeason = safeNum(league?.season || 0);
@@ -506,7 +522,8 @@ export default function DraftPickTrackerClient() {
               </thead>
               <tbody>
                 {filteredDraftRows.map((r) => {
-                  const liveEta = Math.max(0, safeNum(r.etaMs) - (0)); // eta is relative
+                  const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                  const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
                   const human = r.myNextPickOverall ? msToHuman(liveEta) : "—";
 
                   const statusTone = r.draftStatus === "drafting" ? "green" : r.draftStatus === "complete" ? "gray" : "yellow";
