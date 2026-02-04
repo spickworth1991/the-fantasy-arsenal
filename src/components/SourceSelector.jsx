@@ -58,6 +58,13 @@ export const DEFAULT_SOURCES = [
     icon: "FN",
     supports: { dynasty: true, redraft: true, qbToggle: true },
   },
+  {
+    key: "val:idynastyp",
+    type: "value",
+    label: "iDynastyP",
+    icon: "IDP",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
 ];
 
 function clamp(n, min, max) {

@@ -446,7 +446,7 @@ useEffect(() => {
   const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
 
   // Values + Projections sources (match Trade Analyzer)
-  const [sourceKey, setSourceKey] = useState("proj:sleeper");
+  const [sourceKey, setSourceKey] = useState("val:fantasycalc"); // e.g., "val:fantasycalc" | "proj:sleeper"
   const activeSource = useMemo(
     () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
     [sourceKey]
@@ -461,7 +461,7 @@ useEffect(() => {
   useEffect(() => {
     if (activeSource.type === "projection") {
       const map = {
-        "proj:sleeper": "CSV",
+        "proj:ffa": "CSV",
         "proj:espn": "ESPN",
         "proj:cbs": "CBS",
       };
