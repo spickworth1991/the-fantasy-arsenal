@@ -11,6 +11,7 @@ const BADGE_STYLES = {
   NEW: "bg-emerald-400 text-black",
   UPDATED: "bg-purple-400 text-black",
   "COMING SOON": "bg-yellow-500 text-black",
+  DEVELOPING:"bg-red-500 text-black"
 };
 
 function Badge({ text }) {
@@ -53,6 +54,8 @@ export default function HomePage() {
     { name: "Power Rankings", link: "/power-rankings", description: "See where you rank amongst your league." },
     { name: "Strength of Schedule", link: "/sos", description: "Analyze team schedules based on various metrics." },
     { name: "Lineup Optimizer", link: "/lineup", description: "Optimize your weekly lineup for maximum points." },
+    { name: "Draft Pick Tracker", link: "/draft-pick-tracker", description: "Track drafting leagues: next pick countdowns, your upcoming picks, and traded future picks.", badge: "DEVELOPING" },
+
     // { name: "Playoff Odds", link: "/playoff-odds", description: "Calculate your team's odds of making the playoffs.", comingSoon: true },
     // { name: "Draft Kit", link: "/draft-kit", description: "Prepare for your upcoming draft with rankings and cheat sheets.", comingSoon: true },
   ];

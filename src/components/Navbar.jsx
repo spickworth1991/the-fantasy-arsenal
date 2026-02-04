@@ -24,12 +24,14 @@ const ICONS = {
 // "/player-stock": "NEW",
 const NAV_BADGES = {
   "/player-availability": "UPDATED",
+  "/draft-pick-tracker": "DEVELOPING",
   // "/player-stock": "NEW",
 };
 
 const BADGE_STYLES = {
   NEW: "bg-emerald-400 text-black",
   UPDATED: "bg-purple-400 text-black",
+  DEVELOPING: "bg-red-500 text-black",
 };
 
 function NavBadge({ text }) {
@@ -196,6 +198,14 @@ export default function Navbar({ pageTitle }) {
                 onClick={handleCloseSidebar}
                 badge={NAV_BADGES["/lineup"]}
               />
+              <SidebarLink
+                href="/draft-pick-tracker"
+                icon={ICONS.draft}
+                label="Draft Pick Tracker"
+                onClick={handleCloseSidebar}
+                badge={NAV_BADGES["/draft-pick-tracker"]}
+              />
+
             </nav>
 
             <div className="border-t border-gray-700 my-4" />
