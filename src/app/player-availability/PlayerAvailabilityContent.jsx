@@ -400,6 +400,20 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
 export default function PlayerAvailabilityContent() {
   const { username, players, year, format, qbType } = useSleeper();
 
+// local overrides (so you can toggle without mutating global context)
+const [mode, setMode] = useState((format || "dynasty").toLowerCase()); // dynasty | redraft
+const [qb, setQb] = useState((qbType || "sf").toLowerCase()); // sf | 1qb
+
+// keep local defaults in sync if the context changes (login, league change, etc.)
+useEffect(() => {
+  setMode((format || "dynasty").toLowerCase());
+}, [format]);
+
+useEffect(() => {
+  setQb((qbType || "sf").toLowerCase());
+}, [qbType]);
+
+
   // Page init loading + Scan loading
   const [initLoading, setInitLoading] = useState(true);
   const [scanLoading, setScanLoading] = useState(false);
@@ -879,7 +893,8 @@ export default function PlayerAvailabilityContent() {
 
   // ---------- Best Available Players ----------
   const playerList = useMemo(() => Object.values(playersMap || {}), [playersMap]);
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType), [valueSource, format, qbType]);
+  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, mode, qb), [valueSource, mode, qb]);
+
 
   const bestAvailablePlayers = useMemo(() => {
     const leagues = includedLeaguesList;
@@ -1261,14 +1276,19 @@ export default function PlayerAvailabilityContent() {
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <div className="text-xs text-white/60 mb-2">Best Available ranking</div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex flex-wrap items-center gap-2 z-1000 w-full">
+                        <div className="relative z-[1000] flex flex-wrap items-center gap-2 w-full">
                           <div className="relative z-[80] min-w-[240px]">
                             <SourceSelector
-                              sources={DEFAULT_SOURCES}
-                              value={sourceKey}
-                              onChange={setSourceKey}
-                              className="w-full"
-                            />
+  sources={DEFAULT_SOURCES}
+  value={sourceKey}
+  onChange={setSourceKey}
+  className="w-full"
+  mode={mode}
+  qbType={qb}
+  onModeChange={setMode}
+  onQbTypeChange={setQb}
+/>
+
                           </div>
                           <button
                             type="button"
@@ -1373,9 +1393,9 @@ export default function PlayerAvailabilityContent() {
               )}
 
               {/* Best Available + Trending (desktop: hot | best | cold) */}
-              <div className="relative z-0 grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+              <div className="relative  grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
                 {/* HOT */}
-                <div className="relative z-0 lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div className="relative z lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">🔥 Hot Adds</div>
@@ -1465,7 +1485,7 @@ export default function PlayerAvailabilityContent() {
                 </div>
 
                 {/* BEST */}
-                <div className="relative z-0 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
+                <div className="relative lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-bold text-white">Best Available Players</h2>
@@ -1541,7 +1561,7 @@ export default function PlayerAvailabilityContent() {
                 </div>
 
                 {/* COLD */}
-                <div className="relative z-0 lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div className="relative lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">❄️ Cold Drops</div>
