@@ -224,7 +224,9 @@ function getSeasonPointsForPlayer(map, p) {
 
   const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim());
   const team = normalizeTeamAbbr(p.team);
-  const pos = normalizePos(p.position);
+  // Some Sleeper entries (rare dupes) can have an empty `position` but still have fantasy_positions.
+  // Use a primary position fallback so we don't accidentally match a different player with the same name.
+  const pos = normalizePos(p.position || (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : ""));
 
   if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
   if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] !=null) return map.byNamePos[`${nn}|${pos}`];
@@ -446,7 +448,7 @@ useEffect(() => {
   const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
 
   // Values + Projections sources (match Trade Analyzer)
-  const [sourceKey, setSourceKey] = useState("val:fantasycalc"); // e.g., "val:fantasycalc" | "proj:sleeper"
+  const [sourceKey, setSourceKey] = useState("proj:sleeper");
   const activeSource = useMemo(
     () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
     [sourceKey]
@@ -461,14 +463,22 @@ useEffect(() => {
   useEffect(() => {
     if (activeSource.type === "projection") {
       const map = {
-        "proj:ffa": "CSV",
+        "proj:sleeper": "CSV",
         "proj:espn": "ESPN",
         "proj:cbs": "CBS",
       };
       setProjSource(map[activeSource.key] || "CSV");
     } else {
-      // For values, our internal key is lowercased, but downstream logic uses the display label.
-      setValueSource(activeSource.label);
+      // For values, map the selector key to the internal source id used by makeGetPlayerValue().
+      const valueMap = {
+        "val:fantasycalc": "FantasyCalc",
+        "val:keeptradecut": "KeepTradeCut",
+        "val:dynastyprocess": "DynastyProcess",
+        "val:fantasynav": "FantasyNavigator",
+        "val:idynastyp": "IDynastyP",
+        "val:thefantasyarsenal": "TheFantasyArsenal",
+      };
+      setValueSource(valueMap[activeSource.key] || activeSource.label);
     }
   }, [activeSource]);
 

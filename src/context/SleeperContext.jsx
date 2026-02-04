@@ -31,14 +31,6 @@ const lsClear = () => {
   } catch {}
 };
 
-// ✅ Season-year rule (Jan/Feb = previous season year)
-const getCurrentSeasonYear = (d = new Date()) => {
-  const dt = d instanceof Date ? d : new Date(d);
-  const y = dt.getFullYear();
-  const m = dt.getMonth() + 1; // 1-12
-  return m <= 2 ? y - 1 : y;
-};
-
 // ---- Normalization helpers ----
 const normalizeName = (name) =>
   String(name || "")
@@ -90,6 +82,27 @@ function getSleeperFantasyPosSet(p) {
   const pos = normPos(p?.position);
   if (pos) set.add(pos);
   return set;
+}
+
+// Some Sleeper records (notably dup-name entries) can have an empty `position`
+// while still having `fantasy_positions`. Use a stable primary position so
+// name-based matching can safely enforce pos compatibility.
+function getPrimaryPos(p) {
+  const pos = normPos(p?.position);
+  if (pos) return pos;
+
+  const fp = Array.isArray(p?.fantasy_positions) ? p.fantasy_positions : [];
+  // Prefer a fantasy-relevant slot if present.
+  for (const x of fp) {
+    const nx = normPos(x);
+    if (nx && FANTASY_RELEVANT.has(nx)) return nx;
+  }
+  // Fall back to the first non-empty.
+  for (const x of fp) {
+    const nx = normPos(x);
+    if (nx) return nx;
+  }
+  return "";
 }
 
 function isFantasyRelevantSleeperPlayer(p) {
@@ -224,7 +237,7 @@ export const SleeperProvider = ({ children }) => {
   const [username, setUsername] = useState(() => lsGet("username", null));
   const [year, setYear] = useState(() => {
     const y = lsGet("year");
-    return y != null && y !== "" ? Number(y) : getCurrentSeasonYear();
+    return y != null && y !== "" ? Number(y) : new Date().getFullYear();
   });
 
   const [players, setPlayers] = useState({});
@@ -266,21 +279,17 @@ export const SleeperProvider = ({ children }) => {
       setProgress(5);
       setError("");
 
-      const seasonYear = yr != null && yr !== "" ? Number(yr) : getCurrentSeasonYear();
-
       lsSet("username", uname);
-      lsSet("year", seasonYear);
+      lsSet("year", yr);
       setUsername(uname);
-      setYear(seasonYear);
+      setYear(yr);
 
       const userRes = await fetch(`https://api.sleeper.app/v1/user/${uname}`);
       if (!userRes.ok) throw new Error("User not found");
       const user = await userRes.json();
       updateProgress(20);
 
-      const leaguesRes = await fetch(
-        `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${seasonYear}`
-      );
+      const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
       const leaguesData = await leaguesRes.json();
       setLeagues(Array.isArray(leaguesData) ? leaguesData : []);
       updateProgress(50);
@@ -300,11 +309,11 @@ export const SleeperProvider = ({ children }) => {
   /**
    * ✅ Player DB caching and merging:
    * - FantasyCalc: match by Sleeper ID
-   * - DP/KTC: strict position match (KTC now guarded against name-collisions)
+   * - DP/KTC: strict position match
    * - FN/SP: candidate-based (pos compatible required)
    * - iDynastyP: candidate-based -> idp_values stays {one_qb, superflex}
    */
-  const CACHE_KEY = "playerDB_v1.25"; // ✅ bump to invalidate old bad merges
+  const CACHE_KEY = "playerDB_v1.25"; // bump to invalidate old cache
 
   const preloadPlayers = async () => {
     try {
@@ -377,8 +386,6 @@ export const SleeperProvider = ({ children }) => {
       // ---------- KTC ----------
       const ktcByName = {};
       const ktcByNamePos = {};
-      const ktcPosSetByName = {}; // ✅ used to prevent name-only collisions
-
       const ingestKTC = (arr, which) => {
         (Array.isArray(arr) ? arr : []).forEach((p) => {
           const n = keyName(p?.name);
@@ -396,9 +403,6 @@ export const SleeperProvider = ({ children }) => {
             if (!ktcByNamePos[k]) ktcByNamePos[k] = { one_qb: 0, superflex: 0 };
             if (which === "one_qb") ktcByNamePos[k].one_qb = value;
             if (which === "superflex") ktcByNamePos[k].superflex = value;
-
-            if (!ktcPosSetByName[n]) ktcPosSetByName[n] = new Set();
-            ktcPosSetByName[n].add(pos);
           }
         });
       };
@@ -490,20 +494,9 @@ export const SleeperProvider = ({ children }) => {
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
 
-      // ✅ KTC guard: only use exact name+pos.
-      // If missing, only allow name-only if that name appears at exactly ONE position in KTC data.
       const getKTCValues = (normName0, pos0) => {
-        const exact = ktcByNamePos[`${normName0}|${pos0}`] || null;
-        if (exact) return { one_qb: safeNum(exact.one_qb), superflex: safeNum(exact.superflex) };
-
-        const posSet = ktcPosSetByName[normName0];
-        if (posSet && posSet.size === 1) {
-          const onlyPos = Array.from(posSet)[0];
-          const v = ktcByNamePos[`${normName0}|${onlyPos}`] || ktcByName[normName0] || null;
-          return { one_qb: safeNum(v?.one_qb), superflex: safeNum(v?.superflex) };
-        }
-
-        return { one_qb: 0, superflex: 0 };
+        const best = ktcByNamePos[`${normName0}|${pos0}`] || ktcByName[normName0] || null;
+        return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
 
       const get4WayFromIndex = (index, fullName, pos0, team0) => {
@@ -534,7 +527,7 @@ export const SleeperProvider = ({ children }) => {
 
         const fullName = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
         const nn = normalizeName(fullName);
-        const pos = normPos(p.position);
+        const pos = getPrimaryPos(p);
         const team = normTeam(p.team);
 
         const fc_values = {
@@ -577,6 +570,9 @@ export const SleeperProvider = ({ children }) => {
         if (keep) {
           finalPlayers[id] = {
             ...p,
+            // Ensure consumers see a consistent position even when Sleeper's
+            // raw `position` is blank for certain duplicate-name entries.
+            position: pos || p.position,
             fc_values,
             dp_values,
             ktc_values,
@@ -614,9 +610,7 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) =>
-        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
-      );
+      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
       setLeagues(updatedLeagues);
       updateProgress(100);
     } catch (err) {
@@ -640,9 +634,7 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) =>
-        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
-      );
+      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
       setLeagues(updatedLeagues);
 
       return { rosters, users };

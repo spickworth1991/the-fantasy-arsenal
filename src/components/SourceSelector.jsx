@@ -61,7 +61,7 @@ export const DEFAULT_SOURCES = [
   {
     key: "val:idynastyp",
     type: "value",
-    label: "iDynastyP",
+    label: "IDynastyP",
     icon: "IDP",
     supports: { dynasty: true, redraft: false, qbToggle: true },
   },
