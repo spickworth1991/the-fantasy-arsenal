@@ -139,7 +139,7 @@ function createCandidateIndex4() {
     byName[nn].push(cand);
   }
 
-  function pickBest(name, pos, team) {
+    function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
 
@@ -149,13 +149,13 @@ function createCandidateIndex4() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // Collision guard: if ANY candidates have a declared position and the Sleeper
-    // player has a position, require an exact position match.
-    //
-    // This prevents name-only collisions where a different-position player with
-    // the same name (e.g. Kenneth Walker RB vs a Kenneth Walker WR) can steal
-    // values from sources that don't have Sleeper IDs.
-    const anyCandHasPos = pos0 ? cands.some((c) => !!c.pos) : false;
+    // ✅ IMPORTANT:
+    // If the Sleeper record has no position, DO NOT name-match.
+    // This prevents duplicate-name “blank position” entries from stealing values.
+    if (!pos0) return null;
+
+    // Collision guard...
+    const anyCandHasPos = cands.some((c) => !!c.pos);
     const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
 
@@ -166,7 +166,6 @@ function createCandidateIndex4() {
       const candPos = c.pos;
       const candTeam = c.team;
 
-      // Hard guard: if candidate declares pos and sleeper pos exists, must match.
       if (candPos && pos0 && candPos !== pos0) continue;
 
       let score = 0;
@@ -207,7 +206,7 @@ function createCandidateIndex2() {
     byName[nn].push(cand);
   }
 
-  function pickBest(name, pos, team) {
+    function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
 
@@ -217,10 +216,13 @@ function createCandidateIndex2() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // Collision guard: if the source provides positions for any candidates and
-    // the Sleeper player has a position, only consider candidates with an exact
-    // position match. If none match, return null (don't mis-assign values).
-    const anyCandHasPos = pos0 ? cands.some((c) => !!c.pos) : false;
+    // ✅ IMPORTANT:
+    // If the Sleeper record has no position, DO NOT name-match.
+    // This prevents duplicate-name “blank position” entries from stealing values.
+    if (!pos0) return null;
+
+    // Collision guard...
+    const anyCandHasPos = cands.some((c) => !!c.pos);
     const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
 
@@ -246,6 +248,7 @@ function createCandidateIndex2() {
 
     return bestScore >= 0 ? best : null;
   }
+
 
   return { addCandidate, pickBest, raw: byName };
 }
@@ -330,7 +333,7 @@ export const SleeperProvider = ({ children }) => {
    * - FN/SP: candidate-based (pos compatible required)
    * - iDynastyP: candidate-based -> idp_values stays {one_qb, superflex}
    */
-  const CACHE_KEY = "playerDB_v1.25"; // bump to invalidate old cache
+  const CACHE_KEY = "playerDB_v1.28"; // bump to invalidate old cache
 
   const preloadPlayers = async () => {
     try {
@@ -505,6 +508,7 @@ export const SleeperProvider = ({ children }) => {
 
       // ---------- Helpers ----------
       const getDPValues = (normName0, pos0) => {
+        if (!pos0) return { one_qb: 0, superflex: 0 };
         const best = dpByNamePos[`${normName0}|${pos0}`] || dpByName[normName0] || null;
         const dpPos = normPos(best?.pos);
         if (dpPos && dpPos !== pos0) return { one_qb: 0, superflex: 0 };
@@ -512,10 +516,11 @@ export const SleeperProvider = ({ children }) => {
       };
 
       const getKTCValues = (normName0, pos0) => {
-        // KTC provides positions; name-only fallback can mis-assign values for duplicate names (e.g., Kenneth Walker).
+        if (!pos0) return { one_qb: 0, superflex: 0 };
         const best = ktcByNamePos[`${normName0}|${pos0}`] || null;
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
+
 
       const get4WayFromIndex = (index, fullName, pos0, team0) => {
         const cand = index.pickBest(fullName, pos0, team0);
@@ -576,6 +581,30 @@ export const SleeperProvider = ({ children }) => {
         const idp_values = fantasyRelevant
           ? getIDP2FromIndex(idpIndex, fullName, pos, team)
           : { one_qb: 0, superflex: 0 };
+        // ✅ DEBUG: log BOTH Sleeper entries that normalize to "kenneth walker"
+        if (normalizeName(fullName) === "kenneth walker") {
+          console.log("KW merged", {
+            id,
+            fullName,
+            pos,
+            team,
+            ktc: ktc_values,
+            dp: dp_values,
+            fn: fn_values,
+            sp: sp_values,
+            idp: idp_values,
+          });
+        }
+        if (normalizeName(fullName) === "kenneth walker") {
+        console.log("KW sleeper raw", {
+          id,
+          fullName,
+          position: p.position,
+          fantasy_positions: p.fantasy_positions,
+          team: p.team,
+          status: p.status,
+        });
+      }
 
         const keep =
           Object.values(fc_values).some((v) => v > 0) ||
@@ -600,6 +629,7 @@ export const SleeperProvider = ({ children }) => {
           };
         }
       });
+
 
       updateProgress(95);
 
