@@ -24,6 +24,17 @@ function Badge({ text }) {
   );
 }
 
+const TOOL_ICONS = {
+  "Trade Analyzer": "/icons/trade-icon.png",
+  "Player Stock": "/icons/stock-icon.png",
+  "Player Availability": "/icons/availability-icon.png",
+  "Power Rankings": "/icons/power-icon.png",
+  "Strength of Schedule": "/icons/sos-icon.png",
+  "Lineup Optimizer": "/icons/lineup-icon.png",
+  "Draft Pick Tracker": "/icons/draft-icon.png",
+};
+
+
 export default function HomePage() {
   const { username, year, login, loading, error } = useSleeper();
   const [unameInput, setUnameInput] = useState("");
@@ -104,8 +115,14 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 w-full max-w-5xl">
             {tools.map((tool, i) => (
-              <ToolCard key={tool.name} {...tool} delay={i * 150} />
+              <ToolCard
+                key={tool.name}
+                {...tool}
+                icon={TOOL_ICONS[tool.name]}
+                delay={i * 150}
+              />
             ))}
+
           </div>
         )}
       </main>
@@ -113,7 +130,8 @@ export default function HomePage() {
   );
 }
 
-function ToolCard({ name, link, description, comingSoon, badge, delay, disabled }) {
+function ToolCard({ name, link, description, comingSoon, badge, delay, disabled, icon }) {
+
   const pill = comingSoon ? "COMING SOON" : badge;
 
   return comingSoon || disabled ? (
@@ -121,6 +139,16 @@ function ToolCard({ name, link, description, comingSoon, badge, delay, disabled 
       className="bg-gray-900 p-6 text-white rounded-xl shadow-lg text-center relative transform transition hover:scale-105 animate-stagger opacity-50 cursor-not-allowed"
       style={{ animationDelay: `${delay}ms` }}
     >
+      {icon && (
+          <div className="flex justify-center mb-4">
+            <img
+              src={icon}
+              alt={`${name} icon`}
+              className="w-14 h-14 drop-shadow-lg"
+            />
+          </div>
+        )}
+
       {pill && <Badge text={pill} />}
       <h2 className="text-2xl font-bold mb-2">{name}</h2>
       <p className="text-gray-400">{description}</p>
@@ -131,6 +159,16 @@ function ToolCard({ name, link, description, comingSoon, badge, delay, disabled 
       className="bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 hover:neon-hover hover:bg-gray-800 animate-stagger"
       style={{ animationDelay: `${delay}ms` }}
     >
+      {icon && (
+        <div className="flex justify-center mb-4">
+          <img
+            src={icon}
+            alt={`${name} icon`}
+            className="w-14 h-14 drop-shadow-lg"
+          />
+        </div>
+      )}
+
       {pill && <Badge text={pill} />}
       <h2 className="text-2xl text-white font-bold mb-2">{name}</h2>
       <p className="text-gray-400">{description}</p>

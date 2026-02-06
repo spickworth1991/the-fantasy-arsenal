@@ -16,6 +16,7 @@ const ICONS = {
   sos: "/icons/sos-icon.png",
   playoff: "/icons/playoff-icon.png",
   lineup: "/icons/lineup-icon.png",
+  draft: "/icons/draft-icon.png",
 };
 
 // Set badges for sidebar links here (optional).
@@ -201,7 +202,7 @@ export default function Navbar({ pageTitle }) {
               <SidebarLink
                 href="/draft-pick-tracker"
                 icon={ICONS.draft}
-                label="Draft Pick Tracker"
+                label="Draft Monitor"
                 onClick={handleCloseSidebar}
                 badge={NAV_BADGES["/draft-pick-tracker"]}
               />
