@@ -77,7 +77,7 @@ export default function HomePage() {
       <BackgroundParticles />
       <Navbar pageTitle="Home" />
 
-      <main className="flex flex-col items-center px-4">
+      <main className="flex flex-col items-center px-4 pb-32">
         <h1 className="text-4xl text-white sm:text-6xl font-bold mb-4 text-center animate-fadeIn">
           The Fantasy Arsenal <span className="text-blue-400">by StickyPicky</span>
         </h1>
