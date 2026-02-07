@@ -15,8 +15,9 @@
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
-    "git": "git add . && git commit -m \"ballsville<3\" && git push origin main",
-    "stick": "node ./sp-editor.js"
+    "git": "git add . && git commit -m \"AvatarUpdate\" && git push origin main",
+    "stick": "node ./sp-editor.js",
+    "fetch": "node scripts/fetch.mjs --thumb --format=webp --quality=70 --force"
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -26,7 +27,8 @@
     "papaparse": "^5.5.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "recharts": "^3.1.2"
+    "recharts": "^3.1.2",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "1.13.14",

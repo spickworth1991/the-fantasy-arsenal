@@ -9,12 +9,13 @@ import { toSlug } from "../utils/slugify";
  *
  * 1) Name-based (Player Stock style):
  *    <AvatarImage name="Josh Allen" />
- *    -> /avatars/josh-allen.webp
+ *    -> tries:
+ *       /avatars/josh-allen.webp
+ *       /avatars/josh-allen.jpg
+ *       fallbackSrc
  *
  * 2) Explicit src (Trade Calc / API route style):
  *    <AvatarImage src="/api/avatar/josh-allen" fallbackSrc="/avatars/default.webp" alt="Josh Allen" />
- *
- * Backwards compatible with your existing tools.
  */
 export default function AvatarImage({
   name,
@@ -28,24 +29,32 @@ export default function AvatarImage({
   decoding = "async",
   ...rest
 }) {
-  const derivedSrc = useMemo(() => {
-    if (srcProp) return srcProp;
-    if (name) return `/avatars/${toSlug(name)}.webp`;
-    return fallbackSrc;
+  const derived = useMemo(() => {
+    if (srcProp) return { primary: srcProp, secondary: null };
+    if (name) {
+      const slug = toSlug(name);
+      return {
+        primary: `/avatars/${slug}.webp`,
+        secondary: `/avatars/${slug}.jpg`, // <-- Sleeper download script writes these
+      };
+    }
+    return { primary: fallbackSrc, secondary: null };
   }, [srcProp, name, fallbackSrc]);
 
   const derivedAlt = alt ?? name ?? "Avatar";
+  const [src, setSrc] = useState(derived.primary);
 
-  const [src, setSrc] = useState(derivedSrc);
-
-  // IMPORTANT: update the img src when name/srcProp changes
   useEffect(() => {
-    setSrc(derivedSrc);
-  }, [derivedSrc]);
+    setSrc(derived.primary);
+  }, [derived]);
 
   const handleError = () => {
-    // Prevent infinite loops if fallback is missing too
-    setSrc((prev) => (prev === fallbackSrc ? prev : fallbackSrc));
+    setSrc((prev) => {
+      // if name-based, try secondary before fallback
+      if (derived.secondary && prev === derived.primary) return derived.secondary;
+      if (prev !== fallbackSrc) return fallbackSrc;
+      return prev;
+    });
   };
 
   return (

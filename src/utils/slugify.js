@@ -17,6 +17,7 @@ const nameOverrides = {
   "harold fannin": "harold fannin jr.",
   "donte thornton": "dont'e thornton jr.",
   "ollie gordon": "ollie gordon ii",
+  "cameron ward": "cam ward",
 };
 
 export function toSlug(name) {
