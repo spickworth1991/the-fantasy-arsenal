@@ -206,7 +206,7 @@ export default function Navbar({ pageTitle }) {
             <nav className="flex flex-col gap-4">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
               <SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} />
-              <SidebarLink href="/player-stock" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} />
+              <SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} />
               <SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} />
               <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
               <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
