@@ -1,6 +1,6 @@
 "use client";
 import { clearPlayerStockSessionCache } from "../utils/psCache";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react"; // <-- add useEffect
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSleeper } from "../context/SleeperContext";
@@ -17,16 +17,13 @@ const ICONS = {
   playoff: "/icons/playoff-icon.png",
   lineup: "/icons/lineup-icon.png",
   draft: "/icons/draft-icon.png",
+  ballsville: "/brand/ballsville.png",
 };
 
 // Set badges for sidebar links here (optional).
-// Example:
-// "/trade": "UPDATED",
-// "/player-stock": "NEW",
 const NAV_BADGES = {
   "/player-availability": "UPDATED",
   "/draft-pick-tracker": "DEVELOPING",
-  // "/player-stock": "NEW",
 };
 
 const BADGE_STYLES = {
@@ -38,7 +35,11 @@ const BADGE_STYLES = {
 function NavBadge({ text }) {
   const key = String(text || "").toUpperCase();
   const cls = BADGE_STYLES[key] || "bg-white/20 text-white";
-  return <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${cls}`}>{key}</span>;
+  return (
+    <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${cls}`}>
+      {key}
+    </span>
+  );
 }
 
 function SidebarLink({ href, icon, label, onClick, badge }) {
@@ -55,11 +56,59 @@ function SidebarLink({ href, icon, label, onClick, badge }) {
   );
 }
 
+function BallsvilleLink({ className = "" }) {
+  return (
+    <a
+      href="https://theballsvillegame.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className={[
+        "group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-1.5",
+        "text-sm text-gray-200 shadow-lg transition hover:bg-white/5 hover:border-white/20",
+        className,
+      ].join(" ")}
+      title="Check out Ballsville"
+    >
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 border border-white/10 overflow-hidden">
+        <img src={ICONS.ballsville} alt="Ballsville" className="h-5 w-5 opacity-90" />
+      </span>
+      <span className="leading-tight">
+        <span className="text-white font-semibold">Check out Ballsville</span>
+        <span className="block text-[11px] text-gray-400 -mt-0.5">theballsvillegame.com</span>
+      </span>
+      <span className="text-gray-400 group-hover:text-gray-200 transition">↗</span>
+    </a>
+  );
+}
+
 export default function Navbar({ pageTitle }) {
   const { username, year, logout } = useSleeper();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const router = useRouter();
+
+  // ✅ NEW: hide Ballsville promo when tools are being used via Ballsville
+  const [hideBallsville, setHideBallsville] = useState(false);
+
+  useEffect(() => {
+    try {
+      const host = String(window.location.hostname || "").toLowerCase();
+      const path = String(window.location.pathname || "").toLowerCase();
+
+      const isOnBallsvilleDomain =
+        host === "theballsvillegame.com" || host.endsWith(".theballsvillegame.com");
+
+      const isBallsvilleMountedArsenal =
+        path.startsWith("/tools/app");
+
+      if (isOnBallsvilleDomain || isBallsvilleMountedArsenal) {
+        setHideBallsville(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
 
   const handleCloseSidebar = () => {
     setSidebarClosing(true);
@@ -80,7 +129,7 @@ export default function Navbar({ pageTitle }) {
     <>
       {/* Top Bar (full-bleed) */}
       <nav className="fixed top-0 left-0 right-0 w-full bg-gray-900 text-white px-4 sm:px-6 h-14 flex justify-between items-center shadow-lg z-50">
-        {/* Left: Logo + Title (menu button) */}
+        {/* Left: Menu button */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -97,14 +146,22 @@ export default function Navbar({ pageTitle }) {
           {pageTitle || "Home"}
         </h1>
 
-        {/* Right: User Info */}
+        {/* Right: Ballsville + user */}
         <div className="flex items-center gap-3">
+          {/* ✅ hide Ballsville promo if accessed via Ballsville */}
+          {!hideBallsville && (
+            <div className="hidden lg:block">
+              <BallsvilleLink />
+            </div>
+          )}
+
           {username && (
             <span className="hidden text-white sm:inline text-sm opacity-80">
               {username}
               {year ? ` · ${year}` : ""}
             </span>
           )}
+
           {username && (
             <button
               onClick={handleLogout}
@@ -138,75 +195,23 @@ export default function Navbar({ pageTitle }) {
             </button>
 
             {/* Sidebar Title */}
-            <div className="flex justify-center items-center gap-3 mb-6">
+            <div className="flex flex-col items-center gap-3 mb-2">
               <img src={ICONS.football} alt="Logo" className="w-[120px] h-12" />
+
+              {/* ✅ Ballsville promo inside sidebar (hide when in Ballsville context) */}
+              {!hideBallsville && <BallsvilleLink className="w-full justify-between" />}
             </div>
 
             {/* Navigation Links */}
             <nav className="flex flex-col gap-4">
-              <SidebarLink
-                href="/"
-                icon={ICONS.home}
-                label="Home"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/"]}
-              />
-
-              <SidebarLink
-                href="/trade"
-                icon={ICONS.trade}
-                label="Trade Analyzer"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/trade"]}
-              />
-
-              <SidebarLink
-                href="/player-stock"
-                icon={ICONS.stock}
-                label="Player Stock"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/player-stock"]}
-              />
-
-              <SidebarLink
-                href="/player-availability"
-                icon={ICONS.availability}
-                label="Player Availability"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/player-availability"]}
-              />
-
-              <SidebarLink
-                href="/power-rankings"
-                icon={ICONS.powerrank}
-                label="Power Rankings"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/power-rankings"]}
-              />
-
-              <SidebarLink
-                href="/sos"
-                icon={ICONS.sos}
-                label="Strength of Schedule"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/sos"]}
-              />
-
-              <SidebarLink
-                href="/lineup"
-                icon={ICONS.lineup}
-                label="Lineup Optimizer"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/lineup"]}
-              />
-              <SidebarLink
-                href="/draft-pick-tracker"
-                icon={ICONS.draft}
-                label="Draft Monitor"
-                onClick={handleCloseSidebar}
-                badge={NAV_BADGES["/draft-pick-tracker"]}
-              />
-
+              <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
+              <SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} />
+              <SidebarLink href="/player-stock" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} />
+              <SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} />
+              <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
+              <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
+              <SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} />
+              <SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} />
             </nav>
 
             <div className="border-t border-gray-700 my-4" />

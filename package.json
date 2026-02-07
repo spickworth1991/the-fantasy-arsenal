@@ -15,7 +15,7 @@
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
-    "git": "git add . && git commit -m \"playerAvalWorking\" && git push origin main",
+    "git": "git add . && git commit -m \"ballsville<3\" && git push origin main",
     "stick": "node ./sp-editor.js"
   },
   "dependencies": {
