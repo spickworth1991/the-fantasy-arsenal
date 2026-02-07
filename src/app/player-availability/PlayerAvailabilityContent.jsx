@@ -17,10 +17,19 @@ const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const leagueAvatarUrl = (avatarId) => (avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : DEFAULT_LEAGUE_IMG);
 const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`;
 
-// Player avatar helpers (no /api route required)
+// Player avatar helpers (match Trade Analyzer: /public/avatars via slug)
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
-const playerAvatarUrl = (playerId) =>
-  playerId ? `https://sleepercdn.com/content/nfl/players/thumb/${playerId}.jpg` : DEFAULT_PLAYER_IMG;
+
+function localPlayerAvatarUrl(player) {
+  const name =
+    player?.full_name ||
+    player?.name ||
+    player?.search_full_name ||
+    `${player?.first_name || ""} ${player?.last_name || ""}`.trim();
+
+  const slug = toSlug(name);
+  return slug ? `/avatars/${slug}.webp` : DEFAULT_PLAYER_IMG;
+}
 
 
 function cleanNorm(s = "") {
@@ -329,11 +338,12 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
           <div className="min-w-0">
             <div className="flex items-center gap-3">
              <AvatarImage
-                src={player?.id ? playerAvatarUrl(String(player.id)) : DEFAULT_PLAYER_IMG}
-                fallbackSrc={DEFAULT_PLAYER_IMG}
-                alt={title}
-                className="w-10 h-10 rounded-full"
-              />
+              src={localPlayerAvatarUrl({ player_id: player?.id, full_name: player?.name })}
+              fallbackSrc={DEFAULT_PLAYER_IMG}
+              alt={title}
+              className="w-10 h-10 rounded-full"
+            />
+
 
               <div className="min-w-0">
                 <div className="text-xl font-bold text-white truncate">{title}</div>
@@ -1469,11 +1479,13 @@ useEffect(() => {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={playerAvatarUrl(String(r.id))}
+                                      src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
                                       className="w-7 h-7 rounded-full"
                                     />
+
+
                                     <div className="min-w-0">
                                       <div className="text-white font-semibold truncate">{r.name}</div>
                                       <div className="text-[11px] text-white/55">
@@ -1539,11 +1551,12 @@ useEffect(() => {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={playerAvatarUrl(String(row.id))}
+                                      src={localPlayerAvatarUrl({ player_id: row.id, full_name: row.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={row.name}
                                       className="w-8 h-8 rounded-full"
                                     />
+
                                     <div className="min-w-0">
                                       <div className="text-white font-semibold truncate">{row.name}</div>
                                       <div className="text-xs text-white/60 truncate">Click to view open leagues</div>
@@ -1612,11 +1625,12 @@ useEffect(() => {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={playerAvatarUrl(String(r.id))}
+                                      src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
                                       className="w-7 h-7 rounded-full"
                                     />
+
                                     <div className="min-w-0">
                                       <div className="text-white font-semibold truncate">{r.name}</div>
                                       <div className="text-[11px] text-white/55">
