@@ -348,7 +348,7 @@ export default function TradeAnalyzer() {
     <>
       <BackgroundParticles />
       <Navbar pageTitle="Trade Analyzer" />
-      <div className="max-w-6xl mx-auto px-4 pt-8 -mt-2">
+      <div className="max-w-6xl mx-auto px-4 pt-20 -mt-2">
         {!username ? (
           <div className="text-center text-gray-400 mt-20">
             Please log in on the{" "}

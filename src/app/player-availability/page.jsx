@@ -1,18 +1,12 @@
-"use client";
-
-import { Suspense } from "react";
 import PlayerAvailabilityContent from "./PlayerAvailabilityContent";
 
-export default function PlayerAvailabilityPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-screen text-white bg-black">
-          <p className="text-xl">Loading Player Availability...</p>
-        </div>
-      }
-    >
-      <PlayerAvailabilityContent />
-    </Suspense>
-  );
+export const metadata = {
+  title: "Player Availability | Find Which Sleeper Leagues Have a Player | The Fantasy Arsenal",
+  description:
+    "Search any NFL player and instantly see which of your Sleeper leagues they are available in. Fast, clean, and built for draft season.",
+  alternates: { canonical: "/player-availability" },
+};
+
+export default function Page() {
+  return <PlayerAvailabilityContent />;
 }

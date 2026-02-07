@@ -346,7 +346,7 @@ export default function TradeFinder() {
   }, [league, players, rosterName, nflWeek, byeMap, getMetricRaw]);
 
   return (
-    <Card className="p-4 mt-8">
+    <Card className="max-w-6xl mx-auto px-4 pt-20 p-4 mt-8">
       {/* header controls */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
       {/* Shared metric switch (syncs via TRADE_PREFS_EVENT) */}
