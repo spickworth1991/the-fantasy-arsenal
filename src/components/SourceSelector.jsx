@@ -1,3 +1,4 @@
+// src/components/SourceSelector.jsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -10,61 +11,111 @@ import { createPortal } from "react-dom";
  *   - Mode: dynasty / redraft
  *   - QB: sf / 1qb
  * - Uses a Portal so the menu is NEVER trapped behind stacking contexts
+ *
+ * Updated:
+ * - Logo-first UI (no big name row beside it)
+ * - "Projections" / "Values" sits UNDER the logo block
+ * - SHOW_TEXT behavior restored for logos that need it (renders like part of the logo)
+ * - Dropdown width auto-sizes to the widest option needed
  */
 
-function BadgeIcon({ text }) {
-  return (
-    <span
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[10px] font-extrabold tracking-wide text-white/80"
-      aria-hidden
-    >
-      {text}
-    </span>
-  );
-}
+/** ========== Logos ========== */
+const ICONS = {
+  FantasyCalc: "/icons/fantasycalc-logo.png",
+  DynastyProcess: "/icons/dp-logo.png",
+  KeepTradeCut: "/icons/ktc-logo.png",
+  FantasyNavigator: "/icons/fantasynav-logo.png",
+  IDynastyP: "/icons/idp-logo.png",
 
+  FFA: "/icons/ffa-logo.jpg",
+  ESPN: "/icons/espn-logo.png",
+  CBS: "/icons/cbs-logo.png",
+};
+
+const LABELS = {
+  FantasyCalc: "FantasyCalc",
+  DynastyProcess: "DynastyProcess",
+  KeepTradeCut: "KeepTradeCut",
+  FantasyNavigator: "FantasyNavigator",
+  IDynastyP: "IDynastyP",
+
+  FFA: "FFA Projections",
+  ESPN: "ESPN Projections",
+  CBS: "CBS Projections",
+};
+
+// Per-brand sizes: "button" = closed control; "menu" = options in dropdown
+const ICON_SIZES = {
+  button: {
+    FantasyCalc: { w: 112, h: 28 },
+    DynastyProcess: { w: 164, h: 28 },
+    KeepTradeCut: { w: 136, h: 28 },
+    FantasyNavigator: { w: 48, h: 20 }, // square
+    IDynastyP: { w: 60, h: 20 },
+
+    ESPN: { w: 112, h: 28 },
+    CBS: { w: 112, h: 28 },
+    FFA: { w: 48, h: 24 },
+  },
+  menu: {
+    FantasyCalc: { w: 112, h: 21 },
+    DynastyProcess: { w: 128, h: 21 },
+    KeepTradeCut: { w: 136, h: 21 },
+    FantasyNavigator: { w: 48, h: 21 }, // square
+    IDynastyP: { w: 140, h: 28 },
+
+    ESPN: { w: 112, h: 24 },
+    CBS: { w: 112, h: 28 },
+    FFA: { w: 112, h: 24 },
+  },
+};
+
+// Only some logos need visible text; render it like part of the logo/wordmark
+const SHOW_TEXT = (key) => key === "FantasyNavigator";
+
+/** ========== Defaults ========== */
 export const DEFAULT_SOURCES = [
-  // Projections
-  { key: "proj:espn", type: "projection", label: "ESPN Projections", icon: "ESPN" },
-  { key: "proj:cbs", type: "projection", label: "CBS Projections", icon: "CBS" },
-  { key: "proj:ffa", type: "projection", label: "FFA Projections", icon: "FFA" },
+  
 
-  // Values (supports mode + qb toggles by default)
   {
     key: "val:fantasycalc",
     type: "value",
     label: "FantasyCalc",
-    icon: "FC",
+    logoKey: "FantasyCalc",
     supports: { dynasty: true, redraft: true, qbToggle: true },
   },
   {
     key: "val:keeptradecut",
     type: "value",
     label: "KeepTradeCut",
-    icon: "KTC",
+    logoKey: "KeepTradeCut",
     supports: { dynasty: true, redraft: false, qbToggle: true },
   },
   {
     key: "val:dynastyprocess",
     type: "value",
     label: "DynastyProcess",
-    icon: "DP",
+    logoKey: "DynastyProcess",
     supports: { dynasty: true, redraft: false, qbToggle: true },
   },
   {
     key: "val:fantasynav",
     type: "value",
     label: "FantasyNav",
-    icon: "FN",
+    logoKey: "FantasyNavigator",
     supports: { dynasty: true, redraft: true, qbToggle: true },
   },
   {
     key: "val:idynastyp",
     type: "value",
     label: "IDynastyP",
-    icon: "IDP",
+    logoKey: "IDynastyP",
     supports: { dynasty: true, redraft: false, qbToggle: true },
   },
+
+  { key: "proj:espn", type: "projection", label: "ESPN Projections", logoKey: "ESPN" },
+  { key: "proj:cbs", type: "projection", label: "CBS Projections", logoKey: "CBS" },
+  { key: "proj:ffa", type: "projection", label: "FFA Projections", logoKey: "FFA" },
 ];
 
 function clamp(n, min, max) {
@@ -98,12 +149,15 @@ function InlineToggles({
   onQbTypeChange,
   className = "",
 }) {
-  const supports = selected?.supports || { dynasty: false, redraft: false, qbToggle: false };
+  const supports = selected?.supports || {
+    dynasty: false,
+    redraft: false,
+    qbToggle: false,
+  };
 
   const showMode = !!supports?.dynasty || !!supports?.redraft;
   const showQB = !!supports?.qbToggle;
 
-  // if a selected value source does NOT support current mode, auto-fix to a valid mode
   useEffect(() => {
     if (!selected || selected.type !== "value") return;
     if (!showMode) return;
@@ -153,16 +207,10 @@ function InlineToggles({
               QB
             </div>
             <div className="inline-flex rounded-xl border border-white/10 bg-black/20 p-1 backdrop-blur">
-              <SegButton
-                active={qb === "sf"}
-                onClick={() => onQbTypeChange?.("sf")}
-              >
+              <SegButton active={qb === "sf"} onClick={() => onQbTypeChange?.("sf")}>
                 SF
               </SegButton>
-              <SegButton
-                active={qb === "1qb"}
-                onClick={() => onQbTypeChange?.("1qb")}
-              >
+              <SegButton active={qb === "1qb"} onClick={() => onQbTypeChange?.("1qb")}>
                 1QB
               </SegButton>
             </div>
@@ -170,12 +218,84 @@ function InlineToggles({
         )}
       </div>
 
-      {/* small helper line */}
       <div className="mt-2 text-[11px] text-white/45">
-        These settings apply to <span className="text-white/70 font-semibold">value-based</span> rankings only.
+        These settings apply to{" "}
+        <span className="text-white/70 font-semibold">value-based</span> rankings only.
       </div>
     </div>
   );
+}
+
+/**
+ * Logo block:
+ * - renders logo
+ * - optional "wordmark text" that feels attached to the logo
+ * - SR-only label for accessibility
+ */
+function LogoOnly({ source, variant }) {
+  const logoKey = source?.logoKey;
+  const src = logoKey ? ICONS[logoKey] : null;
+
+  const size =
+    (variant === "menu" ? ICON_SIZES.menu[logoKey] : ICON_SIZES.button[logoKey]) || {
+      w: 90,
+      h: 24,
+    };
+
+  const showText = !!logoKey && SHOW_TEXT(logoKey);
+
+  return (
+    <div className="flex items-center justify-center gap-2">
+      {src ? (
+        <img
+          src={src}
+          alt={`${LABELS[logoKey] || source?.label || "Source"} logo`}
+          width={size.w}
+          height={size.h}
+          className="object-contain shrink-0"
+          loading="lazy"
+        />
+      ) : null}
+
+      {/* "part-of-logo" wordmark text */}
+      {showText ? (
+        <span className="text-sm font-semibold tracking-wide text-white/85 leading-none">
+          {LABELS[logoKey] || source?.label}
+        </span>
+      ) : (
+        <span className="sr-only">{LABELS[logoKey] || source?.label}</span>
+      )}
+    </div>
+  );
+}
+
+function getLogoBlockWidthPx(sources, variant) {
+  // Base overhead: left padding inside the row + tiny breathing room
+  // Also include checkmark area on the right of the row
+  const ROW_SIDE_PADDING = 24; // px (px-3)
+  const CHECKMARK_SPACE = 28; // px
+  const GAP_BETWEEN_LOGO_AND_CHECK = 12; // px
+
+  // Extra width if SHOW_TEXT is enabled (approx; makes menu snug but safe)
+  const SHOW_TEXT_EXTRA = 92; // px (wordmark width-ish for "FantasyNavigator")
+
+  let maxLogo = 0;
+
+  for (const s of sources || []) {
+    const k = s?.logoKey;
+    if (!k) continue;
+
+    const sz =
+      (variant === "menu" ? ICON_SIZES.menu[k] : ICON_SIZES.button[k]) || { w: 90, h: 24 };
+
+    const w = sz.w + (SHOW_TEXT(k) ? SHOW_TEXT_EXTRA : 0);
+    if (w > maxLogo) maxLogo = w;
+  }
+
+  // add a bit to cover the "Values/Projections" line and layout
+  const STACK_PADDING = 10;
+
+  return Math.ceil(maxLogo + STACK_PADDING + ROW_SIDE_PADDING + GAP_BETWEEN_LOGO_AND_CHECK + CHECKMARK_SPACE);
 }
 
 export default function SourceSelector({
@@ -185,9 +305,8 @@ export default function SourceSelector({
   className = "",
   label = "Source",
 
-  // NEW: attach mode/qb toggles
-  mode = "dynasty", // dynasty | redraft
-  qbType = "sf", // sf | 1qb
+  mode = "dynasty",
+  qbType = "sf",
   onModeChange,
   onQbTypeChange,
   showToggles = true,
@@ -196,7 +315,6 @@ export default function SourceSelector({
   const [mounted, setMounted] = useState(false);
   const btnRef = useRef(null);
 
-  // fixed-position rect for the portal menu
   const [rect, setRect] = useState({ left: 0, top: 0, width: 320 });
 
   const selected = useMemo(() => {
@@ -204,9 +322,7 @@ export default function SourceSelector({
     return sources.find((s) => s.key === v) || sources[0];
   }, [sources, value]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   const measure = () => {
     const el = btnRef.current;
@@ -214,9 +330,14 @@ export default function SourceSelector({
 
     const r = el.getBoundingClientRect();
     const padding = 12;
-    const menuMaxW = 520;
 
-    const width = clamp(r.width, 240, menuMaxW);
+    // auto-size: only as wide as the widest logo block needed
+    const neededMenuW = getLogoBlockWidthPx(sources, "menu");
+
+    // keep it sane on small screens
+    const maxW = Math.min(560, window.innerWidth - padding * 2);
+    const width = clamp(neededMenuW, 220, maxW);
+
     const left = clamp(r.left, padding, window.innerWidth - width - padding);
     const top = r.bottom + 8;
 
@@ -229,30 +350,26 @@ export default function SourceSelector({
     measure();
 
     const onResize = () => measure();
-    const onScroll = () => measure(); // catches scroll containers too
+    const onScroll = () => measure();
     window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onScroll, true); // capture for nested scroll
+    window.addEventListener("scroll", onScroll, true);
 
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, sources]);
 
-  // close on escape
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   const menu = open ? (
     <>
-      {/* click-away overlay (PORTAL) */}
       <button
         type="button"
         className="fixed inset-0 z-[99998] cursor-default"
@@ -260,7 +377,6 @@ export default function SourceSelector({
         aria-label="Close source selector"
       />
 
-      {/* menu (PORTAL) */}
       <div
         className="fixed z-[99999] overflow-hidden rounded-2xl border border-white/10 bg-[#0b1020]/95 shadow-2xl backdrop-blur-xl"
         style={{
@@ -273,27 +389,39 @@ export default function SourceSelector({
         <div className="max-h-80 overflow-auto p-2">
           {sources.map((s) => {
             const active = s.key === selected.key;
+
             return (
               <button
                 key={s.key}
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition ${
                   active ? "bg-white/10 text-white" : "text-white/85 hover:bg-white/7"
                 }`}
                 onClick={() => {
-                  onChange?.(s.key); // send key string
+                  onChange?.(s.key);
                   setOpen(false);
                 }}
               >
-                <BadgeIcon text={s.icon} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">{s.label}</div>
-                  <div className="text-[11px] text-white/45">
-                    {s.type === "projection" ? "Projections" : "Values"}
+                <div className="flex items-center gap-3">
+                  {/* logo stacked with type */}
+                  <div className="flex flex-col items-center justify-center">
+                    <LogoOnly source={s} variant="menu" />
+                    <div className="mt-1 text-center text-[11px] text-white/45">
+                      {s.type === "projection" ? "Projections" : "Values"}
+                    </div>
                   </div>
+
+                  {/* keep label hidden but accessible */}
+                  <span className="sr-only">{s.label}</span>
                 </div>
+
                 {active && (
-                  <svg className="h-5 w-5 text-white/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <svg
+                    className="h-5 w-5 text-white/70"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.704 5.29a1 1 0 010 1.414l-7.778 7.778a1 1 0 01-1.414 0L3.296 10.27a1 1 0 011.414-1.414l3.095 3.095 7.07-7.07a1 1 0 011.414 0z"
@@ -315,7 +443,6 @@ export default function SourceSelector({
         ref={btnRef}
         type="button"
         onClick={() => {
-          // measure BEFORE opening so first paint is correct
           if (!open) measure();
           setOpen((v) => !v);
         }}
@@ -325,12 +452,21 @@ export default function SourceSelector({
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <BadgeIcon text={selected.icon} />
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-white/50">{label}</div>
-              <div className="truncate text-sm font-semibold text-white/90">{selected.label}</div>
+            {/* logo stacked with type */}
+            <div className="flex flex-col items-center justify-center">
+              <LogoOnly source={selected} variant="button" />
+              <div className="mt-1 text-center text-[11px] text-white/45">
+                {selected.type === "projection" ? "Projections" : "Values"}
+              </div>
+            </div>
+
+            {/* keep label hidden but accessible */}
+            <div className="sr-only">
+              <div>{label}</div>
+              <div>{selected.label}</div>
             </div>
           </div>
+
           <svg
             className={`h-5 w-5 text-white/60 transition ${open ? "rotate-180" : ""}`}
             viewBox="0 0 20 20"
@@ -346,7 +482,6 @@ export default function SourceSelector({
         </div>
       </button>
 
-      {/* NEW: attached mode / qb toggles */}
       {showToggles ? (
         <InlineToggles
           selected={selected}
@@ -357,7 +492,6 @@ export default function SourceSelector({
         />
       ) : null}
 
-      {/* Portal render */}
       {mounted && open ? createPortal(menu, document.body) : null}
     </div>
   );
