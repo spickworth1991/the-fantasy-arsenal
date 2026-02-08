@@ -17,7 +17,7 @@
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
     "git": "git add . && git commit -m \"NewTool\" && git push origin main",
     "stick": "node ./sp-editor.js",
-    "fetch": "node scripts/fetch.mjs --thumb --format=webp --quality=70 --force"
+    "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force"
   },
   "dependencies": {
     "axios": "^1.11.0",
