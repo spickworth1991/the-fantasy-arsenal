@@ -83,19 +83,7 @@ function getSleeperFantasyPosSet(p) {
 
 // Use a stable primary position so name-based matching can safely enforce pos compatibility.
 function getPrimaryPos(p) {
-  const pos = normPos(p?.position);
-  if (pos) return pos;
-
-  const fp = Array.isArray(p?.fantasy_positions) ? p.fantasy_positions : [];
-  for (const x of fp) {
-    const nx = normPos(x);
-    if (nx && FANTASY_RELEVANT.has(nx)) return nx;
-  }
-  for (const x of fp) {
-    const nx = normPos(x);
-    if (nx) return nx;
-  }
-  return "";
+  return normPos(p?.position) || "";
 }
 
 function isFantasyRelevantSleeperPlayer(p) {
@@ -106,10 +94,15 @@ function isFantasyRelevantSleeperPlayer(p) {
   return false;
 }
 
-// ---- Candidate-based matching (prevents name-only collisions) ----
-function createCandidateIndex4() {
+// =====================
+// Candidate-based matching (prevents name-only collisions)
+// =====================
+function createCandidateIndex4(seedByName) {
   // nameKey -> array of candidates: { pos, team, values: {dynasty_sf,...} }
-  const byName = Object.create(null);
+  const byName =
+    seedByName && typeof seedByName === "object"
+      ? seedByName
+      : Object.create(null);
 
   function addCandidate({ name, pos, team, values }) {
     const nn = keyName(name);
@@ -142,12 +135,9 @@ function createCandidateIndex4() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // ✅ IMPORTANT (your “wrong player assigned” fix):
-    // If Sleeper record has no position, DO NOT name-match.
-    // Prevents duplicate-name blank-position entries from stealing values.
+    // ✅ IMPORTANT: if Sleeper record has no position, DO NOT name-match.
     if (!pos0) return null;
 
-    // If candidates have pos info, require exact pos match.
     const anyCandHasPos = cands.some((c) => !!c.pos);
     const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
@@ -178,9 +168,12 @@ function createCandidateIndex4() {
   return { addCandidate, pickBest, raw: byName };
 }
 
-function createCandidateIndex2() {
+function createCandidateIndex2(seedByName) {
   // nameKey -> array of candidates: { pos, team, one_qb, superflex }
-  const byName = Object.create(null);
+  const byName =
+    seedByName && typeof seedByName === "object"
+      ? seedByName
+      : Object.create(null);
 
   function addCandidate({ name, pos, team, one_qb, superflex }) {
     const nn = keyName(name);
@@ -209,7 +202,7 @@ function createCandidateIndex2() {
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
 
-    // ✅ IMPORTANT (your “wrong player assigned” fix):
+    // ✅ IMPORTANT
     if (!pos0) return null;
 
     const anyCandHasPos = cands.some((c) => !!c.pos);
@@ -242,6 +235,138 @@ function createCandidateIndex2() {
   return { addCandidate, pickBest, raw: byName };
 }
 
+// =====================
+// Projections (candidate-based, matches value-style rules)
+// =====================
+const PROJ_JSON_URL = "/projections_2025.json";
+const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
+const PROJ_CBS_JSON_URL = "/projections_cbs_2025.json";
+
+function normalizeTeamAbbr(x) {
+  const s = String(x || "").toUpperCase().trim();
+  const map = {
+    JAX: "JAC",
+    LA: "LAR",
+    STL: "LAR",
+    SD: "LAC",
+    OAK: "LV",
+    WFT: "WAS",
+    WSH: "WAS",
+  };
+  return map[s] || s;
+}
+function normalizePos(x) {
+  const p = String(x || "").toUpperCase().trim();
+  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
+  if (p === "PK") return "K";
+  return p;
+}
+function getSleeperTeamForProj(p) {
+  return normalizeTeamAbbr(p?.team);
+}
+
+function getSleeperPosForProj(p) {
+  // keep consistent with your value-matching: use stable `position`
+  return normalizePos(getPrimaryPos(p));
+}
+
+/**
+ * Projection candidate index:
+ * - Key: normalized name
+ * - Candidate: { pos, team, pts }
+ * - pickBest requires Sleeper pos (no pos => null) like your value indexes
+ */
+function createProjectionIndex(seedByName) {
+  const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
+
+  function add({ name, pos, team, pts }) {
+    const nn = keyName(name);
+    if (!nn) return;
+
+    const cand = {
+      pos: normalizePos(pos),
+      team: normalizeTeamAbbr(team),
+      pts: safeNum(pts),
+    };
+    if (!(cand.pts > 0)) return;
+
+    if (!byName[nn]) byName[nn] = [];
+    byName[nn].push(cand);
+  }
+
+  function pickBest({ name, pos, team }) {
+    const nn = keyName(name);
+    if (!nn) return null;
+
+    const cands = byName[nn];
+    if (!Array.isArray(cands) || cands.length === 0) return null;
+
+    const pos0 = normalizePos(pos);
+    const team0 = normalizeTeamAbbr(team);
+
+    // ✅ match the “values” rule: no position => no name matching
+    if (!pos0) return null;
+
+    const anyCandHasPos = cands.some((c) => !!c.pos);
+    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const c of candidatesToScore) {
+      if (c.pos && pos0 && c.pos !== pos0) continue;
+
+      let score = 0;
+      if (c.pos && pos0 && c.pos === pos0) score += 80;
+      if (c.team && team0 && c.team === team0) score += 20;
+      if (!c.pos && c.team && team0 && c.team === team0) score += 10;
+
+      // tiny tie-breaker: higher projection wins when scores equal
+      if (score > bestScore || (score === bestScore && (c.pts || 0) > (best?.pts || 0))) {
+        bestScore = score;
+        best = c;
+      }
+    }
+
+    return bestScore >= 0 ? best : null;
+  }
+
+  return { add, pickBest, raw: byName };
+}
+
+function buildProjectionIndexFromJSON(json) {
+  const rows = Array.isArray(json) ? json : json?.rows || [];
+  const idx = createProjectionIndex();
+
+  rows.forEach((r) => {
+    const name = r.name || r.player || r.full_name || "";
+    const pts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+
+    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
+    const team = normalizeTeamAbbr(rawTeam);
+
+    const rawPos = r.pos ?? r.position ?? r.player_position;
+    const pos = normalizePos(rawPos);
+
+    if (!name) return;
+    idx.add({ name, pos, team, pts });
+  });
+
+  return idx;
+}
+
+async function fetchProjectionIndex(url) {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return buildProjectionIndexFromJSON(json);
+  } catch {
+    return null;
+  }
+}
+
 export const SleeperProvider = ({ children }) => {
   const [username, setUsername] = useState(() => lsGet("username", null));
   const [year, setYear] = useState(() => {
@@ -264,6 +389,13 @@ export const SleeperProvider = ({ children }) => {
   // Prevent infinite "auto-recover" loops if storage/IDB gets cleared.
   const recoveringRef = useRef(false);
 
+  // ===== Projections state (in context) =====
+  const [projectionIndexes, setProjectionIndexes] = useState({
+    CSV: null,
+    ESPN: null,
+    CBS: null,
+  });
+
   useEffect(() => {
     lsSet("username", username);
   }, [username]);
@@ -279,6 +411,7 @@ export const SleeperProvider = ({ children }) => {
     if (username && !preloadCalled.current) {
       preloadCalled.current = true;
       preloadPlayers();
+      preloadProjections(); // ✅ also warm projections
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
@@ -303,8 +436,82 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
+    setProjectionIndexes({ CSV: null, ESPN: null, CBS: null });
     setActiveLeague(null);
     preloadCalled.current = false;
+  };
+
+  // ===== Projections caching =====
+  const PROJ_CACHE_KEY = "projIndex_v1.0"; // bump to invalidate IDB if you change mapping rules
+
+  
+const preloadProjections = async () => {
+  try {
+    const hydrate = (raw) => {
+      if (!raw || typeof raw !== "object") return null;
+      // raw is a plain serializable object: { [normName]: [{name,pos,team,pts}, ...] }
+      return createProjectionIndex(raw);
+    };
+
+    const cached = await get(PROJ_CACHE_KEY);
+    if (cached && typeof cached === "object") {
+      setProjectionIndexes({
+        CSV: hydrate(cached?.CSV) || null,
+        ESPN: hydrate(cached?.ESPN) || null,
+        CBS: hydrate(cached?.CBS) || null,
+      });
+      return;
+    }
+
+    const [csv, espn, cbs] = await Promise.all([
+      fetchProjectionIndex(PROJ_JSON_URL),
+      fetchProjectionIndex(PROJ_ESPN_JSON_URL),
+      fetchProjectionIndex(PROJ_CBS_JSON_URL),
+    ]);
+
+    // ✅ Store ONLY serializable "raw" data in IDB (functions/closures cannot be cloned)
+    const payloadRaw = {
+      CSV: csv?.raw || null,
+      ESPN: espn?.raw || null,
+      CBS: cbs?.raw || null,
+    };
+
+    await set(PROJ_CACHE_KEY, payloadRaw);
+
+    setProjectionIndexes({
+      CSV: hydrate(payloadRaw.CSV),
+      ESPN: hydrate(payloadRaw.ESPN),
+      CBS: hydrate(payloadRaw.CBS),
+    });
+
+    } catch (e) {
+      console.error("❌ Projection preload error:", e);
+      setProjectionIndexes({ CSV: null, ESPN: null, CBS: null });
+    }
+  };
+
+  // Single helper: matches your value-style candidate rules (pos required; pos+team preferred)
+  const getProjection = (p, source = "CSV") => {
+    if (!p) return 0;
+    const idx =
+      source === "ESPN"
+        ? projectionIndexes.ESPN
+        : source === "CBS"
+        ? projectionIndexes.CBS
+        : projectionIndexes.CSV;
+
+    if (!idx) return 0;
+
+    const fullName =
+      p.full_name ||
+      p.search_full_name ||
+      `${p.first_name || ""} ${p.last_name || ""}`.trim();
+
+    const pos = getSleeperPosForProj(p);
+    const team = getSleeperTeamForProj(p);
+
+    const best = idx.pickBest({ name: fullName, pos, team });
+    return safeNum(best?.pts);
   };
 
   // Auto-recover if storage/IDB gets cleared while UI still has a username.
@@ -312,16 +519,17 @@ export const SleeperProvider = ({ children }) => {
     const hasUsername = !!username;
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
+    const missingProjs =
+      !projectionIndexes?.CSV && !projectionIndexes?.ESPN && !projectionIndexes?.CBS;
 
     if (!hasUsername) return;
     if (loading) return;
-    if (!(missingPlayers || missingLeagues)) return;
+    if (!(missingPlayers || missingLeagues || missingProjs)) return;
     if (recoveringRef.current) return;
 
     recoveringRef.current = true;
 
     (async () => {
-      // 1) Make sure the stored username is still a real Sleeper user.
       const user = await validateUsername(username);
       if (!user) {
         setError("Saved Sleeper username is invalid. Please log in again.");
@@ -331,17 +539,19 @@ export const SleeperProvider = ({ children }) => {
       }
 
       try {
-        // 2) Refresh leagues for stored year.
         const leaguesRes = await fetch(
           `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${year}`
         );
         const leaguesData = await leaguesRes.json();
         setLeagues(Array.isArray(leaguesData) ? leaguesData : []);
 
-        // 3) Rebuild player DB if missing.
         if (missingPlayers) {
           preloadCalled.current = true;
           await preloadPlayers();
+        }
+
+        if (missingProjs) {
+          await preloadProjections();
         }
       } catch (e) {
         console.error("❌ Auto-recover failed:", e);
@@ -350,7 +560,7 @@ export const SleeperProvider = ({ children }) => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, year, players, leagues, loading]);
+  }, [username, year, players, leagues, loading, projectionIndexes]);
 
   const login = async (uname, yr) => {
     try {
@@ -358,18 +568,18 @@ export const SleeperProvider = ({ children }) => {
       setProgress(5);
       setError("");
 
-      // ✅ Validate first (don't mutate state/storage until confirmed)
       const user = await validateUsername(uname);
       if (!user) throw new Error("User not found");
       updateProgress(20);
 
-      // Now persist username/year only after validation
       lsSet("username", uname);
       lsSet("year", yr);
       setUsername(uname);
       setYear(yr);
 
-      const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`);
+      const leaguesRes = await fetch(
+        `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yr}`
+      );
       const leaguesData = await leaguesRes.json();
       setLeagues(Array.isArray(leaguesData) ? leaguesData : []);
       updateProgress(50);
@@ -378,11 +588,13 @@ export const SleeperProvider = ({ children }) => {
         preloadCalled.current = true;
         await preloadPlayers();
       }
+
+      // ✅ always ensure projections are ready after login
+      await preloadProjections();
     } catch (err) {
       console.error("❌ Login error:", err);
       setError(err?.message || "Login failed");
 
-      // Don't leave the app "half logged in" on bad username.
       if (String(err?.message || "").toLowerCase().includes("user not found")) {
         lsSet("username", null);
         setUsername(null);
@@ -400,7 +612,7 @@ export const SleeperProvider = ({ children }) => {
    * - FN/SP: candidate-based; requires Sleeper pos (no pos => null)
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
-  const CACHE_KEY = "playerDB_v1.30"; // bump to invalidate old cache
+  const CACHE_KEY = "playerDB_v1.42";
 
   const preloadPlayers = async () => {
     try {
@@ -416,12 +628,10 @@ export const SleeperProvider = ({ children }) => {
         return;
       }
 
-      // 1) Sleeper players
       const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
       const playersData = await playersRes.json();
       updateProgress(68);
 
-      // 2) Value/projection caches
       const [fcRes, dpRes, ktcRes, fnRes, idpRes, spRes] = await Promise.all([
         fetch("/fantasycalc_cache.json"),
         fetch("/dynastyprocess_cache.json"),
@@ -441,7 +651,6 @@ export const SleeperProvider = ({ children }) => {
       ]);
       updateProgress(78);
 
-      // ---------- FantasyCalc maps (by Sleeper ID) ----------
       const mapBySleeperId = (arr) => {
         const map = {};
         (Array.isArray(arr) ? arr : []).forEach((item) => {
@@ -457,7 +666,6 @@ export const SleeperProvider = ({ children }) => {
       const redraftSFMap = mapBySleeperId(fcData?.Redraft_SF);
       const redraft1QBMap = mapBySleeperId(fcData?.Redraft_1QB);
 
-      // ---------- DynastyProcess ----------
       const dpByName = {};
       const dpByNamePos = {};
       if (dpData && typeof dpData === "object") {
@@ -470,7 +678,6 @@ export const SleeperProvider = ({ children }) => {
         });
       }
 
-      // ---------- KTC ----------
       const ktcByNamePos = {};
       const ingestKTC = (arr, which) => {
         (Array.isArray(arr) ? arr : []).forEach((p) => {
@@ -490,7 +697,6 @@ export const SleeperProvider = ({ children }) => {
       ingestKTC(ktcData?.OneQB, "one_qb");
       ingestKTC(ktcData?.Superflex, "superflex");
 
-      // ---------- FantasyNavigator + StickyPicky (4-way candidate indexes) ----------
       const fnIndex = createCandidateIndex4();
       const spIndex = createCandidateIndex4();
 
@@ -521,7 +727,6 @@ export const SleeperProvider = ({ children }) => {
       ingest4WayList(fnData, fnIndex);
       ingest4WayList(spData, spIndex);
 
-      // ---------- iDynastyP (2-way candidate index) ----------
       const idpIndex = createCandidateIndex2();
 
       const idpRows = Array.isArray(idpData)
@@ -566,11 +771,8 @@ export const SleeperProvider = ({ children }) => {
         });
       });
 
-      // ---------- Helpers ----------
       const getDPValues = (normName0, pos0) => {
-        // ✅ require Sleeper pos for DP lookups (prevents blank-pos collisions)
         if (!pos0) return { one_qb: 0, superflex: 0 };
-
         const best = dpByNamePos[`${normName0}|${pos0}`] || dpByName[normName0] || null;
         const dpPos = normPos(best?.pos);
         if (dpPos && dpPos !== pos0) return { one_qb: 0, superflex: 0 };
@@ -578,7 +780,6 @@ export const SleeperProvider = ({ children }) => {
       };
 
       const getKTCValues = (normName0, pos0) => {
-        // ✅ STRICT: name+pos only (no name-only fallback)
         if (!pos0) return { one_qb: 0, superflex: 0 };
         const best = ktcByNamePos[`${normName0}|${pos0}`] || null;
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
@@ -603,13 +804,13 @@ export const SleeperProvider = ({ children }) => {
         };
       };
 
-      // ---------- Build final players ----------
       const finalPlayers = {};
 
       Object.keys(playersData || {}).forEach((id) => {
         const p = playersData[id];
         if (!p) return;
 
+        const isActive = p?.active === true || p?.active === 1;
         const fullName = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
         const nn = normalizeName(fullName);
         const pos = getPrimaryPos(p);
@@ -643,7 +844,9 @@ export const SleeperProvider = ({ children }) => {
           ? getIDP2FromIndex(idpIndex, fullName, pos, team)
           : { one_qb: 0, superflex: 0 };
 
-        const keep =
+        const hasPos = !!pos;
+
+        const hasAnySignal =
           Object.values(fc_values).some((v) => v > 0) ||
           Object.values(dp_values).some((v) => v > 0) ||
           Object.values(ktc_values).some((v) => v > 0) ||
@@ -651,11 +854,12 @@ export const SleeperProvider = ({ children }) => {
           Object.values(sp_values).some((v) => v > 0) ||
           Object.values(idp_values).some((v) => v > 0);
 
+        const keep = (hasAnySignal && hasPos) || (isActive && fantasyRelevant && hasPos);
+
         if (keep) {
           finalPlayers[id] = {
             ...p,
-            // Ensure consumers see a consistent position even when Sleeper's raw `position` is blank.
-            position: pos || p.position,
+            position: pos,
             fc_values,
             dp_values,
             ktc_values,
@@ -693,7 +897,9 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
+      const updatedLeagues = leagues.map((lg) =>
+        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
+      );
       setLeagues(updatedLeagues);
       updateProgress(100);
     } catch (err) {
@@ -717,7 +923,9 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) => (lg.league_id === leagueId ? { ...lg, rosters, users } : lg));
+      const updatedLeagues = leagues.map((lg) =>
+        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
+      );
       setLeagues(updatedLeagues);
 
       return { rosters, users };
@@ -744,6 +952,10 @@ export const SleeperProvider = ({ children }) => {
         logout,
         fetchLeagueRosters,
         fetchLeagueRostersSilent,
+        // ✅ projections in context
+        projectionIndexes,
+        preloadProjections,
+        getProjection,
         loading,
         progress,
         error,

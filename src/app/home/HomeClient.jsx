@@ -35,6 +35,7 @@ const TOOL_ICONS = {
   "Strength of Schedule": "/icons/sos-icon.png",
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
+  "League Hub": "/icons/league-hub.png",
 };
 
 export default function HomeClient() {
@@ -67,6 +68,13 @@ export default function HomeClient() {
       badge: "UPDATED",
     },
     {
+      name: "League Hub",
+      link: "/league-hub",
+      description:
+        "Multi-league dashboard: recent transactions, top free agents, injury report, and bye conflicts.",
+      badge: "DEVELOPING",
+    },
+    {
       name: "Power Rankings",
       link: "/power-rankings",
       description: "See where you rank amongst your league.",
@@ -86,7 +94,7 @@ export default function HomeClient() {
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
-      badge: "DEVELOPING",
+      badge: "NEW",
     },
   ];
 

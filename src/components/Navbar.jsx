@@ -18,12 +18,14 @@ const ICONS = {
   lineup: "/icons/lineup-icon.png",
   draft: "/icons/draft-icon.png",
   ballsville: "/brand/ballsville.png",
+  leaguehub: "/icons/league-hub.png",
 };
 
 // Set badges for sidebar links here (optional).
 const NAV_BADGES = {
   "/player-availability": "UPDATED",
-  "/draft-pick-tracker": "DEVELOPING",
+  "/draft-pick-tracker": "NEW",
+  "/league-hub": "DEVELOPING",
 };
 
 const BADGE_STYLES = {
@@ -195,7 +197,7 @@ export default function Navbar({ pageTitle }) {
             </button>
 
             {/* Sidebar Title */}
-            <div className="flex flex-col items-center gap-3 mb-2">
+            <div className="flex flex-col items-center gap-2">
               <img src={ICONS.football} alt="Logo" className="w-[120px] h-12" />
 
               {/* ✅ Ballsville promo inside sidebar (hide when in Ballsville context) */}
@@ -203,23 +205,24 @@ export default function Navbar({ pageTitle }) {
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-2">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
               <SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} />
               <SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} />
               <SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} />
+              <SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} />
               <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
               <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
               <SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} />
               <SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} />
             </nav>
 
-            <div className="border-t border-gray-700 my-4" />
+            <div className="border-t border-gray-700" />
 
             {/* User Info + Logout */}
             {username ? (
               <div className="mt-auto">
-                <p className="text-sm text-gray-400 mb-2">
+                <p className="text-sm text-gray-400 mb-1">
                   Logged in as <span className="font-bold">{username}</span> ({year})
                 </p>
                 <button
