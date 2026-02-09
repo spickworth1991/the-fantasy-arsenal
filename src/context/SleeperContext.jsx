@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useRef, useContext, useState, useEffect } from "react";
+import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
 import { get, set } from "idb-keyval";
+import { makeGetPlayerValue } from "../lib/values";
 
 const SleeperContext = createContext();
 export const useSleeper = () => useContext(SleeperContext);
@@ -105,25 +106,44 @@ function createCandidateIndex4(seedByName) {
       : Object.create(null);
 
   function addCandidate({ name, pos, team, values }) {
-    const nn = keyName(name);
-    if (!nn) return;
+  const nn = keyName(name);
+  if (!nn) return;
 
-    const cand = {
-      pos: normPos(pos),
-      team: normTeam(team),
-      values: {},
-    };
+  const candPos = normPos(pos);
+  const candTeam = normTeam(team);
 
+  // Build the incoming values payload
+  const incoming = {};
+  VALUE_KEYS.forEach((k) => {
+    incoming[k] = safeNum(values?.[k]);
+  });
+
+  // If this row doesn't actually contribute anything, skip
+  const hasAny = VALUE_KEYS.some((k) => incoming[k] > 0);
+  if (!hasAny) return;
+
+  if (!byName[nn]) byName[nn] = [];
+
+  // ✅ MERGE: if we already have this exact player candidate (same pos/team), update it
+  const existing = byName[nn].find(
+    (c) => c?.pos === candPos && c?.team === candTeam
+  );
+
+  if (existing) {
     VALUE_KEYS.forEach((k) => {
-      cand.values[k] = safeNum(values?.[k]);
+      if (incoming[k] > 0) existing.values[k] = incoming[k];
     });
-
-    const hasAny = VALUE_KEYS.some((k) => cand.values[k] > 0);
-    if (!hasAny) return;
-
-    if (!byName[nn]) byName[nn] = [];
-    byName[nn].push(cand);
+    return;
   }
+
+  // Otherwise create a new candidate
+  byName[nn].push({
+    pos: candPos,
+    team: candTeam,
+    values: incoming,
+  });
+}
+
 
   function pickBest(name, pos, team) {
     const nn = keyName(name);
@@ -376,8 +396,13 @@ export const SleeperProvider = ({ children }) => {
 
   const [players, setPlayers] = useState({});
   const [leagues, setLeagues] = useState([]);
-  const [format, setFormat] = useState("dynasty");
-  const [qbType, setQbType] = useState("sf");
+
+  // Global knobs used across tools (driven by SourceSelector)
+  const [format, setFormat] = useState(() => lsGet("format", "dynasty"));
+  const [qbType, setQbType] = useState(() => lsGet("qbType", "sf"));
+
+  // Unified source key used by SourceSelector (can be either proj:* or val:*)
+  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "proj:ffa"));
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -391,7 +416,7 @@ export const SleeperProvider = ({ children }) => {
 
   // ===== Projections state (in context) =====
   const [projectionIndexes, setProjectionIndexes] = useState({
-    CSV: null,
+    FFA: null,
     ESPN: null,
     CBS: null,
   });
@@ -403,15 +428,92 @@ export const SleeperProvider = ({ children }) => {
     lsSet("year", year);
   }, [year]);
   useEffect(() => {
+    lsSet("format", format);
+  }, [format]);
+  useEffect(() => {
+    lsSet("qbType", qbType);
+  }, [qbType]);
+  useEffect(() => {
+    lsSet("sourceKey", sourceKey);
+  }, [sourceKey]);
+  useEffect(() => {
     if (activeLeague) lsSet("activeLeague", activeLeague);
     else lsSet("activeLeague", null);
   }, [activeLeague]);
+
+  // ===== Unified source helpers (values + projections) =====
+  const metricType = String(sourceKey || "").startsWith("proj:")
+    ? "projection"
+    : "value";
+
+  // SourceSelector key -> internal values source name used by makeGetPlayerValue
+  const valueSourceFromKey = (k) => {
+    const map = {
+      "val:fantasycalc": "FantasyCalc",
+      "val:keeptradecut": "KeepTradeCut",
+      "val:dynastyprocess": "DynastyProcess",
+      "val:fantasynav": "FantasyNavigator",
+      "val:idynastyp": "IDynastyP",
+      "val:ffa": "FantasyFootaballAnalytics",
+    };
+    return map[String(k || "")] || "FantasyCalc";
+  };
+
+  // SourceSelector key -> legacy projection code your getProjection() expects
+  const projectionSourceFromKey = (k) => {
+    const map = {
+      // ✅ your /projections_2025.json is FFA
+      "proj:ffa": "FFA",
+      "proj:espn": "ESPN",
+      "proj:cbs": "CBS",
+
+      // ✅ backward-compat: if anything still sends proj:sleeper, treat it as FFA
+      "proj:sleeper": "FFA",
+    };
+    return map[String(k || "")] || "FFA";
+  };
+
+  // When a projection key is selected, some pages still want a value getter.
+  // Preserve LeagueHub's old behavior: values fall back to FantasyCalc unless
+  // a value key is actively selected.
+  const activeValueSource = metricType === "value" ? valueSourceFromKey(sourceKey) : "FantasyCalc";
+
+  const projectionSource =
+    metricType === "projection" ? projectionSourceFromKey(sourceKey) : "FFA";
+
+  // Fast path: current global value getter (when a value key is selected)
+  const getPlayerValueFn = useMemo(() => {
+    return makeGetPlayerValue(
+      activeValueSource,
+      String(format || "dynasty").toLowerCase(),
+      String(qbType || "sf").toLowerCase()
+    );
+  }, [activeValueSource, format, qbType]);
+
+  // Universal helper: can be called with overrides (sourceKey/format/qbType)
+  const getPlayerValue = (p, opts = null) => {
+    const fmt = String(opts?.format || format || "dynasty").toLowerCase();
+    const qb = String(opts?.qbType || qbType || "sf").toLowerCase();
+    const srcKey = opts?.sourceKey ?? sourceKey;
+
+    const mt = String(srcKey || "").startsWith("proj:") ? "projection" : "value";
+    if (
+      mt === "value" &&
+      srcKey === sourceKey &&
+      fmt === String(format || "dynasty").toLowerCase() &&
+      qb === String(qbType || "sf").toLowerCase()
+    ) {
+      return getPlayerValueFn(p);
+    }
+    const src = mt === "value" ? valueSourceFromKey(srcKey) : "FantasyCalc";
+    return makeGetPlayerValue(src, fmt, qb)(p);
+  };
 
   useEffect(() => {
     if (username && !preloadCalled.current) {
       preloadCalled.current = true;
       preloadPlayers();
-      preloadProjections(); // ✅ also warm projections
+      preloadProjections();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
@@ -436,69 +538,81 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
-    setProjectionIndexes({ CSV: null, ESPN: null, CBS: null });
+    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null });
     setActiveLeague(null);
     preloadCalled.current = false;
   };
 
   // ===== Projections caching =====
-  const PROJ_CACHE_KEY = "projIndex_v1.0"; // bump to invalidate IDB if you change mapping rules
+  // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
+  const PROJ_CACHE_KEY = "projIndex_v1.101";
 
-  
-const preloadProjections = async () => {
-  try {
-    const hydrate = (raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      // raw is a plain serializable object: { [normName]: [{name,pos,team,pts}, ...] }
-      return createProjectionIndex(raw);
-    };
+  const preloadProjections = async () => {
+    try {
+      const hydrate = (raw) => {
+        if (!raw || typeof raw !== "object") return null;
+        const idx = createProjectionIndex(raw);
+        const size = raw ? Object.keys(raw).length : 0;
+        return size > 0 ? idx : null;
+      };
 
-    const cached = await get(PROJ_CACHE_KEY);
-    if (cached && typeof cached === "object") {
+      const cached = await get(PROJ_CACHE_KEY);
+      if (cached && typeof cached === "object") {
+        const hasFFA = cached?.FFA && typeof cached.FFA === "object" && Object.keys(cached.FFA).length > 0;
+        const hasESPN = cached?.ESPN && typeof cached.ESPN === "object" && Object.keys(cached.ESPN).length > 0;
+        const hasCBS = cached?.CBS && typeof cached.CBS === "object" && Object.keys(cached.CBS).length > 0;
+
+        // ✅ Only early-return if we actually have at least one non-empty index cached
+        if (hasFFA || hasESPN || hasCBS) {
+          setProjectionIndexes({
+            FFA: hydrate(cached?.FFA) || null,
+            ESPN: hydrate(cached?.ESPN) || null,
+            CBS: hydrate(cached?.CBS) || null,
+          });
+          return;
+        }
+      }
+
+      const [ffa, espn, cbs] = await Promise.all([
+        fetchProjectionIndex(PROJ_JSON_URL),        // ✅ FFA
+        fetchProjectionIndex(PROJ_ESPN_JSON_URL),
+        fetchProjectionIndex(PROJ_CBS_JSON_URL),
+      ]);
+
+      const payloadRaw = {
+        FFA: ffa?.raw || null,
+        ESPN: espn?.raw || null,
+        CBS: cbs?.raw || null,
+      };
+
+      await set(PROJ_CACHE_KEY, payloadRaw);
+
       setProjectionIndexes({
-        CSV: hydrate(cached?.CSV) || null,
-        ESPN: hydrate(cached?.ESPN) || null,
-        CBS: hydrate(cached?.CBS) || null,
+        FFA: hydrate(payloadRaw.FFA),
+        ESPN: hydrate(payloadRaw.ESPN),
+        CBS: hydrate(payloadRaw.CBS),
       });
-      return;
-    }
-
-    const [csv, espn, cbs] = await Promise.all([
-      fetchProjectionIndex(PROJ_JSON_URL),
-      fetchProjectionIndex(PROJ_ESPN_JSON_URL),
-      fetchProjectionIndex(PROJ_CBS_JSON_URL),
-    ]);
-
-    // ✅ Store ONLY serializable "raw" data in IDB (functions/closures cannot be cloned)
-    const payloadRaw = {
-      CSV: csv?.raw || null,
-      ESPN: espn?.raw || null,
-      CBS: cbs?.raw || null,
-    };
-
-    await set(PROJ_CACHE_KEY, payloadRaw);
-
-    setProjectionIndexes({
-      CSV: hydrate(payloadRaw.CSV),
-      ESPN: hydrate(payloadRaw.ESPN),
-      CBS: hydrate(payloadRaw.CBS),
-    });
-
     } catch (e) {
       console.error("❌ Projection preload error:", e);
-      setProjectionIndexes({ CSV: null, ESPN: null, CBS: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null });
     }
   };
 
   // Single helper: matches your value-style candidate rules (pos required; pos+team preferred)
-  const getProjection = (p, source = "CSV") => {
+  const getProjection = (p, source = "FFA") => {
+    // Accept either legacy codes (FFA/ESPN/CBS) or SourceSelector keys (proj:ffa/proj:espn/proj:cbs)
+    let src = String(source || "FFA");
+    if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
+
+    if (src !== "FFA" && src !== "ESPN" && src !== "CBS") src = "FFA";
     if (!p) return 0;
+
     const idx =
-      source === "ESPN"
+      src === "ESPN"
         ? projectionIndexes.ESPN
-        : source === "CBS"
+        : src === "CBS"
         ? projectionIndexes.CBS
-        : projectionIndexes.CSV;
+        : projectionIndexes.FFA;
 
     if (!idx) return 0;
 
@@ -520,7 +634,7 @@ const preloadProjections = async () => {
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
     const missingProjs =
-      !projectionIndexes?.CSV && !projectionIndexes?.ESPN && !projectionIndexes?.CBS;
+      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS;
 
     if (!hasUsername) return;
     if (loading) return;
@@ -589,7 +703,6 @@ const preloadProjections = async () => {
         await preloadPlayers();
       }
 
-      // ✅ always ensure projections are ready after login
       await preloadProjections();
     } catch (err) {
       console.error("❌ Login error:", err);
@@ -612,7 +725,8 @@ const preloadProjections = async () => {
    * - FN/SP: candidate-based; requires Sleeper pos (no pos => null)
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
-  const CACHE_KEY = "playerDB_v1.42";
+  // ✅ Bump cache version so your fn_values aliases actually get written.
+  const CACHE_KEY = "playerDB_v1.44";
 
   const preloadPlayers = async () => {
     try {
@@ -785,16 +899,67 @@ const preloadProjections = async () => {
         return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
       };
 
-      const get4WayFromIndex = (index, fullName, pos0, team0) => {
-        const cand = index.pickBest(fullName, pos0, team0);
-        const v = cand?.values || null;
-        return {
-          dynasty_sf: safeNum(v?.dynasty_sf),
-          dynasty_1qb: safeNum(v?.dynasty_1qb),
-          redraft_sf: safeNum(v?.redraft_sf),
-          redraft_1qb: safeNum(v?.redraft_1qb),
-        };
-      };
+      const pickBest4WayValue = (index, fullName, pos0, team0, valueKey) => {
+  if (!index || !index.raw) return 0;
+
+  const nn = keyName(fullName);
+  if (!nn) return 0;
+
+  const cands = index.raw[nn];
+  if (!Array.isArray(cands) || cands.length === 0) return 0;
+
+  const pos = normPos(pos0);
+  const team = normTeam(team0);
+
+  // match your "no pos => no match" rule
+  if (!pos) return 0;
+
+  const anyCandHasPos = cands.some((c) => !!c?.pos);
+  const candidatesToScore = anyCandHasPos ? cands.filter((c) => c?.pos === pos) : cands;
+  if (anyCandHasPos && candidatesToScore.length === 0) return 0;
+
+  let best = null;
+  let bestScore = -1;
+
+  for (const c of candidatesToScore) {
+    const candPos = normPos(c?.pos);
+    const candTeam = normTeam(c?.team);
+
+    if (candPos && pos && candPos !== pos) continue;
+
+    let score = 0;
+    if (candPos && pos && candPos === pos) score += 80;
+    if (candTeam && team && candTeam === team) score += 20;
+    if (!candPos && candTeam && team && candTeam === team) score += 10;
+
+    const v = safeNum(c?.values?.[valueKey]);
+
+    // tie-break using the value for THIS key (this is the important part)
+    if (score > bestScore || (score === bestScore && v > safeNum(best?.values?.[valueKey]))) {
+      bestScore = score;
+      best = c;
+    }
+  }
+
+  return bestScore >= 0 ? safeNum(best?.values?.[valueKey]) : 0;
+};
+
+const get4WayFromIndex = (index, fullName, pos0, team0) => {
+  const dynasty_sf = pickBest4WayValue(index, fullName, pos0, team0, "dynasty_sf");
+  const dynasty_1qb = pickBest4WayValue(index, fullName, pos0, team0, "dynasty_1qb");
+  const redraft_sf = pickBest4WayValue(index, fullName, pos0, team0, "redraft_sf");
+  const redraft_1qb = pickBest4WayValue(index, fullName, pos0, team0, "redraft_1qb");
+
+  const out = { dynasty_sf, dynasty_1qb, redraft_sf, redraft_1qb };
+
+  // keep your casing aliases for any downstream code that expects 1QB
+  return {
+    ...out,
+    dynasty_1QB: out.dynasty_1qb,
+    redraft_1QB: out.redraft_1qb,
+  };
+};
+
 
       const getIDP2FromIndex = (index, fullName, pos0, team0) => {
         const cand = index.pickBest(fullName, pos0, team0);
@@ -834,11 +999,11 @@ const preloadProjections = async () => {
 
         const fn_values = fantasyRelevant
           ? get4WayFromIndex(fnIndex, fullName, pos, team)
-          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0, dynasty_1QB: 0, redraft_1QB: 0 };
 
         const sp_values = fantasyRelevant
           ? get4WayFromIndex(spIndex, fullName, pos, team)
-          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0 };
+          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0, dynasty_1QB: 0, redraft_1QB: 0 };
 
         const idp_values = fantasyRelevant
           ? getIDP2FromIndex(idpIndex, fullName, pos, team)
@@ -948,6 +1113,12 @@ const preloadProjections = async () => {
         qbType,
         setFormat,
         setQbType,
+        // ✅ unified source controls (values + projections)
+        sourceKey,
+        setSourceKey,
+        metricType,
+        projectionSource,
+        getPlayerValue,
         login,
         logout,
         fetchLeagueRosters,

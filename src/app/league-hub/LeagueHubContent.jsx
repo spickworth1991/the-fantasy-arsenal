@@ -11,9 +11,8 @@ const BackgroundParticles = dynamic(
 
 import LoadingScreen from "../../components/LoadingScreen";
 import AvatarImage from "../../components/AvatarImage";
-import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
+import SourceSelector from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
-import { makeGetPlayerValue } from "../../lib/values";
 import { getTeamByeWeek } from "../../utils/nflByeWeeks";
 
 // League avatars (Sleeper)
@@ -264,6 +263,12 @@ export default function LeagueHubContent() {
     year,
     format,
     qbType,
+    // ✅ unified metric controls (handled by SleeperContext + SourceSelector)
+    sourceKey,
+    setSourceKey,
+    metricType,
+    projectionSource,
+    getPlayerValue: getPlayerValue,
     getProjection,
     projectionIndexes,
   } = useSleeper();
@@ -306,13 +311,9 @@ export default function LeagueHubContent() {
   // cache per user+season
   const cacheKey = username ? `lh:${username}:${yrStr}:SCAN` : null;
 
-  // Source selector (single)
-  const [sourceKey, setSourceKey] = useState("proj:sleeper");
-  const activeSource = useMemo(
-    () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
-    [sourceKey]
-  );
-  const bestMetric = activeSource.type === "projection" ? "projection" : "value";
+  // Source selector is owned by SleeperContext.
+  // League Hub only consumes `sourceKey` + `metricType` and uses the unified getters.
+  const bestMetric = metricType === "projection" ? "projection" : "value";
 
   // Best available filters
   const [bestPos, setBestPos] = useState("ALL");
@@ -354,18 +355,9 @@ export default function LeagueHubContent() {
   const [selectedManagerLeague, setSelectedManagerLeague] = useState(null);
   const [selectedInjuryPlayer, setSelectedInjuryPlayer] = useState(null);
 
-  // Projection source (driven by SourceSelector)
-  const [projSource, setProjSource] = useState("CSV");
-
   const projectionsReady =
-    !!projectionIndexes?.CSV || !!projectionIndexes?.ESPN || !!projectionIndexes?.CBS;
+    !!projectionIndexes?.FFA || !!projectionIndexes?.ESPN || !!projectionIndexes?.CBS;
 
-  // drive legacy projection source from selector
-  useEffect(() => {
-    if (activeSource.type !== "projection") return;
-    const map = { "proj:sleeper": "CSV", "proj:espn": "ESPN", "proj:cbs": "CBS" };
-    setProjSource(map[activeSource.key] || "CSV");
-  }, [activeSource]);
 
   // ---------- Guards ----------
   useEffect(() => {
@@ -630,27 +622,10 @@ export default function LeagueHubContent() {
   }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting, excludedLeagueIds]);
 
   // ---------- Compute: Best Free Agents ----------
-  
-    function valueSourceFromKey(k) {
-      const key = String(k || "");
-      const map = {
-        "val:fantasycalc": "FantasyCalc",
-        "val:keeptradecut": "KeepTradeCut",
-        "val:dynastyprocess": "DynastyProcess",
-        "val:fantasynav": "FantasyNavigator",
-        "val:idynastyp": "IDynastyP",
-        "val:ffa": "TheFantasyArsenal",
-      };
-      return map[key] || "FantasyCalc";
-    }
-
-    const getPlayerValue = useMemo(() => {
-      // If selector is on projection, values should still use the currently selected value source
-      // (or default to FantasyCalc).
-      const isValue = activeSource?.type === "value";
-      const valueSource = isValue ? valueSourceFromKey(activeSource?.key) : "FantasyCalc";
-      return makeGetPlayerValue(valueSource, mode, qb);
-    }, [activeSource, mode, qb]);
+  // Values + projections are resolved by SleeperContext based on `sourceKey`.
+  const getValueForPlayer = useMemo(() => {
+    return (p) => getPlayerValue(p, { format: mode, qbType: qb, sourceKey });
+  }, [getPlayerValue, mode, qb, sourceKey]);
 
 
   const bestFreeAgents = useMemo(() => {
@@ -661,8 +636,8 @@ export default function LeagueHubContent() {
 
     const metricFor = (p) => {
       if (!p || p.player_id == null) return 0;
-      if (bestMetric === "projection") return getProjection(p, projSource);
-      return getPlayerValue(p);
+      if (bestMetric === "projection") return getProjection(p, projectionSource);
+      return getValueForPlayer(p);
     };
 
     const ranked = playerList
@@ -700,8 +675,8 @@ export default function LeagueHubContent() {
       const pos = String(p.position || "").toUpperCase();
       const team = String(p.team || "").toUpperCase();
 
-      const proj = getProjection(p, projSource);
-      const val = getPlayerValue(p);
+      const proj = getProjection(p, projectionSource);
+      const val = getValueForPlayer(p);
       out.push({
         id: pid,
         name,
@@ -725,9 +700,9 @@ export default function LeagueHubContent() {
     bestPos,
     bestLimit,
     minOpenSlots,
-    getPlayerValue,
+    getValueForPlayer,
     getProjection,
-    projSource,
+    projectionSource,
   ]);
 
   // ---------- Injury report (clickable -> leagues modal) ----------
@@ -752,8 +727,8 @@ export default function LeagueHubContent() {
         const pos = String(p.position || "").toUpperCase();
         const team = String(p.team || "").toUpperCase();
 
-        const value = getPlayerValue(p);
-        const proj = getProjection(p, projSource);
+        const value = getValueForPlayer(p);
+        const proj = getProjection(p, projectionSource);
         const injuryTag = String(
           p.injury_status || p.status || p.practice_participation || ""
         ).trim();
@@ -790,7 +765,7 @@ export default function LeagueHubContent() {
     out.sort((a, b) => (metric(b) || 0) - (metric(a) || 0) || a.name.localeCompare(b.name));
 
     return out.slice(0, 40);
-  }, [visibleLeaguesList, playersMap, getPlayerValue, getProjection, projSource, bestMetric]);
+  }, [visibleLeaguesList, playersMap, getValueForPlayer, getProjection, projectionSource, bestMetric]);
 
   // Build: player -> leagues map (for injury modal)
   const playerLeaguesMap = useMemo(() => {
@@ -1547,59 +1522,18 @@ useEffect(() => {
 
     const lid = String(tx?._league?.id || "");
 
-    // Split sources for modal controls
-    const VALUE_SOURCES = useMemo(
-      () => (DEFAULT_SOURCES || []).filter((s) => s?.type === "value"),
-      []
-    );
-    const PROJ_SOURCES = useMemo(
-      () => (DEFAULT_SOURCES || []).filter((s) => s?.type === "projection"),
-      []
-    );
+    // ✅ Single metric mode (controlled globally by SourceSelector via SleeperContext)
+    const isProj = metricType === "projection";
+    const metricLabel = isProj ? "PROJ" : "VAL";
 
-   
-
-
-    // ✅ selector key -> legacy projSource codes your getProjection() expects
-    const legacyFromProjKey = (k) => {
-      const map = {
-        "proj:sleeper": "CSV",
-        "proj:espn": "ESPN",
-        "proj:cbs": "CBS",
-        "proj:ffa": "FFA",
-      };
-      return map[String(k || "")] || "CSV";
+    const metricForPlayer = (p) => {
+      if (!p) return 0;
+      return isProj ? (getProjection(p, projectionSource) || 0) : (getPlayerValue(p, { format: mode, qbType: qb, sourceKey }) || 0);
     };
 
-    // Local modal state (does not mutate page/global)
-    const [modalMode, setModalMode] = useState((mode || "dynasty").toLowerCase());
-    const [modalQb, setModalQb] = useState((qb || "sf").toLowerCase());
+    const fmt = (n) => Number(n || 0).toFixed(1);
 
-    // Selector keys (independent)
-    const [modalValueKey, setModalValueKey] = useState(() => {
-      const isPageValue =
-        DEFAULT_SOURCES?.some((s) => s?.key === sourceKey && s?.type === "value") || false;
-      if (isPageValue) return sourceKey;
-      return VALUE_SOURCES?.[0]?.key || "val:fantasycalc";
-    });
-
-    const [modalProjKey, setModalProjKey] = useState(() => {
-      const map = { CSV: "proj:sleeper", ESPN: "proj:espn", CBS: "proj:cbs", FFA: "proj:ffa" };
-      return map[String(projSource || "CSV")] || "proj:sleeper";
-    });
-
-    const modalValueSource = useMemo(
-      () => VALUE_SOURCES.find((s) => s.key === modalValueKey) || VALUE_SOURCES[0],
-      [VALUE_SOURCES, modalValueKey]
-    );
-
-    const modalProjSource = useMemo(() => legacyFromProjKey(modalProjKey), [modalProjKey]);
-
-    const modalGetPlayerValue = useMemo(() => {
-      const src = valueSourceFromKey(modalValueKey);
-      return makeGetPlayerValue(src, modalMode, modalQb);
-    }, [modalValueKey, modalMode, modalQb]);
-
+    
     const rosterIds = Array.isArray(tx?.roster_ids) ? tx.roster_ids.map(String) : [];
     const adds = tx?.adds || {};
     const drops = tx?.drops || {};
@@ -1628,11 +1562,8 @@ useEffect(() => {
       const inFaab = faab.filter((x) => String(x?.receiver) === String(rid));
       const outFaab = faab.filter((x) => String(x?.sender) === String(rid));
 
-      const sumValue = (ids) =>
-        ids.reduce((acc, pid) => acc + (modalGetPlayerValue(getP(pid)) || 0), 0);
-
-      const sumProj = (ids) =>
-        ids.reduce((acc, pid) => acc + (getProjection(getP(pid), modalProjSource) || 0), 0);
+      const sumMetric = (ids) =>
+        ids.reduce((acc, pid) => acc + metricForPlayer(getP(pid)), 0);
 
       return {
         rid: String(rid),
@@ -1643,19 +1574,15 @@ useEffect(() => {
         outPicks,
         inFaab,
         outFaab,
-        incomingVal: sumValue(inAdds),
-        outgoingVal: sumValue(inDrops),
-        incomingProj: sumProj(inAdds),
-        outgoingProj: sumProj(inDrops),
+        incomingMetric: sumMetric(inAdds),
+        outgoingMetric: sumMetric(inDrops),
+
       };
     };
 
     const sides = rosterIds.length ? rosterIds.map(side) : [side("1"), side("2")];
 
-    const net = (s) => ({
-      value: (s.incomingVal || 0) - (s.outgoingVal || 0),
-      proj: (s.incomingProj || 0) - (s.outgoingProj || 0),
-    });
+    const net = (s) => (s.incomingMetric || 0) - (s.outgoingMetric || 0);
 
     const pickLabel = (pk) => {
       const season = pk?.season ? String(pk.season) : "";
@@ -1717,41 +1644,30 @@ useEffect(() => {
               </button>
             </div>
 
-            {/* Sources Bar */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                <div className="text-[11px] text-white/55 mb-2">Value Source (modal only)</div>
-                <SourceSelector
-                  sources={VALUE_SOURCES}
-                  value={modalValueKey}
-                  onChange={setModalValueKey}
-                  className="w-full"
-                  mode={modalMode}
-                  qbType={modalQb}
-                  onModeChange={setModalMode}
-                  onQbTypeChange={setModalQb}
-                  showToggles={true}
-                />
-              </div>
+            {/* Source Bar (global) */}
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div className="text-[11px] text-white/55">
+                  Trade metric:{" "}
+                  <span className="text-white/80 font-semibold">{isProj ? "Projections" : "Values"}</span>
+                  <span className="mx-2 text-white/20">•</span>
+                  Uses the same Source Selector as the page
+                </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                <div className="text-[11px] text-white/55 mb-2">Projection Source (modal only)</div>
-                <SourceSelector
-                  sources={PROJ_SOURCES}
-                  value={modalProjKey}
-                  onChange={setModalProjKey}
-                  className="w-full"
-                  mode={modalMode}
-                  qbType={modalQb}
-                  onModeChange={setModalMode}
-                  onQbTypeChange={setModalQb}
-                  showToggles={false}
-                />
-                <div className="mt-2 text-[11px] text-white/45">
-                  Projections: <span className="text-white/70">{modalProjSource}</span>
+                <div className="min-w-[240px]">
+                  <SourceSelector
+                    value={sourceKey}
+                    onChange={setSourceKey}
+                    className="w-full"
+                    mode={mode}
+                    qbType={qb}
+                    onModeChange={setMode}
+                    onQbTypeChange={setQb}
+                  />
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* Body */}
@@ -1789,17 +1705,10 @@ useEffect(() => {
 
                       <div className="text-xs text-white/60 tabular-nums text-right">
                         <div>
-                          Net Value{" "}
-                          <span className={n.value >= 0 ? "text-emerald-300" : "text-red-300"}>
-                            {n.value >= 0 ? "+" : ""}
-                            {n.value.toFixed(1)}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          Net Proj{" "}
-                          <span className={n.proj >= 0 ? "text-emerald-300" : "text-red-300"}>
-                            {n.proj >= 0 ? "+" : ""}
-                            {n.proj.toFixed(1)}
+                          Net {metricLabel}{" "}
+                          <span className={net(s) >= 0 ? "text-emerald-300" : "text-red-300"}>
+                            {net(s) >= 0 ? "+" : ""}
+                            {fmt(net(s))}
                           </span>
                         </div>
                       </div>
@@ -1810,8 +1719,7 @@ useEffect(() => {
                       <div className="flex items-center justify-between">
                         <div className="font-semibold text-white/80">Incoming</div>
                         <div className="text-[11px] text-white/45 tabular-nums">
-                          Val {Number(s.incomingVal || 0).toFixed(1)} • Proj{" "}
-                          {Number(s.incomingProj || 0).toFixed(1)}
+                          {metricLabel} {fmt(s.incomingMetric)}
                         </div>
                       </div>
 
@@ -1821,8 +1729,8 @@ useEffect(() => {
                             <li key={`in-${s.rid}-${pid}`} className="flex justify-between gap-2">
                               <span className="truncate text-white/85">{labelForId(pid)}</span>
                               <span className="tabular-nums text-white/55 whitespace-nowrap">
-                                {Number(modalGetPlayerValue(getP(pid)) || 0).toFixed(1)} •{" "}
-                                {Number(getProjection(getP(pid), modalProjSource) || 0).toFixed(1)}
+                                {fmt(metricForPlayer(getP(pid)))}
+                                <span className="ml-1 text-[10px] text-white/35">{metricLabel}</span>
                               </span>
                             </li>
                           ))}
@@ -1847,8 +1755,7 @@ useEffect(() => {
                       <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                         <div className="font-semibold text-white/80">Outgoing</div>
                         <div className="text-[11px] text-white/45 tabular-nums">
-                          Val {Number(s.outgoingVal || 0).toFixed(1)} • Proj{" "}
-                          {Number(s.outgoingProj || 0).toFixed(1)}
+                          {metricLabel} {fmt(s.outgoingMetric)}
                         </div>
                       </div>
 
@@ -1858,8 +1765,8 @@ useEffect(() => {
                             <li key={`out-${s.rid}-${pid}`} className="flex justify-between gap-2">
                               <span className="truncate text-white/85">{labelForId(pid)}</span>
                               <span className="tabular-nums text-white/55 whitespace-nowrap">
-                                {Number(modalGetPlayerValue(getP(pid)) || 0).toFixed(1)} •{" "}
-                                {Number(getProjection(getP(pid), modalProjSource) || 0).toFixed(1)}
+                                {fmt(metricForPlayer(getP(pid)))}
+                                <span className="ml-1 text-[10px] text-white/35">{metricLabel}</span>
                               </span>
                             </li>
                           ))}
@@ -1867,6 +1774,7 @@ useEffect(() => {
                       ) : (
                         <div className="mt-2 text-white/40">—</div>
                       )}
+
 
                       {s.outPicks.length ? (
                         <div className="mt-3">
@@ -1886,15 +1794,9 @@ useEffect(() => {
               })}
             </div>
 
-            <div className="mt-4 text-xs text-white/45">
-              Modal Value source:{" "}
-              <span className="text-white/70">
-                {modalValueSource?.label || valueSourceFromKey(modalValueKey)}
-              </span>
-              <span className="mx-2 text-white/20">•</span>
-              QB: <span className="text-white/70">{modalQb.toUpperCase()}</span>
-              <span className="mx-2 text-white/20">•</span>
-              Mode: <span className="text-white/70">{modalMode}</span>
+            <div className="mt-4 text-[11px] text-white/45">
+              Showing <span className="text-white/70 font-semibold">{isProj ? "Projections" : "Values"}</span>{" "}
+              using <span className="text-white/70">{sourceKey}</span>
             </div>
           </div>
         </div>
@@ -2452,7 +2354,6 @@ useEffect(() => {
               <div className="ml-auto flex items-center gap-2">
                 <div className="relative min-w-[240px]">
                   <SourceSelector
-                    sources={DEFAULT_SOURCES}
                     value={sourceKey}
                     onChange={setSourceKey}
                     className="w-full"
