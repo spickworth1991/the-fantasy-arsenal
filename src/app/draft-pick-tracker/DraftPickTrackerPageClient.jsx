@@ -14,7 +14,7 @@ export default function DraftPickTrackerPage() {
     <div className="max-w-6xl mx-auto px-4">
       <div aria-hidden className="h-[72px]" />
       <BackgroundParticles />
-      <Navbar pageTitle="Draft Pick Tracker" />
+      <Navbar pageTitle="Draft Monitor" />
 
       <main className="px-4 pb-16">
         {!username ? (

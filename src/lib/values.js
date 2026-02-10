@@ -27,6 +27,9 @@ export function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "IDynastyP") {
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
     }
+    if (valueSource === "IDPShow") {
+      return qbType === "sf" ? (p.idpshow_values?.superflex || 0) : (p.idpshow_values?.one_qb || 0);
+    }
     if (valueSource === "TheFantasyArsenal") {
       return format === "dynasty"
         ? (qbType === "sf" ? (p.sp_values?.dynasty_sf || 0) : (p.sp_values?.dynasty_1qb || 0))
@@ -47,6 +50,7 @@ export function getAnyPickValue(p, valueSource, format, qbType) {
     "KeepTradeCut",
     "FantasyNavigator",
     "IDynastyP",
+    "IDPShow",
   ];
   for (const src of tryOrder) {
     const v = makeGetPlayerValue(src, format, qbType)(p);

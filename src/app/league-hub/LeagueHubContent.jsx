@@ -255,6 +255,54 @@ function bundleNonTradesInRow(items = []) {
   return out;
 }
 
+  function rosterPosSet(rosterPositions = []) {
+    return new Set((rosterPositions || []).map((x) => String(x || "").toUpperCase()));
+  }
+
+  // Map granular IDP positions -> Sleeper buckets used in roster_positions
+  function normalizeIdpPosForLeague(pos) {
+    const p = String(pos || "").toUpperCase().trim();
+    if (!p) return "";
+
+    // DB family
+    if (["CB", "S", "FS", "SS", "DB"].includes(p)) return "DB";
+
+    // DL/EDGE family (this is your DE fix)
+    if (["DL", "DE", "DT", "ED", "EDGE"].includes(p)) return "DL";
+
+    // LB family
+    if (["LB", "ILB", "MLB", "OLB"].includes(p)) return "LB";
+
+    // Some feeds just say IDP
+    if (p === "IDP") return "IDP";
+
+    return p;
+  }
+
+  function leagueAllowsPosition(lg, pos) {
+    // normalize FIRST so DE/DT/EDGE/CB/S work
+    const p = normalizeIdpPosForLeague(pos);
+    const set = rosterPosSet(lg?.roster_positions);
+
+    // Normal offense + kicker
+    if (["QB", "RB", "WR", "TE", "K"].includes(p)) return true;
+
+    // Team defense (DST/DEF)
+    if (p === "DEF" || p === "DST") return set.has("DEF") || set.has("DST");
+
+    // IDP buckets (Sleeper roster_positions commonly include DL/LB/DB, plus IDP/IDP_FLEX)
+    if (p === "DL" || p === "LB" || p === "DB") {
+      return set.has(p) || set.has("IDP") || set.has("IDP_FLEX");
+    }
+
+    // If a league only uses IDP/IDP_FLEX and a feed says "IDP"
+    if (p === "IDP") return set.has("IDP") || set.has("IDP_FLEX");
+
+    // Unknown positions: don't block (your current behavior)
+    return true;
+  }
+
+
 
 export default function LeagueHubContent() {
   const {
@@ -659,11 +707,18 @@ export default function LeagueHubContent() {
       const pid = String(p.player_id);
       const openLeagues = [];
 
+      const playerPos = getPrimaryPos(p); // "DEF" for DST, etc.
+
       for (const lg of leagues) {
+        // ✅ If the league cannot roster/start this position, it is NOT "available" there.
+        if (!leagueAllowsPosition(lg, playerPos)) continue;
+
         const set = rosterSetsRef.current.get(lg.id);
         if (!set || !set.size) continue;
+
         if (!set.has(pid)) openLeagues.push(lg);
       }
+
 
       if (openLeagues.length === 0) continue;
       if (openLeagues.length < minOpenSlots) continue;

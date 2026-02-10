@@ -43,13 +43,41 @@ const normalizeName = (name) =>
 
 const normPos = (pos) => String(pos || "").toUpperCase().trim();
 const normTeam = (team) => String(team || "").toUpperCase().trim();
+
+// IDP sources (IDynastyP / IDPShow) often use granular positions (CB, S, ED, EDGE, DE, DT)
+// while Sleeper players frequently use grouped positions (DB / DL / LB).
+// Normalize to a shared match key so name+position matching actually hits.
+const normalizeIdpPosForMatch = (pos) => {
+  const p = normPos(pos);
+  if (!p) return "";
+  // Defensive Back family
+  if (["CB", "S", "FS", "SS", "DB"].includes(p)) return "DB";
+  // Defensive Line / Edge family
+  if (["DL", "DE", "DT", "ED", "EDGE"].includes(p)) return "DL";
+  // Linebacker family
+  if (["LB", "ILB", "MLB", "OLB"].includes(p)) return "LB";
+  return p;
+};
+
 const keyName = (n) => normalizeName(n);
 
 // Safe number (handles "123", null, etc)
+// Safe number (handles "1,234", "$123", null, etc)
 const safeNum = (v) => {
-  const x = typeof v === "number" ? v : Number(v);
+  if (v == null) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+
+  // strings like "1,234", "$1,234.5", " 123 "
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[$,%\s]/g, "").replace(/,/g, "");
+    const x = Number(cleaned);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 };
+
 
 // Formats that exist in FN/SP caches
 const VALUE_KEYS = ["dynasty_sf", "dynasty_1qb", "redraft_sf", "redraft_1qb"];
@@ -200,7 +228,8 @@ function createCandidateIndex2(seedByName) {
     if (!nn) return;
 
     const cand = {
-      pos: normPos(pos),
+      // ✅ normalize IDP positions to shared buckets (DB/DL/LB)
+      pos: normalizeIdpPosForMatch(pos),
       team: normTeam(team),
       one_qb: safeNum(one_qb),
       superflex: safeNum(superflex),
@@ -209,6 +238,17 @@ function createCandidateIndex2(seedByName) {
     if (!(cand.one_qb > 0 || cand.superflex > 0)) return;
 
     if (!byName[nn]) byName[nn] = [];
+
+    // ✅ merge duplicates (same pos/team) instead of spamming entries
+    const existing = byName[nn].find(
+      (c) => c.pos === cand.pos && c.team === cand.team
+    );
+    if (existing) {
+      if (cand.one_qb > 0) existing.one_qb = cand.one_qb;
+      if (cand.superflex > 0) existing.superflex = cand.superflex;
+      return;
+    }
+
     byName[nn].push(cand);
   }
 
@@ -219,10 +259,11 @@ function createCandidateIndex2(seedByName) {
     const cands = byName[nn];
     if (!Array.isArray(cands) || cands.length === 0) return null;
 
-    const pos0 = normPos(pos);
+    // ✅ normalize lookup pos the same way as candidates
+    const pos0 = normalizeIdpPosForMatch(pos);
     const team0 = normTeam(team);
 
-    // ✅ IMPORTANT
+    // keep your “no pos => no match”
     if (!pos0) return null;
 
     const anyCandHasPos = cands.some((c) => !!c.pos);
@@ -233,17 +274,21 @@ function createCandidateIndex2(seedByName) {
     let bestScore = -1;
 
     for (const c of candidatesToScore) {
-      const candPos = c.pos;
-      const candTeam = c.team;
-
-      if (candPos && pos0 && candPos !== pos0) continue;
+      if (c.pos && pos0 && c.pos !== pos0) continue;
 
       let score = 0;
-      if (candPos && pos0 && candPos === pos0) score += 80;
-      if (candTeam && team0 && candTeam === team0) score += 20;
-      if (!candPos && candTeam && team0 && candTeam === team0) score += 10;
+      if (c.pos && pos0 && c.pos === pos0) score += 80;
+      if (c.team && team0 && c.team === team0) score += 20;
+      if (!c.pos && c.team && team0 && c.team === team0) score += 10;
 
-      if (score > bestScore) {
+      // small tie-break: higher SF then 1QB
+      const tie = safeNum(c.superflex) * 1e6 + safeNum(c.one_qb);
+
+      if (
+        score > bestScore ||
+        (score === bestScore &&
+          tie > (safeNum(best?.superflex) * 1e6 + safeNum(best?.one_qb)))
+      ) {
         bestScore = score;
         best = c;
       }
@@ -253,6 +298,93 @@ function createCandidateIndex2(seedByName) {
   }
 
   return { addCandidate, pickBest, raw: byName };
+}
+
+
+// ========== IDPShow cache shape normalizer ==========
+// Supports multiple cache shapes so the UI doesn't break if the updater changes:
+// 1) Array of rows: [{ name, position/pos, team, one_qb, superflex }]
+// 2) Wrapped array: { data: [...] } or { players: [...] }
+// 3) Bucketed object: { Dynasty_SF:[{name,position,team,value}], ... }
+function coerceIdpShowRows(idpShowData) {
+  if (!idpShowData) return [];
+
+  // (1) Already an array
+  if (Array.isArray(idpShowData)) return idpShowData;
+
+  // (2) Common wrappers
+  const wrapped = idpShowData?.data || idpShowData?.players;
+  if (Array.isArray(wrapped)) return wrapped;
+
+  // (3) Bucketed (our updater output)
+  const buckets = [
+    "Dynasty_1QB",
+    "Dynasty_SF",
+    "Redraft_1QB",
+    "Redraft_SF",
+  ];
+  const hasBucket = buckets.some((k) => Array.isArray(idpShowData?.[k]));
+  if (hasBucket) {
+    const map = new Map();
+    const keyOf = (name, pos, team) => {
+      const n = normalizeName(name);
+      const p = String(pos || "").toUpperCase().trim();
+      const t = String(team || "").toUpperCase().trim();
+      return `${n}|${p}|${t}`;
+    };
+    const upsert = (row, which) => {
+      const name = row?.name;
+      if (!name) return;
+      const position = (row?.position || row?.pos || "").toString().replace(/\d+$/, "").trim();
+      const team = (row?.team || "").toString().trim();
+      const k = keyOf(name, position, team);
+      const existing = map.get(k) || {
+        name,
+        position,
+        team,
+        one_qb: 0,
+        superflex: 0,
+      };
+      // preserve best display name
+      if (!existing.name || String(existing.name).length < String(name).length) existing.name = name;
+      if (!existing.position && position) existing.position = position;
+      if (!existing.team && team) existing.team = team;
+
+      const v = Number(row?.value) || 0;
+      if (which === "1qb") existing.one_qb = v || existing.one_qb || 0;
+      if (which === "sf") existing.superflex = v || existing.superflex || 0;
+      map.set(k, existing);
+    };
+
+    (idpShowData.Dynasty_1QB || []).forEach((r) => upsert(r, "1qb"));
+    (idpShowData.Redraft_1QB || []).forEach((r) => upsert(r, "1qb"));
+    (idpShowData.Dynasty_SF || []).forEach((r) => upsert(r, "sf"));
+    (idpShowData.Redraft_SF || []).forEach((r) => upsert(r, "sf"));
+
+    return Array.from(map.values());
+  }
+
+  // (4) Raw Apps Script shape: { Sheet1:[{name,team,position,value_1qb,value_sf,...}], ... }
+  const sheetEntries = Object.entries(idpShowData || {}).filter(([, v]) => Array.isArray(v));
+  if (sheetEntries.length) {
+    const out = [];
+    for (const [, rows] of sheetEntries) {
+      for (const r of rows) {
+        const name = r?.name || r?.player || "";
+        if (!name) continue;
+        out.push({
+          name,
+          team: (r?.team || "").toString().trim(),
+          position: (r?.position || r?.pos || "").toString().replace(/\d+$/, "").trim(),
+          one_qb: Number(r?.value_1qb) || 0,
+          superflex: Number(r?.value_sf) || 0,
+        });
+      }
+    }
+    return out;
+  }
+
+  return [];
 }
 
 // =====================
@@ -454,7 +586,8 @@ export const SleeperProvider = ({ children }) => {
       "val:dynastyprocess": "DynastyProcess",
       "val:fantasynav": "FantasyNavigator",
       "val:idynastyp": "IDynastyP",
-      "val:ffa": "FantasyFootaballAnalytics",
+      "val:idpshow": "IDPShow",
+
     };
     return map[String(k || "")] || "FantasyCalc";
   };
@@ -545,7 +678,7 @@ export const SleeperProvider = ({ children }) => {
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = "projIndex_v1.101";
+  const PROJ_CACHE_KEY = "projIndex_v1.104";
 
   const preloadProjections = async () => {
     try {
@@ -726,7 +859,7 @@ export const SleeperProvider = ({ children }) => {
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
   // ✅ Bump cache version so your fn_values aliases actually get written.
-  const CACHE_KEY = "playerDB_v1.44";
+    const CACHE_KEY = "playerDB_v1.476";
 
   const preloadPlayers = async () => {
     try {
@@ -746,21 +879,23 @@ export const SleeperProvider = ({ children }) => {
       const playersData = await playersRes.json();
       updateProgress(68);
 
-      const [fcRes, dpRes, ktcRes, fnRes, idpRes, spRes] = await Promise.all([
+      const [fcRes, dpRes, ktcRes, fnRes, idpRes, idpShowRes, spRes] = await Promise.all([
         fetch("/fantasycalc_cache.json"),
         fetch("/dynastyprocess_cache.json"),
         fetch("/ktc_cache.json"),
         fetch("/fantasynav_cache.json"),
         fetch("/idynastyp_cache.json"),
+        fetch("/idpshow_cache.json"),
         fetch("/stickypicky_cache.json"),
       ]);
 
-      const [fcData, dpData, ktcData, fnData, idpData, spData] = await Promise.all([
+      const [fcData, dpData, ktcData, fnData, idpData, idpShowData, spData] = await Promise.all([
         fcRes.json(),
         dpRes.json(),
         ktcRes.json(),
         fnRes.json(),
         idpRes.json(),
+        idpShowRes.json(),
         spRes.json(),
       ]);
       updateProgress(78);
@@ -855,7 +990,7 @@ export const SleeperProvider = ({ children }) => {
         const name = row?.name || row?.player || row?.player_name || row?.full_name;
         if (!name) return;
 
-        const pos = row?.position || row?.pos;
+        const pos = normalizeIdpPosForMatch(row?.position || row?.pos);
         const team = row?.team || row?.nfl_team;
 
         const oneQb =
@@ -877,6 +1012,42 @@ export const SleeperProvider = ({ children }) => {
           row?.sf_value;
 
         idpIndex.addCandidate({
+          name,
+          pos,
+          team,
+          one_qb: oneQb,
+          superflex: sf,
+        });
+      });
+
+      const idpShowIndex = createCandidateIndex2();
+
+      const idpShowRows = coerceIdpShowRows(idpShowData);
+
+      idpShowRows.forEach((row) => {
+        const name = row?.name || row?.player || row?.player_name || row?.full_name;
+        if (!name) return;
+
+        const pos = normalizeIdpPosForMatch(row?.position || row?.pos);
+        const team = row?.team || row?.nfl_team;
+
+        const oneQb =
+          row?.one_qb ??
+          row?.oneQB ??
+          row?.oneqb ??
+          row?.value_one_qb ??
+          row?.value_1qb ??
+          row?.one_qb_value;
+
+        const sf =
+          row?.superflex ??
+          row?.sf ??
+          row?.super_flex ??
+          row?.value_superflex ??
+          row?.value_sf ??
+          row?.sf_value;
+
+        idpShowIndex.addCandidate({
           name,
           pos,
           team,
@@ -1009,6 +1180,10 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
           ? getIDP2FromIndex(idpIndex, fullName, pos, team)
           : { one_qb: 0, superflex: 0 };
 
+        const idpshow_values = fantasyRelevant
+          ? getIDP2FromIndex(idpShowIndex, fullName, pos, team)
+          : { one_qb: 0, superflex: 0 };
+
         const hasPos = !!pos;
 
         const hasAnySignal =
@@ -1017,7 +1192,8 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
           Object.values(ktc_values).some((v) => v > 0) ||
           Object.values(fn_values).some((v) => v > 0) ||
           Object.values(sp_values).some((v) => v > 0) ||
-          Object.values(idp_values).some((v) => v > 0);
+          Object.values(idp_values).some((v) => v > 0) ||
+          Object.values(idpshow_values).some((v) => v > 0);
 
         const keep = (hasAnySignal && hasPos) || (isActive && fantasyRelevant && hasPos);
 
@@ -1031,6 +1207,7 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
             fn_values,
             sp_values,
             idp_values,
+            idpshow_values,
           };
         }
       });
@@ -1101,38 +1278,61 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
   };
 
   return (
-    <SleeperContext.Provider
-      value={{
-        username,
-        year,
-        players,
-        leagues,
-        activeLeague,
-        setActiveLeague,
-        format,
-        qbType,
-        setFormat,
-        setQbType,
-        // ✅ unified source controls (values + projections)
-        sourceKey,
-        setSourceKey,
-        metricType,
-        projectionSource,
-        getPlayerValue,
-        login,
-        logout,
-        fetchLeagueRosters,
-        fetchLeagueRostersSilent,
-        // ✅ projections in context
-        projectionIndexes,
-        preloadProjections,
-        getProjection,
-        loading,
-        progress,
-        error,
-      }}
-    >
-      {children}
-    </SleeperContext.Provider>
-  );
+  <SleeperContext.Provider
+    value={{
+      username,
+      year,
+      players,
+      leagues,
+      activeLeague,
+      setActiveLeague,
+
+      format,
+      qbType,
+      setFormat,
+      setQbType,
+
+      // ✅ unified source controls (values + projections)
+      sourceKey,
+      setSourceKey,
+      metricType,
+      projectionSource,
+
+      // ✅ Back-compat aliases (older pages/components expect these)
+      selectedSource: sourceKey,
+      setSelectedSource: setSourceKey,
+
+      // ✅ Value getter (works for val:* keys; safe fallback when proj:* selected)
+      getPlayerValue,
+
+      // ✅ Projections in context
+      projectionIndexes,
+      preloadProjections,
+      getProjection,
+
+      // ✅ Back-compat: single getter that returns the "active metric"
+      // - if proj:* => returns projection points
+      // - if val:*  => returns value number
+      getPlayerValueForSelectedSource: (p, opts = null) => {
+        const sk = opts?.sourceKey ?? sourceKey;
+        if (String(sk || "").startsWith("proj:")) {
+          // accept proj:* keys or legacy codes
+          return getProjection(p, sk);
+        }
+        return getPlayerValue(p, { ...(opts || {}), sourceKey: sk });
+      },
+
+      login,
+      logout,
+      fetchLeagueRosters,
+      fetchLeagueRostersSilent,
+
+      loading,
+      progress,
+      error,
+    }}
+  >
+    {children}
+  </SleeperContext.Provider>
+);
 };
