@@ -59,7 +59,8 @@ export default function HomeClient() {
     {
       name: "Player Stock",
       link: "/player-stock/results",
-      description: "Track player value changes over time",
+      description: "Track player value changes over time - Now includes drafting leagues for real-time draft momentum!",
+      badge: "UPDATED",
     },
     {
       name: "Player Availability",

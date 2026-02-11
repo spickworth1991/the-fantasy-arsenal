@@ -1030,75 +1030,46 @@ export default function LeagueHubContent() {
   }, [visibleLeaguesList, playersMap, yrStr]);
 
   // ---------- Waiver tracker (recent transactions across visible leagues) ----------
-useEffect(() => {
-  let alive = true;
+    useEffect(() => {
+      let alive = true;
 
-  const run = async () => {
-    if (!username) return;
-    if (!visibleLeaguesList.length) return;
-    if (scanLoading) return;
+      const run = async () => {
+        if (!username) return;
+        if (!visibleLeaguesList.length) return;
+        if (scanLoading) return;
 
-    setTxLoading(true);
+        setTxLoading(true);
 
-    try {
-      const stRes = await fetch("https://api.sleeper.app/v1/state/nfl");
-      const state = stRes.ok ? await stRes.json() : null;
+        try {
+          const stRes = await fetch("https://api.sleeper.app/v1/state/nfl");
+          const state = stRes.ok ? await stRes.json() : null;
 
-      const stateSeason = String(state?.season || "");
-      const selectedSeason = String(yrStr || "");
-      const stateWeek = Number(state?.week ?? state?.leg ?? 0) || 0;
+          const stateSeason = String(state?.season || "");
+          const selectedSeason = String(yrStr || "");
+          const stateWeek = Number(state?.week ?? state?.leg ?? 0) || 0;
 
-      const weeksToTry = [];
+                // ---------- Weeks to scan (robust across Super Bowl / rollover) ----------
+          const weeksToTry = [];
 
-      // Always try week 0 (offseason bucket)
-      weeksToTry.push(0);
+          // Always include offseason/early buckets
+          weeksToTry.push(0, 1, 2, 3);
 
-      const stateSeasonNum = Number(stateSeason);
-      const selectedSeasonNum = Number(selectedSeason);
+          // Always include late-season buckets (where “latest” often lives right after SB)
+          for (let wk = 18; wk >= 12; wk--) weeksToTry.push(wk);
 
-      const isDifferentSeason =
-        Number.isFinite(stateSeasonNum) &&
-        Number.isFinite(selectedSeasonNum) &&
-        selectedSeasonNum !== stateSeasonNum;
-
-      if (isDifferentSeason) {
-        if (selectedSeasonNum < stateSeasonNum) {
-          // ✅ Viewing a PAST season: pull the *latest* activity from that season
-          // Most leagues have meaningful action late (weeks 14-18).
-          // Grab the last 10-ish weeks (and week 0 already included).
-          for (let wk = 18; wk >= 1 && weeksToTry.length < 12; wk--) {
-            weeksToTry.push(wk);
+          // If state gives us an in-season week, also scan back from there
+          if (stateWeek > 0) {
+            for (let i = 0; i < 10; i++) {
+              const wk = stateWeek - i;
+              if (wk >= 1) weeksToTry.push(wk);
+            }
           }
-        } else {
-          // ✅ Viewing a FUTURE season (rare): drafts/early moves land in 0-3
-          weeksToTry.push(1, 2, 3);
-        }
-      } else {
-        const seasonType = String(state?.season_type || "").toLowerCase(); // "regular" | "post" | "off" (Sleeper)
-        const inPostOrOff = seasonType === "post" || seasonType === "off";
 
-        // Same season:
-        if (inPostOrOff) {
-          // ✅ If we're in POST/OFF, "week" can be misleadingly low.
-          // Pull latest activity from the end of the season.
-          for (let wk = 18; wk >= 1 && weeksToTry.length < 12; wk--) {
-            weeksToTry.push(wk);
-          }
-        } else if (stateWeek > 0) {
-          // regular season: scan backwards from current week for up to 10 weeks
-          for (let i = 0; i < 10; i++) {
-            const wk = stateWeek - i;
-            if (wk >= 1) weeksToTry.push(wk);
-          }
-        } else {
-          // preseason/offseason edge case: try early buckets too
-          weeksToTry.push(1, 2, 3);
-        }
+          // De-dupe + cap (keep request volume sane)
+          const uniqWeeks = Array.from(new Set(weeksToTry))
+            .filter((w) => w >= 0)
+            .slice(0, 14);
 
-      }
-
-      // de-dupe (important)
-      const uniqWeeks = Array.from(new Set(weeksToTry)).filter((w) => w >= 0);
 
 
       const leagueJobs = visibleLeaguesList.map(async (lg) => {

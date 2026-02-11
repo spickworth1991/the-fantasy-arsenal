@@ -2,115 +2,30 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+
 const Navbar = dynamic(() => import("../../../components/Navbar"), { ssr: false });
-const BackgroundParticles = dynamic(() => import("../../../components/BackgroundParticles"), { ssr: false });
+const BackgroundParticles = dynamic(
+  () => import("../../../components/BackgroundParticles"),
+  { ssr: false }
+);
+
 import LoadingScreen from "../../../components/LoadingScreen";
-import ValueSourceDropdown from "../../../components/ValueSourceDropdown";
+import SourceSelector from "../../../components/SourceSelector";
 import { useSleeper } from "../../../context/SleeperContext";
 import AvatarImage from "../../../components/AvatarImage";
-import { getTeamByeWeek } from "../../../utils/nflByeWeeks";
 
-import {
-  ResponsiveContainer,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Bar,
-  ReferenceLine,
-  LabelList,
-} from "recharts";
+const safeNum = (v) => {
+  if (v == null) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
 
-/* ===================== Projections wiring ===================== */
-const PROJ_JSON_URL      = "/projections_2025.json";       // FFA-style
-const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";  // ESPN-style
-const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";   // CBS-style
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[$,%\s]/g, "").replace(/,/g, "");
+    const x = Number(cleaned);
+    return Number.isFinite(x) ? x : 0;
+  }
 
-const REGULAR_SEASON_GAMES = (yr) => (Number(yr) >= 2021 ? 17 : 16);
-
-function normNameForMap(name) {
-  return String(name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "")
-    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-function normalizeTeamAbbr(x) {
-  const s = String(x || "").toUpperCase().trim();
-  const map = { JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV", WFT: "WAS", WSH: "WAS" };
-  return map[s] || s;
-}
-function normalizePos(x) {
-  const p = String(x || "").toUpperCase().trim();
-  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
-  if (p === "PK") return "K";
-  return p;
-}
-function buildProjectionMapFromJSON(json) {
-  const rows = Array.isArray(json) ? json : (json?.rows || []);
-  const byId = Object.create(null);
-  const byName = Object.create(null);
-  const byNameTeam = Object.create(null);
-  const byNamePos = Object.create(null);
-
-  rows.forEach((r) => {
-    const pid = r.player_id != null ? String(r.player_id) : "";
-    const name = r.name || r.player || r.full_name || "";
-    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
-
-    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
-    const team = normalizeTeamAbbr(rawTeam);
-    const rawPos = r.pos ?? r.position ?? r.player_position;
-    const pos = normalizePos(rawPos);
-
-    if (pid) byId[pid] = seasonPts;
-    if (name) {
-      const nn = normNameForMap(name);
-      byName[nn] = seasonPts;
-      byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
-      if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
-      if (pos)  byNamePos[`${nn}|${pos}`]   = seasonPts;
-    }
-  });
-
-  return { byId, byName, byNameTeam, byNamePos };
-}
-async function fetchProjectionMap(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  const json = await res.json();
-  return buildProjectionMapFromJSON(json);
-}
-function getSeasonPointsForPlayer(map, p) {
-  if (!map || !p) return 0;
-
-  // ID match first
-  const hit = map.byId?.[String(p.player_id)];
-  if (hit != null) return hit;
-
-  // Fallbacks
-  const nn   = normNameForMap(p.full_name || p.search_full_name || `${p.first_name||""} ${p.last_name||""}`);
-  const team = normalizeTeamAbbr(p.team);
-  const pos  = normalizePos(p.position);
-
-  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
-  if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
-  if (nn && map.byName?.[nn] != null) return map.byName[nn];
-
-  const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
-  return (k2 && map.byName?.[k2] != null) ? map.byName[k2] : 0;
-}
-
-/* ===================== Value sources (unchanged) ===================== */
-const VALUE_SOURCES = {
-  FantasyCalc: { label: "FantasyCalc", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  DynastyProcess: { label: "DynastyProcess", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  // TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
 };
 
 // League avatar helpers
@@ -121,7 +36,27 @@ const leagueAvatarUrl = (avatarId) =>
 const TRENDING_LIMIT = 50;
 
 export default function ClientResults({ initialSearchParams = {} }) {
-  const { username, year, players, format, qbType, setFormat, setQbType } = useSleeper();
+  const {
+    username,
+    year,
+    players,
+    format,
+    qbType,
+    setFormat,
+    setQbType,
+
+    // unified source selection (values OR projections)
+    selectedSource,
+    sourceKey,
+    setSourceKey,
+
+    metricType,
+    getPlayerValueForSelectedSource,
+  } = useSleeper();
+
+  // Support either "selectedSource" or "sourceKey" naming, depending on your context
+  const effectiveSourceKey = sourceKey ?? selectedSource ?? "";
+  const setEffectiveSourceKey = setSourceKey ?? (() => {});
 
   const getParam = (k) => {
     const v = initialSearchParams?.[k];
@@ -135,79 +70,34 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [progressText, setProgressText] = useState("Preparing scan…");
   const [error, setError] = useState("");
 
-  // === Metric mode & sources ===
-  const [metricMode, setMetricMode] = useState("values"); // "values" | "projections"
-  const [projectionSource, setProjectionSource] = useState("CSV"); // "CSV" | "ESPN" | "CBS"
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
-  const [projLoading, setProjLoading] = useState(false);
-  const [projError, setProjError] = useState("");
+  const mt = String(metricType || "").toLowerCase();
+  const isProj =
+    mt === "projection" ||
+    mt === "projections" ||
+    mt === "proj" ||
+    mt.includes("proj");
 
-  // Preload projections once
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setProjLoading(true);
-        const [csv, espn, cbs] = await Promise.allSettled([
-          fetchProjectionMap(PROJ_JSON_URL),
-          fetchProjectionMap(PROJ_ESPN_JSON_URL),
-          fetchProjectionMap(PROJ_CBS_JSON_URL),
-        ]);
-        if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null };
-        if (csv.status  === "fulfilled") next.CSV  = csv.value;
-        if (espn.status === "fulfilled") next.ESPN = espn.value;
-        if (cbs.status  === "fulfilled") next.CBS  = cbs.value;
-        setProjMaps(next);
-
-        // If user flips to projections but none are present, we’ll auto-fallback later.
-      } catch {
-        if (!mounted) return;
-        setProjError("Projections unavailable; using Values instead.");
-      } finally {
-        if (mounted) setProjLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  // Value source (used in values mode)
-  const [valueSource, setValueSource] = useState("FantasyCalc");
-  const supports = VALUE_SOURCES[valueSource].supports;
+  const valueOrProjLabel = isProj ? "Proj (avg)" : "Value";
+  const valueOrProjSortKey = isProj ? "proj" : "value";
 
   const [query, setQuery] = useState("");
   const [highlightStarters, setHighlightStarters] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(max-width: 640px)");
-    const handler = (e) => setIsMobile(e.matches);
-    setIsMobile(mq.matches);
-    try { mq.addEventListener("change", handler); } catch { mq.addListener(handler); }
-    return () => {
-      try { mq.removeEventListener("change", handler); } catch { mq.removeListener(handler); }
-    };
-  }, []);
-
   // Scan data
   const [leagueCount, setLeagueCount] = useState(0);
   const [scanLeagues, setScanLeagues] = useState([]);
   const [rows, setRows] = useState([]);
-  const [leagueRosters, setLeagueRosters] = useState({});
 
   // Modals
   const [openPid, setOpenPid] = useState(null);
   const [showLeaguesModal, setShowLeaguesModal] = useState(false);
   const [showVisibleLeaguesModal, setShowVisibleLeaguesModal] = useState(false);
-  const [showByeModal, setShowByeModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
-  const [showChart, setShowChart] = useState(false);
 
   // Sorting
   const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | value | proj
-  const [sortDir, setSortDir] = useState("desc");  // asc | desc
+  const [sortDir, setSortDir] = useState("desc"); // asc | desc
 
   // Pagination
   const [pageSize, setPageSize] = useState(25);
@@ -236,6 +126,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [excludeBestBall, setExcludeBestBall] = useState(false);
   const [includeDrafting, setIncludeDrafting] = useState(true);
 
+  // Manual league selection
+  const [manualLeagueSelect, setManualLeagueSelect] = useState(false);
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState(() => new Set());
+
   // Force rescan w/o nav
   const [forceScanNonce, setForceScanNonce] = useState(0);
 
@@ -254,7 +148,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
         );
         const arr = await res.json();
         const m = new Map(
-          (Array.isArray(arr) ? arr.slice(0, TRENDING_LIMIT) : []).map((it) => [String(it.player_id), it.count || 0])
+          (Array.isArray(arr) ? arr.slice(0, TRENDING_LIMIT) : []).map((it) => [
+            String(it.player_id),
+            it.count || 0,
+          ])
         );
         sessionStorage.setItem(key, JSON.stringify(Object.fromEntries(m)));
         setTrendingAddMap(m);
@@ -279,7 +176,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
         );
         const arr = await res.json();
         const m = new Map(
-          (Array.isArray(arr) ? arr.slice(0, TRENDING_LIMIT) : []).map((it) => [String(it.player_id), it.count || 0])
+          (Array.isArray(arr) ? arr.slice(0, TRENDING_LIMIT) : []).map((it) => [
+            String(it.player_id),
+            it.count || 0,
+          ])
         );
         sessionStorage.setItem(key, JSON.stringify(Object.fromEntries(m)));
         setTrendingDropMap(m);
@@ -289,74 +189,47 @@ export default function ClientResults({ initialSearchParams = {} }) {
     })();
   }, [trendingHours]);
 
-  // === Value helper (matches Trade Analyzer) ===
-  const getPlayerValue = (p) => {
-    if (!p) return 0;
-    if (valueSource === "FantasyCalc") {
-      return format === "dynasty"
-        ? qbType === "sf"
-          ? p.fc_values?.dynasty_sf || 0
-          : p.fc_values?.dynasty_1qb || 0
-        : qbType === "sf"
-        ? p.fc_values?.redraft_sf || 0
-        : p.fc_values?.redraft_1qb || 0;
-    } else if (valueSource === "DynastyProcess") {
-      return qbType === "sf" ? p.dp_values?.superflex || 0 : p.dp_values?.one_qb || 0;
-    } else if (valueSource === "KeepTradeCut") {
-      return qbType === "sf" ? p.ktc_values?.superflex || 0 : p.ktc_values?.one_qb || 0;
-    } else if (valueSource === "FantasyNavigator") {
-      return format === "dynasty"
-        ? qbType === "sf"
-          ? p.fn_values?.dynasty_sf || 0
-          : p.fn_values?.dynasty_1qb || 0
-        : qbType === "sf"
-        ? p.fn_values?.redraft_sf || 0
-        : p.fn_values?.redraft_1qb || 0;
-    } else if (valueSource === "IDynastyP") {
-      return qbType === "sf" ? p.idp_values?.superflex || 0 : p.idp_values?.one_qb || 0;
-    // } else if (valueSource === "TheFantasyArsenal") { ... }
-    }
-    return 0;
-  };
+  // === Unified metric helper ===
+  const getMetricRaw = (p) => safeNum(getPlayerValueForSelectedSource?.(p));
 
-  // Choose projection map (or null)
-  const chosenProjMap = useMemo(() => {
-    if (metricMode !== "projections") return null;
-    return projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projMaps.CSV;
-  }, [metricMode, projectionSource, projMaps]);
-
-  // If user is in projections mode but we have no map, fall back to values
-  useEffect(() => {
-    if (metricMode === "projections" && !projLoading && !chosenProjMap) {
-      setProjError("No projection file available — switched to Values.");
-      setMetricMode("values");
-    }
-  }, [metricMode, chosenProjMap, projLoading]);
-
-  // Enrich row with local + metric data (value & projection avg)
-  const seasonForBye = useMemo(() => Number(getParam("year") || year || new Date().getFullYear()), [year, initialSearchParams]);
   const withLocalPlayerData = (row) => {
     const p = players?.[row.player_id];
     const base = {
       ...row,
-      _name: row.name || p?.full_name || `${p?.first_name || ""} ${p?.last_name || ""}`.trim() || "Unknown",
+      _name:
+        row.name ||
+        p?.full_name ||
+        `${p?.first_name || ""} ${p?.last_name || ""}`.trim() ||
+        "Unknown",
       _pos: (row.position || p?.position || "").toUpperCase(),
       _team: (row.team || p?.team || "").toUpperCase(),
     };
-    base._value = getPlayerValue(p);
 
-    // projections (avg per game, bye-adjusted games)
-    if (p && chosenProjMap) {
-      const seasonPts = getSeasonPointsForPlayer(chosenProjMap, p) || 0;
-      const bye = getTeamByeWeek(base._team, seasonForBye);
-      const games = Math.max(1, REGULAR_SEASON_GAMES(seasonForBye) - (Number.isFinite(bye) ? 1 : 0));
-      base._projSeason = seasonPts;
-      base._projAvg = seasonPts / games;
+    const raw = p ? getMetricRaw(p) : 0;
+
+    if (isProj) {
+      base._projAvg = raw;
+      base._projSeason = 0;
+      base._value = 0;
     } else {
+      base._value = raw;
       base._projSeason = 0;
       base._projAvg = 0;
     }
+
     return base;
+  };
+
+  // "Draft-like" for UI filtering only (pre_draft OR drafting)
+  const isDraftLike = (status) => {
+    const s = String(status || "").toLowerCase();
+    return s.includes("pre_draft") || s.includes("drafting") || s === "draft";
+  };
+
+  // ✅ Only true when the league is ACTUALLY drafting (this is the ONLY time we fetch picks)
+  const isActivelyDrafting = (status) => {
+    const s = String(status || "").toLowerCase();
+    return s.includes("drafting") || s === "drafting";
   };
 
   // One-time scan (always all leagues; filters are display-side)
@@ -379,19 +252,20 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
         const cached = !force ? sessionStorage.getItem(cacheKey) : null;
         if (cached) {
-          const {
-            rows: cachedRows,
-            leagueCount: cachedLeagues,
-            leagues: cachedList,
-            leagueRosters: cachedRosters,
-            ts,
-          } = JSON.parse(cached);
+          const { rows: cachedRows, leagueCount: cachedLeagues, leagues: cachedList, ts } =
+            JSON.parse(cached);
+
           if (!cancel) {
-            setRows(cachedRows);
+            setRows(cachedRows || []);
             setLeagueCount(cachedLeagues ?? 0);
             setScanLeagues(cachedList || []);
-            setLeagueRosters(cachedRosters || {});
             setLastUpdated(ts ? new Date(ts) : new Date());
+
+            setSelectedLeagueIds((prev) => {
+              if (prev && prev.size > 0) return prev;
+              return new Set((cachedList || []).map((l) => String(l.id)));
+            });
+
             setProgressPct(100);
             setProgressText("Loaded from cache");
             setLoading(false);
@@ -408,15 +282,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setProgressText("Fetching leagues…");
         setProgressPct(8);
 
-        // 2) leagues (no filtering here)
-        const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`);
+        // 2) leagues
+        const leaguesRes = await fetch(
+          `https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`
+        );
         const leagues = await leaguesRes.json();
 
         if (cancel) return;
 
-        if (leagues.length === 0) {
+        if (!Array.isArray(leagues) || leagues.length === 0) {
           setRows([]);
-          setLeagueRosters({});
           setLeagueCount(0);
           setScanLeagues([]);
           setProgressPct(100);
@@ -425,114 +300,152 @@ export default function ClientResults({ initialSearchParams = {} }) {
           return;
         }
 
-        // 3) iterate rosters with live progress — include only leagues where you actually have a roster with players
+        // 3) iterate:
+        // - if drafting => picks only
+        // - else => rosters only
         const playerCounts = {};
         const playerLeagues = {};
-        const playersRes = await fetch("https://api.sleeper.app/v1/players/nfl");
-        const catalog = await playersRes.json();
-
-        const nextLeagueRosters = {};
         const includedLeagues = [];
+
+        const fetchJson = async (url) => {
+          const r = await fetch(url);
+          if (!r.ok) return null;
+          try {
+            return await r.json();
+          } catch {
+            return null;
+          }
+        };
+
+        // prefer league.draft_id; otherwise fetch most recent draft for league (ONLY when drafting)
+        const getMostRecentDraftIdForLeague = async (leagueId, fallbackDraftId) => {
+          if (fallbackDraftId) return String(fallbackDraftId);
+          const drafts = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
+          if (Array.isArray(drafts) && drafts.length > 0)
+            return drafts[0]?.draft_id ? String(drafts[0].draft_id) : null;
+          return null;
+        };
+
+        const getMyDraftPickedPlayerIds = async (leagueId, userId, fallbackDraftId) => {
+          const draftId = await getMostRecentDraftIdForLeague(leagueId, fallbackDraftId);
+          if (!draftId) return [];
+
+          const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}/picks`);
+          if (!Array.isArray(picks) || picks.length === 0) return [];
+
+          const mine = [];
+          for (const p of picks) {
+            const pickedByMe = p?.picked_by != null && String(p.picked_by) === String(userId);
+            if (pickedByMe) {
+              const pid = p?.player_id != null ? String(p.player_id) : "";
+              if (pid) mine.push(pid);
+            }
+          }
+          return mine;
+        };
 
         for (let i = 0; i < leagues.length; i++) {
           const lg = leagues[i];
+
           setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
           setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
 
-          const rostersRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-          const rosters = await rostersRes.json();
-          const mine = rosters.find((r) => r.owner_id === userId);
+          if (cancel) return;
 
-          // ⛔ Skip this league if you don't have a roster or it's empty
-          if (!mine?.players || mine.players.length === 0) {
-            if (cancel) return;
-            continue;
+          const draftingNow = isActivelyDrafting(lg.status);
+
+          let rosterPlayers = [];
+          let startersSet = new Set();
+          let draftPlayers = [];
+
+          if (draftingNow) {
+            // ✅ Draft picks ONLY when actively drafting
+            draftPlayers = await getMyDraftPickedPlayerIds(
+              lg.league_id,
+              userId,
+              lg.draft_id || null
+            );
+
+            if (draftPlayers.length === 0) continue; // not your draft / no picks yet
+
+          } else {
+            // ✅ Rosters ONLY when NOT actively drafting
+            const rosters = await fetchJson(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+
+            const mineRoster = Array.isArray(rosters)
+              ? rosters.find((r) => String(r?.owner_id) === String(userId))
+              : null;
+
+            rosterPlayers = Array.isArray(mineRoster?.players) ? mineRoster.players.map(String) : [];
+            startersSet = new Set(Array.isArray(mineRoster?.starters) ? mineRoster.starters.map(String) : []);
+
+            if (rosterPlayers.length === 0) continue; // ignore empty/non-owned leagues
           }
 
-          // ✅ Track this league as included
-          includedLeagues.push({
+          const leagueInfo = {
             id: lg.league_id,
             name: lg.name,
             avatar: lg.avatar || null,
             roster_positions: lg.roster_positions || [],
             status: lg.status || "",
             isBestBall: lg?.settings?.best_ball === 1,
-          });
 
-          const starters = new Set(mine.starters || []);
+            // ✅ used by "Include drafting leagues" filter:
+            // treat roster leagues as true; drafting-only leagues as false
+            hasRoster: rosterPlayers.length > 0,
+          };
 
-          // per-league roster build (for bye availability math)
-          const leaguePlayers = [];
-          for (const pid of mine.players) {
-            const base = catalog?.[pid] || {};
-            const team = (base.team || "").toUpperCase();
-            const pos = (base.position || "").toUpperCase();
-            const bye = getTeamByeWeek(team, Number(yr) || new Date().getFullYear());
+          includedLeagues.push(leagueInfo);
 
-            // global aggregates
+          const mergedPids = new Set([...rosterPlayers, ...draftPlayers]);
+
+          for (const pid of mergedPids) {
             playerCounts[pid] = (playerCounts[pid] || 0) + 1;
+
             if (!playerLeagues[pid]) playerLeagues[pid] = [];
             playerLeagues[pid].push({
-              id: lg.league_id,
-              name: lg.name,
-              isStarter: starters.has(pid),
-              avatar: lg.avatar || null,
-              status: lg.status || "",
-              isBestBall: lg?.settings?.best_ball === 1,
-            });
-
-            // per-league roster entry
-            leaguePlayers.push({
-              pid: String(pid),
-              pos,
-              team,
-              bye,
-              isStarter: starters.has(pid),
+              id: leagueInfo.id,
+              name: leagueInfo.name,
+              avatar: leagueInfo.avatar,
+              status: leagueInfo.status,
+              isBestBall: leagueInfo.isBestBall,
+              hasRoster: leagueInfo.hasRoster,
+              isStarter: startersSet.has(pid), // drafting leagues => false for all
             });
           }
-
-          nextLeagueRosters[lg.league_id] = {
-            id: lg.league_id,
-            name: lg.name,
-            roster_positions: lg.roster_positions || [],
-            players: leaguePlayers,
-          };
 
           if (cancel) return;
         }
 
-        // If none of the leagues had your roster, exit gracefully
         if (includedLeagues.length === 0) {
           setRows([]);
-          setLeagueRosters({});
           setLeagueCount(0);
           setScanLeagues([]);
           setLastUpdated(new Date());
           setProgressPct(100);
-          setProgressText("No leagues with a roster found.");
+          setProgressText("No leagues found for this user.");
           setLoading(false);
           return;
         }
 
-        // 4) shape rows (from included leagues only)
-        const seasonNumber = Number(yr) || new Date().getFullYear();
+        // 4) shape rows (use already-loaded players map; avoid /players/nfl)
         const built = Object.entries(playerCounts)
           .map(([pid, count]) => {
-            const base = catalog?.[pid] || {};
-            const team = (base.team || "").toUpperCase();
+            const base = players?.[pid] || {};
+            const team = String(base.team || "").toUpperCase();
+            const pos = String(base.position || "").toUpperCase();
+
             const name =
               base.full_name ||
               `${base.first_name || ""} ${base.last_name || ""}`.trim() ||
-              "Unknown";
-
-            const bye = getTeamByeWeek(team, seasonNumber);
+              (team && team.length <= 4 ? team : "") ||
+              String(pid);
 
             return {
-              player_id: pid,
+              player_id: String(pid),
               name,
               team,
-              position: (base.position || "").toUpperCase(),
-              bye,
+              position: pos,
               count,
               leagues: playerLeagues[pid] || [],
             };
@@ -541,20 +454,23 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
         if (cancel) return;
 
-        // 🆕 Save only included leagues to cache/state
         const payload = {
           rows: built,
           leagueCount: includedLeagues.length,
           leagues: includedLeagues,
-          leagueRosters: nextLeagueRosters,
           ts: Date.now(),
         };
         sessionStorage.setItem(cacheKey, JSON.stringify(payload));
 
         setRows(built);
-        setLeagueRosters(nextLeagueRosters);
         setLeagueCount(includedLeagues.length);
         setScanLeagues(includedLeagues);
+
+        setSelectedLeagueIds((prev) => {
+          if (prev && prev.size > 0) return prev;
+          return new Set(includedLeagues.map((l) => String(l.id)));
+        });
+
         setLastUpdated(new Date());
         setProgressPct(100);
         setProgressText("Done!");
@@ -570,11 +486,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
     };
   }, [username, year, paramsKey, forceScanNonce]);
 
-  // Enriched rows (value + projections)
+  // Enriched rows (metric from context)
   const enriched = useMemo(
     () => rows.map(withLocalPlayerData),
-    // include chosenProjMap & season so projection avg recomputes
-    [rows, valueSource, players, format, qbType, chosenProjMap, seasonForBye]
+    [rows, players, isProj, metricType, effectiveSourceKey]
   );
 
   // Visible league IDs after display filters
@@ -584,24 +499,41 @@ export default function ClientResults({ initialSearchParams = {} }) {
       .filter((lg) => {
         if (onlyBestBall && !lg.isBestBall) return false;
         if (excludeBestBall && lg.isBestBall) return false;
-        if (!includeDrafting && lg.status === "drafting") return false;
+
+        // If "Include drafting" is OFF, hide draft-like leagues ONLY when they do NOT have rosters.
+        // (Drafting-only leagues have hasRoster=false; offseason dynasty leagues with rosters stay visible.)
+        if (!includeDrafting && isDraftLike(lg.status) && !lg.hasRoster) return false;
+
         return true;
       })
       .map((lg) => String(lg.id));
     return new Set(arr);
   }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting]);
-  const visibleLeagueCount = visibleLeagueIds.size || 0;
 
-  // Project rows to visible leagues, drop zeroes
+  // Apply manual league selection (if enabled) ON TOP of visible filters
+  const activeLeagueIds = useMemo(() => {
+    if (!manualLeagueSelect) return visibleLeagueIds;
+    const out = new Set();
+    for (const id of selectedLeagueIds) {
+      if (visibleLeagueIds.has(String(id))) out.add(String(id));
+    }
+    return out;
+  }, [manualLeagueSelect, selectedLeagueIds, visibleLeagueIds]);
+
+  const visibleLeagueCount = activeLeagueIds.size || 0;
+
+  // Project rows to active leagues, drop zeroes
   const projectedRows = useMemo(() => {
-    if (!visibleLeagueIds) return enriched;
+    if (!activeLeagueIds) return enriched;
     return enriched
       .map((row) => {
-        const leagues = (row.leagues || []).filter((lg) => visibleLeagueIds.has(String(lg.id)));
+        const leagues = (row.leagues || []).filter((lg) =>
+          activeLeagueIds.has(String(lg.id))
+        );
         return { ...row, leagues, count: leagues.length };
       })
       .filter((r) => r.count > 0);
-  }, [enriched, visibleLeagueIds]);
+  }, [enriched, activeLeagueIds]);
 
   // Starter PID set (for highlight toggle)
   const starterPidSet = useMemo(() => {
@@ -618,7 +550,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(
-        (r) => r._name.toLowerCase().includes(q) || r._team.toLowerCase().includes(q) || r._pos.toLowerCase().includes(q)
+        (r) =>
+          r._name.toLowerCase().includes(q) ||
+          r._team.toLowerCase().includes(q) ||
+          r._pos.toLowerCase().includes(q)
       );
     }
     if (trendingMode === "adds") list = list.filter((r) => trendingAddMap.has(r.player_id));
@@ -635,12 +570,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
       setSortDir(key === "name" || key === "team" || key === "pos" ? "asc" : "desc");
     }
   };
+
   const sortIndicator = (key) =>
     sortKey !== key ? <span className="opacity-40">↕</span> : sortDir === "asc" ? <span>▲</span> : <span>▼</span>;
+
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
 
-    // If user selected "Only trending adds/drops", sort by that signal first.
+    const getMetricVal = (r) => (isProj ? (r._projAvg || 0) : (r._value || 0));
+
     if (trendingMode !== "all") {
       const getTrend = (r) =>
         trendingMode === "adds"
@@ -649,52 +587,32 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
       return [...filteredRows].sort((a, b) => {
         const tDiff = getTrend(b) - getTrend(a);
-        if (tDiff !== 0) return tDiff; // highest trend first
+        if (tDiff !== 0) return tDiff;
         if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
         if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
         if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
-        if (sortKey === "value") return ((a._value || 0) - (b._value || 0)) * dir;
-        if (sortKey === "proj")  return ((a._projAvg || 0) - (b._projAvg || 0)) * dir;
+        if (sortKey === "value" || sortKey === "proj") return (getMetricVal(a) - getMetricVal(b)) * dir;
         return ((a.count || 0) - (b.count || 0)) * dir;
       });
     }
 
-    // Normal sorting when not in trending-only modes
     return [...filteredRows].sort((a, b) => {
       if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
       if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
-      if (sortKey === "pos")  return a._pos.localeCompare(b._pos) * dir;
-      if (sortKey === "value") return ((a._value || 0) - (b._value || 0)) * dir;
-      if (sortKey === "proj")  return ((a._projAvg || 0) - (b._projAvg || 0)) * dir;
+      if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
+      if (sortKey === "value" || sortKey === "proj") {
+        const av = isProj ? (a._projAvg || 0) : (a._value || 0);
+        const bv = isProj ? (b._projAvg || 0) : (b._value || 0);
+        return (av - bv) * dir;
+      }
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
-  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap]);
+  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, isProj]);
 
   // Paging
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const pageStart = (currentPage - 1) * pageSize;
   const pageRows = sorted.slice(pageStart, pageStart + pageSize);
-
-  // Filters modal "dirty" + reset
-  const defaultFilterState = {
-    onlyBestBall: false,
-    excludeBestBall: false,
-    includeDrafting: true,
-    highlightStarters: false,
-    query: "",
-    maxExposurePct: initialExposureRef.current ?? 25,
-    trendingMode: "all",
-    trendingHours: 24,
-  };
-  const filtersDirty =
-    onlyBestBall !== defaultFilterState.onlyBestBall ||
-    excludeBestBall !== defaultFilterState.excludeBestBall ||
-    includeDrafting !== defaultFilterState.includeDrafting ||
-    highlightStarters !== defaultFilterState.highlightStarters ||
-    query !== defaultFilterState.query ||
-    maxExposurePct !== defaultFilterState.maxExposurePct ||
-    trendingMode !== defaultFilterState.trendingMode ||
-    trendingHours !== defaultFilterState.trendingHours;
 
   const resetFilters = () => {
     setOnlyBestBall(false);
@@ -716,146 +634,32 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setForceScanNonce((n) => n + 1);
   };
 
-  /* ===================== Player Stock Chart data ===================== */
-  const [chartMetric, setChartMetric] = useState("exposure"); // exposure | count | value | proj
-  const [chartTopN, setChartTopN] = useState(20);
-
-  const chartTopNInitRef = useRef(false);
-  useEffect(() => {
-    if (showChart && isMobile && !chartTopNInitRef.current) {
-      setChartTopN(10);
-      chartTopNInitRef.current = true;
-    }
-  }, [showChart, isMobile]);
-
-  const chartData = useMemo(() => {
-    const base = [...sorted].slice(0, Math.max(chartTopN, 1));
-    const data = base.map((r) => ({
-      name: r._name,
-      short: r._name.length > 18 ? r._name.replace(/(.{17}).*/, "$1…") : r._name,
-      exposure: visibleLeagueCount ? Math.round((r.count / visibleLeagueCount) * 100) : 0,
-      count: r.count || 0,
-      value: r._value || 0,
-      proj: r._projAvg || 0,
-    }));
-    data.sort((a, b) => (b[chartMetric] ?? 0) - (a[chartMetric] ?? 0));
-    return data.slice(0, chartTopN);
-  }, [sorted, chartTopN, chartMetric, visibleLeagueCount]);
-
-  const chartYAxisDomain = chartMetric === "exposure" ? [0, 100] : ["auto", "auto"];
-  const chartValueFormatter = (v) => (chartMetric === "exposure" ? `${v}%` : Math.round(v));
-
-  /* ===================== Bye-week helpers + state ===================== */
-  const scanLeaguesMap = useMemo(() => {
-    const m = {};
-    for (const lg of scanLeagues) m[lg.id] = lg;
-    return m;
-  }, [scanLeagues]);
-
-  const [byeTotalCap, setByeTotalCap] = useState(4);
-  const [byeStarterCap, setByeStarterCap] = useState(3);
-  const [byeShowOnlyIssues, setByeShowOnlyIssues] = useState(true);
-
-  const START_SLOTS = new Set(["QB", "RB", "WR", "TE", "FLEX", "WRRB_FLEX", "REC_FLEX", "SUPER_FLEX"]);
-  const SLOT_ELIGIBILITY = {
-    FLEX: new Set(["RB", "WR", "TE"]),
-    WRRB_FLEX: new Set(["RB", "WR"]),
-    REC_FLEX: new Set(["WR", "TE"]),
-    SUPER_FLEX: new Set(["QB", "RB", "WR", "TE"]),
+  // Helpers for manual selection UI
+  const toggleLeagueSelected = (id) => {
+    const sid = String(id);
+    setSelectedLeagueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sid)) next.delete(sid);
+      else next.add(sid);
+      return next;
+    });
   };
 
-  function countRosterSlots(roster_positions = []) {
-    const slots = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, WRRB_FLEX: 0, REC_FLEX: 0, SUPER_FLEX: 0 };
-    roster_positions.forEach((slot) => {
-      if (START_SLOTS.has(slot)) slots[slot] = (slots[slot] || 0) + 1;
+  const selectAllVisible = () => {
+    setSelectedLeagueIds((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleLeagueIds) next.add(String(id));
+      return next;
     });
-    return slots;
-  }
-  function totalStarterSlots(slots) {
-    return Object.values(slots).reduce((a, b) => a + (b || 0), 0);
-  }
-  function flexCapacityFor(pos, slots) {
-    let cap = 0;
-    if (pos === "QB") cap += slots.SUPER_FLEX || 0;
-    if (pos === "RB") cap += (slots.FLEX || 0) + (slots.WRRB_FLEX || 0) + (slots.SUPER_FLEX || 0);
-    if (pos === "WR") cap += (slots.FLEX || 0) + (slots.WRRB_FLEX || 0) + (slots.REC_FLEX || 0) + (slots.SUPER_FLEX || 0);
-    if (pos === "TE") cap += (slots.FLEX || 0) + (slots.REC_FLEX || 0) + (slots.SUPER_FLEX || 0);
-    return cap;
-  }
-  function capacityText(pos, slots) {
-    const base = slots[pos] || 0;
-    const flex = flexCapacityFor(pos, slots);
-    if (base > 0 && flex > 0) return `${base} starters + ${flex} via flex`;
-    if (base > 0 && flex === 0) return `${base} starters`;
-    if (base === 0 && flex > 0) return `${flex} via flex only`;
-    return `no eligible slots`;
-  }
-  function eligibleOtherPositionsFor(pos, slots) {
-    const presentSlotTypes = Object.keys(slots).filter((k) => slots[k] > 0 && SLOT_ELIGIBILITY[k]);
-    const union = new Set();
-    presentSlotTypes.forEach((slotType) => {
-      const set = SLOT_ELIGIBILITY[slotType];
-      if (set && set.has(pos)) set.forEach((p) => union.add(p));
+  };
+
+  const clearAllVisible = () => {
+    setSelectedLeagueIds((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleLeagueIds) next.delete(String(id));
+      return next;
     });
-    union.delete(pos);
-    return Array.from(union).sort();
-  }
-  function activeCountsByPos(leagueRoster, week) {
-    const counts = { QB: 0, RB: 0, WR: 0, TE: 0 };
-    if (!leagueRoster?.players) return counts;
-    leagueRoster.players.forEach((pl) => {
-      const pos = (pl.pos || "UNK").toUpperCase();
-      if (!Object.prototype.hasOwnProperty.call(counts, pos)) return;
-      const isOnBye = Number.isFinite(pl.bye) && Number(pl.bye) === Number(week);
-      if (!isOnBye) counts[pos] += 1;
-    });
-    return counts;
-  }
-
-  // Aggregate bye counts by league/week
-  const byeByLeague = useMemo(() => {
-    const map = {};
-    projectedRows.forEach((r) => {
-      const wk = r.bye || null;
-      if (!wk) return;
-      const pos = (players?.[r.player_id]?.position || r.position || "UNK").toUpperCase();
-      (r.leagues || []).forEach((lg) => {
-        if (!map[lg.id]) map[lg.id] = { id: lg.id, name: lg.name, weeks: {} };
-        const bucket = (map[lg.id].weeks[wk] ||= { total: 0, starters: 0, pos: {} });
-        bucket.total += 1;
-        if (lg.isStarter) bucket.starters += 1;
-        bucket.pos[pos] = (bucket.pos[pos] || 0) + 1;
-      });
-    });
-    return map;
-  }, [projectedRows, players]);
-
-  // Identify problem weeks per league
-  const byeIssuesByLeague = useMemo(() => {
-    const issues = {};
-    Object.entries(byeByLeague).forEach(([lid, league]) => {
-      const rp = scanLeaguesMap[lid]?.roster_positions || [];
-      const slots = countRosterSlots(rp);
-      const startersTotal = totalStarterSlots(slots);
-
-      const wkIssues = {};
-      Object.entries(league.weeks).forEach(([wk, stats]) => {
-        const hasProblem = stats.total >= byeTotalCap || stats.starters >= byeStarterCap || stats.total >= startersTotal;
-
-        if (hasProblem || !byeShowOnlyIssues) {
-          wkIssues[wk] = { ...stats, startersTotal, slots };
-        }
-      });
-
-      if (Object.keys(wkIssues).length) {
-        issues[lid] = { id: league.id, name: league.name, weeks: wkIssues, slots, startersTotal };
-      }
-    });
-    return issues;
-  }, [byeByLeague, scanLeaguesMap, byeTotalCap, byeStarterCap, byeShowOnlyIssues]);
-
-  const valueOrProjLabel = metricMode === "projections" ? "Proj (avg)" : "Value";
-  const valueOrProjSortKey = metricMode === "projections" ? "proj" : "value";
+  };
 
   // UI
   return (
@@ -875,11 +679,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
           </div>
         ) : (
           <div className="mb-4">
-            {/* Controls container */}
             <div className="bg-gray-900 rounded-lg border border-white/10 p-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  {/* Left: search + metric + sources */}
                   <div className="flex items-center gap-3 flex-wrap">
                     <input
                       value={query}
@@ -891,54 +693,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       className="bg-gray-800 border border-white/10 rounded px-3 py-1.5 text-sm w-full md:w-64"
                     />
 
-                    {/* Metric toggle */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Metric:</span>
-                      <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
-                        <button
-                          className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
-                          onClick={() => setMetricMode("projections")}
-                          disabled={projLoading || (!projLoading && !projMaps.CSV && !projMaps.ESPN && !projMaps.CBS)}
-                          title={projError || ""}
-                        >
-                          Projections{projLoading ? "…" : ""}
-                        </button>
-                        <button
-                          className={`px-3 py-1 ${metricMode === "values" ? "bg-white/10" : "hover:bg-white/5"}`}
-                          onClick={() => setMetricMode("values")}
-                        >
-                          Values
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Projection source (only when projections mode) */}
-                    {metricMode === "projections" && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Proj Source:</span>
-                        <select
-                          className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                          value={projectionSource}
-                          onChange={(e) => setProjectionSource(e.target.value)}
-                          disabled={projLoading}
-                        >
-                          {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
-                          {projMaps.ESPN && <option value="ESPN">ESPN</option>}
-                          {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Values source (only in Values mode) */}
-                    {metricMode === "values" && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Values:</span>
-                        <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
-                      </div>
-                    )}
+                    <SourceSelector
+                      value={effectiveSourceKey}
+                      onChange={setEffectiveSourceKey}
+                      mode={format}
+                      qbType={qbType}
+                      onModeChange={setFormat}
+                      onQbTypeChange={setQbType}
+                    />
                   </div>
 
-                  {/* Right: Filters + scan summary */}
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -947,7 +711,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       title="Filters & options"
                     >
                       Filters
-                      {/* dirty dot */}
                     </button>
 
                     <div className="text-sm text-gray-400">
@@ -972,7 +735,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             type="button"
                             className="underline decoration-dotted hover:text-white"
                             onClick={() => setShowVisibleLeaguesModal(true)}
-                            title="Leagues currently visible by filters"
+                            title="Leagues currently visible by filters/selection"
                           >
                             <span className="text-white font-semibold">{visibleLeagueCount}</span>
                           </button>
@@ -990,124 +753,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       >
                         Refresh
                       </button>
-                      {projError && <span className="text-yellow-300 ml-3 text-xs">{projError}</span>}
                       {error && <span className="text-red-400 ml-3">{error}</span>}
                     </div>
                   </div>
                 </div>
-
-                {/* row: chart toggle (left) + bye-week (right) */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <button
-                    className="text-sm rounded px-3 py-1 border border-white/20 hover:bg-white/10"
-                    onClick={() => setShowChart((v) => !v)}
-                    title="Toggle player stock chart"
-                  >
-                    {showChart ? "Hide Player Stock Chart" : "Show Player Stock Chart"}
-                  </button>
-
-                  <button
-                    className="text-sm rounded px-3 py-1 border border-white/20 hover:bg-white/10"
-                    onClick={() => setShowByeModal(true)}
-                    title="See per-league bye-week risk"
-                  >
-                    Bye-week conflicts
-                  </button>
-                </div>
               </div>
             </div>
 
-            {/* Player Stock Chart (toggled) */}
-            {showChart && (
-              <div className="mt-4 bg-gray-900 rounded-lg border border-white/10 p-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="text-lg font-semibold">Player Stock (Top {chartTopN})</div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <label className="flex items-center gap-2 text-sm">
-                      <span>Metric</span>
-                      <select
-                        value={chartMetric}
-                        onChange={(e) => setChartMetric(e.target.value)}
-                        className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="exposure">Exposure %</option>
-                        <option value="count">Leagues</option>
-                        <option value="value">Value</option>
-                        <option value="proj">Proj (avg)</option>
-                      </select>
-                    </label>
-
-                    <label className="flex items-center gap-2 text-sm">
-                      <span>Top</span>
-                      <select
-                        value={chartTopN}
-                        onChange={(e) => setChartTopN(Number(e.target.value))}
-                        className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                      >
-                        {[10, 20, 30, 50].map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </label>
-
-                    {isMobile && chartTopN > 10 && (
-                      <span className="text-xs text-yellow-300">
-                        Tip: 10 is recommended on mobile.
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-3 h-[320px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 50 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                      <XAxis
-                        dataKey="short"
-                        angle={-35}
-                        textAnchor="end"
-                        interval={0}
-                        height={60}
-                        tick={{ fill: "#cbd5e1", fontSize: 12 }}
-                      />
-                      <YAxis domain={chartYAxisDomain} tick={{ fill: "#cbd5e1", fontSize: 12 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: "#111827", border: "1px solid rgba(255,255,255,0.1)" }}
-                        formatter={(value, name) => [chartValueFormatter(value), name]}
-                        labelFormatter={(label, payload) => payload?.[0]?.payload?.name ?? label}
-                      />
-                      <Bar dataKey={chartMetric} fill="#60a5fa">
-                        <LabelList
-                          dataKey={chartMetric}
-                          position="top"
-                          formatter={chartValueFormatter}
-                          style={{ fill: "#e5e7eb", fontSize: 11 }}
-                        />
-                      </Bar>
-                      {chartMetric === "exposure" && (
-                        <ReferenceLine
-                          y={maxExposurePct}
-                          stroke="#ef4444"
-                          strokeDasharray="4 4"
-                          label={{
-                            value: `Cap ${maxExposurePct}%`,
-                            position: "right",
-                            fill: "#fca5a5",
-                            fontSize: 12,
-                          }}
-                        />
-                      )}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="mt-2 text-xs text-gray-500">
-                  Based on your visible leagues ({visibleLeagueCount}). Exposure = leagues rostered / visible leagues.
-                </div>
-              </div>
-            )}
-
-            {/* Table */}
             {sorted.length === 0 ? (
               <div className="text-center text-gray-400 py-10">
                 {loading ? "Working…" : trendingMode !== "all" ? "No matching trending players." : "No players found."}
@@ -1117,16 +769,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 <table className="min-w-full bg-gray-900">
                   <thead className="bg-gray-800/60">
                     <tr>
-                      <th
-                        className="text-left px-4 py-2 cursor-pointer select-none"
-                        onClick={() => toggleSort("name")}
-                      >
+                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("name")}>
                         Player <span className="ml-1 inline-block">{sortIndicator("name")}</span>
                       </th>
-                      <th
-                        className="text-right px-4 py-2 cursor-pointer select-none"
-                        onClick={() => toggleSort("count")}
-                      >
+                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("count")}>
                         Leagues <span className="ml-1 inline-block">{sortIndicator("count")}</span>
                       </th>
                       <th
@@ -1138,6 +784,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <th className="text-left px-4 py-2 hidden md:table-cell">Teams</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {pageRows.map((r) => {
                       const exposure = visibleLeagueCount ? Math.round((r.count / visibleLeagueCount) * 100) : 0;
@@ -1146,7 +793,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       const addCount = trendingAddMap.get(r.player_id);
                       const dropCount = trendingDropMap.get(r.player_id);
 
-                      const metricVal = metricMode === "projections" ? (r._projAvg || 0) : (r._value || 0);
+                      const metricVal = isProj ? (r._projAvg || 0) : (r._value || 0);
 
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
@@ -1179,11 +826,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                 >
                                   {r._name}
                                 </span>
-                                {Number.isFinite(r.bye) && (
-                                  <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70">
-                                    Bye W{r.bye}
-                                  </span>
-                                )}
+
                                 {addCount ? (
                                   <span
                                     className="ml-2 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70"
@@ -1192,6 +835,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                     🔥 {addCount}
                                   </span>
                                 ) : null}
+
                                 {dropCount ? (
                                   <span
                                     className="ml-1 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70"
@@ -1201,36 +845,35 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                   </span>
                                 ) : null}
                               </div>
+
                               <div className="text-xs text-gray-400 ml-10">
                                 {r._pos || "—"} • {r._team || "FA"}
                                 {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
                               </div>
                             </button>
                           </td>
+
                           <td className="px-4 py-2 text-right">{r.count}</td>
                           <td className="px-4 py-2 text-right">{Math.round(metricVal)}</td>
+
                           <td className="px-4 py-2 hidden md:table-cell">
                             <div className="flex -space-x-2">
-                              {(r.leagues || [])
-                                .slice(0, 7)
-                                .map((lg) => (
-                                  <img
-                                    key={lg.id}
-                                    src={leagueAvatarUrl(lg.avatar)}
-                                    alt=""
-                                    className={`w-6 h-6 rounded ring-1 ring-black object-cover ${
-                                      highlightStarters && lg.isStarter ? "ring-blue-500" : ""
-                                    }`}
-                                    onError={(e) => {
-                                      e.currentTarget.src = DEFAULT_LEAGUE_IMG;
-                                    }}
-                                    title={`${lg.name}${lg.isStarter ? " • starter" : ""}`}
-                                  />
-                                ))}
+                              {(r.leagues || []).slice(0, 7).map((lg) => (
+                                <img
+                                  key={lg.id}
+                                  src={leagueAvatarUrl(lg.avatar)}
+                                  alt=""
+                                  className={`w-6 h-6 rounded ring-1 ring-black object-cover ${
+                                    highlightStarters && lg.isStarter ? "ring-blue-500" : ""
+                                  }`}
+                                  onError={(e) => {
+                                    e.currentTarget.src = DEFAULT_LEAGUE_IMG;
+                                  }}
+                                  title={`${lg.name}${lg.isStarter ? " • starter" : ""}`}
+                                />
+                              ))}
                               {(r.leagues || []).length > 7 ? (
-                                <span className="text-xs text-gray-400 pl-2">
-                                  +{(r.leagues || []).length - 7}
-                                </span>
+                                <span className="text-xs text-gray-400 pl-2">+{(r.leagues || []).length - 7}</span>
                               ) : null}
                             </div>
                           </td>
@@ -1242,7 +885,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
               </div>
             )}
 
-            {/* footer: paging + page size */}
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
@@ -1286,18 +928,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
         )}
       </div>
 
-      {/* Filters modal */}
+      {/* Filters modal (SMALLER) */}
       {showFiltersModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
           onClick={() => setShowFiltersModal(false)}
         >
           <div
-            className="w-full max-w-3xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+            className="w-full max-w-xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-xl shadow-xl p-4 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="text-xl font-bold">Filters & Options</div>
+              <div className="text-lg font-bold">Filters & Options</div>
               <button
                 className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
                 onClick={() => setShowFiltersModal(false)}
@@ -1306,8 +948,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Search & row options */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="text-sm text-gray-400">Search</div>
                 <input
@@ -1329,8 +970,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   Highlight starters
                 </label>
 
-                {/* Exposure cap */}
-                <div className="mt-4">
+                <div className="mt-2">
                   <div className="text-sm text-gray-400 mb-1">Max Exposure %</div>
                   <input
                     type="number"
@@ -1343,44 +983,19 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   />
                 </div>
 
-                {/* Value Source + Format/QB (only in Values mode) */}
-                  {metricMode === "values" && (
-                    <>
-                      <div className="text-sm text-gray-400 mt-4">Value Source</div>
-                      <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+                <div className="mt-3">
+                  <div className="text-sm text-gray-400 mb-2">Metric & Source</div>
+                  <SourceSelector
+                    value={effectiveSourceKey}
+                    onChange={setEffectiveSourceKey}
+                    mode={format}
+                    qbType={qbType}
+                    onModeChange={setFormat}
+                    onQbTypeChange={setQbType}
+                  />
+                </div>
 
-                      <div className="mt-2 flex gap-3 items-center">
-                        {supports.dynasty && supports.redraft && (
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={format === "dynasty"}
-                              onChange={() => setFormat(format === "dynasty" ? "redraft" : "dynasty")}
-                              className="sr-only peer"
-                            />
-                            <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
-                            <span className="ml-3 text-sm">{format === "dynasty" ? "Dynasty" : "Redraft"}</span>
-                          </label>
-                        )}
-                        {supports.qbToggle && (
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={qbType === "sf"}
-                              onChange={() => setQbType(qbType === "sf" ? "1qb" : "sf")}
-                              className="sr-only peer"
-                            />
-                            <div className="w-14 h-7 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-7"></div>
-                            <span className="ml-3 text-sm">{qbType === "sf" ? "Superflex" : "1QB"}</span>
-                          </label>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-
-                {/* Trending options */}
-                <div className="mt-6">
+                <div className="mt-4">
                   <div className="text-sm text-gray-400 mb-2">Trending players</div>
 
                   <div className="space-y-2">
@@ -1436,7 +1051,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 </div>
               </div>
 
-              {/* League filters (display-side) */}
               <div className="space-y-3">
                 <div className="text-sm text-gray-400">League filters (display only)</div>
                 <label className="flex items-center justify-between">
@@ -1480,6 +1094,96 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     }}
                   />
                 </label>
+
+                {/* Manual league selection */}
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <label className="flex items-center justify-between">
+                    <span className="text-sm">Manually select leagues</span>
+                    <input
+                      type="checkbox"
+                      checked={manualLeagueSelect}
+                      onChange={() => setManualLeagueSelect((v) => !v)}
+                    />
+                  </label>
+
+                  {manualLeagueSelect && (
+                    <>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-xs rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                          onClick={selectAllVisible}
+                        >
+                          Select all visible
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                          onClick={clearAllVisible}
+                        >
+                          Clear
+                        </button>
+                        <span className="ml-auto text-xs text-gray-500">
+                          {visibleLeagueCount} showing
+                        </span>
+                      </div>
+
+                      <div className="mt-2 max-h-52 overflow-y-auto pr-1 space-y-1">
+                        {scanLeagues
+                          .filter((lg) => visibleLeagueIds.has(String(lg.id)))
+                          .slice()
+                          .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                          .map((lg) => {
+                            const id = String(lg.id);
+                            const checked = selectedLeagueIds.has(id);
+                            return (
+                              <label
+                                key={id}
+                                className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-800/60 border border-white/10"
+                                title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}${
+                                  lg.hasRoster ? " • rosters" : ""
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleLeagueSelected(id)}
+                                />
+                                <img
+                                  src={leagueAvatarUrl(lg.avatar)}
+                                  alt=""
+                                  className="w-5 h-5 rounded object-cover bg-gray-700"
+                                  onError={(e) => {
+                                    e.currentTarget.src = DEFAULT_LEAGUE_IMG;
+                                  }}
+                                />
+                                <span className="truncate">{lg.name}</span>
+                                <span className="ml-auto text-[10px] text-gray-400">
+                                  {lg.isBestBall ? "BB" : "STD"}
+                                  {lg.hasRoster ? " • roster" : ""}
+                                </span>
+                              </label>
+                            );
+                          })}
+                      </div>
+
+                      <div className="mt-2 text-xs text-gray-500">
+                        Selection stacks on top of Best Ball / Drafting filters.
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="pt-3">
+                  <button
+                    type="button"
+                    className="text-sm rounded px-3 py-1 border border-white/20 hover:bg-white/10"
+                    onClick={doRefresh}
+                    title="Rescan now (ignores cache)"
+                  >
+                    Refresh scan
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1527,20 +1231,22 @@ export default function ClientResults({ initialSearchParams = {} }) {
               {scanLeagues
                 .slice()
                 .sort((a, b) => {
-                  const av = visibleLeagueIds.has(String(a.id)) ? 1 : 0;
-                  const bv = visibleLeagueIds.has(String(b.id)) ? 1 : 0;
-                  if (av !== bv) return bv - av; // visible first
+                  const av = activeLeagueIds.has(String(a.id)) ? 1 : 0;
+                  const bv = activeLeagueIds.has(String(b.id)) ? 1 : 0;
+                  if (av !== bv) return bv - av;
                   return (a.name || "").localeCompare(b.name || "");
                 })
                 .map((lg) => (
                   <div
                     key={lg.id}
                     className={`flex items-center gap-3 text-sm px-2 py-1 rounded border ${
-                      visibleLeagueIds.has(String(lg.id))
+                      activeLeagueIds.has(String(lg.id))
                         ? "bg-gray-800 border-white/10"
                         : "bg-gray-800/40 border-white/5 opacity-70"
                     }`}
-                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
+                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}${
+                      lg.hasRoster ? " • rosters" : ""
+                    }`}
                   >
                     <img
                       src={leagueAvatarUrl(lg.avatar)}
@@ -1553,6 +1259,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     <span className="truncate">{lg.name}</span>
                     <span className="ml-auto text-[10px] text-gray-400">
                       {lg.isBestBall ? "BB" : "STD"}
+                      {lg.hasRoster ? " • roster" : ""}
                       {lg.status ? ` • ${lg.status}` : ""}
                     </span>
                   </div>
@@ -1562,7 +1269,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>
       )}
 
-      {/* Visible leagues (filtered "Showing") modal */}
+      {/* Visible leagues modal */}
       {showVisibleLeaguesModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
@@ -1583,13 +1290,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
             </div>
             <div className="max-h-96 overflow-y-auto pr-1 flex flex-col gap-2">
               {scanLeagues
-                .filter((lg) => visibleLeagueIds.has(String(lg.id)))
+                .filter((lg) => activeLeagueIds.has(String(lg.id)))
                 .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
                 .map((lg) => (
                   <div
                     key={lg.id}
                     className="flex items-center gap-3 text-sm px-2 py-1 rounded bg-gray-800 border border-white/10"
-                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
+                    title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}${
+                      lg.hasRoster ? " • rosters" : ""
+                    }`}
                   >
                     <img
                       src={leagueAvatarUrl(lg.avatar)}
@@ -1602,247 +1311,31 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     <span className="truncate">{lg.name}</span>
                     <span className="ml-auto text-[10px] text-gray-400">
                       {lg.isBestBall ? "BB" : "STD"}
+                      {lg.hasRoster ? " • roster" : ""}
                       {lg.status ? ` • ${lg.status}` : ""}
                     </span>
                   </div>
                 ))}
               {visibleLeagueCount === 0 && (
-                <div className="text-sm text-gray-400">No leagues match the current filters.</div>
+                <div className="text-sm text-gray-400">No leagues match the current filters/selection.</div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Bye-week conflicts modal (unchanged content aside from state above) */}
-      {showByeModal && (
-        <div
-          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
-          onClick={() => setShowByeModal(false)}
-        >
-          <div
-            className="w-full max-w-3xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* ... same content as before (omitted for brevity), unchanged ... */}
-            {/* Bye-week conflicts modal */}
-            {showByeModal && (
-              <div
-                className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
-                onClick={() => setShowByeModal(false)}
-              >
-                <div
-                  className="w-full max-w-3xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="text-xl font-bold">Bye-week conflicts (by league)</div>
-                    <button
-                      className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
-                      onClick={() => setShowByeModal(false)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm" title="Flag weeks if TOTAL players on bye ≥ this number">
-                      <span>Flag if total on bye ≥</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={byeTotalCap}
-                        onChange={(e) => setByeTotalCap(Number(e.target.value || 0))}
-                        className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
-                      />
-                    </label>
-
-                    <label
-                      className="flex items-center gap-2 text-sm"
-                      title="Flag if CURRENT STARTERS on bye ≥ this number"
-                    >
-                      <span>Flag if starters on bye ≥</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={byeStarterCap}
-                        onChange={(e) => setByeStarterCap(Number(e.target.value || 0))}
-                        className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1"
-                      />
-                    </label>
-
-                    <label className="flex items-center gap-2 text-sm ml-auto">
-                      <input
-                        type="checkbox"
-                        checked={byeShowOnlyIssues}
-                        onChange={() => setByeShowOnlyIssues((v) => !v)}
-                      />
-                      <span>Show only weeks with issues</span>
-                    </label>
-                  </div>
-
-                  {/* Content */}
-                  <div className="max-h-[65vh] overflow-y-auto pr-1">
-                    {Object.keys(byeIssuesByLeague).length === 0 ? (
-                      <div className="text-gray-400">
-                        {projectedRows.some((r) => r.bye)
-                          ? "No conflicts found with current thresholds."
-                          : "No bye-week data configured. Add team bye weeks in utils/nflByeWeeks.js."}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {Object.values(byeIssuesByLeague).map((lg) => {
-                          const leagueRoster = leagueRosters[lg.id];
-                          const rp = scanLeaguesMap[lg.id]?.roster_positions || [];
-                          const slots = countRosterSlots(rp);
-                          const startersTotal = totalStarterSlots(slots);
-
-                          return (
-                            <div key={lg.id} className="rounded-lg border border-white/10 bg-gray-800/50">
-                              <div className="px-3 py-2 border-b border-white/10 font-semibold">{lg.name}</div>
-                              <div className="p-3 grid gap-2">
-                                {Object.entries(lg.weeks)
-                                  .sort((a, b) => Number(a[0]) - Number(b[0]))
-                                  .map(([wk, stats]) => {
-                                    const posEntries = Object.entries(stats.pos);
-                                    const warnings = [];
-
-                                    if (stats.total >= startersTotal) {
-                                      warnings.push(
-                                        `You have ${stats.total} total players on bye in Week ${wk}; this lineup has ${startersTotal} starter slots.`
-                                      );
-                                    } else if (stats.total >= byeTotalCap) {
-                                      warnings.push(`High bye volume in Week ${wk}: ${stats.total} players on bye.`);
-                                    }
-                                    if (stats.starters >= byeStarterCap) {
-                                      warnings.push(`${stats.starters} of your current starters are on bye in Week ${wk}.`);
-                                    }
-
-                                    const activeByPos = activeCountsByPos(leagueRoster, wk);
-
-                                    posEntries.forEach(([pos, n]) => {
-                                      const base = slots[pos] || 0;
-                                      const flexSlots = flexCapacityFor(pos, slots);
-                                      const totalCap = base + flexSlots;
-
-                                      const sameExtra = Math.max(0, (activeByPos[pos] || 0) - base);
-
-                                      const otherPositions = eligibleOtherPositionsFor(pos, slots);
-                                      let crossExtra = 0;
-                                      otherPositions.forEach((op) => {
-                                        crossExtra += Math.max(0, (activeByPos[op] || 0) - (slots[op] || 0));
-                                      });
-
-                                      const othersLabel = otherPositions.length ? otherPositions.join("/") : "—";
-                                      const needFlex = Math.max(0, n - base);
-
-                                      if (totalCap === 0 && n > 0) {
-                                        warnings.push(`${pos}: ${n} on bye, but this league has ${capacityText(pos, slots)}.`);
-                                      } else if (n > totalCap) {
-                                        warnings.push(
-                                          `${pos}: ${n} on bye, capacity is ${capacityText(pos, slots)}. ` +
-                                            `Available this week — same-pos extras: ${sameExtra}; cross-pos flex candidates: ${crossExtra} (${othersLabel}).`
-                                        );
-                                      } else if (n > base) {
-                                        warnings.push(
-                                          `${pos}: ${n} on bye — needs ${needFlex} flex slot${needFlex > 1 ? "s" : ""}. ` +
-                                            `You have ${sameExtra} extra ${pos} and ${crossExtra} cross-pos candidates (${othersLabel}); ` +
-                                            `flex slots allowing ${pos}: ${flexSlots}.`
-                                        );
-                                      }
-                                    });
-
-                                    const danger =
-                                      stats.total >= byeTotalCap || stats.starters >= byeStarterCap || warnings.length > 0;
-
-                                    return (
-                                      <div
-                                        key={wk}
-                                        className={`rounded p-3 bg-gray-900/60 border ${
-                                          danger ? "border-red-500" : "border-white/10"
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <div className="text-sm">
-                                            <span className="text-gray-400 mr-2">Week</span>
-                                            <span className="font-semibold">{wk}</span>
-                                          </div>
-                                          <div className="text-sm">
-                                            <span className="text-gray-400 mr-2">Total</span>
-                                            <span className="font-semibold">{stats.total}</span>
-                                            <span className="text-gray-400 mx-2">|</span>
-                                            <span className="text-gray-400 mr-2">Starters</span>
-                                            <span className="font-semibold">{stats.starters}</span>
-                                          </div>
-                                        </div>
-
-                                        {warnings.length > 0 && (
-                                          <ul className="mt-2 space-y-1 text-sm text-red-300">
-                                            {warnings.map((w, i) => (
-                                              <li key={i} className="flex items-start gap-2">
-                                                <span aria-hidden>⚠</span>
-                                                <span>{w}</span>
-                                              </li>
-                                            ))}
-                                          </ul>
-                                        )}
-
-                                        {/* position breakdown */}
-                                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                                          {posEntries
-                                            .sort((a, b) => a[0].localeCompare(b[0]))
-                                            .map(([pos, n]) => {
-                                              const base = slots[pos] || 0;
-                                              const flex = flexCapacityFor(pos, slots);
-                                              const active = (leagueRoster ? activeCountsByPos(leagueRoster, wk)[pos] : 0) || 0;
-                                              const needsFlex = n > base;
-                                              const overCap = n > base + flex && base + flex > 0;
-                                              return (
-                                                <span
-                                                  key={pos}
-                                                  className={`px-2 py-1 rounded border ${
-                                                    overCap
-                                                      ? "border-red-400 text-red-300"
-                                                      : needsFlex
-                                                      ? "border-yellow-400 text-yellow-300"
-                                                      : "border-white/10 text-gray-300"
-                                                  }`}
-                                                  title={`On bye: ${n} • Active (not on bye): ${active} • Capacity: ${capacityText(
-                                                    pos,
-                                                    slots
-                                                  )}`}
-                                                >
-                                                  {pos}: {n}
-                                                </span>
-                                              );
-                                            })}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-
       {/* Player detail modal */}
       {openPid &&
         (() => {
           const openRow = enriched.find((r) => r.player_id === openPid) || null;
           if (!openRow) return null;
-          const visibleLeaguesForRow = (openRow.leagues || []).filter((lg) => visibleLeagueIds.has(String(lg.id)));
-          const metricVal = metricMode === "projections" ? Math.round(openRow._projAvg || 0) : Math.round(openRow._value || 0);
+
+          const visibleLeaguesForRow = (openRow.leagues || []).filter((lg) =>
+            activeLeagueIds.has(String(lg.id))
+          );
+
+          const metricVal = isProj ? Math.round(openRow._projAvg || 0) : Math.round(openRow._value || 0);
+
           return (
             <div
               className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4"
@@ -1863,8 +1356,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     <div>
                       <div className="text-xl font-bold">{openRow._name}</div>
                       <div className="text-xs text-gray-400">
-                        {openRow._pos || "—"} • {openRow._team || "FA"}{" "}
-                        {Number.isFinite(openRow.bye) ? `• Bye W${openRow.bye}` : ""}
+                        {openRow._pos || "—"} • {openRow._team || "FA"}
                       </div>
                     </div>
                   </div>

@@ -26,6 +26,7 @@ const NAV_BADGES = {
   "/player-availability": "UPDATED",
   "/draft-pick-tracker": "NEW",
   "/league-hub": "DEVELOPING",
+  "/player-stock": "UPDATED",
 };
 
 const BADGE_STYLES = {

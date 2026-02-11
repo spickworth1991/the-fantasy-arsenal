@@ -534,7 +534,7 @@ export const SleeperProvider = ({ children }) => {
   const [qbType, setQbType] = useState(() => lsGet("qbType", "sf"));
 
   // Unified source key used by SourceSelector (can be either proj:* or val:*)
-  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "proj:ffa"));
+  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "val:fantasycalc"));
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
