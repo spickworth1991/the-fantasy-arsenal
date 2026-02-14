@@ -7,6 +7,11 @@
 const CACHE = "tfa-shell-v1";
 const SHELL = ["/", "/tools", "/draft-pick-tracker", "/site.webmanifest"];
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
+
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
@@ -26,6 +31,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
+  // ✅ Only cache static assets; do NOT cache HTML documents
+  const accept = req.headers.get("accept") || "";
+  if (accept.includes("text/html")) return;
+
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetchPromise = fetch(req)
@@ -40,6 +49,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 
 // ✅ Push handler (W3C Push API)
 self.addEventListener("push", (event) => {
