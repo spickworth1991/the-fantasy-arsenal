@@ -31,9 +31,8 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
-  // ✅ Only cache static assets; do NOT cache HTML documents
   const accept = req.headers.get("accept") || "";
-  if (accept.includes("text/html")) return;
+  if (accept.includes("text/html")) return; // ✅ don't cache HTML
 
   event.respondWith(
     caches.match(req).then((cached) => {
@@ -49,6 +48,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 
 
 // ✅ Push handler (W3C Push API)
