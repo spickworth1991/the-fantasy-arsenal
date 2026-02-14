@@ -55,27 +55,50 @@ export async function POST(req) {
       url,
     };
 
-    const results = await Promise.allSettled(
-      subs.map(async (subscription) => {
+    let sent = 0;
+    let failed = 0;
+    let failures = [];
+
+    for (const subscription of subs) {
+      try {
         const { endpoint, headers, body } = await buildPushHTTPRequest({
           privateJWK: jwk,
           subscription,
           message: {
             payload,
-            adminContact: subject, // e.g. mailto:you@domain.com
+            adminContact: subject,
           },
         });
 
         const res = await fetch(endpoint, { method: "POST", headers, body });
-        if (!res.ok) throw new Error(`Push failed: ${res.status}`);
-        return true;
-      })
-    );
 
-    const sent = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.length - sent;
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          failures.push({
+            status: res.status,
+            body: text,
+          });
 
-    return NextResponse.json({ ok: true, sent, failed });
+          // Auto-clean dead subscriptions
+          if (res.status === 404 || res.status === 410) {
+            await db
+              .prepare(`DELETE FROM push_subscriptions WHERE subscription_json=?`)
+              .bind(JSON.stringify(subscription))
+              .run();
+          }
+
+          failed++;
+        } else {
+          sent++;
+        }
+      } catch (err) {
+        failures.push({ error: err.message });
+        failed++;
+      }
+    }
+
+    return NextResponse.json({ ok: true, sent, failed, failures });
+
   } catch (e) {
     return new NextResponse(e?.message || "Send failed", { status: 500 });
   }

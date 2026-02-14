@@ -51,14 +51,19 @@ self.addEventListener("activate", (event) => {
 
 // Push handler
 self.addEventListener("push", (event) => {
-  let data = {};
+  let payload = {};
   try {
-    data = event.data ? event.data.json() : {};
+    payload = event.data ? event.data.json() : {};
   } catch {}
 
-  const title = data.title || "Draft Pick Tracker";
-  const body = data.body || "New draft activity.";
-  const url = data.url || "/draft-pick-tracker";
+  // ✅ handle wrapped payloads: { data: "{...}" }
+  if (payload && typeof payload.data === "string") {
+    try { payload = JSON.parse(payload.data); } catch {}
+  }
+
+  const title = payload.title || "Draft Update";
+  const body = payload.body || "New draft activity.";
+  const url = payload.url || "/draft-pick-tracker";
 
   event.waitUntil(
     self.registration.showNotification(title, {
@@ -69,6 +74,7 @@ self.addEventListener("push", (event) => {
     })
   );
 });
+
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
