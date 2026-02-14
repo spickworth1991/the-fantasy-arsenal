@@ -17,7 +17,6 @@ export const metadata = {
   applicationName: SITE_NAME,
   // ✅ PWA
   manifest: "/site.webmanifest",
-  themeColor: "#0B1224",
   appleWebApp: {
     capable: true,
     title: SITE_NAME,

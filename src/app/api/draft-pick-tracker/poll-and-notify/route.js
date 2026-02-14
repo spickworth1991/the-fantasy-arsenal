@@ -1,46 +1,38 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { NextResponse } from "next/server";
-import { buildPushPayload } from "@block65/webcrypto-web-push";
+import { buildPushHTTPRequest } from "@pushforge/builder";
 
-// Allow cron-job.org to call either GET or POST
-export async function POST(req) {
-  return handler(req);
-}
-export async function GET(req) {
-  return handler(req);
-}
-
-function getDb() {
-  // Cloudflare Pages (next-on-pages) D1 binding should be exposed here.
-  // If you bound it as PUSH_DB, this should work.
-  return process.env.PUSH_DB;
-}
+export async function POST(req) { return handler(req); }
+export async function GET(req) { return handler(req); }
 
 function assertAuth(req) {
   const secret = req.headers.get("x-push-secret");
   return !!process.env.PUSH_ADMIN_SECRET && secret === process.env.PUSH_ADMIN_SECRET;
 }
 
-function getVapid() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+function getDb() {
+  return process.env.PUSH_DB;
+}
+
+function getPrivateJWK() {
+  const raw = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
 
-  if (!publicKey || !privateKey || !subject) {
-    throw new Error("Missing VAPID env vars. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT.");
-  }
+  if (!raw || !subject) throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
 
-  return { subject, publicKey, privateKey };
+  let jwk;
+  try {
+    jwk = JSON.parse(raw);
+  } catch {
+    throw new Error("VAPID_PRIVATE_KEY must be a JSON JWK string (from `npx @pushforge/builder vapid`).");
+  }
+  return { jwk, subject };
 }
 
 async function getPickCount(draftId) {
-  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`, {
-    // a little safety for edge runtimes
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Sleeper picks fetch failed for draft ${draftId}: ${res.status}`);
+  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Sleeper picks fetch failed for ${draftId}: ${res.status}`);
   const picks = await res.json();
   return Array.isArray(picks) ? picks.length : 0;
 }
@@ -52,15 +44,14 @@ async function handler(req) {
     const db = getDb();
     if (!db?.prepare) {
       return new NextResponse(
-        "PUSH_DB binding not found. In Cloudflare Pages → Settings → Bindings, add a D1 binding named PUSH_DB.",
+        "PUSH_DB binding not found. Add a D1 binding named PUSH_DB in Cloudflare Pages.",
         { status: 500 }
       );
     }
 
-    const vapid = getVapid();
+    const { jwk, subject } = getPrivateJWK();
     const now = Date.now();
 
-    // Load subscriptions
     const subRows = await db
       .prepare(`SELECT endpoint, subscription_json, draft_ids_json FROM push_subscriptions`)
       .all();
@@ -71,11 +62,7 @@ async function handler(req) {
         let draftIds = [];
         try { sub = JSON.parse(r.subscription_json); } catch {}
         try { draftIds = JSON.parse(r.draft_ids_json || "[]"); } catch {}
-        return {
-          endpoint: r.endpoint,
-          sub,
-          draftIds: Array.isArray(draftIds) ? draftIds : [],
-        };
+        return { endpoint: r.endpoint, sub, draftIds: Array.isArray(draftIds) ? draftIds : [] };
       })
       .filter((x) => x?.sub?.endpoint && x.endpoint);
 
@@ -96,7 +83,6 @@ async function handler(req) {
         const lastPickCount = Number(state?.last_pick_count ?? 0);
 
         if (pickCount > lastPickCount) {
-          // Update state first so retries don’t double-send
           await db
             .prepare(
               `INSERT INTO push_draft_state (endpoint, draft_id, last_pick_count, updated_at)
@@ -108,20 +94,20 @@ async function handler(req) {
             .bind(s.endpoint, String(draftId), pickCount, now)
             .run();
 
-          const msg = {
-            data: JSON.stringify({
-              title: "Draft Pick Tracker",
-              body: `New pick made (total picks: ${pickCount}). Tap to open.`,
-              url: "/draft-pick-tracker",
-            }),
-            options: { ttl: 60 },
+          const payload = {
+            title: "Draft Pick Tracker",
+            body: `New pick made (total picks: ${pickCount}). Tap to open.`,
+            url: "/draft-pick-tracker",
           };
 
-          const payload = await buildPushPayload(msg, s.sub, vapid);
-          const pushRes = await fetch(s.sub.endpoint, payload);
+          const { endpoint, headers, body } = await buildPushHTTPRequest({
+            privateJWK: jwk,
+            subscription: s.sub,
+            message: { payload, adminContact: subject },
+          });
 
+          const pushRes = await fetch(endpoint, { method: "POST", headers, body });
           if (pushRes.ok) sent += 1;
-          // If endpoint is dead/expired, you *can* optionally delete it here later.
         }
       }
     }

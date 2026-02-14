@@ -1,31 +1,30 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { NextResponse } from "next/server";
-import { buildPushPayload } from "@block65/webcrypto-web-push";
+import { buildPushHTTPRequest } from "@pushforge/builder";
+
+function assertAuth(req) {
+  const secret = req.headers.get("x-push-secret");
+  return !!process.env.PUSH_ADMIN_SECRET && secret === process.env.PUSH_ADMIN_SECRET;
+}
 
 function getDb() {
   return process.env.PUSH_DB;
 }
 
-function assertAuth(req) {
-  const secret = req.headers.get("x-push-secret");
-  if (!process.env.PUSH_ADMIN_SECRET || secret !== process.env.PUSH_ADMIN_SECRET) {
-    return false;
-  }
-  return true;
-}
-
-function getVapid() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+function getPrivateJWK() {
+  const raw = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
 
-  if (!publicKey || !privateKey || !subject) {
-    throw new Error("Missing VAPID env vars.");
-  }
+  if (!raw || !subject) throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
 
-  return { subject, publicKey, privateKey };
+  let jwk;
+  try {
+    jwk = JSON.parse(raw);
+  } catch {
+    throw new Error("VAPID_PRIVATE_KEY must be a JSON JWK string (from `npx @pushforge/builder vapid`).");
+  }
+  return { jwk, subject };
 }
 
 export async function POST(req) {
@@ -33,45 +32,50 @@ export async function POST(req) {
     if (!assertAuth(req)) return new NextResponse("Unauthorized", { status: 401 });
 
     const { title, message, url = "/draft-pick-tracker" } = (await req.json()) || {};
-    const vapid = getVapid();
+    const { jwk, subject } = getPrivateJWK();
 
     const db = getDb();
     if (!db?.prepare) {
-      return new NextResponse("PUSH_DB binding not found.", { status: 500 });
+      return new NextResponse(
+        "PUSH_DB binding not found. Add a D1 binding named PUSH_DB in Cloudflare Pages.",
+        { status: 500 }
+      );
     }
 
-    const rows = await db
-      .prepare(`SELECT subscription_json FROM push_subscriptions`)
-      .all();
-
+    const rows = await db.prepare(`SELECT subscription_json FROM push_subscriptions`).all();
     const subs = (rows?.results || [])
       .map((r) => {
         try { return JSON.parse(r.subscription_json); } catch { return null; }
       })
       .filter(Boolean);
 
-    const payloadMsg = {
-      data: JSON.stringify({
-        title: title || "Draft Update",
-        body: message || "New draft activity.",
-        url,
-      }),
-      options: { ttl: 60 },
+    const payload = {
+      title: title || "Draft Update",
+      body: message || "New draft activity.",
+      url,
     };
 
     const results = await Promise.allSettled(
-      subs.map(async (sub) => {
-        const payload = await buildPushPayload(payloadMsg, sub, vapid);
-        const res = await fetch(sub.endpoint, payload);
+      subs.map(async (subscription) => {
+        const { endpoint, headers, body } = await buildPushHTTPRequest({
+          privateJWK: jwk,
+          subscription,
+          message: {
+            payload,
+            adminContact: subject, // e.g. mailto:you@domain.com
+          },
+        });
+
+        const res = await fetch(endpoint, { method: "POST", headers, body });
         if (!res.ok) throw new Error(`Push failed: ${res.status}`);
         return true;
       })
     );
 
-    const ok = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.length - ok;
+    const sent = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - sent;
 
-    return NextResponse.json({ ok: true, sent: ok, failed });
+    return NextResponse.json({ ok: true, sent, failed });
   } catch (e) {
     return new NextResponse(e?.message || "Send failed", { status: 500 });
   }

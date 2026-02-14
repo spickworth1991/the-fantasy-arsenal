@@ -1,7 +1,6 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { NextResponse } from "next/server";
 
 function getDb() {
   // Cloudflare Pages D1 binding (set in Pages → Settings → Bindings)
