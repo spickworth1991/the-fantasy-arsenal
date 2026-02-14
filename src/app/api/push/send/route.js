@@ -1,31 +1,40 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { buildPushPayload } from "@block65/webcrypto-web-push";
+import { buildWebPushRequest } from "../../../../lib/webpush";
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
   return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
 }
 
-function getVapid(env) {
-  const publicKey = env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = env.VAPID_PRIVATE_KEY; // JWK JSON string
-  const subject = env.VAPID_SUBJECT;
-  if (!publicKey || !privateKey || !subject) throw new Error("Missing VAPID env vars.");
-  return { publicKey, privateKey, subject };
-}
-
 export async function POST(req, context) {
   try {
-    const env = context?.env || {};
-    const db = env.PUSH_DB;
+    const env = context?.env || process.env;
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
+
+    const db = env.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    const { title, body, url = "/draft-pick-tracker" } = (await req.json()) || {};
-    const vapid = getVapid(env);
+    const vapidPrivateRaw = env.VAPID_PRIVATE_KEY;
+    const vapidSubject = env.VAPID_SUBJECT;
+
+    if (!vapidPrivateRaw || !vapidSubject) {
+      return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
+    }
+
+    let vapidPrivateJwk;
+    try {
+      vapidPrivateJwk = JSON.parse(vapidPrivateRaw);
+    } catch {
+      return new NextResponse("VAPID_PRIVATE_KEY must be a JSON JWK string.", { status: 500 });
+    }
+
+    const input = (await req.json()) || {};
+    const title = input.title || "Draft Update";
+    const body = input.body || input.message || "New draft activity.";
+    const url = input.url || "/draft-pick-tracker";
 
     const rows = await db.prepare(`SELECT endpoint, subscription_json FROM push_subscriptions`).all();
     const subs = (rows?.results || [])
@@ -36,7 +45,7 @@ export async function POST(req, context) {
           return null;
         }
       })
-      .filter((x) => x?.sub?.endpoint);
+      .filter(Boolean);
 
     let sent = 0;
     let failed = 0;
@@ -44,37 +53,34 @@ export async function POST(req, context) {
 
     for (const s of subs) {
       try {
-        const msg = {
-          data: JSON.stringify({
-            title: title || "TFA Test",
-            body: body || "If you see this, push delivery works.",
-            url,
-          }),
-          options: { ttl: 60 },
-        };
+        const { endpoint, fetchInit } = await buildWebPushRequest({
+          subscription: s.sub,
+          payload: { title, body, url },
+          vapidSubject,
+          vapidPrivateJwk,
+        });
 
-        const payload = await buildPushPayload(msg, s.sub, vapid);
-        const res = await fetch(s.sub.endpoint, payload);
+        const res = await fetch(endpoint, fetchInit);
 
         if (res.ok) {
-          sent += 1;
+          sent++;
         } else {
           const txt = await res.text().catch(() => "");
           failures.push({ endpoint: s.endpoint, status: res.status, body: txt });
 
-          // prune dead subs
+          // prune dead endpoints
           if (res.status === 404 || res.status === 410) {
             await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           }
-          failed += 1;
+          failed++;
         }
       } catch (e) {
         failures.push({ endpoint: s.endpoint, error: e?.message || String(e) });
-        failed += 1;
+        failed++;
       }
     }
 
-    return NextResponse.json({ ok: true, subs: subs.length, sent, failed, failures });
+    return NextResponse.json({ ok: true, sent, failed, failures, subs: subs.length });
   } catch (e) {
     return new NextResponse(e?.message || "Send failed", { status: 500 });
   }

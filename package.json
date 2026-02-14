@@ -21,7 +21,6 @@
     "gip": "git add . && git commit -m \"test\" && git push origin preview"
   },
   "dependencies": {
-    "@block65/webcrypto-web-push": "^1.0.2",
     "@pushforge/builder": "^2.0.1",
     "axios": "^1.11.0",
     "express": "^5.2.1",
