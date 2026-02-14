@@ -3,9 +3,15 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 
 export async function POST(req, context) {
-  try {
-    const env = context?.env || {};
-    const db = env.PUSH_DB || PUSH_DB;
+  const env = context?.env;
+  if (!env) return new NextResponse("Missing Cloudflare env (context.env).", { status: 500 });
+
+  const db = env.PUSH_DB;
+  if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
+
+  // secrets also from env
+  const secret = env.PUSH_ADMIN_SECRET;
+
 
     const body = await req.json();
     const { username, draftIds, subscription } = body || {};
