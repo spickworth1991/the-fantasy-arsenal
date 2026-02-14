@@ -3,7 +3,7 @@
   "short_name": "TFA",
   "description": "Premium fantasy football tools — Draft Pick Tracker alerts, Trade Analyzer, Player Stock, and more.",
   "id": "/",
-  "start_url": "/tools",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
