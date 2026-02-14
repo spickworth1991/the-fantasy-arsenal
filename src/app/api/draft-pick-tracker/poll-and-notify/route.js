@@ -1,14 +1,45 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { buildWebPushRequest } from "../../../../lib/webpush";
+import { buildPushHTTPRequest } from "@pushforge/builder";
 
-export async function POST(req, context) { return handler(req, context); }
-export async function GET(req, context) { return handler(req, context); }
+export async function POST(req, context) {
+  return handler(req, context);
+}
+export async function GET(req, context) {
+  return handler(req, context);
+}
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
   return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+}
+
+function getPrivateJWK(env) {
+  const raw = env.VAPID_PRIVATE_KEY;
+  const subject = env.VAPID_SUBJECT;
+  if (!raw || !subject) throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
+
+  let jwk;
+  try {
+    jwk = JSON.parse(raw);
+  } catch {
+    throw new Error("VAPID_PRIVATE_KEY must be a JSON JWK string (from `npx @pushforge/builder vapid`).");
+  }
+  return { jwk, subject };
+}
+
+function toNativeHeaders(h) {
+  const out = new Headers();
+  if (!h) return out;
+
+  if (typeof h.forEach === "function") {
+    h.forEach((v, k) => out.set(k, v));
+    return out;
+  }
+
+  for (const [k, v] of Object.entries(h)) out.set(k, String(v));
+  return out;
 }
 
 async function getPickCount(draftId) {
@@ -35,7 +66,7 @@ async function getUserId(username) {
 function getCurrentSlotSnake(pickNo, teams) {
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
-  const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
+  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
   return { slot, round };
 }
 
@@ -48,19 +79,7 @@ async function handler(req, context) {
     const db = env.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    const vapidPrivateRaw = env.VAPID_PRIVATE_KEY;
-    const vapidSubject = env.VAPID_SUBJECT;
-    if (!vapidPrivateRaw || !vapidSubject) {
-      return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
-    }
-
-    let vapidPrivateJwk;
-    try {
-      vapidPrivateJwk = JSON.parse(vapidPrivateRaw);
-    } catch {
-      return new NextResponse("VAPID_PRIVATE_KEY must be a JSON JWK string.", { status: 500 });
-    }
-
+    const { jwk, subject } = getPrivateJWK(env);
     const now = Date.now();
 
     const subRows = await db
@@ -88,7 +107,6 @@ async function handler(req, context) {
     let sent = 0;
     let checked = 0;
     let changes = 0;
-
     let skippedNoDrafts = 0;
     let skippedNoUsername = 0;
     let skippedNoOrder = 0;
@@ -155,25 +173,28 @@ async function handler(req, context) {
           continue;
         }
 
-        const { endpoint, fetchInit } = await buildWebPushRequest({
+        const payload = {
+          title: "You're on the clock",
+          body: `You are on the clock in "${leagueName}".`,
+          url: "/draft-pick-tracker",
+        };
+
+        const { endpoint, headers, body: pushBody } = await buildPushHTTPRequest({
+          privateJWK: jwk,
           subscription: s.sub,
-          payload: {
-            title: "You're on the clock",
-            body: `You are on the clock in "${leagueName}".`,
-            url: "/draft-pick-tracker",
-          },
-          vapidSubject,
-          vapidPrivateJwk,
+          message: { payload, adminContact: subject },
         });
 
-        const pushRes = await fetch(endpoint, fetchInit);
+        const pushRes = await fetch(endpoint, {
+          method: "POST",
+          headers: toNativeHeaders(headers),
+          body: pushBody,
+        });
 
         if (pushRes.ok) {
           sent++;
-        } else {
-          if (pushRes.status === 404 || pushRes.status === 410) {
-            await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
-          }
+        } else if (pushRes.status === 404 || pushRes.status === 410) {
+          await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
         }
       }
     }

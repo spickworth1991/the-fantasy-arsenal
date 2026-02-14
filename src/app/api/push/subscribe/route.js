@@ -3,18 +3,13 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 
 export async function POST(req, context) {
-  const env = context?.env;
-  if (!env) return new NextResponse("Missing Cloudflare env (context.env).", { status: 500 });
+  try {
+    // D1 bindings live here on Cloudflare Pages
+    const env = context?.env || {};
+    const db = env.PUSH_DB;
 
-  const db = env.PUSH_DB;
-  if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
-
-  // secrets also from env
-  const secret = env.PUSH_ADMIN_SECRET;
-
-
-    const body = await req.json();
-    const { username, draftIds, subscription } = body || {};
+    const body = (await req.json()) || {};
+    const { username, draftIds, subscription } = body;
 
     if (!subscription?.endpoint) {
       return new NextResponse("Missing subscription endpoint.", { status: 400 });
@@ -22,7 +17,7 @@ export async function POST(req, context) {
 
     if (!db?.prepare) {
       return new NextResponse(
-        "PUSH_DB binding not found. Add a D1 binding named PUSH_DB in Cloudflare Pages (Preview env too).",
+        "PUSH_DB binding not found. In Cloudflare Pages: Settings → Functions → D1 bindings → add binding name PUSH_DB.",
         { status: 500 }
       );
     }
@@ -50,7 +45,6 @@ export async function POST(req, context) {
       )
       .run();
 
-    // ✅ confirm we actually wrote to THIS bound DB
     const countRow = await db.prepare(`SELECT COUNT(*) AS c FROM push_subscriptions`).first();
 
     return NextResponse.json({
