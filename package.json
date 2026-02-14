@@ -17,7 +17,8 @@
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
     "git": "git add . && git commit -m \"PlayerStock&WaiverFix\" && git push origin main",
     "stick": "node ./sp-editor.js",
-    "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force"
+    "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
+    "gip": "git add . && git commit -m \"test\" && git push origin preview"
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

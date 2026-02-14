@@ -2,12 +2,11 @@ export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 
-function getDb() {
-  return process.env.PUSH_DB;
-}
-
-export async function POST(req) {
+export async function POST(req, context) {
   try {
+    const env = context?.env || {};
+    const db = env.PUSH_DB;
+
     const body = await req.json();
     const { username, draftIds, subscription } = body || {};
 
@@ -15,16 +14,15 @@ export async function POST(req) {
       return new NextResponse("Missing subscription endpoint.", { status: 400 });
     }
 
-    const endpoint = subscription.endpoint;
-    const now = Date.now();
-
-    const db = getDb();
     if (!db?.prepare) {
       return new NextResponse(
         "PUSH_DB binding not found. Add a D1 binding named PUSH_DB in Cloudflare Pages (Preview env too).",
         { status: 500 }
       );
     }
+
+    const endpoint = subscription.endpoint;
+    const now = Date.now();
 
     await db
       .prepare(
