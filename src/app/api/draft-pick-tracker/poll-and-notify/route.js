@@ -1,3 +1,6 @@
+export const runtime = "edge";
+
+import { NextResponse } from "next/server";
 import { NextResponse } from "next/server";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
