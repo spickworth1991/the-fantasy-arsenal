@@ -1,64 +1,62 @@
-/* public/sw.js */
-/* Minimal PWA SW:
-   - push notifications
-   - basic “app shell” caching (safe + simple)
+/* public/sw.js
+   Push-only service worker (stable).
+   - Never fails install
+   - Supports push + notification click
 */
 
-const CACHE = "tfa-shell-v1";
-const SHELL = ["/", "/tools", "/draft-pick-tracker", "/site.webmanifest"];
+const CACHE = "tfa-static-v2";
+
+// Optional: cache only safe static assets (not HTML routes)
+const STATIC_ASSETS = [
+  "/site.webmanifest",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
+  "/favicon.ico",
+];
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
+    (async () => {
+      // Never let install fail because an asset 404s
+      try {
+        const cache = await caches.open(CACHE);
+        await Promise.allSettled(
+          STATIC_ASSETS.map((url) => cache.add(url))
+        );
+      } catch {
+        // ignore
+      }
+      self.skipWaiting();
+    })()
   );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
-// Basic cache: only GET same-origin, avoid /api
-self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  if (req.method !== "GET") return;
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
-
-  const accept = req.headers.get("accept") || "";
-  if (accept.includes("text/html")) return; // ✅ don't cache HTML
-
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      const fetchPromise = fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => cached);
-
-      return cached || fetchPromise;
-    })
+  event.waitUntil(
+    (async () => {
+      // clean older caches
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
+      await self.clients.claim();
+    })()
   );
 });
 
+// IMPORTANT: do NOT cache HTML/app routes here while you’re iterating.
+// If you want caching later, we can add a safe stale-while-revalidate for static only.
 
-
-// ✅ Push handler (W3C Push API)
+// Push handler
 self.addEventListener("push", (event) => {
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
   } catch {}
 
-  const title = data.title || "Draft Update";
+  const title = data.title || "Draft Pick Tracker";
   const body = data.body || "New draft activity.";
   const url = data.url || "/draft-pick-tracker";
 
