@@ -1,0 +1,17 @@
+name: Draft Push Poller
+
+on:
+  schedule:
+    - cron: "*/1 * * * *" # every minute during active drafts (free on GitHub)
+  workflow_dispatch: {}
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call poll-and-notify
+        run: |
+          curl -sS -X POST "${{ secrets.POLL_URL }}" \
+            -H "x-push-secret: ${{ secrets.PUSH_ADMIN_SECRET }}" \
+            -H "content-type: application/json" \
+            --data "{}"

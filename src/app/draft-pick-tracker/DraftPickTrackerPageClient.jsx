@@ -4,15 +4,30 @@ import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import { useSleeper } from "../../context/SleeperContext";
 import DraftPickTrackerClient from "./tracker.client";
+import PushAlerts from "./PushAlerts.client";
 
-const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
+const BackgroundParticles = dynamic(
+  () => import("../../components/BackgroundParticles"),
+  { ssr: false }
+);
 
 export default function DraftPickTrackerPage() {
-  const { username } = useSleeper();
+  const { username, leagues } = useSleeper();
+
+  const draftIds = Array.isArray(leagues)
+    ? leagues
+        .map((l) => l?.draft_id)
+        .filter(Boolean)
+        // de-dupe
+        .filter((id, i, arr) => arr.indexOf(id) === i)
+    : [];
 
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div aria-hidden className="h-[72px]" />
+
+      <PushAlerts username={username} selectedDraftIds={draftIds} />
+
       <BackgroundParticles />
       <Navbar pageTitle="Draft Monitor" />
 
