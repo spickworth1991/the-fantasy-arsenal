@@ -11,6 +11,14 @@ function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, rej) => {
+    t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
+}
+
 export default function PushAlerts({ username, selectedDraftIds = [] }) {
   const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
   const [msg, setMsg] = useState("");
@@ -23,14 +31,14 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: username || null,
-        draftIds: selectedDraftIds,
+        draftIds: Array.isArray(selectedDraftIds) ? selectedDraftIds : [],
         subscription: sub,
       }),
     });
 
     if (!res.ok) {
       const t = await res.text();
-      throw new Error(t || "Failed to save subscription.");
+      throw new Error(t || `Subscribe API failed (${res.status})`);
     }
   }
 
@@ -39,58 +47,65 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
       setStatus("loading");
       setMsg("");
 
-      if (!("serviceWorker" in navigator)) {
-        setStatus("error");
-        setMsg("Service Worker not supported in this browser.");
-        return;
+      if (!vapidKey) {
+        throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY (not available in this build).");
       }
 
-      const perm = await Notification.requestPermission();
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("Service Worker not supported in this browser.");
+      }
+
+      const perm = await withTimeout(Notification.requestPermission(), 15000, "Notification permission");
       if (perm !== "granted") {
         setStatus("denied");
         setMsg("Notifications are blocked. Enable them in browser settings.");
         return;
       }
 
-      const reg = await navigator.serviceWorker.ready;
+      // Wait for SW ready, but don't hang forever
+      const reg = await withTimeout(navigator.serviceWorker.ready, 15000, "Service worker");
 
-      if (!("PushManager" in window)) {
-        setStatus("error");
-        setMsg("Push not supported on this device/browser.");
-        return;
+      if (!reg?.pushManager) {
+        throw new Error("PushManager not available (push not supported on this device/browser).");
       }
 
-      // Prefer existing subscription
-      let sub = await reg.pushManager.getSubscription();
+      // Prefer existing subscription (prevents InvalidState issues)
+      let sub = await withTimeout(reg.pushManager.getSubscription(), 8000, "Get subscription");
+
       if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        });
+        sub = await withTimeout(
+          reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          }),
+          15000,
+          "Push subscribe"
+        );
       }
 
-      await saveSubscription(sub);
+      // Save to server (D1)
+      await withTimeout(saveSubscription(sub), 15000, "Save subscription");
 
       setStatus("enabled");
       setMsg(
         selectedDraftIds?.length
           ? `Draft alerts enabled for ${selectedDraftIds.length} draft(s).`
-          : "Draft alerts enabled — pick a league/draft to receive alerts."
+          : "Draft alerts enabled. Pick a league/draft to receive alerts."
       );
     } catch (e) {
       setStatus("error");
       setMsg(
         e?.message ||
-          "Couldn’t enable push. On iPhone/iPad, make sure you added the site to Home Screen first (iOS 16.4+)."
+          "Couldn’t enable push. On iPhone/iPad, add the site to Home Screen first (iOS 16.4+)."
       );
     }
   }
 
-  // ✅ Auto-update server when draft selection changes (fixes “saved []”)
+  // Keep server in sync when draft selection changes (prevents draft_ids_json = [])
   useEffect(() => {
     let cancelled = false;
 
-    async function syncDraftIds() {
+    async function sync() {
       try {
         if (Notification.permission !== "granted") return;
         if (!("serviceWorker" in navigator)) return;
@@ -105,22 +120,16 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
           setMsg(
             selectedDraftIds?.length
               ? `Alerts updated: tracking ${selectedDraftIds.length} draft(s).`
-              : "Alerts updated — pick a league/draft to receive alerts."
+              : "Alerts updated. Pick a league/draft to receive alerts."
           );
         }
       } catch {
-        // don’t spam UI if it fails
+        // ignore
       }
     }
 
-    // only run if we’re enabled or permission is granted
-    if (status === "enabled" || Notification.permission === "granted") {
-      syncDraftIds();
-    }
-
-    return () => {
-      cancelled = true;
-    };
+    if (status === "enabled" || Notification.permission === "granted") sync();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDraftIds.join("|")]);
 
@@ -138,7 +147,7 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
         <div>
           <div style={{ fontWeight: 700, letterSpacing: 0.2 }}>Draft Pick Tracker Alerts</div>
           <div style={{ opacity: 0.75, fontSize: 13 }}>
-            Get “on deck” and “on the clock” notifications — even when the app is closed.
+            Get “on the clock” alerts — even when the app is closed.
           </div>
         </div>
 
