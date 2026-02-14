@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export async function POST(req, context) {
   try {
     const env = context?.env || {};
-    const db = env.PUSH_DB;
+    const db = env.PUSH_DB || PUSH_DB;
 
     const body = await req.json();
     const { username, draftIds, subscription } = body || {};
