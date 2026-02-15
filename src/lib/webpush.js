@@ -18,6 +18,13 @@ function bytesToB64url(bytes) {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+function bytesToB64(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  // standard base64 WITH padding
+  return btoa(bin);
+}
+
 
 function concat(...arrs) {
   const total = arrs.reduce((n, a) => n + a.length, 0);
@@ -199,14 +206,13 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     Urgency: "high",
     "Content-Type": "application/octet-stream",
     "Content-Encoding": "aes128gcm",
-    Encryption: `salt=${bytesToB64url(salt)}`,
+    // IMPORTANT: use standard base64 (not base64url) for these two headers
+    Encryption: `salt=${bytesToB64(salt)}`,
+    "Crypto-Key": `dh=${bytesToB64(serverPubRaw)}`,
 
-    // ✅ ONLY dh for aes128gcm (prevents Chrome/FCM header parse issues)
-    "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}`,
-
-    // ✅ RFC8292 VAPID authorization
+    // keep base64url for VAPID k= (this is fine)
     Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
-    };
+
 
 
   return {
