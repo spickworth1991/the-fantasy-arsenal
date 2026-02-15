@@ -200,10 +200,14 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     "Content-Type": "application/octet-stream",
     "Content-Encoding": "aes128gcm",
     Encryption: `salt=${bytesToB64url(salt)}`,
-    // ✅ IMPORTANT: NO SPACE after semicolon
-    "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
-    Authorization: `WebPush ${jwt}`,
-  };
+
+    // ✅ ONLY dh for aes128gcm (prevents Chrome/FCM header parse issues)
+    "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}`,
+
+    // ✅ RFC8292 VAPID authorization
+    Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
+    };
+
 
   return {
     endpoint,
