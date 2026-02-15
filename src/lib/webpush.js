@@ -1,6 +1,6 @@
 // src/lib/webpush.js
-// Edge-safe Web Push request builder (no node:crypto)
-// Implements RFC8291 (Content-Encoding: aes128gcm) using WebCrypto.
+// Edge-safe Web Push request builder using WebCrypto (Cloudflare Pages / Edge runtime).
+// Implements RFC8291 (Content-Encoding: aes128gcm) compatible with Chrome/FCM.
 
 const te = new TextEncoder();
 
@@ -18,13 +18,6 @@ function bytesToB64url(bytes) {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
-function bytesToB64(bytes) {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  // standard base64 WITH padding
-  return btoa(bin);
-}
-
 
 function concat(...arrs) {
   const total = arrs.reduce((n, a) => n + a.length, 0);
@@ -35,10 +28,6 @@ function concat(...arrs) {
     off += a.length;
   }
   return out;
-}
-
-function u16be(n) {
-  return new Uint8Array([(n >> 8) & 0xff, n & 0xff]);
 }
 
 function u32be(n) {
@@ -111,7 +100,7 @@ function makeJWT({ aud, sub, expSeconds }) {
   return `${enc(header)}.${enc(payload)}`;
 }
 
-async function signJWT(data, vapidPrivateJwk) {
+async function signJWT(unsigned, vapidPrivateJwk) {
   const key = await crypto.subtle.importKey(
     "jwk",
     vapidPrivateJwk,
@@ -119,18 +108,15 @@ async function signJWT(data, vapidPrivateJwk) {
     false,
     ["sign"]
   );
-
   const sig = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" },
     key,
-    te.encode(data)
+    te.encode(unsigned)
   );
-
-  return `${data}.${bytesToB64url(new Uint8Array(sig))}`;
+  return `${unsigned}.${bytesToB64url(new Uint8Array(sig))}`;
 }
 
 function jwkToRawPublic(jwk) {
-  // Uncompressed point: 0x04 || X || Y (must be 65 bytes total)
   const x = b64urlToBytes(jwk?.x);
   const y = b64urlToBytes(jwk?.y);
   return concat(new Uint8Array([0x04]), x, y);
@@ -139,15 +125,15 @@ function jwkToRawPublic(jwk) {
 function assertUncompressedP256Point(raw, label) {
   if (!(raw instanceof Uint8Array)) throw new Error(`${label} is not bytes`);
   if (raw.length !== 65 || raw[0] !== 0x04) {
-    throw new Error(`${label} must be an uncompressed P-256 point (65 bytes, starts with 0x04). Got ${raw.length} bytes.`);
+    throw new Error(
+      `${label} must be an uncompressed P-256 point (65 bytes, starts with 0x04). Got ${raw.length} bytes.`
+    );
   }
 }
 
-async function encryptAes128gcm({ subscription, payloadObj }) {
+async function encryptAes128gcmRecord({ subscription, payloadObj }) {
   const clientPubRaw = b64urlToBytes(subscription.keys.p256dh);
   const authSecret = b64urlToBytes(subscription.keys.auth);
-
-  // Validate client key early (prevents mystery failures)
   assertUncompressedP256Point(clientPubRaw, "subscription.keys.p256dh");
 
   const clientPubKey = await importP256Public(clientPubRaw);
@@ -157,74 +143,65 @@ async function encryptAes128gcm({ subscription, payloadObj }) {
     ["deriveBits"]
   );
   const serverPubRaw = await exportRawPublic(serverKP);
-
-  // Validate server ECDH key (this is what Chrome complains about)
   assertUncompressedP256Point(serverPubRaw, "server ECDH public key (dh)");
 
   const sharedSecret = await deriveSharedSecret(clientPubKey, serverKP);
-
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // ===== RFC8291 key derivation =====
+  // RFC8291 key derivation
   const prk = await hkdfExtract(authSecret, sharedSecret);
-
   const info = concat(te.encode("WebPush: info\0"), clientPubRaw, serverPubRaw);
   const ikm = await hkdfExpand(prk, info, 32);
 
   const prk2 = await hkdfExtract(salt, ikm);
-
   const cek = await hkdfExpand(prk2, te.encode("Content-Encoding: aes128gcm\0"), 16);
   const nonce = await hkdfExpand(prk2, te.encode("Content-Encoding: nonce\0"), 12);
 
-  const plainJson = te.encode(JSON.stringify(payloadObj));
-  // RFC8291 aes128gcm record padding:
-  // plaintext = payload || 0x02 || 0x00 * pad
-  const rs = 4096;
-  if (plainJson.length + 1 > rs) {
-    throw new Error(`Payload too large for rs=${rs}: ${plainJson.length} bytes`);
-  }
-  const pad = new Uint8Array(rs - plainJson.length - 1);
-  const plaintext = concat(plainJson, new Uint8Array([0x02]), pad);
-const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  // RFC8291 plaintext framing for aes128gcm:
+  // payload || 0x02 || (0x00 padding...)
+  const payloadBytes = te.encode(JSON.stringify(payloadObj));
+  const plaintext = concat(payloadBytes, new Uint8Array([0x02]));
+
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, plaintext);
 
-  const ciphertext = new Uint8Array(ct);
-
   // RFC8291 record body header:
-  // salt(16) || rs(4) || idlen(1) || keyid(serverPubRaw) || ciphertext
-  const idlen = serverPubRaw.length;
-  if (idlen !== 65) {
-    throw new Error(`serverPubRaw must be 65 bytes, got ${idlen}`);
-  }
-  const body = concat(salt, u32be(rs), new Uint8Array([idlen]), serverPubRaw, ciphertext);
+  // salt(16) || rs(4) || idlen(1) || keyid(65) || ciphertext
+  const rs = 4096; // standard record size
+  const header = concat(
+    salt,
+    u32be(rs),
+    new Uint8Array([65]),
+    serverPubRaw
+  );
 
   return {
-    body,
     salt,
     serverPubRaw,
+    body: concat(header, new Uint8Array(ct)),
   };
 }
 
 export async function buildWebPushRequest({ subscription, payload, vapidSubject, vapidPrivateJwk }) {
   if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
-    throw new Error("Invalid subscription (missing endpoint/keys).");
+    throw new Error("Invalid subscription (missing endpoint/keys)." );
   }
 
-  const { body, salt, serverPubRaw } = await encryptAes128gcm({
+  const { salt, serverPubRaw, body } = await encryptAes128gcmRecord({
     subscription,
     payloadObj: payload,
   });
 
   const endpoint = subscription.endpoint;
   const aud = new URL(endpoint).origin;
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60; // 1 hour
+  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
   const jwtUnsigned = makeJWT({ aud, sub: vapidSubject, expSeconds: exp });
   const jwt = await signJWT(jwtUnsigned, vapidPrivateJwk);
 
-  // This MUST be the VAPID PUBLIC key (x/y). Private JWK contains x/y too, so this is OK.
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
   assertUncompressedP256Point(vapidPublicRaw, "VAPID public key (p256ecdsa)");
 
+  // FCM/Chrome-compatible headers
   const headers = {
     TTL: "300",
     Urgency: "high",
@@ -233,5 +210,14 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     Encryption: `salt=${bytesToB64url(salt)}`,
     "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
     Authorization: `WebPush ${jwt}`,
+  };
+
+  return {
+    endpoint,
+    fetchInit: {
+      method: "POST",
+      headers,
+      body,
+    },
   };
 }
