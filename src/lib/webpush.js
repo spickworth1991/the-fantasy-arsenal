@@ -6,19 +6,57 @@
 
 const te = new TextEncoder();
 
-// ---------- base64url helpers (avoid illegal invocation quirks) ----------
+// ---------- base64url helpers (NO atob/btoa; avoids "Illegal invocation" on Edge/Workers) ----------
 
-function b64ToBytes(b64) {
-  const bin = globalThis.atob(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+const _B64ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const _B64LOOKUP = (() => {
+  const map = new Uint8Array(256);
+  map.fill(255);
+  for (let i = 0; i < _B64ABC.length; i++) map[_B64ABC.charCodeAt(i)] = i;
+  map["=".charCodeAt(0)] = 0;
+  return map;
+})();
+
+function bytesToB64(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const c = i + 2 < bytes.length ? bytes[i + 2] : 0;
+
+    const trip = (a << 16) | (b << 8) | c;
+    out += _B64ABC[(trip >> 18) & 63];
+    out += _B64ABC[(trip >> 12) & 63];
+    out += i + 1 < bytes.length ? _B64ABC[(trip >> 6) & 63] : "=";
+    out += i + 2 < bytes.length ? _B64ABC[trip & 63] : "=";
+  }
   return out;
 }
 
-function bytesToB64(bytes) {
-  let s = "";
-  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return globalThis.btoa(s);
+function b64ToBytes(b64) {
+  if (typeof b64 !== "string") throw new Error("Invalid base64 input");
+  const clean = b64.replace(/\s+/g, "");
+  if (clean.length % 4 !== 0) throw new Error("Invalid base64 length");
+
+  const pad = clean.endsWith("==") ? 2 : clean.endsWith("=") ? 1 : 0;
+  const outLen = (clean.length / 4) * 3 - pad;
+  const out = new Uint8Array(outLen);
+
+  let o = 0;
+  for (let i = 0; i < clean.length; i += 4) {
+    const c0 = _B64LOOKUP[clean.charCodeAt(i)];
+    const c1 = _B64LOOKUP[clean.charCodeAt(i + 1)];
+    const c2 = _B64LOOKUP[clean.charCodeAt(i + 2)];
+    const c3 = _B64LOOKUP[clean.charCodeAt(i + 3)];
+    if ((c0 | c1 | c2 | c3) === 255) throw new Error("Invalid base64 character");
+
+    const trip = (c0 << 18) | (c1 << 12) | (c2 << 6) | c3;
+    if (o < outLen) out[o++] = (trip >> 16) & 255;
+    if (o < outLen) out[o++] = (trip >> 8) & 255;
+    if (o < outLen) out[o++] = trip & 255;
+  }
+
+  return out;
 }
 
 function b64urlToBytes(b64url) {
