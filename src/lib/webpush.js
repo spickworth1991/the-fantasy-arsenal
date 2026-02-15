@@ -19,15 +19,7 @@ function bytesToB64url(bytes) {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-// Standard base64 WITH padding.
-// Some push pipelines (notably FCM legacy endpoints) are picky about base64url in
-// the Web Push HTTP headers (Encryption/Crypto-Key) and may decode to the wrong
-// length, triggering Chrome's "P-256 ECDH uncompressed point must be 65 bytes".
-function bytesToB64(bytes) {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
+
 
 function concat(...arrs) {
   const total = arrs.reduce((n, a) => n + a.length, 0);
@@ -57,12 +49,10 @@ async function hmacSha256(keyBytes, dataBytes) {
 }
 
 async function hkdfExtract(salt, ikm) {
-  // HKDF-Extract(salt, IKM) = HMAC(salt, IKM)
   return hmacSha256(salt, ikm);
 }
 
 async function hkdfExpand(prk, info, length) {
-  // HKDF-Expand(PRK, info, L)
   let prev = new Uint8Array(0);
   let out = new Uint8Array(0);
   let i = 0;
@@ -126,18 +116,16 @@ async function signJWT(data, vapidPrivateJwk) {
 }
 
 function jwkToRawPublic(jwk) {
-  // Uncompressed point: 0x04 || X || Y
-  const x = b64urlToBytes(jwk.x);
-  const y = b64urlToBytes(jwk.y);
+  // Uncompressed point: 0x04 || X || Y (must be 65 bytes total)
+  const x = b64urlToBytes(jwk?.x);
+  const y = b64urlToBytes(jwk?.y);
   return concat(new Uint8Array([0x04]), x, y);
 }
 
 function assertUncompressedP256Point(raw, label) {
   if (!(raw instanceof Uint8Array)) throw new Error(`${label} is not bytes`);
   if (raw.length !== 65 || raw[0] !== 0x04) {
-    throw new Error(
-      `${label} must be an uncompressed P-256 point (65 bytes, starts with 0x04). Got ${raw.length} bytes.`
-    );
+    throw new Error(`${label} must be an uncompressed P-256 point (65 bytes, starts with 0x04). Got ${raw.length} bytes.`);
   }
 }
 
@@ -156,29 +144,24 @@ async function encryptAes128gcm({ subscription, payloadObj }) {
   );
   const serverPubRaw = await exportRawPublic(serverKP);
 
-  // Validate server ECDH key (this is what Chrome complains about if header decoding goes wrong)
+  // Validate server ECDH key (this is what Chrome complains about)
   assertUncompressedP256Point(serverPubRaw, "server ECDH public key (dh)");
+
   const sharedSecret = await deriveSharedSecret(clientPubKey, serverKP);
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
   // ===== RFC8291 key derivation =====
-  // 1) PRK = HKDF-Extract(authSecret, sharedSecret)
   const prk = await hkdfExtract(authSecret, sharedSecret);
 
-  // 2) IKM = HKDF-Expand(PRK, "WebPush: info\0" || ua_pub || as_pub, 32)
   const info = concat(te.encode("WebPush: info\0"), clientPubRaw, serverPubRaw);
   const ikm = await hkdfExpand(prk, info, 32);
 
-  // 3) PRK2 = HKDF-Extract(salt, IKM)
   const prk2 = await hkdfExtract(salt, ikm);
 
-  // 4) CEK / NONCE
   const cek = await hkdfExpand(prk2, te.encode("Content-Encoding: aes128gcm\0"), 16);
   const nonce = await hkdfExpand(prk2, te.encode("Content-Encoding: nonce\0"), 12);
 
-  // ===== Payload format =====
-  // Plaintext = uint16_be(paddingLength) || payload || paddingZeros
   const plainJson = te.encode(JSON.stringify(payloadObj));
   const padLen = 0;
   const plaintext = concat(u16be(padLen), plainJson);
@@ -209,22 +192,20 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
   const jwtUnsigned = makeJWT({ aud, sub: vapidSubject, expSeconds: exp });
   const jwt = await signJWT(jwtUnsigned, vapidPrivateJwk);
 
+  // This MUST be the VAPID PUBLIC key (x/y). Private JWK contains x/y too, so this is OK.
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
-
-  // Validate VAPID public key formatting (must also be a 65-byte uncompressed point)
   assertUncompressedP256Point(vapidPublicRaw, "VAPID public key (p256ecdsa)");
 
-  // IMPORTANT:
-  // Use standard base64 (NOT base64url) for Encryption/Crypto-Key header parameters.
-  // This avoids Chrome/FCM decoding issues that manifest as the "65 bytes" error.
   const headers = {
     TTL: "300",
     Urgency: "high",
     "Content-Type": "application/octet-stream",
     "Content-Encoding": "aes128gcm",
-    Encryption: `salt=${bytesToB64(salt)}`,
-    // No whitespace; keep params tightly formatted.
-    "Crypto-Key": `dh=${bytesToB64(serverPubRaw)};p256ecdsa=${bytesToB64(vapidPublicRaw)}`,
+    // RFC8291 / RFC8188: these parameters are base64url (no padding)
+    Encryption: `salt=${bytesToB64url(salt)}`,
+    // RFC8291: ECDH public key for message decryption
+    "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
+    // FCM expects this scheme
     Authorization: `WebPush ${jwt}`,
   };
 
