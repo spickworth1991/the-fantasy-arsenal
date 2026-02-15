@@ -11,15 +11,25 @@ function u8ToB64Url(u8) {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function b64UrlToU8(b64url) {
-  const b64 =
-    b64url.replace(/-/g, "+").replace(/_/g, "/") +
-    "==".slice((b64url.length + 3) % 4);
-  const bin = atob(b64);
+function b64UrlToU8(input) {
+  if (input == null) return new Uint8Array();
+
+  // tolerate base64 OR base64url + any whitespace/newlines
+  let s = String(input).trim().replace(/\s+/g, "");
+
+  // convert base64url -> base64 (safe if it was already base64)
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+
+  // add padding if missing
+  const pad = s.length % 4;
+  if (pad) s += "=".repeat(4 - pad);
+
+  const bin = atob(s);
   const u8 = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   return u8;
 }
+
 
 function concatU8(...parts) {
   const total = parts.reduce((n, p) => n + p.length, 0);
