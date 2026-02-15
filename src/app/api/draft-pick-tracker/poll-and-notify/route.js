@@ -191,8 +191,6 @@ async function handler(req) {
 
             const pushRes = await fetch(endpoint, fetchInit);
 
-
-          const pushRes = await fetch(endpoint, fetchInit);
           if (pushRes.ok) {
             sent++;
           } else if (pushRes.status === 404 || pushRes.status === 410) {
