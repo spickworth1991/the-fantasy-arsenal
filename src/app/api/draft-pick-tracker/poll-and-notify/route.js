@@ -2,7 +2,8 @@ export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { buildWebPushRequest } from "../../../lib/webpush";
+import { buildWebPushRequest } from "../../../../lib/webpush";
+
 
 export async function POST(req) {
   return handler(req);
@@ -175,16 +176,21 @@ async function handler(req) {
         }
 
         try {
-          const { endpoint, fetchInit } = await buildWebPushRequest({
+          // ✅ ON THE CLOCK — send push
+            const { endpoint, fetchInit } = await buildWebPushRequest({
             subscription: s.sub,
             payload: {
-              title: "You're on the clock",
-              body: `You are on the clock in "${leagueName}".`,
-              url: "/draft-pick-tracker",
+                title: "You're on the clock",
+                body: `You are on the clock in "${leagueName}".`,
+                url: "/draft-pick-tracker",
             },
-            vapidSubject,
-            vapidPrivateJwk,
-          });
+            vapidSubject: subject,
+            vapidPrivateJwk: jwk,
+            ttl: 60,
+            });
+
+            const pushRes = await fetch(endpoint, fetchInit);
+
 
           const pushRes = await fetch(endpoint, fetchInit);
           if (pushRes.ok) {
