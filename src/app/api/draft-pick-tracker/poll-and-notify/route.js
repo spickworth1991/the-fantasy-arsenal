@@ -2,7 +2,7 @@ export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { buildWebPushRequest } from "../../../lib/webpush";
+import { buildWebPushRequest } from "../../../../lib/webpush";
 
 export async function POST(req, context) { return handler(req, context); }
 export async function GET(req, context) { return handler(req, context); }

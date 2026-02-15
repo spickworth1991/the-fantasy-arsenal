@@ -2,7 +2,7 @@ export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { buildWebPushRequest } from "../../../lib/webpush";
+import { buildWebPushRequest } from "../../../../lib/webpush";
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
