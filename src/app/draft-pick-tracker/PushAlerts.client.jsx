@@ -160,7 +160,7 @@ export default function PushAlerts({ username, draftIds }) {
         {status === "working" ? "Working…" : "Enable Alerts"}
       </button>
 
-      <button
+      {/* <button
         onClick={hardReset}
         disabled={status === "working"}
         style={{
@@ -174,7 +174,7 @@ export default function PushAlerts({ username, draftIds }) {
         title="Use this if your Chrome profile stopped receiving pushes entirely."
       >
         Hard Reset Alerts
-      </button>
+      </button> */}
 
       {endpoint ? (
         <div style={{ width: "100%", marginTop: 10, fontSize: 12, opacity: 0.9 }}>
