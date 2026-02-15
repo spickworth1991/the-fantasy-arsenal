@@ -186,15 +186,19 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
 
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
 
-  const headers = {
-    TTL: "60",
-    Urgency: "high",
-    "Content-Type": "application/octet-stream",
-    "Content-Encoding": "aes128gcm",
-    Encryption: `salt=${bytesToB64url(salt)}`,
-    "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}; p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
-    Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
-  };
+    const headers = {
+        // TTL is seconds. Keep it reasonably high so the browser has time to wake.
+        TTL: "300",
+        Urgency: "high",
+        "Content-Type": "application/octet-stream",
+        "Content-Encoding": "aes128gcm",
+        Encryption: `salt=${bytesToB64url(salt)}`,
+        "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}; p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
+        // Spec-compliant VAPID header (works across push services).
+        // (Older "vapid t=..., k=..." format can be silently dropped by some providers.)
+        Authorization: `WebPush ${jwt}`,
+    };
+
 
   return {
     endpoint,
