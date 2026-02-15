@@ -18,6 +18,13 @@ function bytesToB64url(bytes) {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+function bytesToB64(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  // standard base64 WITH padding
+  return btoa(bin);
+}
+
 
 function concat(...arrs) {
   const total = arrs.reduce((n, a) => n + a.length, 0);
@@ -56,12 +63,10 @@ async function hmacSha256(keyBytes, dataBytes) {
 }
 
 async function hkdfExtract(salt, ikm) {
-  // HKDF-Extract(salt, IKM) = HMAC(salt, IKM)
   return hmacSha256(salt, ikm);
 }
 
 async function hkdfExpand(prk, info, length) {
-  // HKDF-Expand(PRK, info, L)
   let prev = new Uint8Array(0);
   let out = new Uint8Array(0);
   let i = 0;
@@ -125,15 +130,25 @@ async function signJWT(data, vapidPrivateJwk) {
 }
 
 function jwkToRawPublic(jwk) {
-  // Uncompressed point: 0x04 || X || Y
-  const x = b64urlToBytes(jwk.x);
-  const y = b64urlToBytes(jwk.y);
+  // Uncompressed point: 0x04 || X || Y (must be 65 bytes total)
+  const x = b64urlToBytes(jwk?.x);
+  const y = b64urlToBytes(jwk?.y);
   return concat(new Uint8Array([0x04]), x, y);
+}
+
+function assertUncompressedP256Point(raw, label) {
+  if (!(raw instanceof Uint8Array)) throw new Error(`${label} is not bytes`);
+  if (raw.length !== 65 || raw[0] !== 0x04) {
+    throw new Error(`${label} must be an uncompressed P-256 point (65 bytes, starts with 0x04). Got ${raw.length} bytes.`);
+  }
 }
 
 async function encryptAes128gcm({ subscription, payloadObj }) {
   const clientPubRaw = b64urlToBytes(subscription.keys.p256dh);
   const authSecret = b64urlToBytes(subscription.keys.auth);
+
+  // Validate client key early (prevents mystery failures)
+  assertUncompressedP256Point(clientPubRaw, "subscription.keys.p256dh");
 
   const clientPubKey = await importP256Public(clientPubRaw);
   const serverKP = await crypto.subtle.generateKey(
@@ -142,45 +157,49 @@ async function encryptAes128gcm({ subscription, payloadObj }) {
     ["deriveBits"]
   );
   const serverPubRaw = await exportRawPublic(serverKP);
+
+  // Validate server ECDH key (this is what Chrome complains about)
+  assertUncompressedP256Point(serverPubRaw, "server ECDH public key (dh)");
+
   const sharedSecret = await deriveSharedSecret(clientPubKey, serverKP);
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
   // ===== RFC8291 key derivation =====
-  // 1) PRK = HKDF-Extract(authSecret, sharedSecret)
   const prk = await hkdfExtract(authSecret, sharedSecret);
 
-  // 2) IKM = HKDF-Expand(PRK, "WebPush: info\0" || ua_pub || as_pub, 32)
   const info = concat(te.encode("WebPush: info\0"), clientPubRaw, serverPubRaw);
   const ikm = await hkdfExpand(prk, info, 32);
 
-  // 3) PRK2 = HKDF-Extract(salt, IKM)
   const prk2 = await hkdfExtract(salt, ikm);
 
-  // 4) CEK / NONCE
   const cek = await hkdfExpand(prk2, te.encode("Content-Encoding: aes128gcm\0"), 16);
   const nonce = await hkdfExpand(prk2, te.encode("Content-Encoding: nonce\0"), 12);
 
-  // ===== Payload format =====
-  // Plaintext = uint16_be(paddingLength) || payload || paddingZeros
   const plainJson = te.encode(JSON.stringify(payloadObj));
-  const padLen = 0;
-  const plaintext = concat(u16be(padLen), plainJson);
-
-  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  // RFC8291 aes128gcm record padding:
+  // plaintext = payload || 0x02 || 0x00 * pad
+  const rs = 4096;
+  if (plainJson.length + 1 > rs) {
+    throw new Error(`Payload too large for rs=${rs}: ${plainJson.length} bytes`);
+  }
+  const pad = new Uint8Array(rs - plainJson.length - 1);
+  const plaintext = concat(plainJson, new Uint8Array([0x02]), pad);
+const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, plaintext);
 
-  // ===== RFC8291 record format =====
-  // body = salt(16) || rs(4) || idlen(1) || keyid(idlen) || ciphertext
-  // keyid is the server ECDH public key (uncompressed P-256 point, 65 bytes)
-  // rs (record size) should be >= 18 and typically 4096.
-  const rs = 4096;
-  const keyId = serverPubRaw;
-  const idlen = new Uint8Array([keyId.length]);
-  const body = concat(salt, u32be(rs), idlen, keyId, new Uint8Array(ct));
+  const ciphertext = new Uint8Array(ct);
+
+  // RFC8291 record body header:
+  // salt(16) || rs(4) || idlen(1) || keyid(serverPubRaw) || ciphertext
+  const idlen = serverPubRaw.length;
+  if (idlen !== 65) {
+    throw new Error(`serverPubRaw must be 65 bytes, got ${idlen}`);
+  }
+  const body = concat(salt, u32be(rs), new Uint8Array([idlen]), serverPubRaw, ciphertext);
 
   return {
-    ciphertext: body,
+    body,
     salt,
     serverPubRaw,
   };
@@ -191,7 +210,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     throw new Error("Invalid subscription (missing endpoint/keys).");
   }
 
-  const { ciphertext, salt, serverPubRaw } = await encryptAes128gcm({
+  const { body, salt, serverPubRaw } = await encryptAes128gcm({
     subscription,
     payloadObj: payload,
   });
@@ -202,29 +221,17 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
   const jwtUnsigned = makeJWT({ aud, sub: vapidSubject, expSeconds: exp });
   const jwt = await signJWT(jwtUnsigned, vapidPrivateJwk);
 
+  // This MUST be the VAPID PUBLIC key (x/y). Private JWK contains x/y too, so this is OK.
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
+  assertUncompressedP256Point(vapidPublicRaw, "VAPID public key (p256ecdsa)");
 
   const headers = {
-    // TTL is seconds. Keep it reasonably high so the browser has time to wake.
     TTL: "300",
     Urgency: "high",
     "Content-Type": "application/octet-stream",
     "Content-Encoding": "aes128gcm",
-    // Keep these headers for compatibility with push services, but Chrome will
-    // primarily read salt/keyid from the RFC8291 body header we build above.
     Encryption: `salt=${bytesToB64url(salt)}`,
     "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
-    // FCM expects this format.
     Authorization: `WebPush ${jwt}`,
-  };
-
-
-  return {
-    endpoint,
-    fetchInit: {
-      method: "POST",
-      headers,
-      body: ciphertext,
-    },
   };
 }
