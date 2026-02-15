@@ -212,7 +212,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
 
     // keep base64url for VAPID k= (this is fine)
     Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
-
+    };
 
 
   return {
