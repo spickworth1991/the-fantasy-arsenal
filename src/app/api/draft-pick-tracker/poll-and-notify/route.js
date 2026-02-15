@@ -2,16 +2,10 @@ export const runtime = "edge";
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { buildWebPushRequest } from "../../../../lib/webpush";
+import { buildWebPushRequest } from "../../../lib/webpush";
 
-
-export async function POST(req) {
-  return handler(req);
-}
-
-export async function GET(req) {
-  return handler(req);
-}
+export async function POST(req, context) { return handler(req, context); }
+export async function GET(req, context) { return handler(req, context); }
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
@@ -42,11 +36,11 @@ async function getUserId(username) {
 function getCurrentSlotSnake(pickNo, teams) {
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
-  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
+  const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
   return { slot, round };
 }
 
-async function handler(req) {
+async function handler(req, context) {
   try {
     const { env } = getRequestContext();
 
@@ -78,12 +72,8 @@ async function handler(req) {
       .map((r) => {
         let sub = null;
         let draftIds = [];
-        try {
-          sub = JSON.parse(r.subscription_json);
-        } catch {}
-        try {
-          draftIds = JSON.parse(r.draft_ids_json || "[]");
-        } catch {}
+        try { sub = JSON.parse(r.subscription_json); } catch {}
+        try { draftIds = JSON.parse(r.draft_ids_json || "[]"); } catch {}
         return {
           endpoint: r.endpoint,
           sub,
@@ -106,24 +96,15 @@ async function handler(req) {
     let skippedNotOnClock = 0;
 
     for (const s of subs) {
-      if (!s.draftIds.length) {
-        skippedNoDrafts++;
-        continue;
-      }
-      if (!s.username) {
-        skippedNoUsername++;
-        continue;
-      }
+      if (!s.draftIds.length) { skippedNoDrafts++; continue; }
+      if (!s.username) { skippedNoUsername++; continue; }
 
       let userId = userIdCache.get(s.username);
       if (!userId) {
         userId = await getUserId(s.username);
         userIdCache.set(s.username, userId);
       }
-      if (!userId) {
-        skippedNoOrder++;
-        continue;
-      }
+      if (!userId) { skippedNoOrder++; continue; }
 
       for (const draftId of s.draftIds) {
         checked++;
@@ -136,8 +117,8 @@ async function handler(req) {
           .first();
 
         const lastPickCount = Number(state?.last_pick_count ?? 0);
-        if (pickCount <= lastPickCount) continue;
 
+        if (pickCount <= lastPickCount) continue;
         changes++;
 
         await db
@@ -175,29 +156,25 @@ async function handler(req) {
           continue;
         }
 
-        try {
-          // ✅ ON THE CLOCK — send push
-            const { endpoint, fetchInit } = await buildWebPushRequest({
-            subscription: s.sub,
-            payload: {
-                title: "You're on the clock",
-                body: `You are on the clock in "${leagueName}".`,
-                url: "/draft-pick-tracker",
-            },
-            vapidSubject: subject,
-            vapidPrivateJwk: jwk,
-            ttl: 60,
-            });
+        const { endpoint, fetchInit } = await buildWebPushRequest({
+          subscription: s.sub,
+          payload: {
+            title: "You're on the clock",
+            body: `You are on the clock in "${leagueName}".`,
+            url: "/draft-pick-tracker",
+          },
+          vapidSubject,
+          vapidPrivateJwk,
+        });
 
-            const pushRes = await fetch(endpoint, fetchInit);
+        const pushRes = await fetch(endpoint, fetchInit);
 
-          if (pushRes.ok) {
-            sent++;
-          } else if (pushRes.status === 404 || pushRes.status === 410) {
+        if (pushRes.ok) {
+          sent++;
+        } else {
+          if (pushRes.status === 404 || pushRes.status === 410) {
             await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           }
-        } catch {
-          // ignore, keep loop alive
         }
       }
     }
