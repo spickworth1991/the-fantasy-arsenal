@@ -56,6 +56,52 @@ function Pill({ children, tone = "blue" }) {
   );
 }
 
+
+function getHeatTier(etaMs) {
+  const ms = safeNum(etaMs);
+
+  // If ETA is missing/invalid/zero, do NOT heat up.
+  // (This is what’s causing the “1h48m but red” bug.)
+  if (!Number.isFinite(ms) || ms <= 0) return "cool";
+
+  const m = Math.floor(ms / 60000);
+
+  if (m <= 10) return "hot";
+  if (m <= 30) return "warm";
+  return "cool";
+}
+
+
+function heatStyles(tier, isDrafting, flashHot) {
+  // only “heat up” visuals during active drafting
+  if (!isDrafting) return { ring: "", wash: "", badge: null };
+
+  if (tier === "hot") {
+    const ringBase =
+      "ring-2 ring-red-400/40 border-red-400/20 shadow-[0_0_0_1px_rgba(248,113,113,0.22),0_0_30px_rgba(248,113,113,0.18)]";
+    const washBase =
+      "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-red-500/15 before:via-transparent before:to-transparent before:pointer-events-none";
+
+    return {
+      ring: flashHot ? `${ringBase} animate-[pulse_1.2s_ease-in-out_infinite]` : ringBase,
+      wash: flashHot ? `${washBase} before:animate-[pulse_1.2s_ease-in-out_infinite]` : washBase,
+      badge: flashHot ? <Pill tone="red">🔥 SOON</Pill> : null, // badge ONLY at <=10m
+    };
+  }
+
+  if (tier === "warm") {
+    return {
+      ring: "ring-1 ring-orange-300/25 border-orange-300/15 shadow-[0_0_0_1px_rgba(251,146,60,0.14),0_0_18px_rgba(251,146,60,0.10)]",
+      wash: "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-orange-400/10 before:via-transparent before:to-transparent before:pointer-events-none",
+      badge: null, // no badge at 10–30 unless you want one
+    };
+  }
+
+  return { ring: "", wash: "", badge: null };
+}
+
+
+
 function SortHeader({ label, col, sortKey, sortDir, setSortKey, setSortDir }) {
   const active = sortKey === col;
   return (
@@ -722,6 +768,17 @@ export default function DraftPickTrackerClient() {
 
             const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
             const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
+            const isDrafting = String(r.draftStatus || "").toLowerCase() === "drafting";
+            const hasMyPick = r.myNextPickOverall != null;
+            const heatTier = getHeatTier(hasMyPick ? liveEta : NaN);
+
+            // Flash ONLY when ETA <= 10 minutes (and you actually have a next pick)
+            const flashHot = isDrafting && hasMyPick && heatTier === "hot";
+
+            const heat = heatStyles(heatTier, isDrafting && hasMyPick, flashHot);
+
+            
+
 
             const statusTone =
               r.draftStatus === "drafting"
@@ -741,12 +798,15 @@ export default function DraftPickTrackerClient() {
               <div
                 key={r.leagueId}
                 className={classNames(
-                  "bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
+                  "relative bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
+                  heat.wash,      // premium wash overlay (uses before:)
+                  heat.ring,      // heat ring/glow
                   (r.onClockIsMe || r.onDeck) &&
                     r.draftStatus === "drafting" &&
                     "ring-1 ring-emerald-400/30"
                 )}
               >
+
                 <div className="p-4 border-b border-white/10 bg-black/20">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -755,6 +815,7 @@ export default function DraftPickTrackerClient() {
                           {r.leagueName}
                         </div>
                         <Pill tone={statusTone}>{r.draftStatus || "—"}</Pill>
+                        {heat.badge}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">
                         {r.teams ? `${r.teams} teams` : "—"}
