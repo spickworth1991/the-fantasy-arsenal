@@ -1,15 +1,36 @@
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { buildWebPushRequest } from "../../../../lib/webpush";
+import { buildPushHTTPRequest } from "@pushforge/builder";
 
-export async function POST(req) { return handler(req); }
-export async function GET(req) { return handler(req); }
+export async function POST(req, context) {
+  return handler(req, context);
+}
+export async function GET(req, context) {
+  return handler(req, context);
+}
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
-  return !!env?.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+  return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+}
+
+function getDb(env) {
+  return env.PUSH_DB;
+}
+
+function getPrivateJWK(env) {
+  const raw = env.VAPID_PRIVATE_KEY;
+  const subject = env.VAPID_SUBJECT;
+  if (!raw || !subject) throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
+
+  let jwk;
+  try {
+    jwk = JSON.parse(raw);
+  } catch {
+    throw new Error("VAPID_PRIVATE_KEY must be a JSON JWK string.");
+  }
+  return { jwk, subject };
 }
 
 async function getPickCount(draftId) {
@@ -36,32 +57,22 @@ async function getUserId(username) {
 function getCurrentSlotSnake(pickNo, teams) {
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
-  const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
+  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
   return { slot, round };
 }
 
-async function handler(req) {
+async function handler(req, context) {
   try {
-    const { env } = getRequestContext();
+    const env = context?.env || process.env;
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
 
-    const db = env?.PUSH_DB;
-    if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
-
-    const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
-    const vapidSubject = env?.VAPID_SUBJECT;
-    if (!vapidPrivateRaw || !vapidSubject) {
-      return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
+    const db = getDb(env);
+    if (!db?.prepare) {
+      return new NextResponse("PUSH_DB binding not found. Add a D1 binding named PUSH_DB.", { status: 500 });
     }
 
-    let vapidPrivateJwk;
-    try {
-      vapidPrivateJwk = JSON.parse(vapidPrivateRaw);
-    } catch {
-      return new NextResponse("VAPID_PRIVATE_KEY must be a JSON JWK string.", { status: 500 });
-    }
-
+    const { jwk, subject } = getPrivateJWK(env);
     const now = Date.now();
 
     const subRows = await db
@@ -117,9 +128,12 @@ async function handler(req) {
           .first();
 
         const lastPickCount = Number(state?.last_pick_count ?? 0);
+
+        // only act when something changed
         if (pickCount <= lastPickCount) continue;
         changes++;
 
+        // update state first to prevent dupes
         await db
           .prepare(
             `INSERT INTO push_draft_state (endpoint, draft_id, last_pick_count, updated_at)
@@ -155,22 +169,25 @@ async function handler(req) {
           continue;
         }
 
-        const { endpoint, fetchInit } = await buildWebPushRequest({
+        // ✅ ON THE CLOCK — send push
+        const payload = {
+          title: "You're on the clock",
+          body: `You are on the clock in "${leagueName}".`,
+          url: "/draft-pick-tracker",
+        };
+
+        const { endpoint, headers, body } = await buildPushHTTPRequest({
+          privateJWK: jwk,
           subscription: s.sub,
-          payload: {
-            title: "You're on the clock",
-            body: `You are on the clock in "${leagueName}".`,
-            url: "/draft-pick-tracker",
-          },
-          vapidSubject,
-          vapidPrivateJwk,
+          message: { payload, adminContact: subject },
         });
 
-        const pushRes = await fetch(endpoint, fetchInit);
+        const pushRes = await fetch(endpoint, { method: "POST", headers, body });
 
         if (pushRes.ok) {
           sent++;
         } else {
+          // prune dead subs
           if (pushRes.status === 404 || pushRes.status === 410) {
             await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           }
