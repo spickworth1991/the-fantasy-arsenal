@@ -40,8 +40,6 @@ function hashEndpoint(endpoint) {
 
 export async function POST(req) {
   try {
-    // D1 bindings (and other CF bindings) are only available via request context.
-    // process.env will NOT contain D1 bindings.
     const { env } = getRequestContext();
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
@@ -81,6 +79,7 @@ export async function POST(req) {
     let sent = 0;
     let failed = 0;
     const failures = [];
+    const provider = [];
 
     for (const s of filtered) {
       try {
@@ -95,10 +94,21 @@ export async function POST(req) {
 
         const res = await fetch(endpoint, fetchInit);
 
+        // IMPORTANT: push endpoints can return OK/2xx but still not deliver.
+        // Capture the response body for debugging.
+        const txt = await res.text().catch(() => "");
+
+        provider.push({
+          endpointHash: hashEndpoint(s.endpoint),
+          ok: res.ok,
+          status: res.status,
+          // keep response small (Edge response size)
+          body: (txt || "").slice(0, 400),
+        });
+
         if (res.ok) {
           sent += 1;
         } else {
-          const txt = await res.text().catch(() => "");
           failures.push({ endpointHash: hashEndpoint(s.endpoint), status: res.status, body: txt });
 
           // prune dead endpoints
@@ -119,6 +129,7 @@ export async function POST(req) {
       subsConsidered: filtered.length,
       sent,
       failed,
+      provider,
       failures,
     });
   } catch (e) {
