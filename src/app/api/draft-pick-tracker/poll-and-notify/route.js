@@ -4,12 +4,12 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-export async function POST(req, context) { return handler(req, context); }
-export async function GET(req, context) { return handler(req, context); }
+export async function POST(req) { return handler(req); }
+export async function GET(req) { return handler(req); }
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
-  return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+  return !!env?.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
 }
 
 async function getPickCount(draftId) {
@@ -40,17 +40,17 @@ function getCurrentSlotSnake(pickNo, teams) {
   return { slot, round };
 }
 
-async function handler(req, context) {
+async function handler(req) {
   try {
     const { env } = getRequestContext();
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
 
-    const db = env.PUSH_DB;
+    const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    const vapidPrivateRaw = env.VAPID_PRIVATE_KEY;
-    const vapidSubject = env.VAPID_SUBJECT;
+    const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
+    const vapidSubject = env?.VAPID_SUBJECT;
     if (!vapidPrivateRaw || !vapidSubject) {
       return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
     }
@@ -117,7 +117,6 @@ async function handler(req, context) {
           .first();
 
         const lastPickCount = Number(state?.last_pick_count ?? 0);
-
         if (pickCount <= lastPickCount) continue;
         changes++;
 
