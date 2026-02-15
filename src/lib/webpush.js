@@ -164,29 +164,59 @@ async function signJwtES256(jwk, payload, { aud, sub, expSeconds = 12 * 60 * 60 
 }
 
 function derToJose(derSig, joseLen) {
+  // Some runtimes/polyfills already return JOSE (r||s). Accept it.
+  if (derSig.length === joseLen && derSig[0] !== 0x30) return derSig;
+
   let offset = 0;
+
+  // ASN.1 DER length (short/long form)
+  const readLen = () => {
+    if (offset >= derSig.length) throw new Error("Invalid DER signature");
+    let len = derSig[offset++];
+
+    // short form
+    if ((len & 0x80) === 0) return len;
+
+    // long form
+    const n = len & 0x7f;
+    if (n === 0 || n > 4) throw new Error("Invalid DER signature");
+    if (offset + n > derSig.length) throw new Error("Invalid DER signature");
+
+    len = 0;
+    for (let i = 0; i < n; i++) len = (len << 8) | derSig[offset++];
+    return len;
+  };
+
   if (derSig[offset++] !== 0x30) throw new Error("Invalid DER signature");
-  offset += 1; // skip seq length
+  const seqLen = readLen();
+  if (offset + seqLen > derSig.length) throw new Error("Invalid DER signature");
 
   if (derSig[offset++] !== 0x02) throw new Error("Invalid DER signature");
-  const rLen = derSig[offset++];
+  const rLen = readLen();
   let r = derSig.slice(offset, offset + rLen);
   offset += rLen;
 
   if (derSig[offset++] !== 0x02) throw new Error("Invalid DER signature");
-  const sLen = derSig[offset++];
+  const sLen = readLen();
   let s = derSig.slice(offset, offset + sLen);
 
-  while (r.length > 1 && r[0] === 0x00) r = r.slice(1);
-  while (s.length > 1 && s[0] === 0x00) s = s.slice(1);
+  // strip leading 0s
+  while (r.length && r[0] === 0) r = r.slice(1);
+  while (s.length && s[0] === 0) s = s.slice(1);
 
+  // pad to fixed length
   const out = new Uint8Array(joseLen);
   const half = joseLen / 2;
 
-  out.set(r.slice(Math.max(0, r.length - half)), half - Math.min(half, r.length));
-  out.set(s.slice(Math.max(0, s.length - half)), joseLen - Math.min(half, s.length));
+  if (r.length > half || s.length > half) throw new Error("Invalid DER signature");
+
+  out.set(r, half - r.length);
+  out.set(s, joseLen - s.length);
+
   return out;
 }
+
+
 
 // ---------- main: build fetch init for a push ----------
 
