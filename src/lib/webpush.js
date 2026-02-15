@@ -1,100 +1,117 @@
 // src/lib/webpush.js
-// Minimal Web Push (aes128gcm) for Edge/Workers using native WebCrypto only.
-// No node:crypto, no external libs.
+// Web Push for Edge/Workers using WebCrypto only (no node:crypto).
+// - Content-Encoding: aes128gcm (RFC 8291)
+// - VAPID: ES256 JWT (RFC 8292)
 
 const te = new TextEncoder();
 
-function b64urlToUint8(b64url) {
-  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
-  const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
-}
-
-function uint8ToB64url(u8) {
+function u8ToB64Url(u8) {
   let s = "";
   for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
-  const b64 = btoa(s);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function u16be(n) {
-  return new Uint8Array([(n >> 8) & 255, n & 255]);
+function b64UrlToU8(b64url) {
+  const b64 =
+    b64url.replace(/-/g, "+").replace(/_/g, "/") +
+    "==".slice((b64url.length + 3) % 4);
+  const bin = atob(b64);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
 }
 
-function u32be(n) {
-  return new Uint8Array([
-    (n >>> 24) & 255,
-    (n >>> 16) & 255,
-    (n >>> 8) & 255,
-    n & 255,
-  ]);
-}
-
-function concat(...parts) {
-  const len = parts.reduce((a, p) => a + p.length, 0);
-  const out = new Uint8Array(len);
-  let off = 0;
+function concatU8(...parts) {
+  const total = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0;
   for (const p of parts) {
-    out.set(p, off);
-    off += p.length;
+    out.set(p, o);
+    o += p.length;
   }
   return out;
 }
 
-async function hmacSha256(keyBytes, dataBytes) {
-  const key = await crypto.subtle.importKey(
+const len2 = (n) => new Uint8Array([(n >> 8) & 0xff, n & 0xff]);
+
+async function hkdfExtract(saltU8, ikmU8) {
+  const saltKey = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    saltU8,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
   );
-  const sig = await crypto.subtle.sign("HMAC", key, dataBytes);
-  return new Uint8Array(sig);
+  const prk = new Uint8Array(await crypto.subtle.sign("HMAC", saltKey, ikmU8));
+  return prk;
 }
 
-async function hkdfExtract(salt, ikm) {
-  // PRK = HMAC(salt, ikm)
-  return hmacSha256(salt, ikm);
-}
-
-async function hkdfExpand(prk, info, length) {
-  // T(0) = empty, T(1) = HMAC(PRK, T(0) | info | 0x01), ...
-  const infoBytes = typeof info === "string" ? te.encode(info) : info;
-  const out = new Uint8Array(length);
-  let prev = new Uint8Array(0);
+async function hkdfExpand(prkU8, infoU8, length) {
+  const prkKey = await crypto.subtle.importKey(
+    "raw",
+    prkU8,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  let t = new Uint8Array(0);
+  let okm = new Uint8Array(0);
   let counter = 1;
-  let pos = 0;
 
-  while (pos < length) {
-    const input = concat(prev, infoBytes, new Uint8Array([counter]));
-    const t = await hmacSha256(prk, input);
-    const take = Math.min(t.length, length - pos);
-    out.set(t.slice(0, take), pos);
-    pos += take;
-    prev = t;
+  while (okm.length < length) {
+    const input = concatU8(t, infoU8, new Uint8Array([counter]));
+    t = new Uint8Array(await crypto.subtle.sign("HMAC", prkKey, input));
+    okm = concatU8(okm, t);
     counter++;
   }
-  return out;
+
+  return okm.slice(0, length);
 }
 
 function jwkToRawPublic(jwk) {
-  // Uncompressed P-256 point: 0x04 || X || Y
-  const x = b64urlToUint8(jwk.x);
-  const y = b64urlToUint8(jwk.y);
-  return concat(new Uint8Array([0x04]), x, y); // 65 bytes
+  // Uncompressed point 04 || X || Y
+  const x = b64UrlToU8(jwk.x);
+  const y = b64UrlToU8(jwk.y);
+  const out = new Uint8Array(1 + x.length + y.length);
+  out[0] = 0x04;
+  out.set(x, 1);
+  out.set(y, 1 + x.length);
+  return out;
 }
 
-async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
-  const header = { typ: "JWT", alg: "ES256" };
-  const enc = (obj) => uint8ToB64url(te.encode(JSON.stringify(obj)));
+// WebCrypto ECDSA sign output is often DER-encoded on Workers.
+// JWT ES256 requires P-1363 (r||s, 64 bytes).
+function derToP1363(sig, size = 32) {
+  if (sig.length === 64) return sig;
 
-  const h = enc(header);
-  const p = enc({ aud, exp, sub });
-  const data = te.encode(`${h}.${p}`);
+  let i = 0;
+  if (sig[i++] !== 0x30) return sig;
+  i++; // seq len (short form)
+
+  if (sig[i++] !== 0x02) return sig;
+  const rLen = sig[i++];
+  let r = sig.slice(i, i + rLen);
+  i += rLen;
+
+  if (sig[i++] !== 0x02) return sig;
+  const sLen = sig[i++];
+  let s = sig.slice(i, i + sLen);
+
+  while (r.length > 1 && r[0] === 0x00) r = r.slice(1);
+  while (s.length > 1 && s[0] === 0x00) s = s.slice(1);
+
+  const rOut = new Uint8Array(size);
+  const sOut = new Uint8Array(size);
+  rOut.set(r.slice(-size), size - Math.min(size, r.length));
+  sOut.set(s.slice(-size), size - Math.min(size, s.length));
+  return concatU8(rOut, sOut);
+}
+
+async function signVapidJWT({ aud, sub, exp, vapidPrivateJwk }) {
+  const header = { typ: "JWT", alg: "ES256" };
+  const body = { aud, exp, sub };
+  const enc = (obj) => u8ToB64Url(te.encode(JSON.stringify(obj)));
+  const signingInput = `${enc(header)}.${enc(body)}`;
 
   const key = await crypto.subtle.importKey(
     "jwk",
@@ -104,126 +121,126 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
     ["sign"]
   );
 
-  // WebCrypto returns DER-ish signature? Actually it returns raw (r|s) in most WebCrypto impls for ECDSA.
-  // Cloudflare returns raw P-1363 (64 bytes). That’s what we want for ES256.
-  const sig = new Uint8Array(
-    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, data)
+  const sigDer = new Uint8Array(
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      te.encode(signingInput)
+    )
   );
-
-  const jwt = `${h}.${p}.${uint8ToB64url(sig)}`;
-  return jwt;
+  const sig = derToP1363(sigDer, 32);
+  return `${signingInput}.${u8ToB64Url(sig)}`;
 }
 
-async function encryptAes128gcm({ subscription, payload, vapidPublicRaw }) {
-  const endpoint = subscription?.endpoint;
-  const p256dh = subscription?.keys?.p256dh;
-  const auth = subscription?.keys?.auth;
+async function encryptAes128gcm({ subscription, payloadJson }) {
+  const sub = subscription;
+  const userP256dh = b64UrlToU8(sub.keys.p256dh);
+  const userAuth = b64UrlToU8(sub.keys.auth);
 
-  if (!endpoint || !p256dh || !auth) throw new Error("Bad subscription (missing endpoint/keys).");
-
-  const uaPub = b64urlToUint8(p256dh); // user agent public key (65 bytes)
-  const authSecret = b64urlToUint8(auth); // 16 bytes
-
-  // Import UA public key for ECDH
-  const uaKey = await crypto.subtle.importKey(
+  // Import receiver public key
+  const userPubKey = await crypto.subtle.importKey(
     "raw",
-    uaPub,
+    userP256dh,
     { name: "ECDH", namedCurve: "P-256" },
     false,
     []
   );
 
-  // Ephemeral server keypair for ECDH
-  const serverKeys = await crypto.subtle.generateKey(
+  // Generate ephemeral ECDH keypair
+  const eph = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
     ["deriveBits"]
   );
-
-  const sharedSecret = new Uint8Array(
-    await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, serverKeys.privateKey, 256)
+  const ephPubRaw = new Uint8Array(
+    await crypto.subtle.exportKey("raw", eph.publicKey)
   );
 
-  const serverPubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", serverKeys.publicKey)); // 65
-
-  // Context per RFC8291
-  const context = concat(
-    te.encode("P-256"),
-    new Uint8Array([0x00]),
-    u16be(uaPub.length),
-    uaPub,
-    u16be(serverPubRaw.length),
-    serverPubRaw
+  // Shared secret
+  const sharedBits = await crypto.subtle.deriveBits(
+    { name: "ECDH", public: userPubKey },
+    eph.privateKey,
+    256
   );
+  const sharedSecret = new Uint8Array(sharedBits);
 
-  // PRK = HKDF-Extract(auth, sharedSecret)
-  const prk = await hkdfExtract(authSecret, sharedSecret);
+  // 1) PRK_key = HKDF-Extract(authSecret, sharedSecret)
+  const prkKey = await hkdfExtract(userAuth, sharedSecret);
 
-  // IKM = HKDF-Expand(PRK, "Content-Encoding: auth\0", 32)
-  const ikm = await hkdfExpand(prk, concat(te.encode("Content-Encoding: auth"), new Uint8Array([0x00])), 32);
+  // 2) IKM = HKDF-Expand(PRK_key, "WebPush: info\0" + len(pubR) + pubR + len(pubS) + pubS, 32)
+  const info = concatU8(
+    te.encode("WebPush: info\0"),
+    len2(userP256dh.length),
+    userP256dh,
+    len2(ephPubRaw.length),
+    ephPubRaw
+  );
+  const ikm = await hkdfExpand(prkKey, info, 32);
 
-  // salt
+  // 3) PRK = HKDF-Extract(salt, IKM)
   const salt = crypto.getRandomValues(new Uint8Array(16));
+  const prk = await hkdfExtract(salt, ikm);
 
-  // PRK2 = HKDF-Extract(salt, IKM)
-  const prk2 = await hkdfExtract(salt, ikm);
+  // 4) CEK + NONCE
+  const cek = await hkdfExpand(prk, te.encode("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdfExpand(prk, te.encode("Content-Encoding: nonce\0"), 12);
 
-  // CEK + NONCE
-  const cekInfo = concat(te.encode("Content-Encoding: aes128gcm"), new Uint8Array([0x00]), context);
-  const nonceInfo = concat(te.encode("Content-Encoding: nonce"), new Uint8Array([0x00]), context);
+  // 5) plaintext = payload || 0x02 delimiter
+  const payloadBytes = te.encode(JSON.stringify(payloadJson));
+  const plaintext = concatU8(payloadBytes, new Uint8Array([0x02]));
 
-  const cek = await hkdfExpand(prk2, cekInfo, 16);
-  const nonce = await hkdfExpand(prk2, nonceInfo, 12);
-
-  // plaintext format: 0x02 || payload (no padding)
-  const pt = concat(new Uint8Array([0x02]), te.encode(payload));
-
-  const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, pt));
-
-  // body format for aes128gcm: salt(16) + rs(4) + idlen(1) + serverPubKey + ciphertext
-  const rs = 4096; // record size
-  const body = concat(salt, u32be(rs), new Uint8Array([serverPubRaw.length]), serverPubRaw, ct);
-
-  const cryptoKey = `dh=${uint8ToB64url(serverPubRaw)}; p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`;
+  const cekKey = await crypto.subtle.importKey(
+    "raw",
+    cek,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt"]
+  );
+  const ctBuf = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: nonce, tagLength: 128 },
+    cekKey,
+    plaintext
+  );
+  const ciphertext = new Uint8Array(ctBuf);
 
   return {
-    endpoint,
-    body,
+    body: ciphertext,
     headers: {
-      "Content-Type": "application/octet-stream",
       "Content-Encoding": "aes128gcm",
-      "Crypto-Key": cryptoKey,
-      TTL: "60",
+      Encryption: `salt=${u8ToB64Url(salt)};rs=4096`,
+      "Crypto-Key": `dh=${u8ToB64Url(ephPubRaw)}`,
     },
   };
 }
 
-export async function buildWebPushRequest({ subscription, payload, vapidSubject, vapidPrivateJwk }) {
-  const url = new URL(subscription.endpoint);
-  const aud = `${url.protocol}//${url.host}`;
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 12; // 12 hours
+export async function buildWebPushRequest({
+  subscription,
+  payload,
+  vapidSubject,
+  vapidPrivateJwk,
+}) {
+  if (!subscription?.endpoint) throw new Error("Missing subscription endpoint");
+  if (!subscription?.keys?.p256dh || !subscription?.keys?.auth)
+    throw new Error("Subscription missing keys");
+
+  const endpoint = subscription.endpoint;
+  const aud = new URL(endpoint).origin;
+  const exp = Math.floor(Date.now() / 1000) + 12 * 60 * 60;
 
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
-
-  const jwt = await signVapidJWT(
-    { aud, sub: vapidSubject, exp },
-    vapidPrivateJwk
-  );
-
-  const enc = await encryptAes128gcm({
-    subscription,
-    payload: JSON.stringify(payload),
-    vapidPublicRaw,
-  });
+  const jwt = await signVapidJWT({ aud, sub: vapidSubject, exp, vapidPrivateJwk });
+  const enc = await encryptAes128gcm({ subscription, payloadJson: payload });
 
   return {
-    endpoint: enc.endpoint,
+    endpoint,
     fetchInit: {
       method: "POST",
       headers: {
         ...enc.headers,
-        Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
+        // Some push services still read p256ecdsa from Crypto-Key.
+        "Crypto-Key": `${enc.headers["Crypto-Key"]};p256ecdsa=${u8ToB64Url(vapidPublicRaw)}`,
+        Authorization: `vapid t=${jwt}, k=${u8ToB64Url(vapidPublicRaw)}`,
+        TTL: "60",
       },
       body: enc.body,
     },
