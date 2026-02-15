@@ -280,19 +280,20 @@ export async function buildWebPushRequest({
   const jwt = await signJwtES256(vapidPrivateJwk, {}, { aud, sub: vapidSubject });
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
 
-  return {
+    return {
     endpoint: subscription.endpoint,
     fetchInit: {
-      method: "POST",
-      headers: {
+        method: "POST",
+        headers: {
         TTL: String(ttl),
         "Content-Type": "application/octet-stream",
         "Content-Encoding": "aes128gcm",
         Encryption: `salt=${bytesToB64url(salt)}`,
-        "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}`,
+        "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
         Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
-      },
-      body: ciphertext,
+        },
+        body: ciphertext,
     },
-  };
+    };
+
 }
