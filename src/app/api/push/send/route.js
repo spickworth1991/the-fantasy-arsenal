@@ -1,68 +1,53 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { buildPushHTTPRequest } from "@pushforge/builder";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+import { buildWebPushRequest } from "../../../lib/webpush";
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
   return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
 }
 
-function getDb(env) {
-  return env.PUSH_DB;
-}
-
-function getPrivateJWK(env) {
-  const raw = env.VAPID_PRIVATE_KEY;
-  const subject = env.VAPID_SUBJECT;
-
-  if (!raw || !subject) {
-    throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
-  }
-
-  let jwk;
-  try {
-    jwk = JSON.parse(raw);
-  } catch {
-    throw new Error(
-      "VAPID_PRIVATE_KEY must be a JSON JWK string (from `npx @pushforge/builder vapid`)."
-    );
-  }
-
-  return { jwk, subject };
-}
-
 function hashEndpoint(endpoint) {
-  // tiny stable hash so you can target an endpoint without dumping it in logs
-  let h = 0;
-  for (let i = 0; i < endpoint.length; i++) h = (h * 31 + endpoint.charCodeAt(i)) >>> 0;
-  return h.toString(16).padStart(8, "0");
+  // Simple stable hash for logs/debug (not security). Keeps responses tidy.
+  let h = 2166136261;
+  for (let i = 0; i < endpoint.length; i++) {
+    h ^= endpoint.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
 }
 
-export async function POST(req, context) {
+export async function POST(req) {
   try {
-    const env = context?.env || process.env;
+    const { env } = getRequestContext();
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
 
-    const db = getDb(env);
+    const db = env.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    const { jwk, subject } = getPrivateJWK(env);
+    const vapidPrivateRaw = env.VAPID_PRIVATE_KEY;
+    const vapidSubject = env.VAPID_SUBJECT;
+    if (!vapidPrivateRaw || !vapidSubject) {
+      return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
+    }
 
-    const input = (await req.json().catch(() => ({}))) || {};
-    const title = input.title || "TFA Test";
-    const body = input.body || input.message || "If you see this, push delivery works.";
+    let vapidPrivateJwk;
+    try {
+      vapidPrivateJwk = JSON.parse(vapidPrivateRaw);
+    } catch {
+      return new NextResponse("VAPID_PRIVATE_KEY must be a JSON JWK string.", { status: 500 });
+    }
+
+    const input = (await req.json()) || {};
+    const title = input.title || "Draft Update";
+    const body = input.body || input.message || "New draft activity.";
     const url = input.url || "/draft-pick-tracker";
+    const targetEndpoint = typeof input.endpoint === "string" && input.endpoint ? input.endpoint : null;
 
-    // Optional targeting: pass either full endpoint OR endpointHash
-    const targetEndpoint = typeof input.endpoint === "string" ? input.endpoint : null;
-    const targetHash = typeof input.endpointHash === "string" ? input.endpointHash : null;
-
-    const rows = await db
-      .prepare(`SELECT endpoint, subscription_json FROM push_subscriptions`)
-      .all();
-
+    const rows = await db.prepare(`SELECT endpoint, subscription_json FROM push_subscriptions`).all();
     const subs = (rows?.results || [])
       .map((r) => {
         try {
@@ -71,52 +56,47 @@ export async function POST(req, context) {
           return null;
         }
       })
-      .filter((x) => x?.sub?.endpoint && x?.endpoint);
-
-    const filtered = subs.filter((s) => {
-      if (targetEndpoint) return s.endpoint === targetEndpoint;
-      if (targetHash) return hashEndpoint(s.endpoint) === targetHash;
-      return true;
-    });
+      .filter(Boolean)
+      .filter((s) => (targetEndpoint ? s.endpoint === targetEndpoint : true));
 
     let sent = 0;
     let failed = 0;
     const failures = [];
 
-    for (const s of filtered) {
+    for (const s of subs) {
+      const endpointHash = hashEndpoint(s.endpoint);
       try {
-        const payload = { title, body, url };
-
-        const { endpoint, headers, body: reqBody } = await buildPushHTTPRequest({
-          privateJWK: jwk,
+        const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: s.sub,
-          message: { payload, adminContact: subject },
+          payload: { title, body, url },
+          vapidSubject,
+          vapidPrivateJwk,
         });
 
-        const res = await fetch(endpoint, { method: "POST", headers, body: reqBody });
+        const res = await fetch(endpoint, fetchInit);
 
         if (res.ok) {
-          sent += 1;
+          sent++;
         } else {
           const txt = await res.text().catch(() => "");
-          failures.push({ endpointHash: hashEndpoint(s.endpoint), status: res.status, body: txt });
+          failures.push({ endpointHash, status: res.status, body: txt });
 
           // prune dead endpoints
           if (res.status === 404 || res.status === 410) {
             await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           }
-          failed += 1;
+          failed++;
         }
       } catch (e) {
-        failures.push({ endpointHash: hashEndpoint(s.endpoint), error: e?.message || String(e) });
-        failed += 1;
+        failures.push({ endpointHash, error: e?.message || String(e) });
+        failed++;
       }
     }
 
     return NextResponse.json({
       ok: true,
       target: targetEndpoint ? { endpointHash: hashEndpoint(targetEndpoint) } : null,
-      subsConsidered: filtered.length,
+      subsConsidered: subs.length,
       sent,
       failed,
       failures,
