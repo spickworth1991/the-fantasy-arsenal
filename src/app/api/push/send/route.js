@@ -1,57 +1,35 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { buildPushHTTPRequest } from "@pushforge/builder";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+import { buildWebPushRequest } from "../../../../lib/webpush";
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
-  return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+  return !!env?.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
 }
 
-function getPrivateJWK(env) {
-  const raw = env.VAPID_PRIVATE_KEY;
-  const subject = env.VAPID_SUBJECT;
-
-  if (!raw || !subject) throw new Error("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.");
-
-  let jwk;
+export async function POST(req) {
   try {
-    jwk = JSON.parse(raw);
-  } catch {
-    throw new Error(
-      "VAPID_PRIVATE_KEY must be a JSON JWK string (from `npx @pushforge/builder vapid`)."
-    );
-  }
-  return { jwk, subject };
-}
-
-function toNativeHeaders(h) {
-  // pushforge may return a Headers-like from a different realm — rebuild it for Cloudflare
-  const out = new Headers();
-  if (!h) return out;
-
-  if (typeof h.forEach === "function") {
-    h.forEach((v, k) => out.set(k, v));
-    return out;
-  }
-
-  // plain object
-  for (const [k, v] of Object.entries(h)) {
-    out.set(k, String(v));
-  }
-  return out;
-}
-
-export async function POST(req, context) {
-  try {
-    const env = context?.env || process.env;
+    const { env } = getRequestContext();
 
     if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
 
-    const db = env.PUSH_DB;
+    const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    const { jwk, subject } = getPrivateJWK(env);
+    const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
+    const vapidSubject = env?.VAPID_SUBJECT;
+    if (!vapidPrivateRaw || !vapidSubject) {
+      return new NextResponse("Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT.", { status: 500 });
+    }
+
+    let vapidPrivateJwk;
+    try {
+      vapidPrivateJwk = JSON.parse(vapidPrivateRaw);
+    } catch {
+      return new NextResponse("VAPID_PRIVATE_KEY must be a JSON JWK string.", { status: 500 });
+    }
 
     const input = (await req.json()) || {};
     const title = input.title || "Draft Update";
@@ -67,7 +45,7 @@ export async function POST(req, context) {
           return null;
         }
       })
-      .filter((x) => x?.sub?.endpoint);
+      .filter(Boolean);
 
     let sent = 0;
     let failed = 0;
@@ -75,23 +53,17 @@ export async function POST(req, context) {
 
     for (const s of subs) {
       try {
-        const { endpoint, headers, body: pushBody } = await buildPushHTTPRequest({
-          privateJWK: jwk,
+        const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: s.sub,
-          message: {
-            payload: { title, body, url },
-            adminContact: subject,
-          },
+          payload: { title, body, url },
+          vapidSubject,
+          vapidPrivateJwk,
         });
 
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: toNativeHeaders(headers),
-          body: pushBody,
-        });
+        const res = await fetch(endpoint, fetchInit);
 
         if (res.ok) {
-          sent += 1;
+          sent++;
         } else {
           const txt = await res.text().catch(() => "");
           failures.push({ endpoint: s.endpoint, status: res.status, body: txt });
@@ -99,11 +71,11 @@ export async function POST(req, context) {
           if (res.status === 404 || res.status === 410) {
             await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           }
-          failed += 1;
+          failed++;
         }
       } catch (e) {
         failures.push({ endpoint: s.endpoint, error: e?.message || String(e) });
-        failed += 1;
+        failed++;
       }
     }
 
