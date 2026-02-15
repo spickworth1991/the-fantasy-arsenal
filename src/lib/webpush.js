@@ -225,7 +225,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     Encryption: `salt=${bytesToB64(salt)}`,
     // No whitespace; keep params tightly formatted.
     "Crypto-Key": `dh=${bytesToB64(serverPubRaw)};p256ecdsa=${bytesToB64(vapidPublicRaw)}`,
-    Authorization: `vapid t=${jwt}, k=${bytesToB64(vapidPublicRaw)}`,
+    Authorization: `WebPush ${jwt}`,
   };
 
 
