@@ -193,10 +193,10 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
         "Content-Type": "application/octet-stream",
         "Content-Encoding": "aes128gcm",
         Encryption: `salt=${bytesToB64url(salt)}`,
-        "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)}; p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
+        "Crypto-Key": `dh=${bytesToB64url(serverPubRaw)};p256ecdsa=${bytesToB64url(vapidPublicRaw)}`,
         // Spec-compliant VAPID header (works across push services).
         // (Older "vapid t=..., k=..." format can be silently dropped by some providers.)
-        Authorization: `WebPush ${jwt}`,
+        Authorization: `vapid t=${jwt}, k=${bytesToB64url(vapidPublicRaw)}`,
     };
 
 
