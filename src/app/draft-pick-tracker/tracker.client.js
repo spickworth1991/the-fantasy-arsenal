@@ -1301,42 +1301,47 @@ export default function DraftPickTrackerClient() {
                     <div
                       key={r.leagueId}
                       className={classNames(
-                        "grid grid-cols-12 gap-2 px-4 py-3 text-sm",
-                        (r.onClockIsMe || r.onDeck) && r.draftStatus === "drafting" && "bg-emerald-500/5"
+                        "relative grid grid-cols-12 gap-2 px-4 py-2.5 text-sm",
+                        r.draftStatus === "drafting" && r.onClockIsMe && "bg-emerald-500/10",
+                        r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && "bg-yellow-500/10"
                       )}
+                      
+
                     >
+                      
+
                       {/* League */}
                       <div className="col-span-4 min-w-0">
-                        <div className="text-white font-semibold truncate">{r.leagueName}</div>
-                        <div className="text-[11px] text-gray-400 truncate">
+                        <div className="text-white truncate">{r.leagueName}</div>
+                        <div className="text-[10px] text-gray-400 truncate">
                           {r.draftStatus || "—"}
                         </div>
                       </div>
 
                       {/* Current */}
                       <div className="col-span-4 min-w-0">
-                        <div className="text-gray-100 font-semibold truncate">
+                        <div className="text-gray-100 truncate">
                           {currentLine} · {currentOwner}
                         </div>
-                        <div className="text-[11px] text-gray-400">
+                        <div className="text-[10px] text-gray-400">
                           {String(r.draftStatus) === "drafting" ? `${clockText} left` : r.draftStatus === "paused" ? "paused" : ""}
                         </div>
                       </div>
 
                       {/* You */}
                       <div className="col-span-2 text-right">
-                        <div className="text-white font-semibold">
+                        <div className="text-white">
                           {myShownPick ? `#${nf0.format(myShownPick)}` : "—"}
                         </div>
-                        <div className="text-[11px] text-gray-400">
+                        <div className="text-[10px] text-gray-400">
                           {r.onClockIsMe ? "on clock" : r.onDeck ? "on deck" : ""}
                         </div>
                       </div>
 
                       {/* ETA / ON CLOCK */}
                       <div className="col-span-2 text-right">
-                        <div className="text-white font-semibold">{d.primary}</div>
-                        <div className="text-[11px] text-gray-400">{d.label}</div>
+                        <div className="text-white">{d.primary}</div>
+                        <div className="text-[10px] text-gray-400">{d.label}</div>
                       </div>
                     </div>
                   );
