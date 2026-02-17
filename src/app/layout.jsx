@@ -1,6 +1,6 @@
 import "./globals.css";
 import Providers from "./providers";
-
+import PWARegister from "../components/PWARegister";
 // Set NEXT_PUBLIC_SITE_URL in your env for accurate canonical URLs.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://thefantasyarsenal.com";
 const SITE_NAME = "The Fantasy Arsenal";
@@ -15,6 +15,21 @@ export const metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
+  // ✅ PWA
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: "/apple-touch-icon.png" }],
+  },
+
   alternates: {
     canonical: "/",
   },
@@ -31,6 +46,8 @@ export const metadata = {
     "strength of schedule",
     "lineup optimizer",
   ],
+
+  
   openGraph: {
     type: "website",
     url: SITE_URL,
@@ -65,6 +82,13 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#0B1224",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -96,6 +120,7 @@ export default function RootLayout({ children }) {
             ),
           }}
         />
+        <PWARegister />
         <Providers>{children}</Providers>
       </body>
     </html>

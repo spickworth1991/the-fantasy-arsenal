@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "engines": {
-    "node": ">=20 <21"
+    "node": ">=20 <23"
   },
   "scripts": {
     "dev": "next dev -p 3000",
@@ -17,9 +17,11 @@
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
     "git": "git add . && git commit -m \"PlayerStock&WaiverFix\" && git push origin main",
     "stick": "node ./sp-editor.js",
-    "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force"
+    "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
+    "gip": "git add . && git commit -m \"test\" && git push origin preview"
   },
   "dependencies": {
+    "@pushforge/builder": "^2.0.1",
     "axios": "^1.11.0",
     "express": "^5.2.1",
     "idb-keyval": "^6.2.2",
