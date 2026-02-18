@@ -52,6 +52,13 @@ export async function POST(req, context) {
     const body = input.body || input.message || "New draft activity.";
     const url = input.url || "/draft-pick-tracker";
 
+    const tag = typeof input.tag === "string" ? input.tag : null;
+    const icon = typeof input.icon === "string" ? input.icon : null;
+    const badge = typeof input.badge === "string" ? input.badge : null;
+    const renotify = !!input.renotify;
+    const actions = Array.isArray(input.actions) ? input.actions : null;
+    const data = input.data && typeof input.data === "object" ? input.data : null;
+
     // ✅ Optional: only send to one endpoint (exact match)
     const onlyEndpoint = typeof input.endpoint === "string" ? input.endpoint : null;
 
@@ -78,7 +85,16 @@ export async function POST(req, context) {
       try {
         const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: s.sub,
-          payload: { title, body, url },
+          payload: {
+            title, body, url,
+            ...(tag ? { tag } : {}),
+            ...(icon ? { icon } : {}),
+            ...(badge ? { badge } : {}),
+            ...(actions ? { actions } : {}),
+            ...(data ? { data } : {}),
+            ...(renotify ? { renotify: true } : {}),
+          },
+
           vapidSubject,
           vapidPrivateJwk,
         });
