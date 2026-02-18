@@ -143,7 +143,7 @@ export default function DraftPickTrackerClient() {
 
   const [view, setView] = useState("cards"); // cards | table
   const [onlyOnDeckOrClock, setOnlyOnDeckOrClock] = useState(false);
-  const [maxPicksAway, setMaxPicksAway] = useState(999); // 999 = off
+  const [maxPicksAway, setMaxPicksAway] = useState(30); // 999 = off
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // removed pace sorting; default to "picks until" then ETA
