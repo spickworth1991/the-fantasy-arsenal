@@ -1,10 +1,12 @@
 /* public/sw.js
    Push-only service worker (stable).
-   - Supports push + notification click + actions
+   - Never fails install
+   - Supports push + notification click
 */
 
 const CACHE = "tfa-static-v2";
 
+// Optional: cache only safe static assets (not HTML routes)
 const STATIC_ASSETS = [
   "/site.webmanifest",
   "/android-chrome-192x192.png",
@@ -19,10 +21,15 @@ self.addEventListener("message", (event) => {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
+      // Never let install fail because an asset 404s
       try {
         const cache = await caches.open(CACHE);
-        await Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)));
-      } catch {}
+        await Promise.allSettled(
+          STATIC_ASSETS.map((url) => cache.add(url))
+        );
+      } catch {
+        // ignore
+      }
       self.skipWaiting();
     })()
   );
@@ -31,6 +38,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
+      // clean older caches
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
       await self.clients.claim();
@@ -38,13 +46,17 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// IMPORTANT: do NOT cache HTML/app routes here while you’re iterating.
+// If you want caching later, we can add a safe stale-while-revalidate for static only.
+
+// Push handler
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
     payload = event.data ? event.data.json() : {};
   } catch {}
 
-  // handle wrapped payloads: { data: "{...}" }
+  // ✅ handle wrapped payloads: { data: "{...}" }
   if (payload && typeof payload.data === "string") {
     try { payload = JSON.parse(payload.data); } catch {}
   }
@@ -53,45 +65,48 @@ self.addEventListener("push", (event) => {
   const body = payload.body || "New draft activity.";
   const url = payload.url || "/draft-pick-tracker";
 
-  const data = payload.data && typeof payload.data === "object" ? payload.data : {};
-  if (!data.url) data.url = url;
+  // Premium / stacking knobs
+  const tag = payload.tag;
+  const renotify = payload.renotify;
+  const requireInteraction = payload.requireInteraction;
+  const icon = payload.icon || "/android-chrome-192x192.png";
+  const badge = payload.badge || "/android-chrome-192x192.png";
+  const image = payload.image;
+  const actions = Array.isArray(payload.actions) ? payload.actions : undefined;
+  const data = payload.data && typeof payload.data === "object" ? payload.data : undefined;
 
-  const opts = {
-    body,
-    icon: payload.icon || "/android-chrome-192x192.png",
-    badge: payload.badge || "/android-chrome-192x192.png",
-    tag: payload.tag || undefined,       // enables stacking/replace behavior depending on tag uniqueness
-    renotify: !!payload.renotify,
-    data,
-    actions: Array.isArray(payload.actions) ? payload.actions : undefined,
-  };
-
-  event.waitUntil(self.registration.showNotification(title, opts));
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      image,
+      tag,
+      renotify,
+      requireInteraction,
+      actions,
+      data: { url, ...data },
+    })
+  );
 });
+
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const url = event.notification?.data?.url || "/draft-pick-tracker";
+  const leagueUrl = event.notification?.data?.leagueUrl;
 
-  const action = event.action || "";
-  const data = event.notification?.data || {};
-
-  let target = data.url || "/draft-pick-tracker";
-
-  if (action === "open_league" && data.leagueUrl) target = data.leagueUrl;
-  if (action === "open_tracker") target = data.url || "/draft-pick-tracker";
+  // If an action button was clicked, prefer that.
+  const action = event.action;
+  let target = url;
+  if (action === "open-league" && leagueUrl) target = leagueUrl;
+  if (action === "open-tracker") target = url;
 
   event.waitUntil(
     (async () => {
       const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-
-      // If it's an external Sleeper URL, just open a new tab/window
-      const isExternal = /^https?:\/\//i.test(target);
-
-      if (!isExternal) {
-        const existing = allClients.find((c) => c.url.includes(target));
-        if (existing) return existing.focus();
-      }
-
+      const existing = allClients.find((c) => c.url.includes(target));
+      if (existing) return existing.focus();
       return clients.openWindow(target);
     })()
   );

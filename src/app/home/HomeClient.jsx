@@ -63,13 +63,6 @@ export default function HomeClient() {
       badge: "UPDATED",
     },
     {
-      name: "Draft Monitor",
-      link: "/draft-pick-tracker",
-      description:
-        "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
-      badge: "UPDATED",
-    },
-    {
       name: "Player Availability",
       link: "/player-availability",
       description: "Find which leagues have a player available",
@@ -97,7 +90,13 @@ export default function HomeClient() {
       link: "/lineup",
       description: "Optimize your weekly lineup for maximum points.",
     },
-    
+    {
+      name: "Draft Monitor",
+      link: "/draft-pick-tracker",
+      description:
+        "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
+      badge: "NEW",
+    },
   ];
 
   return (
