@@ -1,15 +1,15 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
-export async function POST(req, context) {
+export async function POST(req) {
   try {
-    // D1 bindings live here on Cloudflare Pages
-    const env = context?.env || {};
-    const db = env.PUSH_DB;
+    const { env } = getRequestContext();
+    const db = env?.PUSH_DB;
 
-    const body = (await req.json()) || {};
-    const { username, draftIds, subscription } = body;
+    const body = await req.json();
+    const { username, draftIds, subscription } = body || {};
 
     if (!subscription?.endpoint) {
       return new NextResponse("Missing subscription endpoint.", { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req, context) {
 
     if (!db?.prepare) {
       return new NextResponse(
-        "PUSH_DB binding not found. In Cloudflare Pages: Settings → Functions → D1 bindings → add binding name PUSH_DB.",
+        "PUSH_DB binding not found. In Cloudflare Pages: Settings → Functions → D1 bindings → add binding name PUSH_DB (Production + Preview).",
         { status: 500 }
       );
     }
