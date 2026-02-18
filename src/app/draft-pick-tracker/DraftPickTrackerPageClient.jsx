@@ -26,7 +26,7 @@ export default function DraftPickTrackerPage() {
     <div className="max-w-6xl mx-auto px-4">
       <div aria-hidden className="h-[72px]" />
 
-      <PushAlerts username={username} selectedDraftIds={draftIds} />
+      <PushAlerts username={username} draftIds={draftIds} />
 
       <BackgroundParticles />
       <Navbar pageTitle="Draft Monitor" />
