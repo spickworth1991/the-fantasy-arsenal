@@ -45,7 +45,9 @@ export async function POST(req) {
       )
       .run();
 
-    const countRow = await db.prepare(`SELECT COUNT(*) AS c FROM push_subscriptions`).first();
+    const countRow = await db
+      .prepare(`SELECT COUNT(*) AS c FROM push_subscriptions`)
+      .first();
 
     return NextResponse.json({
       ok: true,
