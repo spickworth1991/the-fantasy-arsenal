@@ -65,27 +65,12 @@ self.addEventListener("push", (event) => {
   const body = payload.body || "New draft activity.";
   const url = payload.url || "/draft-pick-tracker";
 
-  // Premium / stacking knobs
-  const tag = payload.tag;
-  const renotify = payload.renotify;
-  const requireInteraction = payload.requireInteraction;
-  const icon = payload.icon || "/android-chrome-192x192.png";
-  const badge = payload.badge || "/android-chrome-192x192.png";
-  const image = payload.image;
-  const actions = Array.isArray(payload.actions) ? payload.actions : undefined;
-  const data = payload.data && typeof payload.data === "object" ? payload.data : undefined;
-
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon,
-      badge,
-      image,
-      tag,
-      renotify,
-      requireInteraction,
-      actions,
-      data: { url, ...data },
+      icon: "/android-chrome-192x192.png",
+      badge: "/android-chrome-192x192.png",
+      data: { url },
     })
   );
 });
@@ -94,20 +79,13 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification?.data?.url || "/draft-pick-tracker";
-  const leagueUrl = event.notification?.data?.leagueUrl;
-
-  // If an action button was clicked, prefer that.
-  const action = event.action;
-  let target = url;
-  if (action === "open-league" && leagueUrl) target = leagueUrl;
-  if (action === "open-tracker") target = url;
 
   event.waitUntil(
     (async () => {
       const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-      const existing = allClients.find((c) => c.url.includes(target));
+      const existing = allClients.find((c) => c.url.includes(url));
       if (existing) return existing.focus();
-      return clients.openWindow(target);
+      return clients.openWindow(url);
     })()
   );
 });
