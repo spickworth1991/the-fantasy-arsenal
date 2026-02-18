@@ -212,17 +212,86 @@ export default function DraftPickTrackerClient() {
 
   function buildTradedPickOwnerMap(tradedPicks = [], seasonStr = "") {
     // key: `${season}|${round}|${originalRosterId}` => currentOwnerRosterId
-    const m = new Map();
-    (tradedPicks || []).forEach((tp) => {
+    // NOTE: traded_picks can contain multiple rows per key if pick was traded multiple times.
+    // We must pick the latest row deterministically.
+
+    const bestByKey = new Map();
+
+    const scoreRow = (tp) => {
+      // Prefer explicit timestamps if present
+      const created = safeNum(tp?.created);
+      const updated = safeNum(tp?.updated);
+      if (updated > 0) return updated;
+      if (created > 0) return created;
+
+      // Some payloads include transaction_id (often sortable-ish)
+      const tx = tp?.transaction_id;
+      if (typeof tx === "number" && Number.isFinite(tx)) return tx;
+      if (typeof tx === "string") {
+        // if numeric-like, use numeric; else use stable hash-ish fallback
+        const n = Number(tx);
+        if (Number.isFinite(n)) return n;
+        // last resort: length-based + char codes (deterministic)
+        let h = tx.length;
+        for (let i = 0; i < tx.length; i++) h = (h * 31 + tx.charCodeAt(i)) >>> 0;
+        return h;
+      }
+
+      // Absolute last resort: 0 (caller will keep last-seen deterministically)
+      return 0;
+    };
+
+    (tradedPicks || []).forEach((tp, idx) => {
       const season = String(tp?.season ?? "");
       const round = safeNum(tp?.round);
       const orig = String(tp?.roster_id ?? "");
       const owner = String(tp?.owner_id ?? "");
+
       if (!season || !round || !orig || !owner) return;
       if (seasonStr && season !== seasonStr) return;
-      m.set(`${season}|${round}|${orig}`, owner);
+
+      const key = `${season}|${round}|${orig}`;
+
+      const prev = bestByKey.get(key);
+      const next = { owner, score: scoreRow(tp), idx };
+
+      // pick “latest”: higher score wins; if score ties/missing, later index wins
+      if (!prev || next.score > prev.score || (next.score === prev.score && next.idx > prev.idx)) {
+        bestByKey.set(key, next);
+      }
     });
+
+    const m = new Map();
+    for (const [key, val] of bestByKey.entries()) m.set(key, val.owner);
     return m;
+  }
+
+
+  function getSnakeSlotForPick({ pickNo, teams, reversalRound }) {
+    if (!pickNo || !teams) return null;
+
+    const idx0 = pickNo - 1;
+    const round = Math.floor(idx0 / teams) + 1;
+    const pickInRound0 = idx0 % teams;
+
+    // Direction handling:
+    // - Normal snake flips every round (1 forward, 2 reverse, 3 forward...)
+    // - 3RR (third-round reversal) means round 3 stays the SAME direction as round 2.
+    const rr = safeNum(reversalRound);
+    let forward = true; // round 1
+
+    if (round > 1) {
+      for (let r = 2; r <= round; r++) {
+        if (rr > 0 && r === rr) {
+          // skip flip on reversal round (3RR behavior)
+        } else {
+          forward = !forward;
+        }
+      }
+    }
+
+    const slot = forward ? pickInRound0 + 1 : teams - pickInRound0;
+    return { round, slot };
   }
 
   function resolveRosterForPick({
@@ -231,23 +300,24 @@ export default function DraftPickTrackerClient() {
     rosterBySlot,
     tradedOwnerMap,
     seasonStr,
+    reversalRound,
   }) {
     if (!pickNo || !teams) return null;
-    const idx0 = pickNo - 1;
-    const round = Math.floor(idx0 / teams) + 1;
-    const pickInRound0 = idx0 % teams;
-    const isReverse = round % 2 === 0;
-    const slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
+
+    const rs = getSnakeSlotForPick({ pickNo, teams, reversalRound });
+    if (!rs) return null;
+
+    const { round, slot } = rs;
 
     const origRosterId = rosterBySlot.get(slot) || null;
     if (!origRosterId) return null;
 
     const tradedOwner =
-      tradedOwnerMap?.get(`${seasonStr}|${round}|${String(origRosterId)}`) ||
-      null;
+      tradedOwnerMap?.get(`${seasonStr}|${round}|${String(origRosterId)}`) || null;
 
     return tradedOwner || String(origRosterId);
   }
+
 
   async function fetchDraftBundle(league) {
     const leagueId = league?.league_id;
@@ -284,7 +354,7 @@ export default function DraftPickTrackerClient() {
 
   function calcPickInfo({ league, draft, picks, users, rosters, traded_picks }, nowMs) {
     const rosterName = buildRosterNameMap(users, rosters);
-
+    const reversalRound = safeNum(draft?.settings?.reversal_round);
     const draftStatus = String(draft?.status || "").toLowerCase();
     const rounds = safeNum(draft?.settings?.rounds);
     const slots = safeNum(draft?.settings?.teams);
@@ -292,16 +362,45 @@ export default function DraftPickTrackerClient() {
 
     const currentPick = (picks?.length || 0) + 1;
 
-    const slotToRoster = draft?.slot_to_roster_id || {};
+    // teams count (Sleeper drafts sometimes have settings.teams missing/weird)
+    const totalSlots =
+      safeNum(draft?.settings?.teams) ||
+      safeNum(draft?.settings?.slots) ||
+      safeNum(draft?.settings?.num_teams) ||
+      safeNum(rosters?.length) ||
+      0;
+
+    const teams = totalSlots > 0 ? totalSlots : 0;
+
+    // slot -> roster_id map
     const rosterBySlot = new Map();
+
+    // Primary: slot_to_roster_id (best when present)
+    const slotToRoster = draft?.slot_to_roster_id || {};
     Object.keys(slotToRoster || {}).forEach((slot) => {
       const rosterId = slotToRoster[slot];
       const s = safeNum(slot);
       if (s && rosterId != null) rosterBySlot.set(s, String(rosterId));
     });
 
-    const totalSlots = slots || safeNum(draft?.settings?.slots) || 0;
-    const teams = totalSlots > 0 ? totalSlots : 0;
+    // Fallback: derive slot -> roster_id from draft_order + league rosters
+    // draft_order is user_id -> slot, rosters uses owner_id (user_id) -> roster_id
+    if (rosterBySlot.size === 0) {
+      const draftOrder = draft?.draft_order || {};
+      const ownerToRoster = new Map();
+      (rosters || []).forEach((r) => {
+        if (r?.owner_id != null && r?.roster_id != null) {
+          ownerToRoster.set(String(r.owner_id), String(r.roster_id));
+        }
+      });
+
+      Object.entries(draftOrder).forEach(([userId, slot]) => {
+        const s = safeNum(slot);
+        const rid = ownerToRoster.get(String(userId));
+        if (s && rid) rosterBySlot.set(s, rid);
+      });
+    }
+
 
     const seasonStr = String(draft?.season || league?.season || year || "");
     const tradedOwnerMap = buildTradedPickOwnerMap(traded_picks, seasonStr);
@@ -314,8 +413,10 @@ export default function DraftPickTrackerClient() {
           rosterBySlot,
           tradedOwnerMap,
           seasonStr,
+          reversalRound,
         })
       : null;
+
 
     const nextOwnerName = nextRosterId
       ? rosterName.get(String(nextRosterId)) || `Roster ${nextRosterId}`
@@ -334,7 +435,9 @@ export default function DraftPickTrackerClient() {
           rosterBySlot,
           tradedOwnerMap,
           seasonStr,
+          reversalRound,
         });
+
         if (String(rosterIdAtPick || "") === String(myRosterId)) {
           myNextPickOverall = pk;
           break;
