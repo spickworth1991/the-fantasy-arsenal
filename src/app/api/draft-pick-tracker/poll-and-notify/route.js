@@ -437,14 +437,20 @@ async function handler(req) {
         const userSlot = Number(draftOrder[userId]);
 
         const lastPicked = Number(draft?.last_picked || 0);
-        const st = await loadDraftState(db, draftId);
+        const draftState = await loadDraftState(db, draftId);
+
         let pickCount;
-        if (st && Number(st.last_picked || 0) === lastPicked && Number.isFinite(Number(st.pick_count))) {
-          pickCount = Number(st.pick_count);
+        if (
+          draftState &&
+          Number(draftState.last_picked || 0) === lastPicked &&
+          Number.isFinite(Number(draftState.pick_count))
+        ) {
+          pickCount = Number(draftState.pick_count);
         } else {
           pickCount = await getPickCount(draftId);
           await saveDraftState(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
         }
+
 
         const nextPickNo = pickCount + 1;
         const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
@@ -467,7 +473,7 @@ async function handler(req) {
             league = cachedL;
           } else {
             // Second: persisted per-draft cache
-            const st2 = st || (await loadDraftState(db, draftId));
+            const st2 = draftState;
             if (st2?.league_id && (st2?.league_name || st2?.league_avatar)) {
               league = { name: st2.league_name || null, avatar: st2.league_avatar || null };
               leagueCache.set(String(leagueId), league);
@@ -500,9 +506,10 @@ async function handler(req) {
         const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "—";
 
         // Load state
-        const st = await loadClockState(db, s.endpoint, draftId);
-        const prevPickNo = Number(st?.pick_no ?? 0);
-        const prevStatus = String(st?.last_status || "");
+        const clockState = await loadClockState(db, s.endpoint, draftId);
+        const prevPickNo = Number(clockState?.pick_no ?? 0);
+        const prevStatus = String(clockState?.last_status || "");
+
 
         // If pick changed (new on-clock pick), reset flags
         const isNewPick = prevPickNo !== nextPickNo;
@@ -512,14 +519,14 @@ async function handler(req) {
         // Unpaused behavior: if it was paused and now drafting, send unpaused once.
         let stageToSend = null;
 
-        const sentPaused = Number(st?.sent_paused ?? 0) === 1;
-        const sentUnpaused = Number(st?.sent_unpaused ?? 0) === 1;
+        const sentPaused = Number(clockState?.sent_paused ?? 0) === 1;
+        const sentUnpaused = Number(clockState?.sent_unpaused ?? 0) === 1;
 
-        const sentOnclock = Number(st?.sent_onclock ?? 0) === 1;
-        const sent25 = Number(st?.sent_25 ?? 0) === 1;
-        const sent50 = Number(st?.sent_50 ?? 0) === 1;
-        const sent10 = Number(st?.sent_10min ?? 0) === 1;
-        const sentFinal = Number(st?.sent_final ?? 0) === 1;
+        const sentOnclock = Number(clockState?.sent_onclock ?? 0) === 1;
+        const sent25 = Number(clockState?.sent_25 ?? 0) === 1;
+        const sent50 = Number(clockState?.sent_50 ?? 0) === 1;
+        const sent10 = Number(clockState?.sent_10min ?? 0) === 1;
+        const sentFinal = Number(clockState?.sent_final ?? 0) === 1;
 
         if (status === "paused") {
           // If paused, only send the paused notice once per pick
