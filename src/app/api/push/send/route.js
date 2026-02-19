@@ -31,6 +31,8 @@ async function shortHash(str) {
   return hex.slice(-8);
 }
 
+const te = new TextEncoder();
+
 export async function POST(req, context) {
   try {
     const env = getEnv(context);
@@ -127,6 +129,51 @@ export async function POST(req, context) {
           vapidPrivateJwk,
         });
 
+        // Debug: capture what we are actually sending to the push service.
+        // This is crucial when the push service returns 201 but delivery fails (usually crypto/auth/body-format).
+        const debugReq = debug
+          ? {
+              endpointHost: (() => {
+                try {
+                  return new URL(endpoint).host;
+                } catch {
+                  return "";
+                }
+              })(),
+              headers: (() => {
+                try {
+                  const h = fetchInit?.headers || {};
+                  // normalize into a plain object for JSON
+                  const obj = {};
+                  if (h && typeof h.forEach === "function") {
+                    h.forEach((v, k) => (obj[k] = v));
+                  } else {
+                    for (const k of Object.keys(h)) obj[k] = h[k];
+                  }
+                  // redact long auth
+                  if (obj.Authorization && obj.Authorization.length > 64) {
+                    obj.Authorization = obj.Authorization.slice(0, 64) + "…";
+                  }
+                  if (obj.authorization && obj.authorization.length > 64) {
+                    obj.authorization = obj.authorization.slice(0, 64) + "…";
+                  }
+                  return obj;
+                } catch {
+                  return {};
+                }
+              })(),
+              bodyBytes: (() => {
+                const b = fetchInit?.body;
+                if (!b) return 0;
+                if (typeof b === "string") return te.encode(b).byteLength;
+                if (b instanceof ArrayBuffer) return b.byteLength;
+                // ArrayBufferView
+                if (b?.buffer && typeof b.byteLength === "number") return b.byteLength;
+                return 0;
+              })(),
+            }
+          : null;
+
         const res = await fetch(endpoint, fetchInit);
 
         // Some push services return small bodies even on success; capture when debugging.
@@ -140,6 +187,7 @@ export async function POST(req, context) {
               status: res.status,
               ok: true,
               body: resText,
+              req: debugReq,
             });
           }
         } else {
@@ -156,6 +204,7 @@ export async function POST(req, context) {
               status: res.status,
               ok: false,
               body: txt,
+              req: debugReq,
             });
           }
 
@@ -176,6 +225,7 @@ export async function POST(req, context) {
             endpointHash: await shortHash(s.endpoint),
             ok: false,
             error: e?.message || String(e),
+            req: null,
           });
         }
         failed++;

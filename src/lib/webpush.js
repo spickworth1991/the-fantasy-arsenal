@@ -214,9 +214,12 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
   const jwt = await signVapidJWT({ aud, sub: vapidSubject, exp }, vapidPrivateJwk);
 
-  // Widest interop (matches common docs/implementations):
-  // Authorization: WebPush <JWT>
-  const vapidAuthHeader = { Authorization: `WebPush ${jwt}` };
+  // ✅ Widest interop across FCM + APNs Web Push: use the "vapid t=..., k=..." format.
+  // Some services accept "WebPush <jwt>", but we've seen payload pushes get accepted (201)
+  // yet not delivered when auth formatting is not what the endpoint expects.
+  const vapidAuthHeader = {
+    Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
+  };
 
   // True no-payload push (delivery check): omit body entirely.
   if (payload == null) {
@@ -239,6 +242,12 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     vapidPublicRaw,
   });
 
+  // Cloudflare/Workers fetch is most reliable with an ArrayBuffer body (not Uint8Array).
+  const bodyBuf = enc.body.buffer.slice(
+    enc.body.byteOffset,
+    enc.body.byteOffset + enc.body.byteLength
+  );
+
   return {
     endpoint: enc.endpoint,
     fetchInit: {
@@ -246,8 +255,10 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
       headers: {
         ...enc.headers,
         ...vapidAuthHeader,
+        // Optional but helps debugging/interop on some proxies.
+        "Content-Length": String(enc.body.byteLength),
       },
-      body: enc.body,
+      body: bodyBuf,
     },
   };
 }
