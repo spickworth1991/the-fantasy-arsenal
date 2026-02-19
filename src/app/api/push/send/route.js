@@ -76,6 +76,10 @@ export async function POST(req, context) {
     const actions = Array.isArray(input.actions) ? input.actions : null;
     const data = input.data && typeof input.data === "object" ? input.data : null;
 
+    // Delivery debug: send a true "no payload" push (body omitted). This can
+    // help determine whether failures are due to encryption/payload handling.
+    const noPayload = input.noPayload === true;
+
     // ✅ Optional: only send to one endpoint (exact match)
     const onlyEndpoint = typeof input.endpoint === "string" ? input.endpoint : null;
 
@@ -103,16 +107,21 @@ export async function POST(req, context) {
       try {
         const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: s.sub,
-          payload: {
-            title, body, url,
-            ...(tag ? { tag } : {}),
-            ...(icon ? { icon } : {}),
-            ...(badge ? { badge } : {}),
-            ...(actions ? { actions } : {}),
-            ...(data ? { data } : {}),
-            ...(renotify ? { renotify: true } : {}),
-            ...(requireInteraction ? { requireInteraction: true } : {}),
-          },
+          // If noPayload=true, omit the body entirely (payload: null).
+          payload: noPayload
+            ? null
+            : {
+                title,
+                body,
+                url,
+                ...(tag ? { tag } : {}),
+                ...(icon ? { icon } : {}),
+                ...(badge ? { badge } : {}),
+                ...(actions ? { actions } : {}),
+                ...(data ? { data } : {}),
+                ...(renotify ? { renotify: true } : {}),
+                ...(requireInteraction ? { requireInteraction: true } : {}),
+              },
 
           vapidSubject,
           vapidPrivateJwk,

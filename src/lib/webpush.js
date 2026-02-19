@@ -217,6 +217,24 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     vapidPrivateJwk
   );
 
+  // RFC8292 allows "no payload" pushes (body omitted). This is useful for
+  // debugging delivery issues because it bypasses payload encryption.
+  //
+  // To trigger this path, pass `payload: null`.
+  if (payload == null) {
+    return {
+      endpoint: subscription.endpoint,
+      fetchInit: {
+        method: "POST",
+        headers: {
+          TTL: "60",
+          Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
+        },
+        // IMPORTANT: omit body entirely for a true no-payload push.
+      },
+    };
+  }
+
   const enc = await encryptAes128gcm({
     subscription,
     payload: JSON.stringify(payload),
