@@ -4,6 +4,69 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+async function ensureTable(db, table, createSql, columnsToEnsure = []) {
+  await db.prepare(createSql).run();
+  if (!columnsToEnsure.length) return;
+
+  let info;
+  try {
+    info = await db.prepare(`PRAGMA table_info(${table})`).all();
+  } catch {
+    return;
+  }
+  const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+  for (const col of columnsToEnsure) {
+    const name = String(col?.name || "").trim();
+    const type = String(col?.type || "TEXT").trim();
+    if (!name || existing.has(name)) continue;
+    await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`).run();
+  }
+}
+
+async function ensurePushTables(db) {
+  await ensureTable(
+    db,
+    "push_subscriptions",
+    `CREATE TABLE IF NOT EXISTS push_subscriptions (
+      endpoint TEXT PRIMARY KEY,
+      subscription_json TEXT,
+      draft_ids_json TEXT,
+      username TEXT,
+      league_count INTEGER,
+      updated_at INTEGER,
+      created_at INTEGER
+    )`,
+    [
+      { name: "subscription_json", type: "TEXT" },
+      { name: "draft_ids_json", type: "TEXT" },
+      { name: "username", type: "TEXT" },
+      { name: "league_count", type: "INTEGER" },
+      { name: "updated_at", type: "INTEGER" },
+      { name: "created_at", type: "INTEGER" },
+    ]
+  );
+
+  await ensureTable(
+    db,
+    "push_clock_state",
+    `CREATE TABLE IF NOT EXISTS push_clock_state (
+      endpoint TEXT,
+      draft_id TEXT,
+      pick_no INTEGER,
+      last_status TEXT,
+      sent_onclock INTEGER,
+      sent_25 INTEGER,
+      sent_50 INTEGER,
+      sent_10min INTEGER,
+      sent_final INTEGER,
+      sent_paused INTEGER,
+      sent_unpaused INTEGER,
+      updated_at INTEGER,
+      PRIMARY KEY (endpoint, draft_id)
+    )`
+  );
+}
+
 export async function POST(req) {
   return handler(req);
 }
@@ -45,6 +108,29 @@ async function getUserId(username) {
   if (!res.ok) throw new Error(`Sleeper user fetch failed for ${username}: ${res.status}`);
   const u = await res.json();
   return u?.user_id || null;
+}
+
+async function getUserLeagues(userId, season) {
+  if (!userId) return [];
+  const year = String(season || new Date().getFullYear());
+  const res = await fetch(`https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${year}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const leagues = await res.json().catch(() => []);
+  return Array.isArray(leagues) ? leagues : [];
+}
+
+async function computeDraftIdsForUsername(username, season) {
+  const userId = await getUserId(username);
+  if (!userId) return { userId: null, draftIds: [], leagueCount: 0 };
+  const leagues = await getUserLeagues(userId, season);
+  const draftIds = leagues.map((lg) => lg?.draft_id).filter(Boolean).map(String);
+  return {
+    userId,
+    leagueCount: leagues.length,
+    draftIds: Array.from(new Set(draftIds)),
+  };
 }
 
 // Snake: round odd L->R, round even R->L
@@ -293,6 +379,9 @@ async function handler(req) {
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
+    // Ensure core push tables/columns exist (prevents silent subscription issues).
+    await ensurePushTables(db);
+
     // New cache table (prevents schema mismatch 500s).
     await ensureDraftCacheTable(db);
 
@@ -312,7 +401,10 @@ async function handler(req) {
     const now = Date.now();
 
     const subRows = await db
-      .prepare(`SELECT endpoint, subscription_json, draft_ids_json, username FROM push_subscriptions`)
+      .prepare(
+        `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, updated_at
+         FROM push_subscriptions`
+      )
       .all();
 
     const subs = (subRows?.results || [])
@@ -330,6 +422,8 @@ async function handler(req) {
           sub,
           username: r.username || null,
           draftIds: Array.isArray(draftIds) ? draftIds : [],
+          leagueCount: Number(r.league_count || 0),
+          updatedAt: Number(r.updated_at || 0),
         };
       })
       .filter((x) => x?.sub?.endpoint && x.endpoint);
@@ -357,12 +451,54 @@ async function handler(req) {
     };
 
     for (const s of subs) {
-      if (!s.draftIds.length) {
-        skippedNoDrafts++;
-        continue;
-      }
       if (!s.username) {
         skippedNoUsername++;
+        continue;
+      }
+
+      // Auto-refresh draft IDs so users never have to "re-enable" after joining leagues.
+      // Refresh when missing OR periodically (cheap: one Sleeper leagues call per sub).
+      const REFRESH_MS = 15 * 60 * 1000; // 15 minutes
+      const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
+      if (needsRefresh) {
+        try {
+          const computed = await computeDraftIdsForUsername(s.username);
+          const newDraftIds = computed.draftIds || [];
+          const newLeagueCount = Number(computed.leagueCount || 0);
+
+          await db
+            .prepare(
+              `UPDATE push_subscriptions
+               SET draft_ids_json=?, league_count=?, updated_at=?
+               WHERE endpoint=?`
+            )
+            .bind(JSON.stringify(newDraftIds), newLeagueCount, now, s.endpoint)
+            .run();
+
+          // Update in-memory subscription row for this poll.
+          s.draftIds = newDraftIds;
+          s.leagueCount = newLeagueCount;
+          s.updatedAt = now;
+
+          // Reuse userId from this call if present.
+          if (computed.userId) userIdCache.set(s.username, computed.userId);
+
+          // If still empty after refresh, skip.
+          if (!s.draftIds.length) {
+            skippedNoDrafts++;
+            continue;
+          }
+        } catch {
+          // If refresh fails, fall back to whatever we already have.
+          if (!s.draftIds.length) {
+            skippedNoDrafts++;
+            continue;
+          }
+        }
+      }
+
+      if (!s.draftIds.length) {
+        skippedNoDrafts++;
         continue;
       }
 
