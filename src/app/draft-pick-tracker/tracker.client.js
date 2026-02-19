@@ -20,6 +20,13 @@ function msToClock(ms) {
   return `${mm}:${pad(ss)}`;
 }
 
+function timerHoursLabel(timerSec) {
+  const t = safeNum(timerSec);
+  if (t <= 0) return null;
+  const hrs = Math.max(1, Math.round(t / 3600));
+  return `${hrs} HR Timer`;
+}
+
 function classNames(...xs) {
   return xs.filter(Boolean).join(" ");
 }
@@ -100,6 +107,12 @@ function Toggle({ checked, onChange, label, disabled = false }) {
       <span className="text-xs font-semibold tracking-wide">{label}</span>
     </button>
   );
+}
+
+function getOnClockHeatMsForUI({ isPaused, liveClockLeft, timerSec }) {
+  // If paused, treat it like a full clock so it stays "green"
+  if (isPaused) return Math.max(0, safeNum(timerSec) * 1000);
+  return Math.max(0, safeNum(liveClockLeft));
 }
 
 /**
@@ -717,42 +730,71 @@ export default function DraftPickTrackerClient() {
       r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
     }
 
-    const bucket = (x) => {
-      const drafting = String(x?.draftStatus || "").toLowerCase() === "drafting";
-      if (drafting && x.onClockIsMe) return 0;
-      if (drafting && x.onDeck) return 1;
-      return 2;
-    };
+    // Priority buckets:
+  // 0: drafting + onClock
+  // 1: drafting + onDeck
+  // 2: drafting (other)
+  // 3: paused
+  // 4: everything else
+  const bucket = (x) => {
+    const st = String(x?.draftStatus || "").toLowerCase();
+    const isDrafting = st === "drafting";
+    const isPaused = st === "paused";
 
-    const dir = sortDir === "asc" ? 1 : -1;
+    // ✅ ALWAYS top if you are on the clock (even if paused)
+    if (x.onClockIsMe) return 0;
 
-    const getLiveClockLeft = (x) => {
-      // ✅ if no timer, treat as infinity so timed on-clock drafts float above
-      if (safeNum(x.timerSec) <= 0) return Number.POSITIVE_INFINITY;
-      const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
-      return Math.max(0, safeNum(x.clockLeftMs) - elapsed);
-    };
+    // then preserve existing priority rules
+    if (isDrafting && x.onDeck) return 1;
+    if (isDrafting) return 2;
+    if (isPaused) return 3;
+    return 4;
+  };
 
-    const getLiveEtaToShownPick = (x) => {
-      // ✅ no timer => no ETA (sort last in time mode)
-      if (safeNum(x.timerSec) <= 0) return Number.POSITIVE_INFINITY;
 
-      const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
-      const isDrafting = String(x?.draftStatus || "").toLowerCase() === "drafting";
-      const liveClockLeft = getLiveClockLeft(x);
+  const dir = sortDir === "asc" ? 1 : -1;
 
-      const shownPickNo = x.onClockIsMe ? x.myNextPickAfterThis : x.myNextPickOverall;
-      const perPickMs = safeNum(x.timerSec) * 1000;
+  const getLiveClockLeft = (x) => {
+    const st = String(x?.draftStatus || "").toLowerCase();
+    const hasTimer = safeNum(x.timerSec) > 0;
+    if (!hasTimer) return Number.POSITIVE_INFINITY;
 
-      if (shownPickNo != null && x.currentPick != null) {
-        if (isDrafting && x.onClockIsMe) {
-          const gap = Math.max(0, safeNum(shownPickNo) - safeNum(x.currentPick) - 1);
-          return liveClockLeft + gap * perPickMs;
-        }
-        return Math.max(0, safeNum(x.etaMs) - elapsed);
+    // ✅ paused: do NOT tick down
+    if (st === "paused") return Math.max(0, safeNum(x.clockLeftMs));
+
+    const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
+    return Math.max(0, safeNum(x.clockLeftMs) - elapsed);
+  };
+
+  const getLiveEtaToShownPick = (x) => {
+    const st = String(x?.draftStatus || "").toLowerCase();
+    const hasTimer = safeNum(x.timerSec) > 0;
+    if (!hasTimer) return Number.POSITIVE_INFINITY;
+
+    // ✅ paused: do NOT tick down (keep last computed ETA)
+    if (st === "paused") {
+      const v = safeNum(x.etaMs);
+      return v > 0 ? v : Number.POSITIVE_INFINITY;
+    }
+
+    const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
+    const isDrafting = st === "drafting";
+    const liveClockLeft = getLiveClockLeft(x);
+
+    const shownPickNo = x.onClockIsMe ? x.myNextPickAfterThis : x.myNextPickOverall;
+    const perPickMs = safeNum(x.timerSec) * 1000;
+
+    if (shownPickNo != null && x.currentPick != null) {
+      if (isDrafting && x.onClockIsMe) {
+        const gap = Math.max(0, safeNum(shownPickNo) - safeNum(x.currentPick) - 1);
+        return liveClockLeft + gap * perPickMs;
       }
-      return Number.POSITIVE_INFINITY;
-    };
+      return Math.max(0, safeNum(x.etaMs) - elapsed);
+    }
+
+    return Number.POSITIVE_INFINITY;
+  };
+
 
     r = [...r].sort((a, b) => {
       const ba = bucket(a);
@@ -993,11 +1035,20 @@ export default function DraftPickTrackerClient() {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {filteredDraftRows.map((r) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-            const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+            const status = String(r?.draftStatus || "").toLowerCase();
+            const isDrafting = status === "drafting";
+            const isPaused = status === "paused";
             const hasTimer = safeNum(r.timerSec) > 0;
 
-            const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
-            const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
+            // paused: do NOT tick down (use stored clockLeftMs)
+            const liveClockLeft = hasTimer
+              ? isPaused
+                ? Math.max(0, safeNum(r.clockLeftMs))
+                : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+              : 0;
+
+            const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+
 
             const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
@@ -1013,7 +1064,7 @@ export default function DraftPickTrackerClient() {
               }
             }
 
-            const etaClock = hasTimer && liveEtaToShownPick != null ? msToClock(liveEtaToShownPick) : "—";
+            const etaClock = isPaused ? "paused" : hasTimer && liveEtaToShownPick != null ? msToClock(liveEtaToShownPick) : "—";
 
             const statusTone =
               r.draftStatus === "drafting"
@@ -1025,7 +1076,16 @@ export default function DraftPickTrackerClient() {
                 : "yellow";
 
             const clockHeat =
-              isDrafting && r.onClockIsMe && hasTimer ? onClockHeatStyles(liveClockLeft) : null;
+              r.onClockIsMe && hasTimer
+                ? onClockHeatStyles(
+                    getOnClockHeatMsForUI({
+                      isPaused,
+                      liveClockLeft,
+                      timerSec: r.timerSec,
+                    })
+                  )
+                : null;
+
             const deckTint = isDrafting && !r.onClockIsMe && r.onDeck ? onDeckTintStyles() : null;
 
             const shellRing = (clockHeat && clockHeat.ring) || (deckTint && deckTint.ring) || "";
@@ -1072,8 +1132,13 @@ export default function DraftPickTrackerClient() {
                           {r.draftStatus || "—"}
                         </Pill>
 
-                        {isDrafting && r.onClockIsMe && (
-                          <span className={classNames("inline-flex", hasTimer ? clockHeat?.shake : "")}>
+                        {r.onClockIsMe && (
+                          <span
+                          className={classNames(
+                            "inline-flex",
+                            hasTimer && !isPaused ? clockHeat?.shake : ""
+                          )}
+                        >
                             <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="sm">
                               ON CLOCK
                             </Pill>
@@ -1095,8 +1160,13 @@ export default function DraftPickTrackerClient() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      {isDrafting && r.onClockIsMe && (
-                        <span className={classNames("inline-flex", hasTimer ? clockHeat?.shake : "")}>
+                      {r.onClockIsMe && (
+                        <span
+                          className={classNames(
+                            "inline-flex",
+                            hasTimer && !isPaused ? clockHeat?.shake : ""
+                          )}
+                        >
                           <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="lg">
                             <span className="tabular-nums font-extrabold tracking-wide">{clockText}</span>
                           </Pill>
@@ -1122,7 +1192,7 @@ export default function DraftPickTrackerClient() {
                         <div className="text-xs text-gray-400">
                           {r.currentPick ? `Pick #${nf0.format(r.currentPick)}` : "Pick —"}
                         </div>
-                        {isDrafting ? (
+                        {isDrafting && !isPaused ? (
                           <div className="text-xl text-white font-extrabold tabular-nums tracking-wide">
                             {clockText}
                           </div>
@@ -1227,11 +1297,19 @@ export default function DraftPickTrackerClient() {
               <div className="divide-y divide-white/10">
                 {filteredDraftRows.map((r) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                  const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+                  const status = String(r?.draftStatus || "").toLowerCase();
+                  const isDrafting = status === "drafting";
+                  const isPaused = status === "paused";
                   const hasTimer = safeNum(r.timerSec) > 0;
 
-                  const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
-                  const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
+                  const liveClockLeft = hasTimer
+                    ? isPaused
+                      ? Math.max(0, safeNum(r.clockLeftMs))
+                      : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                    : 0;
+
+                  const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+
 
                   const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
@@ -1246,14 +1324,14 @@ export default function DraftPickTrackerClient() {
                     }
                   }
 
-                  const etaClock = hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+                  const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
                   return (
                     <div
                       key={r.leagueId}
                       className={classNames(
                         "relative grid grid-cols-12 gap-2 px-4 py-2.5 text-sm border-l-4",
-                        isDrafting && r.onClockIsMe && "bg-emerald-500/10 border-emerald-400/60",
+                        r.onClockIsMe && "bg-emerald-500/10 border-emerald-400/60",
                         isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/10 border-amber-400/60",
                         !(isDrafting && (r.onClockIsMe || r.onDeck)) && "border-transparent"
                       )}
@@ -1267,14 +1345,14 @@ export default function DraftPickTrackerClient() {
                         <div className="text-gray-100 truncate">{r.currentOwnerName || "—"}</div>
                         <div className="text-[11px] text-gray-400 tabular-nums flex items-center gap-2">
                           <span>{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</span>
-                          {isDrafting ? (
+                          {isDrafting && !isPaused ? (
                             <span className="text-base font-extrabold text-white">{clockText}</span>
                           ) : r.draftStatus === "paused" ? (
                             <span className="text-yellow-200/80">paused</span>
                           ) : null}
                         </div>
                         <div className="mt-1 flex gap-1">
-                          {isDrafting && r.onClockIsMe ? (
+                          {r.onClockIsMe ? (
                             <Pill tone="green" size="xs">
                               ON CLOCK
                             </Pill>
@@ -1323,11 +1401,19 @@ export default function DraftPickTrackerClient() {
               <tbody>
                 {filteredDraftRows.map((r) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                  const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+                  const status = String(r?.draftStatus || "").toLowerCase();
+                  const isDrafting = status === "drafting";
+                  const isPaused = status === "paused";
                   const hasTimer = safeNum(r.timerSec) > 0;
 
-                  const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
-                  const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
+                  const liveClockLeft = hasTimer
+                    ? isPaused
+                      ? Math.max(0, safeNum(r.clockLeftMs))
+                      : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                    : 0;
+
+                  const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+
 
                   const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
@@ -1342,7 +1428,7 @@ export default function DraftPickTrackerClient() {
                     }
                   }
 
-                  const etaClock = hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+                  const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
                   const statusTone =
                     r.draftStatus === "drafting"
@@ -1360,7 +1446,7 @@ export default function DraftPickTrackerClient() {
                       key={r.leagueId}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
-                        isDrafting && r.onClockIsMe && "bg-emerald-500/5",
+                        r.onClockIsMe && "bg-emerald-500/5",
                         isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/5"
                       )}
                     >
@@ -1385,7 +1471,7 @@ export default function DraftPickTrackerClient() {
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-gray-100">{r.currentOwnerName || "—"}</span>
-                            {isDrafting && r.onClockIsMe ? (
+                            {r.onClockIsMe ? (
                               <Pill tone="green" size="xs">
                                 ON CLOCK
                               </Pill>
@@ -1394,7 +1480,7 @@ export default function DraftPickTrackerClient() {
 
                           <span className="text-xs text-gray-400 tabular-nums flex items-center gap-2">
                             <span>{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</span>
-                            {isDrafting ? (
+                            {isDrafting && !isPaused ? (
                               <span className="text-lg font-extrabold text-white tabular-nums tracking-wide">
                                 {clockText}
                               </span>

@@ -273,6 +273,55 @@ async function clearClockState(db, endpoint, draftId) {
     .run();
 }
 
+// Per-draft cache to reduce Sleeper subrequests (Cloudflare Workers have strict limits).
+async function ensureDraftStateTable(db) {
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS push_draft_state (
+        draft_id TEXT PRIMARY KEY,
+        last_picked INTEGER,
+        pick_count INTEGER,
+        league_id TEXT,
+        league_name TEXT,
+        league_avatar TEXT,
+        updated_at INTEGER
+      )`
+    )
+    .run();
+}
+
+async function loadDraftState(db, draftId) {
+  return (
+    (await db
+      .prepare(`SELECT * FROM push_draft_state WHERE draft_id=?`)
+      .bind(String(draftId))
+      .first()) || null
+  );
+}
+
+async function saveDraftState(db, draftId, patch) {
+  const now = Date.now();
+  const cur = (await loadDraftState(db, draftId)) || {};
+  const next = { ...cur, ...patch, draft_id: String(draftId), updated_at: now };
+  await db
+    .prepare(
+      `INSERT OR REPLACE INTO push_draft_state (
+        draft_id, last_picked, pick_count, league_id, league_name, league_avatar, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      next.draft_id,
+      next.last_picked ?? null,
+      next.pick_count ?? null,
+      next.league_id ?? null,
+      next.league_name ?? null,
+      next.league_avatar ?? null,
+      next.updated_at
+    )
+    .run();
+  return next;
+}
+
 async function handler(req) {
   try {
     const { env } = getRequestContext();
@@ -281,6 +330,9 @@ async function handler(req) {
 
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
+
+    // Ensure new cache table exists (helps avoid Cloudflare subrequest limit).
+    await ensureDraftStateTable(db);
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
     const vapidSubject = env?.VAPID_SUBJECT;
@@ -358,36 +410,21 @@ async function handler(req) {
       for (const draftId of s.draftIds) {
         checked++;
 
-        // Always fetch draft + pick count because we need status + timer + last_picked
-        const [pickCount, draft] = await Promise.all([
-          getPickCount(draftId),
-          (async () => {
-            const cached = draftCache.get(draftId);
-            if (cached) return cached;
-            const d = await getDraft(draftId);
-            draftCache.set(draftId, d);
-            return d;
-          })(),
-        ]);
-
-        const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
-        let league = null;
-        if (leagueId) {
-          const cachedL = leagueCache.get(String(leagueId));
-          if (cachedL) league = cachedL;
-          else {
-            league = await getLeague(leagueId);
-            leagueCache.set(String(leagueId), league);
-          }
-        }
-
-        const leagueName =
-          draft?.metadata?.name ||
-          draft?.metadata?.league_name ||
-          league?.name ||
-          "your league";
+        // Fetch draft (cached). Fetch pick count only when last_picked changes.
+        const draft = await (async () => {
+          const cached = draftCache.get(draftId);
+          if (cached) return cached;
+          const d = await getDraft(draftId);
+          draftCache.set(draftId, d);
+          return d;
+        })();
 
         const status = String(draft?.status || "").toLowerCase(); // drafting | paused | complete...
+        if (status !== "drafting" && status !== "paused") {
+          await clearClockState(db, s.endpoint, draftId);
+          continue;
+        }
+
         const teams = Number(draft?.settings?.teams || 0);
         const timerSec = Number(draft?.settings?.pick_timer || 0);
 
@@ -398,6 +435,17 @@ async function handler(req) {
         }
 
         const userSlot = Number(draftOrder[userId]);
+
+        const lastPicked = Number(draft?.last_picked || 0);
+        const st = await loadDraftState(db, draftId);
+        let pickCount;
+        if (st && Number(st.last_picked || 0) === lastPicked && Number.isFinite(Number(st.pick_count))) {
+          pickCount = Number(st.pick_count);
+        } else {
+          pickCount = await getPickCount(draftId);
+          await saveDraftState(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
+        }
+
         const nextPickNo = pickCount + 1;
         const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
         const isOnClock = currentSlot === userSlot;
@@ -408,6 +456,41 @@ async function handler(req) {
           skippedNotOnClock++;
           continue;
         }
+
+        // Only now do we need league metadata (saves subrequests).
+        const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
+        let league = null;
+        if (leagueId) {
+          // First: in-memory cache
+          const cachedL = leagueCache.get(String(leagueId));
+          if (cachedL) {
+            league = cachedL;
+          } else {
+            // Second: persisted per-draft cache
+            const st2 = st || (await loadDraftState(db, draftId));
+            if (st2?.league_id && (st2?.league_name || st2?.league_avatar)) {
+              league = { name: st2.league_name || null, avatar: st2.league_avatar || null };
+              leagueCache.set(String(leagueId), league);
+            } else {
+              // Finally: fetch from Sleeper
+              league = await getLeague(leagueId);
+              leagueCache.set(String(leagueId), league);
+              if (league?.name || league?.avatar) {
+                await saveDraftState(db, draftId, {
+                  league_id: String(leagueId),
+                  league_name: league?.name || null,
+                  league_avatar: league?.avatar || null,
+                });
+              }
+            }
+          }
+        }
+
+        const leagueName =
+          draft?.metadata?.name ||
+          draft?.metadata?.league_name ||
+          league?.name ||
+          "your league";
 
         // Determine clock timing
         const lastPickedMs = Number(draft?.last_picked || 0);
