@@ -4,6 +4,18 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+function getEnv(ctx) {
+  // In Next.js route handlers, the 2nd argument is usually `{ params }` and
+  // does NOT include Cloudflare bindings. On Cloudflare Pages (next-on-pages),
+  // bindings live on getRequestContext().env.
+  try {
+    const rc = typeof getRequestContext === "function" ? getRequestContext() : null;
+    return ctx?.env || rc?.env || process.env;
+  } catch {
+    return ctx?.env || process.env;
+  }
+}
+
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
   return !!env.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
@@ -14,19 +26,9 @@ async function shortHash(str) {
   const enc = new TextEncoder().encode(str);
   const buf = await crypto.subtle.digest("SHA-256", enc);
   const bytes = Array.from(new Uint8Array(buf));
+  // last 8 hex chars is plenty for matching
   const hex = bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
   return hex.slice(-8);
-}
-
-function getEnv(context) {
-  // ✅ Cloudflare Pages bindings live on getRequestContext().env
-  // context.env is not reliable in Next route handlers on Pages.
-  try {
-    const rc = getRequestContext();
-    return context?.env || rc?.env || process.env;
-  } catch {
-    return context?.env || process.env;
-  }
 }
 
 export async function POST(req, context) {
@@ -55,6 +57,7 @@ export async function POST(req, context) {
     try {
       input = (await req.json()) || {};
     } catch {
+      // allow empty body
       input = {};
     }
 
@@ -70,7 +73,7 @@ export async function POST(req, context) {
     const actions = Array.isArray(input.actions) ? input.actions : null;
     const data = input.data && typeof input.data === "object" ? input.data : null;
 
-    // Optional: only send to one endpoint (exact match)
+    // ✅ Optional: only send to one endpoint (exact match)
     const onlyEndpoint = typeof input.endpoint === "string" ? input.endpoint : null;
 
     const rows = await db.prepare(`SELECT endpoint, subscription_json FROM push_subscriptions`).all();
@@ -97,9 +100,7 @@ export async function POST(req, context) {
         const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: s.sub,
           payload: {
-            title,
-            body,
-            url,
+            title, body, url,
             ...(tag ? { tag } : {}),
             ...(icon ? { icon } : {}),
             ...(badge ? { badge } : {}),
@@ -108,6 +109,7 @@ export async function POST(req, context) {
             ...(renotify ? { renotify: true } : {}),
             ...(requireInteraction ? { requireInteraction: true } : {}),
           },
+
           vapidSubject,
           vapidPrivateJwk,
         });
