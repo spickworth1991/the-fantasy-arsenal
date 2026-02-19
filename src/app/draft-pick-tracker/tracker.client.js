@@ -10,16 +10,6 @@ function safeNum(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
-function msToHuman(ms) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
-}
-
 function msToClock(ms) {
   const s = Math.max(0, Math.floor(safeNum(ms) / 1000));
   const hh = Math.floor(s / 3600);
@@ -34,20 +24,40 @@ function classNames(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-function Pill({ children, tone = "blue" }) {
+function formatTimerHoursLabel(timerSec) {
+  const t = safeNum(timerSec);
+  if (t <= 0) return "";
+  const hrs = t / 3600;
+
+  // simple + clean: integers show as "2", otherwise "1.5"
+  const txt = Number.isInteger(hrs) ? String(hrs) : hrs.toFixed(1).replace(/\.0$/, "");
+  return `${txt} HR Timer`;
+}
+
+function Pill({ children, tone = "blue", size = "md" }) {
   const tones = {
     blue: "bg-blue-500/20 text-blue-200 border-blue-400/30",
     green: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
     yellow: "bg-yellow-500/20 text-yellow-200 border-yellow-400/30",
+    orange: "bg-orange-500/20 text-orange-200 border-orange-400/30",
     red: "bg-red-500/20 text-red-200 border-red-400/30",
     cyan: "bg-cyan-500/20 text-cyan-200 border-cyan-400/30",
     purple: "bg-purple-500/20 text-purple-200 border-purple-400/30",
     gray: "bg-white/5 text-gray-200 border-white/10",
   };
+
+  const sizes = {
+    xs: "px-1.5 py-0.5 text-[10px]",
+    sm: "px-2 py-0.5 text-[10px]",
+    md: "px-2.5 py-1 text-xs",
+    lg: "px-3 py-1.5 text-sm",
+  };
+
   return (
     <span
       className={classNames(
-        "inline-flex items-center px-2.5 py-1 rounded-full text-xs border",
+        "inline-flex items-center rounded-full border leading-none font-medium",
+        sizes[size] || sizes.md,
         tones[tone] || tones.gray
       )}
     >
@@ -56,77 +66,110 @@ function Pill({ children, tone = "blue" }) {
   );
 }
 
-
-function getHeatTier(etaMs) {
-  const ms = safeNum(etaMs);
-
-  // If ETA is missing/invalid/zero, do NOT heat up.
-  // (This is what’s causing the “1h48m but red” bug.)
-  if (!Number.isFinite(ms) || ms <= 0) return "cool";
-
-  const m = Math.floor(ms / 60000);
-
-  if (m <= 10) return "hot";
-  if (m <= 30) return "warm";
-  return "cool";
-}
-
-
-function heatStyles(tier, isDrafting, flashHot) {
-  // only “heat up” visuals during active drafting
-  if (!isDrafting) return { ring: "", wash: "", badge: null };
-
-  if (tier === "hot") {
-    const ringBase =
-      "ring-2 ring-red-400/40 border-red-400/20 shadow-[0_0_0_1px_rgba(248,113,113,0.22),0_0_30px_rgba(248,113,113,0.18)]";
-    const washBase =
-      "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-red-500/15 before:via-transparent before:to-transparent before:pointer-events-none";
-
-    return {
-      ring: flashHot ? `${ringBase} animate-[pulse_1.2s_ease-in-out_infinite]` : ringBase,
-      wash: flashHot ? `${washBase} before:animate-[pulse_1.2s_ease-in-out_infinite]` : washBase,
-      badge: flashHot ? <Pill tone="red">🔥 SOON</Pill> : null, // badge ONLY at <=10m
-    };
-  }
-
-  if (tier === "warm") {
-    return {
-      ring: "ring-1 ring-orange-300/25 border-orange-300/15 shadow-[0_0_0_1px_rgba(251,146,60,0.14),0_0_18px_rgba(251,146,60,0.10)]",
-      wash: "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-orange-400/10 before:via-transparent before:to-transparent before:pointer-events-none",
-      badge: null, // no badge at 10–30 unless you want one
-    };
-  }
-
-  return { ring: "", wash: "", badge: null };
-}
-
-
-
-function SortHeader({ label, col, sortKey, sortDir, setSortKey, setSortDir }) {
-  const active = sortKey === col;
+function Toggle({ checked, onChange, label, disabled = false }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        if (active) setSortDir(sortDir === "asc" ? "desc" : "asc");
-        else {
-          setSortKey(col);
-          setSortDir("asc");
-        }
-      }}
+      onClick={() => !disabled && onChange(!checked)}
       className={classNames(
-        "text-left w-full flex items-center gap-2",
-        active ? "text-white" : "text-gray-300 hover:text-white"
+        "group inline-flex items-center gap-2 rounded-xl border px-3 py-2 transition",
+        disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5",
+        checked
+          ? "bg-white/10 border-white/20 text-white"
+          : "bg-black/20 border-white/10 text-gray-200"
       )}
+      aria-pressed={checked}
+      aria-label={label}
+      title={label}
     >
-      <span>{label}</span>
-      {active && (
-        <span className="text-xs opacity-80">
-          {sortDir === "asc" ? "▲" : "▼"}
-        </span>
-      )}
+      <span
+        className={classNames(
+          "relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border transition",
+          checked ? "bg-emerald-500/20 border-emerald-400/30" : "bg-white/5 border-white/10"
+        )}
+      >
+        <span
+          className={classNames(
+            "absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full transition",
+            checked
+              ? "left-[18px] bg-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.35)]"
+              : "left-[2px] bg-gray-200/80"
+          )}
+        />
+      </span>
+      <span className="text-xs font-semibold tracking-wide">{label}</span>
     </button>
   );
+}
+
+/**
+ * ON-CLOCK heat (TIME-BASED thresholds, not %):
+ * Tiers use remaining seconds only.
+ * NOTE: only use when a real timer exists.
+ */
+function onClockHeatStyles(liveClockLeftMs) {
+  const left = Math.max(0, safeNum(liveClockLeftMs));
+  const leftSec = Math.ceil(left / 1000);
+
+  // green: > 75s, yellow: 75-46, orange: 45-21, red: <= 20
+  let tier = "green";
+  if (leftSec <= 20) tier = "red";
+  else if (leftSec <= 45) tier = "orange";
+  else if (leftSec <= 75) tier = "yellow";
+
+  const pulse =
+    tier === "green"
+      ? "animate-[pulse_1.25s_ease-in-out_infinite]"
+      : tier === "yellow"
+      ? "animate-[pulse_1.05s_ease-in-out_infinite]"
+      : tier === "orange"
+      ? "animate-[pulse_0.9s_ease-in-out_infinite]"
+      : "animate-[pulse_0.75s_ease-in-out_infinite]";
+
+  const shake = "animate-[dpt_shake_0.9s_ease-in-out_infinite]";
+
+  const ring =
+    tier === "green"
+      ? "ring-2 ring-emerald-400/35 border-emerald-400/20 shadow-[0_0_0_1px_rgba(52,211,153,0.18),0_0_26px_rgba(52,211,153,0.14)]"
+      : tier === "yellow"
+      ? "ring-2 ring-yellow-300/30 border-yellow-300/20 shadow-[0_0_0_1px_rgba(253,224,71,0.14),0_0_24px_rgba(253,224,71,0.10)]"
+      : tier === "orange"
+      ? "ring-2 ring-orange-300/30 border-orange-300/20 shadow-[0_0_0_1px_rgba(251,146,60,0.14),0_0_26px_rgba(251,146,60,0.12)]"
+      : "ring-2 ring-red-400/35 border-red-400/20 shadow-[0_0_0_1px_rgba(248,113,113,0.18),0_0_32px_rgba(248,113,113,0.16)]";
+
+  const wash =
+    tier === "green"
+      ? "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-emerald-500/18 before:via-transparent before:to-transparent before:pointer-events-none"
+      : tier === "yellow"
+      ? "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-yellow-400/16 before:via-transparent before:to-transparent before:pointer-events-none"
+      : tier === "orange"
+      ? "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-orange-400/16 before:via-transparent before:to-transparent before:pointer-events-none"
+      : "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-red-500/18 before:via-transparent before:to-transparent before:pointer-events-none";
+
+  const badgeTone =
+    tier === "green"
+      ? "green"
+      : tier === "yellow"
+      ? "yellow"
+      : tier === "orange"
+      ? "orange"
+      : "red";
+
+  return {
+    ring: `${ring} ${pulse}`,
+    wash,
+    badgeTone,
+    tier,
+    shake,
+  };
+}
+
+function onDeckTintStyles() {
+  return {
+    ring: "ring-1 ring-amber-300/25 border-amber-300/15 shadow-[0_0_0_1px_rgba(251,191,36,0.14),0_0_18px_rgba(251,191,36,0.10)]",
+    wash:
+      "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-amber-400/10 before:via-transparent before:to-transparent before:pointer-events-none",
+  };
 }
 
 // ---------------- Main ----------------
@@ -139,24 +182,21 @@ export default function DraftPickTrackerClient() {
 
   const [search, setSearch] = useState("");
   const [onlyDrafting, setOnlyDrafting] = useState(true);
-  const [includePaused, setIncludePaused] = useState(false);
+  const [includePaused, setIncludePaused] = useState(true);
 
   const [view, setView] = useState("cards"); // cards | table
   const [onlyOnDeckOrClock, setOnlyOnDeckOrClock] = useState(false);
   const [maxPicksAway, setMaxPicksAway] = useState(30); // 999 = off
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // removed pace sorting; default to "picks until" then ETA
-  const [sortKey, setSortKey] = useState("etaMs");
+  const [sortMode, setSortMode] = useState("time"); // "time" | "pick"
   const [sortDir, setSortDir] = useState("asc");
 
-  const [rows, setRows] = useState([]); // computed draft rows
-  const [bundles, setBundles] = useState([]); // cached bundles
+  const [rows, setRows] = useState([]);
+  const [showRecent, setShowRecent] = useState({});
 
-  // per-league expand/collapse for recent picks
-  const [expandedRecent, setExpandedRecent] = useState({}); // { [leagueId]: boolean }
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // ticker so clocks count down without refetching
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -174,9 +214,7 @@ export default function DraftPickTrackerClient() {
     const rosterToName = new Map();
     (rosters || []).forEach((r) => {
       const nm =
-        ownerToName.get(String(r?.owner_id)) ||
-        r?.owner_id ||
-        `Roster ${r?.roster_id}`;
+        ownerToName.get(String(r?.owner_id)) || r?.owner_id || `Roster ${r?.roster_id}`;
       rosterToName.set(String(r?.roster_id), nm);
     });
     return rosterToName;
@@ -187,57 +225,40 @@ export default function DraftPickTrackerClient() {
     if (!uname) return null;
 
     const u =
-      (users || []).find(
-        (x) => String(x?.username || "").toLowerCase() === uname
-      ) ||
-      (users || []).find(
-        (x) => String(x?.display_name || "").toLowerCase() === uname
-      );
+      (users || []).find((x) => String(x?.username || "").toLowerCase() === uname) ||
+      (users || []).find((x) => String(x?.display_name || "").toLowerCase() === uname);
 
     if (!u?.user_id) return null;
-    const r = (rosters || []).find(
-      (x) => String(x?.owner_id) === String(u.user_id)
-    );
+    const r = (rosters || []).find((x) => String(x?.owner_id) === String(u.user_id));
     return r?.roster_id ? String(r.roster_id) : null;
   }
 
   function playerLabel(pid) {
     const p = players?.[String(pid)];
     const name =
-      String(p?.full_name || `${p?.first_name || ""} ${p?.last_name || ""}`)
-        .trim() || `#${pid}`;
+      String(p?.full_name || `${p?.first_name || ""} ${p?.last_name || ""}`).trim() ||
+      `#${pid}`;
     const pos = String(p?.position || "").trim();
     return pos ? `${name} (${pos})` : name;
   }
 
   function buildTradedPickOwnerMap(tradedPicks = [], seasonStr = "") {
-    // key: `${season}|${round}|${originalRosterId}` => currentOwnerRosterId
-    // NOTE: traded_picks can contain multiple rows per key if pick was traded multiple times.
-    // We must pick the latest row deterministically.
-
     const bestByKey = new Map();
 
     const scoreRow = (tp) => {
-      // Prefer explicit timestamps if present
       const created = safeNum(tp?.created);
       const updated = safeNum(tp?.updated);
       if (updated > 0) return updated;
       if (created > 0) return created;
-
-      // Some payloads include transaction_id (often sortable-ish)
       const tx = tp?.transaction_id;
       if (typeof tx === "number" && Number.isFinite(tx)) return tx;
       if (typeof tx === "string") {
-        // if numeric-like, use numeric; else use stable hash-ish fallback
         const n = Number(tx);
         if (Number.isFinite(n)) return n;
-        // last resort: length-based + char codes (deterministic)
         let h = tx.length;
         for (let i = 0; i < tx.length; i++) h = (h * 31 + tx.charCodeAt(i)) >>> 0;
         return h;
       }
-
-      // Absolute last resort: 0 (caller will keep last-seen deterministically)
       return 0;
     };
 
@@ -255,7 +276,6 @@ export default function DraftPickTrackerClient() {
       const prev = bestByKey.get(key);
       const next = { owner, score: scoreRow(tp), idx };
 
-      // pick “latest”: higher score wins; if score ties/missing, later index wins
       if (!prev || next.score > prev.score || (next.score === prev.score && next.idx > prev.idx)) {
         bestByKey.set(key, next);
       }
@@ -266,7 +286,6 @@ export default function DraftPickTrackerClient() {
     return m;
   }
 
-
   function getSnakeSlotForPick({ pickNo, teams, reversalRound }) {
     if (!pickNo || !teams) return null;
 
@@ -274,16 +293,13 @@ export default function DraftPickTrackerClient() {
     const round = Math.floor(idx0 / teams) + 1;
     const pickInRound0 = idx0 % teams;
 
-    // Direction handling:
-    // - Normal snake flips every round (1 forward, 2 reverse, 3 forward...)
-    // - 3RR (third-round reversal) means round 3 stays the SAME direction as round 2.
     const rr = safeNum(reversalRound);
-    let forward = true; // round 1
+    let forward = true;
 
     if (round > 1) {
       for (let r = 2; r <= round; r++) {
         if (rr > 0 && r === rr) {
-          // skip flip on reversal round (3RR behavior)
+          // 3RR: skip flip on reversal round
         } else {
           forward = !forward;
         }
@@ -314,28 +330,44 @@ export default function DraftPickTrackerClient() {
 
     const tradedOwner =
       tradedOwnerMap?.get(`${seasonStr}|${round}|${String(origRosterId)}`) || null;
-
     return tradedOwner || String(origRosterId);
   }
 
+  function getPickOwnerName({
+    pickNo,
+    teams,
+    rosterBySlot,
+    tradedOwnerMap,
+    seasonStr,
+    reversalRound,
+    rosterNameMap,
+  }) {
+    const rid = resolveRosterForPick({
+      pickNo,
+      teams,
+      rosterBySlot,
+      tradedOwnerMap,
+      seasonStr,
+      reversalRound,
+    });
+    if (!rid) return null;
+    return rosterNameMap?.get(String(rid)) || `Roster ${rid}`;
+  }
 
   async function fetchDraftBundle(league) {
     const leagueId = league?.league_id;
     const draftId = league?.draft_id;
     if (!draftId) return null;
 
-    const [draftRes, picksRes, usersRes, rostersRes, tradedRes] =
-      await Promise.all([
-        fetch(`https://api.sleeper.app/v1/draft/${draftId}`),
-        fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`),
-        fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
-        fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-        // traded picks (for this draft)
-        fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`),
-      ]);
+    const [draftRes, picksRes, usersRes, rostersRes, tradedRes] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/draft/${draftId}`),
+      fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+      fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`),
+    ]);
 
-    if (!draftRes.ok)
-      throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
+    if (!draftRes.ok) throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
     const draft = await draftRes.json();
     const picks = picksRes.ok ? await picksRes.json() : [];
     const users = usersRes.ok ? await usersRes.json() : [];
@@ -357,12 +389,10 @@ export default function DraftPickTrackerClient() {
     const reversalRound = safeNum(draft?.settings?.reversal_round);
     const draftStatus = String(draft?.status || "").toLowerCase();
     const rounds = safeNum(draft?.settings?.rounds);
-    const slots = safeNum(draft?.settings?.teams);
     const timerSec = safeNum(draft?.settings?.pick_timer);
 
     const currentPick = (picks?.length || 0) + 1;
 
-    // teams count (Sleeper drafts sometimes have settings.teams missing/weird)
     const totalSlots =
       safeNum(draft?.settings?.teams) ||
       safeNum(draft?.settings?.slots) ||
@@ -372,10 +402,7 @@ export default function DraftPickTrackerClient() {
 
     const teams = totalSlots > 0 ? totalSlots : 0;
 
-    // slot -> roster_id map
     const rosterBySlot = new Map();
-
-    // Primary: slot_to_roster_id (best when present)
     const slotToRoster = draft?.slot_to_roster_id || {};
     Object.keys(slotToRoster || {}).forEach((slot) => {
       const rosterId = slotToRoster[slot];
@@ -383,8 +410,6 @@ export default function DraftPickTrackerClient() {
       if (s && rosterId != null) rosterBySlot.set(s, String(rosterId));
     });
 
-    // Fallback: derive slot -> roster_id from draft_order + league rosters
-    // draft_order is user_id -> slot, rosters uses owner_id (user_id) -> roster_id
     if (rosterBySlot.size === 0) {
       const draftOrder = draft?.draft_order || {};
       const ownerToRoster = new Map();
@@ -401,11 +426,21 @@ export default function DraftPickTrackerClient() {
       });
     }
 
-
     const seasonStr = String(draft?.season || league?.season || year || "");
     const tradedOwnerMap = buildTradedPickOwnerMap(traded_picks, seasonStr);
 
-    // who is currently on the clock (accounting for traded pick ownership)
+    const currentOwnerName = teams
+      ? getPickOwnerName({
+          pickNo: currentPick,
+          teams,
+          rosterBySlot,
+          tradedOwnerMap,
+          seasonStr,
+          reversalRound,
+          rosterNameMap: rosterName,
+        })
+      : null;
+
     const nextRosterId = teams
       ? resolveRosterForPick({
           pickNo: currentPick,
@@ -417,14 +452,8 @@ export default function DraftPickTrackerClient() {
         })
       : null;
 
-
-    const nextOwnerName = nextRosterId
-      ? rosterName.get(String(nextRosterId)) || `Roster ${nextRosterId}`
-      : "—";
-
     const myRosterId = getUserRosterIdForLeague(users, rosters);
 
-    // Find my next pick overall (account for traded ownership)
     let myNextPickOverall = null;
     if (myRosterId && teams > 0) {
       const maxPk = rounds > 0 && teams > 0 ? rounds * teams : currentPick + 500;
@@ -446,29 +475,49 @@ export default function DraftPickTrackerClient() {
     }
 
     const picksUntilMyPick =
-      myNextPickOverall != null
-        ? Math.max(0, myNextPickOverall - currentPick)
-        : null;
+      myNextPickOverall != null ? Math.max(0, myNextPickOverall - currentPick) : null;
 
     const onDeck = picksUntilMyPick === 1;
+
     const onClockIsMe = !!(
       myRosterId &&
       nextRosterId &&
       String(nextRosterId) === String(myRosterId)
     );
 
-    // Clock left (use nowMs passed in, NOT component state, to avoid stale closure bug)
-    const lastPickTs = safeNum(draft?.last_picked); // Sleeper is ms epoch
+    let myNextPickAfterThis = null;
+    if (myRosterId && teams > 0) {
+      const startPk = onClockIsMe ? currentPick + 1 : currentPick;
+      const maxPk = rounds > 0 && teams > 0 ? rounds * teams : startPk + 500;
+
+      for (let pk = startPk; pk <= maxPk; pk++) {
+        const rosterIdAtPick = resolveRosterForPick({
+          pickNo: pk,
+          teams,
+          rosterBySlot,
+          tradedOwnerMap,
+          seasonStr,
+          reversalRound,
+        });
+
+        if (String(rosterIdAtPick || "") === String(myRosterId)) {
+          myNextPickAfterThis = pk;
+          break;
+        }
+      }
+    }
+
+    // Clock left (only if timer exists)
+    const lastPickTs = safeNum(draft?.last_picked);
     const clockEndsAt =
       lastPickTs > 0 && timerSec > 0 ? lastPickTs + timerSec * 1000 : 0;
-    const clockLeftMs =
-      clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
+    const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
 
-    // ETA uses ONLY timer (no pace)
-    const perPickMs = timerSec > 0 ? timerSec * 1000 : 90 * 1000;
+    // ✅ ETA only if timer exists
+    const perPickMs = timerSec > 0 ? timerSec * 1000 : 0;
 
-    let etaMs = 0;
-    if (picksUntilMyPick != null) {
+    let etaMs = null;
+    if (timerSec > 0 && picksUntilMyPick != null) {
       if (clockLeftMs > 0 && picksUntilMyPick > 0) {
         etaMs = clockLeftMs + Math.max(0, picksUntilMyPick - 1) * perPickMs;
       } else {
@@ -476,7 +525,6 @@ export default function DraftPickTrackerClient() {
       }
     }
 
-    // Recent picks (last 10) — show pick_no + name
     const recent = (Array.isArray(picks) ? picks : [])
       .slice(-10)
       .reverse()
@@ -493,18 +541,19 @@ export default function DraftPickTrackerClient() {
       draftId: draft?.draft_id || league?.draft_id,
       draftStatus,
       currentPick,
-      nextOwnerName,
+      currentOwnerName: currentOwnerName || "—",
       clockLeftMs,
       onClockIsMe,
       onDeck,
       myNextPickOverall,
+      myNextPickAfterThis,
       picksUntilMyPick,
       etaMs,
       timerSec,
       teams,
       rounds,
       recent,
-      computedAt: nowMs, // match baseline used in clock calc
+      computedAt: nowMs,
     };
   }
 
@@ -526,14 +575,10 @@ export default function DraftPickTrackerClient() {
         }
       }
 
-      const nowMs = Date.now(); // critical: prevents stale-now auto-refresh drift
-
+      const nowMs = Date.now();
       const draftRows = [];
-      nextBundles.forEach((b) => {
-        draftRows.push(calcPickInfo(b, nowMs));
-      });
+      nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
 
-      setBundles(nextBundles);
       setRows(draftRows);
     } catch (e) {
       console.error(e);
@@ -549,7 +594,99 @@ export default function DraftPickTrackerClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
-  // ---------------- Filters + sorting ----------------
+  const anyDrafting = useMemo(
+    () => (rows || []).some((r) => String(r?.draftStatus) === "drafting"),
+    [rows]
+  );
+
+  // ---------------- Auto-refresh ----------------
+  useEffect(() => {
+    if (!username) return;
+    if (!autoRefresh) return;
+    if (!anyDrafting) return;
+
+    const t = setInterval(() => refresh(), 20000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, autoRefresh, anyDrafting]);
+
+  // ---------------- Alerts: sound + title flash ----------------
+
+  const alertEnabledRef = useRef(true);
+  const lastAlertKeyRef = useRef("");
+  const originalTitleRef = useRef(typeof document !== "undefined" ? document.title : "");
+  const flashTimerRef = useRef(null);
+
+  function beep() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.value = 0.06;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      setTimeout(() => {
+        o.stop();
+        ctx.close();
+      }, 180);
+    } catch {}
+  }
+
+  function flashTitle(msg) {
+    if (typeof document === "undefined") return;
+    const base = originalTitleRef.current || document.title || "Draft Pick Tracker";
+    let on = false;
+
+    if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+    flashTimerRef.current = setInterval(() => {
+      document.title = on ? `${msg} — ${base}` : base;
+      on = !on;
+    }, 900);
+
+    setTimeout(() => {
+      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      document.title = base;
+    }, 12000);
+  }
+
+  useEffect(() => {
+    if (!alertEnabledRef.current) return;
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    const hot = rows
+      .filter((r) => r.draftStatus === "drafting")
+      .filter((r) => r.onDeck || r.onClockIsMe);
+
+    if (hot.length === 0) return;
+
+    const best = hot.find((r) => r.onClockIsMe) || hot.find((r) => r.onDeck) || null;
+    if (!best) return;
+
+    const key = `${best.leagueId}|${best.currentPick}|${best.myNextPickOverall}|${
+      best.onClockIsMe ? "clock" : "deck"
+    }`;
+    if (lastAlertKeyRef.current === key) return;
+
+    lastAlertKeyRef.current = key;
+    beep();
+    flashTitle(best.onClockIsMe ? "ON CLOCK" : "ON DECK");
+  }, [rows]);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      if (typeof document !== "undefined" && originalTitleRef.current) {
+        document.title = originalTitleRef.current;
+      }
+    };
+  }, []);
+
+  // ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
     const q = String(search || "").toLowerCase().trim();
@@ -577,139 +714,92 @@ export default function DraftPickTrackerClient() {
     }
 
     if (q) {
-      r = r.filter((x) => {
-        return (
-          String(x.leagueName || "").toLowerCase().includes(q) ||
-          String(x.nextOwnerName || "").toLowerCase().includes(q) ||
-          String(x.myNextPickOverall || "").includes(q)
-        );
-      });
+      r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
     }
 
+    const bucket = (x) => {
+      const drafting = String(x?.draftStatus || "").toLowerCase() === "drafting";
+      if (drafting && x.onClockIsMe) return 0;
+      if (drafting && x.onDeck) return 1;
+      return 2;
+    };
+
     const dir = sortDir === "asc" ? 1 : -1;
-    r = [...r].sort((a, b) => {
-      const av = a?.[sortKey];
-      const bv = b?.[sortKey];
-      if (typeof av === "string" || typeof bv === "string") {
-        return String(av || "").localeCompare(String(bv || "")) * dir;
+
+    const getLiveClockLeft = (x) => {
+      // ✅ if no timer, treat as infinity so timed on-clock drafts float above
+      if (safeNum(x.timerSec) <= 0) return Number.POSITIVE_INFINITY;
+      const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
+      return Math.max(0, safeNum(x.clockLeftMs) - elapsed);
+    };
+
+    const getLiveEtaToShownPick = (x) => {
+      // ✅ no timer => no ETA (sort last in time mode)
+      if (safeNum(x.timerSec) <= 0) return Number.POSITIVE_INFINITY;
+
+      const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
+      const isDrafting = String(x?.draftStatus || "").toLowerCase() === "drafting";
+      const liveClockLeft = getLiveClockLeft(x);
+
+      const shownPickNo = x.onClockIsMe ? x.myNextPickAfterThis : x.myNextPickOverall;
+      const perPickMs = safeNum(x.timerSec) * 1000;
+
+      if (shownPickNo != null && x.currentPick != null) {
+        if (isDrafting && x.onClockIsMe) {
+          const gap = Math.max(0, safeNum(shownPickNo) - safeNum(x.currentPick) - 1);
+          return liveClockLeft + gap * perPickMs;
+        }
+        return Math.max(0, safeNum(x.etaMs) - elapsed);
       }
-      return (safeNum(av) - safeNum(bv)) * dir;
+      return Number.POSITIVE_INFINITY;
+    };
+
+    r = [...r].sort((a, b) => {
+      const ba = bucket(a);
+      const bb = bucket(b);
+      if (ba !== bb) return ba - bb;
+
+      if (ba === 0 && bb === 0) {
+        const acl = getLiveClockLeft(a);
+        const bcl = getLiveClockLeft(b);
+        if (acl !== bcl) return (acl - bcl) * dir;
+        return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
+      }
+
+      const at = getLiveEtaToShownPick(a);
+      const bt = getLiveEtaToShownPick(b);
+
+      if (sortMode === "pick") {
+        const av = safeNum(a.picksUntilMyPick);
+        const bv = safeNum(b.picksUntilMyPick);
+        if (av !== bv) return (av - bv) * dir;
+        if (at !== bt) return (at - bt) * dir;
+        return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
+      }
+
+      if (at !== bt) return (at - bt) * dir;
+
+      const av = safeNum(a.picksUntilMyPick);
+      const bv = safeNum(b.picksUntilMyPick);
+      if (av !== bv) return (av - bv) * dir;
+
+      return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
     });
 
     return r;
   }, [
     rows,
+    now,
     search,
     onlyDrafting,
     includePaused,
     onlyOnDeckOrClock,
     maxPicksAway,
-    sortKey,
+    sortMode,
     sortDir,
   ]);
 
-  const anyDrafting = useMemo(
-    () => (rows || []).some((r) => String(r?.draftStatus) === "drafting"),
-    [rows]
-  );
-
-  // ---------------- Auto-refresh ----------------
-  // active drafting only (paused doesn't keep polling)
-
-  useEffect(() => {
-    if (!username) return;
-    if (!autoRefresh) return;
-    if (!anyDrafting) return;
-
-    const t = setInterval(() => {
-      refresh();
-    }, 20000);
-
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, autoRefresh, anyDrafting]);
-
-  // ---------------- Alerts: sound + title flash ----------------
-
-  const alertEnabledRef = useRef(true);
-  const lastAlertKeyRef = useRef("");
-  const originalTitleRef = useRef(
-    typeof document !== "undefined" ? document.title : ""
-  );
-  const flashTimerRef = useRef(null);
-
-  function beep() {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.value = 0.06;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      setTimeout(() => {
-        o.stop();
-        ctx.close();
-      }, 180);
-    } catch {}
-  }
-
-  function flashTitle(msg) {
-    if (typeof document === "undefined") return;
-    const base =
-      originalTitleRef.current || document.title || "Draft Pick Tracker";
-    let on = false;
-
-    if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-    flashTimerRef.current = setInterval(() => {
-      document.title = on ? `${msg} — ${base}` : base;
-      on = !on;
-    }, 900);
-
-    setTimeout(() => {
-      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-      document.title = base;
-    }, 12000);
-  }
-
-  useEffect(() => {
-    if (!alertEnabledRef.current) return;
-    if (!Array.isArray(rows) || rows.length === 0) return;
-
-    const hot = rows
-      .filter((r) => r.draftStatus === "drafting")
-      .filter((r) => r.onDeck || r.onClockIsMe);
-
-    if (hot.length === 0) return;
-
-    const best =
-      hot.find((r) => r.onClockIsMe) || hot.find((r) => r.onDeck) || null;
-    if (!best) return;
-
-    const key = `${best.leagueId}|${best.currentPick}|${best.myNextPickOverall}|${
-      best.onClockIsMe ? "clock" : "deck"
-    }`;
-    if (lastAlertKeyRef.current === key) return;
-
-    lastAlertKeyRef.current = key;
-    beep();
-    flashTitle(best.onClockIsMe ? "ON CLOCK" : "ON DECK");
-  }, [rows]);
-
-  useEffect(() => {
-    return () => {
-      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-      if (typeof document !== "undefined" && originalTitleRef.current) {
-        document.title = originalTitleRef.current;
-      }
-    };
-  }, []);
-
-  // ---------------- UI bits ----------------
+  // ---------------- UI ----------------
 
   const totalLeagues = filteredDraftRows.length;
 
@@ -728,8 +818,7 @@ export default function DraftPickTrackerClient() {
             )}
           </div>
           <p className="text-gray-300 mt-1">
-            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers,
-            traded-pick ownership, and expandable recent picks.
+            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers, traded-pick ownership, and recent picks.
           </p>
         </div>
 
@@ -737,7 +826,7 @@ export default function DraftPickTrackerClient() {
           <button
             onClick={refresh}
             disabled={loading}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold shadow-lg"
+            className="px-5 py-2.5 rounded-2xl bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-700 disabled:opacity-60 text-white font-semibold shadow-[0_18px_40px_rgba(37,99,235,0.25)] border border-white/10"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
@@ -745,92 +834,22 @@ export default function DraftPickTrackerClient() {
       </div>
 
       {/* Controls */}
-      <div className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl p-4 shadow-xl">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center w-full">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search league / next up / your pick…"
-              className="w-full sm:w-[360px] px-4 py-2 rounded-xl bg-black/30 border border-white/10 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
-
-            <div className="flex flex-wrap gap-2 items-center">
-              <label className="inline-flex items-center gap-2 text-gray-200 select-none">
-                <input
-                  type="checkbox"
-                  checked={onlyDrafting}
-                  onChange={(e) => setOnlyDrafting(e.target.checked)}
-                />
-                Drafting only
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-gray-200 select-none">
-                <input
-                  type="checkbox"
-                  checked={includePaused}
-                  onChange={(e) => setIncludePaused(e.target.checked)}
-                  disabled={!onlyDrafting}
-                />
-                Include paused
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-gray-200 select-none">
-                <input
-                  type="checkbox"
-                  checked={onlyOnDeckOrClock}
-                  onChange={(e) => setOnlyOnDeckOrClock(e.target.checked)}
-                />
-                On deck / on clock
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-gray-200 select-none">
-                <input
-                  type="checkbox"
-                  checked={autoRefresh}
-                  onChange={(e) => setAutoRefresh(e.target.checked)}
-                />
-                Auto-refresh
-              </label>
-            </div>
+      <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-b from-gray-900/80 to-black/40 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-hidden">
+        <div className="px-5 py-4 bg-black/20 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Pill tone="cyan">{totalLeagues} leagues</Pill>
+            {includePaused && onlyDrafting && <Pill tone="yellow">Paused included</Pill>}
+            {onlyOnDeckOrClock && <Pill tone="purple">Hot only</Pill>}
+            {maxPicksAway >= 999 ? null : <Pill tone="blue">≤ {maxPicksAway} picks</Pill>}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-300 whitespace-nowrap">
-                Next pick within:
-              </span>
-              <input
-                type="range"
-                min={1}
-                max={30}
-                value={Math.min(maxPicksAway, 30)}
-                onChange={(e) => setMaxPicksAway(Number(e.target.value))}
-                className="w-[160px]"
-              />
-              <button
-                type="button"
-                onClick={() => setMaxPicksAway(999)}
-                className={classNames(
-                  "px-3 py-1.5 rounded-xl text-xs font-semibold border transition",
-                  maxPicksAway >= 999
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "bg-black/20 border-white/10 text-gray-300 hover:text-white"
-                )}
-                title="Turn off 'within N picks' filter"
-              >
-                {maxPicksAway >= 999 ? "Any" : `≤ ${maxPicksAway}`}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-2xl border border-white/10 bg-black/20 p-1">
               <button
                 onClick={() => setView("cards")}
                 className={classNames(
-                  "px-4 py-2 rounded-xl border text-sm font-semibold transition",
-                  view === "cards"
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "bg-black/20 border-white/10 text-gray-200 hover:bg-white/5"
+                  "px-4 py-2 rounded-xl text-sm font-semibold transition",
+                  view === "cards" ? "bg-white/10 text-white" : "text-gray-200 hover:bg-white/5"
                 )}
               >
                 Cards
@@ -838,27 +857,135 @@ export default function DraftPickTrackerClient() {
               <button
                 onClick={() => setView("table")}
                 className={classNames(
-                  "px-4 py-2 rounded-xl border text-sm font-semibold transition",
-                  view === "table"
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "bg-black/20 border-white/10 text-gray-200 hover:bg-white/5"
+                  "px-4 py-2 rounded-xl text-sm font-semibold transition",
+                  view === "table" ? "bg-white/10 text-white" : "text-gray-200 hover:bg-white/5"
                 )}
               >
                 Table
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={classNames(
+                "px-4 py-2 rounded-2xl text-sm font-semibold border border-white/10 bg-black/20 text-gray-200 hover:bg-white/5",
+                filtersOpen && "bg-white/10 border-white/20 text-white"
+              )}
+              aria-expanded={filtersOpen}
+            >
+              {filtersOpen ? "Close" : "Filters"}
+            </button>
           </div>
         </div>
 
-        {err && <p className="text-red-300 mt-3">{err}</p>}
-      </div>
+        {filtersOpen && (
+          <div className="border-t border-white/10 p-5">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+              <div className="xl:col-span-4">
+                <div className="text-xs text-gray-300 mb-2">Search</div>
+                <div className="relative">
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search league…"
+                    className="w-full px-4 py-3 rounded-2xl bg-black/30 border border-white/10 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-300/30 shadow-inner"
+                  />
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/5" />
+                </div>
+              </div>
 
-      {/* Summary row */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Pill tone="cyan">{totalLeagues} leagues</Pill>
-        <Pill tone="blue">On-deck alert</Pill>
-        <Pill tone="purple">ETA uses timer + clock</Pill>
-        {includePaused && onlyDrafting && <Pill tone="yellow">Showing paused</Pill>}
+              <div className="xl:col-span-5">
+                <div className="text-xs text-gray-300 mb-2">Filters</div>
+                <div className="flex flex-wrap gap-2">
+                  <Toggle checked={onlyDrafting} onChange={setOnlyDrafting} label="Drafting only" />
+                  <Toggle
+                    checked={includePaused}
+                    onChange={setIncludePaused}
+                    label="Include paused"
+                    disabled={!onlyDrafting}
+                  />
+                  <Toggle checked={onlyOnDeckOrClock} onChange={setOnlyOnDeckOrClock} label="On deck / on clock" />
+                  <Toggle checked={autoRefresh} onChange={setAutoRefresh} label="Auto-refresh" />
+                </div>
+              </div>
+
+              <div className="xl:col-span-3">
+                <div className="text-xs text-gray-300 mb-2">Sort & Window</div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-gray-300">Next pick within</div>
+                    <button
+                      type="button"
+                      onClick={() => setMaxPicksAway(999)}
+                      className={classNames(
+                        "px-3 py-1.5 rounded-xl text-xs font-semibold border transition",
+                        maxPicksAway >= 999
+                          ? "bg-white/10 border-white/20 text-white"
+                          : "bg-black/30 border-white/10 text-gray-200 hover:text-white hover:bg-white/5"
+                      )}
+                      title="Turn off 'within N picks' filter"
+                    >
+                      {maxPicksAway >= 999 ? "Any" : `≤ ${maxPicksAway}`}
+                    </button>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={1}
+                    max={30}
+                    value={Math.min(maxPicksAway, 30)}
+                    onChange={(e) => setMaxPicksAway(Number(e.target.value))}
+                    className="mt-2 w-full accent-cyan-300"
+                    disabled={maxPicksAway >= 999}
+                  />
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSortMode("time")}
+                      className={classNames(
+                        "flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition",
+                        sortMode === "time"
+                          ? "bg-white/10 border-white/20 text-white"
+                          : "bg-black/30 border-white/10 text-gray-200 hover:bg-white/5"
+                      )}
+                    >
+                      Time
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSortMode("pick")}
+                      className={classNames(
+                        "flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition",
+                        sortMode === "pick"
+                          ? "bg-white/10 border-white/20 text-white"
+                          : "bg-black/30 border-white/10 text-gray-200 hover:bg-white/5"
+                      )}
+                    >
+                      Pick
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                    className="mt-2 w-full px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 bg-black/30 text-gray-200 hover:bg-white/5"
+                  >
+                    {sortDir === "asc" ? "▲ Asc" : "▼ Desc"}
+                  </button>
+
+                  <div className="mt-2 text-[11px] text-gray-400">
+                    ON CLOCK rows always sort by <span className="text-gray-200">time left</span> (when timer exists).
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {err && <p className="text-red-300 mt-4">{err}</p>}
+          </div>
+        )}
       </div>
 
       {/* Card view */}
@@ -866,22 +993,27 @@ export default function DraftPickTrackerClient() {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {filteredDraftRows.map((r) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-            const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-            const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+            const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+            const hasTimer = safeNum(r.timerSec) > 0;
 
-            const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-            const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
-            const isDrafting = String(r.draftStatus || "").toLowerCase() === "drafting";
-            const hasMyPick = r.myNextPickOverall != null;
-            const heatTier = getHeatTier(hasMyPick ? liveEta : NaN);
+            const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
+            const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
 
-            // Flash ONLY when ETA <= 10 minutes (and you actually have a next pick)
-            const flashHot = isDrafting && hasMyPick && heatTier === "hot";
+            const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
-            const heat = heatStyles(heatTier, isDrafting && hasMyPick, flashHot);
+            const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+            let liveEtaToShownPick = null;
 
-            
+            if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+              if (isDrafting && r.onClockIsMe) {
+                const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+                liveEtaToShownPick = liveClockLeft + gap * perPickMs;
+              } else {
+                liveEtaToShownPick = Math.max(0, safeNum(r.etaMs) - elapsed);
+              }
+            }
 
+            const etaClock = hasTimer && liveEtaToShownPick != null ? msToClock(liveEtaToShownPick) : "—";
 
             const statusTone =
               r.draftStatus === "drafting"
@@ -892,51 +1024,88 @@ export default function DraftPickTrackerClient() {
                 ? "gray"
                 : "yellow";
 
-            const upIn = r.picksUntilMyPick != null ? r.picksUntilMyPick : null;
+            const clockHeat =
+              isDrafting && r.onClockIsMe && hasTimer ? onClockHeatStyles(liveClockLeft) : null;
+            const deckTint = isDrafting && !r.onClockIsMe && r.onDeck ? onDeckTintStyles() : null;
 
-            const isExpanded = !!expandedRecent[r.leagueId];
-            const recentToShow = isExpanded ? (r.recent || []) : (r.recent || []).slice(0, 3);
+            const shellRing = (clockHeat && clockHeat.ring) || (deckTint && deckTint.ring) || "";
+            const shellWash = (clockHeat && clockHeat.wash) || (deckTint && deckTint.wash) || "";
+
+            const timerLabel = formatTimerHoursLabel(r.timerSec);
 
             return (
               <div
                 key={r.leagueId}
                 className={classNames(
                   "relative bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
-                  heat.wash,      // premium wash overlay (uses before:)
-                  heat.ring,      // heat ring/glow
-                  (r.onClockIsMe || r.onDeck) &&
-                    r.draftStatus === "drafting" &&
-                    "ring-1 ring-emerald-400/30"
+                  shellWash,
+                  shellRing
                 )}
               >
+                <style jsx>{`
+                  @keyframes dpt_shake {
+                    0%,
+                    100% {
+                      transform: translate3d(0, 0, 0) rotate(0deg);
+                    }
+                    25% {
+                      transform: translate3d(0.6px, -0.4px, 0) rotate(-0.15deg);
+                    }
+                    50% {
+                      transform: translate3d(-0.6px, 0.4px, 0) rotate(0.15deg);
+                    }
+                    75% {
+                      transform: translate3d(0.4px, 0.6px, 0) rotate(-0.1deg);
+                    }
+                  }
+                  .animate-[dpt_shake_0.9s_ease-in-out_infinite] {
+                    animation: dpt_shake 0.9s ease-in-out infinite;
+                  }
+                `}</style>
 
                 <div className="p-4 border-b border-white/10 bg-black/20">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="text-white font-semibold truncate">
-                          {r.leagueName}
-                        </div>
-                        <Pill tone={statusTone}>{r.draftStatus || "—"}</Pill>
-                        {heat.badge}
+                        <div className="text-white font-semibold truncate">{r.leagueName}</div>
+                        <Pill tone={statusTone} size="sm">
+                          {r.draftStatus || "—"}
+                        </Pill>
+
+                        {isDrafting && r.onClockIsMe && (
+                          <span className={classNames("inline-flex", hasTimer ? clockHeat?.shake : "")}>
+                            <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="sm">
+                              ON CLOCK
+                            </Pill>
+                          </span>
+                        )}
+
+                        {isDrafting && !r.onClockIsMe && r.onDeck && (
+                          <Pill tone="yellow" size="sm">
+                            ON DECK
+                          </Pill>
+                        )}
                       </div>
+
                       <div className="text-xs text-gray-400 mt-1">
                         {r.teams ? `${r.teams} teams` : "—"}
                         {r.rounds ? ` · ${r.rounds} rounds` : ""}
-                        {r.timerSec ? ` · ${r.timerSec}s timer` : ""}
+                        {timerLabel ? ` · ${timerLabel}` : ""}
                       </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
-                        <Pill tone="green">ON CLOCK · {clockText}</Pill>
+                      {isDrafting && r.onClockIsMe && (
+                        <span className={classNames("inline-flex", hasTimer ? clockHeat?.shake : "")}>
+                          <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="lg">
+                            <span className="tabular-nums font-extrabold tracking-wide">{clockText}</span>
+                          </Pill>
+                        </span>
                       )}
-                      {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
-                        <Pill tone="yellow">ON DECK</Pill>
-                      )}
-                      {upIn != null && upIn >= 0 && (
-                        <Pill tone={upIn <= 1 ? "yellow" : "cyan"}>
-                          Up in {upIn} pick{upIn === 1 ? "" : "s"}
+
+                      {!r.onClockIsMe && r.picksUntilMyPick != null && r.myNextPickOverall != null && (
+                        <Pill tone={r.picksUntilMyPick <= 1 ? "yellow" : "cyan"} size="xs">
+                          Up in {r.picksUntilMyPick}
                         </Pill>
                       )}
                     </div>
@@ -944,109 +1113,83 @@ export default function DraftPickTrackerClient() {
                 </div>
 
                 <div className="p-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <div className="text-xs text-gray-400">Current Pick</div>
-                      <div className="text-white text-lg font-semibold">
-                        {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
-                      </div>
-                      {r.draftStatus === "drafting" && clockText && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {clockText} left
+                      <div className="text-white text-lg font-semibold truncate mt-0.5">{r.currentOwnerName || "—"}</div>
+
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <div className="text-xs text-gray-400">
+                          {r.currentPick ? `Pick #${nf0.format(r.currentPick)}` : "Pick —"}
                         </div>
-                      )}
-                      {r.draftStatus === "paused" && (
-                        <div className="text-xs text-yellow-200/80 mt-1">
-                          Draft paused
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-black/20 border border-white/10 rounded-xl p-3">
-                      <div className="text-xs text-gray-400">Who’s Up</div>
-                      <div className="text-white text-lg font-semibold truncate">
-                        {r.nextOwnerName || "—"}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {r.myNextPickOverall
-                          ? `Your next: #${nf0.format(r.myNextPickOverall)}`
-                          : "Your next: —"}
+                        {isDrafting ? (
+                          <div className="text-xl text-white font-extrabold tabular-nums tracking-wide">
+                            {clockText}
+                          </div>
+                        ) : r.draftStatus === "paused" ? (
+                          <div className="text-xs text-yellow-200/80">paused</div>
+                        ) : (
+                          <div className="text-xs text-gray-500">—</div>
+                        )}
                       </div>
                     </div>
 
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
-                      <div className="text-xs text-gray-400">ETA</div>
-                      <div className="text-white text-lg font-semibold">
-                        {r.myNextPickOverall ? etaHuman : "—"}
+                      <div className="text-xs text-gray-400">
+                        {r.onClockIsMe ? "Your Next Pick (after this)" : "Your Next Pick"}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Uses {r.timerSec ? `${r.timerSec}s` : "timer"} per pick
-                      </div>
-                    </div>
 
-                    <div className="bg-black/20 border border-white/10 rounded-xl p-3">
-                      <div className="text-xs text-gray-400">Timer</div>
-                      <div className="text-white text-lg font-semibold">
-                        {r.timerSec ? `${r.timerSec}s` : "—"}
+                      <div className="text-white text-lg font-semibold mt-0.5">
+                        {shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        League pick timer setting
+
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <div className="text-xs text-gray-400">ETA</div>
+                        <div className="text-xl text-white font-extrabold tabular-nums tracking-wide">{etaClock}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm text-white font-semibold">
-                        Recent picks
-                      </div>
+                      <div className="text-sm text-white font-semibold">Recent picks</div>
 
                       <button
                         type="button"
                         onClick={() =>
-                          setExpandedRecent((prev) => ({
+                          setShowRecent((prev) => ({
                             ...prev,
                             [r.leagueId]: !prev?.[r.leagueId],
                           }))
                         }
                         className="text-xs px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
-                        disabled={(r.recent || []).length <= 3}
-                        title="Expand/collapse recent picks"
+                        disabled={(r.recent || []).length === 0}
+                        title="Show/hide recent picks"
                       >
-                        {(r.recent || []).length <= 3
-                          ? `last ${Math.min(10, (r.recent || []).length)}`
-                          : isExpanded
-                          ? "Collapse"
-                          : "Expand"}
+                        {(r.recent || []).length === 0 ? "None" : showRecent[r.leagueId] ? "Hide" : "Show"}
                       </button>
                     </div>
 
-                    <div className="mt-2 space-y-1">
-                      {recentToShow.map((p, idx) => (
-                        <div
-                          key={`${r.leagueId}-recent-${idx}-${p?.player_id || "x"}`}
-                          className="flex items-center justify-between gap-3 text-sm"
-                        >
-                          <div className="text-gray-200 truncate">
-                            <span className="text-gray-400 mr-2">•</span>
-                            {p?.label || "—"}
+                    {showRecent[r.leagueId] && (
+                      <div className="mt-2 space-y-1">
+                        {(r.recent || []).map((p, idx) => (
+                          <div
+                            key={`${r.leagueId}-recent-${idx}-${p?.player_id || "x"}`}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <div className="text-gray-200 truncate">
+                              <span className="text-gray-400 mr-2">•</span>
+                              {p?.label || "—"}
+                            </div>
+                            {p?.pick_no ? (
+                              <span className="text-xs text-gray-400 flex-shrink-0">#{p.pick_no}</span>
+                            ) : (
+                              <span className="text-xs text-gray-600 flex-shrink-0">—</span>
+                            )}
                           </div>
-                          {p?.pick_no ? (
-                            <span className="text-xs text-gray-400 flex-shrink-0">
-                              #{p.pick_no}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-600 flex-shrink-0">
-                              —
-                            </span>
-                          )}
-                        </div>
-                      ))}
-
-                      {(r.recent || []).length === 0 && (
-                        <div className="text-sm text-gray-400">No picks yet.</div>
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1061,185 +1204,145 @@ export default function DraftPickTrackerClient() {
         </div>
       )}
 
-      {/* Table view (mobile-optimized) */}
+      {/* Table view */}
       {view === "table" && (
         <div className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Pill tone="cyan">{filteredDraftRows.length} leagues</Pill>
-              <Pill tone="blue">Timer + clock</Pill>
-              <Pill tone="yellow">On-deck alert</Pill>
-              {includePaused && onlyDrafting && <Pill tone="yellow">Paused</Pill>}
-            </div>
-            <div className="text-xs text-gray-400 hidden sm:block">
-              Tip: mobile uses stacked rows (no sideways scroll)
+          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-black/20">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Pill tone="cyan">{totalLeagues} leagues</Pill>
+              <Pill tone="blue">Sort: {sortMode}</Pill>
+              {includePaused && onlyDrafting && <Pill tone="yellow">Showing paused</Pill>}
             </div>
           </div>
 
-          {/* MOBILE: stacked rows */}
+          {/* MOBILE */}
           <div className="sm:hidden">
-            <div className="divide-y divide-white/10">
-              {filteredDraftRows.map((r) => {
-                const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-                const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
+            <div className="w-full">
+              <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-black/20 text-xs text-gray-300 border-b border-white/10">
+                <div className="col-span-5">League</div>
+                <div className="col-span-5">Current</div>
+                <div className="col-span-2 text-right">Your Next</div>
+              </div>
 
-                const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-                const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+              <div className="divide-y divide-white/10">
+                {filteredDraftRows.map((r) => {
+                  const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                  const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+                  const hasTimer = safeNum(r.timerSec) > 0;
 
-                const statusTone =
-                  r.draftStatus === "drafting"
-                    ? "green"
-                    : r.draftStatus === "paused"
-                    ? "yellow"
-                    : r.draftStatus === "complete"
-                    ? "gray"
-                    : "yellow";
+                  const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
+                  const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
 
-                return (
-                  <div
-                    key={r.leagueId}
-                    className={classNames(
-                      "p-4",
-                      (r.onClockIsMe || r.onDeck) && r.draftStatus === "drafting" && "bg-emerald-500/5"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-white font-semibold truncate">
-                          {r.leagueName}
-                        </div>
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          <Pill tone={statusTone}>{r.draftStatus || "—"}</Pill>
-                          {r.timerSec ? <Pill tone="gray">{r.timerSec}s timer</Pill> : null}
-                          {r.teams ? <Pill tone="gray">{r.teams} teams</Pill> : null}
-                        </div>
+                  const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
+
+                  const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+                  let liveEta = null;
+                  if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+                    if (isDrafting && r.onClockIsMe) {
+                      const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+                      liveEta = liveClockLeft + gap * perPickMs;
+                    } else {
+                      liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+                    }
+                  }
+
+                  const etaClock = hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+
+                  return (
+                    <div
+                      key={r.leagueId}
+                      className={classNames(
+                        "relative grid grid-cols-12 gap-2 px-4 py-2.5 text-sm border-l-4",
+                        isDrafting && r.onClockIsMe && "bg-emerald-500/10 border-emerald-400/60",
+                        isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/10 border-amber-400/60",
+                        !(isDrafting && (r.onClockIsMe || r.onDeck)) && "border-transparent"
+                      )}
+                    >
+                      <div className="col-span-5 min-w-0">
+                        <div className="text-white truncate">{r.leagueName}</div>
+                        <div className="text-[10px] text-gray-400 truncate">{r.draftStatus || "—"}</div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
-                        {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
-                          <Pill tone="green">ON CLOCK · {clockText}</Pill>
-                        )}
-                        {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
-                          <Pill tone="yellow">ON DECK</Pill>
-                        )}
-                        {r.picksUntilMyPick != null && (
-                          <Pill tone={r.picksUntilMyPick <= 1 ? "yellow" : "cyan"}>
-                            Up in {r.picksUntilMyPick}
-                          </Pill>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <div className="bg-black/20 border border-white/10 rounded-xl p-3">
-                        <div className="text-xs text-gray-400">Current</div>
-                        <div className="text-white font-semibold">
-                          {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
+                      <div className="col-span-5 min-w-0">
+                        <div className="text-gray-100 truncate">{r.currentOwnerName || "—"}</div>
+                        <div className="text-[11px] text-gray-400 tabular-nums flex items-center gap-2">
+                          <span>{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</span>
+                          {isDrafting ? (
+                            <span className="text-base font-extrabold text-white">{clockText}</span>
+                          ) : r.draftStatus === "paused" ? (
+                            <span className="text-yellow-200/80">paused</span>
+                          ) : null}
                         </div>
-                        {r.draftStatus === "drafting" && clockText && (
-                          <div className="text-xs text-gray-400 mt-1">{clockText} left</div>
-                        )}
-                      </div>
-
-                      <div className="bg-black/20 border border-white/10 rounded-xl p-3">
-                        <div className="text-xs text-gray-400">Next up</div>
-                        <div className="text-white font-semibold truncate">
-                          {r.nextOwnerName || "—"}
+                        <div className="mt-1 flex gap-1">
+                          {isDrafting && r.onClockIsMe ? (
+                            <Pill tone="green" size="xs">
+                              ON CLOCK
+                            </Pill>
+                          ) : null}
                         </div>
                       </div>
 
-                      <div className="bg-black/20 border border-white/10 rounded-xl p-3 col-span-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-xs text-gray-400">Your pick / ETA</div>
-                            <div className="text-white font-semibold">
-                              {r.myNextPickOverall ? `#${nf0.format(r.myNextPickOverall)}` : "—"}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-gray-400">ETA</div>
-                            <div className="text-white font-semibold">{etaHuman}</div>
-                          </div>
+                      <div className="col-span-2 text-right">
+                        <div className="text-white">{shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}</div>
+                        <div className="text-[11px] text-gray-300 mt-0.5 tabular-nums font-extrabold">{etaClock}</div>
+                        <div className="mt-1 flex justify-end gap-1">
+                          {isDrafting && !r.onClockIsMe && r.onDeck ? (
+                            <Pill tone="yellow" size="xs">
+                              ON DECK
+                            </Pill>
+                          ) : null}
                         </div>
                       </div>
                     </div>
+                  );
+                })}
+
+                {filteredDraftRows.length === 0 && (
+                  <div className="px-5 py-10 text-center text-gray-300">
+                    No leagues found. Try adjusting filters or hit Refresh.
                   </div>
-                );
-              })}
-
-              {filteredDraftRows.length === 0 && (
-                <div className="px-5 py-10 text-center text-gray-300">
-                  No leagues found. Try adjusting filters or hit Refresh.
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
-          {/* DESKTOP: full table */}
+          {/* DESKTOP */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-black/20 text-gray-200">
                 <tr>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="League"
-                      col="leagueName"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="Status"
-                      col="draftStatus"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="Current Pick"
-                      col="currentPick"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="Next Up"
-                      col="nextOwnerName"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="Your Pick"
-                      col="myNextPickOverall"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="Up In"
-                      col="picksUntilMyPick"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
-                  <th className="px-5 py-3">
-                    <SortHeader
-                      label="ETA"
-                      col="etaMs"
-                      {...{ sortKey, sortDir, setSortKey, setSortDir }}
-                    />
-                  </th>
+                  <th className="px-5 py-3 text-left">League</th>
+                  <th className="px-5 py-3 text-left">Status</th>
+                  <th className="px-5 py-3 text-left">Current</th>
+                  <th className="px-5 py-3 text-left">Your Next</th>
+                  <th className="px-5 py-3 text-left">Up In</th>
+                  <th className="px-5 py-3 text-left">ETA</th>
                 </tr>
               </thead>
+
               <tbody>
                 {filteredDraftRows.map((r) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                  const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-                  const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
+                  const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
+                  const hasTimer = safeNum(r.timerSec) > 0;
 
-                  const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-                  const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+                  const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
+                  const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
+
+                  const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
+
+                  const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+                  let liveEta = null;
+                  if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+                    if (isDrafting && r.onClockIsMe) {
+                      const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+                      liveEta = liveClockLeft + gap * perPickMs;
+                    } else {
+                      liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+                    }
+                  }
+
+                  const etaClock = hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
                   const statusTone =
                     r.draftStatus === "drafting"
@@ -1250,12 +1353,15 @@ export default function DraftPickTrackerClient() {
                       ? "gray"
                       : "yellow";
 
+                  const timerLabel = formatTimerHoursLabel(r.timerSec);
+
                   return (
                     <tr
                       key={r.leagueId}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
-                        (r.onClockIsMe || r.onDeck) && r.draftStatus === "drafting" && "bg-emerald-500/5"
+                        isDrafting && r.onClockIsMe && "bg-emerald-500/5",
+                        isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/5"
                       )}
                     >
                       <td className="px-5 py-4">
@@ -1264,64 +1370,75 @@ export default function DraftPickTrackerClient() {
                           <div className="text-xs text-gray-400">
                             {r.teams ? `${r.teams} teams` : "—"}
                             {r.rounds ? ` · ${r.rounds} rounds` : ""}
-                            {r.timerSec ? ` · ${r.timerSec}s timer` : ""}
+                            {timerLabel ? ` · ${timerLabel}` : ""}
                           </div>
                         </div>
                       </td>
+
                       <td className="px-5 py-4">
-                        <Pill tone={statusTone}>{r.draftStatus || "—"}</Pill>
+                        <Pill tone={statusTone} size="sm">
+                          {r.draftStatus || "—"}
+                        </Pill>
                       </td>
+
                       <td className="px-5 py-4">
-                        {r.currentPick ? (
-                          <div className="flex flex-col">
-                            <span className="text-gray-100">{nf0.format(r.currentPick)}</span>
-                            {r.draftStatus === "drafting" && clockText && (
-                              <span className="text-xs text-gray-400">{clockText} left</span>
-                            )}
-                            {r.draftStatus === "paused" && (
-                              <span className="text-xs text-yellow-200/80">paused</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-gray-100">{r.nextOwnerName || "—"}</td>
-                      <td className="px-5 py-4">
-                        {r.myNextPickOverall ? (
+                        <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Pill tone="purple">#{nf0.format(r.myNextPickOverall)}</Pill>
-                            {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
-                              <Pill tone="green">ON CLOCK · {clockText}</Pill>
-                            )}
-                            {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
-                              <Pill tone="yellow">ON DECK</Pill>
-                            )}
+                            <span className="text-gray-100">{r.currentOwnerName || "—"}</span>
+                            {isDrafting && r.onClockIsMe ? (
+                              <Pill tone="green" size="xs">
+                                ON CLOCK
+                              </Pill>
+                            ) : null}
+                          </div>
+
+                          <span className="text-xs text-gray-400 tabular-nums flex items-center gap-2">
+                            <span>{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</span>
+                            {isDrafting ? (
+                              <span className="text-lg font-extrabold text-white tabular-nums tracking-wide">
+                                {clockText}
+                              </span>
+                            ) : r.draftStatus === "paused" ? (
+                              <span className="text-yellow-200/80">paused</span>
+                            ) : null}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {shownPickNo ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Pill tone="purple" size="sm">
+                              #{nf0.format(shownPickNo)}
+                            </Pill>
+                            {isDrafting && !r.onClockIsMe && r.onDeck ? (
+                              <Pill tone="yellow" size="xs">
+                                ON DECK
+                              </Pill>
+                            ) : null}
                           </div>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
+
                       <td className="px-5 py-4">
                         {r.picksUntilMyPick != null ? (
-                          <Pill tone={r.picksUntilMyPick <= 1 ? "yellow" : "cyan"}>
+                          <Pill tone={r.picksUntilMyPick <= 1 ? "yellow" : "cyan"} size="sm">
                             {r.picksUntilMyPick}
                           </Pill>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
+
                       <td className="px-5 py-4">
-                        {r.myNextPickOverall ? (
-                          <div className="flex flex-col">
-                            <span className="text-white font-semibold">{etaHuman}</span>
-                            <span className="text-xs text-gray-400">
-                              uses {r.timerSec ? `${r.timerSec}s` : "timer"} / pick
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
+                        <div className="flex flex-col">
+                          <span className="text-lg text-white font-extrabold tabular-nums tracking-wide">{etaClock}</span>
+                          <span className="text-xs text-gray-400">
+                            {hasTimer ? "timer-based" : "no timer"}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1329,7 +1446,7 @@ export default function DraftPickTrackerClient() {
 
                 {filteredDraftRows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-gray-300">
+                    <td colSpan={6} className="px-5 py-10 text-center text-gray-300">
                       No leagues found. Try adjusting filters or hit Refresh.
                     </td>
                   </tr>
@@ -1339,7 +1456,7 @@ export default function DraftPickTrackerClient() {
           </div>
 
           <div className="px-5 py-4 border-t border-white/10 text-xs text-gray-400">
-            Tip: “Next up” and “your pick” now account for traded pick ownership.
+            Tip: Current pick owner and your next pick both account for traded pick ownership.
           </div>
         </div>
       )}
