@@ -65,25 +65,12 @@ self.addEventListener("push", (event) => {
   const body = payload.body || "New draft activity.";
   const url = payload.url || "/draft-pick-tracker";
 
-  // Support stacking/replacement + richer options coming from the server payload
-  const tag = typeof payload.tag === "string" ? payload.tag : undefined;
-  const icon = typeof payload.icon === "string" ? payload.icon : "/android-chrome-192x192.png";
-  const badge = typeof payload.badge === "string" ? payload.badge : "/android-chrome-192x192.png";
-  const renotify = !!payload.renotify;
-  const requireInteraction = !!payload.requireInteraction;
-  const actions = Array.isArray(payload.actions) ? payload.actions : undefined;
-  const extraData = payload.data && typeof payload.data === "object" ? payload.data : undefined;
-
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      tag,
-      icon,
-      badge,
-      renotify,
-      requireInteraction,
-      actions,
-      data: { url, ...(extraData || {}) },
+      icon: "/android-chrome-192x192.png",
+      badge: "/android-chrome-192x192.png",
+      data: { url },
     })
   );
 });

@@ -1,189 +1,175 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+import { useEffect, useMemo, useState } from "react";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-  return outputArray;
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+  return out;
 }
 
-async function safeJson(res) {
-  try {
-    return await res.json();
-  } catch {
-    return null;
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, rej) => {
+    t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
+}
+
+export default function PushAlerts({ username, selectedDraftIds = [] }) {
+  const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
+  const [msg, setMsg] = useState("");
+
+  const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
+
+  async function saveSubscription(sub) {
+    const res = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: username || null,
+        draftIds: Array.isArray(selectedDraftIds) ? selectedDraftIds : [],
+        subscription: sub,
+      }),
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(t || `Subscribe API failed (${res.status})`);
+    }
   }
-}
-
-export default function PushAlerts({ username, draftIds }) {
-  const [status, setStatus] = useState("idle"); // idle | working | enabled | error
-  const [endpoint, setEndpoint] = useState("");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!("serviceWorker" in navigator)) return;
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (sub?.endpoint) setEndpoint(sub.endpoint);
-      } catch {
-        // ignore
-      }
-    })();
-  }, []);
 
   async function enable() {
     try {
-      setStatus("working");
+      setStatus("loading");
+      setMsg("");
 
-      if (!("serviceWorker" in navigator)) throw new Error("Service workers not supported.");
-      if (!VAPID_PUBLIC_KEY) throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY.");
+      if (!vapidKey) {
+        throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY (not available in this build).");
+      }
 
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") throw new Error("Notifications not granted.");
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("Service Worker not supported in this browser.");
+      }
 
-      const reg = await navigator.serviceWorker.ready;
+      const perm = await withTimeout(Notification.requestPermission(), 15000, "Notification permission");
+      if (perm !== "granted") {
+        setStatus("denied");
+        setMsg("Notifications are blocked. Enable them in browser settings.");
+        return;
+      }
 
-      let sub = await reg.pushManager.getSubscription();
+      // Wait for SW ready, but don't hang forever
+      const reg = await withTimeout(navigator.serviceWorker.ready, 15000, "Service worker");
+
+      if (!reg?.pushManager) {
+        throw new Error("PushManager not available (push not supported on this device/browser).");
+      }
+
+      // Prefer existing subscription (prevents InvalidState issues)
+      let sub = await withTimeout(reg.pushManager.getSubscription(), 8000, "Get subscription");
+
       if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
+        sub = await withTimeout(
+          reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          }),
+          15000,
+          "Push subscribe"
+        );
       }
 
-      setEndpoint(sub.endpoint || "");
+      // Save to server (D1)
+      await withTimeout(saveSubscription(sub), 15000, "Save subscription");
 
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, draftIds, subscription: sub }),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
       setStatus("enabled");
+      setMsg(
+        selectedDraftIds?.length
+          ? `Draft alerts enabled for ${selectedDraftIds.length} draft(s).`
+          : "Draft alerts enabled. Pick a league/draft to receive alerts."
+      );
     } catch (e) {
       setStatus("error");
-      console.error(e);
-      alert(e?.message || String(e));
+      setMsg(
+        e?.message ||
+          "Couldn’t enable push. On iPhone/iPad, add the site to Home Screen first (iOS 16.4+)."
+      );
     }
   }
 
-  async function hardReset() {
-    // This is the “revive my dead Chrome profile” button.
-    try {
-      setStatus("working");
-      if (!("serviceWorker" in navigator)) throw new Error("Service workers not supported.");
+  // Keep server in sync when draft selection changes (prevents draft_ids_json = [])
+  useEffect(() => {
+    let cancelled = false;
 
-      // 1) Grab current subscription (if any) so we can delete it server-side.
-      let sub = null;
+    async function sync() {
       try {
+        if (Notification.permission !== "granted") return;
+        if (!("serviceWorker" in navigator)) return;
+
         const reg = await navigator.serviceWorker.ready;
-        sub = await reg.pushManager.getSubscription();
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) return;
+
+        await saveSubscription(sub);
+
+        if (!cancelled && status === "enabled") {
+          setMsg(
+            selectedDraftIds?.length
+              ? `Alerts updated: tracking ${selectedDraftIds.length} draft(s).`
+              : "Alerts updated. Pick a league/draft to receive alerts."
+          );
+        }
       } catch {
-        // if SW is busted, we'll still proceed
+        // ignore
       }
-
-      // 2) Delete endpoint from DB first (prevents stale rows)
-      if (sub?.endpoint) {
-        await fetch("/api/push/unsubscribe", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
-        }).catch(() => {});
-      }
-
-      // 3) Unsubscribe client push
-      if (sub) {
-        try {
-          await sub.unsubscribe();
-        } catch {}
-      }
-
-      // 4) Unregister ALL service workers for this origin
-      try {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.allSettled(regs.map((r) => r.unregister()));
-      } catch {}
-
-      // 5) Clear caches for this origin (sometimes old SW script/cached assets get stuck)
-      try {
-        if (window.caches?.keys) {
-          const keys = await caches.keys();
-          await Promise.allSettled(keys.map((k) => caches.delete(k)));
-        }
-      } catch {}
-
-      // 6) Best-effort clear storage (won’t always be allowed)
-      try {
-        if (navigator.storage?.estimate) {
-          // just touch it; some browsers require a user gesture before clear
-          await navigator.storage.estimate();
-        }
-        if (navigator.storage?.persisted) {
-          await navigator.storage.persisted();
-        }
-      } catch {}
-
-      setEndpoint("");
-      setStatus("idle");
-
-      alert("Hard reset complete. Page will reload. Then click Enable Alerts.");
-      location.reload();
-    } catch (e) {
-      setStatus("error");
-      console.error(e);
-      alert(e?.message || String(e));
     }
-  }
+
+    if (status === "enabled" || Notification.permission === "granted") sync();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDraftIds.join("|")]);
 
   return (
-    <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-      <button
-        onClick={enable}
-        disabled={status === "working"}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.2)",
-          background: "rgba(255,255,255,0.08)",
-          color: "white",
-          cursor: "pointer",
-        }}
-      >
-        {status === "working" ? "Working…" : "Enable Alerts"}
-      </button>
-
-      {/* <button
-        onClick={hardReset}
-        disabled={status === "working"}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.2)",
-          background: "rgba(255,90,90,0.18)",
-          color: "white",
-          cursor: "pointer",
-        }}
-        title="Use this if your Chrome profile stopped receiving pushes entirely."
-      >
-        Hard Reset Alerts
-      </button> */}
-
-      {endpoint ? (
-        <div style={{ width: "100%", marginTop: 10, fontSize: 12, opacity: 0.9 }}>
-          <div style={{ marginBottom: 6 }}>
-            <b>Current subscription endpoint:</b>
+    <div
+      style={{
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 16,
+        padding: 14,
+        background: "rgba(10,16,34,0.55)",
+        backdropFilter: "blur(10px)",
+      }}
+    >
+      <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontWeight: 700, letterSpacing: 0.2 }}>Draft Pick Tracker Alerts</div>
+          <div style={{ opacity: 0.75, fontSize: 13 }}>
+            Get “on the clock” alerts — even when the app is closed.
           </div>
-          <div style={{ wordBreak: "break-all", opacity: 0.85 }}>{endpoint}</div>
         </div>
-      ) : null}
+
+        <button
+          onClick={enable}
+          disabled={status === "loading"}
+          style={{
+            borderRadius: 999,
+            padding: "10px 14px",
+            border: "1px solid rgba(122,212,242,0.35)",
+            background: "rgba(122,212,242,0.14)",
+            color: "white",
+            fontWeight: 700,
+            cursor: status === "loading" ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {status === "enabled" ? "Enabled" : status === "loading" ? "Enabling…" : "Enable Alerts"}
+        </button>
+      </div>
+
+      {msg ? <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>{msg}</div> : null}
     </div>
   );
 }
