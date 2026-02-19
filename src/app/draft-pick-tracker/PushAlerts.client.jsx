@@ -19,15 +19,12 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
 }
 
-function hasNotificationAPI() {
-  return typeof window !== "undefined" && typeof window.Notification !== "undefined";
-}
-
 export default function PushAlerts({ username, selectedDraftIds = [] }) {
   const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
   const [msg, setMsg] = useState("");
 
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
+  const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
 
   async function saveSubscription(sub) {
     const res = await fetch("/api/push/subscribe", {
@@ -55,35 +52,35 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
         throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY (not available in this build).");
       }
 
+      if (!hasNotification) {
+        throw new Error(
+          "Notifications are not available in this browser/context. On iPhone/iPad, add the site to Home Screen (iOS 16.4+) and enable notifications for the app."
+        );
+      }
+
       if (!("serviceWorker" in navigator)) {
         throw new Error("Service Worker not supported in this browser.");
       }
 
-      // ✅ iOS/Safari (not installed) can have no Notification global at all
-      if (!hasNotificationAPI()) {
-        throw new Error(
-          "Notifications aren’t available in this browser. On iPhone/iPad: add the site to Home Screen (iOS 16.4+) then enable alerts there."
-        );
-      }
-
       const perm = await withTimeout(
-        window.Notification.requestPermission(),
+        globalThis.Notification.requestPermission(),
         15000,
         "Notification permission"
       );
-
       if (perm !== "granted") {
         setStatus("denied");
         setMsg("Notifications are blocked. Enable them in browser settings.");
         return;
       }
 
+      // Wait for SW ready, but don't hang forever
       const reg = await withTimeout(navigator.serviceWorker.ready, 15000, "Service worker");
 
       if (!reg?.pushManager) {
         throw new Error("PushManager not available (push not supported on this device/browser).");
       }
 
+      // Prefer existing subscription (prevents InvalidState issues)
       let sub = await withTimeout(reg.pushManager.getSubscription(), 8000, "Get subscription");
 
       if (!sub) {
@@ -97,6 +94,7 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
         );
       }
 
+      // Save to server (D1)
       await withTimeout(saveSubscription(sub), 15000, "Save subscription");
 
       setStatus("enabled");
@@ -120,9 +118,8 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
 
     async function sync() {
       try {
-        // ✅ Guard Notification usage
-        if (!hasNotificationAPI()) return;
-        if (window.Notification.permission !== "granted") return;
+        if (!hasNotification) return;
+        if (globalThis.Notification.permission !== "granted") return;
         if (!("serviceWorker" in navigator)) return;
 
         const reg = await navigator.serviceWorker.ready;
@@ -143,12 +140,8 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
       }
     }
 
-    if (status === "enabled") sync();
-    else if (hasNotificationAPI() && window.Notification.permission === "granted") sync();
-
-    return () => {
-      cancelled = true;
-    };
+    if (status === "enabled" || (hasNotification && globalThis.Notification.permission === "granted")) sync();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDraftIds.join("|")]);
 

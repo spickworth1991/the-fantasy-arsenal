@@ -61,6 +61,9 @@ export async function POST(req, context) {
       input = {};
     }
 
+    const urlObj = new URL(req.url);
+    const debug = input.debug === true || urlObj.searchParams.get("debug") === "1";
+
     const title = input.title || "Draft Update";
     const body = input.body || input.message || "New draft activity.";
     const url = input.url || "/draft-pick-tracker";
@@ -94,6 +97,7 @@ export async function POST(req, context) {
     let sent = 0;
     let failed = 0;
     const failures = [];
+    const results = [];
 
     for (const s of subs) {
       try {
@@ -116,15 +120,35 @@ export async function POST(req, context) {
 
         const res = await fetch(endpoint, fetchInit);
 
+        // Some push services return small bodies even on success; capture when debugging.
+        const resText = debug ? await res.text().catch(() => "") : "";
+
         if (res.ok) {
           sent++;
+          if (debug) {
+            results.push({
+              endpointHash: await shortHash(s.endpoint),
+              status: res.status,
+              ok: true,
+              body: resText,
+            });
+          }
         } else {
-          const txt = await res.text().catch(() => "");
+          const txt = resText || (await res.text().catch(() => ""));
           failures.push({
             endpointHash: await shortHash(s.endpoint),
             status: res.status,
             body: txt,
           });
+
+          if (debug) {
+            results.push({
+              endpointHash: await shortHash(s.endpoint),
+              status: res.status,
+              ok: false,
+              body: txt,
+            });
+          }
 
           // prune dead endpoints
           if (res.status === 404 || res.status === 410) {
@@ -137,6 +161,14 @@ export async function POST(req, context) {
           endpointHash: await shortHash(s.endpoint),
           error: e?.message || String(e),
         });
+
+        if (debug) {
+          results.push({
+            endpointHash: await shortHash(s.endpoint),
+            ok: false,
+            error: e?.message || String(e),
+          });
+        }
         failed++;
       }
     }
@@ -148,6 +180,7 @@ export async function POST(req, context) {
       sent,
       failed,
       failures,
+      ...(debug ? { results } : {}),
     });
   } catch (e) {
     return new NextResponse(e?.message || "Send failed", { status: 500 });
