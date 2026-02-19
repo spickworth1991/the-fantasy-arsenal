@@ -175,8 +175,12 @@ async function encryptAes128gcm({ subscription, payload, vapidPublicRaw }) {
   const cek = await hkdfExpand(prk2, cekInfo, 16);
   const nonce = await hkdfExpand(prk2, nonceInfo, 12);
 
-  // plaintext format: 0x02 || payload (no padding)
-  const pt = concat(new Uint8Array([0x02]), te.encode(payload));
+  // aes128gcm plaintext format (RFC8291):
+  //   [paddingLength(1 byte)] [padding bytes...] [payload]
+  // We use NO padding => paddingLength = 0x00.
+  // NOTE: 0x02 is the *aesgcm* (older) padding delimiter and will cause
+  // decryption failures (and therefore “sent but never delivered” pushes).
+  const pt = concat(new Uint8Array([0x00]), te.encode(payload));
 
   const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, pt));
