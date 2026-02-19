@@ -57,12 +57,10 @@ async function hmacSha256(keyBytes, dataBytes) {
 }
 
 async function hkdfExtract(salt, ikm) {
-  // PRK = HMAC(salt, ikm)
   return hmacSha256(salt, ikm);
 }
 
 async function hkdfExpand(prk, info, length) {
-  // T(0) = empty, T(1) = HMAC(PRK, T(0) | info | 0x01), ...
   const infoBytes = typeof info === "string" ? te.encode(info) : info;
   const out = new Uint8Array(length);
   let prev = new Uint8Array(0);
@@ -104,14 +102,11 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
     ["sign"]
   );
 
-  // WebCrypto returns DER-ish signature? Actually it returns raw (r|s) in most WebCrypto impls for ECDSA.
-  // Cloudflare returns raw P-1363 (64 bytes). That’s what we want for ES256.
   const sig = new Uint8Array(
     await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, data)
   );
 
-  const jwt = `${h}.${p}.${uint8ToB64url(sig)}`;
-  return jwt;
+  return `${h}.${p}.${uint8ToB64url(sig)}`;
 }
 
 async function encryptAes128gcm({ subscription, payload, vapidPublicRaw }) {
@@ -175,21 +170,18 @@ async function encryptAes128gcm({ subscription, payload, vapidPublicRaw }) {
   const cek = await hkdfExpand(prk2, cekInfo, 16);
   const nonce = await hkdfExpand(prk2, nonceInfo, 12);
 
-  // aes128gcm plaintext format (RFC8188 / RFC8291):
-  //   [payload][0x02][0x00 padding...]
-  // The single 0x02 delimiter marks the end of the message; optional 0x00
-  // bytes may follow as padding. We do not add extra padding.
-  //
-  // IMPORTANT: Using the "paddingLength byte" format here will often return
-  // 201 from the push service but never deliver to the device (decryption fails).
+  // aes128gcm plaintext format: [payload][0x02][0x00 padding...]
+  // We do not add extra padding.
   const pt = concat(te.encode(payload), new Uint8Array([0x02]));
 
   const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, pt));
 
-  // body format for aes128gcm: salt(16) + rs(4) + idlen(1) + serverPubKey + ciphertext
+  // ✅ Correct body format for aes128gcm:
+  // salt(16) + rs(4) + idlen(1=0) + ciphertext
+  // The sender public key is conveyed in the Crypto-Key header (dh=...).
   const rs = 4096; // record size
-  const body = concat(salt, u32be(rs), new Uint8Array([serverPubRaw.length]), serverPubRaw, ct);
+  const body = concat(salt, u32be(rs), new Uint8Array([0x00]), ct);
 
   const cryptoKey = `dh=${uint8ToB64url(serverPubRaw)}; p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`;
 
@@ -217,10 +209,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     vapidPrivateJwk
   );
 
-  // RFC8292 allows "no payload" pushes (body omitted). This is useful for
-  // debugging delivery issues because it bypasses payload encryption.
-  //
-  // To trigger this path, pass `payload: null`.
+  // RFC8292 no-payload push (omit body entirely)
   if (payload == null) {
     return {
       endpoint: subscription.endpoint,
@@ -230,7 +219,6 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
           TTL: "60",
           Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
         },
-        // IMPORTANT: omit body entirely for a true no-payload push.
       },
     };
   }
