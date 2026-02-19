@@ -4,8 +4,12 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-export async function POST(req) { return handler(req); }
-export async function GET(req) { return handler(req); }
+export async function POST(req) {
+  return handler(req);
+}
+export async function GET(req) {
+  return handler(req);
+}
 
 function assertAuth(req, env) {
   const secret = req.headers.get("x-push-secret");
@@ -13,7 +17,9 @@ function assertAuth(req, env) {
 }
 
 async function getPickCount(draftId) {
-  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`, { cache: "no-store" });
+  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error(`Sleeper picks fetch failed for ${draftId}: ${res.status}`);
   const picks = await res.json();
   return Array.isArray(picks) ? picks.length : 0;
@@ -33,7 +39,9 @@ async function getLeague(leagueId) {
 }
 
 async function getUserId(username) {
-  const res = await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`, { cache: "no-store" });
+  const res = await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error(`Sleeper user fetch failed for ${username}: ${res.status}`);
   const u = await res.json();
   return u?.user_id || null;
@@ -43,11 +51,13 @@ async function getUserId(username) {
 function getCurrentSlotSnake(pickNo, teams) {
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
-  const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
+  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
   return { slot, round };
 }
 
-function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
 
 function msToClock(ms) {
   const s = Math.max(0, Math.floor(Number(ms || 0) / 1000));
@@ -80,16 +90,9 @@ function sleeperDraftUrl(draftId) {
 }
 
 function bestLeagueAvatarUrl({ league, draft }) {
-  // Best effort:
-  // - league.avatar is common on league object
-  // - draft.metadata.avatar sometimes exists
   const leagueAvatar = league?.avatar || null;
   const draftAvatar = draft?.metadata?.avatar || null;
   const avatarId = leagueAvatar || draftAvatar;
-
-  // Sleeper league avatars:
-  // https://sleepercdn.com/avatars/thumbs/<avatarId>
-  // (If avatarId isn't valid, SW will still fall back to icon.)
   return avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : null;
 }
 
@@ -108,109 +111,66 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `"${leagueName}" — you're up. Clock: ${timeLeftText}.`,
   ];
 
-  const P25_TITLES = [
-    "Clock check: 25% used",
-    "Quick reminder ⏳",
-    "Don’t forget your pick",
-  ];
+  const P25_TITLES = ["Clock check: 25% used", "Quick reminder ⏳", "Don’t forget your pick"];
   const P25_BODIES = [
     `You've used ~25% of your clock in "${leagueName}". Don’t forget to pick. (${timeLeftText} left)`,
     `"${leagueName}": 25% of your timer is gone. Make your pick when ready. (${timeLeftText} left)`,
     `Friendly nudge — "${leagueName}" clock is moving. (${timeLeftText} left)`,
   ];
 
-  const P50_TITLES = [
-    "Half your clock is gone",
-    "You good? 😅",
-    "Still on the clock",
-  ];
+  const P50_TITLES = ["Half your clock is gone", "You good? 😅", "Still on the clock"];
   const P50_BODIES = [
     `You've used ~50% of your clock in "${leagueName}". Did you forget? (${timeLeftText} left)`,
     `"${leagueName}": halfway through your timer. Don’t get auto-picked. (${timeLeftText} left)`,
     `Just checking — still your pick in "${leagueName}". (${timeLeftText} left)`,
   ];
 
-  const TEN_TITLES = [
-    "⚠️ 10 minutes left",
-    "Seriously… 10 minutes left",
-    "Final stretch",
-  ];
+  const TEN_TITLES = ["⚠️ 10 minutes left", "Seriously… 10 minutes left", "Final stretch"];
   const TEN_BODIES = [
     `Seriously — you only have 10 minutes left in "${leagueName}". Make your pick.`,
     `"${leagueName}": 10 minutes remaining. Lock it in.`,
     `10 minutes left on the clock in "${leagueName}". Don’t get burned.`,
   ];
 
-  const FINAL_TITLES = [
-    "⚠️ Almost out of time",
-    "Last call",
-    "Clock is dying",
-  ];
+  const FINAL_TITLES = ["⚠️ Almost out of time", "Last call", "Clock is dying"];
   const FINAL_BODIES = [
     `"${leagueName}": you're almost out of time. (${timeLeftText} left)`,
     `Last call — "${leagueName}" pick timer is almost done. (${timeLeftText} left)`,
     `Clock’s about to expire in "${leagueName}". (${timeLeftText} left)`,
   ];
 
-  const PAUSED_TITLES = [
-    "Draft paused (you're still up)",
-    "Paused — but you're on the clock",
-  ];
+  const PAUSED_TITLES = ["Draft paused (you're still up)", "Paused — but you're on the clock"];
   const PAUSED_BODIES = [
     `"${leagueName}" is paused. You're on the clock when it resumes.`,
     `Draft paused in "${leagueName}". You're up when it unpauses.`,
   ];
 
-  const UNPAUSED_TITLES = [
-    "Draft resumed — you're up",
-    "Unpaused: you're still on the clock",
-  ];
+  const UNPAUSED_TITLES = ["Draft resumed — you're up", "Unpaused: you're still on the clock"];
   const UNPAUSED_BODIES = [
     `"${leagueName}" resumed and you’re on the clock. (${timeLeftText} left)`,
     `Unpaused in "${leagueName}" — your pick is still up. (${timeLeftText} left)`,
   ];
 
   if (stage === "onclock") {
-    return {
-      title: pickVariant(ONCLOCK_TITLES, baseSeed),
-      body: pickVariant(ONCLOCK_BODIES, baseSeed),
-    };
+    return { title: pickVariant(ONCLOCK_TITLES, baseSeed), body: pickVariant(ONCLOCK_BODIES, baseSeed) };
   }
   if (stage === "p25") {
-    return {
-      title: pickVariant(P25_TITLES, baseSeed),
-      body: pickVariant(P25_BODIES, baseSeed),
-    };
+    return { title: pickVariant(P25_TITLES, baseSeed), body: pickVariant(P25_BODIES, baseSeed) };
   }
   if (stage === "p50") {
-    return {
-      title: pickVariant(P50_TITLES, baseSeed),
-      body: pickVariant(P50_BODIES, baseSeed),
-    };
+    return { title: pickVariant(P50_TITLES, baseSeed), body: pickVariant(P50_BODIES, baseSeed) };
   }
   if (stage === "ten") {
-    return {
-      title: pickVariant(TEN_TITLES, baseSeed),
-      body: pickVariant(TEN_BODIES, baseSeed),
-    };
+    return { title: pickVariant(TEN_TITLES, baseSeed), body: pickVariant(TEN_BODIES, baseSeed) };
   }
   if (stage === "final") {
-    return {
-      title: pickVariant(FINAL_TITLES, baseSeed),
-      body: pickVariant(FINAL_BODIES, baseSeed),
-    };
+    return { title: pickVariant(FINAL_TITLES, baseSeed), body: pickVariant(FINAL_BODIES, baseSeed) };
   }
   if (stage === "paused") {
-    return {
-      title: pickVariant(PAUSED_TITLES, baseSeed),
-      body: pickVariant(PAUSED_BODIES, baseSeed),
-    };
+    return { title: pickVariant(PAUSED_TITLES, baseSeed), body: pickVariant(PAUSED_BODIES, baseSeed) };
   }
   if (stage === "unpaused") {
-    return {
-      title: pickVariant(UNPAUSED_TITLES, baseSeed),
-      body: pickVariant(UNPAUSED_BODIES, baseSeed),
-    };
+    return { title: pickVariant(UNPAUSED_TITLES, baseSeed), body: pickVariant(UNPAUSED_BODIES, baseSeed) };
   }
   return { title: "Draft Update", body: `Update in "${leagueName}".` };
 }
@@ -273,11 +233,13 @@ async function clearClockState(db, endpoint, draftId) {
     .run();
 }
 
-// Per-draft cache to reduce Sleeper subrequests (Cloudflare Workers have strict limits).
-async function ensureDraftStateTable(db) {
+// Per-draft cache to reduce Sleeper subrequests.
+// IMPORTANT: use a new table name so existing deployments with an older schema
+// (push_draft_state) don't 500 when new columns are introduced.
+async function ensureDraftCacheTable(db) {
   await db
     .prepare(
-      `CREATE TABLE IF NOT EXISTS push_draft_state (
+      `CREATE TABLE IF NOT EXISTS push_draft_cache (
         draft_id TEXT PRIMARY KEY,
         last_picked INTEGER,
         pick_count INTEGER,
@@ -290,22 +252,22 @@ async function ensureDraftStateTable(db) {
     .run();
 }
 
-async function loadDraftState(db, draftId) {
+async function loadDraftCache(db, draftId) {
   return (
     (await db
-      .prepare(`SELECT * FROM push_draft_state WHERE draft_id=?`)
+      .prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`)
       .bind(String(draftId))
       .first()) || null
   );
 }
 
-async function saveDraftState(db, draftId, patch) {
+async function saveDraftCache(db, draftId, patch) {
   const now = Date.now();
-  const cur = (await loadDraftState(db, draftId)) || {};
+  const cur = (await loadDraftCache(db, draftId)) || {};
   const next = { ...cur, ...patch, draft_id: String(draftId), updated_at: now };
   await db
     .prepare(
-      `INSERT OR REPLACE INTO push_draft_state (
+      `INSERT OR REPLACE INTO push_draft_cache (
         draft_id, last_picked, pick_count, league_id, league_name, league_avatar, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
@@ -331,8 +293,8 @@ async function handler(req) {
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    // Ensure new cache table exists (helps avoid Cloudflare subrequest limit).
-    await ensureDraftStateTable(db);
+    // New cache table (prevents schema mismatch 500s).
+    await ensureDraftCacheTable(db);
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
     const vapidSubject = env?.VAPID_SUBJECT;
@@ -357,8 +319,12 @@ async function handler(req) {
       .map((r) => {
         let sub = null;
         let draftIds = [];
-        try { sub = JSON.parse(r.subscription_json); } catch {}
-        try { draftIds = JSON.parse(r.draft_ids_json || "[]"); } catch {}
+        try {
+          sub = JSON.parse(r.subscription_json);
+        } catch {}
+        try {
+          draftIds = JSON.parse(r.draft_ids_json || "[]");
+        } catch {}
         return {
           endpoint: r.endpoint,
           sub,
@@ -380,7 +346,6 @@ async function handler(req) {
     let skippedNoOrder = 0;
     let skippedNotOnClock = 0;
 
-    // helper: send one push payload to a single subscription row
     const sendPayload = async (subRow, payload) => {
       const { endpoint, fetchInit } = await buildWebPushRequest({
         subscription: subRow.sub,
@@ -392,25 +357,30 @@ async function handler(req) {
     };
 
     for (const s of subs) {
-      if (!s.draftIds.length) { skippedNoDrafts++; continue; }
-      if (!s.username) { skippedNoUsername++; continue; }
+      if (!s.draftIds.length) {
+        skippedNoDrafts++;
+        continue;
+      }
+      if (!s.username) {
+        skippedNoUsername++;
+        continue;
+      }
 
       let userId = userIdCache.get(s.username);
       if (!userId) {
         userId = await getUserId(s.username);
         userIdCache.set(s.username, userId);
       }
-      if (!userId) { skippedNoOrder++; continue; }
+      if (!userId) {
+        skippedNoOrder++;
+        continue;
+      }
 
-      // If multiple leagues trigger an on-clock event in the same poll,
-      // we prefer a single stacked “summary” notification.
-      /** @type {Array<{leagueName:string,remainingMs:number,icon?:string,leagueUrl?:string,draftUrl?:string,leagueId?:string,draftId?:string,pickNo?:number}>} */
       const onClockBatch = [];
 
       for (const draftId of s.draftIds) {
         checked++;
 
-        // Fetch draft (cached). Fetch pick count only when last_picked changes.
         const draft = await (async () => {
           const cached = draftCache.get(draftId);
           if (cached) return cached;
@@ -419,7 +389,7 @@ async function handler(req) {
           return d;
         })();
 
-        const status = String(draft?.status || "").toLowerCase(); // drafting | paused | complete...
+        const status = String(draft?.status || "").toLowerCase();
         if (status !== "drafting" && status !== "paused") {
           await clearClockState(db, s.endpoint, draftId);
           continue;
@@ -427,7 +397,6 @@ async function handler(req) {
 
         const teams = Number(draft?.settings?.teams || 0);
         const timerSec = Number(draft?.settings?.pick_timer || 0);
-
         const draftOrder = draft?.draft_order || null;
         if (!teams || !draftOrder || !draftOrder[userId]) {
           skippedNoOrder++;
@@ -435,93 +404,70 @@ async function handler(req) {
         }
 
         const userSlot = Number(draftOrder[userId]);
-
         const lastPicked = Number(draft?.last_picked || 0);
-        const draftState = await loadDraftState(db, draftId);
-
+        const draftCacheRow = await loadDraftCache(db, draftId);
         let pickCount;
         if (
-          draftState &&
-          Number(draftState.last_picked || 0) === lastPicked &&
-          Number.isFinite(Number(draftState.pick_count))
+          draftCacheRow &&
+          Number(draftCacheRow.last_picked || 0) === lastPicked &&
+          Number.isFinite(Number(draftCacheRow.pick_count))
         ) {
-          pickCount = Number(draftState.pick_count);
+          pickCount = Number(draftCacheRow.pick_count);
         } else {
           pickCount = await getPickCount(draftId);
-          await saveDraftState(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
+          await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
         }
-
 
         const nextPickNo = pickCount + 1;
         const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
         const isOnClock = currentSlot === userSlot;
 
-        // If you're not on the clock, clear any previous stage flags
         if (!isOnClock) {
           await clearClockState(db, s.endpoint, draftId);
           skippedNotOnClock++;
           continue;
         }
 
-        // Only now do we need league metadata (saves subrequests).
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
         let league = null;
         if (leagueId) {
-          // First: in-memory cache
           const cachedL = leagueCache.get(String(leagueId));
           if (cachedL) {
             league = cachedL;
+          } else if (draftCacheRow?.league_id && (draftCacheRow?.league_name || draftCacheRow?.league_avatar)) {
+            league = { name: draftCacheRow.league_name || null, avatar: draftCacheRow.league_avatar || null };
+            leagueCache.set(String(leagueId), league);
           } else {
-            // Second: persisted per-draft cache
-            const st2 = draftState;
-            if (st2?.league_id && (st2?.league_name || st2?.league_avatar)) {
-              league = { name: st2.league_name || null, avatar: st2.league_avatar || null };
-              leagueCache.set(String(leagueId), league);
-            } else {
-              // Finally: fetch from Sleeper
-              league = await getLeague(leagueId);
-              leagueCache.set(String(leagueId), league);
-              if (league?.name || league?.avatar) {
-                await saveDraftState(db, draftId, {
-                  league_id: String(leagueId),
-                  league_name: league?.name || null,
-                  league_avatar: league?.avatar || null,
-                });
-              }
+            league = await getLeague(leagueId);
+            leagueCache.set(String(leagueId), league);
+            if (league?.name || league?.avatar) {
+              await saveDraftCache(db, draftId, {
+                league_id: String(leagueId),
+                league_name: league?.name || null,
+                league_avatar: league?.avatar || null,
+              });
             }
           }
         }
 
         const leagueName =
-          draft?.metadata?.name ||
-          draft?.metadata?.league_name ||
-          league?.name ||
-          "your league";
+          draft?.metadata?.name || draft?.metadata?.league_name || league?.name || "your league";
 
-        // Determine clock timing
         const lastPickedMs = Number(draft?.last_picked || 0);
         const clockStart = lastPickedMs > 0 ? lastPickedMs : now;
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
         const remainingMs = totalMs > 0 ? Math.max(0, clockStart + totalMs - now) : 0;
         const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "—";
 
-        // Load state
         const clockState = await loadClockState(db, s.endpoint, draftId);
         const prevPickNo = Number(clockState?.pick_no ?? 0);
         const prevStatus = String(clockState?.last_status || "");
-
-
-        // If pick changed (new on-clock pick), reset flags
         const isNewPick = prevPickNo !== nextPickNo;
 
-        // Build “should send” stages in priority order (one per poll per draft)
-        // Paused behavior: send paused once, then nothing else while paused.
-        // Unpaused behavior: if it was paused and now drafting, send unpaused once.
         let stageToSend = null;
 
         const sentPaused = Number(clockState?.sent_paused ?? 0) === 1;
         const sentUnpaused = Number(clockState?.sent_unpaused ?? 0) === 1;
-
         const sentOnclock = Number(clockState?.sent_onclock ?? 0) === 1;
         const sent25 = Number(clockState?.sent_25 ?? 0) === 1;
         const sent50 = Number(clockState?.sent_50 ?? 0) === 1;
@@ -529,60 +475,51 @@ async function handler(req) {
         const sentFinal = Number(clockState?.sent_final ?? 0) === 1;
 
         if (status === "paused") {
-          // If paused, only send the paused notice once per pick
           if (isNewPick || !sentPaused) stageToSend = "paused";
         } else {
-          // draft is not paused
-          if (prevStatus === "paused" && !sentUnpaused) {
-            stageToSend = "unpaused";
-          } else if (isNewPick || !sentOnclock) {
-            stageToSend = "onclock";
-          } else if (totalMs > 0) {
-            const usedFrac = 1 - (remainingMs / totalMs);
-            // 10 minutes left stage (only if timer supports it)
+          if (prevStatus === "paused" && !sentUnpaused) stageToSend = "unpaused";
+          else if (isNewPick || !sentOnclock) stageToSend = "onclock";
+          else if (totalMs > 0) {
+            const usedFrac = 1 - remainingMs / totalMs;
             if (timerSec >= 600) {
               if (remainingMs <= 600_000 && !sent10) stageToSend = "ten";
-              else if (usedFrac >= 0.50 && !sent50) stageToSend = "p50";
+              else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
               else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
             } else {
-              // short timers: use % stages + a final “almost out of time”
-              const finalThresholdMs = clamp(Math.floor(totalMs * 0.20), 20_000, 120_000); // 20% or 20s..120s
+              const finalThresholdMs = clamp(Math.floor(totalMs * 0.2), 20_000, 120_000);
               if (remainingMs <= finalThresholdMs && !sentFinal) stageToSend = "final";
-              else if (usedFrac >= 0.50 && !sent50) stageToSend = "p50";
+              else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
               else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
             }
           }
         }
 
-        // If nothing to send, just keep state fresh
         if (!stageToSend) {
           await upsertClockState(db, s.endpoint, draftId, {
             pick_no: nextPickNo,
             last_status: status,
-            sent_onclock: isNewPick ? 0 : (sentOnclock ? 1 : 0),
-            sent_25: isNewPick ? 0 : (sent25 ? 1 : 0),
-            sent_50: isNewPick ? 0 : (sent50 ? 1 : 0),
-            sent_10min: isNewPick ? 0 : (sent10 ? 1 : 0),
-            sent_final: isNewPick ? 0 : (sentFinal ? 1 : 0),
-            sent_paused: isNewPick ? 0 : (sentPaused ? 1 : 0),
-            sent_unpaused: isNewPick ? 0 : (sentUnpaused ? 1 : 0),
+            sent_onclock: isNewPick ? 0 : sentOnclock ? 1 : 0,
+            sent_25: isNewPick ? 0 : sent25 ? 1 : 0,
+            sent_50: isNewPick ? 0 : sent50 ? 1 : 0,
+            sent_10min: isNewPick ? 0 : sent10 ? 1 : 0,
+            sent_final: isNewPick ? 0 : sentFinal ? 1 : 0,
+            sent_paused: isNewPick ? 0 : sentPaused ? 1 : 0,
+            sent_unpaused: isNewPick ? 0 : sentUnpaused ? 1 : 0,
           });
           continue;
         }
 
-        // Mark flags (we want stacking, so each stage should have its own tag)
         const nextFlags = {
           pick_no: nextPickNo,
           last_status: status,
-          sent_onclock: (isNewPick ? 0 : (sentOnclock ? 1 : 0)),
-          sent_25: (isNewPick ? 0 : (sent25 ? 1 : 0)),
-          sent_50: (isNewPick ? 0 : (sent50 ? 1 : 0)),
-          sent_10min: (isNewPick ? 0 : (sent10 ? 1 : 0)),
-          sent_final: (isNewPick ? 0 : (sentFinal ? 1 : 0)),
-          sent_paused: (isNewPick ? 0 : (sentPaused ? 1 : 0)),
-          sent_unpaused: (isNewPick ? 0 : (sentUnpaused ? 1 : 0)),
+          sent_onclock: isNewPick ? 0 : sentOnclock ? 1 : 0,
+          sent_25: isNewPick ? 0 : sent25 ? 1 : 0,
+          sent_50: isNewPick ? 0 : sent50 ? 1 : 0,
+          sent_10min: isNewPick ? 0 : sent10 ? 1 : 0,
+          sent_final: isNewPick ? 0 : sentFinal ? 1 : 0,
+          sent_paused: isNewPick ? 0 : sentPaused ? 1 : 0,
+          sent_unpaused: isNewPick ? 0 : sentUnpaused ? 1 : 0,
         };
-
         if (stageToSend === "onclock") nextFlags.sent_onclock = 1;
         if (stageToSend === "p25") nextFlags.sent_25 = 1;
         if (stageToSend === "p50") nextFlags.sent_50 = 1;
@@ -590,27 +527,14 @@ async function handler(req) {
         if (stageToSend === "final") nextFlags.sent_final = 1;
         if (stageToSend === "paused") nextFlags.sent_paused = 1;
         if (stageToSend === "unpaused") nextFlags.sent_unpaused = 1;
-
         await upsertClockState(db, s.endpoint, draftId, nextFlags);
 
-        // Build premium push payload
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
         const icon = bestLeagueAvatarUrl({ league, draft });
-
-        const { title, body } = buildMessage({
-          stage: stageToSend,
-          leagueName,
-          timeLeftText,
-          timerSec,
-        });
-
-        // TAGGING:
-        // - Per draft + pick so updates replace (renotify) instead of spamming a pile of stages.
-        // - Different leagues remain separate because draftId differs.
+        const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
         const tag = `clock:${draftId}:pick:${nextPickNo}`;
 
-        // If it's an initial on-clock notification, batch it so multiple leagues stack nicely.
         if (stageToSend === "onclock") {
           onClockBatch.push({
             leagueName,
@@ -629,13 +553,10 @@ async function handler(req) {
           title,
           body,
           url: "/draft-pick-tracker",
-
-          // premium options consumed by sw.js
           tag,
           renotify: true,
-          icon, // league avatar if available
+          icon,
           badge: "/android-chrome-192x192.png",
-
           data: {
             url: "/draft-pick-tracker",
             leagueUrl,
@@ -646,7 +567,6 @@ async function handler(req) {
             stage: stageToSend,
             timeLeftMs: remainingMs,
           },
-
           actions: [
             { action: "open_tracker", title: "Open Tracker" },
             ...(leagueUrl ? [{ action: "open_league", title: "Open League" }] : []),
@@ -655,24 +575,16 @@ async function handler(req) {
 
         if (pushRes.ok) {
           sent++;
-        } else {
-          // prune dead endpoints
-          if (pushRes.status === 404 || pushRes.status === 410) {
-            await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
-            await clearClockState(db, s.endpoint, draftId);
-          }
+        } else if (pushRes.status === 404 || pushRes.status === 410) {
+          await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
+          await clearClockState(db, s.endpoint, draftId);
         }
       }
 
-      // Flush batched on-clock notifications for this endpoint.
       if (onClockBatch.length === 1) {
         const b = onClockBatch[0];
         const timeLeftText2 = msToClock(b.remainingMs);
-        const { title, body } = buildMessage({
-          stage: "onclock",
-          leagueName: b.leagueName,
-          timeLeftText: timeLeftText2,
-        });
+        const { title, body } = buildMessage({ stage: "onclock", leagueName: b.leagueName, timeLeftText: timeLeftText2 });
 
         const pushRes = await sendPayload(s, {
           title,
