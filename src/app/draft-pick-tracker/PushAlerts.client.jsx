@@ -19,6 +19,10 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
 }
 
+function hasNotificationAPI() {
+  return typeof window !== "undefined" && typeof window.Notification !== "undefined";
+}
+
 export default function PushAlerts({ username, selectedDraftIds = [] }) {
   const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
   const [msg, setMsg] = useState("");
@@ -55,21 +59,31 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
         throw new Error("Service Worker not supported in this browser.");
       }
 
-      const perm = await withTimeout(Notification.requestPermission(), 15000, "Notification permission");
+      // ✅ iOS/Safari (not installed) can have no Notification global at all
+      if (!hasNotificationAPI()) {
+        throw new Error(
+          "Notifications aren’t available in this browser. On iPhone/iPad: add the site to Home Screen (iOS 16.4+) then enable alerts there."
+        );
+      }
+
+      const perm = await withTimeout(
+        window.Notification.requestPermission(),
+        15000,
+        "Notification permission"
+      );
+
       if (perm !== "granted") {
         setStatus("denied");
         setMsg("Notifications are blocked. Enable them in browser settings.");
         return;
       }
 
-      // Wait for SW ready, but don't hang forever
       const reg = await withTimeout(navigator.serviceWorker.ready, 15000, "Service worker");
 
       if (!reg?.pushManager) {
         throw new Error("PushManager not available (push not supported on this device/browser).");
       }
 
-      // Prefer existing subscription (prevents InvalidState issues)
       let sub = await withTimeout(reg.pushManager.getSubscription(), 8000, "Get subscription");
 
       if (!sub) {
@@ -83,7 +97,6 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
         );
       }
 
-      // Save to server (D1)
       await withTimeout(saveSubscription(sub), 15000, "Save subscription");
 
       setStatus("enabled");
@@ -107,7 +120,9 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
 
     async function sync() {
       try {
-        if (Notification.permission !== "granted") return;
+        // ✅ Guard Notification usage
+        if (!hasNotificationAPI()) return;
+        if (window.Notification.permission !== "granted") return;
         if (!("serviceWorker" in navigator)) return;
 
         const reg = await navigator.serviceWorker.ready;
@@ -128,8 +143,12 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
       }
     }
 
-    if (status === "enabled" || Notification.permission === "granted") sync();
-    return () => { cancelled = true; };
+    if (status === "enabled") sync();
+    else if (hasNotificationAPI() && window.Notification.permission === "granted") sync();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDraftIds.join("|")]);
 

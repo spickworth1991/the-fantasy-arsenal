@@ -18,7 +18,7 @@
     "git": "git add . && git commit -m \"PlayerStock&WaiverFix\" && git push origin main",
     "stick": "node ./sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
-    "gip": "git add . && git commit -m \"DraftMonitor&Notifications\" && git push origin preview"
+    "gip": "git add . && git commit -m \"Notifications\" && git push origin preview"
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",
