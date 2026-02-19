@@ -51,39 +51,74 @@ self.addEventListener("activate", (event) => {
 
 // Push handler
 self.addEventListener("push", (event) => {
-  let payload = {};
-  try {
-    payload = event.data ? event.data.json() : {};
-  } catch {}
-
-  // ✅ handle wrapped payloads: { data: "{...}" }
-  if (payload && typeof payload.data === "string") {
-    try { payload = JSON.parse(payload.data); } catch {}
-  }
-
-  const title = payload.title || "Draft Update";
-  const body = payload.body || "New draft activity.";
-  const url = payload.url || "/draft-pick-tracker";
-
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: "/android-chrome-192x192.png",
-      badge: "/android-chrome-192x192.png",
-      data: { url },
-    })
+    (async () => {
+      let payload = {};
+
+      // Prefer JSON payloads
+      try {
+        if (event.data) payload = await event.data.json();
+      } catch {
+        // Fallback to text payloads
+        try {
+          const t = event.data ? await event.data.text() : "";
+          payload = t ? { body: t } : {};
+        } catch {
+          payload = {};
+        }
+      }
+
+      // ✅ handle wrapped payloads: { data: "{...}" }
+      if (payload && typeof payload.data === "string") {
+        try { payload = JSON.parse(payload.data); } catch {}
+      }
+
+      // Some senders wrap under { notification: {...} }
+      if (payload && typeof payload === "object" && payload.notification && typeof payload.notification === "object") {
+        payload = payload.notification;
+      }
+
+      const title = payload.title || "Draft Update";
+      const body = payload.body || "New draft activity.";
+      const url = payload.url || payload?.data?.url || "/draft-pick-tracker";
+
+      // Allow server-controlled presentation (tag/renotify/icon/etc)
+      const icon = payload.icon || "/android-chrome-192x192.png";
+      const badge = payload.badge || "/android-chrome-192x192.png";
+
+      await self.registration.showNotification(title, {
+        body,
+        icon,
+        badge,
+        tag: payload.tag,
+        renotify: !!payload.renotify,
+        requireInteraction: !!payload.requireInteraction,
+        actions: Array.isArray(payload.actions) ? payload.actions : undefined,
+        data: {
+          ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
+          url,
+        },
+      });
+    })()
   );
 });
 
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification?.data?.url || "/draft-pick-tracker";
+  const data = event.notification?.data || {};
+  const action = event.action;
+  const url =
+    action === "open_league"
+      ? (data.leagueUrl || data.draftUrl || data.url)
+      : action === "open_tracker"
+      ? (data.url || "/draft-pick-tracker")
+      : (data.url || "/draft-pick-tracker");
 
   event.waitUntil(
     (async () => {
       const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-      const existing = allClients.find((c) => c.url.includes(url));
+      const existing = allClients.find((c) => c.url && c.url.includes(url));
       if (existing) return existing.focus();
       return clients.openWindow(url);
     })()
