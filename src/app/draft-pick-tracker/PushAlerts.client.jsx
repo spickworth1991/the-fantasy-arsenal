@@ -101,7 +101,7 @@ export default function PushAlerts({ username, selectedDraftIds = [] }) {
       setMsg(
         selectedDraftIds?.length
           ? `Draft alerts enabled for ${selectedDraftIds.length} draft(s).`
-          : "Draft alerts enabled. Pick a league/draft to receive alerts."
+          : "Draft alerts enabled. Pick a league/draft to receive alerts." 
       );
     } catch (e) {
       setStatus("error");
