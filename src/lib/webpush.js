@@ -98,7 +98,7 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
     ["sign"]
   );
 
-  // Cloudflare returns P-1363 signature (64 bytes) which is what ES256 wants.
+  // Cloudflare Workers ECDSA returns P-1363 (64 bytes) which ES256 wants.
   const sig = new Uint8Array(
     await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, data)
   );
@@ -106,7 +106,7 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
   return `${h}.${p}.${uint8ToB64url(sig)}`;
 }
 
-async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRaw }) {
+async function encryptAes128gcm({ subscription, payloadJsonString }) {
   const endpoint = subscription?.endpoint;
   const p256dh = subscription?.keys?.p256dh;
   const auth = subscription?.keys?.auth;
@@ -142,15 +142,18 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 
   const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", serverKeys.publicKey)); // 65
 
-  // aes128gcm key schedule (draft-ietf-webpush-encryption-06 §3.4)
+  // PRK_key = HMAC(auth_secret, ecdh_secret)
   const prkKey = await hkdfExtract(authSecret, ecdhSecret);
 
-  // "WebPush: info" || 0x00 || uaPub || asPub  (NO length prefixes)
+  // key_info = "WebPush: info" || 0x00 || ua_public || as_public
   const keyInfo = concat(te.encode("WebPush: info"), new Uint8Array([0x00]), uaPub, asPub);
 
+  // IKM = HKDF-Expand(PRK_key, key_info, 32)
   const ikm = await hkdfExpand(prkKey, keyInfo, 32);
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // PRK = HKDF-Extract(salt, IKM)
   const prk = await hkdfExtract(salt, ikm);
 
   const cek = await hkdfExpand(
@@ -164,23 +167,23 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
     12
   );
 
-  // Interop-friendly plaintext:
-  // payload || 0x02 || 0x00 (delimiter + at least 1 padding byte)
-  const pt = concat(te.encode(payloadJsonString), new Uint8Array([0x02, 0x00]));
+  // ✅ Spec: delimiter 0x02 appended to plaintext (no need for extra 0x00)
+  const pt = concat(te.encode(payloadJsonString), new Uint8Array([0x02]));
 
   const rs = 4096;
 
   const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, pt));
 
-  // body: salt(16) + rs(4) + idlen(1=0) + ciphertext
-  const body = concat(salt, u32be(rs), new Uint8Array([0x00]), ct);
+  // ✅ CRITICAL FIX:
+  // aes128gcm body MUST include keyid (server public key) inside the body header:
+  // salt(16) + rs(4) + idlen(1) + keyid(65) + ciphertext
+  const idlen = 65;
+  const body = concat(salt, u32be(rs), new Uint8Array([idlen]), asPub, ct);
 
-  // IMPORTANT:
-  // For payload pushes, major push services expect the VAPID public key to be conveyed via
-  // the Authorization header parameter `k=` (see buildWebPushRequest), not via Crypto-Key.
-  // Including `p256ecdsa=` here can cause “201 accepted but never delivered” behavior.
-  // So: Crypto-Key should include ONLY `dh=` for aes128gcm payloads.
+  // Keep these headers (you’re already seeing 201):
+  // - dh in Crypto-Key is still fine to include
+  // - Encryption salt header is fine to include
   const cryptoKey = `dh=${uint8ToB64url(asPub)}`;
   const encryption = `salt=${uint8ToB64url(salt)}`;
 
@@ -209,7 +212,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
   };
 
-  // No-payload push: omit body entirely
+  // No-payload push
   if (payload == null) {
     return {
       endpoint: subscription.endpoint,
@@ -227,10 +230,8 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
   const enc = await encryptAes128gcm({
     subscription,
     payloadJsonString: typeof payload === "string" ? payload : JSON.stringify(payload),
-    vapidPublicRaw,
   });
 
-  // Workers/Edge fetch: send binary as ArrayBuffer
   const bodyBuf = enc.body.buffer.slice(
     enc.body.byteOffset,
     enc.body.byteOffset + enc.body.byteLength
