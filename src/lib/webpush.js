@@ -3,10 +3,7 @@
 // - No Node crypto
 // - Uses native WebCrypto only
 //
-// IMPORTANT:
-// Many “accepted (201)” pushes never deliver when the aes128gcm key derivation
-// is implemented like the old `aesgcm` draft (length-prefixed context, extra HKDF stage).
-// This file implements aes128gcm per draft-ietf-webpush-encryption-06 §3.4.
+// Implements aes128gcm per draft-ietf-webpush-encryption-06 §3.4.
 
 const te = new TextEncoder();
 
@@ -59,12 +56,10 @@ async function hmacSha256(keyBytes, dataBytes) {
 }
 
 async function hkdfExtract(salt, ikm) {
-  // PRK = HMAC(salt, ikm)
   return hmacSha256(salt, ikm);
 }
 
 async function hkdfExpand(prk, info, length) {
-  // T(0) = empty, T(1) = HMAC(PRK, T(0) | info | 0x01), ...
   const infoBytes = typeof info === "string" ? te.encode(info) : info;
   const out = new Uint8Array(length);
   let prev = new Uint8Array(0);
@@ -106,7 +101,6 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
     ["sign"]
   );
 
-  // Cloudflare WebCrypto returns P-1363 (r|s) 64-byte signature for ECDSA.
   const sig = new Uint8Array(
     await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, data)
   );
@@ -121,10 +115,9 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 
   if (!endpoint || !p256dh || !auth) throw new Error("Bad subscription (missing endpoint/keys).");
 
-  const uaPub = b64urlToUint8(p256dh); // 65 bytes (X9.62 uncompressed)
+  const uaPub = b64urlToUint8(p256dh); // 65 bytes
   const authSecret = b64urlToUint8(auth); // 16 bytes
 
-  // Import UA public key for ECDH
   const uaKey = await crypto.subtle.importKey(
     "raw",
     uaPub,
@@ -133,7 +126,6 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
     []
   );
 
-  // Ephemeral server keypair for ECDH
   const serverKeys = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
@@ -150,24 +142,20 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 
   const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", serverKeys.publicKey)); // 65
 
-  // draft-ietf-webpush-encryption-06 §3.4:
   // PRK_key = HMAC(auth_secret, ecdh_secret)
   const prkKey = await hkdfExtract(authSecret, ecdhSecret);
 
   // key_info = "WebPush: info" || 0x00 || ua_public || as_public
-  // (NO length prefixes for aes128gcm)
   const keyInfo = concat(te.encode("WebPush: info"), new Uint8Array([0x00]), uaPub, asPub);
 
   // IKM = HKDF-Expand(PRK_key, key_info, 32)
   const ikm = await hkdfExpand(prkKey, keyInfo, 32);
 
-  // salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
   // PRK = HKDF-Extract(salt, IKM)
   const prk = await hkdfExtract(salt, ikm);
 
-  // CEK/NONCE
   const cek = await hkdfExpand(
     prk,
     concat(te.encode("Content-Encoding: aes128gcm"), new Uint8Array([0x00])),
@@ -179,19 +167,20 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
     12
   );
 
-  // Plaintext for a single record: payload || 0x02 (padding delimiter)
-  const pt = concat(te.encode(payloadJsonString), new Uint8Array([0x02]));
+  // ✅ Interop-critical plaintext formatting:
+  // payload || 0x02 || 0x00
+  // (delimiter + at least one padding byte)
+  const pt = concat(te.encode(payloadJsonString), new Uint8Array([0x02, 0x00]));
 
-  // §4: rs MUST be > plaintext length + padding (padding is at least 2 octets).
-  const rs = Math.max(4096, pt.length + 2);
+  // Keep record size stable.
+  const rs = 4096;
 
   const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, pt));
 
-  // aes128gcm body header: salt(16) + rs(4) + idlen(1=0) + ciphertext
+  // body: salt(16) + rs(4) + idlen(1=0) + ciphertext
   const body = concat(salt, u32be(rs), new Uint8Array([0x00]), ct);
 
-  // Spacing after ';' improves interop with some parsers.
   const cryptoKey = `dh=${uint8ToB64url(asPub)}; p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`;
 
   return {
@@ -209,19 +198,15 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 export async function buildWebPushRequest({ subscription, payload, vapidSubject, vapidPrivateJwk }) {
   const url = new URL(subscription.endpoint);
   const aud = `${url.protocol}//${url.host}`;
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 12; // 12 hours
+  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 12;
 
   const vapidPublicRaw = jwkToRawPublic(vapidPrivateJwk);
   const jwt = await signVapidJWT({ aud, sub: vapidSubject, exp }, vapidPrivateJwk);
 
-  // ✅ Widest interop across FCM + APNs Web Push: use the "vapid t=..., k=..." format.
-  // Some services accept "WebPush <jwt>", but we've seen payload pushes get accepted (201)
-  // yet not delivered when auth formatting is not what the endpoint expects.
   const vapidAuthHeader = {
     Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
   };
 
-  // True no-payload push (delivery check): omit body entirely.
   if (payload == null) {
     return {
       endpoint: subscription.endpoint,
@@ -242,7 +227,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     vapidPublicRaw,
   });
 
-  // Cloudflare/Workers fetch is most reliable with an ArrayBuffer body (not Uint8Array).
+  // Cloudflare/Workers fetch is most reliable with ArrayBuffer for binary
   const bodyBuf = enc.body.buffer.slice(
     enc.body.byteOffset,
     enc.body.byteOffset + enc.body.byteLength
@@ -255,8 +240,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
       headers: {
         ...enc.headers,
         ...vapidAuthHeader,
-        // Optional but helps debugging/interop on some proxies.
-        "Content-Length": String(enc.body.byteLength),
+        // ❌ Do NOT set Content-Length manually in Workers/Edge
       },
       body: bodyBuf,
     },
