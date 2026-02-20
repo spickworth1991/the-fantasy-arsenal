@@ -1,9 +1,6 @@
 // src/lib/webpush.js
 // Web Push (aes128gcm) for Cloudflare Pages/Workers (Edge runtime)
-// - No Node crypto
-// - Uses native WebCrypto only
-//
-// Implements aes128gcm per draft-ietf-webpush-encryption-06 §3.4.
+// Native WebCrypto only.
 
 const te = new TextEncoder();
 
@@ -101,6 +98,7 @@ async function signVapidJWT({ aud, sub, exp }, vapidPrivateJwk) {
     ["sign"]
   );
 
+  // Cloudflare returns P-1363 signature (64 bytes) which is what ES256 wants.
   const sig = new Uint8Array(
     await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, data)
   );
@@ -115,9 +113,10 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 
   if (!endpoint || !p256dh || !auth) throw new Error("Bad subscription (missing endpoint/keys).");
 
-  const uaPub = b64urlToUint8(p256dh); // 65 bytes
+  const uaPub = b64urlToUint8(p256dh); // 65 bytes (uncompressed)
   const authSecret = b64urlToUint8(auth); // 16 bytes
 
+  // Import UA public key for ECDH
   const uaKey = await crypto.subtle.importKey(
     "raw",
     uaPub,
@@ -126,6 +125,7 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
     []
   );
 
+  // Ephemeral server keypair for ECDH
   const serverKeys = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
@@ -142,18 +142,15 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
 
   const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", serverKeys.publicKey)); // 65
 
-  // PRK_key = HMAC(auth_secret, ecdh_secret)
+  // aes128gcm key schedule (draft-ietf-webpush-encryption-06 §3.4)
   const prkKey = await hkdfExtract(authSecret, ecdhSecret);
 
-  // key_info = "WebPush: info" || 0x00 || ua_public || as_public
+  // "WebPush: info" || 0x00 || uaPub || asPub  (NO length prefixes)
   const keyInfo = concat(te.encode("WebPush: info"), new Uint8Array([0x00]), uaPub, asPub);
 
-  // IKM = HKDF-Expand(PRK_key, key_info, 32)
   const ikm = await hkdfExpand(prkKey, keyInfo, 32);
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
-
-  // PRK = HKDF-Extract(salt, IKM)
   const prk = await hkdfExtract(salt, ikm);
 
   const cek = await hkdfExpand(
@@ -167,12 +164,10 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
     12
   );
 
-  // ✅ Interop-critical plaintext formatting:
-  // payload || 0x02 || 0x00
-  // (delimiter + at least one padding byte)
+  // Interop-friendly plaintext:
+  // payload || 0x02 || 0x00 (delimiter + at least 1 padding byte)
   const pt = concat(te.encode(payloadJsonString), new Uint8Array([0x02, 0x00]));
 
-  // Keep record size stable.
   const rs = 4096;
 
   const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
@@ -181,7 +176,9 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
   // body: salt(16) + rs(4) + idlen(1=0) + ciphertext
   const body = concat(salt, u32be(rs), new Uint8Array([0x00]), ct);
 
+  // KEY CHANGE: also send Encryption: salt=... for max interop (doesn't break anything)
   const cryptoKey = `dh=${uint8ToB64url(asPub)}; p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`;
+  const encryption = `salt=${uint8ToB64url(salt)}`;
 
   return {
     endpoint,
@@ -190,6 +187,7 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
       "Content-Type": "application/octet-stream",
       "Content-Encoding": "aes128gcm",
       "Crypto-Key": cryptoKey,
+      Encryption: encryption, // ✅ add this
       TTL: "60",
     },
   };
@@ -207,6 +205,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     Authorization: `vapid t=${jwt}, k=${uint8ToB64url(vapidPublicRaw)}`,
   };
 
+  // No-payload push: omit body entirely
   if (payload == null) {
     return {
       endpoint: subscription.endpoint,
@@ -227,7 +226,7 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
     vapidPublicRaw,
   });
 
-  // Cloudflare/Workers fetch is most reliable with ArrayBuffer for binary
+  // Workers/Edge fetch: send binary as ArrayBuffer
   const bodyBuf = enc.body.buffer.slice(
     enc.body.byteOffset,
     enc.body.byteOffset + enc.body.byteLength
@@ -240,7 +239,6 @@ export async function buildWebPushRequest({ subscription, payload, vapidSubject,
       headers: {
         ...enc.headers,
         ...vapidAuthHeader,
-        // ❌ Do NOT set Content-Length manually in Workers/Edge
       },
       body: bodyBuf,
     },
