@@ -176,8 +176,12 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
   // body: salt(16) + rs(4) + idlen(1=0) + ciphertext
   const body = concat(salt, u32be(rs), new Uint8Array([0x00]), ct);
 
-  // KEY CHANGE: also send Encryption: salt=... for max interop (doesn't break anything)
-  const cryptoKey = `dh=${uint8ToB64url(asPub)}; p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`;
+  // IMPORTANT:
+  // For payload pushes, major push services expect the VAPID public key to be conveyed via
+  // the Authorization header parameter `k=` (see buildWebPushRequest), not via Crypto-Key.
+  // Including `p256ecdsa=` here can cause “201 accepted but never delivered” behavior.
+  // So: Crypto-Key should include ONLY `dh=` for aes128gcm payloads.
+  const cryptoKey = `dh=${uint8ToB64url(asPub)}`;
   const encryption = `salt=${uint8ToB64url(salt)}`;
 
   return {
@@ -187,7 +191,7 @@ async function encryptAes128gcm({ subscription, payloadJsonString, vapidPublicRa
       "Content-Type": "application/octet-stream",
       "Content-Encoding": "aes128gcm",
       "Crypto-Key": cryptoKey,
-      Encryption: encryption, // ✅ add this
+      Encryption: encryption,
       TTL: "60",
     },
   };
