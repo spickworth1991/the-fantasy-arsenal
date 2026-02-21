@@ -19,25 +19,9 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
 }
 
-// Backwards/forwards compatible props:
-// - older callers passed `draftIds`
-// - newer callers passed `selectedDraftIds`
-export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
+export default function PushAlerts({ username, selectedDraftIds = [] }) {
   const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
   const [msg, setMsg] = useState("");
-
-  const chosenDraftIds = useMemo(() => {
-    const arr = Array.isArray(selectedDraftIds)
-      ? selectedDraftIds
-      : Array.isArray(draftIds)
-      ? draftIds
-      : [];
-    // de-dupe
-    return arr
-      .map(String)
-      .filter(Boolean)
-      .filter((id, i, a) => a.indexOf(id) === i);
-  }, [draftIds, selectedDraftIds]);
 
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
   const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
@@ -48,7 +32,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: username || null,
-        draftIds: chosenDraftIds,
+        draftIds: Array.isArray(selectedDraftIds) ? selectedDraftIds : [],
         subscription: sub,
       }),
     });
@@ -115,9 +99,9 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
 
       setStatus("enabled");
       setMsg(
-        chosenDraftIds?.length
-          ? `Draft alerts enabled for ${chosenDraftIds.length} draft(s).`
-          : "Draft alerts enabled. Pick a league/draft to receive alerts."
+        selectedDraftIds?.length
+          ? `Draft alerts enabled for ${selectedDraftIds.length} draft(s).`
+          : "Draft alerts enabled. Pick a league/draft to receive alerts." 
       );
     } catch (e) {
       setStatus("error");
@@ -146,8 +130,8 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
 
         if (!cancelled && status === "enabled") {
           setMsg(
-            chosenDraftIds?.length
-              ? `Alerts updated: tracking ${chosenDraftIds.length} draft(s).`
+            selectedDraftIds?.length
+              ? `Alerts updated: tracking ${selectedDraftIds.length} draft(s).`
               : "Alerts updated. Pick a league/draft to receive alerts."
           );
         }
@@ -156,14 +140,10 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
       }
     }
 
-    if (status === "enabled" || (hasNotification && globalThis.Notification.permission === "granted"))
-      sync();
-
-    return () => {
-      cancelled = true;
-    };
+    if (status === "enabled" || (hasNotification && globalThis.Notification.permission === "granted")) sync();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chosenDraftIds.join("|"), status]);
+  }, [selectedDraftIds.join("|")]);
 
   return (
     <div

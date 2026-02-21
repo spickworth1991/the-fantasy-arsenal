@@ -24,7 +24,9 @@ self.addEventListener("install", (event) => {
       // Never let install fail because an asset 404s
       try {
         const cache = await caches.open(CACHE);
-        await Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)));
+        await Promise.allSettled(
+          STATIC_ASSETS.map((url) => cache.add(url))
+        );
       } catch {
         // ignore
       }
@@ -43,6 +45,9 @@ self.addEventListener("activate", (event) => {
     })()
   );
 });
+
+// IMPORTANT: do NOT cache HTML/app routes here while you’re iterating.
+// If you want caching later, we can add a safe stale-while-revalidate for static only.
 
 // Push handler
 self.addEventListener("push", (event) => {
@@ -65,18 +70,11 @@ self.addEventListener("push", (event) => {
 
       // ✅ handle wrapped payloads: { data: "{...}" }
       if (payload && typeof payload.data === "string") {
-        try {
-          payload = JSON.parse(payload.data);
-        } catch {}
+        try { payload = JSON.parse(payload.data); } catch {}
       }
 
       // Some senders wrap under { notification: {...} }
-      if (
-        payload &&
-        typeof payload === "object" &&
-        payload.notification &&
-        typeof payload.notification === "object"
-      ) {
+      if (payload && typeof payload === "object" && payload.notification && typeof payload.notification === "object") {
         payload = payload.notification;
       }
 
@@ -87,13 +85,11 @@ self.addEventListener("push", (event) => {
       // Allow server-controlled presentation (tag/renotify/icon/etc)
       const icon = payload.icon || "/android-chrome-192x192.png";
       const badge = payload.badge || "/android-chrome-192x192.png";
-      const image = payload.image || undefined;
 
       await self.registration.showNotification(title, {
         body,
         icon,
         badge,
-        image,
         tag: payload.tag,
         renotify: !!payload.renotify,
         requireInteraction: !!payload.requireInteraction,
@@ -107,16 +103,17 @@ self.addEventListener("push", (event) => {
   );
 });
 
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification?.data || {};
   const action = event.action;
   const url =
     action === "open_league"
-      ? data.leagueUrl || data.draftUrl || data.url
+      ? (data.leagueUrl || data.draftUrl || data.url)
       : action === "open_tracker"
-      ? data.url || "/draft-pick-tracker"
-      : data.url || "/draft-pick-tracker";
+      ? (data.url || "/draft-pick-tracker")
+      : (data.url || "/draft-pick-tracker");
 
   event.waitUntil(
     (async () => {
