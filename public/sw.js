@@ -89,6 +89,21 @@ self.addEventListener("push", (event) => {
       const badge = payload.badge || "/android-chrome-192x192.png";
       const image = payload.image || undefined;
 
+      // Broadcast to open pages so the Draft Monitor UI can react live (e.g. auto-pick flash state)
+      try {
+        const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        const msg = {
+          type: "push-event",
+          stage: payload?.data?.stage || null,
+          draftId: payload?.data?.draftId || null,
+          pickNo: payload?.data?.pickNo || null,
+          ts: Date.now(),
+        };
+        for (const c of all) c.postMessage(msg);
+      } catch {
+        // ignore
+      }
+
       await self.registration.showNotification(title, {
         body,
         icon,
