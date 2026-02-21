@@ -78,13 +78,9 @@ function assertAuth(req, env) {
   const expected = env?.PUSH_ADMIN_SECRET;
   if (!expected) return false;
 
-  // 1) Preferred: header (works great from your own scripts / curl / GitHub actions)
   const headerSecret = req.headers.get("x-push-secret");
   if (headerSecret && headerSecret === expected) return true;
 
-  // 2) Fallback for cron providers that can't set headers: query param
-  //    Example: /api/draft-pick-tracker/poll-and-notify?key=YOUR_SECRET
-  //    (Still protected; just less ideal than headers because URLs can leak in logs.)
   try {
     const url = new URL(req.url);
     const key = url.searchParams.get("key");
@@ -149,7 +145,6 @@ async function computeDraftIdsForUsername(username, season) {
   };
 }
 
-// Snake: round odd L->R, round even R->L
 function getCurrentSlotSnake(pickNo, teams) {
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
@@ -171,7 +166,6 @@ function msToClock(ms) {
   return `${mm}:${pad(ss)}`;
 }
 
-// tiny deterministic hash -> stable “random” variations per stage
 function hash32(str) {
   str = String(str ?? "");
   let h = 5381;
@@ -201,93 +195,74 @@ function bestLeagueAvatarUrl({ league, draft }) {
 function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
   const baseSeed = `${stage}|${leagueName}|${timerSec}`;
 
-  const ONCLOCK_TITLES = [
-    "You're on the clock 🕒",
-    "Your pick is up 👀",
-    "ON THE CLOCK",
-    "Draft alert: your turn",
-  ];
+  const ONCLOCK_TITLES = ["You're on the clock", "Your pick is up", "ON THE CLOCK", "Draft alert: your turn"];
   const ONCLOCK_BODIES = [
     `You're on the clock in "${leagueName}". Time left: ${timeLeftText}.`,
     `It's your pick in "${leagueName}". ${timeLeftText} remaining.`,
-    `"${leagueName}" — you're up. Clock: ${timeLeftText}.`,
+    `"${leagueName}" - you're up. Clock: ${timeLeftText}.`,
   ];
 
-  const P25_TITLES = ["Clock check: 25% used", "Quick reminder ⏳", "Don’t forget your pick"];
+  const P25_TITLES = ["Clock check: 25% used", "Quick reminder", "Don't forget your pick"];
   const P25_BODIES = [
-    `You've used ~25% of your clock in "${leagueName}". Don’t forget to pick. (${timeLeftText} left)`,
+    `You've used ~25% of your clock in "${leagueName}". Don't forget to pick. (${timeLeftText} left)`,
     `"${leagueName}": 25% of your timer is gone. Make your pick when ready. (${timeLeftText} left)`,
-    `Friendly nudge — "${leagueName}" clock is moving. (${timeLeftText} left)`,
+    `Friendly nudge - "${leagueName}" clock is moving. (${timeLeftText} left)`,
   ];
 
-  const P50_TITLES = ["Half your clock is gone", "You good? 😅", "Still on the clock"];
+  const P50_TITLES = ["Half your clock is gone", "You good?", "Still on the clock"];
   const P50_BODIES = [
     `You've used ~50% of your clock in "${leagueName}". Did you forget? (${timeLeftText} left)`,
-    `"${leagueName}": halfway through your timer. Don’t get auto-picked. (${timeLeftText} left)`,
-    `Just checking — still your pick in "${leagueName}". (${timeLeftText} left)`,
+    `"${leagueName}": halfway through your timer. Don't get auto-picked. (${timeLeftText} left)`,
+    `Just checking - still your pick in "${leagueName}". (${timeLeftText} left)`,
   ];
 
-  const TEN_TITLES = ["⚠️ 10 minutes left", "Seriously… 10 minutes left", "Final stretch"];
+  const TEN_TITLES = ["10 minutes left", "Seriously... 10 minutes left", "Final stretch"];
   const TEN_BODIES = [
-    `Seriously — you only have 10 minutes left in "${leagueName}". Make your pick.`,
+    `Seriously - you only have 10 minutes left in "${leagueName}". Make your pick.`,
     `"${leagueName}": 10 minutes remaining. Lock it in.`,
-    `10 minutes left on the clock in "${leagueName}". Don’t get burned.`,
+    `10 minutes left on the clock in "${leagueName}". Don't get burned.`,
   ];
 
-  const FINAL_TITLES = ["⚠️ Almost out of time", "Last call", "Clock is dying"];
+  const FINAL_TITLES = ["Almost out of time", "Last call", "Clock is dying"];
   const FINAL_BODIES = [
     `"${leagueName}": you're almost out of time. (${timeLeftText} left)`,
-    `Last call — "${leagueName}" pick timer is almost done. (${timeLeftText} left)`,
-    `Clock’s about to expire in "${leagueName}". (${timeLeftText} left)`,
+    `Last call - "${leagueName}" pick timer is almost done. (${timeLeftText} left)`,
+    `Clock's about to expire in "${leagueName}". (${timeLeftText} left)`,
   ];
 
   const PAUSED_TITLES = [
-    "Draft paused — but it’s your pick",
-    "Paused… you’re still up",
-    "⏸️ Paused, but you’re on deck",
+    "Draft paused - but it's your pick",
+    "Paused... you're still up",
+    "Paused, but you're on deck",
     "League paused (your pick next)",
   ];
   const PAUSED_BODIES = [
-    `"${leagueName}" is paused, but it’s your pick! your timer will start at ${timeLeftText}.`,
-    `Heads up — "${leagueName}" is paused, but you’re up next. Timer resumes at ${timeLeftText}.`,
-    `"${leagueName}" paused. You’re on the clock when it resumes (${timeLeftText}).`,
-    `Paused in "${leagueName}" — you’re still the pick. Resume clock: ${timeLeftText}.`,
+    `"${leagueName}" is paused, but it's your pick! your timer will start at ${timeLeftText}.`,
+    `Heads up - "${leagueName}" is paused, but you're up next. Timer resumes at ${timeLeftText}.`,
+    `"${leagueName}" paused. You're on the clock when it resumes (${timeLeftText}).`,
+    `Paused in "${leagueName}" - you're still the pick. Resume clock: ${timeLeftText}.`,
   ];
 
   const UNPAUSED_TITLES = [
-    "Draft resumed — you’re up",
-    "▶️ Back on: your pick",
-    "Unpaused… clock is running",
+    "Draft resumed - you're up",
+    "Back on: your pick",
+    "Unpaused... clock is running",
     "Draft unpaused (still your turn)",
   ];
   const UNPAUSED_BODIES = [
-    `"${leagueName}" resumed — you’re on the clock. (${timeLeftText} left)`,
-    `Unpaused in "${leagueName}" — your pick is live. (${timeLeftText} left)`,
-    `We’re back. "${leagueName}" clock is ticking: ${timeLeftText} remaining.`,
-    `"${leagueName}" unpaused — don’t get auto-picked. (${timeLeftText} left)`,
+    `"${leagueName}" resumed - you're on the clock. (${timeLeftText} left)`,
+    `Unpaused in "${leagueName}" - your pick is live. (${timeLeftText} left)`,
+    `We're back. "${leagueName}" clock is ticking: ${timeLeftText} remaining.`,
+    `"${leagueName}" unpaused - don't get auto-picked. (${timeLeftText} left)`,
   ];
 
-  if (stage === "onclock") {
-    return { title: pickVariant(ONCLOCK_TITLES, baseSeed), body: pickVariant(ONCLOCK_BODIES, baseSeed) };
-  }
-  if (stage === "p25") {
-    return { title: pickVariant(P25_TITLES, baseSeed), body: pickVariant(P25_BODIES, baseSeed) };
-  }
-  if (stage === "p50") {
-    return { title: pickVariant(P50_TITLES, baseSeed), body: pickVariant(P50_BODIES, baseSeed) };
-  }
-  if (stage === "ten") {
-    return { title: pickVariant(TEN_TITLES, baseSeed), body: pickVariant(TEN_BODIES, baseSeed) };
-  }
-  if (stage === "final") {
-    return { title: pickVariant(FINAL_TITLES, baseSeed), body: pickVariant(FINAL_BODIES, baseSeed) };
-  }
-  if (stage === "paused") {
-    return { title: pickVariant(PAUSED_TITLES, baseSeed), body: pickVariant(PAUSED_BODIES, baseSeed) };
-  }
-  if (stage === "unpaused") {
-    return { title: pickVariant(UNPAUSED_TITLES, baseSeed), body: pickVariant(UNPAUSED_BODIES, baseSeed) };
-  }
+  if (stage === "onclock") return { title: pickVariant(ONCLOCK_TITLES, baseSeed), body: pickVariant(ONCLOCK_BODIES, baseSeed) };
+  if (stage === "p25") return { title: pickVariant(P25_TITLES, baseSeed), body: pickVariant(P25_BODIES, baseSeed) };
+  if (stage === "p50") return { title: pickVariant(P50_TITLES, baseSeed), body: pickVariant(P50_BODIES, baseSeed) };
+  if (stage === "ten") return { title: pickVariant(TEN_TITLES, baseSeed), body: pickVariant(TEN_BODIES, baseSeed) };
+  if (stage === "final") return { title: pickVariant(FINAL_TITLES, baseSeed), body: pickVariant(FINAL_BODIES, baseSeed) };
+  if (stage === "paused") return { title: pickVariant(PAUSED_TITLES, baseSeed), body: pickVariant(PAUSED_BODIES, baseSeed) };
+  if (stage === "unpaused") return { title: pickVariant(UNPAUSED_TITLES, baseSeed), body: pickVariant(UNPAUSED_BODIES, baseSeed) };
   return { title: "Draft Update", body: `Update in "${leagueName}".` };
 }
 
@@ -343,15 +318,9 @@ async function upsertClockState(db, endpoint, draftId, row) {
 }
 
 async function clearClockState(db, endpoint, draftId) {
-  return db
-    .prepare(`DELETE FROM push_clock_state WHERE endpoint=? AND draft_id=?`)
-    .bind(endpoint, String(draftId))
-    .run();
+  return db.prepare(`DELETE FROM push_clock_state WHERE endpoint=? AND draft_id=?`).bind(endpoint, String(draftId)).run();
 }
 
-// Per-draft cache to reduce Sleeper subrequests.
-// IMPORTANT: use a new table name so existing deployments with an older schema
-// (push_draft_state) don't 500 when new columns are introduced.
 async function ensureDraftCacheTable(db) {
   await db
     .prepare(
@@ -369,12 +338,7 @@ async function ensureDraftCacheTable(db) {
 }
 
 async function loadDraftCache(db, draftId) {
-  return (
-    (await db
-      .prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`)
-      .bind(String(draftId))
-      .first()) || null
-  );
+  return (await db.prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`).bind(String(draftId)).first()) || null;
 }
 
 async function saveDraftCache(db, draftId, patch) {
@@ -414,10 +378,7 @@ async function handler(req) {
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
-    // Ensure core push tables/columns exist (prevents silent subscription issues).
     await ensurePushTables(db);
-
-    // New cache table (prevents schema mismatch 500s).
     await ensureDraftCacheTable(db);
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
@@ -446,12 +407,8 @@ async function handler(req) {
       .map((r) => {
         let sub = null;
         let draftIds = [];
-        try {
-          sub = JSON.parse(r.subscription_json);
-        } catch {}
-        try {
-          draftIds = JSON.parse(r.draft_ids_json || "[]");
-        } catch {}
+        try { sub = JSON.parse(r.subscription_json); } catch {}
+        try { draftIds = JSON.parse(r.draft_ids_json || "[]"); } catch {}
         return {
           endpoint: r.endpoint,
           sub,
@@ -466,9 +423,7 @@ async function handler(req) {
     const draftCache = new Map();
     const leagueCache = new Map();
     const userIdCache = new Map();
-    const onClockBatch = [];
-    const pausedBatch = [];
-    const unpausedBatch = [];
+
     let sent = 0;
     let checked = 0;
 
@@ -493,10 +448,9 @@ async function handler(req) {
         continue;
       }
 
-      // Auto-refresh draft IDs so users never have to "re-enable" after joining leagues.
-      // Refresh when missing OR periodically (cheap: one Sleeper leagues call per sub).
-      const REFRESH_MS = 15 * 60 * 1000; // 15 minutes
+      const REFRESH_MS = 15 * 60 * 1000;
       const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
+
       if (needsRefresh) {
         try {
           const computed = await computeDraftIdsForUsername(s.username);
@@ -512,21 +466,17 @@ async function handler(req) {
             .bind(JSON.stringify(newDraftIds), newLeagueCount, now, s.endpoint)
             .run();
 
-          // Update in-memory subscription row for this poll.
           s.draftIds = newDraftIds;
           s.leagueCount = newLeagueCount;
           s.updatedAt = now;
 
-          // Reuse userId from this call if present.
           if (computed.userId) userIdCache.set(s.username, computed.userId);
 
-          // If still empty after refresh, skip.
           if (!s.draftIds.length) {
             skippedNoDrafts++;
             continue;
           }
         } catch {
-          // If refresh fails, fall back to whatever we already have.
           if (!s.draftIds.length) {
             skippedNoDrafts++;
             continue;
@@ -549,7 +499,9 @@ async function handler(req) {
         continue;
       }
 
-      
+      const onClockBatch = [];
+      const pausedBatch = [];
+      const unpausedBatch = [];
 
       for (const draftId of s.draftIds) {
         checked++;
@@ -571,6 +523,7 @@ async function handler(req) {
         const teams = Number(draft?.settings?.teams || 0);
         const timerSec = Number(draft?.settings?.pick_timer || 0);
         const draftOrder = draft?.draft_order || null;
+
         if (!teams || !draftOrder || !draftOrder[userId]) {
           skippedNoOrder++;
           continue;
@@ -578,7 +531,9 @@ async function handler(req) {
 
         const userSlot = Number(draftOrder[userId]);
         const lastPicked = Number(draft?.last_picked || 0);
+
         const draftCacheRow = await loadDraftCache(db, draftId);
+
         let pickCount;
         if (
           draftCacheRow &&
@@ -602,12 +557,16 @@ async function handler(req) {
         }
 
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
+
         let league = null;
         if (leagueId) {
           const cachedL = leagueCache.get(String(leagueId));
           if (cachedL) {
             league = cachedL;
-          } else if (draftCacheRow?.league_id && (draftCacheRow?.league_name || draftCacheRow?.league_avatar)) {
+          } else if (
+            draftCacheRow?.league_id &&
+            (draftCacheRow?.league_name || draftCacheRow?.league_avatar)
+          ) {
             league = { name: draftCacheRow.league_name || null, avatar: draftCacheRow.league_avatar || null };
             leagueCache.set(String(leagueId), league);
           } else {
@@ -630,7 +589,7 @@ async function handler(req) {
         const clockStart = lastPickedMs > 0 ? lastPickedMs : now;
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
         const remainingMs = totalMs > 0 ? Math.max(0, clockStart + totalMs - now) : 0;
-        const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "—";
+        const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
 
         const clockState = await loadClockState(db, s.endpoint, draftId);
         const prevPickNo = Number(clockState?.pick_no ?? 0);
@@ -655,11 +614,11 @@ async function handler(req) {
           else if (totalMs > 0) {
             const usedFrac = 1 - remainingMs / totalMs;
             if (timerSec >= 600) {
-              if (remainingMs <= 600_000 && !sent10) stageToSend = "ten";
+              if (remainingMs <= 600000 && !sent10) stageToSend = "ten";
               else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
               else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
             } else {
-              const finalThresholdMs = clamp(Math.floor(totalMs * 0.2), 20_000, 120_000);
+              const finalThresholdMs = clamp(Math.floor(totalMs * 0.2), 20000, 120000);
               if (remainingMs <= finalThresholdMs && !sentFinal) stageToSend = "final";
               else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
               else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
@@ -700,13 +659,13 @@ async function handler(req) {
         if (stageToSend === "final") nextFlags.sent_final = 1;
         if (stageToSend === "paused") nextFlags.sent_paused = 1;
         if (stageToSend === "unpaused") nextFlags.sent_unpaused = 1;
+
         await upsertClockState(db, s.endpoint, draftId, nextFlags);
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
         const icon = bestLeagueAvatarUrl({ league, draft });
         const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
-        const tag = `draft:${draftId}`;
 
         if (stageToSend === "onclock") {
           onClockBatch.push({
@@ -722,7 +681,6 @@ async function handler(req) {
           continue;
         }
 
-        
         if (stageToSend === "paused") {
           pausedBatch.push({
             leagueName,
@@ -750,11 +708,12 @@ async function handler(req) {
           });
           continue;
         }
-const pushRes = await sendPayload(s, {
+
+        const pushRes = await sendPayload(s, {
           title,
           body,
           url: "/draft-pick-tracker",
-          tag,
+          tag: `draft:${draftId}`,
           renotify: true,
           icon,
           badge: "/android-chrome-192x192.png",
@@ -780,16 +739,17 @@ const pushRes = await sendPayload(s, {
           await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           await clearClockState(db, s.endpoint, draftId);
         }
-      }
+      } // end for each draftId
 
+      // ----- onClock batching (per endpoint) -----
       if (onClockBatch.length === 1) {
         const b = onClockBatch[0];
         const timeLeftText2 = msToClock(b.remainingMs);
-        const { title, body } = buildMessage({ stage: "onclock", leagueName: b.leagueName, timeLeftText: timeLeftText2 });
+        const msg = buildMessage({ stage: "onclock", leagueName: b.leagueName, timeLeftText: timeLeftText2, timerSec: 0 });
 
         const pushRes = await sendPayload(s, {
-          title,
-          body,
+          title: msg.title,
+          body: msg.body,
           url: "/draft-pick-tracker",
           tag: `draft:${b.draftId}`,
           renotify: true,
@@ -815,7 +775,7 @@ const pushRes = await sendPayload(s, {
       } else if (onClockBatch.length > 1) {
         const lines = onClockBatch
           .slice(0, 6)
-          .map((x) => `• ${x.leagueName} — ${msToClock(x.remainingMs)}`)
+          .map((x) => `• ${x.leagueName} - ${msToClock(x.remainingMs)}`)
           .join("\n");
         const more = onClockBatch.length > 6 ? `\n+${onClockBatch.length - 6} more` : "";
 
@@ -833,17 +793,16 @@ const pushRes = await sendPayload(s, {
 
         if (pushRes.ok) sent++;
       }
-    }
 
-    // Paused batching (per endpoint)
+      // ----- paused batching (per endpoint) -----
       if (pausedBatch.length === 1) {
         const b = pausedBatch[0];
         const t = msToClock(b.remainingMs);
-        const { title, body } = buildMessage({ stage: "paused", leagueName: b.leagueName, timeLeftText: t });
+        const msg = buildMessage({ stage: "paused", leagueName: b.leagueName, timeLeftText: t, timerSec: 0 });
 
         const pushRes = await sendPayload(s, {
-          title,
-          body,
+          title: msg.title,
+          body: msg.body,
           url: "/draft-pick-tracker",
           tag: `draft:${b.draftId}`,
           renotify: true,
@@ -869,12 +828,12 @@ const pushRes = await sendPayload(s, {
       } else if (pausedBatch.length > 1) {
         const lines = pausedBatch
           .slice(0, 6)
-          .map((x) => `• ${x.leagueName} — resumes at ${msToClock(x.remainingMs)}`)
+          .map((x) => `• ${x.leagueName} - resumes at ${msToClock(x.remainingMs)}`)
           .join("\n");
         const more = pausedBatch.length > 6 ? `\n+${pausedBatch.length - 6} more` : "";
 
         const pushRes = await sendPayload(s, {
-          title: `Paused (but you’re up in ${pausedBatch.length})`,
+          title: `Paused (but you're up in ${pausedBatch.length})`,
           body: `${lines}${more}`,
           url: "/draft-pick-tracker",
           tag: "paused-summary",
@@ -888,15 +847,15 @@ const pushRes = await sendPayload(s, {
         if (pushRes.ok) sent++;
       }
 
-      // Unpaused batching (per endpoint)
+      // ----- unpaused batching (per endpoint) -----
       if (unpausedBatch.length === 1) {
         const b = unpausedBatch[0];
         const t = msToClock(b.remainingMs);
-        const { title, body } = buildMessage({ stage: "unpaused", leagueName: b.leagueName, timeLeftText: t });
+        const msg = buildMessage({ stage: "unpaused", leagueName: b.leagueName, timeLeftText: t, timerSec: 0 });
 
         const pushRes = await sendPayload(s, {
-          title,
-          body,
+          title: msg.title,
+          body: msg.body,
           url: "/draft-pick-tracker",
           tag: `draft:${b.draftId}`,
           renotify: true,
@@ -922,7 +881,7 @@ const pushRes = await sendPayload(s, {
       } else if (unpausedBatch.length > 1) {
         const lines = unpausedBatch
           .slice(0, 6)
-          .map((x) => `• ${x.leagueName} — ${msToClock(x.remainingMs)} left`)
+          .map((x) => `• ${x.leagueName} - ${msToClock(x.remainingMs)} left`)
           .join("\n");
         const more = unpausedBatch.length > 6 ? `\n+${unpausedBatch.length - 6} more` : "";
 
@@ -940,8 +899,9 @@ const pushRes = await sendPayload(s, {
 
         if (pushRes.ok) sent++;
       }
+    } // end subs loop
 
-      return NextResponse.json({
+    return NextResponse.json({
       ok: true,
       subs: subs.length,
       checked,
