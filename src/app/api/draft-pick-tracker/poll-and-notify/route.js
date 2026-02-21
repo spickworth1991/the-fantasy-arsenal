@@ -466,7 +466,9 @@ async function handler(req) {
     const draftCache = new Map();
     const leagueCache = new Map();
     const userIdCache = new Map();
-
+    const onClockBatch = [];
+    const pausedBatch = [];
+    const unpausedBatch = [];
     let sent = 0;
     let checked = 0;
 
@@ -547,9 +549,7 @@ async function handler(req) {
         continue;
       }
 
-      const onClockBatch = [];
-      const pausedBatch = [];
-      const unpausedBatch = [];
+      
 
       for (const draftId of s.draftIds) {
         checked++;
