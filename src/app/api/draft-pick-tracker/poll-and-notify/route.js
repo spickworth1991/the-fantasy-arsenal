@@ -225,16 +225,30 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `Clock’s about to expire in "${leagueName}". (${timeLeftText} left)`,
   ];
 
-  const PAUSED_TITLES = ["Draft paused (you're still up)", "Paused — but you're on the clock"];
+  const PAUSED_TITLES = [
+    "Draft paused — but it’s your pick",
+    "Paused… you’re still up",
+    "⏸️ Paused, but you’re on deck",
+    "League paused (your pick next)",
+  ];
   const PAUSED_BODIES = [
-    `"${leagueName}" is paused. You're on the clock when it resumes.`,
-    `Draft paused in "${leagueName}". You're up when it unpauses.`,
+    `"${leagueName}" is paused, but it’s your pick! your timer will start at ${timeLeftText}.`,
+    `Heads up — "${leagueName}" is paused, but you’re up next. Timer resumes at ${timeLeftText}.`,
+    `"${leagueName}" paused. You’re on the clock when it resumes (${timeLeftText}).`,
+    `Paused in "${leagueName}" — you’re still the pick. Resume clock: ${timeLeftText}.`,
   ];
 
-  const UNPAUSED_TITLES = ["Draft resumed — you're up", "Unpaused: you're still on the clock"];
+  const UNPAUSED_TITLES = [
+    "Draft resumed — you’re up",
+    "▶️ Back on: your pick",
+    "Unpaused… clock is running",
+    "Draft unpaused (still your turn)",
+  ];
   const UNPAUSED_BODIES = [
-    `"${leagueName}" resumed and you’re on the clock. (${timeLeftText} left)`,
-    `Unpaused in "${leagueName}" — your pick is still up. (${timeLeftText} left)`,
+    `"${leagueName}" resumed — you’re on the clock. (${timeLeftText} left)`,
+    `Unpaused in "${leagueName}" — your pick is live. (${timeLeftText} left)`,
+    `We’re back. "${leagueName}" clock is ticking: ${timeLeftText} remaining.`,
+    `"${leagueName}" unpaused — don’t get auto-picked. (${timeLeftText} left)`,
   ];
 
   if (stage === "onclock") {
@@ -513,6 +527,8 @@ async function handler(req) {
       }
 
       const onClockBatch = [];
+      const pausedBatch = [];
+      const unpausedBatch = [];
 
       for (const draftId of s.draftIds) {
         checked++;
@@ -669,7 +685,7 @@ async function handler(req) {
         const draftUrl = sleeperDraftUrl(draftId);
         const icon = bestLeagueAvatarUrl({ league, draft });
         const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
-        const tag = `clock:${draftId}:pick:${nextPickNo}`;
+        const tag = `draft:${draftId}`;
 
         if (stageToSend === "onclock") {
           onClockBatch.push({
@@ -685,7 +701,35 @@ async function handler(req) {
           continue;
         }
 
-        const pushRes = await sendPayload(s, {
+        
+        if (stageToSend === "paused") {
+          pausedBatch.push({
+            leagueName,
+            remainingMs,
+            icon,
+            leagueUrl,
+            draftUrl,
+            leagueId: String(leagueId || ""),
+            draftId: String(draftId),
+            pickNo: nextPickNo,
+          });
+          continue;
+        }
+
+        if (stageToSend === "unpaused") {
+          unpausedBatch.push({
+            leagueName,
+            remainingMs,
+            icon,
+            leagueUrl,
+            draftUrl,
+            leagueId: String(leagueId || ""),
+            draftId: String(draftId),
+            pickNo: nextPickNo,
+          });
+          continue;
+        }
+const pushRes = await sendPayload(s, {
           title,
           body,
           url: "/draft-pick-tracker",
@@ -726,7 +770,7 @@ async function handler(req) {
           title,
           body,
           url: "/draft-pick-tracker",
-          tag: `clock:${b.draftId}:pick:${b.pickNo}`,
+          tag: `draft:${b.draftId}`,
           renotify: true,
           icon: b.icon,
           badge: "/android-chrome-192x192.png",
@@ -770,7 +814,113 @@ async function handler(req) {
       }
     }
 
-    return NextResponse.json({
+    // Paused batching (per endpoint)
+      if (pausedBatch.length === 1) {
+        const b = pausedBatch[0];
+        const t = msToClock(b.remainingMs);
+        const { title, body } = buildMessage({ stage: "paused", leagueName: b.leagueName, timeLeftText: t });
+
+        const pushRes = await sendPayload(s, {
+          title,
+          body,
+          url: "/draft-pick-tracker",
+          tag: `draft:${b.draftId}`,
+          renotify: true,
+          icon: b.icon,
+          badge: "/android-chrome-192x192.png",
+          data: {
+            url: "/draft-pick-tracker",
+            leagueUrl: b.leagueUrl,
+            draftUrl: b.draftUrl,
+            leagueId: b.leagueId,
+            draftId: b.draftId,
+            pickNo: b.pickNo,
+            stage: "paused",
+            timeLeftMs: b.remainingMs,
+          },
+          actions: [
+            { action: "open_tracker", title: "Open Tracker" },
+            ...(b.leagueUrl ? [{ action: "open_league", title: "Open League" }] : []),
+          ],
+        });
+
+        if (pushRes.ok) sent++;
+      } else if (pausedBatch.length > 1) {
+        const lines = pausedBatch
+          .slice(0, 6)
+          .map((x) => `• ${x.leagueName} — resumes at ${msToClock(x.remainingMs)}`)
+          .join("\n");
+        const more = pausedBatch.length > 6 ? `\n+${pausedBatch.length - 6} more` : "";
+
+        const pushRes = await sendPayload(s, {
+          title: `Paused (but you’re up in ${pausedBatch.length})`,
+          body: `${lines}${more}`,
+          url: "/draft-pick-tracker",
+          tag: "paused-summary",
+          renotify: true,
+          icon: pausedBatch[0]?.icon,
+          badge: "/android-chrome-192x192.png",
+          data: { url: "/draft-pick-tracker" },
+          actions: [{ action: "open_tracker", title: "Open Tracker" }],
+        });
+
+        if (pushRes.ok) sent++;
+      }
+
+      // Unpaused batching (per endpoint)
+      if (unpausedBatch.length === 1) {
+        const b = unpausedBatch[0];
+        const t = msToClock(b.remainingMs);
+        const { title, body } = buildMessage({ stage: "unpaused", leagueName: b.leagueName, timeLeftText: t });
+
+        const pushRes = await sendPayload(s, {
+          title,
+          body,
+          url: "/draft-pick-tracker",
+          tag: `draft:${b.draftId}`,
+          renotify: true,
+          icon: b.icon,
+          badge: "/android-chrome-192x192.png",
+          data: {
+            url: "/draft-pick-tracker",
+            leagueUrl: b.leagueUrl,
+            draftUrl: b.draftUrl,
+            leagueId: b.leagueId,
+            draftId: b.draftId,
+            pickNo: b.pickNo,
+            stage: "unpaused",
+            timeLeftMs: b.remainingMs,
+          },
+          actions: [
+            { action: "open_tracker", title: "Open Tracker" },
+            ...(b.leagueUrl ? [{ action: "open_league", title: "Open League" }] : []),
+          ],
+        });
+
+        if (pushRes.ok) sent++;
+      } else if (unpausedBatch.length > 1) {
+        const lines = unpausedBatch
+          .slice(0, 6)
+          .map((x) => `• ${x.leagueName} — ${msToClock(x.remainingMs)} left`)
+          .join("\n");
+        const more = unpausedBatch.length > 6 ? `\n+${unpausedBatch.length - 6} more` : "";
+
+        const pushRes = await sendPayload(s, {
+          title: `Drafts resumed (${unpausedBatch.length} leagues)`,
+          body: `${lines}${more}`,
+          url: "/draft-pick-tracker",
+          tag: "unpaused-summary",
+          renotify: true,
+          icon: unpausedBatch[0]?.icon,
+          badge: "/android-chrome-192x192.png",
+          data: { url: "/draft-pick-tracker" },
+          actions: [{ action: "open_tracker", title: "Open Tracker" }],
+        });
+
+        if (pushRes.ok) sent++;
+      }
+
+      return NextResponse.json({
       ok: true,
       subs: subs.length,
       checked,
