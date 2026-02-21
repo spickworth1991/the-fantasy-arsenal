@@ -208,46 +208,9 @@ export default function DraftPickTrackerClient() {
   const [rows, setRows] = useState([]);
   const [showRecent, setShowRecent] = useState({});
 
-  // Local "auto-pick" flags (set via service-worker push -> postMessage).
-  // Stored client-side (per device) so we don't have to expose per-user push data server-side.
-  const [autoByDraftId, setAutoByDraftId] = useState({});
-
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    const onMsg = (ev) => {
-      const data = ev?.data;
-      if (!data || data.type !== "push-event") return;
-      if (data.stage !== "auto" || !data.draftId) return;
-      const draftId = String(data.draftId);
-      const ts = Number(data.ts || Date.now());
-      setAutoByDraftId((prev) => ({ ...prev, [draftId]: ts }));
-    };
-    navigator.serviceWorker.addEventListener("message", onMsg);
-    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
-  }, []);
-
-  // Auto flags expire after 15 minutes.
-  useEffect(() => {
-    const t = setInterval(() => {
-      const cutoff = Date.now() - 15 * 60 * 1000;
-      setAutoByDraftId((prev) => {
-        const next = { ...prev };
-        let changed = false;
-        for (const [k, v] of Object.entries(next)) {
-          if (Number(v || 0) < cutoff) {
-            delete next[k];
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
-    }, 10_000);
-    return () => clearInterval(t);
-  }, []);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -404,46 +367,51 @@ export default function DraftPickTrackerClient() {
     return rosterNameMap?.get(String(rid)) || `Roster ${rid}`;
   }
 
-  async function fetchDraftBundle(league, registryByDraftId = {}) {
+  async function fetchDraftBundle(league) {
     const leagueId = league?.league_id;
     const draftId = league?.draft_id;
     if (!draftId) return null;
 
-    const reg = registryByDraftId?.[String(draftId)] || null;
+    const isBestBall = Number(league?.settings?.best_ball || 0) === 1;
 
-    const [draftResMaybe, usersRes, rostersRes, tradedRes] = await Promise.all([
-      reg?.draft ? null : fetch(`https://api.sleeper.app/v1/draft/${draftId}`),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-      fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`),
-    ]);
+// Best Ball leagues don't need traded_picks (and it is extra load).
+const tradedPromise = isBestBall
+  ? Promise.resolve(null)
+  : fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`);
 
-    const draft = reg?.draft || (draftResMaybe ? await draftResMaybe.json() : null);
-    if (!draft) throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
+const [draftRes, picksRes, usersRes, rostersRes, tradedRes] = await Promise.all([
+  fetch(`https://api.sleeper.app/v1/draft/${draftId}`),
+  fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`),
+  fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+  fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+  tradedPromise,
+]);
 
-    const pickCount = Number.isFinite(Number(reg?.pickCount)) ? Number(reg.pickCount) : null;
+    if (!draftRes.ok) throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
+    const draft = await draftRes.json();
+    const picks = picksRes.ok ? await picksRes.json() : [];
     const users = usersRes.ok ? await usersRes.json() : [];
     const rosters = rostersRes.ok ? await rostersRes.json() : [];
-    const traded_picks = tradedRes.ok ? await tradedRes.json() : [];
+    const traded_picks = tradedRes && tradedRes.ok ? await tradedRes.json() : [];
 
     return {
       league,
       draft,
-      pickCount: pickCount == null ? 0 : pickCount,
+      picks: Array.isArray(picks) ? picks : [],
       users,
       rosters,
       traded_picks: Array.isArray(traded_picks) ? traded_picks : [],
     };
   }
 
-  function calcPickInfo({ league, draft, pickCount, users, rosters, traded_picks }, nowMs) {
+  function calcPickInfo({ league, draft, picks, users, rosters, traded_picks }, nowMs) {
     const rosterName = buildRosterNameMap(users, rosters);
     const reversalRound = safeNum(draft?.settings?.reversal_round);
     const draftStatus = String(draft?.status || "").toLowerCase();
     const rounds = safeNum(draft?.settings?.rounds);
     const timerSec = safeNum(draft?.settings?.pick_timer);
 
-    const currentPick = (safeNum(pickCount) || 0) + 1;
+    const currentPick = (picks?.length || 0) + 1;
 
     const totalSlots =
       safeNum(draft?.settings?.teams) ||
@@ -616,32 +584,16 @@ export default function DraftPickTrackerClient() {
     setLoading(true);
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-      // Pull shared draft + pick counts from our server-side registry first.
-      // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
-      let registryByDraftId = {};
-      try {
-        const ids = eligible.map((l) => l?.draft_id).filter(Boolean);
-        if (ids.length) {
-          const regRes = await fetch(
-            `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
-          );
-          const regJson = regRes.ok ? await regRes.json() : null;
-          registryByDraftId = regJson?.drafts || {};
-        }
-      } catch {
-        registryByDraftId = {};
-      }
+      const nextBundles = [];
 
-      const nextBundles = (await Promise.all(
-        eligible.map(async (lg) => {
-          try {
-            return await fetchDraftBundle(lg, registryByDraftId);
-          } catch (e) {
-            console.warn("Draft bundle failed:", lg?.name, e);
-            return null;
-          }
-        })
-      )).filter(Boolean);
+      for (const lg of eligible) {
+        try {
+          const b = await fetchDraftBundle(lg);
+          if (b) nextBundles.push(b);
+        } catch (e) {
+          console.warn("Draft bundle failed:", lg?.name, e);
+        }
+      }
 
       const nowMs = Date.now();
       const draftRows = [];
@@ -1141,26 +1093,10 @@ export default function DraftPickTrackerClient() {
                   )
                 : null;
 
-            const autoActive = (() => {
-              const ts = autoByDraftId?.[String(draftId)];
-              if (!ts) return false;
-              return Date.now() - Number(ts) < 15 * 60 * 1000;
-            })();
-
-            const autoHeat = autoActive
-              ? {
-                  ring: "ring-red-400/70",
-                  wash: "bg-red-500/10",
-                  shake: "animate-pulse",
-                }
-              : null;
-
             const deckTint = isDrafting && !r.onClockIsMe && r.onDeck ? onDeckTintStyles() : null;
 
-            const shellRing =
-              (autoHeat && autoHeat.ring) || (clockHeat && clockHeat.ring) || (deckTint && deckTint.ring) || "";
-            const shellWash =
-              (autoHeat && autoHeat.wash) || (clockHeat && clockHeat.wash) || (deckTint && deckTint.wash) || "";
+            const shellRing = (clockHeat && clockHeat.ring) || (deckTint && deckTint.ring) || "";
+            const shellWash = (clockHeat && clockHeat.wash) || (deckTint && deckTint.wash) || "";
 
             const timerLabel = formatTimerHoursLabel(r.timerSec);
 
@@ -1170,8 +1106,7 @@ export default function DraftPickTrackerClient() {
                 className={classNames(
                   "relative bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
                   shellWash,
-                  shellRing,
-                  (autoHeat && autoHeat.shake) || (clockHeat && clockHeat.shake) || ""
+                  shellRing
                 )}
               >
                 <style jsx>{`
@@ -1513,12 +1448,6 @@ export default function DraftPickTrackerClient() {
 
                   const timerLabel = formatTimerHoursLabel(r.timerSec);
 
-                  const autoActive = (() => {
-                    const ts = autoByDraftId?.[String(r.draftId)];
-                    if (!ts) return false;
-                    return Date.now() - Number(ts) < 15 * 60 * 1000;
-                  })();
-
                   return (
                     <tr
                       key={r.leagueId}
@@ -1540,16 +1469,9 @@ export default function DraftPickTrackerClient() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Pill tone={statusTone} size="sm">
-                            {r.draftStatus || "—"}
-                          </Pill>
-                          {autoActive ? (
-                            <Pill tone="red" size="sm">
-                              🚨 AUTO
-                            </Pill>
-                          ) : null}
-                        </div>
+                        <Pill tone={statusTone} size="sm">
+                          {r.draftStatus || "—"}
+                        </Pill>
                       </td>
 
                       <td className="px-5 py-4">
