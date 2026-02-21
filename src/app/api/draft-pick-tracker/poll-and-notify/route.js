@@ -372,7 +372,7 @@ async function upsertClockState(db, endpoint, draftId, row) {
           last_remaining_ms,
           paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
           updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(endpoint, draft_id) DO UPDATE SET
          pick_no=excluded.pick_no,
          last_status=excluded.last_status,
