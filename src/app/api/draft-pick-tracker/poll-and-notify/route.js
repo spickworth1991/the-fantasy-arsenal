@@ -75,8 +75,24 @@ export async function GET(req) {
 }
 
 function assertAuth(req, env) {
-  const secret = req.headers.get("x-push-secret");
-  return !!env?.PUSH_ADMIN_SECRET && secret === env.PUSH_ADMIN_SECRET;
+  const expected = env?.PUSH_ADMIN_SECRET;
+  if (!expected) return false;
+
+  // 1) Preferred: header (works great from your own scripts / curl / GitHub actions)
+  const headerSecret = req.headers.get("x-push-secret");
+  if (headerSecret && headerSecret === expected) return true;
+
+  // 2) Fallback for cron providers that can't set headers: query param
+  //    Example: /api/draft-pick-tracker/poll-and-notify?key=YOUR_SECRET
+  //    (Still protected; just less ideal than headers because URLs can leak in logs.)
+  try {
+    const url = new URL(req.url);
+    const key = url.searchParams.get("key");
+    if (key && key === expected) return true;
+  } catch {
+    // ignore
+  }
+  return false;
 }
 
 async function getPickCount(draftId) {
@@ -388,7 +404,12 @@ async function handler(req) {
   try {
     const { env } = getRequestContext();
 
-    if (!assertAuth(req, env)) return new NextResponse("Unauthorized", { status: 401 });
+    if (!assertAuth(req, env)) {
+      return new NextResponse(
+        "Unauthorized. Provide x-push-secret header, or ?key=... query param (cron-job.org fallback).",
+        { status: 401 }
+      );
+    }
 
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
