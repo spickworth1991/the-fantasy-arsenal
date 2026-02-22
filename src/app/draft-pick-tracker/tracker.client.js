@@ -424,7 +424,7 @@ export default function DraftPickTrackerClient() {
 
     const draft = reg?.draft || (draftResMaybe ? await draftResMaybe.json() : null);
     if (!draft) throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
-
+    const picks = picksRes.ok ? await picksRes.json() : [];
     const pickCount = Number.isFinite(Number(reg?.pickCount)) ? Number(reg.pickCount) : null;
     const users = usersRes.ok ? await usersRes.json() : [];
     const rosters = rostersRes.ok ? await rostersRes.json() : [];
@@ -434,13 +434,14 @@ export default function DraftPickTrackerClient() {
       league,
       draft,
       pickCount: pickCount == null ? 0 : pickCount,
+      picks: Array.isArray(picks) ? picks : [],
       users,
       rosters,
       traded_picks: Array.isArray(traded_picks) ? traded_picks : [],
     };
   }
 
-  function calcPickInfo({ league, draft, pickCount, users, rosters, traded_picks }, nowMs) {
+  function calcPickInfo({ league, picks, draft, pickCount, users, rosters, traded_picks }, nowMs) {
     const rosterName = buildRosterNameMap(users, rosters);
     const reversalRound = safeNum(draft?.settings?.reversal_round);
     const draftStatus = String(draft?.status || "").toLowerCase();
