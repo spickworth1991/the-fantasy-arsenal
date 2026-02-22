@@ -4,6 +4,20 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+// Optional: Durable Object that refreshes the shared draft registry every ~15s.
+// If the binding isn't present (local dev / older env), this no-ops.
+async function kickDraftRegistry(env) {
+  try {
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return;
+    const id = ns.idFromName("master");
+    const stub = ns.get(id);
+    await stub.fetch("https://do/tick", { method: "POST" });
+  } catch {
+    // ignore
+  }
+}
+
 async function ensureTable(db, table, createSql, columnsToEnsure = []) {
   await db.prepare(createSql).run();
   if (!columnsToEnsure.length) return;
@@ -253,7 +267,10 @@ function bestLeagueAvatarUrl({ league, draft }) {
   const leagueAvatar = league?.avatar || null;
   const draftAvatar = draft?.metadata?.avatar || null;
   const avatarId = leagueAvatar || draftAvatar;
-  return avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : null;
+  if (!avatarId) return null;
+  // If registry already stored a full URL, use it.
+  if (typeof avatarId === "string" && avatarId.startsWith("http")) return avatarId;
+  return `https://sleepercdn.com/avatars/thumbs/${avatarId}`;
 }
 
 function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
@@ -491,6 +508,10 @@ async function handler(req) {
     await ensureDraftCacheTable(db);
     await ensureDraftRegistryTable(db);
 
+    // Keep the D1 master draft registry hot (15s cadence) even if no UI is open.
+    // This is best-effort; if the DO isn't bound, cron still works as before.
+    await kickDraftRegistry(env);
+
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
     const vapidSubject = env?.VAPID_SUBJECT;
     if (!vapidPrivateRaw || !vapidSubject) {
@@ -552,104 +573,13 @@ async function handler(req) {
       return fetch(endpoint, fetchInit);
     };
 
-    // ---- Shared draft registry pass ----
-    // Build one set of drafts we should actively poll (drafting/paused). Finished drafts
-    // get cooled down in the registry so we aren't burning calls forever.
-    const uniqueDraftIds = Array.from(
-      new Set(
-        subs
-          .flatMap((s) => (Array.isArray(s.draftIds) ? s.draftIds : []))
-          .filter(Boolean)
-          .map(String)
-      )
-    );
-
-    const ACTIVE_REFRESH_MS = 60 * 1000; // always re-check active drafts each run
-    const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // re-check inactive drafts every 6 hours
+    // ---- Active draft list ----
+    // The 15-second registry updater (Durable Object) keeps push_draft_registry fresh.
+    // Cron uses that table as the source of truth to avoid the "update one run, notify next run" lag.
     const activeDraftIdSet = new Set();
-
-    for (const draftId of uniqueDraftIds) {
-      const reg = await db
-        .prepare(
-          `SELECT draft_id, active, status, last_checked_at
-           FROM push_draft_registry
-           WHERE draft_id=?`
-        )
-        .bind(String(draftId))
-        .first();
-
-      const lastChecked = Number(reg?.last_checked_at || 0);
-      const wasActive = Number(reg?.active || 0) === 1;
-      const needsRecheck =
-        !lastChecked || now - lastChecked > (wasActive ? ACTIVE_REFRESH_MS : INACTIVE_REFRESH_MS);
-
-      if (!needsRecheck) {
-        if (wasActive) activeDraftIdSet.add(String(draftId));
-        continue;
-      }
-
-      let draft;
-      try {
-        draft = await (async () => {
-          const cached = draftCache.get(draftId);
-          if (cached) return cached;
-          const d = await getDraft(draftId);
-          draftCache.set(draftId, d);
-          return d;
-        })();
-      } catch {
-        // If Sleeper is flaky, keep prior classification.
-        if (wasActive) activeDraftIdSet.add(String(draftId));
-        continue;
-      }
-
-      const status = String(draft?.status || "").toLowerCase();
-      const isActive = status === "drafting" || status === "paused";
-      const teams = Number(draft?.settings?.teams || 0) || null;
-      const timerSec = Number(draft?.settings?.pick_timer || 0) || null;
-      const lastPicked = Number(draft?.last_picked || 0) || null;
-      const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
-
-      await db
-        .prepare(
-          `INSERT INTO push_draft_registry (
-            draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
-            last_picked, pick_count, draft_json, draft_order_json, teams, timer_sec,
-            league_id, league_name, league_avatar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(draft_id) DO UPDATE SET
-            active=excluded.active,
-            status=excluded.status,
-            last_checked_at=excluded.last_checked_at,
-            last_active_at=excluded.last_active_at,
-            last_inactive_at=excluded.last_inactive_at,
-            last_picked=excluded.last_picked,
-            teams=excluded.teams,
-            timer_sec=excluded.timer_sec,
-            league_id=excluded.league_id,
-            draft_json=excluded.draft_json,
-            draft_order_json=excluded.draft_order_json`
-        )
-        .bind(
-          String(draftId),
-          isActive ? 1 : 0,
-          status,
-          now,
-          isActive ? now : Number(reg?.last_active_at || 0) || null,
-          !isActive ? now : Number(reg?.last_inactive_at || 0) || null,
-          lastPicked,
-          null,
-          JSON.stringify(draft || {}),
-          draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
-          teams,
-          timerSec,
-          leagueId ? String(leagueId) : null,
-          null,
-          null
-        )
-        .run();
-
-      if (isActive) activeDraftIdSet.add(String(draftId));
+    const regRows = await db.prepare(`SELECT draft_id FROM push_draft_registry WHERE active=1`).all();
+    for (const r of regRows?.results || []) {
+      if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
     }
 
     for (const s of subs) {
@@ -659,7 +589,7 @@ async function handler(req) {
       }
 
       // Expensive call chain (user -> leagues). We only need to discover new drafts occasionally.
-      const REFRESH_MS = 60 * 60 * 1000; // 1 hour
+      const REFRESH_MS = 4 * 60 * 60 * 1000; // 4 hours
       const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
 
       if (needsRefresh) {
@@ -719,27 +649,62 @@ async function handler(req) {
       for (const draftId of activeDraftIdsForSub) {
         checked++;
 
-        const draft = await (async () => {
-          const cached = draftCache.get(draftId);
-          if (cached) return cached;
-          const d = await getDraft(draftId);
-          draftCache.set(draftId, d);
-          return d;
-        })();
+        // Prefer the shared registry payload (refreshed every ~15s by the DO).
+        // Fallback to Sleeper if registry is missing/stale.
+        let reg = null;
+        try {
+          reg = await db
+            .prepare(
+              `SELECT draft_json, draft_order_json, status, last_picked, pick_count,
+                      teams, timer_sec, league_id, league_name, league_avatar, best_ball
+               FROM push_draft_registry
+               WHERE draft_id=?`
+            )
+            .bind(String(draftId))
+            .first();
+        } catch {
+          reg = null;
+        }
 
-        const status = String(draft?.status || "").toLowerCase();
+        let draft = null;
+        if (reg?.draft_json) {
+          try {
+            draft = JSON.parse(reg.draft_json);
+          } catch {
+            draft = null;
+          }
+        }
+        if (!draft) {
+          draft = await (async () => {
+            const cached = draftCache.get(draftId);
+            if (cached) return cached;
+            const d = await getDraft(draftId);
+            draftCache.set(draftId, d);
+            return d;
+          })();
+        }
+
+        const status = String(draft?.status || reg?.status || "").toLowerCase();
         if (status !== "drafting" && status !== "paused") {
           await clearClockState(db, s.endpoint, draftId);
           continue;
         }
 
-        // Used below for registry updates + messages.
-        const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
-        let leagueName = null;
+        const leagueId = String(reg?.league_id || draft?.league_id || draft?.metadata?.league_id || "") || null;
+        const leagueName = reg?.league_name || null;
+        const leagueAvatarUrl = reg?.league_avatar || null;
+        const bestBall = Number(reg?.best_ball || 0) ? 1 : 0;
 
-        const teams = Number(draft?.settings?.teams || 0);
+        const teams = Number(reg?.teams || draft?.settings?.teams || 0);
 
-        const draftOrder = draft?.draft_order || null;
+        let draftOrder = draft?.draft_order || null;
+        if (!draftOrder && reg?.draft_order_json) {
+          try {
+            draftOrder = JSON.parse(reg.draft_order_json);
+          } catch {
+            draftOrder = null;
+          }
+        }
 
         if (!teams || !draftOrder || !draftOrder[userId]) {
           skippedNoOrder++;
@@ -747,80 +712,29 @@ async function handler(req) {
         }
 
         const userSlot = Number(draftOrder[userId]);
-        const lastPicked = Number(draft?.last_picked || 0);
+        const lastPicked = Number(reg?.last_picked || draft?.last_picked || 0);
 
         const draftCacheRow = await loadDraftCache(db, draftId);
 
-        let pickCount;
-        if (
-          draftCacheRow &&
-          Number(draftCacheRow.last_picked || 0) === lastPicked &&
-          Number.isFinite(Number(draftCacheRow.pick_count))
-        ) {
-          pickCount = Number(draftCacheRow.pick_count);
-        } else {
-          pickCount = await getPickCount(draftId);
-          await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
-        }
-
-        // Keep the shared registry in-sync so the Draft Monitor + tracker page can read
-        // draft metadata + pick counts without each client hammering Sleeper.
-        // Also cache league metadata + bestball flag so we can treat Best Ball drafts as "done".
-
-        let leagueAvatar = null;
-        let bestBall = 0;
-
-        if (leagueId) {
-          const leagueKey = String(leagueId);
-          let lg = leagueCache.get(leagueKey);
-          if (lg === undefined) {
-            lg = await getLeague(leagueKey);
-            leagueCache.set(leagueKey, lg || null);
-          }
-          if (lg) {
-            leagueName = lg?.name || null;
-            leagueAvatar = lg?.avatar || null;
-            bestBall = Number(lg?.settings?.best_ball) ? 1 : 0;
+        let pickCount = Number(reg?.pick_count);
+        if (!Number.isFinite(pickCount)) {
+          if (
+            draftCacheRow &&
+            Number(draftCacheRow.last_picked || 0) === lastPicked &&
+            Number.isFinite(Number(draftCacheRow.pick_count))
+          ) {
+            pickCount = Number(draftCacheRow.pick_count);
+          } else {
+            pickCount = await getPickCount(draftId);
+            await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
           }
         }
 
-        const active = status === "drafting" || status === "paused" ? 1 : 0;
-        const timerSec = Number(draft?.settings?.pick_timer) || Number(draft?.settings?.pick_timer_seconds) || null;
-        const completedAt = bestBall && active === 0 ? now : null;
-
-        await db
-          .prepare(
-            `UPDATE push_draft_registry
-             SET active=?, status=?,
-                 last_picked=?, pick_count=?,
-                 draft_order_json=?, teams=?, timer_sec=?,
-                 league_id=COALESCE(?, league_id),
-                 league_name=COALESCE(?, league_name),
-                 league_avatar=COALESCE(?, league_avatar),
-                 best_ball=COALESCE(?, best_ball),
-                 completed_at=COALESCE(?, completed_at),
-                 draft_json=?,
-                 last_checked_at=?
-             WHERE draft_id=?`
-          )
-          .bind(
-            active,
-            status,
-            lastPicked,
-            pickCount,
-            draftOrder ? JSON.stringify(draftOrder) : null,
-            teams,
-            timerSec,
-            leagueId,
-            leagueName,
-            leagueAvatar ? `https://sleepercdn.com/avatars/thumbs/${leagueAvatar}` : null,
-            bestBall,
-            completedAt,
-            JSON.stringify(draft || {}),
-            now,
-            String(draftId)
-          )
-          .run();
+        const timerSec =
+          Number(reg?.timer_sec || 0) ||
+          Number(draft?.settings?.pick_timer || 0) ||
+          Number(draft?.settings?.pick_timer_seconds || 0) ||
+          null;
 
         const nextPickNo = pickCount + 1;
         const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
@@ -840,7 +754,7 @@ async function handler(req) {
           const wasOnClock = Number(clockState?.was_onclock ?? 0) === 1;
           const sentAuto = Number(clockState?.sent_auto ?? 0) === 1;
           const startMs = Number(clockState?.pick_start_ms ?? 0);
-          const endMs = Number(draft?.last_picked || 0);
+        const endMs = Number(reg?.last_picked || draft?.last_picked || 0);
           const timerMs = timerSec > 0 ? timerSec * 1000 : 0;
           const tolMs = timerMs > 0 ? Math.min(15_000, Math.max(5_000, Math.floor(timerMs * 0.05))) : 0;
 
@@ -916,20 +830,23 @@ async function handler(req) {
           const cachedL = leagueCache.get(String(leagueId));
           if (cachedL) {
             league = cachedL;
+          } else if (leagueName || leagueAvatarUrl) {
+            league = { name: leagueName || null, avatar: leagueAvatarUrl || null };
+            leagueCache.set(String(leagueId), league);
           } else if (
             draftCacheRow?.league_id &&
             (draftCacheRow?.league_name || draftCacheRow?.league_avatar)
           ) {
             league = { name: draftCacheRow.league_name || null, avatar: draftCacheRow.league_avatar || null };
             leagueCache.set(String(leagueId), league);
-	          } else {
-	            league = await getLeague(String(leagueId));
+          } else {
+            league = await getLeague(String(leagueId));
             leagueCache.set(String(leagueId), league);
             if (league?.name || league?.avatar) {
               await saveDraftCache(db, draftId, {
                 league_id: String(leagueId),
                 league_name: league?.name || null,
-                league_avatar: league?.avatar || null,
+                league_avatar: league?.avatar ? `https://sleepercdn.com/avatars/thumbs/${league.avatar}` : null,
               });
             }
           }

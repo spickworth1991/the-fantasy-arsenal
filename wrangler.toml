@@ -1,0 +1,15 @@
+name = "the-fantasy-arsenal"
+compatibility_date = "2026-02-22"
+
+# NOTE:
+# - If you already bind D1/KV/vars in the Cloudflare Pages dashboard, you can keep doing that.
+# - The only *new* binding required for the 15-second master draft registry updater is the
+#   Durable Object below.
+
+[[durable_objects.bindings]]
+name = "DRAFT_REGISTRY"
+class_name = "DraftRegistry"
+
+[[migrations]]
+tag = "draft-registry-v1"
+new_classes = ["DraftRegistry"]
