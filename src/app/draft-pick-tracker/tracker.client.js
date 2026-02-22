@@ -216,6 +216,10 @@ export default function DraftPickTrackerClient() {
 
   const [now, setNow] = useState(Date.now());
 
+  // One-time per page-load: register the user's draft_ids into the shared registry.
+  // The cron (poll-and-notify) then hydrates + updates registry rows continuously.
+  const registeredRef = useRef(false);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const onMsg = (ev) => {
@@ -254,6 +258,31 @@ export default function DraftPickTrackerClient() {
   }, []);
 
   // ---------------- Helpers ----------------
+
+  const registerDraftsInRegistry = async (drafts = []) => {
+    try {
+      const payload = {
+        drafts: (drafts || [])
+          .map((lg) => ({
+            draft_id: lg?.draft_id != null ? String(lg.draft_id) : "",
+            league_id: lg?.league_id != null ? String(lg.league_id) : null,
+            league_name: lg?.name || null,
+            league_avatar: lg?.avatar || null,
+            best_ball: Number(lg?.settings?.best_ball) ? 1 : 0,
+          }))
+          .filter((d) => d.draft_id),
+      };
+      if (!payload.drafts.length) return;
+
+      await fetch(`/api/draft-pick-tracker/registry`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   const buildRosterNameMap = (users = [], rosters = []) => {
     const ownerToName = new Map();
@@ -628,6 +657,13 @@ export default function DraftPickTrackerClient() {
     setLoading(true);
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
+
+      // One-time: register draft ids into the shared registry so the monitor can render
+      // without fetching draft metadata per league.
+      if (!registeredRef.current && eligible.length) {
+        registeredRef.current = true;
+        await registerDraftsInRegistry(eligible);
+      }
       // Pull shared draft + pick counts from our server-side registry first.
       // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
       let registryByDraftId = {};
@@ -644,8 +680,19 @@ export default function DraftPickTrackerClient() {
         registryByDraftId = {};
       }
 
+      // Only fetch expensive per-league data for ACTIVE drafts.
+      const activeEligible = [];
+      const inactiveEligible = [];
+      for (const lg of eligible) {
+        const r = registryByDraftId?.[String(lg.draft_id)];
+        const st = String(r?.status || "").toLowerCase();
+        const active = r?.active == null ? null : Number(r.active);
+        const isActive = active === 1 || st === "drafting" || st === "paused";
+        (isActive ? activeEligible : inactiveEligible).push(lg);
+      }
+
       const nextBundles = (await Promise.all(
-        eligible.map(async (lg) => {
+        activeEligible.map(async (lg) => {
           try {
             return await fetchDraftBundle(lg, registryByDraftId);
           } catch (e) {
@@ -658,6 +705,36 @@ export default function DraftPickTrackerClient() {
       const nowMs = Date.now();
       const draftRows = [];
       nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
+
+      // Render inactive drafts straight from registry (no Sleeper calls).
+      inactiveEligible.forEach((lg) => {
+        const r = registryByDraftId?.[String(lg.draft_id)] || {};
+        draftRows.push({
+          leagueId: r.league_id || lg.league_id,
+          leagueName: r.league_name || lg.name,
+          leagueAvatarUrl:
+            r.league_avatar || (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
+          draftId: String(lg.draft_id),
+          draftStatus: r.status || lg.status || "",
+          pickCount: r.pick_count != null ? Number(r.pick_count) : null,
+          teams: r.teams != null ? Number(r.teams) : null,
+          timerSec: r.timer_sec != null ? Number(r.timer_sec) : null,
+          lastPicked: r.last_picked != null ? Number(r.last_picked) : null,
+          onTheClock: false,
+          currentPick: null,
+          mySlot: null,
+          myPick: null,
+          clockLeftMs: null,
+        });
+      });
+
+      // Sort: on-the-clock first, then by league name.
+      draftRows.sort((a, b) => {
+        const ao = a.onTheClock ? 1 : 0;
+        const bo = b.onTheClock ? 1 : 0;
+        if (ao !== bo) return bo - ao;
+        return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
+      });
 
       setRows(draftRows);
     } catch (e) {
@@ -685,7 +762,9 @@ export default function DraftPickTrackerClient() {
     if (!autoRefresh) return;
     if (!anyDrafting) return;
 
-    const t = setInterval(() => refresh(), 20000);
+    // Registry is hydrated by cron; client countdown ticks locally every second.
+    // Refreshing once per minute is plenty and avoids hammering Sleeper.
+    const t = setInterval(() => refresh(), 60000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, autoRefresh, anyDrafting]);

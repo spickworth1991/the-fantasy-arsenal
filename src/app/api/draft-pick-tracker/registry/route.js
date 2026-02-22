@@ -151,3 +151,60 @@ export async function GET(req) {
     return new NextResponse(e?.message || "Registry read failed", { status: 500 });
   }
 }
+
+// Draft Monitor + "hourly sync" uses this to register draft ids into the shared registry.
+// poll-and-notify will hydrate and keep these rows current.
+export async function POST(req) {
+  try {
+    const { env } = getRequestContext();
+    const db = env?.PUSH_DB;
+    if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
+
+    await ensureDraftRegistryTable(db);
+
+    let payload = null;
+    try {
+      payload = await req.json();
+    } catch {
+      payload = null;
+    }
+
+    const drafts = Array.isArray(payload?.drafts) ? payload.drafts : [];
+    const now = Date.now();
+
+    let upserted = 0;
+    for (const d of drafts) {
+      const draftId = d?.draft_id != null ? String(d.draft_id).trim() : "";
+      if (!draftId) continue;
+
+      const leagueId = d?.league_id != null ? String(d.league_id) : null;
+      const leagueName = d?.league_name != null ? String(d.league_name) : null;
+      const leagueAvatar = d?.league_avatar != null ? String(d.league_avatar) : null;
+      const bestBall = d?.best_ball == null ? null : Number(d.best_ball) ? 1 : 0;
+      const status = d?.status != null ? String(d.status).toLowerCase() : null;
+
+      // Insert (or patch missing fields) without overwriting hydrated values.
+      await db
+        .prepare(
+          `INSERT INTO push_draft_registry (
+            draft_id, active, status, last_checked_at,
+            league_id, league_name, league_avatar, best_ball
+          ) VALUES (?, 1, COALESCE(?, 'unknown'), ?, ?, ?, ?, ?)
+          ON CONFLICT(draft_id) DO UPDATE SET
+            league_id=COALESCE(push_draft_registry.league_id, excluded.league_id),
+            league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+            league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+            best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+            last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at)`
+        )
+        .bind(draftId, status, now, leagueId, leagueName, leagueAvatar, bestBall)
+        .run();
+
+      upserted++;
+    }
+
+    return NextResponse.json({ ok: true, upserted });
+  } catch (e) {
+    return new NextResponse(e?.message || "Registry write failed", { status: 500 });
+  }
+}

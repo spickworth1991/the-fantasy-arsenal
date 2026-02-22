@@ -610,13 +610,38 @@ async function handler(req) {
       const lastPicked = Number(draft?.last_picked || 0) || null;
       const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
 
+      // Cache league metadata + best ball flag so Draft Monitor can render from registry
+      // and Best Ball drafts can be permanently marked done once complete.
+      let leagueName = null;
+      let leagueAvatarUrl = null;
+      let bestBall = 0;
+      if (leagueId) {
+        let lg = leagueCache.get(String(leagueId));
+        if (lg === undefined) {
+          try {
+            lg = await getLeague(String(leagueId));
+          } catch {
+            lg = null;
+          }
+          leagueCache.set(String(leagueId), lg || null);
+        }
+        if (lg) {
+          leagueName = lg?.name || null;
+          const av = lg?.avatar || null;
+          leagueAvatarUrl = av ? `https://sleepercdn.com/avatars/thumbs/${av}` : null;
+          bestBall = Number(lg?.settings?.best_ball) ? 1 : 0;
+        }
+      }
+
+      const completedAt = !isActive && bestBall ? now : null;
+
       await db
         .prepare(
           `INSERT INTO push_draft_registry (
             draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
             last_picked, pick_count, draft_json, draft_order_json, teams, timer_sec,
-            league_id, league_name, league_avatar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            league_id, league_name, league_avatar, best_ball, completed_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(draft_id) DO UPDATE SET
             active=excluded.active,
             status=excluded.status,
@@ -628,7 +653,11 @@ async function handler(req) {
             timer_sec=excluded.timer_sec,
             league_id=excluded.league_id,
             draft_json=excluded.draft_json,
-            draft_order_json=excluded.draft_order_json`
+            draft_order_json=excluded.draft_order_json,
+            league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+            league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+            best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+            completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at)`
         )
         .bind(
           String(draftId),
@@ -644,8 +673,10 @@ async function handler(req) {
           teams,
           timerSec,
           leagueId ? String(leagueId) : null,
-          null,
-          null
+          leagueName,
+          leagueAvatarUrl,
+          bestBall || null,
+          completedAt
         )
         .run();
 
@@ -732,6 +763,9 @@ async function handler(req) {
           await clearClockState(db, s.endpoint, draftId);
           continue;
         }
+
+
+        let leagueName = null;
 
         const teams = Number(draft?.settings?.teams || 0);
 
