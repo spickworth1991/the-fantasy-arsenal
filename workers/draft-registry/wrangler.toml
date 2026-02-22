@@ -1,0 +1,11 @@
+name = "tfa-draft-registry"
+main = "index.js"
+compatibility_date = "2026-02-22"
+
+[[durable_objects.bindings]]
+name = "DRAFT_REGISTRY"
+class_name = "DraftRegistry"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DraftRegistry"]
