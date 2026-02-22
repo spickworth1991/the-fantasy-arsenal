@@ -932,9 +932,6 @@ async function handler(req) {
           }
         }
 
-        const leagueName =
-          draft?.metadata?.name || draft?.metadata?.league_name || league?.name || "your league";
-
         // clockState already loaded above (before isOnClock checks)
         const prevPickNo = Number(clockState?.pick_no ?? 0);
         const prevStatus = String(clockState?.last_status || "");
