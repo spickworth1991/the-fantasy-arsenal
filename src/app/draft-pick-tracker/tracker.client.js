@@ -1153,6 +1153,10 @@ export default function DraftPickTrackerClient() {
                   )
                 : null;
 
+            // Some UI features (like recent auto-pick detection) are keyed by draft id.
+            // `r.draftId` is provided by the registry API rows.
+            const draftId = r?.draftId;
+
             const autoActive = (() => {
               const ts = autoByDraftId?.[String(draftId)];
               if (!ts) return false;
