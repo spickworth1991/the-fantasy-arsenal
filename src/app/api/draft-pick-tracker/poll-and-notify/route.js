@@ -105,18 +105,26 @@ async function ensureDraftRegistryTable(db) {
         timer_sec INTEGER,
         league_id TEXT,
         league_name TEXT,
-        league_avatar TEXT
+        league_avatar TEXT,
+        best_ball INTEGER,
+        completed_at INTEGER
       )`
     )
     .run();
 
   // Back-compat: older deployments may have the table without newer columns.
-  // Ensure draft_json exists so the tracker page can use the shared registry cache.
+  // Ensure newer columns exist so the tracker page + monitor can use shared registry cache.
   try {
     const info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
     const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
     if (!existing.has("draft_json")) {
       await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN draft_json TEXT`).run();
+    }
+    if (!existing.has("best_ball")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN best_ball INTEGER`).run();
+    }
+    if (!existing.has("completed_at")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN completed_at INTEGER`).run();
     }
   } catch {
     // ignore
@@ -650,7 +658,8 @@ async function handler(req) {
         continue;
       }
 
-      const REFRESH_MS = 15 * 60 * 1000;
+      // Expensive call chain (user -> leagues). We only need to discover new drafts occasionally.
+      const REFRESH_MS = 60 * 60 * 1000; // 1 hour
       const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
 
       if (needsRefresh) {
@@ -725,7 +734,7 @@ async function handler(req) {
         }
 
         const teams = Number(draft?.settings?.teams || 0);
-        const timerSec = Number(draft?.settings?.pick_timer || 0);
+
         const draftOrder = draft?.draft_order || null;
 
         if (!teams || !draftOrder || !draftOrder[userId]) {
@@ -750,15 +759,62 @@ async function handler(req) {
           await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
         }
 
-        // Keep the shared registry in-sync so the Draft Monitor page can read draft + pick counts
-        // without each client hammering Sleeper.
+        // Keep the shared registry in-sync so the Draft Monitor + tracker page can read
+        // draft metadata + pick counts without each client hammering Sleeper.
+        // Also cache league metadata + bestball flag so we can treat Best Ball drafts as "done".
+
+        let leagueAvatar = null;
+        let bestBall = 0;
+
+        if (leagueId) {
+          let lg = leagueCache.get(leagueId);
+          if (lg === undefined) {
+            lg = await getLeague(leagueId);
+            leagueCache.set(leagueId, lg || null);
+          }
+          if (lg) {
+            leagueName = lg?.name || null;
+            leagueAvatar = lg?.avatar || null;
+            bestBall = Number(lg?.settings?.best_ball) ? 1 : 0;
+          }
+        }
+
+        const active = status === "drafting" || status === "paused" ? 1 : 0;
+        const timerSec = Number(draft?.settings?.pick_timer) || Number(draft?.settings?.pick_timer_seconds) || null;
+        const completedAt = bestBall && active === 0 ? now : null;
+
         await db
           .prepare(
             `UPDATE push_draft_registry
-             SET last_picked=?, pick_count=?, draft_json=?, last_checked_at=?
+             SET active=?, status=?,
+                 last_picked=?, pick_count=?,
+                 draft_order_json=?, teams=?, timer_sec=?,
+                 league_id=COALESCE(?, league_id),
+                 league_name=COALESCE(?, league_name),
+                 league_avatar=COALESCE(?, league_avatar),
+                 best_ball=COALESCE(?, best_ball),
+                 completed_at=COALESCE(?, completed_at),
+                 draft_json=?,
+                 last_checked_at=?
              WHERE draft_id=?`
           )
-          .bind(lastPicked, pickCount, JSON.stringify(draft || {}), now, String(draftId))
+          .bind(
+            active,
+            status,
+            lastPicked,
+            pickCount,
+            draftOrder ? JSON.stringify(draftOrder) : null,
+            teams,
+            timerSec,
+            leagueId,
+            leagueName,
+            leagueAvatar ? `https://sleepercdn.com/avatars/thumbs/${leagueAvatar}` : null,
+            bestBall,
+            completedAt,
+            JSON.stringify(draft || {}),
+            now,
+            String(draftId)
+          )
           .run();
 
         const nextPickNo = pickCount + 1;

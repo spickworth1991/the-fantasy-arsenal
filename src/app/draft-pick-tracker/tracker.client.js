@@ -424,8 +424,14 @@ export default function DraftPickTrackerClient() {
 
     const draft = reg?.draft || (draftResMaybe ? await draftResMaybe.json() : null);
     if (!draft) throw new Error(`Draft fetch failed: ${league?.name || leagueId}`);
-    const picks = picksRes.ok ? await picksRes.json() : [];
+
+    // IMPORTANT: do NOT fetch the full picks array here.
+    // This explodes request volume + payload size across many leagues.
+    // poll-and-notify keeps pick_count + last_picked server-side.
+    const picks = [];
+
     const pickCount = Number.isFinite(Number(reg?.pickCount)) ? Number(reg.pickCount) : null;
+    const lastPicked = Number.isFinite(Number(reg?.lastPicked)) ? Number(reg.lastPicked) : null;
     const users = usersRes.ok ? await usersRes.json() : [];
     const rosters = rostersRes.ok ? await rostersRes.json() : [];
 	    const traded_picks = tradedRes && tradedRes.ok ? await tradedRes.json() : [];
@@ -435,6 +441,7 @@ export default function DraftPickTrackerClient() {
       draft,
       pickCount: pickCount == null ? 0 : pickCount,
       picks: Array.isArray(picks) ? picks : [],
+      lastPicked,
       users,
       rosters,
       traded_picks: Array.isArray(traded_picks) ? traded_picks : [],
