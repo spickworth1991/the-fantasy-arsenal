@@ -463,6 +463,201 @@ async function ensureDraftCacheTable(db) {
     .run();
 }
 
+function toLeagueAvatarUrl(avatarId) {
+  return avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : null;
+}
+
+async function ensureRegistryRowsExist(db, draftIds) {
+  const ids = (Array.isArray(draftIds) ? draftIds : [])
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+  if (!ids.length) return 0;
+
+  const now = Date.now();
+  let inserted = 0;
+  // Keep this simple + safe: don't overwrite hydrated fields.
+  for (const draftId of ids.slice(0, 2000)) {
+    // eslint-disable-next-line no-await-in-loop
+    await db
+      .prepare(
+        `INSERT INTO push_draft_registry (draft_id, active, status, last_checked_at)
+         VALUES (?, 1, 'unknown', ?)
+         ON CONFLICT(draft_id) DO UPDATE SET
+           last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at)`
+      )
+      .bind(String(draftId), now)
+      .run();
+    inserted++;
+  }
+  return inserted;
+}
+
+async function refreshSharedDraftRegistry(db, draftIds, opts = {}) {
+  const {
+    max = 140, // safety: cron runs every minute; keep this bounded
+    concurrency = 6,
+    activeStaleMs = 20_000,
+    inactiveStaleMs = 6 * 60 * 60 * 1000,
+  } = opts;
+
+  const ids = (Array.isArray(draftIds) ? draftIds : [])
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+  if (!ids.length) return { ok: true, total: 0, checked: 0, updated: 0, active: 0 };
+
+  const now = Date.now();
+  // Decide which drafts actually need a refresh.
+  const toCheck = [];
+  for (const draftId of ids) {
+    // eslint-disable-next-line no-await-in-loop
+    const reg = await db
+      .prepare(
+        `SELECT draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+                league_name, league_avatar, best_ball
+         FROM push_draft_registry WHERE draft_id=?`
+      )
+      .bind(String(draftId))
+      .first();
+
+    const lastChecked = Number(reg?.last_checked_at || 0);
+    const wasActive = Number(reg?.active || 0) === 1;
+    const staleMs = wasActive ? activeStaleMs : inactiveStaleMs;
+    const needs = !lastChecked || now - lastChecked > staleMs;
+    if (needs) toCheck.push({ draftId: String(draftId), reg, wasActive });
+    if (toCheck.length >= max) break;
+  }
+
+  let updated = 0;
+  let active = 0;
+
+  const upsert = async (draftId, patch) => {
+    const completedAt =
+      patch?.completed_at != null ? patch.completed_at : (patch?.active ? null : null);
+    await db
+      .prepare(
+        `INSERT INTO push_draft_registry (
+          draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+          last_picked, pick_count, draft_json, draft_order_json, teams, timer_sec,
+          league_id, league_name, league_avatar, best_ball, completed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(draft_id) DO UPDATE SET
+          active=excluded.active,
+          status=excluded.status,
+          last_checked_at=excluded.last_checked_at,
+          last_active_at=excluded.last_active_at,
+          last_inactive_at=excluded.last_inactive_at,
+          last_picked=excluded.last_picked,
+          pick_count=excluded.pick_count,
+          draft_json=excluded.draft_json,
+          draft_order_json=excluded.draft_order_json,
+          teams=excluded.teams,
+          timer_sec=excluded.timer_sec,
+          league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
+          league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+          league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+          best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+          completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at)`
+      )
+      .bind(
+        String(draftId),
+        Number(patch?.active || 0),
+        String(patch?.status || ""),
+        now,
+        Number(patch?.active || 0) === 1 ? now : (Number(patch?.last_active_at || 0) || null),
+        Number(patch?.active || 0) === 1 ? (Number(patch?.last_inactive_at || 0) || null) : now,
+        patch?.last_picked ?? null,
+        patch?.pick_count ?? null,
+        patch?.draft_json ?? null,
+        patch?.draft_order_json ?? null,
+        patch?.teams ?? null,
+        patch?.timer_sec ?? null,
+        patch?.league_id ?? null,
+        patch?.league_name ?? null,
+        patch?.league_avatar ?? null,
+        patch?.best_ball ?? null,
+        completedAt ?? null
+      )
+      .run();
+  };
+
+  for (let i = 0; i < toCheck.length; i += concurrency) {
+    const batch = toCheck.slice(i, i + concurrency);
+    // eslint-disable-next-line no-await-in-loop
+    await Promise.all(
+      batch.map(async ({ draftId, reg }) => {
+        let draft;
+        try {
+          draft = await getDraft(draftId);
+        } catch {
+          return;
+        }
+
+        const status = String(draft?.status || "").toLowerCase();
+        const isActive = status === "drafting" || status === "paused";
+        if (isActive) active++;
+
+        const teams = Number(draft?.settings?.teams || 0) || null;
+        const timerSec =
+          Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
+        const lastPicked = Number(draft?.last_picked || 0) || null;
+        const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
+
+        const cacheRow = await loadDraftCache(db, draftId);
+        let pickCount = Number(cacheRow?.pick_count);
+        const cacheLastPicked = Number(cacheRow?.last_picked || 0);
+        if (!Number.isFinite(pickCount) || cacheLastPicked !== Number(lastPicked || 0)) {
+          try {
+            pickCount = await getPickCount(draftId);
+          } catch {
+            pickCount = Number.isFinite(pickCount) ? pickCount : null;
+          }
+          await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
+        }
+
+        let leagueName = reg?.league_name || cacheRow?.league_name || null;
+        let leagueAvatarUrl = reg?.league_avatar || cacheRow?.league_avatar || null;
+        let bestBall = reg?.best_ball;
+
+        if (leagueId && (!leagueName || !leagueAvatarUrl || bestBall == null)) {
+          const lg = await getLeague(String(leagueId));
+          if (lg) {
+            leagueName = leagueName || lg?.name || null;
+            leagueAvatarUrl = leagueAvatarUrl || toLeagueAvatarUrl(lg?.avatar || null);
+            bestBall = bestBall == null ? (Number(lg?.settings?.best_ball) ? 1 : 0) : bestBall;
+            await saveDraftCache(db, draftId, {
+              league_id: String(leagueId),
+              league_name: leagueName,
+              league_avatar: leagueAvatarUrl,
+            });
+          }
+        }
+
+        const completedAt = !isActive && Number(bestBall || 0) === 1 ? now : null;
+
+        await upsert(draftId, {
+          active: isActive ? 1 : 0,
+          status,
+          last_picked: lastPicked,
+          pick_count: pickCount,
+          draft_json: JSON.stringify(draft || {}),
+          draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
+          teams,
+          timer_sec: timerSec,
+          league_id: leagueId ? String(leagueId) : null,
+          league_name: leagueName,
+          league_avatar: leagueAvatarUrl,
+          best_ball: bestBall == null ? null : Number(bestBall),
+          completed_at: completedAt,
+        });
+
+        updated++;
+      })
+    );
+  }
+
+  return { ok: true, total: ids.length, checked: toCheck.length, updated, active };
+}
+
 async function loadDraftCache(db, draftId) {
   return (await db.prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`).bind(String(draftId)).first()) || null;
 }
@@ -573,58 +768,64 @@ async function handler(req) {
       return fetch(endpoint, fetchInit);
     };
 
+    // --- Draft discovery refresh (per subscription) ---
+    // Keep each subscription's draft_ids fresh every 4 hours.
+    // IMPORTANT: do this BEFORE we refresh the shared registry so new draft ids are included.
+    for (const s of subs) {
+      if (!s.username) continue;
+
+      const REFRESH_MS = 4 * 60 * 60 * 1000; // 4 hours
+      const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
+      if (!needsRefresh) continue;
+
+      try {
+        const computed = await computeDraftIdsForUsername(s.username);
+        const newDraftIds = computed.draftIds || [];
+        const newLeagueCount = Number(computed.leagueCount || 0);
+
+        await db
+          .prepare(
+            `UPDATE push_subscriptions
+             SET draft_ids_json=?, league_count=?, updated_at=?
+             WHERE endpoint=?`
+          )
+          .bind(JSON.stringify(newDraftIds), newLeagueCount, now, s.endpoint)
+          .run();
+
+        s.draftIds = newDraftIds;
+        s.leagueCount = newLeagueCount;
+        s.updatedAt = now;
+        if (computed.userId) userIdCache.set(s.username, computed.userId);
+      } catch {
+        // ignore
+      }
+    }
+
+    // --- Shared registry refresh (cron-safe fallback) ---
+    // The Durable Object is best-case (15s cadence), but in Pages it may not exist or may not be running.
+    // So cron ALWAYS refreshes the registry for drafts we know about, then notifies immediately.
+    const allDraftIdSet = new Set();
+    for (const s of subs) {
+      for (const id of s.draftIds || []) allDraftIdSet.add(String(id));
+    }
+    const allDraftIds = Array.from(allDraftIdSet);
+    await ensureRegistryRowsExist(db, allDraftIds);
+    const registryRefresh = await refreshSharedDraftRegistry(db, allDraftIds);
+
     // ---- Active draft list ----
-    // The 15-second registry updater (Durable Object) keeps push_draft_registry fresh.
-    // Cron uses that table as the source of truth to avoid the "update one run, notify next run" lag.
+    // After refreshing, the registry is our source of truth for what's currently drafting.
     const activeDraftIdSet = new Set();
     const regRows = await db.prepare(`SELECT draft_id FROM push_draft_registry WHERE active=1`).all();
     for (const r of regRows?.results || []) {
       if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
     }
 
+    // --- Notifications ---
     for (const s of subs) {
       if (!s.username) {
         skippedNoUsername++;
         continue;
       }
-
-      // Expensive call chain (user -> leagues). We only need to discover new drafts occasionally.
-      const REFRESH_MS = 4 * 60 * 60 * 1000; // 4 hours
-      const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
-
-      if (needsRefresh) {
-        try {
-          const computed = await computeDraftIdsForUsername(s.username);
-          const newDraftIds = computed.draftIds || [];
-          const newLeagueCount = Number(computed.leagueCount || 0);
-
-          await db
-            .prepare(
-              `UPDATE push_subscriptions
-               SET draft_ids_json=?, league_count=?, updated_at=?
-               WHERE endpoint=?`
-            )
-            .bind(JSON.stringify(newDraftIds), newLeagueCount, now, s.endpoint)
-            .run();
-
-          s.draftIds = newDraftIds;
-          s.leagueCount = newLeagueCount;
-          s.updatedAt = now;
-
-          if (computed.userId) userIdCache.set(s.username, computed.userId);
-
-          if (!s.draftIds.length) {
-            skippedNoDrafts++;
-            continue;
-          }
-        } catch {
-          if (!s.draftIds.length) {
-            skippedNoDrafts++;
-            continue;
-          }
-        }
-      }
-
       if (!s.draftIds.length) {
         skippedNoDrafts++;
         continue;
@@ -1260,6 +1461,7 @@ async function handler(req) {
     return NextResponse.json({
       ok: true,
       subs: subs.length,
+      registryRefresh,
       checked,
       sent,
       skippedNoDrafts,

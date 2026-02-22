@@ -203,6 +203,20 @@ export async function POST(req) {
       upserted++;
     }
 
+    // Kick the 15s Durable Object registry updater.
+    // This ensures that "registry only" drafts (added by Draft Monitor) start hydrating
+    // even if no one has enabled alerts yet.
+    try {
+      const ns = env?.DRAFT_REGISTRY;
+      if (ns?.idFromName) {
+        const id = ns.idFromName("master");
+        const stub = ns.get(id);
+        await stub.fetch("https://do/tick", { method: "POST" });
+      }
+    } catch {
+      // ignore
+    }
+
     return NextResponse.json({ ok: true, upserted });
   } catch (e) {
     return new NextResponse(e?.message || "Registry write failed", { status: 500 });

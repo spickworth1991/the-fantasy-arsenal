@@ -145,6 +145,29 @@ async function listUniqueDraftIdsFromSubs(db) {
   return Array.from(set);
 }
 
+// Draft Monitor can register drafts into push_draft_registry even if nobody has alerts enabled.
+// If we only watch push_subscriptions, those drafts never get hydrated/refreshed.
+async function listUniqueDraftIdsFromRegistry(db) {
+  try {
+    const rows = await db.prepare(`SELECT draft_id FROM push_draft_registry`).all();
+    const set = new Set();
+    for (const r of rows?.results || []) {
+      if (r?.draft_id) set.add(String(r.draft_id));
+    }
+    return Array.from(set);
+  } catch {
+    return [];
+  }
+}
+
+async function listUniqueDraftIds(db) {
+  const [subs, reg] = await Promise.all([
+    listUniqueDraftIdsFromSubs(db),
+    listUniqueDraftIdsFromRegistry(db),
+  ]);
+  return Array.from(new Set([...(subs || []), ...(reg || [])]));
+}
+
 async function getRegistryRow(db, draftId) {
   return (
     (await db
@@ -219,7 +242,7 @@ async function tickOnce(env) {
   await ensureDraftCacheTable(db);
 
   const now = Date.now();
-  const uniqueDraftIds = await listUniqueDraftIdsFromSubs(db);
+  const uniqueDraftIds = await listUniqueDraftIds(db);
   if (!uniqueDraftIds.length) return { ok: true, drafts: 0, active: 0, updated: 0 };
 
   const toCheck = [];
