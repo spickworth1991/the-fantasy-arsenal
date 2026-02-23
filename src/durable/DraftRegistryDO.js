@@ -9,7 +9,10 @@
 
 const TICK_MS = 15_000;
 const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
-const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck inactive drafts every 6h
+// If a draft is in pre-draft, it can flip to drafting at any time.
+// Keep a tight loop for pre-draft so new activity shows up quickly.
+const PRE_DRAFT_REFRESH_MS = 2 * 60 * 1000; // 2 minutes
+const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
 
 async function ensureDraftRegistryTable(db) {
   await db
@@ -250,7 +253,10 @@ async function tickOnce(env) {
     const reg = await getRegistryRow(db, draftId);
     const lastChecked = Number(reg?.last_checked_at || 0);
     const wasActive = Number(reg?.active || 0) === 1;
-    const staleMs = wasActive ? ACTIVE_REFRESH_MS : INACTIVE_REFRESH_MS;
+    const statusLower = String(reg?.status || "").toLowerCase();
+    const staleMs = wasActive
+      ? ACTIVE_REFRESH_MS
+      : (statusLower === "pre_draft" ? PRE_DRAFT_REFRESH_MS : INACTIVE_REFRESH_MS);
     const needs = !lastChecked || now - lastChecked > staleMs;
     if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
   }

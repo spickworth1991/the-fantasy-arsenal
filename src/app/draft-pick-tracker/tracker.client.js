@@ -219,7 +219,6 @@ export default function DraftPickTrackerClient() {
   // One-time per page-load: register the user's draft_ids into the shared registry.
   // The cron (poll-and-notify) then hydrates + updates registry rows continuously.
   const registeredRef = useRef(false);
-  const registeredDraftIdsRef = useRef(new Set());
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -275,17 +274,11 @@ export default function DraftPickTrackerClient() {
       };
       if (!payload.drafts.length) return;
 
-      const resp = await fetch(`/api/draft-pick-tracker/registry`, {
+      await fetch(`/api/draft-pick-tracker/registry`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (resp.ok) {
-        for (const d of payload.drafts) {
-          registeredDraftIdsRef.current.add(String(d.draft_id));
-        }
-      }
     } catch {
       // ignore
     }
@@ -665,24 +658,12 @@ export default function DraftPickTrackerClient() {
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
 
-      // Discover drafts for this user (even if they never enabled notifications).
-      // If new leagues/drafts appear later, we register only the missing ones so
-      // the master registry/DO can start tracking them immediately.
-      const missing = eligible.filter(
-        (d) => !registeredDraftIdsRef.current.has(String(d.draft_id))
-      );
-      if (missing.length) {
-        const CHUNK = 50;
-        for (let i = 0; i < missing.length; i += CHUNK) {
-          const chunk = missing.slice(i, i + CHUNK);
-          try {
-            await registerDraftsInRegistry(chunk);
-          } catch (e) {
-            console.warn("registry discovery failed", e);
-          }
-        }
+      // One-time: register draft ids into the shared registry so the monitor can render
+      // without fetching draft metadata per league.
+      if (!registeredRef.current && eligible.length) {
+        registeredRef.current = true;
+        await registerDraftsInRegistry(eligible);
       }
-      registeredRef.current = true;
       // Pull shared draft + pick counts from our server-side registry first.
       // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
       let registryByDraftId = {};
@@ -697,6 +678,38 @@ export default function DraftPickTrackerClient() {
         }
       } catch {
         registryByDraftId = {};
+      }
+
+      // ✅ Always perform a lightweight discovery pass.
+      // If Sleeper shows a draft_id we don't have (or it's tied to the wrong league_id),
+      // re-register it so it appears for non-push users too.
+      try {
+        const toRegister = eligible.filter((lg) => {
+          const did = String(lg?.draft_id || "");
+          if (!did) return false;
+          const r = registryByDraftId?.[did];
+          if (!r) return true;
+          const regLeagueId = String(r?.league_id || "");
+          const sleeperLeagueId = String(lg?.league_id || "");
+          // If the registry doesn't know the league, or it points to a different league, fix it.
+          if (!regLeagueId || !sleeperLeagueId) return true;
+          return regLeagueId !== sleeperLeagueId;
+        });
+
+        if (toRegister.length) {
+          await registerDraftsInRegistry(toRegister);
+
+          const ids2 = eligible.map((l) => l?.draft_id).filter(Boolean);
+          if (ids2.length) {
+            const regRes2 = await fetch(
+              `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids2.join(","))}`
+            );
+            const regJson2 = regRes2.ok ? await regRes2.json() : null;
+            registryByDraftId = regJson2?.drafts || registryByDraftId;
+          }
+        }
+      } catch {
+        // ignore discovery errors
       }
 
       // Only fetch expensive per-league data for ACTIVE drafts.
@@ -770,10 +783,10 @@ export default function DraftPickTrackerClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
-  const anyDrafting = useMemo(
-    () => (rows || []).some((r) => String(r?.draftStatus) === "drafting"),
-    [rows]
-  );
+  const anyDrafting = useMemo(() => {
+    const ACTIVE = new Set(["drafting", "paused"]);
+    return (rows || []).some((r) => ACTIVE.has(String(r?.draftStatus || "").toLowerCase()));
+  }, [rows]);
 
   // ---------------- Auto-refresh ----------------
   useEffect(() => {
@@ -1025,7 +1038,7 @@ export default function DraftPickTrackerClient() {
             )}
           </div>
           <p className="text-gray-300 mt-1">
-            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers, traded-pick ownership.
+            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers, traded-pick ownership, and recent picks.
           </p>
         </div>
 
@@ -1406,7 +1419,7 @@ export default function DraftPickTrackerClient() {
                     </div>
                   </div>
 
-                  {/* <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
+                  <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm text-white font-semibold">Recent picks</div>
 
@@ -1446,7 +1459,7 @@ export default function DraftPickTrackerClient() {
                         ))}
                       </div>
                     )}
-                  </div> */}
+                  </div>
                 </div>
               </div>
             );
