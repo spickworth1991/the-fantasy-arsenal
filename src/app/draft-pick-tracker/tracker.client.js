@@ -219,6 +219,7 @@ export default function DraftPickTrackerClient() {
   // One-time per page-load: register the user's draft_ids into the shared registry.
   // The cron (poll-and-notify) then hydrates + updates registry rows continuously.
   const registeredRef = useRef(false);
+  const registeredDraftIdsRef = useRef(new Set());
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -274,11 +275,17 @@ export default function DraftPickTrackerClient() {
       };
       if (!payload.drafts.length) return;
 
-      await fetch(`/api/draft-pick-tracker/registry`, {
+      const resp = await fetch(`/api/draft-pick-tracker/registry`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      if (resp.ok) {
+        for (const d of payload.drafts) {
+          registeredDraftIdsRef.current.add(String(d.draft_id));
+        }
+      }
     } catch {
       // ignore
     }
@@ -658,12 +665,24 @@ export default function DraftPickTrackerClient() {
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
 
-      // One-time: register draft ids into the shared registry so the monitor can render
-      // without fetching draft metadata per league.
-      if (!registeredRef.current && eligible.length) {
-        registeredRef.current = true;
-        await registerDraftsInRegistry(eligible);
+      // Discover drafts for this user (even if they never enabled notifications).
+      // If new leagues/drafts appear later, we register only the missing ones so
+      // the master registry/DO can start tracking them immediately.
+      const missing = eligible.filter(
+        (d) => !registeredDraftIdsRef.current.has(String(d.draft_id))
+      );
+      if (missing.length) {
+        const CHUNK = 50;
+        for (let i = 0; i < missing.length; i += CHUNK) {
+          const chunk = missing.slice(i, i + CHUNK);
+          try {
+            await registerDraftsInRegistry(chunk);
+          } catch (e) {
+            console.warn("registry discovery failed", e);
+          }
+        }
       }
+      registeredRef.current = true;
       // Pull shared draft + pick counts from our server-side registry first.
       // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
       let registryByDraftId = {};

@@ -1,4 +1,16 @@
 export const runtime = "edge";
+// If Durable Object binding isn't present (local dev / older env), this no-ops.
+async function kickDraftRegistry(env) {
+  try {
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return;
+    const id = ns.idFromName("master");
+    const stub = ns.get(id);
+    await stub.fetch("https://do/tick", { method: "POST" });
+  } catch {
+    // ignore
+  }
+}
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
@@ -201,20 +213,6 @@ export async function POST(req) {
         .run();
 
       upserted++;
-    }
-
-    // Kick the 15s Durable Object registry updater.
-    // This ensures that "registry only" drafts (added by Draft Monitor) start hydrating
-    // even if no one has enabled alerts yet.
-    try {
-      const ns = env?.DRAFT_REGISTRY;
-      if (ns?.idFromName) {
-        const id = ns.idFromName("master");
-        const stub = ns.get(id);
-        await stub.fetch("https://do/tick", { method: "POST" });
-      }
-    } catch {
-      // ignore
     }
 
     return NextResponse.json({ ok: true, upserted });
