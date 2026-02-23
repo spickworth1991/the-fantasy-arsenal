@@ -1,4 +1,52 @@
 export const runtime = "edge";
+// If Durable Object binding isn't present (local dev / older env), this no-ops.
+async function kickDraftRegistry(env) {
+  try {
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return;
+    const id = ns.idFromName("master");
+    const stub = ns.get(id);
+    await stub.fetch("https://do/tick", { method: "POST" });
+  } catch {
+    // ignore
+  }
+}
+
+// Keep the Durable Object's internal registry in sync so its alarm loop can hydrate + update D1.
+async function addDraftsToDraftRegistryDO(env, drafts) {
+  try {
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return;
+    const id = ns.idFromName("master");
+    const stub = ns.get(id);
+
+    for (const d of drafts || []) {
+      const draftId = d?.draft_id != null ? String(d.draft_id).trim() : "";
+      const leagueId = d?.league_id != null ? String(d.league_id).trim() : "";
+      if (!draftId || !leagueId) continue;
+
+      await stub.fetch("https://do/add", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          draft: {
+            draft_id: draftId,
+            league_id: leagueId,
+            league_name: d?.league_name ?? null,
+            league_avatar: d?.league_avatar ?? null,
+            best_ball: d?.best_ball ?? null,
+            status: d?.status ?? null,
+            active: d?.active ?? 1,
+          },
+        }),
+      });
+    }
+
+    await stub.fetch("https://do/kick", { method: "POST" });
+  } catch {
+    // ignore
+  }
+}
 
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
@@ -173,6 +221,7 @@ export async function POST(req) {
     const now = Date.now();
 
     let upserted = 0;
+    const doDrafts = [];
     for (const d of drafts) {
       const draftId = d?.draft_id != null ? String(d.draft_id).trim() : "";
       if (!draftId) continue;
@@ -182,61 +231,44 @@ export async function POST(req) {
       const leagueAvatar = d?.league_avatar != null ? String(d.league_avatar) : null;
       const bestBall = d?.best_ball == null ? null : Number(d.best_ball) ? 1 : 0;
       const status = d?.status != null ? String(d.status).toLowerCase() : null;
+      const forceActive = status === "drafting" || status === "paused" || status === "in_progress";
+      const requestedActive = d?.active == null ? 1 : Number(d.active) ? 1 : 0;
+      const active = forceActive ? 1 : requestedActive;
 
-      // Insert (or patch missing fields) and revive rows that may have been marked
-      // inactive during pre-draft so we don't wait hours to notice "drafting".
+      // Insert (or patch missing fields) without overwriting hydrated values.
       await db
         .prepare(
           `INSERT INTO push_draft_registry (
-            draft_id, active, status, last_checked_at, last_active_at,
+            draft_id, active, status, last_checked_at,
             league_id, league_name, league_avatar, best_ball
-          ) VALUES (
-            ?,
-            1,
-            COALESCE(?, 'unknown'),
-            ?,
-            CASE WHEN LOWER(COALESCE(?, '')) IN ('drafting','paused') THEN ? ELSE NULL END,
-            ?, ?, ?, ?
-          )
+          ) VALUES (?, ?, COALESCE(?, 'unknown'), ?, ?, ?, ?, ?)
           ON CONFLICT(draft_id) DO UPDATE SET
-            active=1,
-            status=COALESCE(excluded.status, push_draft_registry.status),
-            league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-            league_name=COALESCE(excluded.league_name, push_draft_registry.league_name),
-            league_avatar=COALESCE(excluded.league_avatar, push_draft_registry.league_avatar),
-            best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
-            last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at),
-            last_active_at=COALESCE(excluded.last_active_at, push_draft_registry.last_active_at)`
+            league_id=COALESCE(push_draft_registry.league_id, excluded.league_id),
+            league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+            league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+            best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+            active=CASE WHEN excluded.active=1 THEN 1 ELSE push_draft_registry.active END,
+            last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at)`
         )
-        .bind(
-          draftId,
-          status,
-          now,
-          status,
-          now,
-          leagueId,
-          leagueName,
-          leagueAvatar,
-          bestBall
-        )
+        .bind(draftId, active, status, now, leagueId, leagueName, leagueAvatar, bestBall)
         .run();
 
       upserted++;
+
+      doDrafts.push({
+        draft_id: draftId,
+        league_id: leagueId,
+        league_name: leagueName,
+        league_avatar: leagueAvatar,
+        best_ball: bestBall,
+        status,
+        active,
+      });
     }
 
-    // Kick the 15s Durable Object registry updater.
-    // This ensures that "registry only" drafts (added by Draft Monitor) start hydrating
-    // even if no one has enabled alerts yet.
-    try {
-      const ns = env?.DRAFT_REGISTRY;
-      if (ns?.idFromName) {
-        const id = ns.idFromName("master");
-        const stub = ns.get(id);
-        await stub.fetch("https://do/tick", { method: "POST" });
-      }
-    } catch {
-      // ignore
-    }
+    // Sync drafts into the DO's internal registry and kick its update loop.
+    await addDraftsToDraftRegistryDO(env, doDrafts);
+    await kickDraftRegistry(env);
 
     return NextResponse.json({ ok: true, upserted });
   } catch (e) {
