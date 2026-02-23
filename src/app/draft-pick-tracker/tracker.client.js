@@ -1025,7 +1025,7 @@ export default function DraftPickTrackerClient() {
             )}
           </div>
           <p className="text-gray-300 mt-1">
-            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers, traded-pick ownership, and recent picks.
+            Multi-league draft dashboard: on-deck alerts, accurate on-clock timers, traded-pick ownership.
           </p>
         </div>
 
@@ -1406,7 +1406,7 @@ export default function DraftPickTrackerClient() {
                     </div>
                   </div>
 
-                  <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
+                  {/* <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm text-white font-semibold">Recent picks</div>
 
@@ -1446,7 +1446,7 @@ export default function DraftPickTrackerClient() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </div> */}
                 </div>
               </div>
             );
