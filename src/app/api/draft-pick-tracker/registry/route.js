@@ -3,6 +3,15 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
+function safeJsonParse(value, fallback = null) {
+  if (!value) return fallback;
+  try {
+    return typeof value === "string" ? JSON.parse(value) : value;
+  } catch {
+    return fallback;
+  }
+}
+
 function getDb(env) {
   // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
   return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
