@@ -475,10 +475,7 @@ export default function DraftPickTrackerClient() {
       Object.entries(rosterNamesObj || {}).map(([k, v]) => [String(k), String(v)])
     );
     const reversalRound = safeNum(bundle?.reversalRound ?? draft?.settings?.reversal_round);
-    // Registry can mark a draft as active while omitting `draft.status`.
-    // If `active=1` but status is missing, treat as drafting so the UI doesn't hide it.
-    let draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
-    if (!draftStatus && bundle?.active) draftStatus = "drafting";
+    const draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
     const rounds = safeNum(bundle?.rounds ?? draft?.settings?.rounds);
     const timerSec = safeNum(bundle?.timerSec ?? draft?.settings?.pick_timer);
 
@@ -611,7 +608,6 @@ export default function DraftPickTrackerClient() {
       season: league?.season || year,
       draftId: draft?.draft_id || league?.draft_id,
       draftStatus,
-      isActive: Boolean(bundle?.active) || draftStatus === "drafting" || draftStatus === "paused",
       currentPick,
       currentOwnerName: currentOwnerName || "—",
       clockLeftMs,
@@ -688,25 +684,22 @@ export default function DraftPickTrackerClient() {
       // Render inactive drafts straight from registry (no Sleeper calls).
       inactiveEligible.forEach((lg) => {
         const r = registryByDraftId?.[String(lg.draft_id)] || {};
-        const st = String(r?.status || lg.status || "").toLowerCase();
-        const isActive = Number(r?.active) === 1 || st === "drafting" || st === "paused";
         draftRows.push({
           leagueId: r.league_id || lg.league_id,
           leagueName: r.league_name || lg.name,
           leagueAvatarUrl:
             r.league_avatar || (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
           draftId: String(lg.draft_id),
-          draftStatus: st || "unknown",
-          isActive,
+          draftStatus: r.status || lg.status || "",
           pickCount: r.pickCount != null ? Number(r.pickCount) : null,
           teams: r.teams != null ? Number(r.teams) : null,
+          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
           timerSec: r.timerSec != null ? Number(r.timerSec) : null,
           onTheClock: false,
           currentPick: null,
           mySlot: null,
           myPick: null,
           clockLeftMs: null,
-          computedAt: nowMs,
         });
       });
 
@@ -717,10 +710,53 @@ export default function DraftPickTrackerClient() {
         if (ao !== bo) return bo - ao;
         return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
       });
+      // DEBUG: compare registry ids vs rendered rows
+        try {
+          const regIds = new Set(Object.keys(registryByDraftId || {}).map(String));
+          const renderedIds = new Set((draftRows || []).map((x) => String(x?.draftId || x?.draft_id || "")));
 
-      setRows(draftRows);
-      window.__DPT_ROWS__ = draftRows;
-console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
+          const missing = [];
+          for (const id of regIds) {
+            if (!renderedIds.has(id)) {
+              const r = registryByDraftId?.[id];
+              missing.push({
+                draftId: id,
+                league: r?.league_name,
+                status: r?.status,
+                active: r?.active,
+                pickCount: r?.pickCount,
+              });
+            }
+          }
+
+          console.log("[DPT] eligible leagues:", eligible.length);
+          console.log("[DPT] registry drafts:", regIds.size);
+          console.log("[DPT] rendered rows:", draftRows.length);
+          console.log("[DPT] missing from UI rows:", missing);
+        } catch (e) {
+          console.log("[DPT] debug compare failed", e);
+        }
+
+      // IMPORTANT: React keys must be unique.
+      // When a registry row is missing league_id temporarily, keying by leagueId can
+      // produce duplicate/undefined keys and React will collapse rows (making it look
+      // like leagues are "missing" even though they exist in the registry response).
+      // Dedup and attach a stable per-row key using draftId (preferred).
+      const seen = new Set();
+      const uniqueRows = [];
+      for (let i = 0; i < (draftRows || []).length; i++) {
+        const row = draftRows[i];
+        const k = String(row?.draftId || row?.draft_id || row?.leagueId || "");
+        if (!k) {
+          uniqueRows.push({ ...row, __rowKey: `idx:${i}` });
+          continue;
+        }
+        if (seen.has(k)) continue;
+        seen.add(k);
+        uniqueRows.push({ ...row, __rowKey: k });
+      }
+
+      setRows(uniqueRows);
     } catch (e) {
       console.error(e);
       setErr("Failed to load drafts. Try refresh.");
@@ -876,13 +912,14 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
   // ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
+    const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
 
     if (onlyDrafting) {
       r = r.filter((x) => {
         const st = String(x.draftStatus || "").toLowerCase();
-        if (st === "drafting" || (!st && x?.isActive)) return true;
+        if (st === "drafting") return true;
         if (includePaused && st === "paused") return true;
         return false;
       });
@@ -903,6 +940,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
     if (q) {
       r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
     }
+    console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
 
     // Priority buckets:
   // 0: drafting + onClock
@@ -1207,7 +1245,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
       {/* Card view */}
       {view === "cards" && (
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-          {filteredDraftRows.map((r) => {
+          {filteredDraftRows.map((r, idx) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
             const status = String(r?.draftStatus || "").toLowerCase();
             const isDrafting = status === "drafting";
@@ -1267,7 +1305,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
             const autoActive = (() => {
               const ts = autoByDraftId?.[String(draftId)];
               if (!ts) return false;
-              return safeNum(now) - Number(ts) < 15 * 60 * 1000;
+              return Date.now() - Number(ts) < 15 * 60 * 1000;
             })();
 
             const autoHeat = autoActive
@@ -1289,7 +1327,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
 
             return (
               <div
-                key={String(r.draftId || r.leagueId || r.leagueName)}
+                key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                 className={classNames(
                   "relative bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
                   shellWash,
@@ -1450,7 +1488,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
               </div>
 
               <div className="divide-y divide-white/10">
-                {filteredDraftRows.map((r) => {
+                {filteredDraftRows.map((r, idx) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
                   const status = String(r?.draftStatus || "").toLowerCase();
                   const isDrafting = status === "drafting";
@@ -1483,7 +1521,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
 
                   return (
                     <div
-                      key={String(r.draftId || r.leagueId || r.leagueName)}
+                      key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                       className={classNames(
                         "relative grid grid-cols-12 gap-2 px-4 py-2.5 text-sm border-l-4",
                         r.onClockIsMe && "bg-emerald-500/10 border-emerald-400/60",
@@ -1554,7 +1592,7 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
               </thead>
 
               <tbody>
-                {filteredDraftRows.map((r) => {
+                {filteredDraftRows.map((r, idx) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
                   const status = String(r?.draftStatus || "").toLowerCase();
                   const isDrafting = status === "drafting";
@@ -1599,12 +1637,12 @@ console.log("[DPT] statuses:", draftRows.map(x => x.draftStatus));
                   const autoActive = (() => {
                     const ts = autoByDraftId?.[String(r.draftId)];
                     if (!ts) return false;
-                    return safeNum(now) - Number(ts) < 15 * 60 * 1000;
+                    return Date.now() - Number(ts) < 15 * 60 * 1000;
                   })();
 
                   return (
                     <tr
-                      key={String(r.draftId || r.leagueId || r.leagueName)}
+                      key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
                         r.onClockIsMe && "bg-emerald-500/5",
