@@ -3,6 +3,17 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
+function safeJsonParse(s) {
+  try {
+    if (s == null) return null;
+    const txt = typeof s === "string" ? s : String(s);
+    if (!txt.trim()) return null;
+    return JSON.parse(txt);
+  } catch {
+    return null;
+  }
+}
+
 // Public read-only endpoint used by the Draft Monitor page.
 // Returns the shared draft registry rows (draft_json + pick_count) so clients don't need to poll Sleeper.
 
