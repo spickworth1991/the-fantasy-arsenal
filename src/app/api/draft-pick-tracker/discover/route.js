@@ -3,102 +3,188 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-async function ensureDraftRegistryTable(db) {
+const SLEEPER = "https://api.sleeper.app/v1";
+
+async function sleeperJson(url) {
+  const r = await fetch(url, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error(`Sleeper ${r.status} for ${url}`);
+  return r.json();
+}
+
+async function ensureRegistryTable(db) {
   await db
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_draft_registry (
         draft_id TEXT PRIMARY KEY,
-        active INTEGER,
+        active INTEGER DEFAULT 1,
         status TEXT,
-        last_checked_at INTEGER,
-        last_active_at INTEGER,
-        last_inactive_at INTEGER,
-        last_picked INTEGER,
-        pick_count INTEGER,
-        draft_order_json TEXT,
-        draft_json TEXT,
-        slot_to_roster_json TEXT,
-        roster_names_json TEXT,
-        roster_by_username_json TEXT,
-        traded_pick_owner_json TEXT,
-        teams INTEGER,
-        rounds INTEGER,
-        timer_sec INTEGER,
-        reversal_round INTEGER,
         league_id TEXT,
         league_name TEXT,
         league_avatar TEXT,
         best_ball INTEGER,
-        completed_at INTEGER
+        last_checked_at INTEGER,
+        last_pick_number INTEGER,
+        picks_made INTEGER,
+        picks_total INTEGER,
+        updated_at INTEGER
       )`
     )
     .run();
+
+  try {
+    const info = await db.prepare("PRAGMA table_info(push_draft_registry)").all();
+    const cols = new Set((info?.results || []).map((r) => String(r?.name || "")));
+    const maybeAdd = async (name, type) => {
+      if (cols.has(name)) return;
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
+    };
+    await maybeAdd("league_id", "TEXT");
+    await maybeAdd("league_name", "TEXT");
+    await maybeAdd("league_avatar", "TEXT");
+    await maybeAdd("best_ball", "INTEGER");
+    await maybeAdd("updated_at", "INTEGER");
+  } catch {
+    // ignore
+  }
 }
 
-/**
- * Lightweight discovery endpoint.
- *
- * The client calls this every ~60s with the user's known league + draft IDs.
- * This route:
- *  - upserts missing draft_ids into the shared registry (D1)
- *  - triggers the Durable Object to hydrate/refresh separately (does NOT block UI)
- */
-export async function POST(request) {
+async function getDraftRegistryStub(env) {
   try {
-    const { env, ctx } = getRequestContext();
-    await ensureDraftRegistryTable(env.DB);
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return null;
+    const id = ns.idFromName("master");
+    return ns.get(id);
+  } catch {
+    return null;
+  }
+}
 
-    const body = await request.json().catch(() => ({}));
-    const leagues = Array.isArray(body?.leagues) ? body.leagues : [];
+async function upsertDraft(db, d, now) {
+  const draftId = d?.draft_id != null ? String(d.draft_id).trim() : "";
+  const leagueId = d?.league_id != null ? String(d.league_id).trim() : "";
+  if (!draftId || !leagueId) return false;
 
-    let inserted = 0;
-    let updated = 0;
+  const leagueName = d?.league_name != null ? String(d.league_name) : null;
+  const leagueAvatar = d?.league_avatar != null ? String(d.league_avatar) : null;
+  const bestBall = d?.best_ball == null ? null : Number(d.best_ball) ? 1 : 0;
+  const status = d?.status != null ? String(d.status).toLowerCase() : null;
+  const forceActive = status === "drafting" || status === "paused" || status === "in_progress";
+  const requestedActive = d?.active == null ? 1 : Number(d.active) ? 1 : 0;
+  const active = forceActive ? 1 : requestedActive;
+
+  await db
+    .prepare(
+      `INSERT INTO push_draft_registry (
+        draft_id, active, status, last_checked_at,
+        league_id, league_name, league_avatar, best_ball
+      ) VALUES (?, ?, COALESCE(?, 'unknown'), ?, ?, ?, ?, ?)
+      ON CONFLICT(draft_id) DO UPDATE SET
+        league_id=COALESCE(push_draft_registry.league_id, excluded.league_id),
+        league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+        league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+        best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+        active=CASE WHEN excluded.active=1 THEN 1 ELSE push_draft_registry.active END,
+        status=COALESCE(excluded.status, push_draft_registry.status),
+        last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at)`
+    )
+    .bind(draftId, active, status, now, leagueId, leagueName, leagueAvatar, bestBall)
+    .run();
+
+  return { draft_id: draftId, league_id: leagueId, league_name: leagueName, league_avatar: leagueAvatar, best_ball: bestBall, status, active };
+}
+
+// This route is called by the tracker client to discover new/changed draft IDs
+// and ensure they are added to the master registry (D1 + Durable Object).
+export async function GET(req) {
+  try {
+    const { env } = getRequestContext();
+    const db = env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB;
+    if (!db?.prepare) {
+      // Don't hard-crash the page if a Preview env is missing a D1 binding.
+      // Return a graceful empty result so the client can still render.
+      return NextResponse.json({ ok: false, error: "D1 binding not found (expected PUSH_DB/DB/D1).", added: 0, drafts: [] }, { status: 200 });
+    }
+    await ensureRegistryTable(db);
+
+    const url = new URL(req.url);
+    const username = (url.searchParams.get("username") || "").trim();
+    if (!username) return NextResponse.json({ ok: false, error: "username required" }, { status: 400 });
+
     const now = Date.now();
+    const season = String(new Date().getFullYear());
 
-    for (const item of leagues) {
-      const draftId = String(item?.draft_id || "").trim();
-      if (!draftId) continue;
+    const user = await sleeperJson(`${SLEEPER}/user/${encodeURIComponent(username)}`);
+    const leagues = await sleeperJson(`${SLEEPER}/user/${encodeURIComponent(user.user_id)}/leagues/nfl/${season}`);
 
-      const leagueId = item?.league_id ? String(item.league_id) : null;
-      const leagueName = item?.league_name ? String(item.league_name) : null;
-      const leagueAvatar = item?.league_avatar ? String(item.league_avatar) : null;
-      const bestBall = Number(item?.best_ball || 0) === 1 ? 1 : 0;
+    // Map known drafts in registry (by draft_id) so we only fetch Sleeper draft objects when needed.
+    const existing = await db
+      .prepare("SELECT draft_id, active, status, league_id FROM push_draft_registry")
+      .all();
+    const byDraftId = new Map((existing?.results || []).map((r) => [String(r.draft_id), r]));
+    const byLeagueId = new Map((existing?.results || []).map((r) => [String(r.league_id || ""), r]));
 
-      // Upsert minimal metadata; DO will fill in everything else.
-      const res = await env.DB.prepare(
-        `INSERT INTO push_draft_registry (
-          draft_id, active, status, last_checked_at,
-          league_id, league_name, league_avatar, best_ball
-        ) VALUES (?, 1, 'unknown', ?, ?, ?, ?, ?)
-        ON CONFLICT(draft_id) DO UPDATE SET
-          active=1,
-          last_checked_at=COALESCE(push_draft_registry.last_checked_at, excluded.last_checked_at),
-          league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-          league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
-          league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
-          best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball)`
-      )
-        .bind(draftId, now, leagueId, leagueName, leagueAvatar, bestBall)
-        .run();
+    const toAddOrUpdate = [];
+    for (const lg of Array.isArray(leagues) ? leagues : []) {
+      const leagueId = String(lg?.league_id || "");
+      const draftId = String(lg?.draft_id || "");
+      if (!leagueId || !draftId) continue;
 
-      if (res?.meta?.changes === 1) inserted += 1;
-      else updated += 1;
+      const rowByDraft = byDraftId.get(draftId);
+      const rowByLeague = byLeagueId.get(leagueId);
+
+      const needsAdd = !rowByDraft;
+      const suspiciousInactive = rowByLeague && Number(rowByLeague.active) === 0;
+      const suspiciousStatus = rowByLeague && !["drafting", "in_progress", "paused"].includes(String(rowByLeague.status || "").toLowerCase());
+
+      if (!needsAdd && !suspiciousInactive && !suspiciousStatus) continue;
+
+      // Pull the real draft object so we can set status/active correctly.
+      let draft;
+      try {
+        draft = await sleeperJson(`${SLEEPER}/draft/${encodeURIComponent(draftId)}`);
+      } catch {
+        // If the draft lookup fails, still record the draft_id/league_id so the DO can retry later.
+        draft = { draft_id: draftId, league_id: leagueId, status: "unknown" };
+      }
+
+      toAddOrUpdate.push({
+        draft_id: draftId,
+        league_id: leagueId,
+        league_name: lg?.name ?? null,
+        league_avatar: lg?.avatar ?? null,
+        best_ball: lg?.settings?.best_ball ?? null,
+        status: draft?.status ?? lg?.status ?? null,
+        active: 1,
+      });
     }
 
-    // Kick the DO to hydrate asynchronously (do not block UI)
-    try {
-      const id = env.DRAFT_REGISTRY.idFromName("global");
-      const stub = env.DRAFT_REGISTRY.get(id);
-      ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick"));
-    } catch {
-      // ignore
+    const did = [];
+    for (const d of toAddOrUpdate) {
+      const res = await upsertDraft(db, d, now);
+      if (res) did.push(res);
     }
 
-    return NextResponse.json({ ok: true, inserted, updated });
-  } catch (err) {
-    return NextResponse.json(
-      { ok: false, error: String(err?.message || err) },
-      { status: 500 }
-    );
+    const stub = await getDraftRegistryStub(env);
+    if (stub && did.length) {
+      for (const d of did) {
+        await stub.fetch("https://do/add", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ draft: d }),
+        });
+      }
+      await stub.fetch("https://do/kick", { method: "POST" });
+      await stub.fetch("https://do/tick", { method: "POST" });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      season,
+      checked_leagues: Array.isArray(leagues) ? leagues.length : 0,
+      upserted: did.length,
+      drafts: did,
+    });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
   }
 }

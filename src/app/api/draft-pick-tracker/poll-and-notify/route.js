@@ -695,10 +695,10 @@ async function handler(req) {
         { status: 401 }
       );
     }
-
-    const db = env?.PUSH_DB;
-    if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
-
+    const db = env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB;
+    if (!db?.prepare) {
+      return NextResponse.json({ ok: false, error: "D1 binding not found (expected PUSH_DB/DB/D1)." }, { status: 200 });
+    }
     await ensurePushTables(db);
     await ensureDraftCacheTable(db);
     await ensureDraftRegistryTable(db);
