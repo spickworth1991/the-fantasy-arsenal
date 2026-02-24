@@ -194,8 +194,7 @@ export default function DraftPickTrackerClient() {
   const [err, setErr] = useState("");
 
   const [search, setSearch] = useState("");
-  // Default to showing everything from the registry; users can toggle Drafting-only.
-  const [onlyDrafting, setOnlyDrafting] = useState(false);
+  const [onlyDrafting, setOnlyDrafting] = useState(true);
   const [includePaused, setIncludePaused] = useState(true);
 
   const [view, setView] = useState("cards"); // cards | table
