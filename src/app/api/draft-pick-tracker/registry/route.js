@@ -124,10 +124,17 @@ export async function GET(req) {
         } catch {
           draft = null;
         }
+
+        // ✅ derive status from draft_json if stored status is missing/unknown
+        const storedStatus = String(r.status || "").toLowerCase().trim();
+        const draftStatus = String(draft?.status || "").toLowerCase().trim();
+        const effectiveStatus =
+          storedStatus && storedStatus !== "unknown" ? storedStatus : (draftStatus || null);
+
         list.push({
           draftId: String(r.draft_id),
           active: Number(r.active || 0) === 1,
-          status: r.status || null,
+          status: effectiveStatus,
           lastCheckedAt: Number(r.last_checked_at || 0),
           lastPicked: r.last_picked == null ? null : Number(r.last_picked),
           pickCount: r.pick_count == null ? null : Number(r.pick_count),
@@ -172,9 +179,16 @@ export async function GET(req) {
       } catch {
         draft = null;
       }
+
+      // ✅ derive status from draft_json if stored status is missing/unknown
+      const storedStatus = String(r.status || "").toLowerCase().trim();
+      const draftStatus = String(draft?.status || "").toLowerCase().trim();
+      const effectiveStatus =
+        storedStatus && storedStatus !== "unknown" ? storedStatus : (draftStatus || null);
+
       out[String(r.draft_id)] = {
         active: Number(r.active || 0) === 1,
-        status: r.status || null,
+        status: effectiveStatus,
         lastPicked: Number(r.last_picked || 0),
         pickCount: Number(r.pick_count ?? NaN),
         draft,
