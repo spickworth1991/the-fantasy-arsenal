@@ -475,7 +475,7 @@ export default function DraftPickTrackerClient() {
       Object.entries(rosterNamesObj || {}).map(([k, v]) => [String(k), String(v)])
     );
     const reversalRound = safeNum(bundle?.reversalRound ?? draft?.settings?.reversal_round);
-    const draftStatus = String(bundle?.status || draft?.status || "").toLowerCase();
+    const draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
     const rounds = safeNum(bundle?.rounds ?? draft?.settings?.rounds);
     const timerSec = safeNum(bundle?.timerSec ?? draft?.settings?.pick_timer);
 
@@ -691,10 +691,10 @@ export default function DraftPickTrackerClient() {
             r.league_avatar || (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
           draftId: String(lg.draft_id),
           draftStatus: r.status || lg.status || "",
-          pickCount: r.pick_count != null ? Number(r.pick_count) : null,
+          pickCount: r.pickCount != null ? Number(r.pickCount) : null,
           teams: r.teams != null ? Number(r.teams) : null,
-          timerSec: r.timer_sec != null ? Number(r.timer_sec) : null,
-          lastPicked: r.last_picked != null ? Number(r.last_picked) : null,
+          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
+          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
           onTheClock: false,
           currentPick: null,
           mySlot: null,
