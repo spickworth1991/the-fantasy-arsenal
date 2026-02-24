@@ -915,25 +915,28 @@ export default function DraftPickTrackerClient() {
     const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
-    console.log("rows =", rows)
+    console.log("rows =", r)
 
     if (onlyDrafting) {
       r = r.filter((x) => {
         const st = String(x.draftStatus || "").toLowerCase();
         if (st === "drafting") return true;
         if (includePaused && st === "paused") return true;
+        console.log("onlydrafting =", r)
         return false;
       });
     }
 
     if (onlyOnDeckOrClock) {
       r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
+      console.log("onlyondeck =", r)
     }
 
     if (maxPicksAway < 999) {
       r = r.filter((x) => {
         const pu = safeNum(x.picksUntilMyPick);
         if (x.myNextPickOverall == null) return false;
+        console.log("maxpicksaway =", pu)
         return pu <= maxPicksAway;
       });
     }
@@ -945,7 +948,10 @@ export default function DraftPickTrackerClient() {
           String(x.nextOwnerName || "").toLowerCase().includes(q) ||
           String(x.myNextPickOverall || "").includes(q)
         );
+        
       });
+      console.log("q =", r)
+      console.log("qr =", q)
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
