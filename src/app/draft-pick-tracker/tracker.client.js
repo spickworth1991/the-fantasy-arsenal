@@ -710,6 +710,32 @@ export default function DraftPickTrackerClient() {
         if (ao !== bo) return bo - ao;
         return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
       });
+      // DEBUG: compare registry ids vs rendered rows
+        try {
+          const regIds = new Set(Object.keys(registryByDraftId || {}).map(String));
+          const renderedIds = new Set((draftRows || []).map((x) => String(x?.draftId || x?.draft_id || "")));
+
+          const missing = [];
+          for (const id of regIds) {
+            if (!renderedIds.has(id)) {
+              const r = registryByDraftId?.[id];
+              missing.push({
+                draftId: id,
+                league: r?.league_name,
+                status: r?.status,
+                active: r?.active,
+                pickCount: r?.pickCount,
+              });
+            }
+          }
+
+          console.log("[DPT] eligible leagues:", eligible.length);
+          console.log("[DPT] registry drafts:", regIds.size);
+          console.log("[DPT] rendered rows:", draftRows.length);
+          console.log("[DPT] missing from UI rows:", missing);
+        } catch (e) {
+          console.log("[DPT] debug compare failed", e);
+        }
 
       setRows(draftRows);
     } catch (e) {
@@ -867,6 +893,7 @@ export default function DraftPickTrackerClient() {
   // ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
+    const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
 
@@ -894,6 +921,7 @@ export default function DraftPickTrackerClient() {
     if (q) {
       r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
     }
+    console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
 
     // Priority buckets:
   // 0: drafting + onClock
