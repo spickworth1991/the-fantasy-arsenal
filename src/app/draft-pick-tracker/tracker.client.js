@@ -915,6 +915,7 @@ export default function DraftPickTrackerClient() {
     const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
+    console.log("rows =", rows)
 
     if (onlyDrafting) {
       r = r.filter((x) => {
@@ -938,8 +939,24 @@ export default function DraftPickTrackerClient() {
     }
 
     if (q) {
-      r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
+            r = r.filter((x) => {
+        return (
+          String(x.leagueName || "").toLowerCase().includes(q) ||
+          String(x.nextOwnerName || "").toLowerCase().includes(q) ||
+          String(x.myNextPickOverall || "").includes(q)
+        );
+      });
     }
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    r = [...r].sort((a, b) => {
+      const av = a?.[sortKey];
+      const bv = b?.[sortKey];
+      if (typeof av === "string" || typeof bv === "string") {
+        return String(av || "").localeCompare(String(bv || "")) * dir;
+      }
+      return (safeNum(av) - safeNum(bv)) * dir;
+    });
     console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
 
     // Priority buckets:
@@ -964,7 +981,7 @@ export default function DraftPickTrackerClient() {
   };
 
 
-  const dir = sortDir === "asc" ? 1 : -1;
+
 
   const getLiveClockLeft = (x) => {
     const st = String(x?.draftStatus || "").toLowerCase();
