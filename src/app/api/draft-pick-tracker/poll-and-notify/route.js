@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+function getDb(env) {
+  // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
+  return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
+}
+
 // Optional: Durable Object that refreshes the shared draft registry every ~15s.
 // If the binding isn't present (local dev / older env), this no-ops.
 async function kickDraftRegistry(env) {
@@ -695,10 +700,14 @@ async function handler(req) {
         { status: 401 }
       );
     }
-    const db = env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB;
-    if (!db?.prepare) {
-      return NextResponse.json({ ok: false, error: "D1 binding not found (expected PUSH_DB/DB/D1)." }, { status: 200 });
-    }
+
+    const db = getDb(env);
+    if (!db?.prepare)
+      return new NextResponse(
+        "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB.",
+        { status: 500 }
+      );
+
     await ensurePushTables(db);
     await ensureDraftCacheTable(db);
     await ensureDraftRegistryTable(db);
