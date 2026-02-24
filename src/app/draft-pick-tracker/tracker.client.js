@@ -206,11 +206,6 @@ export default function DraftPickTrackerClient() {
   const [sortDir, setSortDir] = useState("asc");
 
   const [rows, setRows] = useState([]);
-  const [registryRows, setRegistryRows] = useState([]); // raw registry snapshot
-
-  // Cache hydrated draft details (users/rosters/slot map/etc) so registry polling
-  // does NOT force us to refetch everything every time.
-  const bundleCacheRef = useRef(new Map()); // draftId -> normalized bundle
 
   // Local "auto-pick" flags (set via service-worker push -> postMessage).
   // Stored client-side (per device) so we don't have to expose per-user push data server-side.
@@ -320,15 +315,6 @@ export default function DraftPickTrackerClient() {
     if (!u?.user_id) return null;
     const r = (rosters || []).find((x) => String(x?.owner_id) === String(u.user_id));
     return r?.roster_id ? String(r.roster_id) : null;
-  }
-
-  function playerLabel(pid) {
-    const p = players?.[String(pid)];
-    const name =
-      String(p?.full_name || `${p?.first_name || ""} ${p?.last_name || ""}`)
-        .trim() || `#${pid}`;
-    const pos = String(p?.position || "").trim();
-    return pos ? `${name} (${pos})` : name;
   }
 
   function buildTradedPickOwnerMap(tradedPicks = [], seasonStr = "") {
@@ -482,115 +468,6 @@ export default function DraftPickTrackerClient() {
     };
   }
 
-  // If the registry entry doesn't contain the heavy draft context (slot map, roster maps, traded picks),
-  // hydrate it ONCE from Sleeper via our edge API, then cache it.
-  function needsHydration(reg) {
-    const hasSlot = reg?.slotToRoster && Object.keys(reg.slotToRoster || {}).length > 0;
-    const hasNames = reg?.rosterNames && Object.keys(reg.rosterNames || {}).length > 0;
-    const hasByU = reg?.rosterByUsername && Object.keys(reg.rosterByUsername || {}).length > 0;
-    return !(hasSlot && hasNames && hasByU);
-  }
-
-  function normalizeBundleFromApi(league, api) {
-    const draft = api?.draft || {};
-    const picks = Array.isArray(api?.picks) ? api.picks : [];
-    const users = Array.isArray(api?.users) ? api.users : [];
-    const rosters = Array.isArray(api?.rosters) ? api.rosters : [];
-    const traded_picks = Array.isArray(api?.traded_picks) ? api.traded_picks : [];
-
-    const rosterNameMap = buildRosterNameMap(users, rosters);
-    const rosterNames = Object.fromEntries([...rosterNameMap.entries()]);
-
-    const ownerToRoster = new Map();
-    (rosters || []).forEach((r) => {
-      if (r?.owner_id != null && r?.roster_id != null) {
-        ownerToRoster.set(String(r.owner_id), String(r.roster_id));
-      }
-    });
-
-    // username -> roster_id
-    const rosterByUsername = {};
-    (users || []).forEach((u) => {
-      const uname = String(u?.username || "").toLowerCase().trim();
-      if (!uname) return;
-      const rid = ownerToRoster.get(String(u?.user_id));
-      if (rid) rosterByUsername[uname] = rid;
-    });
-
-    // slot -> roster_id
-    const slotToRoster = {};
-    const slotToRosterRaw = draft?.slot_to_roster_id || {};
-    Object.keys(slotToRosterRaw || {}).forEach((slot) => {
-      const s = safeNum(slot);
-      const rid = slotToRosterRaw[slot];
-      if (s && rid != null) slotToRoster[String(s)] = String(rid);
-    });
-    if (Object.keys(slotToRoster).length === 0) {
-      const draftOrder = draft?.draft_order || {};
-      Object.entries(draftOrder).forEach(([userId, slot]) => {
-        const s = safeNum(slot);
-        const rid = ownerToRoster.get(String(userId));
-        if (s && rid) slotToRoster[String(s)] = String(rid);
-      });
-    }
-
-    // recent picks (last 10)
-    const recentPicks = picks
-      .slice(-10)
-      .reverse()
-      .map((p) => ({
-        player_id: p?.player_id,
-        label: p?.player_id ? playerLabel(p.player_id) : "—",
-        pick_no: safeNum(p?.pick_no) || null,
-      }));
-
-    return {
-      league,
-      draft,
-      pickCount: picks.length,
-      picks: [], // UI uses registry counters + recentPicks
-      lastPicked: safeNum(draft?.last_picked) || null,
-      slotToRoster,
-      rosterNames,
-      rosterByUsername,
-      tradedPickOwners: traded_picks,
-      teams: safeNum(draft?.settings?.teams) || safeNum(rosters?.length) || null,
-      rounds: safeNum(draft?.settings?.rounds) || null,
-      timerSec: safeNum(draft?.settings?.pick_timer) || null,
-      reversalRound: safeNum(draft?.settings?.reversal_round) || null,
-      status: String(draft?.status || ""),
-      active: true,
-      recentPicks,
-    };
-  }
-
-  async function hydrateFromApiOnce(league, reg) {
-    const draftId = String(league?.draft_id || "");
-    if (!draftId) return reg || null;
-
-    const cached = bundleCacheRef.current.get(draftId);
-    if (cached) return cached;
-
-    if (reg && !needsHydration(reg)) {
-      bundleCacheRef.current.set(draftId, reg);
-      return reg;
-    }
-
-    const leagueId = String(league?.league_id || "");
-    const res = await fetch(
-      `/api/draft-pick-tracker/draft?draftId=${encodeURIComponent(
-        draftId
-      )}&leagueId=${encodeURIComponent(leagueId)}`
-    );
-    if (!res.ok) throw new Error(`hydrate failed (${res.status})`);
-    const api = await res.json();
-    if (!api?.ok) throw new Error(api?.error || "hydrate failed");
-
-    const normalized = normalizeBundleFromApi(league, api);
-    bundleCacheRef.current.set(draftId, normalized);
-    return normalized;
-  }
-
   function calcPickInfo(bundle, nowMs) {
     const { league, draft, pickCount } = bundle;
     const rosterNamesObj = bundle?.rosterNames || {};
@@ -598,10 +475,7 @@ export default function DraftPickTrackerClient() {
       Object.entries(rosterNamesObj || {}).map(([k, v]) => [String(k), String(v)])
     );
     const reversalRound = safeNum(bundle?.reversalRound ?? draft?.settings?.reversal_round);
-    // Registry can mark a draft as active while omitting `draft.status`.
-    // If `active=1` but status is missing, treat as drafting so the UI doesn't hide it.
-    let draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
-    if (!draftStatus && bundle?.active) draftStatus = "drafting";
+    const draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
     const rounds = safeNum(bundle?.rounds ?? draft?.settings?.rounds);
     const timerSec = safeNum(bundle?.timerSec ?? draft?.settings?.pick_timer);
 
@@ -734,7 +608,6 @@ export default function DraftPickTrackerClient() {
       season: league?.season || year,
       draftId: draft?.draft_id || league?.draft_id,
       draftStatus,
-      isActive: Boolean(bundle?.active) || draftStatus === "drafting" || draftStatus === "paused",
       currentPick,
       currentOwnerName: currentOwnerName || "—",
       clockLeftMs,
@@ -758,55 +631,132 @@ export default function DraftPickTrackerClient() {
     setErr("");
     setLoading(true);
     try {
-      // REGISTRY-ONLY: UI reads D1 registry and filters down to drafts that include this username.
-      // No Sleeper polling / no hydration from the client.
-      const regRes = await fetch(`/api/draft-pick-tracker/registry`, { cache: "no-store" });
-      const regJson = regRes.ok ? await regRes.json() : null;
-      if (!regRes.ok || !regJson?.ok) throw new Error(regJson?.error || "Registry fetch failed");
+      const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
 
-      const snapshot = Array.isArray(regJson?.rows) ? regJson.rows : [];
-      setRegistryRows(snapshot);
+      // One-time: register draft ids into the shared registry so the monitor can render
+      // without fetching draft metadata per league.
+      if (!registeredRef.current && eligible.length) {
+        registeredRef.current = true;
+        await registerDraftsInRegistry(eligible);
+      }
+      // Pull shared draft + pick counts from our server-side registry first.
+      // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
+      let registryByDraftId = {};
+      try {
+        const ids = eligible.map((l) => l?.draft_id).filter(Boolean);
+        if (ids.length) {
+          const regRes = await fetch(
+            `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
+          );
+          const regJson = regRes.ok ? await regRes.json() : null;
+          registryByDraftId = regJson?.drafts || {};
+        }
+      } catch {
+        registryByDraftId = {};
+      }
 
-      const unameKey = String(username || "").toLowerCase().trim();
-      const visible = snapshot.filter((rr) => {
-        if (!unameKey) return false;
-        const m = rr?.rosterByUsername;
-        if (!m || typeof m !== "object") return false;
-        return Object.keys(m).some((k) => String(k || "").toLowerCase().trim() === unameKey);
-      });
+      // Only fetch expensive per-league data for ACTIVE drafts.
+      const activeEligible = [];
+      const inactiveEligible = [];
+      for (const lg of eligible) {
+        const r = registryByDraftId?.[String(lg.draft_id)];
+        const st = String(r?.status || "").toLowerCase();
+        const active = r?.active == null ? null : Number(r.active);
+        const isActive = active === 1 || st === "drafting" || st === "paused";
+        (isActive ? activeEligible : inactiveEligible).push(lg);
+      }
+
+      const nextBundles = (await Promise.all(
+        activeEligible.map(async (lg) => {
+          try {
+            return makeDraftBundleFromRegistry(lg, registryByDraftId);
+          } catch (e) {
+            console.warn("Draft bundle failed:", lg?.name, e);
+            return null;
+          }
+        })
+      )).filter(Boolean);
 
       const nowMs = Date.now();
-      const draftRows = visible
-        .map((rr) => {
-          const draftId = String(rr?.draftId || "");
-          const fakeLeague = {
-            league_id: rr?.leagueId,
-            name: rr?.leagueName,
-            season: String(year || ""),
-            draft_id: draftId,
-            avatar: rr?.leagueAvatar,
-          };
-          const bundle = makeDraftBundleFromRegistry(fakeLeague, { [draftId]: rr }) || {
-            league: fakeLeague,
-            draftId,
-          };
-          return calcPickInfo(bundle, nowMs);
-        })
-        .filter(Boolean);
+      const draftRows = [];
+      nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
 
-      // Sort: on clock first, then on deck, then ETA.
-      draftRows.sort((a, b) => {
-        const aClock = a?.onClockIsMe ? 1 : 0;
-        const bClock = b?.onClockIsMe ? 1 : 0;
-        if (aClock !== bClock) return bClock - aClock;
-        const aDeck = a?.onDeck ? 1 : 0;
-        const bDeck = b?.onDeck ? 1 : 0;
-        if (aDeck !== bDeck) return bDeck - aDeck;
-        return safeNum(a?.etaMs) - safeNum(b?.etaMs);
+      // Render inactive drafts straight from registry (no Sleeper calls).
+      inactiveEligible.forEach((lg) => {
+        const r = registryByDraftId?.[String(lg.draft_id)] || {};
+        draftRows.push({
+          leagueId: r.league_id || lg.league_id,
+          leagueName: r.league_name || lg.name,
+          leagueAvatarUrl:
+            r.league_avatar || (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
+          draftId: String(lg.draft_id),
+          draftStatus: r.status || lg.status || "",
+          pickCount: r.pickCount != null ? Number(r.pickCount) : null,
+          teams: r.teams != null ? Number(r.teams) : null,
+          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
+          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
+          onTheClock: false,
+          currentPick: null,
+          mySlot: null,
+          myPick: null,
+          clockLeftMs: null,
+        });
       });
 
-      setRows(draftRows);
-      window.__DPT_ROWS__ = draftRows;
+      // Sort: on-the-clock first, then by league name.
+      draftRows.sort((a, b) => {
+        const ao = a.onTheClock ? 1 : 0;
+        const bo = b.onTheClock ? 1 : 0;
+        if (ao !== bo) return bo - ao;
+        return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
+      });
+      // DEBUG: compare registry ids vs rendered rows
+        try {
+          const regIds = new Set(Object.keys(registryByDraftId || {}).map(String));
+          const renderedIds = new Set((draftRows || []).map((x) => String(x?.draftId || x?.draft_id || "")));
+
+          const missing = [];
+          for (const id of regIds) {
+            if (!renderedIds.has(id)) {
+              const r = registryByDraftId?.[id];
+              missing.push({
+                draftId: id,
+                league: r?.league_name,
+                status: r?.status,
+                active: r?.active,
+                pickCount: r?.pickCount,
+              });
+            }
+          }
+
+          console.log("[DPT] eligible leagues:", eligible.length);
+          console.log("[DPT] registry drafts:", regIds.size);
+          console.log("[DPT] rendered rows:", draftRows.length);
+          console.log("[DPT] missing from UI rows:", missing);
+        } catch (e) {
+          console.log("[DPT] debug compare failed", e);
+        }
+
+      // IMPORTANT: React keys must be unique.
+      // When a registry row is missing league_id temporarily, keying by leagueId can
+      // produce duplicate/undefined keys and React will collapse rows (making it look
+      // like leagues are "missing" even though they exist in the registry response).
+      // Dedup and attach a stable per-row key using draftId (preferred).
+      const seen = new Set();
+      const uniqueRows = [];
+      for (let i = 0; i < (draftRows || []).length; i++) {
+        const row = draftRows[i];
+        const k = String(row?.draftId || row?.draft_id || row?.leagueId || "");
+        if (!k) {
+          uniqueRows.push({ ...row, __rowKey: `idx:${i}` });
+          continue;
+        }
+        if (seen.has(k)) continue;
+        seen.add(k);
+        uniqueRows.push({ ...row, __rowKey: k });
+      }
+
+      setRows(uniqueRows);
     } catch (e) {
       console.error(e);
       setErr("Failed to load drafts. Try refresh.");
@@ -830,12 +780,14 @@ export default function DraftPickTrackerClient() {
   useEffect(() => {
     if (!username) return;
     if (!autoRefresh) return;
+    if (!anyDrafting) return;
 
-    // Registry-only: poll D1 every 15s while the user is on this page.
-    const t = setInterval(() => refresh(), 15000);
+    // Registry is hydrated by cron; client countdown ticks locally every second.
+    // Refreshing once per minute is plenty and avoids hammering Sleeper.
+    const t = setInterval(() => refresh(), 60000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, autoRefresh]);
+  }, [username, autoRefresh, anyDrafting]);
 
   // ---------------- Discovery (lightweight) ----------------
   // Every minute, tell the server what league+draft IDs exist for this user.
@@ -960,13 +912,14 @@ export default function DraftPickTrackerClient() {
   // ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
+    const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
 
     if (onlyDrafting) {
       r = r.filter((x) => {
         const st = String(x.draftStatus || "").toLowerCase();
-        if (st === "drafting" || (!st && x?.isActive)) return true;
+        if (st === "drafting") return true;
         if (includePaused && st === "paused") return true;
         return false;
       });
@@ -987,6 +940,7 @@ export default function DraftPickTrackerClient() {
     if (q) {
       r = r.filter((x) => String(x.leagueName || "").toLowerCase().includes(q));
     }
+    console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
 
     // Priority buckets:
   // 0: drafting + onClock
@@ -1291,7 +1245,7 @@ export default function DraftPickTrackerClient() {
       {/* Card view */}
       {view === "cards" && (
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-          {filteredDraftRows.map((r) => {
+          {filteredDraftRows.map((r, idx) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
             const status = String(r?.draftStatus || "").toLowerCase();
             const isDrafting = status === "drafting";
@@ -1351,7 +1305,7 @@ export default function DraftPickTrackerClient() {
             const autoActive = (() => {
               const ts = autoByDraftId?.[String(draftId)];
               if (!ts) return false;
-              return safeNum(now) - Number(ts) < 15 * 60 * 1000;
+              return Date.now() - Number(ts) < 15 * 60 * 1000;
             })();
 
             const autoHeat = autoActive
@@ -1373,7 +1327,7 @@ export default function DraftPickTrackerClient() {
 
             return (
               <div
-                key={String(r.draftId || r.leagueId || r.leagueName)}
+                key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                 className={classNames(
                   "relative bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
                   shellWash,
@@ -1534,7 +1488,7 @@ export default function DraftPickTrackerClient() {
               </div>
 
               <div className="divide-y divide-white/10">
-                {filteredDraftRows.map((r) => {
+                {filteredDraftRows.map((r, idx) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
                   const status = String(r?.draftStatus || "").toLowerCase();
                   const isDrafting = status === "drafting";
@@ -1567,7 +1521,7 @@ export default function DraftPickTrackerClient() {
 
                   return (
                     <div
-                      key={String(r.draftId || r.leagueId || r.leagueName)}
+                      key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                       className={classNames(
                         "relative grid grid-cols-12 gap-2 px-4 py-2.5 text-sm border-l-4",
                         r.onClockIsMe && "bg-emerald-500/10 border-emerald-400/60",
@@ -1638,7 +1592,7 @@ export default function DraftPickTrackerClient() {
               </thead>
 
               <tbody>
-                {filteredDraftRows.map((r) => {
+                {filteredDraftRows.map((r, idx) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
                   const status = String(r?.draftStatus || "").toLowerCase();
                   const isDrafting = status === "drafting";
@@ -1683,12 +1637,12 @@ export default function DraftPickTrackerClient() {
                   const autoActive = (() => {
                     const ts = autoByDraftId?.[String(r.draftId)];
                     if (!ts) return false;
-                    return safeNum(now) - Number(ts) < 15 * 60 * 1000;
+                    return Date.now() - Number(ts) < 15 * 60 * 1000;
                   })();
 
                   return (
                     <tr
-                      key={String(r.draftId || r.leagueId || r.leagueName)}
+                      key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
                         r.onClockIsMe && "bg-emerald-500/5",
