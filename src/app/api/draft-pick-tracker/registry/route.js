@@ -3,17 +3,6 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-function safeJsonParse(s) {
-  try {
-    if (s == null) return null;
-    const txt = typeof s === "string" ? s : String(s);
-    if (!txt.trim()) return null;
-    return JSON.parse(txt);
-  } catch {
-    return null;
-  }
-}
-
 // Public read-only endpoint used by the Draft Monitor page.
 // Returns the shared draft registry rows (draft_json + pick_count) so clients don't need to poll Sleeper.
 
@@ -74,8 +63,19 @@ async function ensureDraftRegistryTable(db) {
 export async function GET(req) {
   try {
     const { env } = getRequestContext();
-    const db = env?.PUSH_DB;
-    if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
+    // Cloudflare Pages D1 bindings vary by project. This repo standardizes on `DB`,
+    // but keep a fallback for older deployments that used `PUSH_DB`.
+    const db = env?.DB || env?.PUSH_DB;
+    if (!db?.prepare) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "D1 binding not found. Bind your D1 database in the Cloudflare Pages dashboard as 'DB' (or legacy 'PUSH_DB').",
+        },
+        { status: 500 }
+      );
+    }
 
     await ensureDraftRegistryTable(db);
 

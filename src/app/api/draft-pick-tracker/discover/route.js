@@ -46,15 +46,7 @@ async function ensureDraftRegistryTable(db) {
 export async function POST(request) {
   try {
     const { env, ctx } = getRequestContext();
-
-    if (!env?.PUSH_DB) {
-      return NextResponse.json(
-        { ok: false, error: "Missing D1 binding: PUSH_DB" },
-        { status: 500 }
-      );
-    }
-    // D1 is bound as PUSH_DB in the Cloudflare dashboard.
-    await ensureDraftRegistryTable(env.PUSH_DB);
+    await ensureDraftRegistryTable(env.DB);
 
     const body = await request.json().catch(() => ({}));
     const leagues = Array.isArray(body?.leagues) ? body.leagues : [];
@@ -73,7 +65,7 @@ export async function POST(request) {
       const bestBall = Number(item?.best_ball || 0) === 1 ? 1 : 0;
 
       // Upsert minimal metadata; DO will fill in everything else.
-      const res = await env.PUSH_DB.prepare(
+      const res = await env.DB.prepare(
         `INSERT INTO push_draft_registry (
           draft_id, active, status, last_checked_at,
           league_id, league_name, league_avatar, best_ball
