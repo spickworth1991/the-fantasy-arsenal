@@ -12,6 +12,18 @@ function safeJsonParse(value, fallback = null) {
   }
 }
 
+function isDebugRequest(req) {
+  try {
+    const url = new URL(req.url);
+    if (url.searchParams.get("debug") === "1") return true;
+  } catch {}
+  try {
+    const h = req?.headers?.get?.("x-dpt-debug");
+    if (h === "1" || h === "true") return true;
+  } catch {}
+  return false;
+}
+
 function getDb(env) {
   // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
   return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
@@ -25,11 +37,11 @@ function getDraftRegistryStub(env) {
   return ns.get(id);
 }
 
-async function kickDraftRegistry(env) {
+async function kickDraftRegistry(env, debug = false) {
   try {
     const stub = getDraftRegistryStub(env);
     if (!stub) return;
-    await stub.fetch("https://do/tick", { method: "POST" });
+    await stub.fetch(`https://do/tick${debug ? "?debug=1" : ""}`, { method: "POST" });
   } catch {
     // ignore
   }
@@ -96,6 +108,7 @@ export async function GET(req) {
   try {
     const { env } = getRequestContext();
     const db = getDb(env);
+    const debug = isDebugRequest(req);
     if (!db?.prepare) {
       return NextResponse.json(
         {
@@ -171,6 +184,25 @@ export async function GET(req) {
         });
       }
 
+      if (debug) {
+        const sample = list.slice(0, 3).map((d) => ({
+          draftId: d?.draftId,
+          status: d?.status,
+          active: d?.active,
+          pickCount: d?.pickCount,
+          leagueName: d?.leagueName,
+          hasRosterNames: !!d?.rosterNames && Object.keys(d.rosterNames || {}).length > 0,
+          hasRosterByUsername:
+            !!d?.rosterByUsername && Object.keys(d.rosterByUsername || {}).length > 0,
+          hasSlotToRoster: !!d?.slotToRoster && Object.keys(d.slotToRoster || {}).length > 0,
+        }));
+        // eslint-disable-next-line no-console
+        console.log("[DPT registry] GET snapshot", {
+          returned: list.length,
+          sample,
+        });
+      }
+
       return NextResponse.json({ ok: true, rows: list });
     }
 
@@ -228,7 +260,30 @@ export async function GET(req) {
       if (!r?.draft_json || !String(effectiveStatus || "").trim()) needsKick = true;
     }
 
-    if (needsKick) await kickDraftRegistry(env);
+    if (needsKick) await kickDraftRegistry(env, debug);
+
+    if (debug) {
+      const sample = Object.entries(out)
+        .slice(0, 3)
+        .map(([draftId, d]) => ({
+          draftId,
+          status: d?.status,
+          active: d?.active,
+          pickCount: d?.pickCount,
+          leagueName: d?.leagueName,
+          hasRosterNames: !!d?.rosterNames && Object.keys(d.rosterNames || {}).length > 0,
+          hasRosterByUsername:
+            !!d?.rosterByUsername && Object.keys(d.rosterByUsername || {}).length > 0,
+          hasSlotToRoster: !!d?.slotToRoster && Object.keys(d.slotToRoster || {}).length > 0,
+        }));
+      // eslint-disable-next-line no-console
+      console.log("[DPT registry] GET", {
+        requested: ids.length,
+        returned: Object.keys(out).length,
+        needsKick,
+        sample,
+      });
+    }
 
     return NextResponse.json({ ok: true, drafts: out });
   } catch (e) {
@@ -241,6 +296,7 @@ export async function POST(req) {
   try {
     const { env } = getRequestContext();
     const db = getDb(env);
+    const debug = isDebugRequest(req);
     if (!db?.prepare) {
       return NextResponse.json(
         { ok: false, error: "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB." },
@@ -259,6 +315,14 @@ export async function POST(req) {
 
     const drafts = Array.isArray(payload?.drafts) ? payload.drafts : [];
     const now = Date.now();
+
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.log("[DPT registry] POST register", {
+        count: drafts.length,
+        sample: drafts.slice(0, 5),
+      });
+    }
 
     let upserted = 0;
     for (const d of drafts) {
@@ -308,10 +372,26 @@ export async function POST(req) {
         .run();
 
       upserted++;
+
+      if (debug) {
+        // eslint-disable-next-line no-console
+        console.log("[DPT registry] upserted seed row", {
+          draftId,
+          leagueId,
+          leagueName,
+          bestBall,
+          status,
+        });
+      }
     }
 
     // Kick the shared DO (same name as everywhere else) so it hydrates immediately.
-    await kickDraftRegistry(env);
+    await kickDraftRegistry(env, debug);
+
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.log("[DPT registry] kicked DO", { debug: true, upserted });
+    }
 
     return NextResponse.json({ ok: true, upserted });
   } catch (e) {

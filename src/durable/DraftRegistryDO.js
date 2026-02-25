@@ -371,7 +371,16 @@ function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, s
   return traded || String(origRosterId);
 }
 
-async function tickOnce(env) {
+async function tickOnce(env, debug = false, log = null) {
+  const _log =
+    typeof log === "function"
+      ? log
+      : (...args) => {
+          if (!debug) return;
+          // eslint-disable-next-line no-console
+          console.log("[DPT DO]", ...args);
+        };
+
   const db = env?.PUSH_DB; // ✅ this worker's D1 binding is PUSH_DB
   if (!db?.prepare) return { ok: false, error: "PUSH_DB binding not found" };
 
@@ -381,6 +390,8 @@ async function tickOnce(env) {
   const now = Date.now();
   const uniqueDraftIds = await listUniqueDraftIds(db);
   if (!uniqueDraftIds.length) return { ok: true, drafts: 0, active: 0, updated: 0 };
+
+  _log("tick start", { uniqueDraftIds: uniqueDraftIds.length });
 
   // decide what needs to be checked this tick
   const toCheck = [];
@@ -395,42 +406,23 @@ async function tickOnce(env) {
       ? PRE_DRAFT_REFRESH_MS
       : INACTIVE_REFRESH_MS;
 
-    // Force a hydrate if core registry fields are missing, even if it was just registered.
-    // This prevents the UI from showing "empty" rows right after first load.
-    const isBestBall = Number(reg?.best_ball || 0) === 1;
-
-    const missingCore =
-      !reg?.draft_json ||
-      reg?.pick_count == null ||
-      reg?.teams == null ||
-      reg?.rounds == null ||
-      reg?.timer_sec == null ||
-      reg?.reversal_round == null;
-
-    const missingContext =
-      !isBestBall &&
-      ( !reg?.slot_to_roster_json ||
-        !reg?.roster_names_json ||
-        !reg?.roster_by_username_json ||
-        !reg?.traded_pick_owner_json );
-
-    // Best ball: we still want slot + roster maps for accurate owner names,
-    // but we can skip traded-pick ownership.
-    const missingContextBestBall =
-      isBestBall &&
-      ( !reg?.slot_to_roster_json ||
-        !reg?.roster_names_json ||
-        !reg?.roster_by_username_json );
-
-    const needs =
-      missingCore ||
-      missingContext ||
-      missingContextBestBall ||
-      !lastChecked ||
-      now - lastChecked > staleMs;
-
+    const needs = !lastChecked || now - lastChecked > staleMs;
     if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
   }
+
+  _log("filter", {
+    total: uniqueDraftIds.length,
+    toCheck: toCheck.length,
+    sample: toCheck.slice(0, 3).map((x) => ({
+      draftId: x.draftId,
+      wasActive: x.wasActive,
+      status: x.reg?.status || null,
+      league_id: x.reg?.league_id || null,
+      has_roster_names: !!x.reg?.roster_names_json,
+      has_roster_by_username: !!x.reg?.roster_by_username_json,
+      has_slot_to_roster: !!x.reg?.slot_to_roster_json,
+    })),
+  });
 
   let updated = 0;
   let active = 0;
@@ -442,8 +434,19 @@ async function tickOnce(env) {
       batch.map(async ({ draftId, wasActive, reg }) => {
         let draft;
         try {
+          _log("draft begin", {
+            draftId,
+            cached_status: reg?.status || null,
+            cached_league_id: reg?.league_id || null,
+            cached_best_ball: reg?.best_ball ?? null,
+            has_roster_names: !!reg?.roster_names_json,
+            has_roster_by_username: !!reg?.roster_by_username_json,
+            has_slot_to_roster: !!reg?.slot_to_roster_json,
+          });
+
           draft = await getDraft(draftId);
         } catch {
+          _log("draft fetch FAILED", { draftId });
           // if we fail to fetch but it was previously active, keep it counted so UI doesn't flicker
           if (wasActive) active++;
           return;
@@ -452,6 +455,15 @@ async function tickOnce(env) {
         const status = String(draft?.status || "").toLowerCase();
         const isActive = status === "drafting" || status === "paused";
         if (isActive) active++;
+
+        _log("draft status", {
+          draftId,
+          status,
+          isActive,
+          picked_so_far: draft?.picked_so_far ?? null,
+          metadata_timer_seconds: draft?.metadata?.timer_seconds ?? null,
+          league_id: draft?.league_id ?? null,
+        });
 
         const teams = Number(draft?.settings?.teams || 0) || null;
         const timerSec = Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
@@ -512,6 +524,13 @@ async function tickOnce(env) {
 
         if (canHydrateRosterContext) {
           try {
+            _log("hydrate roster context", {
+              draftId,
+              leagueId: String(leagueId),
+              needsRosterContext,
+              contextStale,
+            });
+
             const [users, rosters] = await Promise.all([
               sleeperJson(`https://api.sleeper.app/v1/league/${leagueId}/users`),
               sleeperJson(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
@@ -571,14 +590,25 @@ async function tickOnce(env) {
             rosterNamesJson = JSON.stringify(rosterNames);
             rosterByUsernameJson = JSON.stringify(rosterByUsername);
             slotToRosterJson = JSON.stringify(slotToRoster);
+
+            _log("hydrated roster context", {
+              draftId,
+              rosterNamesCount: Object.keys(rosterNames || {}).length,
+              rosterByUsernameCount: Object.keys(rosterByUsername || {}).length,
+              slotToRosterCount: Object.keys(slotToRoster || {}).length,
+              sampleRosterNames: Object.entries(rosterNames || {}).slice(0, 3),
+              sampleRosterByUsername: Object.entries(rosterByUsername || {}).slice(0, 3),
+            });
           } catch {
             // ignore hydration failure; we will try again on next context refresh
+            _log("hydrate roster context FAILED", { draftId, leagueId: String(leagueId) });
           }
         }
 
         // traded_picks: skip for bestball. only hydrate when missing.
         if (Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
           try {
+            _log("hydrate traded picks", { draftId });
             const traded = await sleeperJson(
               `https://api.sleeper.app/v1/draft/${draftId}/traded_picks`
             );
@@ -603,8 +633,11 @@ async function tickOnce(env) {
             const out = {};
             for (const [k, v] of best.entries()) out[k] = v.owner;
             tradedPickOwnerJson = JSON.stringify(out);
+
+            _log("hydrated traded picks", { draftId, count: Object.keys(out).length });
           } catch {
             // ignore
+            _log("hydrate traded picks FAILED", { draftId });
           }
         }
 
@@ -691,9 +724,25 @@ async function tickOnce(env) {
         });
 
         updated++;
+
+        _log("draft upsert", {
+          draftId,
+          status,
+          active: isActive ? 1 : 0,
+          pickCount,
+          currentPick,
+          currentOwnerName,
+          nextOwnerName,
+          clockEndsAt,
+          hasRosterNames: !!rosterNamesJson,
+          hasRosterByUsername: !!rosterByUsernameJson,
+          hasSlotToRoster: !!slotToRosterJson,
+        });
       })
     );
   }
+
+  _log("tick end", { drafts: uniqueDraftIds.length, active, updated });
 
   return { ok: true, drafts: uniqueDraftIds.length, active, updated };
 }
@@ -704,9 +753,35 @@ export class DraftRegistry {
     this.env = env;
   }
 
+  async _isDebugEnabled() {
+    try {
+      const until = await this.state.storage.get("debug_until");
+      return Number(until || 0) > Date.now();
+    } catch {
+      return false;
+    }
+  }
+
+  async _enableDebugWindow(ms = 15 * 60 * 1000) {
+    try {
+      await this.state.storage.put("debug_until", Date.now() + ms);
+    } catch {
+      // ignore
+    }
+  }
+
   async alarm() {
     try {
-      await tickOnce(this.env);
+      const debug = await this._isDebugEnabled();
+      const log = (...args) => {
+        if (!debug) return;
+        // eslint-disable-next-line no-console
+        console.log("[DPT DO]", ...args);
+      };
+
+      if (debug) log("alarm fired");
+
+      await tickOnce(this.env, debug, log);
     } finally {
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
     }
@@ -714,8 +789,22 @@ export class DraftRegistry {
 
   async fetch(request) {
     const url = new URL(request.url);
+
+    // Enable a short debug window by calling /tick?debug=1 or /kick?debug=1
+    if (url.searchParams.get("debug") === "1") {
+      await this._enableDebugWindow();
+    }
+
+    const debug = await this._isDebugEnabled();
+    const log = (...args) => {
+      if (!debug) return;
+      // eslint-disable-next-line no-console
+      console.log("[DPT DO]", ...args);
+    };
+
     if (url.pathname === "/tick" || url.pathname === "/kick") {
-      const result = await tickOnce(this.env);
+      if (debug) log("request", { path: url.pathname });
+      const result = await tickOnce(this.env, debug, log);
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
       return new Response(JSON.stringify(result), {
         status: 200,
