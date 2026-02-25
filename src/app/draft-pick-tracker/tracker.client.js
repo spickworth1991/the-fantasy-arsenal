@@ -945,32 +945,32 @@ export default function DraftPickTrackerClient() {
       });
     }
 
-    if (onlyOnDeckOrClock) {
-      r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
-      console.log("onlyondeck =",  r.length, r.map(x => x.onClockIsMe),r.map(x => x.onDeck) )
-    }
+    // if (onlyOnDeckOrClock) {
+    //   r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
+    //   console.log("onlyondeck =",  r.length, r.map(x => x.onClockIsMe),r.map(x => x.onDeck) )
+    // }
 
-    if (maxPicksAway < 999) {
-      r = r.filter((x) => {
-        const pu = safeNum(x.picksUntilMyPick);
-        if (x.myNextPickOverall == null) return false;
-        console.log("maxpicksaway =", pu)
-        return pu <= maxPicksAway;
-      });
-    }
+    // if (maxPicksAway < 999) {
+    //   r = r.filter((x) => {
+    //     const pu = safeNum(x.picksUntilMyPick);
+    //     if (x.myNextPickOverall == null) return false;
+    //     console.log("maxpicksaway =", pu)
+    //     return pu <= maxPicksAway;
+    //   });
+    // }
 
-    if (q) {
-            r = r.filter((x) => {
-        return (
-          String(x.leagueName || "").toLowerCase().includes(q) ||
-          String(x.currentOwnerName || "").toLowerCase().includes(q) ||
-          String(x.myNextPickOverall || "").includes(q)
-        );
+    // if (q) {
+    //         r = r.filter((x) => {
+    //     return (
+    //       String(x.leagueName || "").toLowerCase().includes(q) ||
+    //       String(x.currentOwnerName || "").toLowerCase().includes(q) ||
+    //       String(x.myNextPickOverall || "").includes(q)
+    //     );
         
-      });
-      console.log("q =", r)
-      console.log("qr =", q)
-    }
+    //   });
+    //   console.log("q =", r)
+    //   console.log("qr =", q)
+    // }
 
     
     console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
