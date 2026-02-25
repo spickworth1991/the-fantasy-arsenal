@@ -927,10 +927,10 @@ export default function DraftPickTrackerClient() {
       });
     }
 
-    if (onlyOnDeckOrClock) {
-      r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
-      console.log("onlyondeck =", r)
-    }
+    // if (onlyOnDeckOrClock) {
+    //   r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
+    //   console.log("onlyondeck =", r)
+    // }
 
     if (maxPicksAway < 999) {
       r = r.filter((x) => {
