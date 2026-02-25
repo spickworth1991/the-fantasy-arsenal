@@ -395,7 +395,40 @@ async function tickOnce(env) {
       ? PRE_DRAFT_REFRESH_MS
       : INACTIVE_REFRESH_MS;
 
-    const needs = !lastChecked || now - lastChecked > staleMs;
+    // Force a hydrate if core registry fields are missing, even if it was just registered.
+    // This prevents the UI from showing "empty" rows right after first load.
+    const isBestBall = Number(reg?.best_ball || 0) === 1;
+
+    const missingCore =
+      !reg?.draft_json ||
+      reg?.pick_count == null ||
+      reg?.teams == null ||
+      reg?.rounds == null ||
+      reg?.timer_sec == null ||
+      reg?.reversal_round == null;
+
+    const missingContext =
+      !isBestBall &&
+      ( !reg?.slot_to_roster_json ||
+        !reg?.roster_names_json ||
+        !reg?.roster_by_username_json ||
+        !reg?.traded_pick_owner_json );
+
+    // Best ball: we still want slot + roster maps for accurate owner names,
+    // but we can skip traded-pick ownership.
+    const missingContextBestBall =
+      isBestBall &&
+      ( !reg?.slot_to_roster_json ||
+        !reg?.roster_names_json ||
+        !reg?.roster_by_username_json );
+
+    const needs =
+      missingCore ||
+      missingContext ||
+      missingContextBestBall ||
+      !lastChecked ||
+      now - lastChecked > staleMs;
+
     if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
   }
 

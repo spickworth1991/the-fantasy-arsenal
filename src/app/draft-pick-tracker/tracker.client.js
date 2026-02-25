@@ -586,7 +586,7 @@ export default function DraftPickTrackerClient() {
     }
 
     // Clock left (only if timer exists)
-    const lastPickTs = safeNum(draft?.last_picked);
+    const lastPickTs = safeNum(bundle?.lastPicked ?? draft?.last_picked);
     const clockEndsAt =
       lastPickTs > 0 && timerSec > 0 ? lastPickTs + timerSec * 1000 : 0;
     const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
