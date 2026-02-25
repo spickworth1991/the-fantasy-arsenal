@@ -58,20 +58,14 @@ function Pill({ children, tone = "blue" }) {
 
 function getHeatTier(etaMs) {
   const ms = safeNum(etaMs);
-
-  // If ETA is missing/invalid/zero, do NOT heat up.
-  // (This is what’s causing the “1h48m but red” bug.)
   if (!Number.isFinite(ms) || ms <= 0) return "cool";
-
   const m = Math.floor(ms / 60000);
-
   if (m <= 10) return "hot";
   if (m <= 30) return "warm";
   return "cool";
 }
 
 function heatStyles(tier, isDrafting, flashHot) {
-  // only “heat up” visuals during active drafting
   if (!isDrafting) return { ring: "", wash: "", badge: null };
 
   if (tier === "hot") {
@@ -83,7 +77,7 @@ function heatStyles(tier, isDrafting, flashHot) {
     return {
       ring: flashHot ? `${ringBase} animate-[pulse_1.2s_ease-in-out_infinite]` : ringBase,
       wash: flashHot ? `${washBase} before:animate-[pulse_1.2s_ease-in-out_infinite]` : washBase,
-      badge: flashHot ? <Pill tone="red">🔥 SOON</Pill> : null, // badge ONLY at <=10m
+      badge: flashHot ? <Pill tone="red">🔥 SOON</Pill> : null,
     };
   }
 
@@ -91,7 +85,7 @@ function heatStyles(tier, isDrafting, flashHot) {
     return {
       ring: "ring-1 ring-orange-300/25 border-orange-300/15 shadow-[0_0_0_1px_rgba(251,146,60,0.14),0_0_18px_rgba(251,146,60,0.10)]",
       wash: "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-orange-400/10 before:via-transparent before:to-transparent before:pointer-events-none",
-      badge: null, // no badge at 10–30 unless you want one
+      badge: null,
     };
   }
 
@@ -116,14 +110,10 @@ function SortHeader({ label, col, sortKey, sortDir, setSortKey, setSortDir }) {
       )}
     >
       <span>{label}</span>
-      {active && (
-        <span className="text-xs opacity-80">{sortDir === "asc" ? "▲" : "▼"}</span>
-      )}
+      {active && <span className="text-xs opacity-80">{sortDir === "asc" ? "▲" : "▼"}</span>}
     </button>
   );
 }
-
-// ---------------- Main ----------------
 
 export default function DraftPickTrackerClient() {
   const { username, leagues, year, players } = useSleeper();
@@ -140,33 +130,57 @@ export default function DraftPickTrackerClient() {
   const [maxPicksAway, setMaxPicksAway] = useState(30); // 999 = off
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // removed pace sorting; default to "picks until" then ETA
   const [sortKey, setSortKey] = useState("etaMs");
   const [sortDir, setSortDir] = useState("asc");
 
-  const [rows, setRows] = useState([]); // computed draft rows
-  const [bundles, setBundles] = useState([]); // cached bundles
+  const [rows, setRows] = useState([]);
 
-  // per-league expand/collapse for recent picks
-  const [expandedRecent, setExpandedRecent] = useState({}); // { [leagueId]: boolean }
-  const [expandedSettings, setExpandedSettings] = useState({}); // { [leagueId]: boolean }
-  const [showRecent, setShowRecent] = useState({}); // { [leagueId]: boolean }
+  const [expandedRecent, setExpandedRecent] = useState({});
+  const [expandedSettings, setExpandedSettings] = useState({});
+  const [showRecent, setShowRecent] = useState({});
 
-  // ticker so clocks count down without refetching
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // ---------------- Registry registration ----------------
+
+  const registerDraftsInRegistry = async (drafts = []) => {
+    try {
+      const payload = [];
+      for (const lg of Array.isArray(drafts) ? drafts : []) {
+        const draftId = lg?.draft_id;
+        if (!draftId) continue;
+        payload.push({
+          draft_id: String(draftId),
+          league_id: lg?.league_id != null ? String(lg.league_id) : null,
+          league_name: lg?.name || lg?.league_name || null,
+          league_avatar: lg?.avatar || lg?.league_avatar || null,
+          best_ball: Number(lg?.settings?.best_ball || lg?.best_ball || 0) === 1 ? 1 : 0,
+          status: lg?.draft_status || lg?.status || null,
+        });
+      }
+      if (!payload.length) return;
+
+      await fetch("/api/draft-pick-tracker/registry", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ drafts: payload }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
   // ---------------- Helpers ----------------
 
-  function getUserRosterIdForLeague(rosterByUsernameObj) {
+  function getUserRosterIdForLeague(rosterByUsername = {}, _users = [], _rosters = []) {
     const uname = String(username || "").toLowerCase().trim();
     if (!uname) return null;
-
-    const m = rosterByUsernameObj || {};
-    const rid = m?.[uname];
+    const rid = rosterByUsername?.[uname];
     return rid != null ? String(rid) : null;
   }
 
@@ -182,7 +196,6 @@ export default function DraftPickTrackerClient() {
   function getEtaDisplay(r, liveClockLeft, liveEta) {
     const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
 
-    // If you're on the clock and draft is active: show the clock countdown for THIS pick.
     if (isDrafting && r?.onClockIsMe && liveClockLeft > 0) {
       return {
         label: "ON CLOCK",
@@ -192,7 +205,6 @@ export default function DraftPickTrackerClient() {
       };
     }
 
-    // Otherwise: show ETA until your next pick (if you have one).
     if (r?.myNextPickOverall != null) {
       return {
         label: "ETA",
@@ -205,9 +217,19 @@ export default function DraftPickTrackerClient() {
     return { label: "ETA", primary: "—", secondary: "", mode: "none" };
   }
 
-  function buildTradedPickOwnerMap(tradedPicksObj = {}) {
-    // already keyed as `${season}|${round}|${origRosterId}` => ownerRosterId
-    return new Map(Object.entries(tradedPicksObj || {}));
+  function buildTradedPickOwnerMap(tradedPickOwnersObj = {}, seasonStr = "") {
+    // tradedPickOwnersObj is already the DO-computed map:
+    // key: `${season}|${round}|${originalRosterId}` => ownerRosterId
+    const m = new Map();
+    if (tradedPickOwnersObj && typeof tradedPickOwnersObj === "object") {
+      for (const [k, v] of Object.entries(tradedPickOwnersObj)) {
+        if (!k || v == null) continue;
+        const key = String(k);
+        if (seasonStr && !key.startsWith(`${seasonStr}|`)) continue;
+        m.set(key, String(v));
+      }
+    }
+    return m;
   }
 
   function getSnakeSlotForPick({ pickNo, teams, reversalRound }) {
@@ -217,11 +239,8 @@ export default function DraftPickTrackerClient() {
     const round = Math.floor(idx0 / teams) + 1;
     const pickInRound0 = idx0 % teams;
 
-    // Direction handling:
-    // - Normal snake flips every round (1 forward, 2 reverse, 3 forward...)
-    // - 3RR (third-round reversal) means round 3 stays the SAME direction as round 2.
     const rr = safeNum(reversalRound);
-    let forward = true; // round 1
+    let forward = true;
 
     if (round > 1) {
       for (let r = 2; r <= round; r++) {
@@ -282,42 +301,65 @@ export default function DraftPickTrackerClient() {
     return rosterNameMap?.get(String(rid)) || `Roster ${rid}`;
   }
 
+  function makeDraftBundleFromRegistry(league, registryByDraftId = {}) {
+    const draftId = league?.draft_id;
+    if (!draftId) return null;
+
+    const reg = registryByDraftId?.[String(draftId)] || null;
+
+    return {
+      league,
+      draft: reg?.draft || null,
+      pickCount: Number.isFinite(Number(reg?.pickCount)) ? Number(reg.pickCount) : 0,
+      picks: [],
+      lastPicked: Number.isFinite(Number(reg?.lastPicked)) ? Number(reg.lastPicked) : null,
+      slotToRoster: reg?.slotToRoster || null,
+      rosterNames: reg?.rosterNames || null,
+      rosterByUsername: reg?.rosterByUsername || null,
+      tradedPickOwners: reg?.tradedPickOwners || null,
+      teams: reg?.teams ?? null,
+      rounds: reg?.rounds ?? null,
+      timerSec: reg?.timerSec ?? null,
+      reversalRound: reg?.reversalRound ?? null,
+      status: reg?.status || null,
+      active: Boolean(reg?.active),
+    };
+  }
+
   function calcPickInfo(bundle, nowMs) {
-    const league = bundle?.league;
-    const draft = bundle?.draft;
-
-    const pickCount = safeNum(bundle?.pickCount);
-    const lastPickedMs = safeNum(bundle?.lastPicked || draft?.last_picked);
-    const draftStatus = String(draft?.status || "").toLowerCase();
-
-    const teamsFromReg = safeNum(bundle?.teams);
-    const roundsFromReg = safeNum(bundle?.rounds);
-    const timerSec = safeNum(bundle?.timerSec);
-    const reversalRound = safeNum(bundle?.reversalRound);
-
-    const scoringType =
-      String(draft?.metadata?.scoring_type || league?.settings?.scoring_type || "")
-        .trim() || null;
-
-    const currentPick = pickCount + 1;
+    const { league, draft, pickCount } = bundle;
 
     const rosterNamesObj = bundle?.rosterNames || {};
-    const rosterNameMap = new Map(Object.entries(rosterNamesObj || {}));
+    const rosterName = new Map(
+      Object.entries(rosterNamesObj || {}).map(([k, v]) => [String(k), String(v)])
+    );
 
-    // slot -> roster_id map
+    const reversalRound = safeNum(bundle?.reversalRound ?? draft?.settings?.reversal_round);
+    const draftStatus = String(bundle?.status || draft?.status || "").toLowerCase();
+    const rounds = safeNum(bundle?.rounds ?? draft?.settings?.rounds);
+    const timerSec = safeNum(bundle?.timerSec ?? draft?.settings?.pick_timer);
+
+    const currentPick = (safeNum(pickCount) || 0) + 1;
+
+    const totalSlots =
+      safeNum(bundle?.teams) ||
+      safeNum(draft?.settings?.teams) ||
+      safeNum(draft?.settings?.slots) ||
+      safeNum(draft?.settings?.num_teams) ||
+      0;
+
+    const teams = totalSlots > 0 ? totalSlots : 0;
+
     const rosterBySlot = new Map();
-    const slotToRosterObj = bundle?.slotToRoster || {};
-    Object.keys(slotToRosterObj || {}).forEach((slot) => {
-      const rosterId = slotToRosterObj[slot];
+    const slotToRoster = bundle?.slotToRoster || draft?.slot_to_roster_id || {};
+    Object.keys(slotToRoster || {}).forEach((slot) => {
+      const rosterId = slotToRoster[slot];
       const s = safeNum(slot);
       if (s && rosterId != null) rosterBySlot.set(s, String(rosterId));
     });
 
     const seasonStr = String(draft?.season || league?.season || year || "");
-    const tradedOwnerMap = buildTradedPickOwnerMap(bundle?.tradedPickOwners || {});
-
-    const teams = teamsFromReg || rosterBySlot.size || 0;
-    const rounds = roundsFromReg || safeNum(draft?.settings?.rounds) || 0;
+    const tradedOwnerMap = buildTradedPickOwnerMap(bundle?.tradedPickOwners, seasonStr);
 
     const currentOwnerName = teams
       ? getPickOwnerName({
@@ -327,7 +369,7 @@ export default function DraftPickTrackerClient() {
           tradedOwnerMap,
           seasonStr,
           reversalRound,
-          rosterNameMap,
+          rosterNameMap: rosterName,
         })
       : null;
 
@@ -339,7 +381,7 @@ export default function DraftPickTrackerClient() {
           tradedOwnerMap,
           seasonStr,
           reversalRound,
-          rosterNameMap,
+          rosterNameMap: rosterName,
         })
       : null;
 
@@ -354,9 +396,8 @@ export default function DraftPickTrackerClient() {
         })
       : null;
 
-    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername || {});
+    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername, [], []);
 
-    // Find my next pick overall (account for traded ownership)
     let myNextPickOverall = null;
     if (myRosterId && teams > 0) {
       const maxPk = rounds > 0 && teams > 0 ? rounds * teams : currentPick + 500;
@@ -369,6 +410,7 @@ export default function DraftPickTrackerClient() {
           seasonStr,
           reversalRound,
         });
+
         if (String(rosterIdAtPick || "") === String(myRosterId)) {
           myNextPickOverall = pk;
           break;
@@ -377,18 +419,16 @@ export default function DraftPickTrackerClient() {
     }
 
     const picksUntilMyPick =
-      myNextPickOverall != null
-        ? Math.max(0, myNextPickOverall - currentPick)
-        : null;
+      myNextPickOverall != null ? Math.max(0, myNextPickOverall - currentPick) : null;
 
     const onDeck = picksUntilMyPick === 1;
+
     const onClockIsMe = !!(
       myRosterId &&
       nextRosterId &&
       String(nextRosterId) === String(myRosterId)
     );
 
-    // If I'm currently on the clock, also find my *next* pick AFTER this one
     let myNextPickAfterThis = null;
     if (myRosterId && teams > 0) {
       const startPk = onClockIsMe ? currentPick + 1 : currentPick;
@@ -411,12 +451,11 @@ export default function DraftPickTrackerClient() {
       }
     }
 
-    // Clock left
+    const lastPickTs = safeNum(draft?.last_picked);
     const clockEndsAt =
-      lastPickedMs > 0 && timerSec > 0 ? lastPickedMs + timerSec * 1000 : 0;
+      lastPickTs > 0 && timerSec > 0 ? lastPickTs + timerSec * 1000 : 0;
     const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
 
-    // ETA uses ONLY timer (no pace)
     const perPickMs = timerSec > 0 ? timerSec * 1000 : 90 * 1000;
 
     let etaMs = 0;
@@ -428,8 +467,6 @@ export default function DraftPickTrackerClient() {
       }
     }
 
-    // Recent picks (we don't keep pick lists in registry to avoid huge payloads)
-    // Keep UI stable: show none (or you can re-add "recent" via a separate endpoint later).
     const recent = [];
 
     return {
@@ -453,38 +490,8 @@ export default function DraftPickTrackerClient() {
       rounds,
       recent,
       computedAt: nowMs,
-      draftType: String(draft?.type || "").toLowerCase(),
-      scoringType,
-      startTimeMs: safeNum(draft?.start_time),
-      createdMs: safeNum(draft?.created),
-      lastPickedMs,
       reversalRound: reversalRound || 0,
     };
-  }
-
-  async function registerDraftsInRegistry(leagueList) {
-    try {
-      const items = (leagueList || [])
-        .filter((lg) => !!lg?.draft_id)
-        .map((lg) => ({
-          draft_id: String(lg.draft_id),
-          league_id: lg?.league_id != null ? String(lg.league_id) : null,
-          league_name: lg?.name != null ? String(lg.name) : null,
-          league_avatar: lg?.avatar
-            ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}`
-            : null,
-        }));
-
-      if (!items.length) return;
-
-      await fetch("/api/draft-pick-tracker/registry", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
-    } catch {
-      // ignore
-    }
   }
 
   // ---------------- Refresh ----------------
@@ -492,59 +499,42 @@ export default function DraftPickTrackerClient() {
   async function refresh() {
     setErr("");
     setLoading(true);
+
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-      const draftIds = eligible.map((l) => String(l.draft_id)).filter(Boolean);
-
-      if (!draftIds.length) {
-        setBundles([]);
+      if (!eligible.length) {
         setRows([]);
         return;
       }
 
-      // Pull shared draft state + context from the registry (D1) instead of polling Sleeper per user.
-      // (This keeps the UI fast even when many people share the same leagues.)
+      // One-way registration so the server knows to hydrate these drafts in the shared registry.
+      // (The Durable Object / cron does the heavy Sleeper polling.)
+      registerDraftsInRegistry(eligible);
+
+      const ids = eligible.map((l) => String(l.draft_id)).filter(Boolean);
+
       const res = await fetch(
-        `/api/draft-pick-tracker/registry?draft_ids=${encodeURIComponent(
-          draftIds.join(",")
-        )}`,
+        `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`,
         { cache: "no-store" }
       );
-      if (!res.ok) throw new Error("registry fetch failed");
-      const data = await res.json();
-      const registry = data?.rows || {};
+      if (!res.ok) throw new Error("Registry fetch failed");
 
-      // Build "bundle" objects that match calcPickInfo() expectations.
-      const nextBundles = [];
+      const json = await res.json();
+      const registryByDraftId = json?.drafts || {};
+
+      const nowMs = Date.now();
+      const nextRows = [];
+
       for (const lg of eligible) {
-        const draftId = String(lg?.draft_id || "");
-        const reg = registry?.[draftId];
-        if (!draftId || !reg?.draft) continue;
-
-        nextBundles.push({
-          league: lg,
-          draft: reg.draft,
-          pickCount: safeNum(reg.pickCount),
-          lastPicked: safeNum(reg.lastPicked),
-          teams: safeNum(reg.teams),
-          rounds: safeNum(reg.rounds),
-          timerSec: safeNum(reg.timerSec),
-          reversalRound: safeNum(reg.reversalRound),
-          slotToRoster: reg.slotToRoster || {},
-          rosterNames: reg.rosterNames || {},
-          rosterByUsername: reg.rosterByUsername || {},
-          tradedPickOwners: reg.tradedPickOwners || {},
-        });
+        const bundle = makeDraftBundleFromRegistry(lg, registryByDraftId);
+        if (!bundle?.draft) continue;
+        nextRows.push(calcPickInfo(bundle, nowMs));
       }
 
-      const nowMs = Date.now(); // critical: prevents stale-now auto-refresh drift
-      const draftRows = nextBundles.map((b) => calcPickInfo(b, nowMs));
-
-      setBundles(nextBundles);
-      setRows(draftRows);
+      setRows(nextRows);
     } catch (e) {
       console.error(e);
-      setErr("Failed to load drafts. Try refresh.");
+      setErr("Failed to load drafts.");
     } finally {
       setLoading(false);
     }
@@ -556,13 +546,139 @@ export default function DraftPickTrackerClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
-  // Ensure the shared registry knows about the drafts you can see (non-blocking).
+  const anyDrafting = useMemo(() => {
+    const ACTIVE = new Set(["drafting", "paused"]);
+    return (rows || []).some((r) => ACTIVE.has(String(r?.draftStatus || "").toLowerCase()));
+  }, [rows]);
+
+  // ---------------- Auto-refresh ----------------
+
   useEffect(() => {
     if (!username) return;
-    if (!Array.isArray(leagues) || leagues.length === 0) return;
-    registerDraftsInRegistry(leagues);
+    if (!autoRefresh) return;
+    if (!anyDrafting) return;
+
+    const t = setInterval(() => refresh(), 60000);
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, autoRefresh, anyDrafting]);
+
+  // ---------------- Discovery (keep existing behavior) ----------------
+
+  useEffect(() => {
+    const uname = String(username || "").trim();
+    if (!uname) return;
+
+    const buildPayload = () => {
+      const arr = Array.isArray(leagues) ? leagues : [];
+      const out = [];
+      for (const lg of arr) {
+        const draftId = lg?.draft_id;
+        if (!draftId) continue;
+        out.push({
+          league_id: lg?.league_id || null,
+          league_name: lg?.name || lg?.league_name || null,
+          league_avatar: lg?.avatar || lg?.league_avatar || null,
+          draft_id: draftId,
+          best_ball: Number(lg?.settings?.best_ball || lg?.best_ball || 0) === 1 ? 1 : 0,
+        });
+      }
+      return out;
+    };
+
+    const ping = () => {
+      try {
+        const payload = buildPayload();
+        if (!payload.length) return;
+        fetch("/api/draft-pick-tracker/discover", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ leagues: payload }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch {}
+    };
+
+    ping();
+    const t = setInterval(ping, 60_000);
+    return () => clearInterval(t);
   }, [username, leagues]);
+
+  // ---------------- Alerts ----------------
+
+  const alertEnabledRef = useRef(true);
+  const lastAlertKeyRef = useRef("");
+  const originalTitleRef = useRef(typeof document !== "undefined" ? document.title : "");
+  const flashTimerRef = useRef(null);
+
+  function beep() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.value = 0.06;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      setTimeout(() => {
+        o.stop();
+        ctx.close();
+      }, 180);
+    } catch {}
+  }
+
+  function flashTitle(msg) {
+    if (typeof document === "undefined") return;
+    const base = originalTitleRef.current || document.title || "Draft Pick Tracker";
+    let on = false;
+
+    if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+    flashTimerRef.current = setInterval(() => {
+      document.title = on ? `${msg} — ${base}` : base;
+      on = !on;
+    }, 900);
+
+    setTimeout(() => {
+      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      document.title = base;
+    }, 12000);
+  }
+
+  useEffect(() => {
+    if (!alertEnabledRef.current) return;
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    const hot = rows
+      .filter((r) => r.draftStatus === "drafting")
+      .filter((r) => r.onDeck || r.onClockIsMe);
+
+    if (hot.length === 0) return;
+
+    const best = hot.find((r) => r.onClockIsMe) || hot.find((r) => r.onDeck) || null;
+    if (!best) return;
+
+    const key = `${best.leagueId}|${best.currentPick}|${best.myNextPickOverall}|${
+      best.onClockIsMe ? "clock" : "deck"
+    }`;
+    if (lastAlertKeyRef.current === key) return;
+
+    lastAlertKeyRef.current = key;
+    beep();
+    flashTitle(best.onClockIsMe ? "ON CLOCK" : "ON DECK");
+  }, [rows]);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
+      if (typeof document !== "undefined" && originalTitleRef.current) {
+        document.title = originalTitleRef.current;
+      }
+    };
+  }, []);
 
   // ---------------- Filters + sorting ----------------
 
@@ -623,108 +739,7 @@ export default function DraftPickTrackerClient() {
     sortDir,
   ]);
 
-  const anyDrafting = useMemo(
-    () => (rows || []).some((r) => String(r?.draftStatus) === "drafting"),
-    [rows]
-  );
-
-  // ---------------- Auto-refresh ----------------
-  // active drafting only (paused doesn't keep polling)
-
-  useEffect(() => {
-    if (!username) return;
-    if (!autoRefresh) return;
-    if (!anyDrafting) return;
-
-    const t = setInterval(() => {
-      refresh();
-    }, 20000);
-
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, autoRefresh, anyDrafting]);
-
-  // ---------------- Alerts: sound + title flash ----------------
-
-  const alertEnabledRef = useRef(true);
-  const lastAlertKeyRef = useRef("");
-  const originalTitleRef = useRef(
-    typeof document !== "undefined" ? document.title : ""
-  );
-  const flashTimerRef = useRef(null);
-
-  function beep() {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.value = 0.06;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      setTimeout(() => {
-        o.stop();
-        ctx.close();
-      }, 180);
-    } catch {}
-  }
-
-  function flashTitle(msg) {
-    if (typeof document === "undefined") return;
-    const base =
-      originalTitleRef.current || document.title || "Draft Pick Tracker";
-    let on = false;
-
-    if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-    flashTimerRef.current = setInterval(() => {
-      document.title = on ? `${msg} — ${base}` : base;
-      on = !on;
-    }, 900);
-
-    setTimeout(() => {
-      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-      document.title = base;
-    }, 12000);
-  }
-
-  useEffect(() => {
-    if (!alertEnabledRef.current) return;
-    if (!Array.isArray(rows) || rows.length === 0) return;
-
-    const hot = rows
-      .filter((r) => r.draftStatus === "drafting")
-      .filter((r) => r.onDeck || r.onClockIsMe);
-
-    if (hot.length === 0) return;
-
-    const best =
-      hot.find((r) => r.onClockIsMe) || hot.find((r) => r.onDeck) || null;
-    if (!best) return;
-
-    const key = `${best.leagueId}|${best.currentPick}|${best.myNextPickOverall}|${
-      best.onClockIsMe ? "clock" : "deck"
-    }`;
-    if (lastAlertKeyRef.current === key) return;
-
-    lastAlertKeyRef.current = key;
-    beep();
-    flashTitle(best.onClockIsMe ? "ON CLOCK" : "ON DECK");
-  }, [rows]);
-
-  useEffect(() => {
-    return () => {
-      if (flashTimerRef.current) clearInterval(flashTimerRef.current);
-      if (typeof document !== "undefined" && originalTitleRef.current) {
-        document.title = originalTitleRef.current;
-      }
-    };
-  }, []);
-
-  // ---------------- UI bits ----------------
+  // ---------------- UI ----------------
 
   const totalLeagues = filteredDraftRows.length;
 
@@ -736,7 +751,7 @@ export default function DraftPickTrackerClient() {
           <div className="flex items-center gap-3">
             <h2 className="text-3xl font-bold text-white">Draft Pick Tracker</h2>
             <Pill tone="purple">LIVE</Pill>
-            {anyDrafting ? (
+            {(rows || []).some((r) => String(r?.draftStatus) === "drafting") ? (
               <Pill tone="green">Drafts in progress</Pill>
             ) : (
               <Pill tone="gray">No active drafts</Pill>
@@ -880,10 +895,7 @@ export default function DraftPickTrackerClient() {
             const isDrafting = String(r.draftStatus || "").toLowerCase() === "drafting";
             const hasMyPick = r.myNextPickOverall != null;
             const heatTier = getHeatTier(hasMyPick ? liveEta : NaN);
-
-            // Flash ONLY when ETA <= 10 minutes (and you actually have a next pick)
             const flashHot = isDrafting && hasMyPick && heatTier === "hot";
-
             const heat = heatStyles(heatTier, isDrafting && hasMyPick, flashHot);
 
             const statusTone =
@@ -896,9 +908,6 @@ export default function DraftPickTrackerClient() {
                 : "yellow";
 
             const upIn = r.picksUntilMyPick != null ? r.picksUntilMyPick : null;
-
-            const isExpanded = !!expandedRecent[r.leagueId];
-            const recentToShow = isExpanded ? (r.recent || []) : (r.recent || []).slice(0, 3);
 
             return (
               <div
@@ -934,22 +943,20 @@ export default function DraftPickTrackerClient() {
                       {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
                         <Pill tone="yellow">ON DECK</Pill>
                       )}
-                      {upIn != null && upIn >= 0 && (
-                        upIn === 0 ? (
+                      {upIn != null && upIn >= 0 &&
+                        (upIn === 0 ? (
                           <Pill tone="green">YOUR PICK!</Pill>
                         ) : (
                           <Pill tone={upIn <= 1 ? "yellow" : "cyan"}>
                             Up in {upIn} pick{upIn === 1 ? "" : "s"}
                           </Pill>
-                        )
-                      )}
+                        ))}
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Current Pick */}
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <div className="text-xs text-gray-400">Current Pick</div>
                       <div className="text-white text-lg font-semibold">
@@ -958,7 +965,6 @@ export default function DraftPickTrackerClient() {
                       <div className="text-sm text-gray-200 truncate mt-0.5">
                         {r.currentOwnerName || "—"}
                       </div>
-
                       {r.draftStatus === "drafting" && clockText && (
                         <div className="text-xs text-gray-400 mt-1">{clockText} left</div>
                       )}
@@ -967,7 +973,6 @@ export default function DraftPickTrackerClient() {
                       )}
                     </div>
 
-                    {/* Who’s Next */}
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <div className="text-xs text-gray-400">Who’s Next?</div>
                       <div className="text-white text-lg font-semibold truncate">
@@ -981,7 +986,6 @@ export default function DraftPickTrackerClient() {
                       </div>
                     </div>
 
-                    {/* ETA / On-clock timer (live) */}
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       {(() => {
                         const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
@@ -1009,7 +1013,6 @@ export default function DraftPickTrackerClient() {
                       })()}
                     </div>
 
-                    {/* League Settings (click-to-expand) */}
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <button
                         type="button"
@@ -1041,21 +1044,9 @@ export default function DraftPickTrackerClient() {
                       {expandedSettings[r.leagueId] && (
                         <div className="mt-3 text-xs text-gray-300 space-y-1">
                           <div>Season: {r.season || "—"}</div>
-                          <div>Draft type: {r.draftType || "—"}</div>
-                          <div>Scoring: {r.scoringType || "—"}</div>
                           <div>3RR: {r.reversalRound ? `Yes (round ${r.reversalRound})` : "No"}</div>
                           <div>Draft ID: {r.draftId || "—"}</div>
-                          <div>
-                            Start time:{" "}
-                            {r.startTimeMs ? new Date(r.startTimeMs).toLocaleString() : "—"}
-                          </div>
-                          <div>
-                            Last pick:{" "}
-                            {r.lastPickedMs ? new Date(r.lastPickedMs).toLocaleString() : "—"}
-                          </div>
-                          <div>
-                            Current pick #: {r.currentPick ? nf0.format(r.currentPick) : "—"}
-                          </div>
+                          <div>Current pick #: {r.currentPick ? nf0.format(r.currentPick) : "—"}</div>
                           <div>
                             Your current/next pick #:{" "}
                             {r.myNextPickOverall ? nf0.format(r.myNextPickOverall) : "—"}
@@ -1084,11 +1075,7 @@ export default function DraftPickTrackerClient() {
                         disabled={(r.recent || []).length === 0}
                         title="Show/hide recent picks"
                       >
-                        {(r.recent || []).length === 0
-                          ? "None"
-                          : showRecent[r.leagueId]
-                          ? "Hide"
-                          : "Show"}
+                        {(r.recent || []).length === 0 ? "None" : showRecent[r.leagueId] ? "Hide" : "Show"}
                       </button>
                     </div>
 
@@ -1104,9 +1091,7 @@ export default function DraftPickTrackerClient() {
                               {p?.label || "—"}
                             </div>
                             {p?.pick_no ? (
-                              <span className="text-xs text-gray-400 flex-shrink-0">
-                                #{p.pick_no}
-                              </span>
+                              <span className="text-xs text-gray-400 flex-shrink-0">#{p.pick_no}</span>
                             ) : (
                               <span className="text-xs text-gray-600 flex-shrink-0">—</span>
                             )}
@@ -1128,8 +1113,173 @@ export default function DraftPickTrackerClient() {
         </div>
       )}
 
-      {/* Table view etc... (unchanged below this point in your file) */}
-      {/* IMPORTANT: the rest of your original file remains as-is */}
+      {/* Table view */}
+      {view === "table" && (
+        <div className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Pill tone="cyan">{totalLeagues} leagues</Pill>
+              <Pill tone="blue">On-deck alert</Pill>
+              <Pill tone="purple">ETA uses timer + clock</Pill>
+              {includePaused && onlyDrafting && <Pill tone="yellow">Showing paused</Pill>}
+            </div>
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-black/20 text-gray-200">
+                <tr>
+                  <th className="px-5 py-3">
+                    <SortHeader label="League" col="leagueName" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="Status" col="draftStatus" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="Current Pick" col="currentPick" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="Next Up" col="nextOwnerName" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="Your Pick" col="myNextPickOverall" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="Up In" col="picksUntilMyPick" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                  <th className="px-5 py-3">
+                    <SortHeader label="ETA" col="etaMs" {...{ sortKey, sortDir, setSortKey, setSortDir }} />
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredDraftRows.map((r) => {
+                  const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                  const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+
+                  const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+                  const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+
+                  const statusTone =
+                    r.draftStatus === "drafting"
+                      ? "green"
+                      : r.draftStatus === "paused"
+                      ? "yellow"
+                      : r.draftStatus === "complete"
+                      ? "gray"
+                      : "yellow";
+
+                  return (
+                    <tr
+                      key={r.leagueId}
+                      className={classNames(
+                        "border-t border-white/5 hover:bg-white/5",
+                        (r.onClockIsMe || r.onDeck) && r.draftStatus === "drafting" && "bg-emerald-500/5"
+                      )}
+                    >
+                      <td className="px-5 py-4">
+                        <div>
+                          <div className="text-white font-semibold">{r.leagueName}</div>
+                          <div className="text-xs text-gray-400">
+                            {r.teams ? `${r.teams} teams` : "—"}
+                            {r.rounds ? ` · ${r.rounds} rounds` : ""}
+                            {r.timerSec ? ` · ${r.timerSec}s timer` : ""}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <Pill tone={statusTone}>{r.draftStatus || "—"}</Pill>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {r.currentPick ? (
+                          <div className="flex flex-col">
+                            <span className="text-gray-100">{nf0.format(r.currentPick)}</span>
+                            {r.draftStatus === "drafting" && clockText && (
+                              <span className="text-xs text-gray-400">{clockText} left</span>
+                            )}
+                            {r.draftStatus === "paused" && (
+                              <span className="text-xs text-yellow-200/80">paused</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4 text-gray-100">{r.nextOwnerName || "—"}</td>
+
+                      <td className="px-5 py-4">
+                        {r.myNextPickOverall ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Pill tone="purple">#{nf0.format(r.myNextPickOverall)}</Pill>
+                            {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
+                              <Pill tone="green">ON CLOCK · {clockText}</Pill>
+                            )}
+                            {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
+                              <Pill tone="yellow">ON DECK</Pill>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {r.picksUntilMyPick != null ? (
+                          <Pill tone={r.picksUntilMyPick <= 1 ? "yellow" : "cyan"}>
+                            {r.picksUntilMyPick}
+                          </Pill>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {(() => {
+                          const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                          const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+                          const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+
+                          const d = getEtaDisplay(r, liveClockLeft, liveEta);
+
+                          if (d.mode === "none") return <span className="text-gray-400">—</span>;
+
+                          return (
+                            <div className="flex flex-col">
+                              <span className="text-white font-semibold">{d.primary}</span>
+                              {d.secondary ? <span className="text-xs text-gray-400">{d.secondary}</span> : null}
+                              {d.mode === "clock" && r.myNextPickAfterThis ? (
+                                <span className="text-xs text-gray-400">
+                                  Next: #{nf0.format(r.myNextPickAfterThis)}
+                                </span>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredDraftRows.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-10 text-center text-gray-300">
+                      No leagues found. Try adjusting filters or hit Refresh.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-5 py-4 border-t border-white/10 text-xs text-gray-400">
+            Tip: “Next up” and “your pick” now account for traded pick ownership.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
