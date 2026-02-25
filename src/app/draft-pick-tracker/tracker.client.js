@@ -633,150 +633,60 @@ export default function DraftPickTrackerClient() {
   async function refresh() {
     setErr("");
     setLoading(true);
+
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-
-      // One-time: register draft ids into the shared registry so the monitor can render
-      // without fetching draft metadata per league.
-      if (!registeredRef.current && eligible.length) {
-        registeredRef.current = true;
-        await registerDraftsInRegistry(eligible);
-      }
-      // Pull shared draft + pick counts from our server-side registry first.
-      // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
-      let registryByDraftId = {};
-      try {
-        const ids = eligible.map((l) => l?.draft_id).filter(Boolean);
-        if (ids.length) {
-          const regRes = await fetch(
-            `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
-          );
-          const regJson = regRes.ok ? await regRes.json() : null;
-          registryByDraftId = regJson?.drafts || {};
-        }
-      } catch {
-        registryByDraftId = {};
+      if (!eligible.length) {
+        setRows([]);
+        return;
       }
 
-      // Only fetch expensive per-league data for ACTIVE drafts.
-      const activeEligible = [];
-      const inactiveEligible = [];
-      for (const lg of eligible) {
-        const r = registryByDraftId?.[String(lg.draft_id)];
-        const st = String(r?.status || "").toLowerCase();
-        const active = r?.active == null ? null : Number(r.active);
-        const isActive = active === 1 || st === "drafting" || st === "paused";
-        (isActive ? activeEligible : inactiveEligible).push(lg);
-      }
+      const ids = eligible.map((l) => l.draft_id).filter(Boolean);
 
-      const nextBundles = (await Promise.all(
-        activeEligible.map(async (lg) => {
-          try {
-            return makeDraftBundleFromRegistry(lg, registryByDraftId);
-          } catch (e) {
-            console.warn("Draft bundle failed:", lg?.name, e);
-            return null;
-          }
-        })
-      )).filter(Boolean);
+      const res = await fetch(
+        `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
+      );
+
+      if (!res.ok) throw new Error("Registry fetch failed");
+
+      const json = await res.json();
+      const drafts = json?.drafts || {};
 
       const nowMs = Date.now();
-      const draftRows = [];
-      nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
+      const nextRows = [];
 
-      // Render inactive drafts straight from registry (no Sleeper calls).
-            inactiveEligible.forEach((lg) => {
-            const r = registryByDraftId?.[String(lg.draft_id)] || {};
-            draftRows.push({
-              leagueId: r.league_id || lg.league_id,
-              leagueName: r.league_name || lg.name || "Unnamed League",
-              leagueAvatarUrl:
-                r.league_avatar ||
-                (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
-              draftId: String(lg.draft_id),
+      for (const lg of eligible) {
+        const r = drafts[String(lg.draft_id)];
+        if (!r) continue;
 
-              // normalize
-              draftStatus: String(r.status || lg.status || "").toLowerCase(),
+        const draftStatus = String(r.status || "").toLowerCase();
 
-              // fields the UI expects everywhere
-              currentOwnerName: "—",
-              currentPick: null,
-              clockLeftMs: null,
-              etaMs: null,
-              computedAt: Date.now(),
+        const clockLeftMs =
+          r.clock_ends_at
+            ? Math.max(0, Number(r.clock_ends_at) - nowMs)
+            : 0;
 
-              onClockIsMe: false,
-              onDeck: false,
-
-              myNextPickOverall: null,
-              myNextPickAfterThis: null,
-              picksUntilMyPick: null,
-
-              teams: r.teams != null ? Number(r.teams) : null,
-              rounds: r.rounds != null ? Number(r.rounds) : null,
-              timerSec: r.timerSec != null ? Number(r.timerSec) : null,
-
-              recent: [],
-            });
-          });
-
-      // Sort: on-the-clock first, then by league name.
-      draftRows.sort((a, b) => {
-        const ao = a.onTheClock ? 1 : 0;
-        const bo = b.onTheClock ? 1 : 0;
-        if (ao !== bo) return bo - ao;
-        return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
-      });
-      // DEBUG: compare registry ids vs rendered rows
-        try {
-          const regIds = new Set(Object.keys(registryByDraftId || {}).map(String));
-          const renderedIds = new Set((draftRows || []).map((x) => String(x?.draftId || x?.draft_id || "")));
-
-          const missing = [];
-          for (const id of regIds) {
-            if (!renderedIds.has(id)) {
-              const r = registryByDraftId?.[id];
-              missing.push({
-                draftId: id,
-                league: r?.league_name,
-                status: r?.status,
-                active: r?.active,
-                pickCount: r?.pickCount,
-              });
-            }
-          }
-
-          console.log("[DPT] eligible leagues:", eligible.length);
-          console.log("[DPT] registry drafts:", regIds.size);
-          console.log("[DPT] rendered rows:", draftRows.length);
-          console.log("[DPT] missing from UI rows:", missing);
-        } catch (e) {
-          console.log("[DPT] debug compare failed", e);
-        }
-
-      // IMPORTANT: React keys must be unique.
-      // When a registry row is missing league_id temporarily, keying by leagueId can
-      // produce duplicate/undefined keys and React will collapse rows (making it look
-      // like leagues are "missing" even though they exist in the registry response).
-      // Dedup and attach a stable per-row key using draftId (preferred).
-      const seen = new Set();
-      const uniqueRows = [];
-      for (let i = 0; i < (draftRows || []).length; i++) {
-        const row = draftRows[i];
-        const k = String(row?.draftId || row?.draft_id || row?.leagueId || "");
-        if (!k) {
-          uniqueRows.push({ ...row, __rowKey: `idx:${i}` });
-          continue;
-        }
-        if (seen.has(k)) continue;
-        seen.add(k);
-        uniqueRows.push({ ...row, __rowKey: k });
+        nextRows.push({
+          leagueId: r.league_id,
+          leagueName: r.league_name,
+          draftId: r.draft_id,
+          draftStatus,
+          currentPick: r.current_pick,
+          currentOwnerName: r.current_owner_name,
+          nextOwnerName: r.next_owner_name,
+          clockLeftMs,
+          teams: r.teams,
+          rounds: r.rounds,
+          timerSec: r.timer_sec,
+          reversalRound: r.reversal_round,
+          computedAt: nowMs,
+        });
       }
 
-      setRows(uniqueRows);
+      setRows(nextRows);
     } catch (e) {
       console.error(e);
-      setErr("Failed to load drafts. Try refresh.");
+      setErr("Failed to load drafts.");
     } finally {
       setLoading(false);
     }

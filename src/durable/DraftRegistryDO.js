@@ -36,6 +36,10 @@ async function ensureDraftRegistryTable(db) {
       league_name TEXT,
       league_avatar TEXT,
       best_ball INTEGER,
+      current_pick INTEGER,
+      current_owner_name TEXT,
+      next_owner_name TEXT,
+      clock_ends_at INTEGER,
       completed_at INTEGER
     )
   `).run();
@@ -186,12 +190,80 @@ async function tickOnce(env) {
 
     const lastPicked = Number(draft?.last_picked || 0) || null;
     const pickCount = await getPickCount(draftId);
+    // --------------------------------------------------
+    // Compute shared draft math (snake + traded logic)
+    // --------------------------------------------------
 
+    const seasonStr = String(draft?.season || "");
+    const teamsNum = Number(draft?.settings?.teams || 0) || 0;
+    const reversalRound = Number(draft?.settings?.reversal_round || 0) || 0;
+
+    const currentPick = (Number(pickCount) || 0) + 1;
+
+    function getSnakeSlot(pickNo) {
+      if (!pickNo || !teamsNum) return null;
+      const idx0 = pickNo - 1;
+      const round = Math.floor(idx0 / teamsNum) + 1;
+      const pickInRound0 = idx0 % teamsNum;
+
+      let forward = true;
+      for (let r = 2; r <= round; r++) {
+        if (reversalRound > 0 && r === reversalRound) continue;
+        forward = !forward;
+      }
+
+      const slot = forward ? pickInRound0 + 1 : teamsNum - pickInRound0;
+      return { round, slot };
+    }
+
+    function resolveRoster(pickNo) {
+      const rs = getSnakeSlot(pickNo);
+      if (!rs) return null;
+
+      const origRosterId =
+        slotToRosterJson
+          ? JSON.parse(slotToRosterJson)?.[String(rs.slot)]
+          : null;
+
+      if (!origRosterId) return null;
+
+      const traded =
+        tradedPickOwnerJson
+          ? JSON.parse(tradedPickOwnerJson)?.[
+              `${seasonStr}|${rs.round}|${origRosterId}`
+            ]
+          : null;
+
+      return traded || origRosterId;
+    }
+
+    const rosterNames = rosterNamesJson
+      ? JSON.parse(rosterNamesJson)
+      : {};
+
+    const currentRosterId = resolveRoster(currentPick);
+    const nextRosterId = resolveRoster(currentPick + 1);
+
+    const currentOwnerName =
+      rosterNames?.[String(currentRosterId)] || null;
+
+    const nextOwnerName =
+      rosterNames?.[String(nextRosterId)] || null;
+
+    const clockEndsAt =
+      lastPicked && timerSec
+        ? Number(lastPicked) + Number(timerSec) * 1000
+        : null;
+        
     await upsertRegistry(db, draftId, {
       active: isActive ? 1 : 0,
       status,
       last_picked: lastPicked,
       pick_count: pickCount,
+      current_pick: currentPick,
+      current_owner_name: currentOwnerName,
+      next_owner_name: nextOwnerName,
+      clock_ends_at: clockEndsAt,
       draft_json: JSON.stringify(draft),
       draft_order_json: draft?.draft_order
         ? JSON.stringify(draft.draft_order)
