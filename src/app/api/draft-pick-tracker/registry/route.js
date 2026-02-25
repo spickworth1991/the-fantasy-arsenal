@@ -1,214 +1,198 @@
-export const runtime = "edge";
-
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-function jsonParseSafe(s, fallback) {
+async function kickDraftRegistry(env) {
   try {
-    return JSON.parse(s);
+    const ns = env?.DRAFT_REGISTRY;
+    if (!ns?.idFromName) return;
+    const id = ns.idFromName("master");
+    const stub = ns.get(id);
+    // Runs a tick immediately and schedules the alarm loop.
+    await stub.fetch("https://do/kick", { method: "POST" });
   } catch {
-    return fallback;
+    // ignore
   }
 }
 
-async function ensureDraftRegistryTable(db) {
-  // Keep this in sync with the DO schema (but DO will also back-fill missing cols).
-  await db
-    .prepare(
-      `CREATE TABLE IF NOT EXISTS push_draft_registry (
-        draft_id TEXT PRIMARY KEY,
-        active INTEGER,
-        status TEXT,
-        last_checked_at INTEGER,
-        last_active_at INTEGER,
-        last_inactive_at INTEGER,
-        last_picked INTEGER,
-        pick_count INTEGER,
-        draft_json TEXT,
-        draft_order_json TEXT,
-        slot_to_roster_json TEXT,
-        roster_names_json TEXT,
-        roster_by_username_json TEXT,
-        traded_pick_owner_json TEXT,
-        teams INTEGER,
-        rounds INTEGER,
-        timer_sec INTEGER,
-        reversal_round INTEGER,
-        league_id TEXT,
-        league_name TEXT,
-        league_avatar TEXT,
-        best_ball INTEGER,
-        current_pick INTEGER,
-        current_owner_name TEXT,
-        next_owner_name TEXT,
-        clock_ends_at INTEGER,
-        completed_at INTEGER
-      )`
-    )
-    .run();
-
-  // back-compat: add columns if missing
-  let info;
+export async function GET(request) {
   try {
-    info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
-  } catch {
-    return;
-  }
-  const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+    const { env } = getRequestContext();
+    const url = new URL(request.url);
 
-  const addColumn = async (name, type) => {
-    if (!existing.has(name)) {
-      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
-    }
-  };
+    const idsRaw = url.searchParams.get("ids") || "";
+    const ids = idsRaw
+      .split(",")
+      .map((x) => String(x || "").trim())
+      .filter(Boolean)
+      .slice(0, 200);
 
-  await addColumn("pick_count", "INTEGER");
-  await addColumn("draft_json", "TEXT");
-  await addColumn("draft_order_json", "TEXT");
-  await addColumn("slot_to_roster_json", "TEXT");
-  await addColumn("roster_names_json", "TEXT");
-  await addColumn("roster_by_username_json", "TEXT");
-  await addColumn("traded_pick_owner_json", "TEXT");
-  await addColumn("teams", "INTEGER");
-  await addColumn("rounds", "INTEGER");
-  await addColumn("timer_sec", "INTEGER");
-  await addColumn("reversal_round", "INTEGER");
-  await addColumn("league_id", "TEXT");
-  await addColumn("league_name", "TEXT");
-  await addColumn("league_avatar", "TEXT");
-  await addColumn("best_ball", "INTEGER");
-  await addColumn("current_pick", "INTEGER");
-  await addColumn("current_owner_name", "TEXT");
-  await addColumn("next_owner_name", "TEXT");
-  await addColumn("clock_ends_at", "INTEGER");
-  await addColumn("completed_at", "INTEGER");
-}
-
-function getDb() {
-  const ctx = getRequestContext();
-  // D1 binding name in your project is PUSH_DB.
-  const db = ctx?.env?.PUSH_DB;
-  if (!db) throw new Error("PUSH_DB binding not found");
-  return db;
-}
-
-export async function GET(req) {
-  try {
-    const db = getDb();
-    await ensureDraftRegistryTable(db);
-
-    const { searchParams } = new URL(req.url);
-    const draftIdsRaw = String(searchParams.get("draft_ids") || "").trim();
-
-    const draftIds = draftIdsRaw
-      ? draftIdsRaw
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : [];
-
-    if (!draftIds.length) {
-      return NextResponse.json({ rows: {} });
+    // Optional: kick the registry DO to hydrate missing draft data.
+    // Only do this when explicitly requested AND ids are provided.
+    if (ids.length && url.searchParams.get("kick") === "1") {
+      await kickDraftRegistry(env);
     }
 
-    // build dynamic IN (?, ?, ?)
-    const placeholders = draftIds.map(() => "?").join(",");
-    const stmt = db.prepare(
-      `SELECT draft_id,
-              active, status,
-              last_checked_at,
-              last_picked,
-              pick_count,
-              draft_json,
-              slot_to_roster_json,
-              roster_names_json,
-              roster_by_username_json,
-              traded_pick_owner_json,
-              teams, rounds, timer_sec, reversal_round,
-              league_id, league_name, league_avatar,
-              best_ball, current_pick, current_owner_name, next_owner_name, clock_ends_at, completed_at
-       FROM push_draft_registry
-       WHERE draft_id IN (${placeholders})`
-    );
+    if (!ids.length) {
+      return NextResponse.json({ ok: true, drafts: {} });
+    }
 
-    const rows = await stmt.bind(...draftIds).all();
+    const db = env.D1;
+    const qs = ids.map(() => "?").join(",");
+    const { results } = await db
+      .prepare(
+        `SELECT
+          draft_id,
+          league_id,
+          league_name,
+          league_avatar,
+          best_ball,
+          status,
+          active,
+          updated_at,
+          draft_json,
+          pick_count,
+          last_picked,
+          current_pick,
+          current_owner_name,
+          next_owner_name,
+          clock_ends_at,
+          timer_sec,
+          teams,
+          rounds,
+          reversal_round,
+          slot_to_roster_json,
+          roster_names_json,
+          roster_by_username_json,
+          traded_pick_owner_json
+        FROM draft_registry
+        WHERE draft_id IN (${qs})`
+      )
+      .bind(...ids)
+      .all();
 
     const out = {};
-    for (const r of rows?.results || []) {
-      const draftId = String(r?.draft_id || "");
-      if (!draftId) continue;
+    for (const row of results || []) {
+      let draft = null;
+      try {
+        draft = row?.draft_json ? JSON.parse(row.draft_json) : null;
+      } catch {}
 
-      out[draftId] = {
-        active: Number(r.active || 0) === 1,
-        status: r.status || null,
-        lastCheckedAt: r.last_checked_at == null ? null : Number(r.last_checked_at),
-        lastPicked: r.last_picked == null ? null : Number(r.last_picked),
-        pickCount: r.pick_count == null ? null : Number(r.pick_count),
+      let slotToRoster = null;
+      try {
+        slotToRoster = row?.slot_to_roster_json ? JSON.parse(row.slot_to_roster_json) : null;
+      } catch {}
 
-        draft: r.draft_json ? jsonParseSafe(r.draft_json, null) : null,
-        slotToRoster: r.slot_to_roster_json ? jsonParseSafe(r.slot_to_roster_json, {}) : {},
-        rosterNames: r.roster_names_json ? jsonParseSafe(r.roster_names_json, {}) : {},
-        rosterByUsername: r.roster_by_username_json ? jsonParseSafe(r.roster_by_username_json, {}) : {},
-        tradedPickOwners: r.traded_pick_owner_json ? jsonParseSafe(r.traded_pick_owner_json, {}) : {},
+      let rosterNames = null;
+      try {
+        rosterNames = row?.roster_names_json ? JSON.parse(row.roster_names_json) : null;
+      } catch {}
 
-        teams: r.teams == null ? null : Number(r.teams),
-        rounds: r.rounds == null ? null : Number(r.rounds),
-        timerSec: r.timer_sec == null ? null : Number(r.timer_sec),
-        reversalRound: r.reversal_round == null ? null : Number(r.reversal_round),
+      let rosterByUsername = null;
+      try {
+        rosterByUsername = row?.roster_by_username_json ? JSON.parse(row.roster_by_username_json) : null;
+      } catch {}
 
-        leagueId: r.league_id || null,
-        leagueName: r.league_name || null,
-        leagueAvatar: r.league_avatar || null,
+      let tradedPickOwners = null;
+      try {
+        tradedPickOwners = row?.traded_pick_owner_json ? JSON.parse(row.traded_pick_owner_json) : null;
+      } catch {}
 
-        bestBall: Number(r.best_ball || 0) === 1,
-        currentPick: r.current_pick == null ? null : Number(r.current_pick),
-        currentOwnerName: r.current_owner_name || null,
-        nextOwnerName: r.next_owner_name || null,
-        clockEndsAt: r.clock_ends_at == null ? null : Number(r.clock_ends_at),
-        completedAt: r.completed_at == null ? null : Number(r.completed_at),
+      out[String(row.draft_id)] = {
+        draft_id: String(row.draft_id),
+        league_id: row.league_id ? String(row.league_id) : null,
+        league_name: row.league_name || null,
+        league_avatar: row.league_avatar || null,
+        best_ball: Number(row.best_ball || 0),
+        status: row.status || null,
+        active: Number(row.active || 0),
+        updated_at: row.updated_at || null,
+
+        // hydrated
+        draft,
+        pick_count: Number(row.pick_count || 0),
+        last_picked: row.last_picked != null ? Number(row.last_picked) : null,
+        current_pick: row.current_pick != null ? Number(row.current_pick) : null,
+        current_owner_name: row.current_owner_name || null,
+        next_owner_name: row.next_owner_name || null,
+        clock_ends_at: row.clock_ends_at != null ? Number(row.clock_ends_at) : null,
+        timer_sec: row.timer_sec != null ? Number(row.timer_sec) : null,
+        teams: row.teams != null ? Number(row.teams) : null,
+        rounds: row.rounds != null ? Number(row.rounds) : null,
+        reversal_round: row.reversal_round != null ? Number(row.reversal_round) : null,
+
+        // context maps
+        slot_to_roster: slotToRoster,
+        roster_names: rosterNames,
+        roster_by_username: rosterByUsername,
+        traded_pick_owners: tradedPickOwners,
       };
     }
 
-    return NextResponse.json({ rows: out });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "registry_get_failed" }, { status: 500 });
+    return NextResponse.json({ ok: true, drafts: out });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: "registry_get_failed" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const db = getDb();
-    await ensureDraftRegistryTable(db);
+    const { env } = getRequestContext();
+    const db = env.D1;
 
-    const body = await req.json();
-    const items = Array.isArray(body?.items) ? body.items : [];
+    const body = await request.json().catch(() => null);
+    const drafts = Array.isArray(body?.drafts) ? body.drafts : [];
 
-    // Expected item shape: { draft_id, league_id, league_name, league_avatar }
-    for (const it of items) {
-      const draftId = String(it?.draft_id || "").trim();
+    if (!drafts.length) {
+      return NextResponse.json({ ok: true, inserted: 0 });
+    }
+
+    const now = Date.now();
+    let inserted = 0;
+
+    for (const d of drafts) {
+      const draftId = String(d?.draft_id || "").trim();
       if (!draftId) continue;
 
-      const leagueId = it?.league_id != null ? String(it.league_id) : null;
-      const leagueName = it?.league_name != null ? String(it.league_name) : null;
-      const leagueAvatar = it?.league_avatar != null ? String(it.league_avatar) : null;
+      const leagueId = d?.league_id != null ? String(d.league_id) : null;
+      const leagueName = d?.league_name != null ? String(d.league_name) : null;
+      const leagueAvatar = d?.league_avatar != null ? String(d.league_avatar) : null;
+      const bestBall = Number(d?.best_ball || 0) ? 1 : 0;
 
       await db
         .prepare(
-          `INSERT INTO push_draft_registry (draft_id, active, status, last_checked_at, league_id, league_name, league_avatar)
-           VALUES (?, 0, '', ?, ?, ?, ?)
+          `INSERT INTO draft_registry (draft_id, league_id, league_name, league_avatar, best_ball, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(draft_id) DO UPDATE SET
-             league_id=COALESCE(push_draft_registry.league_id, excluded.league_id),
-             league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
-             league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar)`
+             league_id=COALESCE(excluded.league_id, draft_registry.league_id),
+             league_name=COALESCE(excluded.league_name, draft_registry.league_name),
+             league_avatar=COALESCE(excluded.league_avatar, draft_registry.league_avatar),
+             best_ball=COALESCE(excluded.best_ball, draft_registry.best_ball),
+             updated_at=excluded.updated_at`
         )
-        .bind(draftId, Date.now(), leagueId, leagueName, leagueAvatar)
+        .bind(draftId, leagueId, leagueName, leagueAvatar, bestBall, now)
         .run();
+
+      inserted++;
     }
 
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "registry_post_failed" }, { status: 500 });
+    // kick the DO to hydrate + start its alarm loop
+    try {
+      const ns = env?.DRAFT_REGISTRY;
+      const id = ns.idFromName("master");
+      const stub = ns.get(id);
+      await stub.fetch("https://do/tick", { method: "POST" });
+    } catch {
+      // ignore
+    }
+
+    return NextResponse.json({ ok: true, inserted });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: "registry_post_failed" },
+      { status: 500 }
+    );
   }
 }
