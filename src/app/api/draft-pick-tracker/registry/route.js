@@ -109,7 +109,7 @@ export async function GET(req) {
     await ensureDraftRegistryTable(db);
 
     const url = new URL(req.url);
-    const idsRaw = url.searchParams.get("ids") || "";
+    const idsRaw = url.searchParams.get("ids") || url.searchParams.get("draft_ids") || "";
     const activeOnly = url.searchParams.get("active") === "1";
     const ids = idsRaw
       .split(",")

@@ -932,11 +932,11 @@ export default function DraftPickTrackerClient() {
     const before = (rows || []).length;
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
-    console.log("rows =", r)
+    // console.log("rows =", r)
 
     if (onlyDrafting) {
       r = r.filter((x) => {
-        console.log("[DPT] after onlyDrafting:", r.length, r.map(x => x.draftStatus))
+        // console.log("[DPT] after onlyDrafting:", r.length, r.map(x => x.draftStatus))
         const st = String(x.draftStatus || "").toLowerCase();
         if (st === "drafting") return true;
         if (includePaused && st === "paused") return true;
