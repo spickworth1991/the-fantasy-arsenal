@@ -586,7 +586,7 @@ export default function DraftPickTrackerClient() {
     }
 
     // Clock left (only if timer exists)
-    const lastPickTs = safeNum(bundle?.lastPicked ?? draft?.last_picked);
+    const lastPickTs = safeNum(draft?.last_picked);
     const clockEndsAt =
       lastPickTs > 0 && timerSec > 0 ? lastPickTs + timerSec * 1000 : 0;
     const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
@@ -656,6 +656,28 @@ export default function DraftPickTrackerClient() {
         }
       } catch {
         registryByDraftId = {};
+      }
+
+      // If the registry is missing roster context (names/username map), the API route will
+      // "kick" the Durable Object to hydrate it. In that case, do a short retry so the UI
+      // can render next-pick + names without waiting a full minute.
+      const needsContextHydration = eligible.some((lg) => {
+        const r = registryByDraftId?.[String(lg?.draft_id)];
+        if (!r) return false;
+        const st = String(r?.status || "").toLowerCase();
+        const active = r?.active === true || Number(r?.active) === 1;
+        const isActive = active || st === "drafting" || st === "paused";
+        if (!isActive) return false;
+        return !r?.slotToRoster || !r?.rosterNames || !r?.rosterByUsername;
+      });
+
+      if (needsContextHydration && !refresh._hydrationRetryScheduled) {
+        refresh._hydrationRetryScheduled = true;
+        setTimeout(() => {
+          refresh._hydrationRetryScheduled = false;
+          // Registry-only retry (no Sleeper polling here).
+          refresh();
+        }, 4000);
       }
 
       // Only fetch expensive per-league data for ACTIVE drafts.

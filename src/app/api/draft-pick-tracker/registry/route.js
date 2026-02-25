@@ -225,7 +225,15 @@ export async function GET(req) {
       };
 
       // If not hydrated yet, kick the DO so the UI fills in quickly.
-      if (!r?.draft_json || !String(effectiveStatus || "").trim()) needsKick = true;
+      const missingContext =
+        !r?.draft_json ||
+        !String(effectiveStatus || "").trim() ||
+        !r?.slot_to_roster_json ||
+        !r?.roster_names_json ||
+        !r?.roster_by_username_json;
+
+      // If not hydrated yet, kick the DO so the UI fills in quickly.
+      if (missingContext) needsKick = true;
     }
 
     if (needsKick) await kickDraftRegistry(env);
