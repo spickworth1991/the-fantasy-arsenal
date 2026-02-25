@@ -213,7 +213,13 @@ export default function DraftPickTrackerClient() {
 
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // One-time per page-load: register the user's draft_ids into the shared registry.
   // The cron (poll-and-notify) then hydrates + updates registry rows continuously.
@@ -251,10 +257,7 @@ export default function DraftPickTrackerClient() {
     }, 10_000);
     return () => clearInterval(t);
   }, []);
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+
 
   // ---------------- Helpers ----------------
 
@@ -475,7 +478,7 @@ export default function DraftPickTrackerClient() {
       Object.entries(rosterNamesObj || {}).map(([k, v]) => [String(k), String(v)])
     );
     const reversalRound = safeNum(bundle?.reversalRound ?? draft?.settings?.reversal_round);
-    const draftStatus = String(draft?.status || bundle?.status || "").toLowerCase();
+    const draftStatus = String(bundle?.status || draft?.status || "").toLowerCase();
     const rounds = safeNum(bundle?.rounds ?? draft?.settings?.rounds);
     const timerSec = safeNum(bundle?.timerSec ?? draft?.settings?.pick_timer);
 
@@ -919,18 +922,19 @@ export default function DraftPickTrackerClient() {
 
     if (onlyDrafting) {
       r = r.filter((x) => {
+        console.log("[DPT] after onlyDrafting:", r.length, r.map(x => x.draftStatus))
         const st = String(x.draftStatus || "").toLowerCase();
         if (st === "drafting") return true;
         if (includePaused && st === "paused") return true;
-        console.log("onlydrafting =", r)
         return false;
+        
       });
     }
 
-    // if (onlyOnDeckOrClock) {
-    //   r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
-    //   console.log("onlyondeck =", r)
-    // }
+    if (onlyOnDeckOrClock) {
+      r = r.filter((x) => !!x.onDeck || !!x.onClockIsMe);
+      console.log("onlyondeck =",  r.length, r.map(x => x.onClockIsMe),r.map(x => x.onDeck) )
+    }
 
     if (maxPicksAway < 999) {
       r = r.filter((x) => {
@@ -954,15 +958,7 @@ export default function DraftPickTrackerClient() {
       console.log("qr =", q)
     }
 
-    const dir = sortDir === "asc" ? 1 : -1;
-    r = [...r].sort((a, b) => {
-      const av = a?.[sortKey];
-      const bv = b?.[sortKey];
-      if (typeof av === "string" || typeof bv === "string") {
-        return String(av || "").localeCompare(String(bv || "")) * dir;
-      }
-      return (safeNum(av) - safeNum(bv)) * dir;
-    });
+    
     console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
 
     // Priority buckets:
