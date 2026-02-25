@@ -685,26 +685,40 @@ export default function DraftPickTrackerClient() {
       nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
 
       // Render inactive drafts straight from registry (no Sleeper calls).
-      inactiveEligible.forEach((lg) => {
-        const r = registryByDraftId?.[String(lg.draft_id)] || {};
-        draftRows.push({
-          leagueId: r.league_id || lg.league_id,
-          leagueName: r.league_name || lg.name,
-          leagueAvatarUrl:
-            r.league_avatar || (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
-          draftId: String(lg.draft_id),
-          draftStatus: r.status || lg.status || "",
-          pickCount: r.pickCount != null ? Number(r.pickCount) : null,
-          teams: r.teams != null ? Number(r.teams) : null,
-          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
-          timerSec: r.timerSec != null ? Number(r.timerSec) : null,
-          onTheClock: false,
-          currentPick: null,
-          mySlot: null,
-          myPick: null,
-          clockLeftMs: null,
-        });
-      });
+            inactiveEligible.forEach((lg) => {
+            const r = registryByDraftId?.[String(lg.draft_id)] || {};
+            draftRows.push({
+              leagueId: r.league_id || lg.league_id,
+              leagueName: r.league_name || lg.name || "Unnamed League",
+              leagueAvatarUrl:
+                r.league_avatar ||
+                (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
+              draftId: String(lg.draft_id),
+
+              // normalize
+              draftStatus: String(r.status || lg.status || "").toLowerCase(),
+
+              // fields the UI expects everywhere
+              currentOwnerName: "—",
+              currentPick: null,
+              clockLeftMs: null,
+              etaMs: null,
+              computedAt: Date.now(),
+
+              onClockIsMe: false,
+              onDeck: false,
+
+              myNextPickOverall: null,
+              myNextPickAfterThis: null,
+              picksUntilMyPick: null,
+
+              teams: r.teams != null ? Number(r.teams) : null,
+              rounds: r.rounds != null ? Number(r.rounds) : null,
+              timerSec: r.timerSec != null ? Number(r.timerSec) : null,
+
+              recent: [],
+            });
+          });
 
       // Sort: on-the-clock first, then by league name.
       draftRows.sort((a, b) => {
@@ -949,7 +963,7 @@ export default function DraftPickTrackerClient() {
             r = r.filter((x) => {
         return (
           String(x.leagueName || "").toLowerCase().includes(q) ||
-          String(x.nextOwnerName || "").toLowerCase().includes(q) ||
+          String(x.currentOwnerName || "").toLowerCase().includes(q) ||
           String(x.myNextPickOverall || "").includes(q)
         );
         
@@ -1027,37 +1041,39 @@ export default function DraftPickTrackerClient() {
   };
 
 
-    r = [...r].sort((a, b) => {
-      const ba = bucket(a);
-      const bb = bucket(b);
-      if (ba !== bb) return ba - bb;
+      const dir = sortDir === "asc" ? 1 : -1;
 
-      if (ba === 0 && bb === 0) {
-        const acl = getLiveClockLeft(a);
-        const bcl = getLiveClockLeft(b);
-        if (acl !== bcl) return (acl - bcl) * dir;
-        return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
-      }
+      r = [...r].sort((a, b) => {
+        const ba = bucket(a);
+        const bb = bucket(b);
+        if (ba !== bb) return ba - bb;
 
-      const at = getLiveEtaToShownPick(a);
-      const bt = getLiveEtaToShownPick(b);
+        if (ba === 0 && bb === 0) {
+          const acl = getLiveClockLeft(a);
+          const bcl = getLiveClockLeft(b);
+          if (acl !== bcl) return (acl - bcl) * dir;
+          return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
+        }
 
-      if (sortMode === "pick") {
+        const at = getLiveEtaToShownPick(a);
+        const bt = getLiveEtaToShownPick(b);
+
+        if (sortMode === "pick") {
+          const av = safeNum(a.picksUntilMyPick);
+          const bv = safeNum(b.picksUntilMyPick);
+          if (av !== bv) return (av - bv) * dir;
+          if (at !== bt) return (at - bt) * dir;
+          return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
+        }
+
+        if (at !== bt) return (at - bt) * dir;
+
         const av = safeNum(a.picksUntilMyPick);
         const bv = safeNum(b.picksUntilMyPick);
         if (av !== bv) return (av - bv) * dir;
-        if (at !== bt) return (at - bt) * dir;
+
         return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
-      }
-
-      if (at !== bt) return (at - bt) * dir;
-
-      const av = safeNum(a.picksUntilMyPick);
-      const bv = safeNum(b.picksUntilMyPick);
-      if (av !== bv) return (av - bv) * dir;
-
-      return String(a.leagueName || "").localeCompare(String(b.leagueName || "")) * dir;
-    });
+      });
 
     return r;
   }, [
