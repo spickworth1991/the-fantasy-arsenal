@@ -1,4 +1,12 @@
-// Durable Object that keeps the "master" draft registry in D1 fresh every ~15 seconds.
+//
+
+function coerceJsonStr(v) {
+  const s = v == null ? "" : String(v);
+  if (!s || s === "null" || s === "undefined") return null;
+  return s;
+}
+
+ Durable Object that keeps the "master" draft registry in D1 fresh every ~15 seconds.
 //
 // Why:
 // - Cloudflare Scheduled Triggers can't run every 15s.
@@ -514,31 +522,15 @@ async function tickOnce(env, debug = false, log = null) {
         const lastContextAt = Number(cacheRow?.context_updated_at || 0) || 0;
         const contextStale = !lastContextAt || now - lastContextAt > CONTEXT_TTL_MS;
 
-        let slotToRosterJson = reg?.slot_to_roster_json || cacheRow?.slot_to_roster_json || null;
-        let rosterNamesJson = reg?.roster_names_json || cacheRow?.roster_names_json || null;
-        let rosterByUsernameJson = reg?.roster_by_username_json || cacheRow?.roster_by_username_json || null;
-        let tradedPickOwnerJson = reg?.traded_pick_owner_json || cacheRow?.traded_pick_owner_json || null;
+        let slotToRosterJson = coerceJsonStr(reg?.slot_to_roster_json) || coerceJsonStr(cacheRow?.slot_to_roster_json);
+        let rosterNamesJson = coerceJsonStr(reg?.roster_names_json) || coerceJsonStr(cacheRow?.roster_names_json);
+        let rosterByUsernameJson = coerceJsonStr(reg?.roster_by_username_json) || coerceJsonStr(cacheRow?.roster_by_username_json);
+        let tradedPickOwnerJson = coerceJsonStr(reg?.traded_pick_owner_json) || coerceJsonStr(cacheRow?.traded_pick_owner_json);
 
         const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
         const canHydrateRosterContext = Boolean(leagueId) && (needsRosterContext || contextStale);
 
         if (canHydrateRosterContext) {
-          // Always try to at least populate slot_to_roster_json from the draft payload.
-          // (This does NOT require any league endpoints and is enough for the UI to map slots.)
-          if (!slotToRosterJson) {
-            const s2r = draft?.slot_to_roster_id || null;
-            if (s2r && typeof s2r === "object") {
-              const slotToRoster = {};
-              for (const [slot, rid] of Object.entries(s2r)) {
-                const s = Number(slot);
-                if (!Number.isFinite(s) || s <= 0) continue;
-                if (rid == null) continue;
-                slotToRoster[String(s)] = String(rid);
-              }
-              if (Object.keys(slotToRoster).length) slotToRosterJson = JSON.stringify(slotToRoster);
-            }
-          }
-
           try {
             _log("hydrate roster context", {
               draftId,
@@ -577,11 +569,17 @@ async function tickOnce(env, debug = false, log = null) {
               if (roster?.roster_id != null) rosterByUsername[uname] = String(roster.roster_id);
             }
 
-            // If slot_to_roster_id was missing, try to derive it from draft_order + rosters.
-            // (If we already have slotToRosterJson from above, keep it.)
-            let slotToRoster = null;
-            if (!slotToRosterJson) {
-              slotToRoster = {};
+            const slotToRoster = {};
+            const s2r = draft?.slot_to_roster_id || null;
+
+            if (s2r && typeof s2r === "object") {
+              for (const [slot, rid] of Object.entries(s2r)) {
+                const s = Number(slot);
+                if (!Number.isFinite(s) || s <= 0) continue;
+                if (rid == null) continue;
+                slotToRoster[String(s)] = String(rid);
+              }
+            } else {
               const ownerToRoster = new Map();
               for (const r of Array.isArray(rosters) ? rosters : []) {
                 if (r?.owner_id != null && r?.roster_id != null) {
@@ -599,9 +597,7 @@ async function tickOnce(env, debug = false, log = null) {
 
             rosterNamesJson = JSON.stringify(rosterNames);
             rosterByUsernameJson = JSON.stringify(rosterByUsername);
-            if (slotToRoster && Object.keys(slotToRoster).length) {
-              slotToRosterJson = JSON.stringify(slotToRoster);
-            }
+            slotToRosterJson = JSON.stringify(slotToRoster);
 
             _log("hydrated roster context", {
               draftId,
