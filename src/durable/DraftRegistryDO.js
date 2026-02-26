@@ -523,6 +523,22 @@ async function tickOnce(env, debug = false, log = null) {
         const canHydrateRosterContext = Boolean(leagueId) && (needsRosterContext || contextStale);
 
         if (canHydrateRosterContext) {
+          // Always try to at least populate slot_to_roster_json from the draft payload.
+          // (This does NOT require any league endpoints and is enough for the UI to map slots.)
+          if (!slotToRosterJson) {
+            const s2r = draft?.slot_to_roster_id || null;
+            if (s2r && typeof s2r === "object") {
+              const slotToRoster = {};
+              for (const [slot, rid] of Object.entries(s2r)) {
+                const s = Number(slot);
+                if (!Number.isFinite(s) || s <= 0) continue;
+                if (rid == null) continue;
+                slotToRoster[String(s)] = String(rid);
+              }
+              if (Object.keys(slotToRoster).length) slotToRosterJson = JSON.stringify(slotToRoster);
+            }
+          }
+
           try {
             _log("hydrate roster context", {
               draftId,
@@ -561,17 +577,11 @@ async function tickOnce(env, debug = false, log = null) {
               if (roster?.roster_id != null) rosterByUsername[uname] = String(roster.roster_id);
             }
 
-            const slotToRoster = {};
-            const s2r = draft?.slot_to_roster_id || null;
-
-            if (s2r && typeof s2r === "object") {
-              for (const [slot, rid] of Object.entries(s2r)) {
-                const s = Number(slot);
-                if (!Number.isFinite(s) || s <= 0) continue;
-                if (rid == null) continue;
-                slotToRoster[String(s)] = String(rid);
-              }
-            } else {
+            // If slot_to_roster_id was missing, try to derive it from draft_order + rosters.
+            // (If we already have slotToRosterJson from above, keep it.)
+            let slotToRoster = null;
+            if (!slotToRosterJson) {
+              slotToRoster = {};
               const ownerToRoster = new Map();
               for (const r of Array.isArray(rosters) ? rosters : []) {
                 if (r?.owner_id != null && r?.roster_id != null) {
@@ -589,7 +599,9 @@ async function tickOnce(env, debug = false, log = null) {
 
             rosterNamesJson = JSON.stringify(rosterNames);
             rosterByUsernameJson = JSON.stringify(rosterByUsername);
-            slotToRosterJson = JSON.stringify(slotToRoster);
+            if (slotToRoster && Object.keys(slotToRoster).length) {
+              slotToRosterJson = JSON.stringify(slotToRoster);
+            }
 
             _log("hydrated roster context", {
               draftId,

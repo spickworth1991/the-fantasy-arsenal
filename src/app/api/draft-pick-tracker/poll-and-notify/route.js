@@ -105,7 +105,8 @@ async function ensurePushTables(db) {
 }
 
 async function ensureDraftRegistryTable(db) {
-  // Keep this in sync with the DO schema (but DO will also back-fill missing cols).
+  // Shared registry: lets us stop polling finished drafts for hours at a time,
+  // while still keeping draft_ids stored on subscriptions for future ADP tooling.
   await db
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_draft_registry (
@@ -115,7 +116,6 @@ async function ensureDraftRegistryTable(db) {
         last_checked_at INTEGER,
         last_active_at INTEGER,
         last_inactive_at INTEGER,
-        completed_at INTEGER,
         last_picked INTEGER,
         pick_count INTEGER,
         draft_json TEXT,
@@ -131,37 +131,69 @@ async function ensureDraftRegistryTable(db) {
         league_id TEXT,
         league_name TEXT,
         league_avatar TEXT,
-        best_ball INTEGER
+        best_ball INTEGER,
+        completed_at INTEGER,
+        updated_at INTEGER,
+        current_pick INTEGER,
+        current_owner_name TEXT,
+        next_owner_name TEXT,
+        clock_ends_at INTEGER
       )`
     )
     .run();
 
-  // Back-fill columns for older deployments
-  let info;
+  // Back-compat: older deployments may have the table without newer columns.
+  // Ensure newer columns exist so the tracker page + monitor can use shared registry cache.
   try {
-    info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
+    const info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
+    const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+    if (!existing.has("draft_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN draft_json TEXT`).run();
+    }
+    if (!existing.has("draft_order_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN draft_order_json TEXT`).run();
+    }
+    if (!existing.has("slot_to_roster_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN slot_to_roster_json TEXT`).run();
+    }
+    if (!existing.has("roster_names_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN roster_names_json TEXT`).run();
+    }
+    if (!existing.has("roster_by_username_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN roster_by_username_json TEXT`).run();
+    }
+    if (!existing.has("traded_pick_owner_json")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN traded_pick_owner_json TEXT`).run();
+    }
+    if (!existing.has("best_ball")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN best_ball INTEGER`).run();
+    }
+    if (!existing.has("completed_at")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN completed_at INTEGER`).run();
+    }
+    if (!existing.has("updated_at")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN updated_at INTEGER`).run();
+    }
+    if (!existing.has("rounds")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN rounds INTEGER`).run();
+    }
+    if (!existing.has("reversal_round")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN reversal_round INTEGER`).run();
+    }
+    if (!existing.has("current_pick")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN current_pick INTEGER`).run();
+    }
+    if (!existing.has("current_owner_name")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN current_owner_name TEXT`).run();
+    }
+    if (!existing.has("next_owner_name")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN next_owner_name TEXT`).run();
+    }
+    if (!existing.has("clock_ends_at")) {
+      await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN clock_ends_at INTEGER`).run();
+    }
   } catch {
-    return;
-  }
-  const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
-  const cols = [
-    ["completed_at", "INTEGER"],
-    ["slot_to_roster_json", "TEXT"],
-    ["roster_names_json", "TEXT"],
-    ["roster_by_username_json", "TEXT"],
-    ["traded_pick_owner_json", "TEXT"],
-    ["teams", "INTEGER"],
-    ["rounds", "INTEGER"],
-    ["timer_sec", "INTEGER"],
-    ["reversal_round", "INTEGER"],
-    ["league_id", "TEXT"],
-    ["league_name", "TEXT"],
-    ["league_avatar", "TEXT"],
-    ["best_ball", "INTEGER"],
-  ];
-  for (const [name, type] of cols) {
-    if (existing.has(name)) continue;
-    await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
+    // ignore
   }
 }
 
@@ -211,6 +243,81 @@ async function getLeague(leagueId) {
   return res.json();
 }
 
+async function getLeagueUsers(leagueId) {
+  if (!leagueId) return [];
+  const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`, { cache: "no-store" });
+  if (!res.ok) return [];
+  const users = await res.json().catch(() => []);
+  return Array.isArray(users) ? users : [];
+}
+
+async function getLeagueRosters(leagueId) {
+  if (!leagueId) return [];
+  const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`, { cache: "no-store" });
+  if (!res.ok) return [];
+  const rosters = await res.json().catch(() => []);
+  return Array.isArray(rosters) ? rosters : [];
+}
+
+async function getDraftTradedPicks(draftId) {
+  if (!draftId) return [];
+  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`, { cache: "no-store" });
+  if (!res.ok) return [];
+  const tp = await res.json().catch(() => []);
+  return Array.isArray(tp) ? tp : [];
+}
+
+function buildRosterMaps({ users = [], rosters = [], draft = null }) {
+  const rosterIdToName = {};
+  const rosterIdToUsername = {};
+  const userIdToName = {};
+  const userIdToUsername = {};
+
+  for (const u of users) {
+    const uid = String(u?.user_id || "");
+    if (!uid) continue;
+    const dn = String(u?.display_name || u?.username || "");
+    const un = String(u?.username || "");
+    userIdToName[uid] = dn;
+    userIdToUsername[uid] = un;
+  }
+
+  for (const r of rosters) {
+    const rid = String(r?.roster_id ?? "");
+    if (!rid) continue;
+    const ownerId = String(r?.owner_id || "");
+    const name = userIdToName[ownerId] || userIdToUsername[ownerId] || "";
+    const username = userIdToUsername[ownerId] || "";
+    if (name) rosterIdToName[rid] = name;
+    if (username) rosterIdToUsername[rid] = username;
+  }
+
+  // For draft_id endpoints, some flows care about slot_to_roster_id.
+  const slotToRoster = draft?.slot_to_roster_id || draft?.settings?.slot_to_roster_id || null;
+
+  return {
+    rosterNames: Object.keys(rosterIdToName).length ? rosterIdToName : null,
+    rosterByUsername: Object.keys(rosterIdToUsername).length ? rosterIdToUsername : null,
+    slotToRoster: slotToRoster ? slotToRoster : null,
+  };
+}
+
+function buildTradedPickOwnerMap(tradedPicks, rosterNames) {
+  // Best-effort: key by "round.pick" or "r#p#"; value is roster_id (and optional name if known).
+  if (!Array.isArray(tradedPicks) || !tradedPicks.length) return null;
+  const out = {};
+  for (const tp of tradedPicks) {
+    const rnd = tp?.round;
+    const pick = tp?.pick;
+    const ownerRid = tp?.owner_roster_id;
+    if (!Number.isFinite(Number(rnd)) || !Number.isFinite(Number(pick)) || !ownerRid) continue;
+    const k1 = `${Number(rnd)}.${Number(pick)}`;
+    const rid = String(ownerRid);
+    out[k1] = rosterNames?.[rid] ? { roster_id: rid, name: rosterNames[rid] } : { roster_id: rid };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 async function getUserId(username) {
   const res = await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`, {
     cache: "no-store",
@@ -252,90 +359,6 @@ function getCurrentSlotSnake(pickNo, teams) {
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
-}
-async function fetchSleeperJSON(path) {
-  const url = `https://api.sleeper.app/v1${path}`;
-  const r = await fetch(url, { headers: { "accept": "application/json" } });
-  if (!r.ok) throw new Error(`Sleeper ${r.status} for ${path}`);
-  return r.json();
-}
-
-function safeLower(s) {
-  return String(s || "").trim().toLowerCase();
-}
-
-async function buildRosterContext({ leagueId, draft }) {
-  // League context used by UI to render owner names + compute "your next pick"
-  const [users, rosters, tradedPicks] = await Promise.all([
-    fetchSleeperJSON(`/league/${leagueId}/users`),
-    fetchSleeperJSON(`/league/${leagueId}/rosters`),
-    fetchSleeperJSON(`/league/${leagueId}/traded_picks`).catch(() => []),
-  ]);
-
-  const userById = new Map();
-  for (const u of Array.isArray(users) ? users : []) userById.set(String(u.user_id), u);
-
-  const rosterNameMap = new Map();        // roster_id -> display_name
-  const rosterByUsername = new Map();     // username(lower) -> roster_id
-  const ownerToRoster = new Map();        // owner_id(user_id) -> roster_id
-
-  for (const r of Array.isArray(rosters) ? rosters : []) {
-    const rid = String(r.roster_id);
-    const ownerId = r.owner_id == null ? "" : String(r.owner_id);
-    if (ownerId) ownerToRoster.set(ownerId, rid);
-
-    const u = ownerId ? userById.get(ownerId) : null;
-    const disp = (u && (u.display_name || u.username)) ? String(u.display_name || u.username) : `Roster ${rid}`;
-    rosterNameMap.set(rid, disp);
-
-    if (u && u.username) rosterByUsername.set(safeLower(u.username), rid);
-  }
-
-  // slot -> roster_id
-  const slotToRoster = {};
-  const slotMap = draft?.slot_to_roster_id && typeof draft.slot_to_roster_id === "object" ? draft.slot_to_roster_id : null;
-  if (slotMap) {
-    for (const [k, v] of Object.entries(slotMap)) {
-      if (v == null) continue;
-      slotToRoster[String(k)] = String(v);
-    }
-  } else {
-    const order = draft?.draft_order && typeof draft.draft_order === "object" ? draft.draft_order : null;
-    if (order) {
-      for (const [slot, ownerId] of Object.entries(order)) {
-        if (ownerId == null) continue;
-        const rid = ownerToRoster.get(String(ownerId));
-        if (rid) slotToRoster[String(slot)] = String(rid);
-      }
-    }
-  }
-
-  // traded picks: key "season|round|origRoster" -> ownerRoster
-  const tradedPickOwner = {};
-  for (const tp of Array.isArray(tradedPicks) ? tradedPicks : []) {
-    const season = tp?.season == null ? "" : String(tp.season);
-    const round = tp?.round == null ? "" : String(tp.round);
-    const orig = tp?.roster_id == null ? "" : String(tp.roster_id);
-    const owner = tp?.owner_id == null ? "" : String(tp.owner_id);
-    if (!season || !round || !orig || !owner) continue;
-    tradedPickOwner[`${season}|${round}|${orig}`] = owner;
-  }
-
-  let teams = Number.isFinite(Number(draft?.settings?.teams)) ? Number(draft.settings.teams) : null;
-  const rounds = Number.isFinite(Number(draft?.settings?.rounds)) ? Number(draft.settings.rounds) : null;
-  let timerSec = Number.isFinite(Number(draft?.settings?.pick_timer)) ? Number(draft.settings.pick_timer) : null;
-  const reversalRound = Number.isFinite(Number(draft?.settings?.reversal_round)) ? Number(draft.settings.reversal_round) : null;
-
-  return {
-    slotToRoster,
-    rosterNameMap,
-    rosterByUsername,
-    tradedPickOwner,
-    teams,
-    rounds,
-    timerSec,
-    reversalRound,
-  };
 }
 
 function msToClock(ms) {
@@ -634,96 +657,82 @@ async function refreshSharedDraftRegistry(db, draftIds, opts = {}) {
   let updated = 0;
   let active = 0;
 
-  
-const upsert = async (draftId, patch) => {
-  const a = patch?.active ?? null;
-  const status = patch?.status ?? null;
-  const lastChecked = patch?.last_checked_at ?? null;
-  const lastActive = patch?.last_active_at ?? null;
-  const lastInactive = patch?.last_inactive_at ?? null;
-  const completedAt = patch?.completed_at ?? null;
-  const lastPicked = patch?.last_picked ?? null;
-  const pickCount = patch?.pick_count ?? null;
-  const draftJson = patch?.draft_json ?? null;
-  const draftOrderJson = patch?.draft_order_json ?? null;
-
-  const slotToRosterJson = patch?.slot_to_roster_json ?? null;
-  const rosterNamesJson = patch?.roster_names_json ?? null;
-  const rosterByUsernameJson = patch?.roster_by_username_json ?? null;
-  const tradedPickOwnerJson = patch?.traded_pick_owner_json ?? null;
-
-  const teams = patch?.teams ?? null;
-  const rounds = patch?.rounds ?? null;
-  const timerSec = patch?.timer_sec ?? null;
-  const reversalRound = patch?.reversal_round ?? null;
-
-  const leagueId = patch?.league_id ?? null;
-  const leagueName = patch?.league_name ?? null;
-  const leagueAvatar = patch?.league_avatar ?? null;
-  const bestBall = patch?.best_ball ?? null;
-
-  // NOTE: this table is shared with the DO schema; keep the columns aligned.
-  await db
-    .prepare(
-      `INSERT INTO push_draft_registry (
-        draft_id, active, status, last_checked_at, last_active_at, last_inactive_at, completed_at,
-        last_picked, pick_count, draft_json, draft_order_json,
-        slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-        teams, rounds, timer_sec, reversal_round,
-        league_id, league_name, league_avatar, best_ball
+  const upsert = async (draftId, patch) => {
+    const completedAt =
+      patch?.completed_at != null ? patch.completed_at : (patch?.active ? null : null);
+    const updatedAt = patch?.updated_at ?? now;
+    await db
+      .prepare(
+        `INSERT INTO push_draft_registry (
+          draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+          last_picked, pick_count,
+          draft_order_json, teams, rounds, timer_sec, reversal_round,
+          league_id, league_name, league_avatar,
+          draft_json, best_ball, completed_at, updated_at,
+          slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+          current_pick, current_owner_name, next_owner_name, clock_ends_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(draft_id) DO UPDATE SET
+          active=excluded.active,
+          status=excluded.status,
+          last_checked_at=excluded.last_checked_at,
+          last_active_at=excluded.last_active_at,
+          last_inactive_at=excluded.last_inactive_at,
+          last_picked=excluded.last_picked,
+          pick_count=excluded.pick_count,
+          draft_order_json=excluded.draft_order_json,
+          teams=excluded.teams,
+          timer_sec=excluded.timer_sec,
+          rounds=excluded.rounds,
+          reversal_round=excluded.reversal_round,
+          league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
+          league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+          league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+          draft_json=excluded.draft_json,
+          best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+          completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
+          updated_at=excluded.updated_at,
+          slot_to_roster_json=COALESCE(excluded.slot_to_roster_json, push_draft_registry.slot_to_roster_json),
+          roster_names_json=COALESCE(excluded.roster_names_json, push_draft_registry.roster_names_json),
+          roster_by_username_json=COALESCE(excluded.roster_by_username_json, push_draft_registry.roster_by_username_json),
+          traded_pick_owner_json=COALESCE(excluded.traded_pick_owner_json, push_draft_registry.traded_pick_owner_json),
+          current_pick=excluded.current_pick,
+          current_owner_name=excluded.current_owner_name,
+          next_owner_name=excluded.next_owner_name,
+          clock_ends_at=excluded.clock_ends_at`
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(draft_id) DO UPDATE SET
-        active=excluded.active,
-        status=excluded.status,
-        last_checked_at=excluded.last_checked_at,
-        last_active_at=excluded.last_active_at,
-        last_inactive_at=excluded.last_inactive_at,
-        completed_at=excluded.completed_at,
-        last_picked=excluded.last_picked,
-        pick_count=excluded.pick_count,
-        draft_json=excluded.draft_json,
-        draft_order_json=excluded.draft_order_json,
-        slot_to_roster_json=excluded.slot_to_roster_json,
-        roster_names_json=excluded.roster_names_json,
-        roster_by_username_json=excluded.roster_by_username_json,
-        traded_pick_owner_json=excluded.traded_pick_owner_json,
-        teams=excluded.teams,
-        rounds=excluded.rounds,
-        timer_sec=excluded.timer_sec,
-        reversal_round=excluded.reversal_round,
-        league_id=excluded.league_id,
-        league_name=excluded.league_name,
-        league_avatar=excluded.league_avatar,
-        best_ball=excluded.best_ball`
-    )
-    .bind(
-      String(draftId),
-      a,
-      status,
-      lastChecked,
-      lastActive,
-      lastInactive,
-      completedAt,
-      lastPicked,
-      pickCount,
-      draftJson,
-      draftOrderJson,
-      slotToRosterJson,
-      rosterNamesJson,
-      rosterByUsernameJson,
-      tradedPickOwnerJson,
-      teams,
-      rounds,
-      timerSec,
-      reversalRound,
-      leagueId,
-      leagueName,
-      leagueAvatar,
-      bestBall
-    )
-    .run();
-};
+      .bind(
+        String(draftId),
+        Number(patch?.active || 0),
+        String(patch?.status || ""),
+        now,
+        Number(patch?.active || 0) === 1 ? now : (Number(patch?.last_active_at || 0) || null),
+        Number(patch?.active || 0) === 1 ? (Number(patch?.last_inactive_at || 0) || null) : now,
+        patch?.last_picked ?? null,
+        patch?.pick_count ?? null,
+        patch?.draft_order_json ?? null,
+        patch?.teams ?? null,
+        patch?.rounds ?? null,
+        patch?.timer_sec ?? null,
+        patch?.reversal_round ?? null,
+        patch?.league_id ?? null,
+        patch?.league_name ?? null,
+        patch?.league_avatar ?? null,
+        patch?.draft_json ?? null,
+        patch?.best_ball ?? null,
+        completedAt ?? null,
+        updatedAt ?? null,
+        patch?.slot_to_roster_json ?? null,
+        patch?.roster_names_json ?? null,
+        patch?.roster_by_username_json ?? null,
+        patch?.traded_pick_owner_json ?? null,
+        patch?.current_pick ?? null,
+        patch?.current_owner_name ?? null,
+        patch?.next_owner_name ?? null,
+        patch?.clock_ends_at ?? null
+      )
+      .run();
+  };
 
   for (let i = 0; i < toCheck.length; i += concurrency) {
     const batch = toCheck.slice(i, i + concurrency);
@@ -741,8 +750,8 @@ const upsert = async (draftId, patch) => {
         const isActive = status === "drafting" || status === "paused";
         if (isActive) active++;
 
-        let teams = Number(draft?.settings?.teams || 0) || null;
-        let timerSec =
+        const teams = Number(draft?.settings?.teams || 0) || null;
+        const timerSec =
           Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
         const lastPicked = Number(draft?.last_picked || 0) || null;
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
@@ -779,78 +788,82 @@ const upsert = async (draftId, patch) => {
 
         const completedAt = !isActive && Number(bestBall || 0) === 1 ? now : null;
 
-        // Preserve existing roster context unless we successfully hydrate newer values.
-let slotToRosterJson = reg?.slot_to_roster_json ?? null;
-let rosterNamesJson = reg?.roster_names_json ?? null;
-let rosterByUsernameJson = reg?.roster_by_username_json ?? null;
-let tradedPickOwnerJson = reg?.traded_pick_owner_json ?? null;
+        // Extra registry fields used by UI + notifications.
+        const rounds = draft?.settings?.rounds ?? draft?.rounds ?? null;
+        const reversalRound = draft?.settings?.reversal_round ?? draft?.reversal_round ?? null;
 
-let rounds = reg?.rounds ?? null;
-let reversalRound = reg?.reversal_round ?? null;
+        const needsRosterInfo =
+          !reg?.roster_names_json && !cacheRow?.roster_names_json &&
+          !reg?.roster_by_username_json && !cacheRow?.roster_by_username_json &&
+          !reg?.slot_to_roster_json && !cacheRow?.slot_to_roster_json;
 
-if (isActive && leagueId) {
-  const needCtx =
-    !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson || !tradedPickOwnerJson || !rounds;
+        const needsTraded = !reg?.traded_pick_owner_json && !cacheRow?.traded_pick_owner_json;
 
-  if (needCtx) {
-    try {
-      const ctx = await buildRosterContext({ leagueId: String(leagueId), draft });
-      slotToRosterJson = JSON.stringify(ctx.slotToRoster || {});
-      rosterNamesJson = JSON.stringify(Object.fromEntries(ctx.rosterNameMap || []));
-      rosterByUsernameJson = JSON.stringify(Object.fromEntries(ctx.rosterByUsername || []));
-      tradedPickOwnerJson = JSON.stringify(ctx.tradedPickOwner || {});
-      if (ctx.teams != null) teams = ctx.teams;
-      if (ctx.rounds != null) rounds = ctx.rounds;
-      if (ctx.timerSec != null) timerSec = ctx.timerSec;
-      if (ctx.reversalRound != null) reversalRound = ctx.reversalRound;
+        let slotToRosterJson = null;
+        let rosterNamesJson = null;
+        let rosterByUsernameJson = null;
+        let tradedPickOwnerJson = null;
 
-      console.log("[DPT poll] hydrated roster context", {
-        draftId,
-        leagueId,
-        teams,
-        rounds,
-        hasSlot: !!slotToRosterJson,
-        hasNames: !!rosterNamesJson,
-        hasByUser: !!rosterByUsernameJson,
-        hasTraded: !!tradedPickOwnerJson,
-      });
-    } catch (e) {
-      console.log("[DPT poll] roster context hydrate failed", {
-        draftId,
-        leagueId,
-        message: String(e?.message || e),
-      });
-    }
-  }
-}
+        if (leagueId && (needsRosterInfo || needsTraded)) {
+          // These calls are league-scoped so we only do them when the registry row is missing.
+          const [users, rosters, tradedPicks] = await Promise.all([
+            needsRosterInfo ? getLeagueUsers(String(leagueId)) : Promise.resolve([]),
+            needsRosterInfo ? getLeagueRosters(String(leagueId)) : Promise.resolve([]),
+            needsTraded ? getDraftTradedPicks(String(draftId)) : Promise.resolve([]),
+          ]);
 
-await upsert(draftId, {
-  active: isActive ? 1 : 0,
-  status,
-  last_picked: lastPicked,
-  pick_count: pickCount,
-  draft_json: JSON.stringify(draft || {}),
-  draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
+          if (needsRosterInfo) {
+            const maps = buildRosterMaps({ users, rosters, draft });
+            slotToRosterJson = maps.slotToRoster ? JSON.stringify(maps.slotToRoster) : null;
+            rosterNamesJson = maps.rosterNames ? JSON.stringify(maps.rosterNames) : null;
+            rosterByUsernameJson = maps.rosterByUsername ? JSON.stringify(maps.rosterByUsername) : null;
+          }
 
-  slot_to_roster_json: slotToRosterJson,
-  roster_names_json: rosterNamesJson,
-  roster_by_username_json: rosterByUsernameJson,
-  traded_pick_owner_json: tradedPickOwnerJson,
+          if (needsTraded) {
+            // If we didn't fetch roster names above, try to derive from existing mapping.
+            let rosterNamesObj = null;
+            try {
+              rosterNamesObj = rosterNamesJson
+                ? JSON.parse(rosterNamesJson)
+                : (reg?.roster_names_json ? JSON.parse(reg.roster_names_json) : null);
+            } catch {
+              rosterNamesObj = null;
+            }
+            const tradedMap = buildTradedPickOwnerMap(tradedPicks, rosterNamesObj);
+            tradedPickOwnerJson = tradedMap ? JSON.stringify(tradedMap) : null;
+          }
+        }
 
-  teams,
-  rounds,
-  timer_sec: timerSec,
-  reversal_round: reversalRound,
+        const updatedAt = now;
 
-  league_id: leagueId ? String(leagueId) : null,
-  league_name: leagueName || null,
-  league_avatar: leagueAvatarUrl || null,
-  best_ball: bestBall,
-  last_checked_at: now,
-  last_active_at: isActive ? now : (reg?.last_active_at ?? null),
-  last_inactive_at: !isActive ? now : (reg?.last_inactive_at ?? null),
-  completed_at: completedAt,
-});
+        await upsert(draftId, {
+          active: isActive ? 1 : 0,
+          status,
+          last_picked: lastPicked,
+          pick_count: pickCount,
+          draft_json: JSON.stringify(draft || {}),
+          draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
+          teams,
+          rounds: rounds == null ? null : Number(rounds),
+          timer_sec: timerSec,
+          reversal_round: reversalRound == null ? null : Number(reversalRound),
+          league_id: leagueId ? String(leagueId) : null,
+          league_name: leagueName,
+          league_avatar: leagueAvatarUrl,
+          best_ball: bestBall == null ? null : Number(bestBall),
+          completed_at: completedAt,
+          updated_at: updatedAt,
+          slot_to_roster_json: slotToRosterJson,
+          roster_names_json: rosterNamesJson,
+          roster_by_username_json: rosterByUsernameJson,
+          traded_pick_owner_json: tradedPickOwnerJson,
+
+          // Not computed in this worker yet (kept for schema completeness).
+          current_pick: null,
+          current_owner_name: null,
+          next_owner_name: null,
+          clock_ends_at: null,
+        });
 
         updated++;
       })

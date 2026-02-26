@@ -99,6 +99,7 @@ async function ensureDraftRegistryTable(db) {
     await ensure("reversal_round", "INTEGER");
     await ensure("best_ball", "INTEGER");
     await ensure("completed_at", "INTEGER");
+    await ensure("updated_at", "INTEGER");
   } catch {
     // ignore
   }
@@ -124,6 +125,8 @@ export async function GET(req) {
     const url = new URL(req.url);
     const idsRaw = url.searchParams.get("ids") || url.searchParams.get("draft_ids") || "";
     const activeOnly = url.searchParams.get("active") === "1";
+    const sinceStr = url.searchParams.get("since");
+    const since = sinceStr == null ? 0 : Number(sinceStr);
     const ids = idsRaw
       .split(",")
       .map((x) => String(x || "").trim())
@@ -138,7 +141,7 @@ export async function GET(req) {
           `SELECT draft_id, active, status, last_checked_at, last_picked, pick_count, draft_json,
                   slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                   teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                  best_ball, completed_at
+                  best_ball, completed_at, updated_at
            FROM push_draft_registry
            ${where}
            ORDER BY COALESCE(last_active_at, last_checked_at) DESC
@@ -181,6 +184,7 @@ export async function GET(req) {
           leagueAvatar: r.league_avatar || null,
           bestBall: Number(r.best_ball || 0) === 1,
           completedAt: r.completed_at == null ? null : Number(r.completed_at),
+          updatedAt: r.updated_at == null ? null : Number(r.updated_at),
         });
       }
 
@@ -207,17 +211,26 @@ export async function GET(req) {
     }
 
     const placeholders = ids.map(() => "?").join(",");
-    const rows = await db
-      .prepare(
-        `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
-                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-                teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                best_ball, completed_at
-         FROM push_draft_registry
-         WHERE draft_id IN (${placeholders})`
-      )
-      .bind(...ids)
-      .all();
+    const useSince = Number.isFinite(since) && since > 0;
+    const whereSince = useSince
+      ? ` AND (
+            COALESCE(updated_at, 0) > ? OR
+            COALESCE(last_checked_at, 0) > ? OR
+            COALESCE(completed_at, 0) > ?
+          )`
+      : "";
+
+    const sql =
+      `SELECT draft_id, active, status, last_checked_at, last_picked, pick_count, draft_json,
+              slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+              teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
+              best_ball, completed_at, updated_at
+       FROM push_draft_registry
+       WHERE draft_id IN (${placeholders})` +
+      whereSince;
+
+    const binds = useSince ? [...ids, since, since, since] : ids;
+    const rows = await db.prepare(sql).bind(...binds).all();
 
     const out = {};
     let needsKick = false;
@@ -254,10 +267,18 @@ export async function GET(req) {
         leagueAvatar: r.league_avatar || null,
         bestBall: Number(r.best_ball || 0) === 1,
         completedAt: r.completed_at == null ? null : Number(r.completed_at),
+        updatedAt: r.updated_at == null ? null : Number(r.updated_at),
       };
 
       // If not hydrated yet, kick the DO so the UI fills in quickly.
-      if (!r?.draft_json || !String(effectiveStatus || "").trim()) needsKick = true;
+      // (We also treat missing roster/trade maps as "not hydrated" because the UI/notifications need them.)
+      const missingMaps =
+        !r?.slot_to_roster_json ||
+        !r?.roster_names_json ||
+        !r?.roster_by_username_json ||
+        !r?.traded_pick_owner_json;
+
+      if (!r?.draft_json || !String(effectiveStatus || "").trim() || missingMaps) needsKick = true;
     }
 
     if (needsKick) await kickDraftRegistry(env, debug);
