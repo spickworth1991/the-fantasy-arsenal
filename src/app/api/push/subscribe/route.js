@@ -138,18 +138,6 @@ export async function POST(req) {
       .prepare(`SELECT COUNT(*) AS c FROM push_subscriptions`)
       .first();
 
-    // Kick the 15s registry updater so the master draft list starts refreshing immediately.
-    try {
-      const ns = env?.DRAFT_REGISTRY;
-      if (ns?.idFromName) {
-        const id = ns.idFromName("master");
-        const stub = ns.get(id);
-        await stub.fetch("https://do/tick", { method: "POST" });
-      }
-    } catch {
-      // ignore
-    }
-
     return json({
       ok: true,
       endpoint,
