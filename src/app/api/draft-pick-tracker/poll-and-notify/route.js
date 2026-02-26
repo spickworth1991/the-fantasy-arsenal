@@ -741,8 +741,8 @@ const upsert = async (draftId, patch) => {
         const isActive = status === "drafting" || status === "paused";
         if (isActive) active++;
 
-        const teams = Number(draft?.settings?.teams || 0) || null;
-        const timerSec =
+        let teams = Number(draft?.settings?.teams || 0) || null;
+        let timerSec =
           Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
         const lastPicked = Number(draft?.last_picked || 0) || null;
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
@@ -844,7 +844,7 @@ await upsert(draftId, {
 
   league_id: leagueId ? String(leagueId) : null,
   league_name: leagueName || null,
-  league_avatar: leagueAvatar || null,
+  league_avatar: leagueAvatarUrl || null,
   best_ball: bestBall,
   last_checked_at: now,
   last_active_at: isActive ? now : (reg?.last_active_at ?? null),
