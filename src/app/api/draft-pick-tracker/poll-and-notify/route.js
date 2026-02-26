@@ -948,6 +948,23 @@ async function saveDraftCache(db, draftId, patch) {
 }
 
 async function handler(req) {
+  // ---- DEBUG (opt-in only) ----
+  const url = new URL(req.url);
+  const DEBUG = url.searchParams.get("debug") === "1" || req.headers.get("x-debug") === "1";
+  const steps = [];
+  const draftsDebug = [];
+  const step = (name, data) => {
+    if (!DEBUG) return;
+    const row = { t: Date.now(), name };
+    if (data !== undefined) row.data = data;
+    steps.push(row);
+    console.log("[poll-and-notify]", name, data ?? "");
+  };
+  const dlog = (draftId, note) => {
+    if (!DEBUG) return;
+    draftsDebug.push({ t: Date.now(), draftId: String(draftId), ...note });
+  };
+
   try {
     const { env } = getRequestContext();
 
@@ -959,19 +976,22 @@ async function handler(req) {
     }
 
     const db = getDb(env);
-    if (!db?.prepare)
+    if (!db?.prepare) {
       return new NextResponse(
         "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB.",
         { status: 500 }
       );
+    }
+
+    step("boot", { debug: DEBUG });
 
     await ensurePushTables(db);
     await ensureDraftCacheTable(db);
     await ensureDraftRegistryTable(db);
+    step("tables_ok");
 
-    // Keep the D1 master draft registry hot (15s cadence) even if no UI is open.
-    // This is best-effort; if the DO isn't bound, cron still works as before.
     await kickDraftRegistry(env);
+    step("kick_registry_ok");
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
     const vapidSubject = env?.VAPID_SUBJECT;
@@ -1012,6 +1032,8 @@ async function handler(req) {
       })
       .filter((x) => x?.sub?.endpoint && x.endpoint);
 
+    step("subs_loaded", { subs: subs.length });
+
     const draftCache = new Map();
     const leagueCache = new Map();
     const userIdCache = new Map();
@@ -1035,12 +1057,10 @@ async function handler(req) {
     };
 
     // --- Draft discovery refresh (per subscription) ---
-    // Keep each subscription's draft_ids fresh every 4 hours.
-    // IMPORTANT: do this BEFORE we refresh the shared registry so new draft ids are included.
     for (const s of subs) {
       if (!s.username) continue;
 
-      const REFRESH_MS = 4 * 60 * 60 * 1000; // 4 hours
+      const REFRESH_MS = 4 * 60 * 60 * 1000;
       const needsRefresh = !s.draftIds.length || !s.updatedAt || now - s.updatedAt > REFRESH_MS;
       if (!needsRefresh) continue;
 
@@ -1062,29 +1082,30 @@ async function handler(req) {
         s.leagueCount = newLeagueCount;
         s.updatedAt = now;
         if (computed.userId) userIdCache.set(s.username, computed.userId);
-      } catch {
-        // ignore
+
+        step("sub_refreshed", { username: s.username, drafts: newDraftIds.length, leagues: newLeagueCount });
+      } catch (e) {
+        step("sub_refresh_failed", { username: s.username, err: String(e?.message || e) });
       }
     }
 
-    // --- Shared registry refresh (cron-safe fallback) ---
-    // The Durable Object is best-case (15s cadence), but in Pages it may not exist or may not be running.
-    // So cron ALWAYS refreshes the registry for drafts we know about, then notifies immediately.
+    // --- Shared registry refresh ---
     const allDraftIdSet = new Set();
-    for (const s of subs) {
-      for (const id of s.draftIds || []) allDraftIdSet.add(String(id));
-    }
+    for (const s of subs) for (const id of s.draftIds || []) allDraftIdSet.add(String(id));
     const allDraftIds = Array.from(allDraftIdSet);
+
+    step("registry_input", { uniqueDraftIds: allDraftIds.length });
+
     await ensureRegistryRowsExist(db, allDraftIds);
+
     const registryRefresh = await refreshSharedDraftRegistry(db, allDraftIds);
+    step("registry_refreshed", registryRefresh);
 
     // ---- Active draft list ----
-    // After refreshing, the registry is our source of truth for what's currently drafting.
     const activeDraftIdSet = new Set();
     const regRows = await db.prepare(`SELECT draft_id FROM push_draft_registry WHERE active=1`).all();
-    for (const r of regRows?.results || []) {
-      if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
-    }
+    for (const r of regRows?.results || []) if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
+    step("active_drafts", { active: activeDraftIdSet.size });
 
     // --- Notifications ---
     for (const s of subs) {
@@ -1104,6 +1125,7 @@ async function handler(req) {
       }
       if (!userId) {
         skippedNoOrder++;
+        step("user_id_missing", { username: s.username });
         continue;
       }
 
@@ -1111,72 +1133,71 @@ async function handler(req) {
       const pausedBatch = [];
       const unpausedBatch = [];
 
-      // Only iterate drafts that are currently active (drafting/paused).
       const activeDraftIdsForSub = (s.draftIds || []).filter((id) => activeDraftIdSet.has(String(id)));
+
+      if (DEBUG) step("sub_active_drafts", { username: s.username, activeDrafts: activeDraftIdsForSub.length });
+
       for (const draftId of activeDraftIdsForSub) {
         checked++;
 
-        // Prefer the shared registry payload (refreshed every ~15s by the DO).
-        // Fallback to Sleeper if registry is missing/stale.
-        let reg = null;
         try {
-          reg = await db
-            .prepare(
-              `SELECT draft_json, draft_order_json, status, last_picked, pick_count,
-                      teams, timer_sec, league_id, league_name, league_avatar, best_ball
-               FROM push_draft_registry
-               WHERE draft_id=?`
-            )
-            .bind(String(draftId))
-            .first();
-        } catch {
-          reg = null;
-        }
-
-        let draft = null;
-        if (reg?.draft_json) {
+          let reg = null;
           try {
-            draft = JSON.parse(reg.draft_json);
+            reg = await db
+              .prepare(
+                `SELECT draft_json, draft_order_json, status, last_picked, pick_count,
+                        teams, timer_sec, league_id, league_name, league_avatar, best_ball
+                 FROM push_draft_registry
+                 WHERE draft_id=?`
+              )
+              .bind(String(draftId))
+              .first();
           } catch {
-            draft = null;
+            reg = null;
           }
-        }
-        if (!draft) {
-          draft = await (async () => {
+
+          let draft = null;
+          if (reg?.draft_json) {
+            try { draft = JSON.parse(reg.draft_json); } catch { draft = null; }
+          }
+          if (!draft) {
             const cached = draftCache.get(draftId);
-            if (cached) return cached;
-            const d = await getDraft(draftId);
-            draftCache.set(draftId, d);
-            return d;
-          })();
-        }
-
-        const status = String(draft?.status || reg?.status || "").toLowerCase();
-        if (status !== "drafting" && status !== "paused") {
-          await clearClockState(db, s.endpoint, draftId);
-          continue;
-        }
-
-        const leagueId = String(reg?.league_id || draft?.league_id || draft?.metadata?.league_id || "") || null;
-        const leagueName = reg?.league_name || null;
-        const leagueAvatarUrl = reg?.league_avatar || null;
-        const bestBall = Number(reg?.best_ball || 0) ? 1 : 0;
-
-        const teams = Number(reg?.teams || draft?.settings?.teams || 0);
-
-        let draftOrder = draft?.draft_order || null;
-        if (!draftOrder && reg?.draft_order_json) {
-          try {
-            draftOrder = JSON.parse(reg.draft_order_json);
-          } catch {
-            draftOrder = null;
+            if (cached) draft = cached;
+            else {
+              draft = await getDraft(draftId);
+              draftCache.set(draftId, draft);
+            }
           }
-        }
 
-        if (!teams || !draftOrder || !draftOrder[userId]) {
-          skippedNoOrder++;
-          continue;
-        }
+          const status = String(draft?.status || reg?.status || "").toLowerCase();
+          if (status !== "drafting" && status !== "paused") {
+            await clearClockState(db, s.endpoint, draftId);
+            dlog(draftId, { action: "clear_state_inactive", status });
+            continue;
+          }
+
+          const leagueId = String(reg?.league_id || draft?.league_id || draft?.metadata?.league_id || "") || null;
+
+          const teams = Number(reg?.teams || draft?.settings?.teams || 0);
+
+          let draftOrder = draft?.draft_order || null;
+          if (!draftOrder && reg?.draft_order_json) {
+            try { draftOrder = JSON.parse(reg.draft_order_json); } catch { draftOrder = null; }
+          }
+
+          if (!teams || !draftOrder || !draftOrder[userId]) {
+            skippedNoOrder++;
+            dlog(draftId, {
+              action: "skip_no_order",
+              teams,
+              hasDraftOrder: !!draftOrder,
+              hasUserSlot: !!(draftOrder && draftOrder[userId]),
+              userId: String(userId),
+              leagueId,
+              status,
+            });
+            continue;
+          }
 
         const userSlot = Number(draftOrder[userId]);
         const lastPicked = Number(reg?.last_picked || draft?.last_picked || 0);
@@ -1562,6 +1583,10 @@ async function handler(req) {
           await db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint).run();
           await clearClockState(db, s.endpoint, draftId);
         }
+      } catch (e) {
+          dlog(draftId, { action: "draft_loop_error", err: String(e?.message || e) });
+          continue;
+        }
       } // end for each draftId
 
       // ----- onClock batching (per endpoint) -----
@@ -1724,7 +1749,7 @@ async function handler(req) {
       }
     } // end subs loop
 
-    return NextResponse.json({
+    const out = {
       ok: true,
       subs: subs.length,
       registryRefresh,
@@ -1734,8 +1759,18 @@ async function handler(req) {
       skippedNoUsername,
       skippedNoOrder,
       skippedNotOnClock,
-    });
+    };
+
+    if (DEBUG) {
+      out.debug = {
+        steps,
+        drafts: draftsDebug.slice(0, 500), // safety cap
+      };
+    }
+
+    return NextResponse.json(out);
   } catch (e) {
+    if (DEBUG) console.log("[poll-and-notify] fatal", e);
     return new NextResponse(e?.message || "Poll failed", { status: 500 });
   }
 }
