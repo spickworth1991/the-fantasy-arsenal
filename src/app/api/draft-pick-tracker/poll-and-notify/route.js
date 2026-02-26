@@ -1505,6 +1505,14 @@ async function handler(req) {
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
         const icon = bestLeagueAvatarUrl({ league, draft });
+        const leagueName =
+          String(
+            reg?.league_name ||
+            league?.name ||
+            draft?.metadata?.name ||
+            draft?.metadata?.league_name ||
+            "your league"
+          );
         const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
 
         if (stageToSend === "onclock") {
