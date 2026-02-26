@@ -190,20 +190,6 @@ function onDeckTintStyles() {
 export default function DraftPickTrackerClient() {
   const { username, leagues, year, players } = useSleeper();
 
-  // Debug:
-  // - enable by adding ?dpt_debug=1 to the URL, or setting localStorage.dpt_debug = "1"
-  // - when enabled, we pass a header to the registry API so it can emit verbose logs
-  const debugEnabled = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const sp = new URLSearchParams(window.location.search);
-      if (sp.get("dpt_debug") === "1") return true;
-      return window.localStorage?.getItem("dpt_debug") === "1";
-    } catch {
-      return false;
-    }
-  }, []);
-
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -290,20 +276,9 @@ export default function DraftPickTrackerClient() {
       };
       if (!payload.drafts.length) return;
 
-      if (debugEnabled) {
-        // eslint-disable-next-line no-console
-        console.log("[DPT] registering drafts in registry", {
-          count: payload.drafts.length,
-          drafts: payload.drafts.slice(0, 5),
-        });
-      }
-
       await fetch(`/api/draft-pick-tracker/registry`, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(debugEnabled ? { "x-dpt-debug": "1" } : {}),
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
     } catch {
@@ -611,7 +586,7 @@ export default function DraftPickTrackerClient() {
     }
 
     // Clock left (only if timer exists)
-    const lastPickTs = safeNum(draft?.last_picked);
+    const lastPickTs = safeNum(draft?.last_picked ?? bundle?.lastPicked);
     const clockEndsAt =
       lastPickTs > 0 && timerSec > 0 ? lastPickTs + timerSec * 1000 : 0;
     const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
@@ -673,23 +648,11 @@ export default function DraftPickTrackerClient() {
       try {
         const ids = eligible.map((l) => l?.draft_id).filter(Boolean);
         if (ids.length) {
-          const regUrl = `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(
-            ids.join(",")
-          )}${debugEnabled ? "&debug=1" : ""}`;
-          const regRes = await fetch(regUrl, {
-            headers: debugEnabled ? { "x-dpt-debug": "1" } : undefined,
-          });
+          const regRes = await fetch(
+            `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
+          );
           const regJson = regRes.ok ? await regRes.json() : null;
           registryByDraftId = regJson?.drafts || {};
-
-          if (debugEnabled) {
-            // eslint-disable-next-line no-console
-            console.log("[DPT] registry snapshot", {
-              requested: ids.length,
-              returned: Object.keys(registryByDraftId || {}).length,
-              sample: Object.entries(registryByDraftId || {}).slice(0, 2),
-            });
-          }
         }
       } catch {
         registryByDraftId = {};
