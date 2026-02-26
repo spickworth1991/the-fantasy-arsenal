@@ -23,14 +23,14 @@ async function kickDraftRegistry(env) {
   }
 }
 
-async 
+// Treat "null"/"undefined" string values as missing
 function coerceJsonStr(v) {
   const s = v == null ? "" : String(v);
   if (!s || s === "null" || s === "undefined") return null;
   return s;
 }
 
-function ensureTable(db, table, createSql, columnsToEnsure = []) {
+async function ensureTable(db, table, createSql, columnsToEnsure = []) {
   await db.prepare(createSql).run();
   if (!columnsToEnsure.length) return;
 
@@ -40,6 +40,7 @@ function ensureTable(db, table, createSql, columnsToEnsure = []) {
   } catch {
     return;
   }
+
   const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
   for (const col of columnsToEnsure) {
     const name = String(col?.name || "").trim();
