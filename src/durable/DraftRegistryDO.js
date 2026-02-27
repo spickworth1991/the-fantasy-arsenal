@@ -317,15 +317,15 @@ async function upsertRegistry(db, draftId, patch) {
         timer_sec=excluded.timer_sec,
         reversal_round=COALESCE(excluded.reversal_round, push_draft_registry.reversal_round),
         league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-        league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
-        league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
-        best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
+        league_name=COALESCE(excluded.league_name, push_draft_registry.league_name),
+        league_avatar=COALESCE(excluded.league_avatar, push_draft_registry.league_avatar),
+        best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
         current_pick=COALESCE(excluded.current_pick, push_draft_registry.current_pick),
         current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
         next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
         clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
-	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
-	      updated_at=excluded.updated_at)`
+	      completed_at=COALESCE(excluded.completed_at, push_draft_registry.completed_at),
+	      updated_at=excluded.updated_at`
     )
     .bind(
       String(draftId),
