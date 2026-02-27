@@ -13,9 +13,6 @@ const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
 const PRE_DRAFT_REFRESH_MS = 2 * 60 * 1000; // 2 minutes
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
 
-const MAX_CONTEXT_HYDRATES_PER_TICK = 3; // limit league users/rosters hydrations per tick to avoid Sleeper 429
-const CONTEXT_BACKOFF_MS = 5 * 60 * 1000; // after a 429/5xx, wait 5 min before retrying context
-
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Sleeper fetch failed ${res.status} for ${url}`);
@@ -112,9 +109,6 @@ async function ensureDraftCacheTable(db) {
         timer_sec INTEGER,
         reversal_round INTEGER,
         context_updated_at INTEGER,
-        context_retry_after INTEGER,
-        context_error TEXT,
-        context_error_at INTEGER,
         updated_at INTEGER
       )`
     )
@@ -137,9 +131,6 @@ async function ensureDraftCacheTable(db) {
     await add("timer_sec", "INTEGER");
     await add("reversal_round", "INTEGER");
     await add("context_updated_at", "INTEGER");
-    await add("context_retry_after", "INTEGER");
-    await add("context_error", "TEXT");
-    await add("context_error_at", "INTEGER");
     await add("league_id", "TEXT");
     await add("league_name", "TEXT");
     await add("league_avatar", "TEXT");
@@ -306,7 +297,7 @@ async function upsertRegistry(db, draftId, patch) {
         current_pick, current_owner_name, next_owner_name, clock_ends_at,
 	      completed_at,
 	      updated_at
-	    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(draft_id) DO UPDATE SET
         active=excluded.active,
         status=excluded.status,
@@ -436,8 +427,6 @@ async function tickOnce(env) {
   let updated = 0;
   let active = 0;
 
-  let contextHydratesLeft = MAX_CONTEXT_HYDRATES_PER_TICK;
-
   const CONCURRENCY = 6;
   for (let i = 0; i < toCheck.length; i += CONCURRENCY) {
     const batch = toCheck.slice(i, i + CONCURRENCY);
@@ -521,18 +510,9 @@ async function tickOnce(env) {
 	      let didHydrateRosterContext = false;
 
         const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
-
-        // backoff if Sleeper rate-limited / transient failing
-        const retryAfter = Number(cacheRow?.context_retry_after || 0) || 0;
-        const canTryContextNow =
-          contextHydratesLeft > 0 && (!retryAfter || now >= retryAfter);
-
-        // Only hit league users/rosters when we truly need it, and we still have budget this tick.
-        const canHydrateRosterContext =
-          Boolean(leagueId) && canTryContextNow && (needsRosterContext || (isActive && contextStale));
+        const canHydrateRosterContext = Boolean(leagueId) && (needsRosterContext || contextStale);
 
         if (canHydrateRosterContext) {
-          contextHydratesLeft--;
           try {
             const [users, rosters] = await Promise.all([
               sleeperJson(`https://api.sleeper.app/v1/league/${leagueId}/users`),
@@ -594,43 +574,19 @@ async function tickOnce(env) {
             rosterByUsernameJson = JSON.stringify(rosterByUsername);
             slotToRosterJson = JSON.stringify(slotToRoster);
 
-            if (
-              Object.keys(rosterNames || {}).length > 0 &&
-              Object.keys(rosterByUsername || {}).length > 0 &&
-              Object.keys(slotToRoster || {}).length > 0
-            ) {
-              didHydrateRosterContext = true;
-            }
-
-            // clear any previous backoff/error
-            await saveDraftCache(db, draftId, {
-              context_retry_after: null,
-              context_error: null,
-              context_error_at: null,
-            });
-          } catch (e) {
-            const status = Number(e?.status || 0) || 0;
-            const msg = String(e?.message || "context hydration failed");
-            const retry = now + CONTEXT_BACKOFF_MS;
-
-            // Record why we couldn't hydrate, so you can see it in D1 immediately.
-            await saveDraftCache(db, draftId, {
-              context_retry_after: retry,
-              context_error: status ? `${status} ${msg}` : msg,
-              context_error_at: now,
-            });
-
-            // Also log once per attempt for observability.
-            console.log("[DraftRegistryDO] context hydrate failed", {
-              draftId,
-              leagueId: String(leagueId || ""),
-              status,
-              msg,
-              retryAfter: retry,
-            });
+	          if (
+	            Object.keys(rosterNames || {}).length > 0 &&
+	            Object.keys(rosterByUsername || {}).length > 0 &&
+	            Object.keys(slotToRoster || {}).length > 0
+	          ) {
+	            didHydrateRosterContext = true;
+	          }
+          } catch {
+            // ignore hydration failure; we will try again on next context refresh
           }
         }
- // traded_picks: skip for bestball. only hydrate when missing.
+
+        // traded_picks: skip for bestball. only hydrate when missing.
         if (Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
           try {
             const traded = await sleeperJson(
