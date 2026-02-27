@@ -13,6 +13,9 @@ const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
 const PRE_DRAFT_REFRESH_MS = 2 * 60 * 1000; // 2 minutes
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
 
+const MAX_CONTEXT_HYDRATES_PER_TICK = 3; // limit league users/rosters hydrations per tick to avoid Sleeper 429
+const CONTEXT_BACKOFF_MS = 5 * 60 * 1000; // after a 429/5xx, wait 5 min before retrying context
+
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Sleeper fetch failed ${res.status} for ${url}`);
@@ -49,7 +52,8 @@ async function ensureDraftRegistryTable(db) {
         current_owner_name TEXT,
         next_owner_name TEXT,
         clock_ends_at INTEGER,
-        completed_at INTEGER
+	        completed_at INTEGER,
+	        updated_at INTEGER
       )`
     )
     .run();
@@ -84,6 +88,7 @@ async function ensureDraftRegistryTable(db) {
     await add("current_owner_name", "TEXT");
     await add("next_owner_name", "TEXT");
     await add("clock_ends_at", "INTEGER");
+	    await add("updated_at", "INTEGER");
   } catch {
     // ignore
   }
@@ -107,6 +112,9 @@ async function ensureDraftCacheTable(db) {
         timer_sec INTEGER,
         reversal_round INTEGER,
         context_updated_at INTEGER,
+        context_retry_after INTEGER,
+        context_error TEXT,
+        context_error_at INTEGER,
         updated_at INTEGER
       )`
     )
@@ -129,6 +137,9 @@ async function ensureDraftCacheTable(db) {
     await add("timer_sec", "INTEGER");
     await add("reversal_round", "INTEGER");
     await add("context_updated_at", "INTEGER");
+    await add("context_retry_after", "INTEGER");
+    await add("context_error", "TEXT");
+    await add("context_error_at", "INTEGER");
     await add("league_id", "TEXT");
     await add("league_name", "TEXT");
     await add("league_avatar", "TEXT");
@@ -206,9 +217,19 @@ function toLeagueAvatarUrl(avatarId) {
 function coerceJsonStr(v) {
   const s = v == null ? "" : String(v);
   if (!s || s === "null" || s === "undefined") return null;
-  // Treat empty objects/arrays as missing to allow re-hydration after transient failures.
-  const t = s.trim();
-  if (t === "{}" || t === "[]") return null;
+
+  // Treat empty JSON containers as missing so we can re-hydrate.
+  // Prevents the "{} means present" bug that leaves registry fields empty forever.
+  try {
+    const j = JSON.parse(s);
+    if (j && typeof j === "object") {
+      if (Array.isArray(j)) return j.length ? s : null;
+      return Object.keys(j).length ? s : null;
+    }
+  } catch {
+    // ignore parse failures
+  }
+
   return s;
 }
 
@@ -258,7 +279,8 @@ async function getRegistryRow(db, draftId) {
                 teams, rounds, timer_sec, reversal_round,
                 league_id, league_name, league_avatar, best_ball,
                 current_pick, current_owner_name, next_owner_name, clock_ends_at,
-                completed_at
+		        completed_at,
+		        updated_at
          FROM push_draft_registry
          WHERE draft_id=?`
       )
@@ -282,8 +304,9 @@ async function upsertRegistry(db, draftId, patch) {
         teams, rounds, timer_sec, reversal_round,
         league_id, league_name, league_avatar, best_ball,
         current_pick, current_owner_name, next_owner_name, clock_ends_at,
-        completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	      completed_at,
+	      updated_at
+	    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(draft_id) DO UPDATE SET
         active=excluded.active,
         status=excluded.status,
@@ -310,7 +333,8 @@ async function upsertRegistry(db, draftId, patch) {
         current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
         next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
         clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
-        completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at)`
+	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
+	      updated_at=excluded.updated_at)`
     )
     .bind(
       String(draftId),
@@ -339,7 +363,8 @@ async function upsertRegistry(db, draftId, patch) {
       next.current_owner_name ?? null,
       next.next_owner_name ?? null,
       next.clock_ends_at ?? null,
-      next.completed_at ?? null
+	    next.completed_at ?? null,
+	    now
     )
     .run();
 }
@@ -410,6 +435,8 @@ async function tickOnce(env) {
 
   let updated = 0;
   let active = 0;
+
+  let contextHydratesLeft = MAX_CONTEXT_HYDRATES_PER_TICK;
 
   const CONCURRENCY = 6;
   for (let i = 0; i < toCheck.length; i += CONCURRENCY) {
@@ -489,14 +516,23 @@ async function tickOnce(env) {
         let tradedPickOwnerJson =
           coerceJsonStr(reg?.traded_pick_owner_json) || coerceJsonStr(cacheRow?.traded_pick_owner_json);
 
-        const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
-        const canHydrateRosterContext = Boolean(leagueId) && (needsRosterContext || contextStale);
+	      // Track whether we *successfully* hydrated non-empty context, so we don't
+	      // advance context_updated_at when we only produced empty {} values.
+	      let didHydrateRosterContext = false;
 
-        // Track whether we actually hydrated usable context this pass.
-        let didHydrateRosterContext = false;
-        let didHydrateTraded = false;
+        const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
+
+        // backoff if Sleeper rate-limited / transient failing
+        const retryAfter = Number(cacheRow?.context_retry_after || 0) || 0;
+        const canTryContextNow =
+          contextHydratesLeft > 0 && (!retryAfter || now >= retryAfter);
+
+        // Only hit league users/rosters when we truly need it, and we still have budget this tick.
+        const canHydrateRosterContext =
+          Boolean(leagueId) && canTryContextNow && (needsRosterContext || (isActive && contextStale));
 
         if (canHydrateRosterContext) {
+          contextHydratesLeft--;
           try {
             const [users, rosters] = await Promise.all([
               sleeperJson(`https://api.sleeper.app/v1/league/${leagueId}/users`),
@@ -565,17 +601,37 @@ async function tickOnce(env) {
             ) {
               didHydrateRosterContext = true;
             }
-          } catch {
-            // ignore hydration failure; we will try again on next context refresh
+
+            // clear any previous backoff/error
+            await saveDraftCache(db, draftId, {
+              context_retry_after: null,
+              context_error: null,
+              context_error_at: null,
+            });
+          } catch (e) {
+            const status = Number(e?.status || 0) || 0;
+            const msg = String(e?.message || "context hydration failed");
+            const retry = now + CONTEXT_BACKOFF_MS;
+
+            // Record why we couldn't hydrate, so you can see it in D1 immediately.
+            await saveDraftCache(db, draftId, {
+              context_retry_after: retry,
+              context_error: status ? `${status} ${msg}` : msg,
+              context_error_at: now,
+            });
+
+            // Also log once per attempt for observability.
+            console.log("[DraftRegistryDO] context hydrate failed", {
+              draftId,
+              leagueId: String(leagueId || ""),
+              status,
+              msg,
+              retryAfter: retry,
+            });
           }
         }
-
-        // traded_picks: skip for bestball.
-        // Trades can happen AFTER we first cached an empty map, so for active drafts
-        // (or when context is stale) we refresh traded picks.
-        const shouldRefreshTraded =
-          Number(bestBall || 0) !== 1 && Boolean(leagueId) && (isActive || contextStale || !tradedPickOwnerJson);
-        if (shouldRefreshTraded) {
+ // traded_picks: skip for bestball. only hydrate when missing.
+        if (Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
           try {
             const traded = await sleeperJson(
               `https://api.sleeper.app/v1/draft/${draftId}/traded_picks`
@@ -600,8 +656,7 @@ async function tickOnce(env) {
             }
             const out = {};
             for (const [k, v] of best.entries()) out[k] = v.owner;
-            tradedPickOwnerJson = Object.keys(out).length ? JSON.stringify(out) : null;
-            didHydrateTraded = true;
+            tradedPickOwnerJson = JSON.stringify(out);
           } catch {
             // ignore
           }
@@ -616,9 +671,8 @@ async function tickOnce(env) {
           rounds,
           timer_sec: timerSec,
           reversal_round: reversalRound,
-          // Only advance context_updated_at when we actually produced usable context.
-          // Otherwise keep it stale so the next tick will retry.
-          context_updated_at: didHydrateRosterContext ? now : lastContextAt || 0,
+	        // Only move the TTL forward when we hydrated meaningful context.
+	        context_updated_at: didHydrateRosterContext ? now : (lastContextAt || null),
         });
 
         // -------- computed convenience fields (optional) --------
