@@ -317,14 +317,14 @@ async function upsertRegistry(db, draftId, patch) {
         timer_sec=excluded.timer_sec,
         reversal_round=COALESCE(excluded.reversal_round, push_draft_registry.reversal_round),
         league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-        league_name=COALESCE(excluded.league_name, push_draft_registry.league_name),
-        league_avatar=COALESCE(excluded.league_avatar, push_draft_registry.league_avatar),
-        best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
+        league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+        league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+        best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
         current_pick=COALESCE(excluded.current_pick, push_draft_registry.current_pick),
         current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
         next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
         clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
-	      completed_at=COALESCE(excluded.completed_at, push_draft_registry.completed_at),
+	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
 	      updated_at=excluded.updated_at`
     )
     .bind(
@@ -535,13 +535,23 @@ async function tickOnce(env) {
 
             const rosterByUsername = {};
             for (const u of Array.isArray(users) ? users : []) {
-              const uname = String(u?.username || "").toLowerCase().trim();
-              if (!uname) continue;
               const ownerId = String(u?.user_id || "");
+              if (!ownerId) continue;
+
               const roster = (Array.isArray(rosters) ? rosters : []).find(
                 (x) => String(x?.owner_id) === ownerId
               );
-              if (roster?.roster_id != null) rosterByUsername[uname] = String(roster.roster_id);
+              if (roster?.roster_id == null) continue;
+
+              const rid = String(roster.roster_id);
+
+              // Map BOTH username and display_name to roster_id (lowercased).
+              // Some league-user records can be missing `username` but still have `display_name`.
+              const u1 = String(u?.username || "").toLowerCase().trim();
+              const u2 = String(u?.display_name || "").toLowerCase().trim();
+
+              if (u1) rosterByUsername[u1] = rid;
+              if (u2 && !rosterByUsername[u2]) rosterByUsername[u2] = rid;
             }
 
             const slotToRoster = {};

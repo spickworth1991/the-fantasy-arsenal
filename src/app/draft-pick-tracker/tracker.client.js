@@ -206,7 +206,6 @@ export default function DraftPickTrackerClient() {
   const [sortDir, setSortDir] = useState("asc");
 
   const [rows, setRows] = useState([]);
-  const [bundles, setBundles] = useState([]);
 
   // Local "auto-pick" flags (set via service-worker push -> postMessage).
   // Stored client-side (per device) so we don't have to expose per-user push data server-side.
@@ -302,7 +301,7 @@ export default function DraftPickTrackerClient() {
     return rosterToName;
   };
 
-  function getUserRosterIdForLeague(rosterByUsername, users, rosters) {
+  function getUserRosterIdForLeague(rosterByUsername, users, rosters, rosterNames) {
     const uname = String(username || "").toLowerCase().trim();
     if (!uname) return null;
 
@@ -310,6 +309,15 @@ export default function DraftPickTrackerClient() {
     if (rosterByUsername && typeof rosterByUsername === "object") {
       const rid = rosterByUsername?.[uname];
       if (rid != null) return String(rid);
+    }
+
+    // Fallback: registry often has rosterNames (roster_id -> display name).
+    // If rosterByUsername is empty/missing, try matching the entered username against rosterNames values.
+    if (rosterNames && typeof rosterNames === "object") {
+      for (const [rid, nm] of Object.entries(rosterNames)) {
+        if (!rid) continue;
+        if (String(nm || "").toLowerCase().trim() === uname) return String(rid);
+      }
     }
 
     const u =
@@ -531,7 +539,7 @@ export default function DraftPickTrackerClient() {
         })
       : null;
 
-    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername, [], []);
+    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername, [], [], bundle?.rosterNames);
 
     let myNextPickOverall = null;
     if (myRosterId && teams > 0) {
@@ -980,37 +988,7 @@ export default function DraftPickTrackerClient() {
     };
   }, []);
 
-  
-  // ---------------- Live-time helpers ----------------
-  // Rows are computed server-side at `computedAt`; adjust clock/ETA client-side as time passes.
-  const getAgeMs = (row) => {
-    const computedAt = safeNum(row?.computedAt);
-    return computedAt > 0 && now > 0 ? Math.max(0, now - computedAt) : 0;
-  };
-
-  const getLiveClockLeft = (row) => {
-    const base = safeNum(row?.clockLeftMs);
-    return Math.max(0, base - getAgeMs(row));
-  };
-
-  const getLiveEtaToShownPick = (row) => {
-    const v = row?.etaMs;
-    if (v == null) return Number.MAX_SAFE_INTEGER;
-    const base = safeNum(v);
-    return Math.max(0, base - getAgeMs(row));
-  };
-
-  // Bucket priority for sorting: On Clock (me) → On Deck → Drafting → Paused → Other
-  const bucket = (row) => {
-    if (row?.onClockIsMe) return 0;
-    if (row?.onDeck) return 1;
-    const st = String(row?.draftStatus || "").toLowerCase();
-    if (st === "drafting") return 2;
-    if (st === "paused") return 3;
-    return 4;
-  };
-
-// ---------------- Filters + sorting (bucket priority) ----------------
+  // ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
     const before = (rows || []).length;
