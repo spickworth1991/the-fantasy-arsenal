@@ -190,20 +190,6 @@ function onDeckTintStyles() {
 export default function DraftPickTrackerClient() {
   const { username, leagues, year, players } = useSleeper();
 
-  // Debug:
-  // - enable by adding ?dpt_debug=1 to the URL, or setting localStorage.dpt_debug = "1"
-  // - when enabled, we pass a header to the registry API so it can emit verbose logs
-  const debugEnabled = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const sp = new URLSearchParams(window.location.search);
-      if (sp.get("dpt_debug") === "1") return true;
-      return window.localStorage?.getItem("dpt_debug") === "1";
-    } catch {
-      return false;
-    }
-  }, []);
-
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -290,20 +276,9 @@ export default function DraftPickTrackerClient() {
       };
       if (!payload.drafts.length) return;
 
-      if (debugEnabled) {
-        // eslint-disable-next-line no-console
-        console.log("[DPT] registering drafts in registry", {
-          count: payload.drafts.length,
-          drafts: payload.drafts.slice(0, 5),
-        });
-      }
-
       await fetch(`/api/draft-pick-tracker/registry`, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(debugEnabled ? { "x-dpt-debug": "1" } : {}),
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
     } catch {
@@ -656,168 +631,210 @@ export default function DraftPickTrackerClient() {
   // ---------------- Refresh ----------------
 
   async function refresh() {
-    setErr("");
-    setLoading(true);
+  setErr("");
+  setLoading(true);
+
+  // Build rows strictly from the shared registry (no per-league Sleeper fan-out).
+  // The registry is hydrated by the DraftRegistry Durable Object (every ~15s).
+
+  const jsonParseSafe = (s, fallback) => {
     try {
-      const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-
-      // One-time: register draft ids into the shared registry so the monitor can render
-      // without fetching draft metadata per league.
-      if (!registeredRef.current && eligible.length) {
-        registeredRef.current = true;
-        await registerDraftsInRegistry(eligible);
-      }
-      // Pull shared draft + pick counts from our server-side registry first.
-      // This keeps Sleeper polling centralized (poll-and-notify) instead of each client.
-      let registryByDraftId = {};
-      try {
-        const ids = eligible.map((l) => l?.draft_id).filter(Boolean);
-        if (ids.length) {
-          const regUrl = `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(
-            ids.join(",")
-          )}${debugEnabled ? "&debug=1" : ""}`;
-          const regRes = await fetch(regUrl, {
-            headers: debugEnabled ? { "x-dpt-debug": "1" } : undefined,
-          });
-          const regJson = regRes.ok ? await regRes.json() : null;
-          registryByDraftId = regJson?.drafts || {};
-
-          if (debugEnabled) {
-            // eslint-disable-next-line no-console
-            console.log("[DPT] registry snapshot", {
-              requested: ids.length,
-              returned: Object.keys(registryByDraftId || {}).length,
-              sample: Object.entries(registryByDraftId || {}).slice(0, 2),
-            });
-          }
-        }
-      } catch {
-        registryByDraftId = {};
-      }
-
-      // Only fetch expensive per-league data for ACTIVE drafts.
-      const activeEligible = [];
-      const inactiveEligible = [];
-      for (const lg of eligible) {
-        const r = registryByDraftId?.[String(lg.draft_id)];
-        const st = String(r?.status || "").toLowerCase();
-        const active = r?.active == null ? null : Number(r.active);
-        const isActive = active === 1 || st === "drafting" || st === "paused";
-        (isActive ? activeEligible : inactiveEligible).push(lg);
-      }
-
-      const nextBundles = (await Promise.all(
-        activeEligible.map(async (lg) => {
-          try {
-            return makeDraftBundleFromRegistry(lg, registryByDraftId);
-          } catch (e) {
-            console.warn("Draft bundle failed:", lg?.name, e);
-            return null;
-          }
-        })
-      )).filter(Boolean);
-
-      const nowMs = Date.now();
-      const draftRows = [];
-      nextBundles.forEach((b) => draftRows.push(calcPickInfo(b, nowMs)));
-
-      // Render inactive drafts straight from registry (no Sleeper calls).
-            inactiveEligible.forEach((lg) => {
-            const r = registryByDraftId?.[String(lg.draft_id)] || {};
-            draftRows.push({
-              leagueId: r.league_id || lg.league_id,
-              leagueName: r.league_name || lg.name || "Unnamed League",
-              leagueAvatarUrl:
-                r.league_avatar ||
-                (lg.avatar ? `https://sleepercdn.com/avatars/thumbs/${lg.avatar}` : null),
-              draftId: String(lg.draft_id),
-
-              // normalize
-              draftStatus: String(r.status || lg.status || "").toLowerCase(),
-
-              // fields the UI expects everywhere
-              currentOwnerName: "—",
-              currentPick: null,
-              clockLeftMs: null,
-              etaMs: null,
-              computedAt: Date.now(),
-
-              onClockIsMe: false,
-              onDeck: false,
-
-              myNextPickOverall: null,
-              myNextPickAfterThis: null,
-              picksUntilMyPick: null,
-
-              teams: r.teams != null ? Number(r.teams) : null,
-              rounds: r.rounds != null ? Number(r.rounds) : null,
-              timerSec: r.timerSec != null ? Number(r.timerSec) : null,
-
-              recent: [],
-            });
-          });
-
-      // Sort: on-the-clock first, then by league name.
-      draftRows.sort((a, b) => {
-        const ao = a.onTheClock ? 1 : 0;
-        const bo = b.onTheClock ? 1 : 0;
-        if (ao !== bo) return bo - ao;
-        return String(a.leagueName || "").localeCompare(String(b.leagueName || ""));
-      });
-      // DEBUG: compare registry ids vs rendered rows
-        try {
-          const regIds = new Set(Object.keys(registryByDraftId || {}).map(String));
-          const renderedIds = new Set((draftRows || []).map((x) => String(x?.draftId || x?.draft_id || "")));
-
-          const missing = [];
-          for (const id of regIds) {
-            if (!renderedIds.has(id)) {
-              const r = registryByDraftId?.[id];
-              missing.push({
-                draftId: id,
-                league: r?.league_name,
-                status: r?.status,
-                active: r?.active,
-                pickCount: r?.pickCount,
-              });
-            }
-          }
-
-          console.log("[DPT] eligible leagues:", eligible.length);
-          console.log("[DPT] registry drafts:", regIds.size);
-          console.log("[DPT] rendered rows:", draftRows.length);
-          console.log("[DPT] missing from UI rows:", missing);
-        } catch (e) {
-          console.log("[DPT] debug compare failed", e);
-        }
-
-      // IMPORTANT: React keys must be unique.
-      // When a registry row is missing league_id temporarily, keying by leagueId can
-      // produce duplicate/undefined keys and React will collapse rows (making it look
-      // like leagues are "missing" even though they exist in the registry response).
-      // Dedup and attach a stable per-row key using draftId (preferred).
-      const seen = new Set();
-      const uniqueRows = [];
-      for (let i = 0; i < (draftRows || []).length; i++) {
-        const row = draftRows[i];
-        const k = String(row?.draftId || row?.draft_id || row?.leagueId || "");
-        if (!k) {
-          uniqueRows.push({ ...row, __rowKey: `idx:${i}` });
-          continue;
-        }
-        if (seen.has(k)) continue;
-        seen.add(k);
-        uniqueRows.push({ ...row, __rowKey: k });
-      }
-
-      setRows(uniqueRows);
-    } catch (e) {
-      console.error(e);
-      setErr("Failed to load drafts. Try refresh.");
-    } finally {
-      setLoading(false);
+      return JSON.parse(s);
+    } catch {
+      return fallback;
     }
+  };
+
+  const safeLower = (s) => String(s || "").trim().toLowerCase();
+
+  const getSnakeSlotForPick = ({ pickNo, teams, reversalRound }) => {
+    if (!pickNo || !teams) return null;
+    const idx0 = pickNo - 1;
+    const round = Math.floor(idx0 / teams) + 1;
+    const pickInRound0 = idx0 % teams;
+
+    // Normal snake flips every round; 3RR keeps the same direction on the reversal round.
+    const rr = safeNum(reversalRound);
+    let forward = true;
+    if (round > 1) {
+      for (let r = 2; r <= round; r++) {
+        if (rr > 0 && r === rr) {
+          // skip flip
+        } else {
+          forward = !forward;
+        }
+      }
+    }
+
+    const slot = forward ? pickInRound0 + 1 : teams - pickInRound0;
+    return { round, slot };
+  };
+
+  const resolveRosterForPick = ({
+    pickNo,
+    teams,
+    reversalRound,
+    slotToRoster,
+    tradedPickOwner,
+    seasonStr,
+  }) => {
+    const rs = getSnakeSlotForPick({ pickNo, teams, reversalRound });
+    if (!rs) return null;
+    const { round, slot } = rs;
+    const origRosterId = slotToRoster?.[String(slot)] ?? slotToRoster?.[slot] ?? null;
+    if (!origRosterId) return null;
+    const key = `${seasonStr}|${round}|${String(origRosterId)}`;
+    const traded = tradedPickOwner?.[key];
+    return traded ? String(traded) : String(origRosterId);
+  };
+
+  const getOwnerName = (rosterId, rosterNames) => {
+    const rid = rosterId == null ? "" : String(rosterId);
+    return rosterNames?.[rid] || (rid ? `Roster ${rid}` : "—");
+  };
+
+  try {
+    const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
+    if (!eligible.length) {
+      setRows([]);
+      setBundles([]);
+      return;
+    }
+
+    const ids = eligible.map((l) => String(l.draft_id)).filter(Boolean);
+
+    const res = await fetch(`/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`);
+    if (!res.ok) throw new Error("Registry fetch failed");
+
+    const json = await res.json();
+    const registryDrafts = json?.drafts || {};
+
+    const nowMs = Date.now();
+    const uname = safeLower(username);
+
+    const draftRows = [];
+
+    for (const lg of eligible) {
+      const reg = registryDrafts[String(lg.draft_id)];
+      if (!reg) continue;
+
+      const draft = reg?.draft_json ? jsonParseSafe(reg.draft_json, null) : null;
+      const draftStatus = String(draft?.status || reg?.status || "").toLowerCase();
+
+      const slotToRoster = reg?.slot_to_roster_json ? jsonParseSafe(reg.slot_to_roster_json, {}) : {};
+      const rosterNames = reg?.roster_names_json ? jsonParseSafe(reg.roster_names_json, {}) : {};
+      const rosterByUsername = reg?.roster_by_username_json ? jsonParseSafe(reg.roster_by_username_json, {}) : {};
+      const tradedPickOwner = reg?.traded_pick_owner_json ? jsonParseSafe(reg.traded_pick_owner_json, {}) : {};
+
+      const teams = safeNum(reg?.teams || draft?.settings?.teams || 0);
+      const rounds = safeNum(reg?.rounds || draft?.settings?.rounds || 0);
+      const timerSec = safeNum(reg?.timer_sec || draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0);
+      const reversalRound = safeNum(reg?.reversal_round || draft?.settings?.reversal_round || 0);
+
+      const pickCount = safeNum(reg?.pick_count || 0);
+      const currentPick = pickCount + 1;
+
+      const seasonStr = String(draft?.season || lg?.season || year || "");
+      const myRosterId = rosterByUsername?.[uname] ? String(rosterByUsername[uname]) : null;
+
+      const currentRosterId = teams
+        ? resolveRosterForPick({ pickNo: currentPick, teams, reversalRound, slotToRoster, tradedPickOwner, seasonStr })
+        : null;
+      const nextRosterId = teams
+        ? resolveRosterForPick({ pickNo: currentPick + 1, teams, reversalRound, slotToRoster, tradedPickOwner, seasonStr })
+        : null;
+
+      const currentOwnerName = currentRosterId ? getOwnerName(currentRosterId, rosterNames) : "—";
+      const nextOwnerName = nextRosterId ? getOwnerName(nextRosterId, rosterNames) : "—";
+
+      const onClockIsMe = !!(myRosterId && currentRosterId && String(myRosterId) === String(currentRosterId));
+      const onDeck = !!(myRosterId && nextRosterId && String(myRosterId) === String(nextRosterId));
+
+      // My next pick overall (traded-pick aware)
+      let myNextPickOverall = null;
+      if (myRosterId && teams > 0) {
+        const maxPk = rounds > 0 ? rounds * teams : currentPick + 500;
+        for (let pk = currentPick; pk <= maxPk; pk++) {
+          const rid = resolveRosterForPick({ pickNo: pk, teams, reversalRound, slotToRoster, tradedPickOwner, seasonStr });
+          if (rid && String(rid) === String(myRosterId)) {
+            myNextPickOverall = pk;
+            break;
+          }
+        }
+      }
+
+      let myNextPickAfterThis = null;
+      if (myRosterId && teams > 0) {
+        const startPk = onClockIsMe ? currentPick + 1 : currentPick;
+        const maxPk = rounds > 0 ? rounds * teams : startPk + 500;
+        for (let pk = startPk; pk <= maxPk; pk++) {
+          const rid = resolveRosterForPick({ pickNo: pk, teams, reversalRound, slotToRoster, tradedPickOwner, seasonStr });
+          if (rid && String(rid) === String(myRosterId)) {
+            myNextPickAfterThis = pk;
+            break;
+          }
+        }
+      }
+
+      const picksUntilMyPick = myNextPickOverall != null ? Math.max(0, myNextPickOverall - currentPick) : null;
+
+      // Clock left
+      const lastPickedMs = safeNum(draft?.last_picked || reg?.last_picked || 0);
+      const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
+      const clockEndsAt = draftStatus === "drafting" && lastPickedMs > 0 && totalMs > 0 ? lastPickedMs + totalMs : 0;
+      const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
+
+      // ETA: timer-only (like old UI)
+      const perPickMs = totalMs > 0 ? totalMs : 90 * 1000;
+      let etaMs = 0;
+      if (picksUntilMyPick != null) {
+        if (clockLeftMs > 0 && picksUntilMyPick > 0) {
+          etaMs = clockLeftMs + Math.max(0, picksUntilMyPick - 1) * perPickMs;
+        } else {
+          etaMs = picksUntilMyPick * perPickMs;
+        }
+      }
+
+      draftRows.push({
+        leagueId: reg?.league_id || lg?.league_id || null,
+        leagueName: reg?.league_name || lg?.name || "Unnamed League",
+        season: seasonStr,
+        draftId: String(lg?.draft_id || reg?.draft_id || ""),
+        draftStatus,
+        currentPick,
+        currentOwnerName,
+        nextOwnerName,
+        clockLeftMs,
+        onClockIsMe,
+        onDeck,
+        myNextPickOverall,
+        myNextPickAfterThis,
+        picksUntilMyPick,
+        etaMs,
+        timerSec: timerSec || null,
+        teams: teams || null,
+        rounds: rounds || null,
+        reversalRound: reversalRound || 0,
+        recent: [],
+        computedAt: nowMs,
+        draftType: String(draft?.type || "").toLowerCase() || null,
+        scoringType: String(draft?.metadata?.scoring_type || "").trim() || null,
+        startTimeMs: safeNum(draft?.start_time || 0) || null,
+        createdMs: safeNum(draft?.created || 0) || null,
+        lastPickedMs: lastPickedMs || null,
+      });
+    }
+
+    setBundles([]);
+    setRows(draftRows);
+  } catch (e) {
+    console.error(e);
+    setErr("Failed to load drafts from registry.");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   useEffect(() => {
     if (!username) return;
@@ -982,162 +999,7 @@ export default function DraftPickTrackerClient() {
       });
     }
 
-    async function refresh() {
-  setErr("");
-  setLoading(true);
-
-  try {
-    const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-    if (!eligible.length) {
-      setRows([]);
-      setBundles([]);
-      return;
-    }
-
-    const ids = eligible.map((l) => l.draft_id).filter(Boolean);
-
-    const res = await fetch(
-      `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`
-    );
-
-    if (!res.ok) throw new Error("Registry fetch failed");
-
-    const json = await res.json();
-    const registryDrafts = json?.drafts || {};
-
-    const nowMs = Date.now();
-    const nextBundles = [];
-    const draftRows = [];
-
-    for (const lg of eligible) {
-      const reg = registryDrafts[String(lg.draft_id)];
-      if (!reg) continue;
-
-      const draft = reg?.draft_json ? JSON.parse(reg.draft_json) : null;
-      if (!draft) continue;
-
-      const slotToRoster = reg?.slot_to_roster_json
-        ? JSON.parse(reg.slot_to_roster_json)
-        : {};
-
-      const rosterNames = reg?.roster_names_json
-        ? JSON.parse(reg.roster_names_json)
-        : {};
-
-      const tradedOwnerMapRaw = reg?.traded_pick_owner_json
-        ? JSON.parse(reg.traded_pick_owner_json)
-        : {};
-
-      const traded_picks = Object.entries(tradedOwnerMapRaw).map(
-        ([key, owner]) => {
-          const [season, round, orig] = key.split("|");
-          return {
-            season,
-            round: Number(round),
-            roster_id: orig,
-            owner_id: owner,
-          };
-        }
-      );
-
-      // Rebuild bundle shape expected by calcPickInfo
-      const bundle = {
-        league: {
-          league_id: reg.league_id,
-          name: reg.league_name,
-          season: draft?.season,
-        },
-        draft,
-        picks: Array(reg.pick_count || 0).fill({}),
-        users: [],
-        rosters: [],
-        traded_picks,
-      };
-
-      nextBundles.push(bundle);
-      draftRows.push(calcPickInfo(bundle, nowMs));
-    }
-
-    setBundles(nextBundles);
-    setRows(draftRows);
-  } catch (e) {
-    console.error(e);
-    setErr("Failed to load drafts from registry.");
-  } finally {
-    setLoading(false);
-  }
-}
-
-    
-    console.log("[DPT] rows before filter:", before, "after:", r.length, "onlyDrafting:", onlyDrafting);
-
-    // Priority buckets:
-  // 0: drafting + onClock
-  // 1: drafting + onDeck
-  // 2: drafting (other)
-  // 3: paused
-  // 4: everything else
-  const bucket = (x) => {
-    const st = String(x?.draftStatus || "").toLowerCase();
-    const isDrafting = st === "drafting";
-    const isPaused = st === "paused";
-
-    // ✅ ALWAYS top if you are on the clock (even if paused)
-    if (x.onClockIsMe) return 0;
-
-    // then preserve existing priority rules
-    if (isDrafting && x.onDeck) return 1;
-    if (isDrafting) return 2;
-    if (isPaused) return 3;
-    return 4;
-  };
-
-
-
-
-  const getLiveClockLeft = (x) => {
-    const st = String(x?.draftStatus || "").toLowerCase();
-    const hasTimer = safeNum(x.timerSec) > 0;
-    if (!hasTimer) return Number.POSITIVE_INFINITY;
-
-    // ✅ paused: do NOT tick down
-    if (st === "paused") return Math.max(0, safeNum(x.clockLeftMs));
-
-    const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
-    return Math.max(0, safeNum(x.clockLeftMs) - elapsed);
-  };
-
-  const getLiveEtaToShownPick = (x) => {
-    const st = String(x?.draftStatus || "").toLowerCase();
-    const hasTimer = safeNum(x.timerSec) > 0;
-    if (!hasTimer) return Number.POSITIVE_INFINITY;
-
-    // ✅ paused: do NOT tick down (keep last computed ETA)
-    if (st === "paused") {
-      const v = safeNum(x.etaMs);
-      return v > 0 ? v : Number.POSITIVE_INFINITY;
-    }
-
-    const elapsed = Math.max(0, safeNum(now) - safeNum(x.computedAt));
-    const isDrafting = st === "drafting";
-    const liveClockLeft = getLiveClockLeft(x);
-
-    const shownPickNo = x.onClockIsMe ? x.myNextPickAfterThis : x.myNextPickOverall;
-    const perPickMs = safeNum(x.timerSec) * 1000;
-
-    if (shownPickNo != null && x.currentPick != null) {
-      if (isDrafting && x.onClockIsMe) {
-        const gap = Math.max(0, safeNum(shownPickNo) - safeNum(x.currentPick) - 1);
-        return liveClockLeft + gap * perPickMs;
-      }
-      return Math.max(0, safeNum(x.etaMs) - elapsed);
-    }
-
-    return Number.POSITIVE_INFINITY;
-  };
-
-
-      const dir = sortDir === "asc" ? 1 : -1;
+    const dir = sortDir === "asc" ? 1 : -1;
 
       r = [...r].sort((a, b) => {
         const ba = bucket(a);

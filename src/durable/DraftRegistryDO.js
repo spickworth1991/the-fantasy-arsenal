@@ -6,6 +6,7 @@ function coerceJsonStr(v) {
   return s;
 }
 
+//  Durable Object that keeps the "master" draft registry in D1 fresh every ~15 seconds.
 //
 // Why:
 // - Cloudflare Scheduled Triggers can't run every 15s.
