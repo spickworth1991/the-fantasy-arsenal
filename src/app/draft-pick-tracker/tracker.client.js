@@ -206,6 +206,7 @@ export default function DraftPickTrackerClient() {
   const [sortDir, setSortDir] = useState("asc");
 
   const [rows, setRows] = useState([]);
+  const [bundles, setBundles] = useState([]);
 
   // Local "auto-pick" flags (set via service-worker push -> postMessage).
   // Stored client-side (per device) so we don't have to expose per-user push data server-side.
@@ -301,7 +302,7 @@ export default function DraftPickTrackerClient() {
     return rosterToName;
   };
 
-  function getUserRosterIdForLeague(rosterByUsername, users, rosters, rosterNames) {
+  function getUserRosterIdForLeague(rosterByUsername, users, rosters) {
     const uname = String(username || "").toLowerCase().trim();
     if (!uname) return null;
 
@@ -309,15 +310,6 @@ export default function DraftPickTrackerClient() {
     if (rosterByUsername && typeof rosterByUsername === "object") {
       const rid = rosterByUsername?.[uname];
       if (rid != null) return String(rid);
-    }
-
-    // Fallback: registry often has rosterNames (roster_id -> display name).
-    // If rosterByUsername is empty/missing, try matching the entered username against rosterNames values.
-    if (rosterNames && typeof rosterNames === "object") {
-      for (const [rid, nm] of Object.entries(rosterNames)) {
-        if (!rid) continue;
-        if (String(nm || "").toLowerCase().trim() === uname) return String(rid);
-      }
     }
 
     const u =
@@ -539,7 +531,7 @@ export default function DraftPickTrackerClient() {
         })
       : null;
 
-    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername, [], [], bundle?.rosterNames);
+    const myRosterId = getUserRosterIdForLeague(bundle?.rosterByUsername, [], []);
 
     let myNextPickOverall = null;
     if (myRosterId && teams > 0) {
@@ -727,20 +719,39 @@ export default function DraftPickTrackerClient() {
       const reg = registryDrafts[String(lg.draft_id)];
       if (!reg) continue;
 
-      const draft = reg?.draft_json ? jsonParseSafe(reg.draft_json, null) : null;
+      // Registry API may return either raw DB JSON strings (older) OR parsed objects (newer).
+      const draft =
+        reg?.draft ??
+        (reg?.draft_json ? jsonParseSafe(reg.draft_json, null) : null);
+
       const draftStatus = String(draft?.status || reg?.status || "").toLowerCase();
 
-      const slotToRoster = reg?.slot_to_roster_json ? jsonParseSafe(reg.slot_to_roster_json, {}) : {};
-      const rosterNames = reg?.roster_names_json ? jsonParseSafe(reg.roster_names_json, {}) : {};
-      const rosterByUsername = reg?.roster_by_username_json ? jsonParseSafe(reg.roster_by_username_json, {}) : {};
-      const tradedPickOwner = reg?.traded_pick_owner_json ? jsonParseSafe(reg.traded_pick_owner_json, {}) : {};
+      const slotToRoster =
+        reg?.slotToRoster ??
+        (reg?.slot_to_roster_json ? jsonParseSafe(reg.slot_to_roster_json, {}) : {}) ??
+        {};
+
+      const rosterNames =
+        reg?.rosterNames ??
+        (reg?.roster_names_json ? jsonParseSafe(reg.roster_names_json, {}) : {}) ??
+        {};
+
+      const rosterByUsername =
+        reg?.rosterByUsername ??
+        (reg?.roster_by_username_json ? jsonParseSafe(reg.roster_by_username_json, {}) : {}) ??
+        {};
+
+      const tradedPickOwner =
+        reg?.tradedPickOwners ??
+        (reg?.traded_pick_owner_json ? jsonParseSafe(reg.traded_pick_owner_json, {}) : {}) ??
+        {};
 
       const teams = safeNum(reg?.teams || draft?.settings?.teams || 0);
       const rounds = safeNum(reg?.rounds || draft?.settings?.rounds || 0);
       const timerSec = safeNum(reg?.timer_sec || draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0);
       const reversalRound = safeNum(reg?.reversal_round || draft?.settings?.reversal_round || 0);
 
-      const pickCount = safeNum(reg?.pick_count || 0);
+      const pickCount = safeNum((reg?.pickCount ?? reg?.pick_count) ?? 0);
       const currentPick = pickCount + 1;
 
       const seasonStr = String(draft?.season || lg?.season || year || "");
@@ -805,8 +816,8 @@ export default function DraftPickTrackerClient() {
       }
 
       draftRows.push({
-        leagueId: reg?.league_id || lg?.league_id || null,
-        leagueName: reg?.league_name || lg?.name || "Unnamed League",
+        leagueId: reg?.leagueId || reg?.league_id || lg?.league_id || null,
+        leagueName: reg?.leagueName || reg?.league_name || lg?.name || "Unnamed League",
         season: seasonStr,
         draftId: String(lg?.draft_id || reg?.draft_id || ""),
         draftStatus,
@@ -988,7 +999,8 @@ export default function DraftPickTrackerClient() {
     };
   }, []);
 
-    // ---------------- Live-time helpers ----------------
+  
+  // ---------------- Live-time helpers ----------------
   // Rows are computed server-side at `computedAt`; adjust clock/ETA client-side as time passes.
   const getAgeMs = (row) => {
     const computedAt = safeNum(row?.computedAt);
@@ -1007,7 +1019,7 @@ export default function DraftPickTrackerClient() {
     return Math.max(0, base - getAgeMs(row));
   };
 
-  // ---------------- Filters + sorting (bucket priority) ----------------
+  // Bucket priority for sorting: On Clock (me) → On Deck → Drafting → Paused → Other
   const bucket = (row) => {
     if (row?.onClockIsMe) return 0;
     if (row?.onDeck) return 1;
@@ -1016,6 +1028,8 @@ export default function DraftPickTrackerClient() {
     if (st === "paused") return 3;
     return 4;
   };
+
+// ---------------- Filters + sorting (bucket priority) ----------------
 
   const filteredDraftRows = useMemo(() => {
     const before = (rows || []).length;
