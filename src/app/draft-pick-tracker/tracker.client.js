@@ -988,6 +988,25 @@ export default function DraftPickTrackerClient() {
     };
   }, []);
 
+    // ---------------- Live-time helpers ----------------
+  // Rows are computed server-side at `computedAt`; adjust clock/ETA client-side as time passes.
+  const getAgeMs = (row) => {
+    const computedAt = safeNum(row?.computedAt);
+    return computedAt > 0 && now > 0 ? Math.max(0, now - computedAt) : 0;
+  };
+
+  const getLiveClockLeft = (row) => {
+    const base = safeNum(row?.clockLeftMs);
+    return Math.max(0, base - getAgeMs(row));
+  };
+
+  const getLiveEtaToShownPick = (row) => {
+    const v = row?.etaMs;
+    if (v == null) return Number.MAX_SAFE_INTEGER;
+    const base = safeNum(v);
+    return Math.max(0, base - getAgeMs(row));
+  };
+
   // ---------------- Filters + sorting (bucket priority) ----------------
   const bucket = (row) => {
     if (row?.onClockIsMe) return 0;
