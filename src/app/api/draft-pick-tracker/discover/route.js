@@ -104,7 +104,7 @@ export async function POST(request) {
 
     // Kick the DO to hydrate asynchronously (do not block UI)
     try {
-      const id = env.DRAFT_REGISTRY.idFromName("global");
+      const id = env.DRAFT_REGISTRY.idFromName("master");
       const stub = env.DRAFT_REGISTRY.get(id);
       ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick"));
     } catch {
