@@ -989,6 +989,14 @@ export default function DraftPickTrackerClient() {
   }, []);
 
   // ---------------- Filters + sorting (bucket priority) ----------------
+  const bucket = (row) => {
+    if (row?.onClockIsMe) return 0;
+    if (row?.onDeck) return 1;
+    const st = String(row?.draftStatus || "").toLowerCase();
+    if (st === "drafting") return 2;
+    if (st === "paused") return 3;
+    return 4;
+  };
 
   const filteredDraftRows = useMemo(() => {
     const before = (rows || []).length;
