@@ -12,18 +12,6 @@ function safeJsonParse(value, fallback = null) {
   }
 }
 
-function isDebugRequest(req) {
-  try {
-    const url = new URL(req.url);
-    if (url.searchParams.get("debug") === "1") return true;
-  } catch {}
-  try {
-    const h = req?.headers?.get?.("x-dpt-debug");
-    if (h === "1" || h === "true") return true;
-  } catch {}
-  return false;
-}
-
 function getDb(env) {
   // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
   return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
@@ -37,11 +25,11 @@ function getDraftRegistryStub(env) {
   return ns.get(id);
 }
 
-async function kickDraftRegistry(env, debug = false) {
+async function kickDraftRegistry(env) {
   try {
     const stub = getDraftRegistryStub(env);
     if (!stub) return;
-    await stub.fetch(`https://do/tick${debug ? "?debug=1" : ""}`, { method: "POST" });
+    await stub.fetch("https://do/tick", { method: "POST" });
   } catch {
     // ignore
   }
@@ -76,7 +64,12 @@ async function ensureDraftRegistryTable(db) {
         league_name TEXT,
         league_avatar TEXT,
         best_ball INTEGER,
-        completed_at INTEGER
+        current_pick INTEGER,
+        current_owner_name TEXT,
+        next_owner_name TEXT,
+        clock_ends_at INTEGER,
+        completed_at INTEGER,
+        updated_at INTEGER
       )`
     )
     .run();
@@ -98,7 +91,12 @@ async function ensureDraftRegistryTable(db) {
     await ensure("rounds", "INTEGER");
     await ensure("reversal_round", "INTEGER");
     await ensure("best_ball", "INTEGER");
+    await ensure("current_pick", "INTEGER");
+    await ensure("current_owner_name", "TEXT");
+    await ensure("next_owner_name", "TEXT");
+    await ensure("clock_ends_at", "INTEGER");
     await ensure("completed_at", "INTEGER");
+    await ensure("updated_at", "INTEGER");
   } catch {
     // ignore
   }
@@ -108,7 +106,6 @@ export async function GET(req) {
   try {
     const { env } = getRequestContext();
     const db = getDb(env);
-    const debug = isDebugRequest(req);
     if (!db?.prepare) {
       return NextResponse.json(
         {
@@ -184,25 +181,6 @@ export async function GET(req) {
         });
       }
 
-      if (debug) {
-        const sample = list.slice(0, 3).map((d) => ({
-          draftId: d?.draftId,
-          status: d?.status,
-          active: d?.active,
-          pickCount: d?.pickCount,
-          leagueName: d?.leagueName,
-          hasRosterNames: !!d?.rosterNames && Object.keys(d.rosterNames || {}).length > 0,
-          hasRosterByUsername:
-            !!d?.rosterByUsername && Object.keys(d.rosterByUsername || {}).length > 0,
-          hasSlotToRoster: !!d?.slotToRoster && Object.keys(d.slotToRoster || {}).length > 0,
-        }));
-        // eslint-disable-next-line no-console
-        console.log("[DPT registry] GET snapshot", {
-          returned: list.length,
-          sample,
-        });
-      }
-
       return NextResponse.json({ ok: true, rows: list });
     }
 
@@ -212,7 +190,9 @@ export async function GET(req) {
         `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
                 slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                 teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                best_ball, completed_at
+                best_ball,
+                current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                completed_at, updated_at
          FROM push_draft_registry
          WHERE draft_id IN (${placeholders})`
       )
@@ -240,6 +220,10 @@ export async function GET(req) {
         status: effectiveStatus,
         lastPicked: Number(r.last_picked || 0),
         pickCount: Number(r.pick_count ?? NaN),
+        currentPick: r.current_pick == null ? null : Number(r.current_pick),
+        currentOwnerName: r.current_owner_name || null,
+        nextOwnerName: r.next_owner_name || null,
+        clockEndsAt: r.clock_ends_at == null ? null : Number(r.clock_ends_at),
         draft,
         slotToRoster: safeJsonParse(r.slot_to_roster_json),
         rosterNames: safeJsonParse(r.roster_names_json),
@@ -254,36 +238,21 @@ export async function GET(req) {
         leagueAvatar: r.league_avatar || null,
         bestBall: Number(r.best_ball || 0) === 1,
         completedAt: r.completed_at == null ? null : Number(r.completed_at),
+        updatedAt: r.updated_at == null ? null : Number(r.updated_at),
       };
 
       // If not hydrated yet, kick the DO so the UI fills in quickly.
-      if (!r?.draft_json || !String(effectiveStatus || "").trim()) needsKick = true;
+      if (
+        !r?.draft_json ||
+        !String(effectiveStatus || "").trim() ||
+        !r?.roster_names_json ||
+        String(r.roster_names_json) === "null"
+      ) {
+        needsKick = true;
+      }
     }
 
-    if (needsKick) await kickDraftRegistry(env, debug);
-
-    if (debug) {
-      const sample = Object.entries(out)
-        .slice(0, 3)
-        .map(([draftId, d]) => ({
-          draftId,
-          status: d?.status,
-          active: d?.active,
-          pickCount: d?.pickCount,
-          leagueName: d?.leagueName,
-          hasRosterNames: !!d?.rosterNames && Object.keys(d.rosterNames || {}).length > 0,
-          hasRosterByUsername:
-            !!d?.rosterByUsername && Object.keys(d.rosterByUsername || {}).length > 0,
-          hasSlotToRoster: !!d?.slotToRoster && Object.keys(d.slotToRoster || {}).length > 0,
-        }));
-      // eslint-disable-next-line no-console
-      console.log("[DPT registry] GET", {
-        requested: ids.length,
-        returned: Object.keys(out).length,
-        needsKick,
-        sample,
-      });
-    }
+    if (needsKick) await kickDraftRegistry(env);
 
     return NextResponse.json({ ok: true, drafts: out });
   } catch (e) {
@@ -296,7 +265,6 @@ export async function POST(req) {
   try {
     const { env } = getRequestContext();
     const db = getDb(env);
-    const debug = isDebugRequest(req);
     if (!db?.prepare) {
       return NextResponse.json(
         { ok: false, error: "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB." },
@@ -315,14 +283,6 @@ export async function POST(req) {
 
     const drafts = Array.isArray(payload?.drafts) ? payload.drafts : [];
     const now = Date.now();
-
-    if (debug) {
-      // eslint-disable-next-line no-console
-      console.log("[DPT registry] POST register", {
-        count: drafts.length,
-        sample: drafts.slice(0, 5),
-      });
-    }
 
     let upserted = 0;
     for (const d of drafts) {
@@ -372,26 +332,10 @@ export async function POST(req) {
         .run();
 
       upserted++;
-
-      if (debug) {
-        // eslint-disable-next-line no-console
-        console.log("[DPT registry] upserted seed row", {
-          draftId,
-          leagueId,
-          leagueName,
-          bestBall,
-          status,
-        });
-      }
     }
 
     // Kick the shared DO (same name as everywhere else) so it hydrates immediately.
-    await kickDraftRegistry(env, debug);
-
-    if (debug) {
-      // eslint-disable-next-line no-console
-      console.log("[DPT registry] kicked DO", { debug: true, upserted });
-    }
+    await kickDraftRegistry(env);
 
     return NextResponse.json({ ok: true, upserted });
   } catch (e) {
