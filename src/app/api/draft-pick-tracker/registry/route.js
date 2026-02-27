@@ -246,7 +246,9 @@ export async function GET(req) {
         !r?.draft_json ||
         !String(effectiveStatus || "").trim() ||
         !r?.roster_names_json ||
-        String(r.roster_names_json) === "null"
+        ["null", "{}", "[]"].includes(String(r.roster_names_json)) ||
+        !r?.slot_to_roster_json ||
+        ["null", "{}", "[]"].includes(String(r.slot_to_roster_json))
       ) {
         needsKick = true;
       }

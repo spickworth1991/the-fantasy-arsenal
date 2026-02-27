@@ -825,7 +825,6 @@ export default function DraftPickTrackerClient() {
       });
     }
 
-    setBundles([]);
     setRows(draftRows);
   } catch (e) {
     console.error(e);
