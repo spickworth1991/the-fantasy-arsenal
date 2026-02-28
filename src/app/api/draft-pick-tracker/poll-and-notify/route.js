@@ -104,14 +104,51 @@ async function ensureDraftRegistryTable(db) {
         league_id TEXT,
         league_name TEXT,
         league_avatar TEXT,
+        best_ball INTEGER,
         current_pick INTEGER,
         current_owner_name TEXT,
         next_owner_name TEXT,
         clock_ends_at INTEGER,
+        completed_at INTEGER,
         updated_at INTEGER
       )`
     )
     .run();
+
+  // Back-compat: add missing columns if the table exists in an older shape.
+  try {
+    const info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
+    const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+    const add = async (name, type) => {
+      if (!existing.has(name)) {
+        await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
+      }
+    };
+
+    await add("pick_count", "INTEGER");
+    await add("draft_json", "TEXT");
+    await add("draft_order_json", "TEXT");
+    await add("slot_to_roster_json", "TEXT");
+    await add("roster_names_json", "TEXT");
+    await add("roster_by_username_json", "TEXT");
+    await add("traded_pick_owner_json", "TEXT");
+    await add("teams", "INTEGER");
+    await add("rounds", "INTEGER");
+    await add("timer_sec", "INTEGER");
+    await add("reversal_round", "INTEGER");
+    await add("league_id", "TEXT");
+    await add("league_name", "TEXT");
+    await add("league_avatar", "TEXT");
+    await add("best_ball", "INTEGER");
+    await add("current_pick", "INTEGER");
+    await add("current_owner_name", "TEXT");
+    await add("next_owner_name", "TEXT");
+    await add("clock_ends_at", "INTEGER");
+    await add("completed_at", "INTEGER");
+    await add("updated_at", "INTEGER");
+  } catch {
+    // ignore
+  }
 }
 
 export async function POST(req) {
@@ -173,6 +210,12 @@ async function computeDraftIdsForUsername(username, season) {
   };
 }
 
+function getCurrentSlotSnake(pickNo, teams) {
+  const idx = (pickNo - 1) % teams;
+  const round = Math.floor((pickNo - 1) / teams) + 1;
+  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
+  return { slot, round };
+}
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
