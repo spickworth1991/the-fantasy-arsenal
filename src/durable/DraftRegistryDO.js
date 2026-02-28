@@ -414,6 +414,9 @@ async function tickOnce(env) {
     const lastChecked = Number(reg?.last_checked_at || 0);
     const wasActive = Number(reg?.active || 0) === 1;
     const statusLower = String(reg?.status || "").toLowerCase();
+    // If a draft is complete, we do not need to keep re-checking it forever.
+    // New drafts get discovered separately via the discover flow.
+    if (reg && statusLower === "complete") continue;
     const staleMs = wasActive
       ? ACTIVE_REFRESH_MS
       : statusLower === "pre_draft"

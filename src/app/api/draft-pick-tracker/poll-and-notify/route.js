@@ -4,6 +4,34 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+function jsonParseSafe(s, fallback) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return fallback;
+  }
+}
+
+function registryAvatarUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return null;
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  return `https://sleepercdn.com/avatars/thumbs/${s}`;
+}
+
+async function loadRegistryRow(db, draftId) {
+  return db
+    .prepare(
+      `SELECT draft_id, active, status, league_name, league_id, league_avatar,
+              timer_sec, current_pick, current_owner_name, clock_ends_at,
+              roster_names_json, roster_by_username_json
+       FROM push_draft_registry
+       WHERE draft_id=?`
+    )
+    .bind(String(draftId))
+    .first();
+}
+
 async function ensureTable(db, table, createSql, columnsToEnsure = []) {
   await db.prepare(createSql).run();
   if (!columnsToEnsure.length) return;
@@ -220,12 +248,6 @@ function sleeperDraftUrl(draftId) {
   return draftId ? `https://sleeper.com/draft/nfl/${draftId}` : null;
 }
 
-function bestLeagueAvatarUrl({ league, draft }) {
-  const leagueAvatar = league?.avatar || null;
-  const draftAvatar = draft?.metadata?.avatar || null;
-  const avatarId = leagueAvatar || draftAvatar;
-  return avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : null;
-}
 
 function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
   const baseSeed = `${stage}|${leagueName}|${timerSec}`;
@@ -479,10 +501,6 @@ async function handler(req) {
       })
       .filter((x) => x?.sub?.endpoint && x.endpoint);
 
-    const draftCache = new Map();
-    const leagueCache = new Map();
-    const userIdCache = new Map();
-
     let sent = 0;
     let checked = 0;
 
@@ -502,102 +520,24 @@ async function handler(req) {
     };
 
     // ---- Shared draft registry pass ----
-    // Build one set of drafts we should actively poll (drafting/paused). Finished drafts
-    // get cooled down in the registry so we aren't burning calls forever.
-    const uniqueDraftIds = Array.from(
-      new Set(
-        subs
-          .flatMap((s) => (Array.isArray(s.draftIds) ? s.draftIds : []))
-          .filter(Boolean)
-          .map(String)
-      )
-    );
+// Determine which drafts are currently active (drafting/paused) using the D1 registry.
+// This route should NOT poll Sleeper itself; the Durable Object keeps the registry fresh.
+const activeDraftIdSet = new Set();
+try {
+  const activeRows = await db
+    .prepare(
+      `SELECT draft_id
+       FROM push_draft_registry
+       WHERE active=1 AND (LOWER(status)='drafting' OR LOWER(status)='paused')`
+    )
+    .all();
+  for (const r of activeRows?.results || []) {
+    if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
+  }
+} catch {
+  // If the registry query fails for some reason, keep going (we'll just skip notifications this run).
+}
 
-    const ACTIVE_REFRESH_MS = 60 * 1000; // always re-check active drafts each run
-    const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // re-check inactive drafts every 6 hours
-    const activeDraftIdSet = new Set();
-
-    for (const draftId of uniqueDraftIds) {
-      const reg = await db
-        .prepare(
-          `SELECT draft_id, active, status, last_checked_at
-           FROM push_draft_registry
-           WHERE draft_id=?`
-        )
-        .bind(String(draftId))
-        .first();
-
-      const lastChecked = Number(reg?.last_checked_at || 0);
-      const wasActive = Number(reg?.active || 0) === 1;
-      const needsRecheck =
-        !lastChecked || now - lastChecked > (wasActive ? ACTIVE_REFRESH_MS : INACTIVE_REFRESH_MS);
-
-      if (!needsRecheck) {
-        if (wasActive) activeDraftIdSet.add(String(draftId));
-        continue;
-      }
-
-      let draft;
-      try {
-        draft = await (async () => {
-          const cached = draftCache.get(draftId);
-          if (cached) return cached;
-          const d = await getDraft(draftId);
-          draftCache.set(draftId, d);
-          return d;
-        })();
-      } catch {
-        // If Sleeper is flaky, keep prior classification.
-        if (wasActive) activeDraftIdSet.add(String(draftId));
-        continue;
-      }
-
-      const status = String(draft?.status || "").toLowerCase();
-      const isActive = status === "drafting" || status === "paused";
-      const teams = Number(draft?.settings?.teams || 0) || null;
-      const timerSec = Number(draft?.settings?.pick_timer || 0) || null;
-      const lastPicked = Number(draft?.last_picked || 0) || null;
-      const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
-
-      await db
-        .prepare(
-          `INSERT INTO push_draft_registry (
-            draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
-            last_picked, pick_count, draft_order_json, teams, timer_sec,
-            league_id, league_name, league_avatar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(draft_id) DO UPDATE SET
-            active=excluded.active,
-            status=excluded.status,
-            last_checked_at=excluded.last_checked_at,
-            last_active_at=excluded.last_active_at,
-            last_inactive_at=excluded.last_inactive_at,
-            last_picked=excluded.last_picked,
-            teams=excluded.teams,
-            timer_sec=excluded.timer_sec,
-            league_id=excluded.league_id,
-            draft_order_json=excluded.draft_order_json`
-        )
-        .bind(
-          String(draftId),
-          isActive ? 1 : 0,
-          status,
-          now,
-          isActive ? now : Number(reg?.last_active_at || 0) || null,
-          !isActive ? now : Number(reg?.last_inactive_at || 0) || null,
-          lastPicked,
-          null,
-          draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
-          teams,
-          timerSec,
-          leagueId ? String(leagueId) : null,
-          null,
-          null
-        )
-        .run();
-
-      if (isActive) activeDraftIdSet.add(String(draftId));
-    }
 
     for (const s of subs) {
       if (!s.username) {
@@ -646,16 +586,6 @@ async function handler(req) {
         continue;
       }
 
-      let userId = userIdCache.get(s.username);
-      if (!userId) {
-        userId = await getUserId(s.username);
-        userIdCache.set(s.username, userId);
-      }
-      if (!userId) {
-        skippedNoOrder++;
-        continue;
-      }
-
       const onClockBatch = [];
       const pausedBatch = [];
       const unpausedBatch = [];
@@ -665,49 +595,33 @@ async function handler(req) {
       for (const draftId of activeDraftIdsForSub) {
         checked++;
 
-        const draft = await (async () => {
-          const cached = draftCache.get(draftId);
-          if (cached) return cached;
-          const d = await getDraft(draftId);
-          draftCache.set(draftId, d);
-          return d;
-        })();
+        
+        const reg = await loadRegistryRow(db, draftId);
 
-        const status = String(draft?.status || "").toLowerCase();
+        const status = String(reg?.status || "").toLowerCase();
         if (status !== "drafting" && status !== "paused") {
           await clearClockState(db, s.endpoint, draftId);
           continue;
         }
 
-        const teams = Number(draft?.settings?.teams || 0);
-        const timerSec = Number(draft?.settings?.pick_timer || 0);
-        const draftOrder = draft?.draft_order || null;
+        const timerSec = Number(reg?.timer_sec || 0);
+        const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
 
-        if (!teams || !draftOrder || !draftOrder[userId]) {
+        const nextPickNo = Number(reg?.current_pick || 0);
+        if (!nextPickNo) {
           skippedNoOrder++;
           continue;
         }
 
-        const userSlot = Number(draftOrder[userId]);
-        const lastPicked = Number(draft?.last_picked || 0);
+        const uname = String(s.username || "").toLowerCase().trim();
+        const rosterByUsername = jsonParseSafe(reg?.roster_by_username_json || "{}", {});
+        const rosterNames = jsonParseSafe(reg?.roster_names_json || "{}", {});
 
-        const draftCacheRow = await loadDraftCache(db, draftId);
+        const userRosterId = rosterByUsername?.[uname] ? String(rosterByUsername[uname]) : null;
+        const userRosterName = userRosterId && rosterNames ? String(rosterNames[userRosterId] || "") : "";
 
-        let pickCount;
-        if (
-          draftCacheRow &&
-          Number(draftCacheRow.last_picked || 0) === lastPicked &&
-          Number.isFinite(Number(draftCacheRow.pick_count))
-        ) {
-          pickCount = Number(draftCacheRow.pick_count);
-        } else {
-          pickCount = await getPickCount(draftId);
-          await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
-        }
-
-        const nextPickNo = pickCount + 1;
-        const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
-        const isOnClock = currentSlot === userSlot;
+        const currentOwnerName = String(reg?.current_owner_name || "");
+        const isOnClock = Boolean(userRosterName) && Boolean(currentOwnerName) && userRosterName === currentOwnerName;
 
         if (!isOnClock) {
           await clearClockState(db, s.endpoint, draftId);
@@ -715,62 +629,45 @@ async function handler(req) {
           continue;
         }
 
-        const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
-
-        let league = null;
-        if (leagueId) {
-          const cachedL = leagueCache.get(String(leagueId));
-          if (cachedL) {
-            league = cachedL;
-          } else if (
-            draftCacheRow?.league_id &&
-            (draftCacheRow?.league_name || draftCacheRow?.league_avatar)
-          ) {
-            league = { name: draftCacheRow.league_name || null, avatar: draftCacheRow.league_avatar || null };
-            leagueCache.set(String(leagueId), league);
-          } else {
-            league = await getLeague(leagueId);
-            leagueCache.set(String(leagueId), league);
-            if (league?.name || league?.avatar) {
-              await saveDraftCache(db, draftId, {
-                league_id: String(leagueId),
-                league_name: league?.name || null,
-                league_avatar: league?.avatar || null,
-              });
-            }
-          }
-        }
-
-        const leagueName =
-          draft?.metadata?.name || draft?.metadata?.league_name || league?.name || "your league";
+        const leagueId = reg?.league_id ? String(reg.league_id) : null;
+        const leagueAvatar = registryAvatarUrl(reg?.league_avatar);
+        const leagueName = String(reg?.league_name || "your league");
 
         const clockState = await loadClockState(db, s.endpoint, draftId);
         const prevPickNo = Number(clockState?.pick_no ?? 0);
         const prevStatus = String(clockState?.last_status || "");
         const isNewPick = prevPickNo !== nextPickNo;
 
-        const lastPickedMs = Number(draft?.last_picked || 0);
-        const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
+        // Registry provides the clock end time (computed by the Durable Object).
+        // We use push_clock_state to "freeze" time when paused.
+        let remainingMs = 0;
+        const clockEndsAt = Number(reg?.clock_ends_at || 0);
+        if (totalMs > 0 && clockEndsAt) remainingMs = Math.max(0, clockEndsAt - now);
 
-        // Base "clock start" normally comes from Sleeper's last_picked timestamp.
-        // But when a draft pauses, Sleeper doesn't include pause duration in last_picked,
-        // so remaining time becomes wrong. We freeze remaining time when paused, then
-        // synthesize a new clock start when it resumes.
-        let clockStart = lastPickedMs > 0 ? lastPickedMs : now;
+        const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
+        const wasPaused = prevStatus === "paused";
+        const isPaused = status === "paused";
 
-        const frozenPausedRemaining = Number(clockState?.paused_remaining_ms ?? NaN);
-        if (!isNewPick && prevStatus === "paused" && status === "drafting") {
-          // resumed: start from the frozen remaining time
-          if (Number.isFinite(frozenPausedRemaining) && totalMs > 0) {
-            clockStart = now - (totalMs - frozenPausedRemaining);
-          }
+        if (!wasPaused && isPaused) {
+          // Just paused — freeze remainingMs.
+          await upsertClockState(db, s.endpoint, draftId, {
+            pick_no: nextPickNo,
+            last_status: status,
+            paused_remaining_ms: Number.isFinite(remainingMs) ? remainingMs : null,
+            paused_at_ms: now,
+          });
+        } else if (wasPaused && !isPaused) {
+          // Just unpaused — clear freeze.
+          await upsertClockState(db, s.endpoint, draftId, {
+            pick_no: nextPickNo,
+            last_status: status,
+            paused_remaining_ms: null,
+            paused_at_ms: null,
+          });
         }
 
-        let remainingMs = totalMs > 0 ? Math.max(0, clockStart + totalMs - now) : 0;
-        if (status === "paused") {
-          if (Number.isFinite(frozenPausedRemaining)) {
-            remainingMs = frozenPausedRemaining;
-          }
+        if (isPaused && Number.isFinite(frozenPausedRemaining)) {
+          remainingMs = frozenPausedRemaining;
         }
 
         const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
@@ -886,7 +783,7 @@ async function handler(req) {
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
-        const icon = bestLeagueAvatarUrl({ league, draft });
+        const icon = leagueAvatar;
         const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
 
         if (stageToSend === "onclock") {
