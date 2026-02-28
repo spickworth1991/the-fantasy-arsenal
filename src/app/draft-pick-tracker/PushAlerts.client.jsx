@@ -42,22 +42,25 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
   const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
 
-  async function saveSubscription(sub) {
-    const res = await fetch("/api/push/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: username || null,
-        draftIds: chosenDraftIds,
-        subscription: sub,
-      }),
-    });
+  async function saveSubscription(sub, { includeUsername = false } = {}) {
+  const endpoint = sub?.endpoint || "";
+  if (!endpoint) return;
 
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(t || `Subscribe API failed (${res.status})`);
-    }
-  }
+  // Only send username when explicitly enabling alerts.
+  const payload = {
+    subscription: sub,
+    draftIds: chosenDraftIds,
+  };
+  if (includeUsername && username) payload.username = username;
+
+  await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+
 
   async function enable() {
     try {
@@ -111,7 +114,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
       }
 
       // Save to server (D1)
-      await withTimeout(saveSubscription(sub), 15000, "Save subscription");
+      await withTimeout(saveSubscription(sub, { includeUsername: true }), 15000, "Save subscription");
 
       setStatus("enabled");
       setMsg(
@@ -142,7 +145,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
         const sub = await reg.pushManager.getSubscription();
         if (!sub) return;
 
-        await saveSubscription(sub);
+        await saveSubscription(sub, { includeUsername: true });
 
         if (!cancelled && status === "enabled") {
           setMsg(

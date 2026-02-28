@@ -13,10 +13,292 @@ const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
 const PRE_DRAFT_REFRESH_MS = 2 * 60 * 1000; // 2 minutes
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
 
+
+// Discovery: keep push_subscriptions.draft_ids_json fresh without requiring a UI visit.
+// Goal: sweep *all* subscribed usernames quickly but safely (bounded API calls).
+// We refresh a small batch every tick, sized so we typically complete a full sweep
+// in ~2 minutes (or as close as possible given caps).
+const DISCOVERY_TARGET_SWEEP_MS = 2 * 60 * 1000;
+const DISCOVERY_MIN_BATCH = 10;
+const DISCOVERY_MAX_BATCH = 60;
+const DISCOVERY_CONCURRENCY = 6;
+const USERID_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+
+
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Sleeper fetch failed ${res.status} for ${url}`);
   return res.json();
+}
+
+
+
+async function ensurePushSubscriptionsTable(db) {
+  // Minimal schema needed for discovery.
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS push_subscriptions (
+        endpoint TEXT PRIMARY KEY,
+        subscription_json TEXT,
+        draft_ids_json TEXT,
+        username TEXT,
+        league_count INTEGER,
+        updated_at INTEGER,
+        created_at INTEGER
+      )`
+    )
+    .run();
+
+  // Back-compat: add missing cols
+  try {
+    const info = await db.prepare(`PRAGMA table_info(push_subscriptions)`).all();
+    const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+    const add = async (name, type) => {
+      if (!existing.has(name)) {
+        await db.prepare(`ALTER TABLE push_subscriptions ADD COLUMN ${name} ${type}`).run();
+      }
+    };
+    await add("subscription_json", "TEXT");
+    await add("draft_ids_json", "TEXT");
+    await add("username", "TEXT");
+    await add("league_count", "INTEGER");
+    await add("updated_at", "INTEGER");
+    await add("created_at", "INTEGER");
+  } catch {
+    // ignore
+  }
+}
+
+function uniqStrings(arr) {
+  const out = [];
+  const seen = new Set();
+  for (const v of arr || []) {
+    const s = v == null ? "" : String(v);
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+}
+
+async function getUserIdByUsername(username) {
+  const u = String(username || "").trim();
+  if (!u) return null;
+  const data = await sleeperJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(u)}`);
+  return data?.user_id ? String(data.user_id) : null;
+}
+
+async function getUserLeaguesById(userId, seasonYear) {
+  const uid = String(userId || "").trim();
+  if (!uid) return [];
+  const year = String(seasonYear || new Date().getFullYear());
+  try {
+    const leagues = await sleeperJson(`https://api.sleeper.app/v1/user/${uid}/leagues/nfl/${year}`);
+    return Array.isArray(leagues) ? leagues : [];
+  } catch {
+    return [];
+  }
+}
+
+async function seedRegistryFromLeagues(db, leagues, onlyDraftIdsSet) {
+  // Seed minimal league metadata for newly discovered drafts so the UI + notifier have names/avatars
+  // even before a full hydrate occurs.
+  const now = Date.now();
+  const rows = Array.isArray(leagues) ? leagues : [];
+  for (const lg of rows) {
+    const draftId = lg?.draft_id != null ? String(lg.draft_id) : "";
+    if (!draftId) continue;
+    if (onlyDraftIdsSet && !onlyDraftIdsSet.has(draftId)) continue;
+
+    const leagueId = lg?.league_id != null ? String(lg.league_id) : null;
+    const leagueName = lg?.name != null ? String(lg.name) : null;
+    const leagueAvatar = lg?.avatar != null ? String(lg.avatar) : null;
+    const bestBall = lg?.settings?.best_ball ? 1 : 0;
+
+    await db
+      .prepare(
+        `INSERT INTO push_draft_registry (
+           draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+           last_picked, pick_count,
+           draft_json, draft_order_json, slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+           teams, rounds, timer_sec, reversal_round,
+           league_id, league_name, league_avatar, best_ball,
+           current_pick, current_owner_name, next_owner_name, clock_ends_at,
+           completed_at, updated_at
+         ) VALUES (
+           ?, 0, 'pre_draft', ?, NULL, NULL,
+           NULL, NULL,
+           NULL, NULL, NULL, NULL, NULL, NULL,
+           NULL, NULL, NULL, NULL,
+           ?, ?, ?, ?,
+           NULL, NULL, NULL, NULL,
+           NULL, ?
+         )
+         ON CONFLICT(draft_id) DO UPDATE SET
+           league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
+           league_name=CASE
+             WHEN (push_draft_registry.league_name IS NULL OR push_draft_registry.league_name='') AND excluded.league_name IS NOT NULL
+             THEN excluded.league_name ELSE push_draft_registry.league_name END,
+           league_avatar=CASE
+             WHEN (push_draft_registry.league_avatar IS NULL OR push_draft_registry.league_avatar='') AND excluded.league_avatar IS NOT NULL
+             THEN excluded.league_avatar ELSE push_draft_registry.league_avatar END,
+           best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
+           updated_at=?`
+      )
+      .bind(
+        draftId,
+        now,
+        leagueId,
+        leagueName,
+        leagueAvatar,
+        bestBall,
+        now,
+        now
+      )
+      .run();
+  }
+}
+
+async function listDiscoveryUsernames(db, limit) {
+  // Sweep by username (not endpoint) so multiple devices for the same user stay in sync.
+  // Use oldest updated_at across that username for fair ordering.
+  const res = await db
+    .prepare(
+      `SELECT username, MIN(COALESCE(updated_at, 0)) AS oldest
+       FROM push_subscriptions
+       WHERE username IS NOT NULL AND username != ''
+       GROUP BY username
+       ORDER BY oldest ASC
+       LIMIT ?`
+    )
+    .bind(Number(limit || 0))
+    .all();
+  return res?.results || [];
+}
+
+async function listDraftIdsForUsername(db, username) {
+  const res = await db
+    .prepare(`SELECT draft_ids_json FROM push_subscriptions WHERE username=?`)
+    .bind(String(username))
+    .all();
+  const set = new Set();
+  for (const r of res?.results || []) {
+    try {
+      const ids = JSON.parse(r.draft_ids_json || "[]");
+      if (Array.isArray(ids)) ids.filter(Boolean).forEach((x) => set.add(String(x)));
+    } catch {
+      // ignore
+    }
+  }
+  return Array.from(set);
+}
+
+async function discoveryBatch(env, state) {
+  const db = env?.PUSH_DB;
+  if (!db?.prepare) return { ok: false, discoveredDrafts: 0, discoveredUsers: 0 };
+
+  await ensurePushSubscriptionsTable(db);
+
+  const now = Date.now();
+  const seasonYear = new Date().getFullYear();
+
+  let userCount = 0;
+  try {
+    const c = await db
+      .prepare(
+        `SELECT COUNT(DISTINCT username) AS c
+         FROM push_subscriptions
+         WHERE username IS NOT NULL AND username != ''`
+      )
+      .first();
+    userCount = Number(c?.c || 0);
+  } catch {
+    userCount = 0;
+  }
+
+  if (!userCount) return { ok: true, discoveredDrafts: 0, discoveredUsers: 0, userCount: 0 };
+
+  const rawBatch = Math.ceil((userCount * TICK_MS) / DISCOVERY_TARGET_SWEEP_MS);
+  const batchSize = Math.max(DISCOVERY_MIN_BATCH, Math.min(DISCOVERY_MAX_BATCH, rawBatch));
+
+  const rows = await listDiscoveryUsernames(db, batchSize);
+  if (!rows.length) return { ok: true, discoveredDrafts: 0, discoveredUsers: 0, userCount };
+
+  // Simple in-DO userId cache with TTL.
+  const getCachedUserId = async (username) => {
+    const key = `uid:${String(username || "").toLowerCase().trim()}`;
+    if (!key || key === "uid:") return null;
+    try {
+      const cached = await state.storage.get(key);
+      const obj = cached && typeof cached === "object" ? cached : null;
+      if (obj?.userId && obj?.ts && now - Number(obj.ts) < USERID_CACHE_TTL_MS) return String(obj.userId);
+    } catch {
+      // ignore
+    }
+    let userId = null;
+    try {
+      userId = await getUserIdByUsername(username);
+    } catch {
+      userId = null;
+    }
+    if (userId) {
+      try {
+        await state.storage.put(key, { userId, ts: now });
+      } catch {
+        // ignore
+      }
+    }
+    return userId;
+  };
+
+  let discoveredUsers = 0;
+  let discoveredDrafts = 0;
+
+  const queue = rows.slice();
+  const workers = Array.from(
+    { length: Math.min(DISCOVERY_CONCURRENCY, queue.length) },
+    () =>
+      (async () => {
+        while (queue.length) {
+          const row = queue.shift();
+          if (!row) break;
+          const username = String(row.username || "").trim();
+          if (!username) continue;
+
+          const existing = await listDraftIdsForUsername(db, username);
+          const existingSet = new Set(existing.map(String));
+
+          const userId = await getCachedUserId(username);
+          if (!userId) continue;
+
+          const leagues = await getUserLeaguesById(userId, seasonYear);
+          const leagueDraftIds = uniqStrings(leagues.map((lg) => lg?.draft_id).filter(Boolean));
+          const combined = uniqStrings([...existing, ...leagueDraftIds]);
+
+          const newOnes = combined.filter((id) => !existingSet.has(String(id)));
+          if (newOnes.length) {
+            discoveredUsers++;
+            discoveredDrafts += newOnes.length;
+            const only = new Set(newOnes.map(String));
+            await seedRegistryFromLeagues(db, leagues, only);
+          }
+
+          // Update ALL endpoints for that username so devices stay in sync.
+          await db
+            .prepare(
+              `UPDATE push_subscriptions
+               SET draft_ids_json=?, league_count=?, updated_at=?
+               WHERE username=?`
+            )
+            .bind(JSON.stringify(combined), Number(leagues.length || 0), now, username)
+            .run();
+        }
+      })()
+  );
+
+  await Promise.all(workers);
+
+  return { ok: true, discoveredDrafts, discoveredUsers, checkedUsers: rows.length, userCount };
 }
 
 async function ensureDraftRegistryTable(db) {
@@ -402,6 +684,14 @@ async function tickOnce(env) {
 
   await ensureDraftRegistryTable(db);
   await ensureDraftCacheTable(db);
+// Discovery runs on every tick (bounded) so alerts don't depend on someone visiting the UI.
+// It refreshes push_subscriptions.draft_ids_json in a fair, oldest-first sweep by username.
+try {
+  if (state?.storage) await discoveryBatch(env, state);
+} catch {
+  // discovery should never block registry updates
+}
+
 
   const now = Date.now();
   const uniqueDraftIds = await listUniqueDraftIds(db);
