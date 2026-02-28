@@ -4,34 +4,6 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-function jsonParseSafe(s, fallback) {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return fallback;
-  }
-}
-
-function registryAvatarUrl(v) {
-  const s = String(v || "").trim();
-  if (!s) return null;
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  return `https://sleepercdn.com/avatars/thumbs/${s}`;
-}
-
-async function loadRegistryRow(db, draftId) {
-  return db
-    .prepare(
-      `SELECT draft_id, active, status, league_name, league_id, league_avatar,
-              timer_sec, current_pick, current_owner_name, clock_ends_at,
-              roster_names_json, roster_by_username_json
-       FROM push_draft_registry
-       WHERE draft_id=?`
-    )
-    .bind(String(draftId))
-    .first();
-}
-
 async function ensureTable(db, table, createSql, columnsToEnsure = []) {
   await db.prepare(createSql).run();
   if (!columnsToEnsure.length) return;
@@ -106,8 +78,8 @@ async function ensurePushTables(db) {
 }
 
 async function ensureDraftRegistryTable(db) {
-  // Shared registry: lets us stop polling finished drafts for hours at a time,
-  // while still keeping draft_ids stored on subscriptions for future ADP tooling.
+  // Keep in sync with the Durable Object schema. The DO is the source of truth,
+  // but poll-and-notify may be the first thing to touch D1 in a fresh env.
   await db
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_draft_registry (
@@ -119,12 +91,24 @@ async function ensureDraftRegistryTable(db) {
         last_inactive_at INTEGER,
         last_picked INTEGER,
         pick_count INTEGER,
+        draft_json TEXT,
         draft_order_json TEXT,
+        slot_to_roster_json TEXT,
+        roster_names_json TEXT,
+        roster_by_username_json TEXT,
+        traded_pick_owner_json TEXT,
         teams INTEGER,
+        rounds INTEGER,
         timer_sec INTEGER,
+        reversal_round INTEGER,
         league_id TEXT,
         league_name TEXT,
-        league_avatar TEXT
+        league_avatar TEXT,
+        current_pick INTEGER,
+        current_owner_name TEXT,
+        next_owner_name TEXT,
+        clock_ends_at INTEGER,
+        updated_at INTEGER
       )`
     )
     .run();
@@ -154,27 +138,8 @@ function assertAuth(req, env) {
   return false;
 }
 
-async function getPickCount(draftId) {
-  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}/picks`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Sleeper picks fetch failed for ${draftId}: ${res.status}`);
-  const picks = await res.json();
-  return Array.isArray(picks) ? picks.length : 0;
-}
 
-async function getDraft(draftId) {
-  const res = await fetch(`https://api.sleeper.app/v1/draft/${draftId}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Sleeper draft fetch failed for ${draftId}: ${res.status}`);
-  return res.json();
-}
 
-async function getLeague(leagueId) {
-  if (!leagueId) return null;
-  const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return res.json();
-}
 
 async function getUserId(username) {
   const res = await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`, {
@@ -208,12 +173,6 @@ async function computeDraftIdsForUsername(username, season) {
   };
 }
 
-function getCurrentSlotSnake(pickNo, teams) {
-  const idx = (pickNo - 1) % teams;
-  const round = Math.floor((pickNo - 1) / teams) + 1;
-  const slot = round % 2 === 1 ? idx + 1 : teams - idx;
-  return { slot, round };
-}
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
@@ -401,48 +360,8 @@ async function clearClockState(db, endpoint, draftId) {
   return db.prepare(`DELETE FROM push_clock_state WHERE endpoint=? AND draft_id=?`).bind(endpoint, String(draftId)).run();
 }
 
-async function ensureDraftCacheTable(db) {
-  await db
-    .prepare(
-      `CREATE TABLE IF NOT EXISTS push_draft_cache (
-        draft_id TEXT PRIMARY KEY,
-        last_picked INTEGER,
-        pick_count INTEGER,
-        league_id TEXT,
-        league_name TEXT,
-        league_avatar TEXT,
-        updated_at INTEGER
-      )`
-    )
-    .run();
-}
 
-async function loadDraftCache(db, draftId) {
-  return (await db.prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`).bind(String(draftId)).first()) || null;
-}
 
-async function saveDraftCache(db, draftId, patch) {
-  const now = Date.now();
-  const cur = (await loadDraftCache(db, draftId)) || {};
-  const next = { ...cur, ...patch, draft_id: String(draftId), updated_at: now };
-  await db
-    .prepare(
-      `INSERT OR REPLACE INTO push_draft_cache (
-        draft_id, last_picked, pick_count, league_id, league_name, league_avatar, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .bind(
-      next.draft_id,
-      next.last_picked ?? null,
-      next.pick_count ?? null,
-      next.league_id ?? null,
-      next.league_name ?? null,
-      next.league_avatar ?? null,
-      next.updated_at
-    )
-    .run();
-  return next;
-}
 
 async function handler(req) {
   try {
@@ -459,7 +378,6 @@ async function handler(req) {
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
 
     await ensurePushTables(db);
-    await ensureDraftCacheTable(db);
     await ensureDraftRegistryTable(db);
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
@@ -500,6 +418,7 @@ async function handler(req) {
         };
       })
       .filter((x) => x?.sub?.endpoint && x.endpoint);
+    const userIdCache = new Map();
 
     let sent = 0;
     let checked = 0;
@@ -520,24 +439,23 @@ async function handler(req) {
     };
 
     // ---- Shared draft registry pass ----
-// Determine which drafts are currently active (drafting/paused) using the D1 registry.
-// This route should NOT poll Sleeper itself; the Durable Object keeps the registry fresh.
-const activeDraftIdSet = new Set();
-try {
-  const activeRows = await db
-    .prepare(
-      `SELECT draft_id
-       FROM push_draft_registry
-       WHERE active=1 AND (LOWER(status)='drafting' OR LOWER(status)='paused')`
-    )
-    .all();
-  for (const r of activeRows?.results || []) {
-    if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
-  }
-} catch {
-  // If the registry query fails for some reason, keep going (we'll just skip notifications this run).
-}
-
+    // Determine which drafts are currently active (drafting/paused) using the D1 registry.
+    // This route should NOT poll Sleeper itself; the Durable Object keeps the registry fresh.
+    const activeDraftIdSet = new Set();
+    try {
+      const activeRows = await db
+        .prepare(
+          `SELECT draft_id
+           FROM push_draft_registry
+           WHERE active=1 AND (LOWER(status)='drafting' OR LOWER(status)='paused')`
+        )
+        .all();
+      for (const r of activeRows?.results || []) {
+        if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
+      }
+    } catch {
+      // If the registry query fails, keep going (we'll just skip notifications this run).
+    }
 
     for (const s of subs) {
       if (!s.username) {
@@ -586,6 +504,16 @@ try {
         continue;
       }
 
+      let userId = userIdCache.get(s.username);
+      if (!userId) {
+        userId = await getUserId(s.username);
+        userIdCache.set(s.username, userId);
+      }
+      if (!userId) {
+        skippedNoOrder++;
+        continue;
+      }
+
       const onClockBatch = [];
       const pausedBatch = [];
       const unpausedBatch = [];
@@ -595,7 +523,6 @@ try {
       for (const draftId of activeDraftIdsForSub) {
         checked++;
 
-        
         const reg = await loadRegistryRow(db, draftId);
 
         const status = String(reg?.status || "").toLowerCase();
@@ -605,7 +532,6 @@ try {
         }
 
         const timerSec = Number(reg?.timer_sec || 0);
-        const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
 
         const nextPickNo = Number(reg?.current_pick || 0);
         if (!nextPickNo) {
@@ -637,40 +563,42 @@ try {
         const prevPickNo = Number(clockState?.pick_no ?? 0);
         const prevStatus = String(clockState?.last_status || "");
         const isNewPick = prevPickNo !== nextPickNo;
+        const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
 
-        // Registry provides the clock end time (computed by the Durable Object).
-        // We use push_clock_state to "freeze" time when paused.
-        let remainingMs = 0;
-        const clockEndsAt = Number(reg?.clock_ends_at || 0);
-        if (totalMs > 0 && clockEndsAt) remainingMs = Math.max(0, clockEndsAt - now);
+// Registry provides the clock end time (computed by the Durable Object).
+// We use push_clock_state to freeze time when paused (Sleeper's API doesn't
+// include pause duration in last_picked).
+let remainingMs = 0;
+const clockEndsAt = Number(reg?.clock_ends_at || 0);
+if (totalMs > 0 && clockEndsAt) remainingMs = Math.max(0, clockEndsAt - now);
 
-        const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
-        const wasPaused = prevStatus === "paused";
-        const isPaused = status === "paused";
+const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
+const wasPaused = prevStatus === "paused";
+const isPaused = status === "paused";
 
-        if (!wasPaused && isPaused) {
-          // Just paused — freeze remainingMs.
-          await upsertClockState(db, s.endpoint, draftId, {
-            pick_no: nextPickNo,
-            last_status: status,
-            paused_remaining_ms: Number.isFinite(remainingMs) ? remainingMs : null,
-            paused_at_ms: now,
-          });
-        } else if (wasPaused && !isPaused) {
-          // Just unpaused — clear freeze.
-          await upsertClockState(db, s.endpoint, draftId, {
-            pick_no: nextPickNo,
-            last_status: status,
-            paused_remaining_ms: null,
-            paused_at_ms: null,
-          });
-        }
+if (!wasPaused && isPaused) {
+  // Just paused — freeze remainingMs.
+  await upsertClockState(db, s.endpoint, draftId, {
+    pick_no: nextPickNo,
+    last_status: status,
+    paused_remaining_ms: Number.isFinite(remainingMs) ? remainingMs : null,
+    paused_at_ms: now,
+  });
+} else if (wasPaused && !isPaused) {
+  // Just unpaused — clear freeze.
+  await upsertClockState(db, s.endpoint, draftId, {
+    pick_no: nextPickNo,
+    last_status: status,
+    paused_remaining_ms: null,
+    paused_at_ms: null,
+  });
+}
 
-        if (isPaused && Number.isFinite(frozenPausedRemaining)) {
-          remainingMs = frozenPausedRemaining;
-        }
+if (isPaused && Number.isFinite(frozenPausedRemaining)) {
+  remainingMs = frozenPausedRemaining;
+}
 
-        const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
+const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
 
         let stageToSend = null;
 
@@ -783,7 +711,7 @@ try {
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
-        const icon = leagueAvatar;
+        const icon = leagueAvatar || null;
         const { title, body } = buildMessage({ stage: stageToSend, leagueName, timeLeftText, timerSec });
 
         if (stageToSend === "onclock") {
