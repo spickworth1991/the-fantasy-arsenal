@@ -869,7 +869,7 @@ export const SleeperProvider = ({ children }) => {
 
       const cachedPlayers = await get(CACHE_KEY);
       if (cachedPlayers && typeof cachedPlayers === "object") {
-        console.log("✅ Loaded player DB from cache:", Object.keys(cachedPlayers).length);
+        // console.log("✅ Loaded player DB from cache:", Object.keys(cachedPlayers).length);
         setPlayers(cachedPlayers);
         setProgress(100);
         return;
