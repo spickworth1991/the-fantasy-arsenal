@@ -4,6 +4,20 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+
+async function kickDraftRegistry(env) {
+  // Ensure the DraftRegistry DO alarm loop is running even if nobody is on the UI.
+  // We call /kick (same as /tick) which also schedules the next alarm tick.
+  try {
+    if (!env?.DRAFT_REGISTRY?.idFromName) return;
+    const id = env.DRAFT_REGISTRY.idFromName("master");
+    const stub = env.DRAFT_REGISTRY.get(id);
+    await stub.fetch("https://draft-registry/kick", { method: "POST" });
+  } catch {
+    // never block notifications on a kick failure
+  }
+}
+
 /**
  * Goals:
  * 1) Pause/unpause notifications: NO time-left text (avoid jitter / wrong remaining).
@@ -564,6 +578,8 @@ async function handler(req) {
         { status: 401 }
       );
     }
+
+    await kickDraftRegistry(env);
 
     const db = env?.PUSH_DB;
     if (!db?.prepare) return new NextResponse("PUSH_DB binding not found.", { status: 500 });
