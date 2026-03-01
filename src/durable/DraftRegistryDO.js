@@ -82,51 +82,55 @@ async function ensurePushSubscriptionsTable(db) {
 }
 
 async function ensurePushClockStateTable(db) {
-  // Per-endpoint/per-draft notification state so we can suppress duplicates.
+  // Match poll-and-notify schema exactly (column names included).
   await db
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_clock_state (
         endpoint TEXT,
         draft_id TEXT,
-        last_on_clock INTEGER,
-        last_pick_count INTEGER,
+        pick_no INTEGER,
         last_status TEXT,
-        last_clock_ends_at INTEGER,
-        sent_on_clock INTEGER,
+        sent_onclock INTEGER,
         sent_25 INTEGER,
         sent_50 INTEGER,
-        sent_10 INTEGER,
+        sent_10min INTEGER,
         sent_urgent INTEGER,
         sent_final INTEGER,
         sent_paused INTEGER,
         sent_unpaused INTEGER,
+        paused_remaining_ms INTEGER,
+        paused_at_ms INTEGER,
+        resume_clock_start_ms INTEGER,
         updated_at INTEGER,
         PRIMARY KEY (endpoint, draft_id)
       )`
     )
     .run();
 
-  // Back-compat add columns.
+  // Backfill missing columns safely if an older version exists.
   try {
     const info = await db.prepare(`PRAGMA table_info(push_clock_state)`).all();
     const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
+
     const add = async (name, type) => {
       if (!existing.has(name)) {
         await db.prepare(`ALTER TABLE push_clock_state ADD COLUMN ${name} ${type}`).run();
       }
     };
-    await add("last_on_clock", "INTEGER");
-    await add("last_pick_count", "INTEGER");
+
+    await add("pick_no", "INTEGER");
     await add("last_status", "TEXT");
-    await add("last_clock_ends_at", "INTEGER");
-    await add("sent_on_clock", "INTEGER");
+    await add("sent_onclock", "INTEGER");
     await add("sent_25", "INTEGER");
     await add("sent_50", "INTEGER");
-    await add("sent_10", "INTEGER");
+    await add("sent_10min", "INTEGER");
     await add("sent_urgent", "INTEGER");
     await add("sent_final", "INTEGER");
     await add("sent_paused", "INTEGER");
     await add("sent_unpaused", "INTEGER");
+    await add("paused_remaining_ms", "INTEGER");
+    await add("paused_at_ms", "INTEGER");
+    await add("resume_clock_start_ms", "INTEGER");
     await add("updated_at", "INTEGER");
   } catch {
     // ignore
@@ -181,7 +185,7 @@ async function seedRegistryFromLeagues(db, leagues, onlyDraftIdsSet) {
 
     const leagueId = lg?.league_id != null ? String(lg.league_id) : null;
     const leagueName = lg?.name != null ? String(lg.name) : null;
-    const leagueAvatar = lg?.avatar != null ? String(lg.avatar) : null;
+    const leagueAvatar = lg?.avatar != null ? toLeagueAvatarUrl(String(lg.avatar)) : null;
     const bestBall = lg?.settings?.best_ball ? 1 : 0;
 
     await db
@@ -206,11 +210,15 @@ async function seedRegistryFromLeagues(db, leagues, onlyDraftIdsSet) {
          ON CONFLICT(draft_id) DO UPDATE SET
            league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
            league_name=CASE
-             WHEN (push_draft_registry.league_name IS NULL OR push_draft_registry.league_name='') AND excluded.league_name IS NOT NULL
-             THEN excluded.league_name ELSE push_draft_registry.league_name END,
-           league_avatar=CASE
-             WHEN (push_draft_registry.league_avatar IS NULL OR push_draft_registry.league_avatar='') AND excluded.league_avatar IS NOT NULL
-             THEN excluded.league_avatar ELSE push_draft_registry.league_avatar END,
+            WHEN excluded.league_name IS NOT NULL AND excluded.league_name != '' AND excluded.league_name != push_draft_registry.league_name
+            THEN excluded.league_name
+            ELSE push_draft_registry.league_name
+          END,
+          league_avatar=CASE
+            WHEN excluded.league_avatar IS NOT NULL AND excluded.league_avatar != '' AND excluded.league_avatar != push_draft_registry.league_avatar
+            THEN excluded.league_avatar
+            ELSE push_draft_registry.league_avatar
+          END,
            best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
            updated_at=?`
       )
@@ -682,6 +690,49 @@ async function listDraftsToCheckPrioritized(db, now, opts = {}) {
   return out;
 }
 
+function chunkArray(arr, size) {
+  const out = [];
+  const a = Array.isArray(arr) ? arr : [];
+  for (let i = 0; i < a.length; i += size) out.push(a.slice(i, i + size));
+  return out;
+}
+
+async function getRegistryRowsForDraftIds(db, draftIds) {
+  const ids = (draftIds || []).map(String).filter(Boolean);
+  const map = new Map();
+  if (!ids.length) return map;
+
+  // Be safe with SQL placeholder limits by chunking.
+  // 200 is conservative and keeps the SQL string sane.
+  const CHUNK = 200;
+
+  for (const batch of chunkArray(ids, CHUNK)) {
+    const placeholders = batch.map(() => "?").join(",");
+    const res = await db
+      .prepare(
+        `SELECT draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+                last_picked, pick_count,
+                draft_order_json, draft_json,
+                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+                teams, rounds, timer_sec, reversal_round,
+                league_id, league_name, league_avatar, best_ball,
+                current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                completed_at,
+                updated_at
+         FROM push_draft_registry
+         WHERE draft_id IN (${placeholders})`
+      )
+      .bind(...batch)
+      .all();
+
+    for (const r of res?.results || []) {
+      map.set(String(r.draft_id), r);
+    }
+  }
+
+  return map;
+}
+
 async function getRegistryRow(db, draftId) {
   return (
     (await db
@@ -708,6 +759,22 @@ async function upsertRegistry(db, draftId, patch) {
   const cur = (await getRegistryRow(db, draftId)) || {};
   const next = { ...cur, ...patch };
 
+  const curActive = Number(cur?.active || 0) === 1;
+  const nextActive = Number(next?.active || 0) === 1;
+
+  // Only stamp these when the active flag transitions.
+  const transitioned = curActive !== nextActive;
+
+  const lastActiveAt =
+    transitioned && nextActive
+      ? now
+      : (cur?.last_active_at != null ? Number(cur.last_active_at) : null);
+
+  const lastInactiveAt =
+    transitioned && !nextActive
+      ? now
+      : (cur?.last_inactive_at != null ? Number(cur.last_inactive_at) : null);
+
   await db
     .prepare(
       `INSERT INTO push_draft_registry (
@@ -718,9 +785,9 @@ async function upsertRegistry(db, draftId, patch) {
         teams, rounds, timer_sec, reversal_round,
         league_id, league_name, league_avatar, best_ball,
         current_pick, current_owner_name, next_owner_name, clock_ends_at,
-	      completed_at,
-	      updated_at
-	    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        completed_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(draft_id) DO UPDATE SET
         active=excluded.active,
         status=excluded.status,
@@ -740,23 +807,36 @@ async function upsertRegistry(db, draftId, patch) {
         timer_sec=excluded.timer_sec,
         reversal_round=COALESCE(excluded.reversal_round, push_draft_registry.reversal_round),
         league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-        league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
-        league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+
+        -- ✅ Fix 3: keep league name fresh if Sleeper changes it
+        league_name=CASE
+          WHEN excluded.league_name IS NOT NULL AND excluded.league_name != '' AND excluded.league_name != push_draft_registry.league_name
+          THEN excluded.league_name
+          ELSE push_draft_registry.league_name
+        END,
+
+        -- ✅ also keep avatar fresh if we have a value (safe + consistent)
+        league_avatar=CASE
+          WHEN excluded.league_avatar IS NOT NULL AND excluded.league_avatar != '' AND excluded.league_avatar != push_draft_registry.league_avatar
+          THEN excluded.league_avatar
+          ELSE push_draft_registry.league_avatar
+        END,
+
         best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
         current_pick=COALESCE(excluded.current_pick, push_draft_registry.current_pick),
         current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
         next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
         clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
-	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
-	      updated_at=excluded.updated_at`
+        completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
+        updated_at=excluded.updated_at`
     )
     .bind(
       String(draftId),
-      next.active ?? 0,
+      nextActive ? 1 : 0,
       String(next.status || ""),
       now,
-      next.active ? now : (Number(cur?.last_active_at || 0) || null),
-      !next.active ? now : (Number(cur?.last_inactive_at || 0) || null),
+      lastActiveAt,
+      lastInactiveAt,
       next.last_picked ?? null,
       next.pick_count ?? null,
       next.draft_json ?? null,
@@ -777,8 +857,8 @@ async function upsertRegistry(db, draftId, patch) {
       next.current_owner_name ?? null,
       next.next_owner_name ?? null,
       next.clock_ends_at ?? null,
-	    next.completed_at ?? null,
-	    now
+      next.completed_at ?? null,
+      now
     )
     .run();
 }
@@ -851,6 +931,34 @@ function formatTimeLeft(sec) {
   return `${h}h ${mm}m`;
 }
 
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+
+function msToClock(ms) {
+  const s = Math.max(0, Math.floor(Number(ms || 0) / 1000));
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  const pad = (x) => String(x).padStart(2, "0");
+  if (hh > 0) return `${hh}:${pad(mm)}:${pad(ss)}`;
+  return `${mm}:${pad(ss)}`;
+}
+
+function stageLabel(stage) {
+  switch (stage) {
+    case "onclock": return "ON CLOCK";
+    case "p25": return "25% used";
+    case "p50": return "50% used";
+    case "ten": return "10 min left";
+    case "urgent": return "URGENT (<2 min)";
+    case "final": return "FINAL";
+    case "paused": return "PAUSED (your pick)";
+    case "unpaused": return "RESUMED (your pick)";
+    default: return "UPDATE";
+  }
+}
+
 function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
   const baseSeed = `${stage}|${leagueName}|${timerSec}`;
 
@@ -919,7 +1027,7 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
   ];
 
   const map = {
-    on_clock: { titles: ONCLOCK_TITLES, bodies: ONCLOCK_BODIES },
+    onclock: { titles: ONCLOCK_TITLES, bodies: ONCLOCK_BODIES },
     p25: { titles: P25_TITLES, bodies: P25_BODIES },
     p50: { titles: P50_TITLES, bodies: P50_BODIES },
     ten: { titles: TEN_TITLES, bodies: TEN_BODIES },
@@ -929,7 +1037,7 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     unpaused: { titles: UNPAUSED_TITLES, bodies: UNPAUSED_BODIES },
   };
 
-  const bucket = map[String(stage || "")] || map.on_clock;
+  const bucket = map[String(stage || "")] || map.onclock;
   const title = pickDeterministic(bucket.titles, `${baseSeed}|t`) || "Draft alert";
   const body = pickDeterministic(bucket.bodies, `${baseSeed}|b`) || "";
   return { title, body };
@@ -967,11 +1075,48 @@ function buildSummaryMessage({ onClockRows, triggeredRows }) {
   return { title, body };
 }
 
+async function loadClockStatesForDraftIds(db, endpoint, draftIds) {
+  const ep = String(endpoint || "");
+  const ids = (draftIds || []).map(String).filter(Boolean);
+  const map = new Map();
+  if (!ep || !ids.length) return map;
+
+  // Chunk to stay under any placeholder/SQL limits.
+  const CHUNK = 200;
+
+  for (const batch of chunkArray(ids, CHUNK)) {
+    const placeholders = batch.map(() => "?").join(",");
+    const res = await db
+      .prepare(
+        `SELECT draft_id,
+                pick_no, last_status,
+                sent_onclock, sent_25, sent_50, sent_10min, sent_urgent, sent_final,
+                sent_paused, sent_unpaused,
+                paused_remaining_ms, paused_at_ms, resume_clock_start_ms
+         FROM push_clock_state
+         WHERE endpoint=?
+           AND draft_id IN (${placeholders})`
+      )
+      .bind(ep, ...batch)
+      .all();
+
+    for (const r of res?.results || []) {
+      map.set(String(r.draft_id), r);
+    }
+  }
+
+  return map;
+}
+
 async function loadClockState(db, endpoint, draftId) {
   return (
     (await db
       .prepare(
-        `SELECT * FROM push_clock_state
+        `SELECT pick_no, last_status,
+                sent_onclock, sent_25, sent_50, sent_10min, sent_urgent, sent_final,
+                sent_paused, sent_unpaused,
+                paused_remaining_ms, paused_at_ms, resume_clock_start_ms
+         FROM push_clock_state
          WHERE endpoint=? AND draft_id=?`
       )
       .bind(String(endpoint), String(draftId))
@@ -979,39 +1124,64 @@ async function loadClockState(db, endpoint, draftId) {
   );
 }
 
-async function saveClockState(db, endpoint, draftId, patch) {
+async function upsertClockState(db, endpoint, draftId, row) {
   const now = Date.now();
-  const cur = (await loadClockState(db, endpoint, draftId)) || {};
-  const next = { ...cur, ...patch };
+  const pickNo = Number(row?.pick_no || 0) || 0;
+
   await db
     .prepare(
-      `INSERT OR REPLACE INTO push_clock_state (
-        endpoint, draft_id,
-        last_on_clock, last_pick_count, last_status, last_clock_ends_at,
-        sent_on_clock, sent_25, sent_50, sent_10, sent_urgent, sent_final,
-        sent_paused, sent_unpaused,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO push_clock_state
+         (endpoint, draft_id, pick_no, last_status,
+          sent_onclock, sent_25, sent_50, sent_10min, sent_urgent, sent_final,
+          sent_paused, sent_unpaused,
+          paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
+          updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(endpoint, draft_id) DO UPDATE SET
+         pick_no=excluded.pick_no,
+         last_status=excluded.last_status,
+         sent_onclock=excluded.sent_onclock,
+         sent_25=excluded.sent_25,
+         sent_50=excluded.sent_50,
+         sent_10min=excluded.sent_10min,
+         sent_urgent=excluded.sent_urgent,
+         sent_final=excluded.sent_final,
+         sent_paused=excluded.sent_paused,
+         sent_unpaused=excluded.sent_unpaused,
+         paused_remaining_ms=excluded.paused_remaining_ms,
+         paused_at_ms=excluded.paused_at_ms,
+         resume_clock_start_ms=excluded.resume_clock_start_ms,
+         updated_at=excluded.updated_at`
     )
     .bind(
       String(endpoint),
       String(draftId),
-      next.last_on_clock ?? 0,
-      next.last_pick_count ?? null,
-      next.last_status ?? null,
-      next.last_clock_ends_at ?? null,
-      next.sent_on_clock ?? 0,
-      next.sent_25 ?? 0,
-      next.sent_50 ?? 0,
-      next.sent_10 ?? 0,
-      next.sent_urgent ?? 0,
-      next.sent_final ?? 0,
-      next.sent_paused ?? 0,
-      next.sent_unpaused ?? 0,
+      pickNo,
+      String(row?.last_status || ""),
+      Number(row?.sent_onclock || 0),
+      Number(row?.sent_25 || 0),
+      Number(row?.sent_50 || 0),
+      Number(row?.sent_10min || 0),
+      Number(row?.sent_urgent || 0),
+      Number(row?.sent_final || 0),
+      Number(row?.sent_paused || 0),
+      Number(row?.sent_unpaused || 0),
+      row?.paused_remaining_ms == null ? null : Number(row.paused_remaining_ms),
+      row?.paused_at_ms == null ? null : Number(row.paused_at_ms),
+      row?.resume_clock_start_ms == null ? null : Number(row.resume_clock_start_ms),
       now
     )
     .run();
 }
+
+async function clearClockState(db, endpoint, draftId) {
+  await db
+    .prepare(`DELETE FROM push_clock_state WHERE endpoint=? AND draft_id=?`)
+    .bind(String(endpoint), String(draftId))
+    .run();
+}
+
+
 
 async function sendPush(env, subscription, payload) {
   const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
@@ -1039,11 +1209,13 @@ async function notifyFromRegistry(env, state, db) {
   await ensurePushTables(db);
 
   const now = Date.now();
+
   const rows = await db
     .prepare(
       `SELECT endpoint, subscription_json, username, draft_ids_json
        FROM push_subscriptions
-       WHERE subscription_json IS NOT NULL AND subscription_json != ''`
+       WHERE subscription_json IS NOT NULL AND subscription_json != ''
+         AND username IS NOT NULL AND username != ''`
     )
     .all();
 
@@ -1058,215 +1230,267 @@ async function notifyFromRegistry(env, state, db) {
     if (!endpoint || !username) continue;
 
     let subscription = null;
-    try {
-      subscription = JSON.parse(String(s?.subscription_json || ""));
-    } catch {
-      subscription = null;
-    }
+    try { subscription = JSON.parse(String(s?.subscription_json || "")); } catch {}
     if (!subscription) continue;
 
     let draftIds = [];
-    try {
-      draftIds = JSON.parse(String(s?.draft_ids_json || "[]"));
-    } catch {
-      draftIds = [];
-    }
+    try { draftIds = JSON.parse(String(s?.draft_ids_json || "[]")); } catch {}
     if (!Array.isArray(draftIds) || !draftIds.length) continue;
+    const regMap = await getRegistryRowsForDraftIds(db, draftIds);
+    const clockMap = await loadClockStatesForDraftIds(db, endpoint, draftIds);
+    const unameKey = username.toLowerCase().trim();
 
-    const userKey = username.toLowerCase().trim();
-
-    const onClockRows = [];
-    const triggered = [];
+    const events = [];
 
     for (const draftIdRaw of draftIds) {
       const draftId = String(draftIdRaw || "");
       if (!draftId) continue;
 
-      const reg = await getRegistryRow(db, draftId);
+      const reg = regMap.get(draftId);
       if (!reg) continue;
 
       const status = String(reg?.status || "").toLowerCase();
-      const isActive = status === "drafting" || status === "paused";
-      if (!isActive) continue;
+      if (status !== "drafting" && status !== "paused") {
+        await clearClockState(db, endpoint, draftId);
+        continue;
+      }
 
-      // Resolve current roster for current_pick using registry context.
-      let slotToRoster = null;
-      let rosterNames = null;
+      const nextPickNo = Number(reg?.current_pick || 0) || 0;
+      if (!nextPickNo) continue;
+
       let rosterByUsername = null;
-      let tradedOwners = null;
+      let rosterNames = null;
       try {
-        slotToRoster = reg?.slot_to_roster_json ? JSON.parse(String(reg.slot_to_roster_json)) : null;
+        rosterByUsername = reg?.roster_by_username_json ? JSON.parse(String(reg.roster_by_username_json)) : null;
         rosterNames = reg?.roster_names_json ? JSON.parse(String(reg.roster_names_json)) : null;
-        rosterByUsername = reg?.roster_by_username_json
-          ? JSON.parse(String(reg.roster_by_username_json))
-          : null;
-        tradedOwners = reg?.traded_pick_owner_json ? JSON.parse(String(reg.traded_pick_owner_json)) : null;
-      } catch {
-        // If context is malformed, skip this draft.
+      } catch {}
+
+      const hasRosterCtx =
+        rosterByUsername && typeof rosterByUsername === "object" && Object.keys(rosterByUsername).length > 0 &&
+        rosterNames && typeof rosterNames === "object" && Object.keys(rosterNames).length > 0;
+
+      if (!hasRosterCtx) {
+        // registry not hydrated yet — skip but don't wipe state
         continue;
       }
 
-      const myRosterId = rosterByUsername?.[userKey] || null;
-      if (!myRosterId) continue;
+      const userRosterId = rosterByUsername?.[unameKey] != null ? String(rosterByUsername[unameKey]) : null;
+      const userRosterName = userRosterId ? String(rosterNames?.[userRosterId] || "") : "";
 
-      const teams = Number(reg?.teams || 0) || (slotToRoster ? Object.keys(slotToRoster).length : 0);
-      const reversalRound = Number(reg?.reversal_round || 0) || 0;
-      const pickCount = Number(reg?.pick_count || 0) || 0;
-      const currentPick = pickCount + 1;
-      const seasonStr = (() => {
-        try {
-          const dj = reg?.draft_json ? JSON.parse(String(reg.draft_json)) : null;
-          return String(dj?.season || "");
-        } catch {
-          return "";
-        }
-      })();
+      const currentOwnerName = String(reg?.current_owner_name || "");
+      const isOnClock = Boolean(userRosterName) && Boolean(currentOwnerName) && userRosterName === currentOwnerName;
 
-      const curRosterId = resolveRosterForPick({
-        pickNo: currentPick,
-        teams,
-        slotToRoster,
-        tradedPickOwners: tradedOwners,
-        seasonStr,
-        reversalRound,
-      });
+      if (!isOnClock) {
+        await clearClockState(db, endpoint, draftId);
+        continue;
+      }
 
-      const onClock = curRosterId && String(curRosterId) === String(myRosterId);
-      if (!onClock) {
-        // Reset state when not on clock so next time we re-alert.
-        await saveClockState(db, endpoint, draftId, {
-          last_on_clock: 0,
-          last_pick_count: pickCount,
+      const timerSec = Number(reg?.timer_sec || 0) || 0;
+      const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
+
+      let remainingMs = 0;
+      const clockEndsAt = Number(reg?.clock_ends_at || 0) || 0;
+      if (totalMs > 0 && clockEndsAt) remainingMs = Math.max(0, clockEndsAt - now);
+
+      const clockState = clockMap.get(draftId) || {};
+      const prevPickNo = Number(clockState?.pick_no ?? 0);
+      const prevStatus = String(clockState?.last_status || "").toLowerCase();
+      const isNewPick = prevPickNo !== nextPickNo;
+
+      const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
+      const wasPaused = prevStatus === "paused";
+      const isPaused = status === "paused";
+
+      if (!wasPaused && isPaused) {
+        await upsertClockState(db, endpoint, draftId, {
+          pick_no: nextPickNo,
           last_status: status,
-          last_clock_ends_at: reg?.clock_ends_at ?? null,
-          sent_on_clock: 0,
-          sent_25: 0,
-          sent_50: 0,
-          sent_10: 0,
-          sent_urgent: 0,
-          sent_final: 0,
-          sent_paused: 0,
-          sent_unpaused: 0,
+          paused_remaining_ms: Number.isFinite(remainingMs) ? remainingMs : null,
+          paused_at_ms: now,
+          sent_onclock: Number(clockState?.sent_onclock || 0),
+          sent_25: Number(clockState?.sent_25 || 0),
+          sent_50: Number(clockState?.sent_50 || 0),
+          sent_10min: Number(clockState?.sent_10min || 0),
+          sent_urgent: Number(clockState?.sent_urgent || 0),
+          sent_final: Number(clockState?.sent_final || 0),
+          sent_paused: Number(clockState?.sent_paused || 0),
+          sent_unpaused: Number(clockState?.sent_unpaused || 0),
         });
-        continue;
+      } else if (wasPaused && !isPaused) {
+        await upsertClockState(db, endpoint, draftId, {
+          pick_no: nextPickNo,
+          last_status: status,
+          paused_remaining_ms: null,
+          paused_at_ms: null,
+          sent_onclock: Number(clockState?.sent_onclock || 0),
+          sent_25: Number(clockState?.sent_25 || 0),
+          sent_50: Number(clockState?.sent_50 || 0),
+          sent_10min: Number(clockState?.sent_10min || 0),
+          sent_urgent: Number(clockState?.sent_urgent || 0),
+          sent_final: Number(clockState?.sent_final || 0),
+          sent_paused: Number(clockState?.sent_paused || 0),
+          sent_unpaused: Number(clockState?.sent_unpaused || 0),
+        });
       }
 
-      const leagueName = String(reg?.league_name || rosterNames?.[String(myRosterId)] || "League");
-      const timerSec = Number(reg?.timer_sec || 0) || null;
-      const clockEndsAt = Number(reg?.clock_ends_at || 0) || null;
-      const remainingSec = clockEndsAt ? Math.max(0, Math.floor((clockEndsAt - now) / 1000)) : null;
-
-      onClockRows.push({ draftId, leagueName, status, timerSec, remainingSec });
-
-      const st = (await loadClockState(db, endpoint, draftId)) || {};
-      const prevOnClock = Number(st?.last_on_clock || 0) === 1;
-      const prevPickCount = Number(st?.last_pick_count || -1);
-      const prevStatus = String(st?.last_status || "").toLowerCase();
-
-      // If pick_count changed while we're still on the clock (fast auto picks),
-      // reset sent flags so we can notify again for the new pick.
-      const pickAdvanced = prevPickCount !== pickCount;
-      if (pickAdvanced) {
-        st.sent_on_clock = 0;
-        st.sent_25 = 0;
-        st.sent_50 = 0;
-        st.sent_10 = 0;
-        st.sent_urgent = 0;
-        st.sent_final = 0;
-        st.sent_paused = 0;
-        st.sent_unpaused = 0;
+      if (isPaused && Number.isFinite(frozenPausedRemaining)) {
+        remainingMs = frozenPausedRemaining;
       }
+
+      const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
+
+      const sentPaused = Number(clockState?.sent_paused ?? 0) === 1;
+      const sentUnpaused = Number(clockState?.sent_unpaused ?? 0) === 1;
+      const sentOnclock = Number(clockState?.sent_onclock ?? 0) === 1;
+      const sent25 = Number(clockState?.sent_25 ?? 0) === 1;
+      const sent50 = Number(clockState?.sent_50 ?? 0) === 1;
+      const sent10 = Number(clockState?.sent_10min ?? 0) === 1;
+      const sentUrgent = Number(clockState?.sent_urgent ?? 0) === 1;
+      const sentFinal = Number(clockState?.sent_final ?? 0) === 1;
 
       let stageToSend = null;
 
-      // Pause / unpause (no time text)
-      if (status === "paused" && !Number(st?.sent_paused || 0)) {
-        stageToSend = "paused";
-        st.sent_paused = 1;
-      } else if (prevStatus === "paused" && status === "drafting" && !Number(st?.sent_unpaused || 0)) {
-        stageToSend = "unpaused";
-        st.sent_unpaused = 1;
-      }
+      if (status === "paused") {
+        if (isNewPick || !sentPaused) stageToSend = "paused";
+      } else {
+        if (prevStatus === "paused" && !sentUnpaused) stageToSend = "unpaused";
+        else if (isNewPick || !sentOnclock) stageToSend = "onclock";
+        else if (totalMs > 0) {
+          const usedFrac = 1 - remainingMs / totalMs;
 
-      // Normal on-clock thresholds
-      if (!stageToSend) {
-        const timeLeftText = remainingSec == null ? "" : formatTimeLeft(remainingSec);
-        const usedFrac =
-          remainingSec != null && timerSec ? Math.min(1, Math.max(0, 1 - remainingSec / timerSec)) : 0;
+          if (remainingMs <= 120000 && !sentUrgent) stageToSend = "urgent";
+          else {
+            const canTen = totalMs > 600000;
+            const tenEligible = canTen && remainingMs <= 600000 && remainingMs < totalMs - 30000;
 
-        if (!prevOnClock && !Number(st?.sent_on_clock || 0)) {
-          stageToSend = "on_clock";
-          st.sent_on_clock = 1;
-        } else if (remainingSec != null && remainingSec <= 30 && !Number(st?.sent_final || 0)) {
-          stageToSend = "final";
-          st.sent_final = 1;
-        } else if (remainingSec != null && remainingSec <= 120 && !Number(st?.sent_urgent || 0)) {
-          stageToSend = "urgent";
-          st.sent_urgent = 1;
-        } else if (remainingSec != null && remainingSec <= 600 && timerSec && timerSec >= 600 && !Number(st?.sent_10 || 0)) {
-          stageToSend = "ten";
-          st.sent_10 = 1;
-        } else if (usedFrac >= 0.5 && !Number(st?.sent_50 || 0)) {
-          stageToSend = "p50";
-          st.sent_50 = 1;
-        } else if (usedFrac >= 0.25 && !Number(st?.sent_25 || 0)) {
-          stageToSend = "p25";
-          st.sent_25 = 1;
+            if (tenEligible && !sent10) stageToSend = "ten";
+            else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
+            else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
+            else {
+              const finalThresholdMs = clamp(Math.floor(totalMs * 0.2), 20000, 120000);
+              if (remainingMs <= finalThresholdMs && !sentFinal) stageToSend = "final";
+            }
+          }
         }
       }
 
-      // Persist state updates
-      await saveClockState(db, endpoint, draftId, {
-        last_on_clock: 1,
-        last_pick_count: pickCount,
+      const nextFlags = {
+        pick_no: nextPickNo,
         last_status: status,
-        last_clock_ends_at: clockEndsAt ?? null,
-        sent_on_clock: st.sent_on_clock ?? 0,
-        sent_25: st.sent_25 ?? 0,
-        sent_50: st.sent_50 ?? 0,
-        sent_10: st.sent_10 ?? 0,
-        sent_urgent: st.sent_urgent ?? 0,
-        sent_final: st.sent_final ?? 0,
-        sent_paused: st.sent_paused ?? 0,
-        sent_unpaused: st.sent_unpaused ?? 0,
-      });
-
-      if (stageToSend) {
-        triggered.push({ draftId, leagueName, stage: stageToSend, timerSec, remainingSec });
-      }
-    }
-
-    if (!triggered.length) continue;
-
-    const shouldSummarize = onClockRows.length > 1 || triggered.length > 1;
-
-    if (shouldSummarize) {
-      const summary = buildSummaryMessage({ onClockRows, triggeredRows: triggered });
-      const payload = {
-        title: summary.title,
-        body: summary.body,
-        url: "/draft-pick-tracker",
-        tag: `summary:${userKey}:${Math.floor(now / 30000)}`,
-        renotify: true,
+        sent_onclock: isNewPick ? 0 : sentOnclock ? 1 : 0,
+        sent_25: isNewPick ? 0 : sent25 ? 1 : 0,
+        sent_50: isNewPick ? 0 : sent50 ? 1 : 0,
+        sent_10min: isNewPick ? 0 : sent10 ? 1 : 0,
+        sent_urgent: isNewPick ? 0 : sentUrgent ? 1 : 0,
+        sent_final: isNewPick ? 0 : sentFinal ? 1 : 0,
+        sent_paused: isNewPick ? 0 : sentPaused ? 1 : 0,
+        sent_unpaused: isNewPick ? 0 : sentUnpaused ? 1 : 0,
+        paused_remaining_ms:
+          status === "paused"
+            ? Number.isFinite(Number(clockState?.paused_remaining_ms))
+              ? Number(clockState?.paused_remaining_ms)
+              : remainingMs
+            : null,
+        paused_at_ms:
+          status === "paused"
+            ? Number.isFinite(Number(clockState?.paused_at_ms))
+              ? Number(clockState?.paused_at_ms)
+              : now
+            : null,
+        resume_clock_start_ms:
+          prevStatus === "paused" && status === "drafting" && totalMs > 0
+            ? now - (totalMs - remainingMs)
+            : null,
       };
 
-      const res = await sendPush(env, subscription, payload);
-      if (res.ok) sent++;
-    } else {
-      const t = triggered[0];
-      const timeLeftText = t.stage === "paused" || t.stage === "unpaused" ? "" : formatTimeLeft(t.remainingSec ?? 0);
-      const msg = buildMessage({ stage: t.stage, leagueName: t.leagueName, timeLeftText, timerSec: t.timerSec });
-      const payload = {
+      if (stageToSend === "onclock") nextFlags.sent_onclock = 1;
+      if (stageToSend === "p25") nextFlags.sent_25 = 1;
+      if (stageToSend === "p50") nextFlags.sent_50 = 1;
+      if (stageToSend === "ten") nextFlags.sent_10min = 1;
+      if (stageToSend === "urgent") nextFlags.sent_urgent = 1;
+      if (stageToSend === "final") nextFlags.sent_final = 1;
+      if (stageToSend === "paused") nextFlags.sent_paused = 1;
+      if (stageToSend === "unpaused") nextFlags.sent_unpaused = 1;
+
+      await upsertClockState(db, endpoint, draftId, nextFlags);
+
+      if (!stageToSend) continue;
+
+      const leagueName = String(reg?.league_name || "League");
+      const msgTimeLeft = stageToSend === "paused" || stageToSend === "unpaused" ? "" : timeLeftText;
+      const msg = buildMessage({ stage: stageToSend, leagueName, timeLeftText: msgTimeLeft, timerSec });
+
+      events.push({
+        draftId,
+        leagueName,
+        stage: stageToSend,
+        remainingMs,
         title: msg.title,
         body: msg.body,
-        url: "/draft-pick-tracker",
-        tag: `draft:${t.draftId}:${t.stage}:${userKey}:${t.remainingSec ?? "x"}`,
-        renotify: true,
-      };
-
-      const res = await sendPush(env, subscription, payload);
-      if (res.ok) sent++;
+      });
     }
+
+    if (!events.length) continue;
+
+    // same payload builder used elsewhere in your file
+    const sendPayload = async (payload) => sendPush(env, subscription, payload);
+
+    if (events.length === 1) {
+      const ev = events[0];
+      const res = await sendPayload({
+        title: ev.title,
+        body: ev.body,
+        url: "/draft-pick-tracker",
+        tag: `draft:${ev.draftId}`,
+        renotify: true,
+      });
+      if (res.ok) sent++;
+      continue;
+    }
+
+    // SUMMARY MODE
+    const sorted = events.slice().sort((a, b) => {
+      const au = a.stage === "urgent" || (a.remainingMs > 0 && a.remainingMs <= 120000 && a.stage !== "paused") ? 1 : 0;
+      const bu = b.stage === "urgent" || (b.remainingMs > 0 && b.remainingMs <= 120000 && b.stage !== "paused") ? 1 : 0;
+      if (au !== bu) return bu - au;
+
+      const ap = a.stage === "paused" ? 1 : 0;
+      const bp = b.stage === "paused" ? 1 : 0;
+      if (ap !== bp) return ap - bp;
+
+      const ar = a.stage === "unpaused" ? 1 : 0;
+      const br = b.stage === "unpaused" ? 1 : 0;
+      if (ar !== br) return br - ar;
+
+      return (a.remainingMs || 0) - (b.remainingMs || 0);
+    });
+
+    const anyUrgent = sorted.some(
+      (x) => x.stage === "urgent" || (x.remainingMs > 0 && x.remainingMs <= 120000 && x.stage !== "paused")
+    );
+
+    const title = anyUrgent ? "⚠️ URGENT" : `Draft updates (${sorted.length})`;
+
+    const formatLine = (ev) => {
+      const lbl = stageLabel(ev.stage);
+      const showTime = ev.stage !== "paused" && ev.stage !== "unpaused" && ev.remainingMs > 0;
+      const t = showTime ? ` — ${msToClock(ev.remainingMs)}` : "";
+      return `• ${ev.leagueName} — ${lbl}${t}`;
+    };
+
+    const maxLines = 8;
+    const lines = sorted.slice(0, maxLines).map(formatLine).join("\n");
+    const more = sorted.length > maxLines ? `\n+${sorted.length - maxLines} more` : "";
+
+    const res = await sendPayload({
+      title,
+      body: `${lines}${more}`,
+      url: "/draft-pick-tracker",
+      tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
+      renotify: true,
+    });
+
+    if (res.ok) sent++;
   }
 
   return { ok: true, subs: subs.length, sent };
@@ -1379,8 +1603,11 @@ async function tickOnce(env, state, opts = {}) {
         }
 
         // Best-ball "complete" is a TFA concept (we don't need to keep rechecking forever).
-        const completedAt = !isActive && Number(bestBall || 0) === 1 ? now : null;
-
+        const prevCompletedAt = Number(reg?.completed_at || cacheRow?.completed_at || 0) || null;
+        const completedAt =
+        Number(bestBall || 0) === 1 && !isActive
+          ? (prevCompletedAt || now)
+          : null;
         // ------------------------------------------------------------
         // Shared league context (cached in D1) so clients do NOT
         // hit Sleeper users/rosters/traded_picks endpoints.
@@ -1622,18 +1849,6 @@ async function tickOnce(env, state, opts = {}) {
     );
   }
 
-  // After registry updates, send notifications in the same DO pass.
-  // Gate to ~30s so we don't do push work every 15s tick.
-  try {
-    const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
-    const lastAt = Number(last || 0);
-    if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
-      notify = await notifyFromRegistry(env, state, db);
-      await state.storage.put("last_notify_at", now);
-    }
-  } catch {
-    // notifications should never block registry updates
-  }
 
     return { ok: true, drafts: toCheck.length, active, updated, notify };
 }
@@ -1642,6 +1857,16 @@ export class DraftRegistry {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+
+    // Self-arm on first instantiation.
+    this.state.blockConcurrencyWhile(async () => {
+      try {
+        const a = await this.state.storage.getAlarm();
+        if (!a) await this.state.storage.setAlarm(Date.now() + 500);
+      } catch {
+        // ignore
+      }
+    });
   }
 
   async alarm() {
@@ -1654,15 +1879,23 @@ export class DraftRegistry {
 
   async fetch(request) {
     const url = new URL(request.url);
+
     if (url.pathname === "/tick" || url.pathname === "/kick") {
       const forcePreDraft = url.pathname === "/kick";
-      const result = await tickOnce(this.env, this.state, { source: forcePreDraft ? "kick" : "tick", forcePreDraft });
+      const result = await tickOnce(this.env, this.state, {
+        source: forcePreDraft ? "kick" : "tick",
+        forcePreDraft,
+      });
+
+      // Optional: keep it armed on manual tick too
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
+
       return new Response(JSON.stringify(result), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
     }
+
     return new Response("Not Found", { status: 404 });
   }
 }
