@@ -1374,7 +1374,10 @@ async function notifyFromRegistry(env, state, db) {
         }
       }
 
-      const nextFlags = {
+      // IMPORTANT: We always persist the *state* (pick_no, last_status, pause bookkeeping),
+      // but we only mark a notification stage as "sent" AFTER the push request succeeds.
+      // Otherwise a transient push failure would permanently suppress future sends.
+      const baseFlags = {
         pick_no: nextPickNo,
         last_status: status,
         sent_onclock: isNewPick ? 0 : sentOnclock ? 1 : 0,
@@ -1403,16 +1406,8 @@ async function notifyFromRegistry(env, state, db) {
             : null,
       };
 
-      if (stageToSend === "onclock") nextFlags.sent_onclock = 1;
-      if (stageToSend === "p25") nextFlags.sent_25 = 1;
-      if (stageToSend === "p50") nextFlags.sent_50 = 1;
-      if (stageToSend === "ten") nextFlags.sent_10min = 1;
-      if (stageToSend === "urgent") nextFlags.sent_urgent = 1;
-      if (stageToSend === "final") nextFlags.sent_final = 1;
-      if (stageToSend === "paused") nextFlags.sent_paused = 1;
-      if (stageToSend === "unpaused") nextFlags.sent_unpaused = 1;
-
-      await upsertClockState(db, endpoint, draftId, nextFlags);
+      // Persist base state first (does not mark the stage as sent).
+      await upsertClockState(db, endpoint, draftId, baseFlags);
 
       if (!stageToSend) continue;
 
@@ -1427,6 +1422,7 @@ async function notifyFromRegistry(env, state, db) {
         remainingMs,
         title: msg.title,
         body: msg.body,
+        baseFlags,
       });
     }
 
@@ -1444,7 +1440,20 @@ async function notifyFromRegistry(env, state, db) {
         tag: `draft:${ev.draftId}`,
         renotify: true,
       });
-      if (res.ok) sent++;
+      if (res.ok) {
+        // Mark that specific stage as sent.
+        const f = { ...(ev.baseFlags || {}) };
+        if (ev.stage === "onclock") f.sent_onclock = 1;
+        if (ev.stage === "p25") f.sent_25 = 1;
+        if (ev.stage === "p50") f.sent_50 = 1;
+        if (ev.stage === "ten") f.sent_10min = 1;
+        if (ev.stage === "urgent") f.sent_urgent = 1;
+        if (ev.stage === "final") f.sent_final = 1;
+        if (ev.stage === "paused") f.sent_paused = 1;
+        if (ev.stage === "unpaused") f.sent_unpaused = 1;
+        await upsertClockState(db, endpoint, ev.draftId, f);
+        sent++;
+      }
       continue;
     }
 
@@ -1490,7 +1499,22 @@ async function notifyFromRegistry(env, state, db) {
       renotify: true,
     });
 
-    if (res.ok) sent++;
+    if (res.ok) {
+      // Summary push succeeded — mark each individual stage as sent.
+      for (const ev of events) {
+        const f = { ...(ev.baseFlags || {}) };
+        if (ev.stage === "onclock") f.sent_onclock = 1;
+        if (ev.stage === "p25") f.sent_25 = 1;
+        if (ev.stage === "p50") f.sent_50 = 1;
+        if (ev.stage === "ten") f.sent_10min = 1;
+        if (ev.stage === "urgent") f.sent_urgent = 1;
+        if (ev.stage === "final") f.sent_final = 1;
+        if (ev.stage === "paused") f.sent_paused = 1;
+        if (ev.stage === "unpaused") f.sent_unpaused = 1;
+        await upsertClockState(db, endpoint, ev.draftId, f);
+      }
+      sent++;
+    }
   }
 
   return { ok: true, subs: subs.length, sent };
