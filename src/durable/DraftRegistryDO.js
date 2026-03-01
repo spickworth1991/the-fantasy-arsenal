@@ -1292,13 +1292,26 @@ async function tickOnce(env, state, opts = {}) {
 
   // IMPORTANT: do NOT scan every draft and do 1 query per draft.
   // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
-  const toCheck = await listDraftsToCheckPrioritized(db, now, opts);
+    const toCheck = await listDraftsToCheckPrioritized(db, now, opts);
 
-  if (!toCheck.length) {
-    // keep return shape compatible
-    return { ok: true, drafts: 0, active: 0, updated: 0 };
-  }
+    // ✅ Notifications should not depend on registry refresh work existing.
+    // Gate to ~30s so we don't do push work every 15s tick.
+    let notify = null;
+    try {
+      const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
+      const lastAt = Number(last || 0);
+      if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
+        notify = await notifyFromRegistry(env, state, db);
+        await state.storage.put("last_notify_at", now);
+      }
+    } catch {
+      // notifications should never block registry updates
+    }
 
+    if (!toCheck.length) {
+      // keep return shape compatible
+      return { ok: true, drafts: 0, active: 0, updated: 0, notify };
+    }
   let updated = 0;
   let active = 0;
 
@@ -1611,7 +1624,6 @@ async function tickOnce(env, state, opts = {}) {
 
   // After registry updates, send notifications in the same DO pass.
   // Gate to ~30s so we don't do push work every 15s tick.
-  let notify = null;
   try {
     const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
     const lastAt = Number(last || 0);
