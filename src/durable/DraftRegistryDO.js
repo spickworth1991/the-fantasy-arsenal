@@ -12,8 +12,14 @@ import { buildWebPushRequest } from "../lib/webpush";
 
 const TICK_MS = 15_000;
 const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
-const PRE_DRAFT_REFRESH_MS = 2 * 60 * 1000; // 2 minutes
+const PRE_DRAFT_REFRESH_MS = 60 * 1000; // 1 minute
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
+
+// Critical: bound the amount of work per 15s alarm so the DO never falls behind as registry grows.
+const MAX_DRAFTS_PER_TICK = 60;      // total drafts we will refresh per tick (across all statuses)
+const MAX_ACTIVE_PER_TICK = 40;      // prioritize active drafts (drafting/paused)
+const MAX_PREDRAFT_PER_TICK = 15;    // then pre_draft
+// remainder (MAX_DRAFTS_PER_TICK - above) goes to inactive
 
 
 // Discovery: keep push_subscriptions.draft_ids_json fresh without requiring a UI visit.
@@ -569,39 +575,111 @@ function coerceJsonStr(v) {
   return s;
 }
 
-async function listUniqueDraftIdsFromSubs(db) {
-  const rows = await db
-    .prepare(`SELECT draft_ids_json FROM push_subscriptions WHERE draft_ids_json IS NOT NULL`)
+
+
+async function listDraftsToCheckPrioritized(db, now, opts = {}) {
+  // We intentionally DO NOT scan every draft id and then do 1 query per draft.
+  // Instead, we let D1 give us a bounded set of drafts that are most likely stale,
+  // prioritized as: active -> pre_draft -> inactive.
+
+  const activeCutoff = now - ACTIVE_REFRESH_MS;
+  const preDraftCutoff = now - (opts?.forcePreDraft ? 60_000 : PRE_DRAFT_REFRESH_MS);
+  const inactiveCutoff = now - INACTIVE_REFRESH_MS;
+
+  const limitActive = Math.max(0, Math.min(MAX_ACTIVE_PER_TICK, MAX_DRAFTS_PER_TICK));
+  const limitPre = Math.max(
+    0,
+    Math.min(MAX_PREDRAFT_PER_TICK, Math.max(0, MAX_DRAFTS_PER_TICK - limitActive))
+  );
+  const limitInactive = Math.max(0, MAX_DRAFTS_PER_TICK - limitActive - limitPre);
+
+  // Helper to normalize results
+  const norm = (rows) =>
+    (rows || []).map((r) => ({
+      draftId: String(r?.draft_id || ""),
+      wasActive: Number(r?.active || 0) === 1,
+      reg: r || null,
+    })).filter((x) => x.draftId);
+
+  // 1) ACTIVE: status drafting/paused, and stale by ACTIVE_REFRESH_MS
+  const activeRes = await db
+    .prepare(
+      `SELECT
+         draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+         last_picked, pick_count,
+         draft_order_json, draft_json,
+         slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+         teams, rounds, timer_sec, reversal_round,
+         league_id, league_name, league_avatar, best_ball,
+         current_pick, current_owner_name, next_owner_name, clock_ends_at,
+         completed_at,
+         updated_at
+       FROM push_draft_registry
+       WHERE status IN ('drafting','paused')
+         AND (last_checked_at IS NULL OR last_checked_at < ?)
+       ORDER BY COALESCE(last_checked_at, 0) ASC
+       LIMIT ?`
+    )
+    .bind(activeCutoff, limitActive)
     .all();
-  const set = new Set();
-  for (const r of rows?.results || []) {
-    try {
-      const ids = JSON.parse(r.draft_ids_json || "[]");
-      if (Array.isArray(ids)) ids.filter(Boolean).forEach((x) => set.add(String(x)));
-    } catch {
-      // ignore
-    }
-  }
-  return Array.from(set);
-}
 
-// Draft Monitor can register drafts into push_draft_registry even if nobody has alerts enabled.
-async function listUniqueDraftIdsFromRegistry(db) {
-  try {
-    const rows = await db.prepare(`SELECT draft_id FROM push_draft_registry`).all();
-    const set = new Set();
-    for (const r of rows?.results || []) {
-      if (r?.draft_id) set.add(String(r.draft_id));
-    }
-    return Array.from(set);
-  } catch {
-    return [];
-  }
-}
+  // 2) PRE-DRAFT: status pre_draft, stale by PRE_DRAFT_REFRESH_MS (or 60s if forcePreDraft)
+  const preRes = await db
+    .prepare(
+      `SELECT
+         draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+         last_picked, pick_count,
+         draft_order_json, draft_json,
+         slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+         teams, rounds, timer_sec, reversal_round,
+         league_id, league_name, league_avatar, best_ball,
+         current_pick, current_owner_name, next_owner_name, clock_ends_at,
+         completed_at,
+         updated_at
+       FROM push_draft_registry
+       WHERE status = 'pre_draft'
+         AND (last_checked_at IS NULL OR last_checked_at < ?)
+       ORDER BY COALESCE(last_checked_at, 0) ASC
+       LIMIT ?`
+    )
+    .bind(preDraftCutoff, limitPre)
+    .all();
 
-async function listUniqueDraftIds(db) {
-  const [subs, reg] = await Promise.all([listUniqueDraftIdsFromSubs(db), listUniqueDraftIdsFromRegistry(db)]);
-  return Array.from(new Set([...(subs || []), ...(reg || [])]));
+  // 3) INACTIVE (but not complete): stale by INACTIVE_REFRESH_MS
+  const inactiveRes = await db
+    .prepare(
+      `SELECT
+         draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
+         last_picked, pick_count,
+         draft_order_json, draft_json,
+         slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+         teams, rounds, timer_sec, reversal_round,
+         league_id, league_name, league_avatar, best_ball,
+         current_pick, current_owner_name, next_owner_name, clock_ends_at,
+         completed_at,
+         updated_at
+       FROM push_draft_registry
+       WHERE status IS NOT NULL
+         AND status != 'complete'
+         AND status NOT IN ('drafting','paused','pre_draft')
+         AND (last_checked_at IS NULL OR last_checked_at < ?)
+       ORDER BY COALESCE(last_checked_at, 0) ASC
+       LIMIT ?`
+    )
+    .bind(inactiveCutoff, limitInactive)
+    .all();
+
+  const picked = [...norm(activeRes?.results), ...norm(preRes?.results), ...norm(inactiveRes?.results)];
+
+  // De-dupe just in case (shouldn't happen, but safe)
+  const seen = new Set();
+  const out = [];
+  for (const item of picked) {
+    if (!item.draftId || seen.has(item.draftId)) continue;
+    seen.add(item.draftId);
+    out.push(item);
+  }
+  return out;
 }
 
 async function getRegistryRow(db, draftId) {
@@ -1210,31 +1288,15 @@ async function tickOnce(env, state, opts = {}) {
   }
 
 
-  const now = Date.now();
-  const uniqueDraftIds = await listUniqueDraftIds(db);
-  if (!uniqueDraftIds.length) return { ok: true, drafts: 0, active: 0, updated: 0 };
+    const now = Date.now();
 
-  // decide what needs to be checked this tick
-  const toCheck = [];
-  for (const draftId of uniqueDraftIds) {
-    const reg = await getRegistryRow(db, draftId);
-    const lastChecked = Number(reg?.last_checked_at || 0);
-    const wasActive = Number(reg?.active || 0) === 1;
-    const statusLower = String(reg?.status || "").toLowerCase();
-    // If a draft is complete, we do not need to keep re-checking it forever.
-    // New drafts get discovered separately via the discover flow.
-    if (reg && statusLower === "complete") continue;
-    // Pre-draft is intentionally less frequent during background alarms.
-    // But when a 1-min "kick" happens (UI open OR cron), we tighten pre-draft checks
-    // so drafts that just started flip to drafting quickly.
-    const staleMs = wasActive
-      ? ACTIVE_REFRESH_MS
-      : statusLower === "pre_draft"
-      ? (opts?.forcePreDraft ? 60_000 : PRE_DRAFT_REFRESH_MS)
-      : INACTIVE_REFRESH_MS;
+  // IMPORTANT: do NOT scan every draft and do 1 query per draft.
+  // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
+  const toCheck = await listDraftsToCheckPrioritized(db, now, opts);
 
-    const needs = !lastChecked || now - lastChecked > staleMs;
-    if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
+  if (!toCheck.length) {
+    // keep return shape compatible
+    return { ok: true, drafts: 0, active: 0, updated: 0 };
   }
 
   let updated = 0;
@@ -1561,7 +1623,7 @@ async function tickOnce(env, state, opts = {}) {
     // notifications should never block registry updates
   }
 
-  return { ok: true, drafts: uniqueDraftIds.length, active, updated, notify };
+    return { ok: true, drafts: toCheck.length, active, updated, notify };
 }
 
 export class DraftRegistry {
