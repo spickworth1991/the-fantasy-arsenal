@@ -1203,8 +1203,15 @@ async function sendPush(env, subscription, payload) {
 
   // buildWebPushRequest returns { endpoint, fetchInit }
   try {
-    const res = await fetch(req.endpoint, req.fetchInit);
-    return { ok: res.ok, status: res.status };
+    let res;
+try {
+  res = await fetch(req.endpoint, req.fetchInit);
+  console.log("PUSH STATUS:", res.status);
+} catch (err) {
+  console.log("PUSH ERROR:", err?.message || err);
+  return { ok: false, error: String(err) };
+}
+return { ok: res.ok, status: res.status };
   } catch (err) {
     return { ok: false, status: 0, error: String(err?.message || err) };
   }
