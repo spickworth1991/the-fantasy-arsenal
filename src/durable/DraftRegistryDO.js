@@ -1127,7 +1127,10 @@ async function loadClockState(db, endpoint, draftId) {
 async function upsertClockState(db, endpoint, draftId, row) {
   const now = Date.now();
   const pickNo = Number(row?.pick_no || 0) || 0;
-
+  console.log("🧠 UPSERT CLOCK STATE:", endpoint, draftId, {
+    pick: row?.pick_no,
+    status: row?.last_status
+  });
   await db
     .prepare(
       `INSERT INTO push_clock_state
@@ -1203,21 +1206,26 @@ async function sendPush(env, subscription, payload) {
 
   // buildWebPushRequest returns { endpoint, fetchInit }
   try {
-    let res;
-try {
-  res = await fetch(req.endpoint, req.fetchInit);
-  console.log("PUSH STATUS:", res.status);
-} catch (err) {
-  console.log("PUSH ERROR:", err?.message || err);
-  return { ok: false, error: String(err) };
-}
-return { ok: res.ok, status: res.status };
+    console.log("🚀 SENDING PUSH to", req.endpoint);
+
+    const res = await fetch(req.endpoint, req.fetchInit);
+
+    console.log("🚀 PUSH RESPONSE:", res.status);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.log("🚨 PUSH FAILED BODY:", text);
+    }
+
+    return { ok: res.ok, status: res.status };
   } catch (err) {
-    return { ok: false, status: 0, error: String(err?.message || err) };
+    console.log("💥 PUSH THROW:", err?.message || err);
+    return { ok: false, error: String(err) };
   }
 }
 
 async function notifyFromRegistry(env, state, db) {
+  console.log("📣 notifyFromRegistry START");
   await ensurePushTables(db);
 
   const now = Date.now();
@@ -1230,6 +1238,8 @@ async function notifyFromRegistry(env, state, db) {
          AND username IS NOT NULL AND username != ''`
     )
     .all();
+
+  console.log("📣 SUBS FOUND:", rows?.results?.length || 0);
 
   const subs = rows?.results || [];
   if (!subs.length) return { ok: true, subs: 0, sent: 0 };
@@ -1435,6 +1445,10 @@ async function notifyFromRegistry(env, state, db) {
         nextFlags,
       });
     }
+    console.log("📬 EVENTS FOR", username, ":", events.map(e => ({
+      draft: e.draftId,
+      stage: e.stage
+    })));
 
     if (!events.length) continue;
 
@@ -1569,17 +1583,24 @@ async function tickOnce(env, state, opts = {}) {
     try {
       const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
       const lastAt = Number(last || 0);
-      if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
-        notify = await notifyFromRegistry(env, state, db);
-        await state.storage.put("last_notify_at", now);
-      }
-    } catch {
-      // notifications should never block registry updates
-    }
 
-    if (!toCheck.length) {
-      // keep return shape compatible
-      return { ok: true, drafts: 0, active: 0, updated: 0, notify };
+      console.log("🟡 NOTIFY CHECK", {
+        now,
+        lastAt,
+        diff: now - lastAt,
+        gate: NOTIFY_MIN_INTERVAL_MS
+      });
+
+      if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
+        console.log("🟢 RUNNING notifyFromRegistry()");
+        notify = await notifyFromRegistry(env, state, db);
+        console.log("🟢 NOTIFY RESULT:", JSON.stringify(notify));
+        await state.storage.put("last_notify_at", now);
+      } else {
+        console.log("⚪ NOTIFY SKIPPED (interval gate)");
+      }
+    } catch (err) {
+      console.log("❌ NOTIFY BLOCK ERROR:", err?.message || err);
     }
   let updated = 0;
   let active = 0;
@@ -1915,8 +1936,11 @@ export class DraftRegistry {
   }
 
   async alarm() {
+    console.log("🔥 DO ALARM FIRED", Date.now());
+
     try {
-      await tickOnce(this.env, this.state, { source: "alarm" });
+      const result = await tickOnce(this.env, this.state, { source: "alarm" });
+      console.log("🔥 TICK RESULT:", JSON.stringify(result));
     } finally {
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
     }
