@@ -681,107 +681,37 @@ async function tickOnce(env, state) {
 
 
   const now = Date.now();
+  const uniqueDraftIds = await listUniqueDraftIds(db);
+  if (!uniqueDraftIds.length) return { ok: true, drafts: 0, active: 0, updated: 0 };
 
-  // ------------------------------------------------------------
-  // IMPORTANT PERFORMANCE NOTE
-  // ------------------------------------------------------------
-  // We may have *many* drafts in the registry (across many users / devices).
-  // Doing N sequential reads (getRegistryRow per draft) can make the DO tick
-  // too slow and cause some drafts to lag behind by minutes.
-  //
-  // Instead, pick a bounded set of drafts to refresh each tick:
-  //   1) stale ACTIVE drafts first
-  //   2) stale PRE_DRAFT drafts next
-  //   3) then other stale drafts
-  //
-  // This keeps "drafting/paused" drafts near real-time even with a large registry.
-  const MAX_CHECK_PER_TICK = 60;
+  // decide what needs to be checked this tick
+  const toCheck = [];
+  for (const draftId of uniqueDraftIds) {
+    const reg = await getRegistryRow(db, draftId);
+    const lastChecked = Number(reg?.last_checked_at || 0);
+    const wasActive = Number(reg?.active || 0) === 1;
+    const statusLower = String(reg?.status || "").toLowerCase();
+    // If a draft is complete, we do not need to keep re-checking it forever.
+    // New drafts get discovered separately via the discover flow.
+    if (reg && statusLower === "complete") continue;
+    const staleMs = wasActive
+      ? ACTIVE_REFRESH_MS
+      : statusLower === "pre_draft"
+      ? PRE_DRAFT_REFRESH_MS
+      : INACTIVE_REFRESH_MS;
 
-  const pickStaleRows = async () => {
-    const out = [];
-    const seen = new Set();
-
-    const pushRows = (rows) => {
-      for (const r of rows || []) {
-        const id = r?.draft_id ? String(r.draft_id) : "";
-        if (!id || seen.has(id)) continue;
-        seen.add(id);
-        out.push(r);
-        if (out.length >= MAX_CHECK_PER_TICK) break;
-      }
-    };
-
-    const q = async (sql, binds) => {
-      try {
-        const res = await db.prepare(sql).bind(...(binds || [])).all();
-        return res?.results || [];
-      } catch {
-        return [];
-      }
-    };
-
-    // 1) active drafts (drafting/paused) stale by ACTIVE_REFRESH_MS
-    pushRows(
-      await q(
-        `SELECT * FROM push_draft_registry
-         WHERE active=1
-           AND lower(COALESCE(status,'')) != 'complete'
-           AND (last_checked_at IS NULL OR last_checked_at < ?)
-         ORDER BY COALESCE(last_checked_at, 0) ASC
-         LIMIT ?`,
-        [now - ACTIVE_REFRESH_MS, MAX_CHECK_PER_TICK]
-      )
-    );
-    if (out.length >= MAX_CHECK_PER_TICK) return out;
-
-    // 2) pre_draft drafts stale by PRE_DRAFT_REFRESH_MS (these are the ones that matter most for "draft just started")
-    pushRows(
-      await q(
-        `SELECT * FROM push_draft_registry
-         WHERE lower(COALESCE(status,'')) = 'pre_draft'
-           AND lower(COALESCE(status,'')) != 'complete'
-           AND (last_checked_at IS NULL OR last_checked_at < ?)
-         ORDER BY COALESCE(last_checked_at, 0) ASC
-         LIMIT ?`,
-        [now - PRE_DRAFT_REFRESH_MS, MAX_CHECK_PER_TICK - out.length]
-      )
-    );
-    if (out.length >= MAX_CHECK_PER_TICK) return out;
-
-    // 3) everything else stale by INACTIVE_REFRESH_MS
-    pushRows(
-      await q(
-        `SELECT * FROM push_draft_registry
-         WHERE active=0
-           AND lower(COALESCE(status,'')) NOT IN ('complete','pre_draft')
-           AND (last_checked_at IS NULL OR last_checked_at < ?)
-         ORDER BY COALESCE(last_checked_at, 0) ASC
-         LIMIT ?`,
-        [now - INACTIVE_REFRESH_MS, MAX_CHECK_PER_TICK - out.length]
-      )
-    );
-
-    return out;
-  };
-
-  const toCheckRows = await pickStaleRows();
-  if (!toCheckRows.length) {
-    const c = await db.prepare(`SELECT COUNT(*) AS c FROM push_draft_registry`).first();
-    return { ok: true, drafts: Number(c?.c || 0), active: 0, updated: 0 };
+    const needs = !lastChecked || now - lastChecked > staleMs;
+    if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
   }
 
   let updated = 0;
   let active = 0;
 
   const CONCURRENCY = 6;
-  for (let i = 0; i < toCheckRows.length; i += CONCURRENCY) {
-    const batch = toCheckRows.slice(i, i + CONCURRENCY);
+  for (let i = 0; i < toCheck.length; i += CONCURRENCY) {
+    const batch = toCheck.slice(i, i + CONCURRENCY);
     await Promise.all(
-      batch.map(async (regRow) => {
-        const draftId = String(regRow?.draft_id || "");
-        if (!draftId) return;
-        const wasActive = Number(regRow?.active || 0) === 1;
-        const reg = regRow;
+      batch.map(async ({ draftId, wasActive, reg }) => {
         let draft;
         try {
           draft = await getDraft(draftId);
@@ -1086,8 +1016,7 @@ async function tickOnce(env, state) {
     );
   }
 
-  const c2 = await db.prepare(`SELECT COUNT(*) AS c FROM push_draft_registry`).first();
-  return { ok: true, drafts: Number(c2?.c || 0), active, updated };
+  return { ok: true, drafts: uniqueDraftIds.length, active, updated };
 }
 
 export class DraftRegistry {
