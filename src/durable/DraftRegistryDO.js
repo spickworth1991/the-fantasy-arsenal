@@ -1127,10 +1127,7 @@ async function loadClockState(db, endpoint, draftId) {
 async function upsertClockState(db, endpoint, draftId, row) {
   const now = Date.now();
   const pickNo = Number(row?.pick_no || 0) || 0;
-  console.log("🧠 UPSERT CLOCK STATE:", endpoint, draftId, {
-    pick: row?.pick_no,
-    status: row?.last_status
-  });
+
   await db
     .prepare(
       `INSERT INTO push_clock_state
@@ -1189,100 +1186,26 @@ async function clearClockState(db, endpoint, draftId) {
 async function sendPush(env, subscription, payload) {
   const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
   const vapidSubject = env?.VAPID_SUBJECT;
-  if (!vapidPrivateRaw || !vapidSubject) {
-    console.log(
-      "🚫 PUSH missing VAPID env vars",
-      JSON.stringify({
-        hasPrivate: Boolean(vapidPrivateRaw),
-        hasSubject: Boolean(vapidSubject),
-        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-      })
-    );
-    return { ok: false, error: "Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT" };
-  }
+  if (!vapidPrivateRaw || !vapidSubject) return { ok: false, error: "Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT" };
 
   let vapidJwk = null;
   try {
     vapidJwk = JSON.parse(String(vapidPrivateRaw));
   } catch {
-    console.log(
-      "🚫 PUSH VAPID_PRIVATE_KEY parse failed",
-      JSON.stringify({
-        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-      })
-    );
     return { ok: false, error: "VAPID_PRIVATE_KEY must be JSON JWK" };
   }
 
-  let req;
-  try {
-    req = await buildWebPushRequest({
-      subscription,
-      vapid: { subject: String(vapidSubject), privateKeyJwk: vapidJwk },
-      payload,
-    });
-  } catch (err) {
-    console.log(
-      "💥 PUSH buildWebPushRequest threw",
-      JSON.stringify({
-        err: String(err?.message || err),
-        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-      })
-    );
-    return { ok: false, status: 0, error: String(err?.message || err) };
-  }
+  const req = await buildWebPushRequest({
+    subscription,
+    vapid: { subject: String(vapidSubject), privateKeyJwk: vapidJwk },
+    payload,
+  });
 
-  // buildWebPushRequest returns { endpoint, fetchInit }
-  try {
-    console.log(
-      "🚀 SENDING PUSH",
-      JSON.stringify({
-        endpoint: String(req?.endpoint || "").slice(0, 160),
-        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-      })
-    );
-
-    const res = await fetch(req.endpoint, req.fetchInit);
-    const text = await res.text().catch(() => "");
-
-    console.log(
-      "🚀 PUSH RESPONSE",
-      JSON.stringify({
-        ok: Boolean(res.ok),
-        status: Number(res.status || 0),
-        endpoint: String(req?.endpoint || "").slice(0, 160),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-        body: String(text || "").slice(0, 200),
-      })
-    );
-
-    return { ok: Boolean(res.ok), status: Number(res.status || 0), error: res.ok ? null : String(text || "") };
-  } catch (err) {
-    console.log(
-      "💥 PUSH FETCH THROW",
-      JSON.stringify({
-        err: String(err?.message || err),
-        endpoint: String(req?.endpoint || "").slice(0, 160),
-        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
-        title: String(payload?.title || "").slice(0, 80),
-        tag: String(payload?.tag || "").slice(0, 80),
-      })
-    );
-    return { ok: false, status: 0, error: String(err?.message || err) };
-  }
+  const res = await fetch(req.url, req.init);
+  return { ok: res.ok, status: res.status };
 }
 
 async function notifyFromRegistry(env, state, db) {
-  console.log("📣 notifyFromRegistry START");
   await ensurePushTables(db);
 
   const now = Date.now();
@@ -1295,8 +1218,6 @@ async function notifyFromRegistry(env, state, db) {
          AND username IS NOT NULL AND username != ''`
     )
     .all();
-
-  console.log("📣 SUBS FOUND:", rows?.results?.length || 0);
 
   const subs = rows?.results || [];
   if (!subs.length) return { ok: true, subs: 0, sent: 0 };
@@ -1453,7 +1374,10 @@ async function notifyFromRegistry(env, state, db) {
         }
       }
 
-      const nextFlags = {
+      // IMPORTANT: We always persist the *state* (pick_no, last_status, pause bookkeeping),
+      // but we only mark a notification stage as "sent" AFTER the push request succeeds.
+      // Otherwise a transient push failure would permanently suppress future sends.
+      const baseFlags = {
         pick_no: nextPickNo,
         last_status: status,
         sent_onclock: isNewPick ? 0 : sentOnclock ? 1 : 0,
@@ -1482,9 +1406,8 @@ async function notifyFromRegistry(env, state, db) {
             : null,
       };
 
-      // Always persist the base state (pick/status + carry-forward sent flags).
-      // IMPORTANT: we do NOT mark a stage as "sent" until a push send succeeds.
-      await upsertClockState(db, endpoint, draftId, nextFlags);
+      // Persist base state first (does not mark the stage as sent).
+      await upsertClockState(db, endpoint, draftId, baseFlags);
 
       if (!stageToSend) continue;
 
@@ -1499,33 +1422,14 @@ async function notifyFromRegistry(env, state, db) {
         remainingMs,
         title: msg.title,
         body: msg.body,
-        nextFlags,
+        baseFlags,
       });
     }
-    console.log("📬 EVENTS FOR", username, ":", events.map(e => ({
-      draft: e.draftId,
-      stage: e.stage
-    })));
 
     if (!events.length) continue;
 
-// same payload builder used elsewhere in your file
+    // same payload builder used elsewhere in your file
     const sendPayload = async (payload) => sendPush(env, subscription, payload);
-
-    const stageToFlagField = (stage) => {
-      switch (String(stage || "")) {
-        case "onclock": return "sent_onclock";
-        case "p25": return "sent_25";
-        case "p50": return "sent_50";
-        case "ten": return "sent_10min";
-        case "urgent": return "sent_urgent";
-        case "final": return "sent_final";
-        case "paused": return "sent_paused";
-        case "unpaused": return "sent_unpaused";
-        default: return null;
-      }
-    };
-
 
     if (events.length === 1) {
       const ev = events[0];
@@ -1536,32 +1440,20 @@ async function notifyFromRegistry(env, state, db) {
         tag: `draft:${ev.draftId}`,
         renotify: true,
       });
-
       if (res.ok) {
+        // Mark that specific stage as sent.
+        const f = { ...(ev.baseFlags || {}) };
+        if (ev.stage === "onclock") f.sent_onclock = 1;
+        if (ev.stage === "p25") f.sent_25 = 1;
+        if (ev.stage === "p50") f.sent_50 = 1;
+        if (ev.stage === "ten") f.sent_10min = 1;
+        if (ev.stage === "urgent") f.sent_urgent = 1;
+        if (ev.stage === "final") f.sent_final = 1;
+        if (ev.stage === "paused") f.sent_paused = 1;
+        if (ev.stage === "unpaused") f.sent_unpaused = 1;
+        await upsertClockState(db, endpoint, ev.draftId, f);
         sent++;
-
-        const field = stageToFlagField(ev.stage);
-        if (field) {
-          await upsertClockState(db, endpoint, ev.draftId, {
-            ...(ev.nextFlags || {}),
-            [field]: 1,
-          });
-        }
       }
-
-	      if (!res.ok) {
-	        console.log(
-	          "🚨 NOTIFY send failed",
-	          JSON.stringify({
-	            endpoint: String(endpoint).slice(0, 120),
-	            draftId: String(ev?.draftId || ""),
-	            stage: String(ev?.stage || ""),
-	            status: Number(res?.status || 0),
-	            error: String(res?.error || "").slice(0, 200),
-	          })
-	        );
-	      }
-
       continue;
     }
 
@@ -1608,30 +1500,21 @@ async function notifyFromRegistry(env, state, db) {
     });
 
     if (res.ok) {
-      sent++;
-
-      // Mark each underlying event as sent only after the summary push succeeds.
+      // Summary push succeeded — mark each individual stage as sent.
       for (const ev of events) {
-        const field = stageToFlagField(ev.stage);
-        if (!field) continue;
-        await upsertClockState(db, endpoint, ev.draftId, {
-          ...(ev.nextFlags || {}),
-          [field]: 1,
-        });
+        const f = { ...(ev.baseFlags || {}) };
+        if (ev.stage === "onclock") f.sent_onclock = 1;
+        if (ev.stage === "p25") f.sent_25 = 1;
+        if (ev.stage === "p50") f.sent_50 = 1;
+        if (ev.stage === "ten") f.sent_10min = 1;
+        if (ev.stage === "urgent") f.sent_urgent = 1;
+        if (ev.stage === "final") f.sent_final = 1;
+        if (ev.stage === "paused") f.sent_paused = 1;
+        if (ev.stage === "unpaused") f.sent_unpaused = 1;
+        await upsertClockState(db, endpoint, ev.draftId, f);
       }
+      sent++;
     }
-
-	    if (!res.ok) {
-	      console.log(
-	        "🚨 NOTIFY summary send failed",
-	        JSON.stringify({
-	          endpoint: String(endpoint).slice(0, 120),
-	          status: Number(res?.status || 0),
-	          error: String(res?.error || "").slice(0, 200),
-	          leagues: events.map((e) => String(e?.leagueName || "").slice(0, 48)).slice(0, 8),
-	        })
-	      );
-	    }
   }
 
   return { ok: true, subs: subs.length, sent };
@@ -1655,9 +1538,28 @@ async function tickOnce(env, state, opts = {}) {
 
     const now = Date.now();
 
-    // IMPORTANT: do NOT scan every draft and do 1 query per draft.
-    // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
+  // IMPORTANT: do NOT scan every draft and do 1 query per draft.
+  // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
     const toCheck = await listDraftsToCheckPrioritized(db, now, opts);
+
+    // ✅ Notifications should not depend on registry refresh work existing.
+    // Gate to ~30s so we don't do push work every 15s tick.
+    let notify = null;
+    try {
+      const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
+      const lastAt = Number(last || 0);
+      if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
+        notify = await notifyFromRegistry(env, state, db);
+        await state.storage.put("last_notify_at", now);
+      }
+    } catch {
+      // notifications should never block registry updates
+    }
+
+    if (!toCheck.length) {
+      // keep return shape compatible
+      return { ok: true, drafts: 0, active: 0, updated: 0, notify };
+    }
   let updated = 0;
   let active = 0;
 
@@ -1971,40 +1873,8 @@ async function tickOnce(env, state, opts = {}) {
     );
   }
 
-  // ✅ Notifications should be evaluated *after* we refresh the registry in this tick.
-  // Otherwise we can repeatedly read stale/empty computed fields (current_owner_name/clock_ends_at)
-  // and never generate events.
-  // Gate to ~30s so we don't do push work every 15s alarm.
-  let notify = null;
-  try {
-    const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
-    const lastAt = Number(last || 0);
 
-    console.log("🟡 NOTIFY CHECK", {
-      now,
-      lastAt,
-      diff: now - lastAt,
-      gate: NOTIFY_MIN_INTERVAL_MS,
-    });
-
-    if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
-      console.log("🟢 RUNNING notifyFromRegistry()", {
-        tickDrafts: toCheck.length,
-        tickUpdated: updated,
-        tickActive: active,
-        source: String(opts?.source || ""),
-      });
-      notify = await notifyFromRegistry(env, state, db);
-      console.log("🟢 NOTIFY RESULT:", JSON.stringify(notify));
-      await state.storage.put("last_notify_at", now);
-    } else {
-      console.log("⚪ NOTIFY SKIPPED (interval gate)");
-    }
-  } catch (err) {
-    console.log("❌ NOTIFY BLOCK ERROR:", err?.message || err);
-  }
-
-  return { ok: true, drafts: toCheck.length, active, updated, notify };
+    return { ok: true, drafts: toCheck.length, active, updated, notify };
 }
 
 export class DraftRegistry {
@@ -2024,11 +1894,8 @@ export class DraftRegistry {
   }
 
   async alarm() {
-    console.log("🔥 DO ALARM FIRED", Date.now());
-
     try {
-      const result = await tickOnce(this.env, this.state, { source: "alarm" });
-      console.log("🔥 TICK RESULT:", JSON.stringify(result));
+      await tickOnce(this.env, this.state, { source: "alarm" });
     } finally {
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
     }
