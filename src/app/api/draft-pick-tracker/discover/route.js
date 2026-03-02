@@ -82,20 +82,35 @@ export async function POST(request) {
       const bestBall = Number(item?.best_ball || 0) === 1 ? 1 : 0;
 
       // Upsert minimal metadata; DO will fill in everything else.
-      const res = await db.prepare(
-        `INSERT INTO push_draft_registry (
-          draft_id, active, status, last_checked_at,
-          league_id, league_name, league_avatar, best_ball
-        ) VALUES (?, 1, 'unknown', ?, ?, ?, ?, ?)
-        ON CONFLICT(draft_id) DO UPDATE SET
-          active=1,
-          last_checked_at=COALESCE(push_draft_registry.last_checked_at, excluded.last_checked_at),
-          league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-          league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
-          league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
-          best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball)`
-      )
-        .bind(draftId, now, leagueId, leagueName, leagueAvatar, bestBall)
+      // IMPORTANT:
+      // - Do NOT mark as active/unknown here. That can push the draft into the "inactive" bucket,
+      //   which is only refreshed every ~6 hours.
+      // - Seed as pre_draft with last_checked_at=0 so the DO picks it up quickly.
+      const res = await db
+        .prepare(
+          `INSERT INTO push_draft_registry (
+            draft_id, active, status, last_checked_at,
+            league_id, league_name, league_avatar, best_ball
+          ) VALUES (?, 0, 'pre_draft', 0, ?, ?, ?, ?)
+          ON CONFLICT(draft_id) DO UPDATE SET
+            -- If we only had a placeholder status, make it eligible for the DO pre_draft refresh.
+            status=CASE
+              WHEN push_draft_registry.status IS NULL OR push_draft_registry.status='' OR push_draft_registry.status='unknown'
+              THEN 'pre_draft'
+              ELSE push_draft_registry.status
+            END,
+            -- Force a near-immediate refresh if we were stuck in the placeholder state.
+            last_checked_at=CASE
+              WHEN push_draft_registry.status='unknown'
+              THEN 0
+              ELSE COALESCE(push_draft_registry.last_checked_at, 0)
+            END,
+            league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
+            league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
+            league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
+            best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball)`
+        )
+        .bind(draftId, leagueId, leagueName, leagueAvatar, bestBall)
         .run();
 
       if (res?.meta?.changes === 1) inserted += 1;

@@ -200,7 +200,31 @@ async function encryptAes128gcm({ subscription, payloadJsonString }) {
   };
 }
 
-export async function buildWebPushRequest({ subscription, payload, vapidSubject, vapidPrivateJwk }) {
+export async function buildWebPushRequest(args) {
+  // Back-compat shim:
+  // Some callers pass { subscription, payload, vapid: { subject, privateKeyJwk } }
+  // while others pass { subscription, payload, vapidSubject, vapidPrivateJwk }.
+  const subscription = args?.subscription;
+  const payload = args?.payload;
+
+  const vapidSubject =
+    args?.vapidSubject != null
+      ? args.vapidSubject
+      : args?.vapid?.subject != null
+        ? args.vapid.subject
+        : undefined;
+
+  const vapidPrivateJwk =
+    args?.vapidPrivateJwk != null
+      ? args.vapidPrivateJwk
+      : args?.vapid?.privateKeyJwk != null
+        ? args.vapid.privateKeyJwk
+        : undefined;
+
+  if (!subscription?.endpoint) throw new Error("Missing subscription.endpoint");
+  if (!vapidSubject) throw new Error("Missing vapid subject");
+  if (!vapidPrivateJwk) throw new Error("Missing VAPID private JWK");
+
   const url = new URL(subscription.endpoint);
   const aud = `${url.protocol}//${url.host}`;
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 12;
