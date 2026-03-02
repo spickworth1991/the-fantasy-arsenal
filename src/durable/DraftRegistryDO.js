@@ -1189,38 +1189,95 @@ async function clearClockState(db, endpoint, draftId) {
 async function sendPush(env, subscription, payload) {
   const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
   const vapidSubject = env?.VAPID_SUBJECT;
-  if (!vapidPrivateRaw || !vapidSubject) return { ok: false, error: "Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT" };
+  if (!vapidPrivateRaw || !vapidSubject) {
+    console.log(
+      "🚫 PUSH missing VAPID env vars",
+      JSON.stringify({
+        hasPrivate: Boolean(vapidPrivateRaw),
+        hasSubject: Boolean(vapidSubject),
+        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+      })
+    );
+    return { ok: false, error: "Missing VAPID_PRIVATE_KEY or VAPID_SUBJECT" };
+  }
 
   let vapidJwk = null;
   try {
     vapidJwk = JSON.parse(String(vapidPrivateRaw));
   } catch {
+    console.log(
+      "🚫 PUSH VAPID_PRIVATE_KEY parse failed",
+      JSON.stringify({
+        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+      })
+    );
     return { ok: false, error: "VAPID_PRIVATE_KEY must be JSON JWK" };
   }
 
-  const req = await buildWebPushRequest({
-    subscription,
-    vapid: { subject: String(vapidSubject), privateKeyJwk: vapidJwk },
-    payload,
-  });
+  let req;
+  try {
+    req = await buildWebPushRequest({
+      subscription,
+      vapid: { subject: String(vapidSubject), privateKeyJwk: vapidJwk },
+      payload,
+    });
+  } catch (err) {
+    console.log(
+      "💥 PUSH buildWebPushRequest threw",
+      JSON.stringify({
+        err: String(err?.message || err),
+        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+      })
+    );
+    return { ok: false, status: 0, error: String(err?.message || err) };
+  }
 
   // buildWebPushRequest returns { endpoint, fetchInit }
   try {
-    console.log("🚀 SENDING PUSH to", req.endpoint);
+    console.log(
+      "🚀 SENDING PUSH",
+      JSON.stringify({
+        endpoint: String(req?.endpoint || "").slice(0, 160),
+        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+      })
+    );
 
     const res = await fetch(req.endpoint, req.fetchInit);
+    const text = await res.text().catch(() => "");
 
-    console.log("🚀 PUSH RESPONSE:", res.status);
+    console.log(
+      "🚀 PUSH RESPONSE",
+      JSON.stringify({
+        ok: Boolean(res.ok),
+        status: Number(res.status || 0),
+        endpoint: String(req?.endpoint || "").slice(0, 160),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+        body: String(text || "").slice(0, 200),
+      })
+    );
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.log("🚨 PUSH FAILED BODY:", text);
-    }
-
-    return { ok: res.ok, status: res.status };
+    return { ok: Boolean(res.ok), status: Number(res.status || 0), error: res.ok ? null : String(text || "") };
   } catch (err) {
-    console.log("💥 PUSH THROW:", err?.message || err);
-    return { ok: false, error: String(err) };
+    console.log(
+      "💥 PUSH FETCH THROW",
+      JSON.stringify({
+        err: String(err?.message || err),
+        endpoint: String(req?.endpoint || "").slice(0, 160),
+        subEndpoint: String(subscription?.endpoint || "").slice(0, 120),
+        title: String(payload?.title || "").slice(0, 80),
+        tag: String(payload?.tag || "").slice(0, 80),
+      })
+    );
+    return { ok: false, status: 0, error: String(err?.message || err) };
   }
 }
 
@@ -1492,6 +1549,19 @@ async function notifyFromRegistry(env, state, db) {
         }
       }
 
+	      if (!res.ok) {
+	        console.log(
+	          "🚨 NOTIFY send failed",
+	          JSON.stringify({
+	            endpoint: String(endpoint).slice(0, 120),
+	            draftId: String(ev?.draftId || ""),
+	            stage: String(ev?.stage || ""),
+	            status: Number(res?.status || 0),
+	            error: String(res?.error || "").slice(0, 200),
+	          })
+	        );
+	      }
+
       continue;
     }
 
@@ -1550,6 +1620,18 @@ async function notifyFromRegistry(env, state, db) {
         });
       }
     }
+
+	    if (!res.ok) {
+	      console.log(
+	        "🚨 NOTIFY summary send failed",
+	        JSON.stringify({
+	          endpoint: String(endpoint).slice(0, 120),
+	          status: Number(res?.status || 0),
+	          error: String(res?.error || "").slice(0, 200),
+	          leagues: events.map((e) => String(e?.leagueName || "").slice(0, 48)).slice(0, 8),
+	        })
+	      );
+	    }
   }
 
   return { ok: true, subs: subs.length, sent };
