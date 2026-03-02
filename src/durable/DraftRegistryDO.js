@@ -1573,35 +1573,9 @@ async function tickOnce(env, state, opts = {}) {
 
     const now = Date.now();
 
-  // IMPORTANT: do NOT scan every draft and do 1 query per draft.
-  // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
+    // IMPORTANT: do NOT scan every draft and do 1 query per draft.
+    // Instead, pull a bounded, prioritized set of stale drafts directly from D1.
     const toCheck = await listDraftsToCheckPrioritized(db, now, opts);
-
-    // ✅ Notifications should not depend on registry refresh work existing.
-    // Gate to ~30s so we don't do push work every 15s tick.
-    let notify = null;
-    try {
-      const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
-      const lastAt = Number(last || 0);
-
-      console.log("🟡 NOTIFY CHECK", {
-        now,
-        lastAt,
-        diff: now - lastAt,
-        gate: NOTIFY_MIN_INTERVAL_MS
-      });
-
-      if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
-        console.log("🟢 RUNNING notifyFromRegistry()");
-        notify = await notifyFromRegistry(env, state, db);
-        console.log("🟢 NOTIFY RESULT:", JSON.stringify(notify));
-        await state.storage.put("last_notify_at", now);
-      } else {
-        console.log("⚪ NOTIFY SKIPPED (interval gate)");
-      }
-    } catch (err) {
-      console.log("❌ NOTIFY BLOCK ERROR:", err?.message || err);
-    }
   let updated = 0;
   let active = 0;
 
@@ -1915,8 +1889,40 @@ async function tickOnce(env, state, opts = {}) {
     );
   }
 
+  // ✅ Notifications should be evaluated *after* we refresh the registry in this tick.
+  // Otherwise we can repeatedly read stale/empty computed fields (current_owner_name/clock_ends_at)
+  // and never generate events.
+  // Gate to ~30s so we don't do push work every 15s alarm.
+  let notify = null;
+  try {
+    const last = state?.storage ? await state.storage.get("last_notify_at") : 0;
+    const lastAt = Number(last || 0);
 
-    return { ok: true, drafts: toCheck.length, active, updated, notify };
+    console.log("🟡 NOTIFY CHECK", {
+      now,
+      lastAt,
+      diff: now - lastAt,
+      gate: NOTIFY_MIN_INTERVAL_MS,
+    });
+
+    if (state?.storage && (!lastAt || now - lastAt >= NOTIFY_MIN_INTERVAL_MS)) {
+      console.log("🟢 RUNNING notifyFromRegistry()", {
+        tickDrafts: toCheck.length,
+        tickUpdated: updated,
+        tickActive: active,
+        source: String(opts?.source || ""),
+      });
+      notify = await notifyFromRegistry(env, state, db);
+      console.log("🟢 NOTIFY RESULT:", JSON.stringify(notify));
+      await state.storage.put("last_notify_at", now);
+    } else {
+      console.log("⚪ NOTIFY SKIPPED (interval gate)");
+    }
+  } catch (err) {
+    console.log("❌ NOTIFY BLOCK ERROR:", err?.message || err);
+  }
+
+  return { ok: true, drafts: toCheck.length, active, updated, notify };
 }
 
 export class DraftRegistry {
