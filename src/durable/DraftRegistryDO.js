@@ -14,7 +14,7 @@ const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
 // We keep this fairly tight so we notice the transition without needing a UI visit.
 const PRE_DRAFT_REFRESH_MS = 60 * 1000; // 1 minute
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
-
+const PICKS_SYNC_COOLDOWN_MS = 20_000;
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Sleeper fetch failed ${res.status} for ${url}`);
@@ -367,6 +367,8 @@ async function ensureDraftCacheTable(db) {
         draft_id TEXT PRIMARY KEY,
         last_picked INTEGER,
         pick_count INTEGER,
+        pick_count_synced_last_picked INTEGER,
+        last_picks_sync_at INTEGER,
         league_id TEXT,
         league_name TEXT,
         league_avatar TEXT,
@@ -380,7 +382,9 @@ async function ensureDraftCacheTable(db) {
         context_updated_at INTEGER,
         updated_at INTEGER
       )`
+      
     )
+    
     .run();
 
   // Back-compat for cache table too.
@@ -403,6 +407,8 @@ async function ensureDraftCacheTable(db) {
     await add("league_id", "TEXT");
     await add("league_name", "TEXT");
     await add("league_avatar", "TEXT");
+    await add("pick_count_synced_last_picked", "INTEGER");
+    await add("last_picks_sync_at", "INTEGER");
   } catch {
     // ignore
   }
@@ -424,17 +430,21 @@ async function saveDraftCache(db, draftId, patch) {
       `INSERT OR REPLACE INTO push_draft_cache (
         draft_id,
         last_picked, pick_count,
+        pick_count_synced_last_picked,
+        last_picks_sync_at,
         league_id, league_name, league_avatar,
         slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
         rounds, timer_sec, reversal_round,
         context_updated_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       next.draft_id,
       next.last_picked ?? null,
       next.pick_count ?? null,
+      next.pick_count_synced_last_picked ?? null,
+      next.last_picks_sync_at ?? null,
       next.league_id ?? null,
       next.league_name ?? null,
       next.league_avatar ?? null,
@@ -739,37 +749,57 @@ async function tickOnce(env, state) {
         const reversalRound = Number(draft?.settings?.reversal_round || 0) || null;
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
 
-        // IMPORTANT:
-        // Never let missing/zero-ish draft fields regress the registry to "pick 1".
-        // D1 NULL values would become Number(null) === 0 (a valid number), which can
-        // make current_pick compute as 1 and owner resolution drift.
         const cacheRow = await loadDraftCache(db, draftId);
-        const cacheLastPicked = cacheRow?.last_picked == null ? NaN : Number(cacheRow.last_picked);
-        const draftLastPickedRaw = draft?.last_picked;
-        const draftLastPicked = Number.isFinite(Number(draftLastPickedRaw)) ? Number(draftLastPickedRaw) : null;
+
+        const draftLastPicked = draft?.last_picked != null ? Number(draft.last_picked) : null;
+
+        // "lastPicked" is the value we write into cache during sync attempts
+        const lastPicked = draftLastPicked;
+
+        // "lastPickedEffective" is what we write into the registry if draft doesn't provide it yet
         const lastPickedEffective =
-          draftLastPicked != null ? draftLastPicked : (Number.isFinite(cacheLastPicked) ? cacheLastPicked : null);
+          draftLastPicked != null
+            ? draftLastPicked
+            : (Number.isFinite(Number(cacheRow?.last_picked)) ? Number(cacheRow.last_picked) : null);
 
-        const cachedPickCountRaw = cacheRow?.pick_count;
-        let pickCount = cachedPickCountRaw == null ? NaN : Number(cachedPickCountRaw);
+        let pickCount = Number(cacheRow?.pick_count);
+        const cacheLastPicked = Number(cacheRow?.last_picked || 0);
+        const cacheSyncedLastPicked = Number(cacheRow?.pick_count_synced_last_picked || 0);
+        const cacheLastSyncAt = Number(cacheRow?.last_picks_sync_at || 0);
 
-        const shouldRefreshPickCount =
-          !Number.isFinite(pickCount) ||
-          (draftLastPicked != null && (!Number.isFinite(cacheLastPicked) || cacheLastPicked !== draftLastPicked));
+        // Keep pick_count accurate even if /picks temporarily fails.
+        // Only mark pick_count as "synced" when /picks succeeded for the current draft last_picked.
+        const lastPickedNum = Number(draftLastPicked || 0);
 
-        if (shouldRefreshPickCount) {
+        const wantsPickSync =
+          isActive &&
+          (draftLastPicked != null) &&
+          (!Number.isFinite(pickCount) || cacheSyncedLastPicked !== lastPickedNum);
+
+        const canPickSync = wantsPickSync && (now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS);
+
+        if (canPickSync) {
           try {
             pickCount = await getPickCount(draftId);
+            await saveDraftCache(db, draftId, {
+              last_picked: lastPicked,
+              pick_count: Number.isFinite(pickCount) ? pickCount : null,
+              pick_count_synced_last_picked: lastPickedNum || null,
+              last_picks_sync_at: now,
+            });
           } catch {
-            // If we already had a sane count, keep it; otherwise leave it as NaN.
-            pickCount = Number.isFinite(pickCount) ? pickCount : NaN;
+            // We saw draftLastPicked move, but couldn't fetch /picks.
+            // Keep retrying next ticks by NOT updating pick_count_synced_last_picked.
+            await saveDraftCache(db, draftId, {
+              last_picked: lastPicked,
+              last_picks_sync_at: now,
+            });
           }
-          await saveDraftCache(db, draftId, {
-            last_picked: lastPickedEffective,
-            pick_count: Number.isFinite(pickCount) ? pickCount : null,
-          });
+        } else if (draftLastPicked != null && cacheLastPicked !== lastPickedNum) {
+          // last_picked advanced but we’re on cooldown; still update last_picked for clock rendering.
+          await saveDraftCache(db, draftId, { last_picked: lastPicked });
         }
-
+        
         let leagueName = reg?.league_name || cacheRow?.league_name || null;
         let leagueAvatarUrl = reg?.league_avatar || cacheRow?.league_avatar || null;
         let bestBall = reg?.best_ball;
@@ -1000,15 +1030,15 @@ async function tickOnce(env, state) {
         }
 
         const clockEndsAt =
-          lastPickedEffective != null && timerSec
-            ? Number(lastPickedEffective) + Number(timerSec) * 1000
-            : null;
+        lastPickedEffective != null && timerSec
+          ? Number(lastPickedEffective) + Number(timerSec) * 1000
+          : null;
 
         await upsertRegistry(db, draftId, {
           active: isActive ? 1 : 0,
           status,
           last_picked: lastPickedEffective,
-          pick_count: pickCount,
+          pick_count: Number.isFinite(Number(pickCount)) ? Number(pickCount) : null,
           draft_json: JSON.stringify(draft || {}),
           draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
           slot_to_roster_json: slotToRosterJson,
