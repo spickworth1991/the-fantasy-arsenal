@@ -116,19 +116,56 @@ function getOnClockHeatMsForUI({ isPaused, liveClockLeft, timerSec }) {
 }
 
 /**
- * ON-CLOCK heat (TIME-BASED thresholds, not %):
- * Tiers use remaining seconds only.
- * NOTE: only use when a real timer exists.
+ * ON-CLOCK heat mapping (TIMER-RELATIVE)
+ * - Uses % of timer remaining so long timers transition earlier logically.
+ * - Also clamps with absolute "caps" so it still feels right for short timers.
+ *
+ * Rules of thumb:
+ * - Green: plenty of time
+ * - Yellow: getting warm
+ * - Orange: urgent
+ * - Red: critical
  */
-function onClockHeatStyles(liveClockLeftMs) {
-  const left = Math.max(0, safeNum(liveClockLeftMs));
-  const leftSec = Math.ceil(left / 1000);
+function onClockHeatStyles(liveClockLeftMs, timerSec) {
+  const leftMs = Math.max(0, safeNum(liveClockLeftMs));
+  const tSec = Math.max(0, safeNum(timerSec));
+  const totalMs = tSec > 0 ? tSec * 1000 : 0;
 
-  // green: > 75s, yellow: 75-46, orange: 45-21, red: <= 20
+  // If no timer, treat as neutral (no heat).
+  if (!totalMs) {
+    return {
+      ring: "",
+      wash: "",
+      badgeTone: "gray",
+      tier: "none",
+      shake: "",
+    };
+  }
+
+  const leftSec = Math.ceil(leftMs / 1000);
+  const pctLeft = Math.max(0, Math.min(1, leftMs / totalMs));
+
+  /**
+   * Percent thresholds (default):
+   * - yellow when <= 60% time left
+   * - orange when <= 35%
+   * - red when <= 15%
+   *
+   * Then apply absolute caps (seconds) so the tiers feel consistent:
+   * - yellow at <= max(60% OR 10 min)  (so long timers start warming earlier)
+   * - orange at <= max(35% OR 5 min)
+   * - red at <= max(15% OR 2 min)
+   *
+   * For short timers, the % rule naturally triggers early enough.
+   */
+  const yellowCapSec = Math.max(Math.round(tSec * 0.60), 10 * 60);
+  const orangeCapSec = Math.max(Math.round(tSec * 0.35), 5 * 60);
+  const redCapSec = Math.max(Math.round(tSec * 0.15), 2 * 60);
+
   let tier = "green";
-  if (leftSec <= 20) tier = "red";
-  else if (leftSec <= 45) tier = "orange";
-  else if (leftSec <= 75) tier = "yellow";
+  if (leftSec <= redCapSec) tier = "red";
+  else if (leftSec <= orangeCapSec) tier = "orange";
+  else if (leftSec <= yellowCapSec) tier = "yellow";
 
   const pulse =
     tier === "green"
@@ -139,7 +176,13 @@ function onClockHeatStyles(liveClockLeftMs) {
       ? "animate-[pulse_0.9s_ease-in-out_infinite]"
       : "animate-[pulse_0.75s_ease-in-out_infinite]";
 
-  const shake = "animate-[dpt_shake_0.9s_ease-in-out_infinite]";
+  const shakeOnly =
+    tier === "orange" || tier === "red"
+      ? "animate-[dpt_shake_0.9s_ease-in-out_infinite]"
+      : "";
+
+  // ✅ include pulse in "shake" so text/Pill wrappers can pulse too
+  const shake = `${pulse} ${shakeOnly}`.trim();
 
   const ring =
     tier === "green"
@@ -160,13 +203,7 @@ function onClockHeatStyles(liveClockLeftMs) {
       : "before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-red-500/18 before:via-transparent before:to-transparent before:pointer-events-none";
 
   const badgeTone =
-    tier === "green"
-      ? "green"
-      : tier === "yellow"
-      ? "yellow"
-      : tier === "orange"
-      ? "orange"
-      : "red";
+    tier === "green" ? "green" : tier === "yellow" ? "yellow" : tier === "orange" ? "orange" : "red";
 
   return {
     ring: `${ring} ${pulse}`,
@@ -1336,10 +1373,10 @@ export default function DraftPickTrackerClient() {
                       isPaused,
                       liveClockLeft,
                       timerSec: r.timerSec,
-                    })
+                    }),
+                    r.timerSec
                   )
                 : null;
-
             // Some UI features (like recent auto-pick detection) are keyed by draft id.
             // `r.draftId` is provided by the registry API rows.
             const draftId = r?.draftId;
@@ -1587,11 +1624,31 @@ export default function DraftPickTrackerClient() {
                           ) : null}
                         </div>
                         <div className="mt-1 flex gap-1">
-                          {r.onClockIsMe ? (
-                            <Pill tone="green" size="xs">
-                              ON CLOCK
-                            </Pill>
-                          ) : null}
+                          {(() => {
+                              if (!r.onClockIsMe) return null;
+
+                              const status = String(r?.draftStatus || "").toLowerCase();
+                              const isPaused = status === "paused";
+                              const hasTimer = safeNum(r.timerSec) > 0;
+
+                              // paused: do NOT tick down
+                              const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                              const liveClockLeft = hasTimer
+                                ? isPaused
+                                  ? Math.max(0, safeNum(r.clockLeftMs))
+                                  : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                                : 0;
+
+                              const heat = hasTimer ? onClockHeatStyles(getOnClockHeatMsForUI({ isPaused, liveClockLeft, timerSec: r.timerSec }), r.timerSec) : null;
+
+                              return (
+                                <span className={classNames("inline-flex", hasTimer && !isPaused ? heat?.shake : "")}>
+                                  <Pill tone={(hasTimer ? heat?.badgeTone : "green") || "green"} size="xs">
+                                    ON CLOCK
+                                  </Pill>
+                                </span>
+                              );
+                            })()}
                         </div>
                       </div>
 
@@ -1687,7 +1744,25 @@ export default function DraftPickTrackerClient() {
                       key={r.__rowKey || r.draftId || r.leagueId || `row:${idx}`}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
-                        r.onClockIsMe && "bg-emerald-500/5",
+                        (() => {
+                          if (!r.onClockIsMe) return "";
+                          const status = String(r?.draftStatus || "").toLowerCase();
+                          const isPaused = status === "paused";
+                          const hasTimer = safeNum(r.timerSec) > 0;
+                          if (!hasTimer || isPaused) return "bg-emerald-500/5"; // fallback
+
+                          const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                          const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+                          const heat = onClockHeatStyles(getOnClockHeatMsForUI({ isPaused: false, liveClockLeft, timerSec: r.timerSec }), r.timerSec);
+
+                          return heat?.tier === "red"
+                            ? "bg-red-500/8"
+                            : heat?.tier === "orange"
+                            ? "bg-orange-500/7"
+                            : heat?.tier === "yellow"
+                            ? "bg-yellow-500/7"
+                            : "bg-emerald-500/5";
+                        })(),
                         isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/5"
                       )}
                     >
@@ -1719,19 +1794,69 @@ export default function DraftPickTrackerClient() {
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-gray-100">{r.currentOwnerName || "—"}</span>
-                            {r.onClockIsMe ? (
-                              <Pill tone="green" size="xs">
-                                ON CLOCK
-                              </Pill>
-                            ) : null}
+                            {(() => {
+                                if (!r.onClockIsMe) return null;
+
+                                const status = String(r?.draftStatus || "").toLowerCase();
+                                const isPaused = status === "paused";
+                                const hasTimer = safeNum(r.timerSec) > 0;
+
+                                // paused: do NOT tick down
+                                const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                                const liveClockLeft = hasTimer
+                                  ? isPaused
+                                    ? Math.max(0, safeNum(r.clockLeftMs))
+                                    : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                                  : 0;
+
+                                const heat = hasTimer ? onClockHeatStyles(getOnClockHeatMsForUI({ isPaused, liveClockLeft, timerSec: r.timerSec }), r.timerSec) : null;
+
+                                return (
+                                  <span className={classNames("inline-flex", hasTimer && !isPaused ? heat?.shake : "")}>
+                                    <Pill tone={(hasTimer ? heat?.badgeTone : "green") || "green"} size="xs">
+                                      ON CLOCK
+                                    </Pill>
+                                  </span>
+                                );
+                              })()}
                           </div>
 
                           <span className="text-xs text-gray-400 tabular-nums flex items-center gap-2">
                             <span>{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</span>
                             {isDrafting && !isPaused ? (
-                              <span className="text-lg font-extrabold text-white tabular-nums tracking-wide">
-                                {clockText}
-                              </span>
+                              (() => {
+                                const status = String(r?.draftStatus || "").toLowerCase();
+                                const paused = status === "paused";
+                                const hasTimer = safeNum(r.timerSec) > 0;
+
+                                // fallback: no timer, paused, or not drafting
+                                if (!hasTimer || paused || !isDrafting) {
+                                  return (
+                                    <span className="text-lg font-extrabold text-white tabular-nums tracking-wide">
+                                      {clockText}
+                                    </span>
+                                  );
+                                }
+
+                                const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                                const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+
+                                const heat = onClockHeatStyles(
+                                  getOnClockHeatMsForUI({ isPaused: false, liveClockLeft, timerSec: r.timerSec }),
+                                  r.timerSec
+                                );
+
+                                return (
+                                  <span
+                                    className={classNames(
+                                      "text-lg font-extrabold text-white tabular-nums tracking-wide",
+                                      heat?.shake
+                                    )}
+                                  >
+                                    {clockText}
+                                  </span>
+                                );
+                              })()
                             ) : r.draftStatus === "paused" ? (
                               <span className="text-yellow-200/80">paused</span>
                             ) : null}
