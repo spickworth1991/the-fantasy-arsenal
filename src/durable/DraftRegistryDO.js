@@ -589,16 +589,10 @@ async function upsertRegistry(db, draftId, patch) {
         league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
         league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
         best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
-        -- IMPORTANT:
-        -- These are derived fields (computed from pick_count + draft context).
-        -- Using COALESCE here can cause stale owner names to "stick" across ticks if
-        -- a single tick fails to compute the name (temporarily NULL), which matches
-        -- the symptom: correct pick/time but wrong owner label.
-        -- We always overwrite to keep UI + notifications consistent.
-        current_pick=excluded.current_pick,
-        current_owner_name=excluded.current_owner_name,
-        next_owner_name=excluded.next_owner_name,
-        clock_ends_at=excluded.clock_ends_at,
+        current_pick=COALESCE(excluded.current_pick, push_draft_registry.current_pick),
+        current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
+        next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
+        clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
 	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
 	      updated_at=excluded.updated_at`
     )
@@ -743,20 +737,37 @@ async function tickOnce(env, state) {
         const timerSec = Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
         const rounds = Number(draft?.settings?.rounds || 0) || null;
         const reversalRound = Number(draft?.settings?.reversal_round || 0) || null;
-        const lastPicked = Number(draft?.last_picked || 0) || null;
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
 
+        // IMPORTANT:
+        // Never let missing/zero-ish draft fields regress the registry to "pick 1".
+        // D1 NULL values would become Number(null) === 0 (a valid number), which can
+        // make current_pick compute as 1 and owner resolution drift.
         const cacheRow = await loadDraftCache(db, draftId);
-        let pickCount = Number(cacheRow?.pick_count);
-        const cacheLastPicked = Number(cacheRow?.last_picked || 0);
+        const cacheLastPicked = cacheRow?.last_picked == null ? NaN : Number(cacheRow.last_picked);
+        const draftLastPickedRaw = draft?.last_picked;
+        const draftLastPicked = Number.isFinite(Number(draftLastPickedRaw)) ? Number(draftLastPickedRaw) : null;
+        const lastPickedEffective =
+          draftLastPicked != null ? draftLastPicked : (Number.isFinite(cacheLastPicked) ? cacheLastPicked : null);
 
-        if (!Number.isFinite(pickCount) || cacheLastPicked !== Number(lastPicked || 0)) {
+        const cachedPickCountRaw = cacheRow?.pick_count;
+        let pickCount = cachedPickCountRaw == null ? NaN : Number(cachedPickCountRaw);
+
+        const shouldRefreshPickCount =
+          !Number.isFinite(pickCount) ||
+          (draftLastPicked != null && (!Number.isFinite(cacheLastPicked) || cacheLastPicked !== draftLastPicked));
+
+        if (shouldRefreshPickCount) {
           try {
             pickCount = await getPickCount(draftId);
           } catch {
-            pickCount = Number.isFinite(pickCount) ? pickCount : null;
+            // If we already had a sane count, keep it; otherwise leave it as NaN.
+            pickCount = Number.isFinite(pickCount) ? pickCount : NaN;
           }
-          await saveDraftCache(db, draftId, { last_picked: lastPicked, pick_count: pickCount });
+          await saveDraftCache(db, draftId, {
+            last_picked: lastPickedEffective,
+            pick_count: Number.isFinite(pickCount) ? pickCount : null,
+          });
         }
 
         let leagueName = reg?.league_name || cacheRow?.league_name || null;
@@ -953,8 +964,8 @@ async function tickOnce(env, state) {
         let nextOwnerName = null;
 
         try {
-          const pickCountNum = Number.isFinite(Number(pickCount)) ? Number(pickCount) : 0;
-          currentPick = pickCountNum + 1;
+          const pickCountNum = Number.isFinite(Number(pickCount)) ? Number(pickCount) : null;
+          currentPick = pickCountNum == null ? null : pickCountNum + 1;
 
           const slotToRoster = slotToRosterJson ? JSON.parse(slotToRosterJson) : null;
           const rosterNames = rosterNamesJson ? JSON.parse(rosterNamesJson) : null;
@@ -963,7 +974,7 @@ async function tickOnce(env, state) {
           const seasonStr = String(draft?.season || "");
           const teamsNum = Number(teams || 0) || (slotToRoster ? Object.keys(slotToRoster).length : 0);
 
-          if (teamsNum > 0 && slotToRoster && rosterNames) {
+          if (currentPick != null && teamsNum > 0 && slotToRoster && rosterNames) {
             const ridCur = resolveRosterForPick({
               pickNo: currentPick,
               teams: teamsNum,
@@ -989,12 +1000,14 @@ async function tickOnce(env, state) {
         }
 
         const clockEndsAt =
-          lastPicked && timerSec ? Number(lastPicked) + Number(timerSec) * 1000 : null;
+          lastPickedEffective != null && timerSec
+            ? Number(lastPickedEffective) + Number(timerSec) * 1000
+            : null;
 
         await upsertRegistry(db, draftId, {
           active: isActive ? 1 : 0,
           status,
-          last_picked: lastPicked,
+          last_picked: lastPickedEffective,
           pick_count: pickCount,
           draft_json: JSON.stringify(draft || {}),
           draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
