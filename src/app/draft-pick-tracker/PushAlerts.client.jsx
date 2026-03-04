@@ -1,166 +1,133 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 function urlBase64ToUint8Array(base64String) {
+  // From WebPush docs: convert VAPID key
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
-  return out;
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
 }
 
-function withTimeout(promise, ms, label) {
-  let t;
-  const timeout = new Promise((_, rej) => {
-    t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
-  });
-  return Promise.race([promise.finally(() => clearTimeout(t)), timeout]);
-}
-
-// Backwards/forwards compatible props:
-// - older callers passed `draftIds`
-// - newer callers passed `selectedDraftIds`
 export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
   const [status, setStatus] = useState("idle"); // idle | enabled | denied | error | loading
   const [msg, setMsg] = useState("");
 
   const chosenDraftIds = useMemo(() => {
-    const arr = Array.isArray(selectedDraftIds)
-      ? selectedDraftIds
-      : Array.isArray(draftIds)
-      ? draftIds
-      : [];
-    // de-dupe
-    return arr
-      .map(String)
-      .filter(Boolean)
-      .filter((id, i, a) => a.indexOf(id) === i);
+    const raw = Array.isArray(selectedDraftIds) && selectedDraftIds.length ? selectedDraftIds : draftIds;
+    return Array.isArray(raw) ? raw.filter(Boolean) : [];
   }, [draftIds, selectedDraftIds]);
 
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
   const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
 
-  async function saveSubscription(sub, { includeUsername = false } = {}) {
-  const endpoint = sub?.endpoint || "";
-  if (!endpoint) return;
+  // Reflect existing permission/subscription in the UI, but do NOT POST on page-load.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!hasNotification) return;
+        if (globalThis.Notification.permission !== "granted") return;
+        if (!("serviceWorker" in navigator)) return;
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (!cancelled && sub) setStatus("enabled");
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasNotification]);
 
-  // Only send username when explicitly enabling alerts.
-  const payload = {
-    subscription: sub,
-    draftIds: chosenDraftIds,
-  };
-  if (includeUsername && username) payload.username = username;
+  async function saveSubscription(subscription, { includeUsername = false } = {}) {
 
-  await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-}
+  const endpoint = subscription?.endpoint;
+    if (!endpoint) return;
 
+    const payload = {
+      subscription,
+      // Only send username explicitly when enabling alerts; otherwise we can omit to avoid unintended discover.
+      username: includeUsername ? username : undefined,
+      draftIds: chosenDraftIds,
+    };
 
+    const res = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || "Subscribe failed");
+    }
+  }
 
   async function enable() {
     try {
-      setStatus("loading");
       setMsg("");
+      setStatus("loading");
 
-      if (!vapidKey) {
-        throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY (not available in this build).");
-      }
+      if (!hasNotification) throw new Error("Notifications not supported");
+      if (!vapidKey) throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY");
 
-      if (!hasNotification) {
-        throw new Error(
-          "Notifications are not available in this browser/context. On iPhone/iPad, add the site to Home Screen (iOS 16.4+) and enable notifications for the app."
-        );
-      }
-
-      if (!("serviceWorker" in navigator)) {
-        throw new Error("Service Worker not supported in this browser.");
-      }
-
-      const perm = await withTimeout(
-        globalThis.Notification.requestPermission(),
-        15000,
-        "Notification permission"
-      );
+      const perm = await globalThis.Notification.requestPermission();
       if (perm !== "granted") {
-        setStatus("denied");
-        setMsg("Notifications are blocked. Enable them in browser settings.");
+        setStatus(perm === "denied" ? "denied" : "error");
+        setMsg("Notifications permission not granted.");
         return;
       }
 
-      // Wait for SW ready, but don't hang forever
-      const reg = await withTimeout(navigator.serviceWorker.ready, 15000, "Service worker");
+      if (!("serviceWorker" in navigator)) throw new Error("No service worker");
+      const reg = await navigator.serviceWorker.ready;
+      // Reuse existing subscription if present.
+      const existing = await reg.pushManager.getSubscription();
+      const sub =
+        existing ||
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        }));
 
-      if (!reg?.pushManager) {
-        throw new Error("PushManager not available (push not supported on this device/browser).");
-      }
-
-      // Prefer existing subscription (prevents InvalidState issues)
-      let sub = await withTimeout(reg.pushManager.getSubscription(), 8000, "Get subscription");
-
-      if (!sub) {
-        sub = await withTimeout(
-          reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
-          }),
-          15000,
-          "Push subscribe"
-        );
-      }
-
-      // Save to server (D1)
-      await withTimeout(saveSubscription(sub, { includeUsername: true }), 15000, "Save subscription");
-
+      await saveSubscription(sub, { includeUsername: true });
       setStatus("enabled");
-      setMsg(
-        chosenDraftIds?.length
-          ? `Draft alerts enabled for ${chosenDraftIds.length} draft(s).`
-          : "Draft alerts enabled. Pick a league/draft to receive alerts."
-      );
+      setMsg("Alerts enabled for this device.");
     } catch (e) {
+      console.error(e);
       setStatus("error");
-      setMsg(
-        e?.message ||
-          "Couldn’t enable push. On iPhone/iPad, add the site to Home Screen first (iOS 16.4+)."
-      );
+      setMsg(e?.message || "Failed to enable alerts");
     }
   }
 
   // Keep server in sync when draft selection changes (prevents draft_ids_json = [])
+  // Only after the user has enabled alerts.
   useEffect(() => {
     let cancelled = false;
 
     async function sync() {
       try {
+        if (cancelled) return;
         if (!hasNotification) return;
         if (globalThis.Notification.permission !== "granted") return;
-        if (!("serviceWorker" in navigator)) return;
+        if (status !== "enabled") return;
 
+        if (!("serviceWorker" in navigator)) return;
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
         if (!sub) return;
 
         await saveSubscription(sub, { includeUsername: true });
-
-        if (!cancelled && status === "enabled") {
-          setMsg(
-            chosenDraftIds?.length
-              ? `Alerts updated: tracking ${chosenDraftIds.length} draft(s).`
-              : "Alerts updated. Pick a league/draft to receive alerts."
-          );
-        }
       } catch {
         // ignore
       }
     }
 
-    if (status === "enabled" || (hasNotification && globalThis.Notification.permission === "granted"))
-      sync();
+    if (status === "enabled") sync();
 
     return () => {
       cancelled = true;
@@ -169,42 +136,40 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
   }, [chosenDraftIds.join("|"), status]);
 
   return (
-    <div
-      style={{
-        border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 16,
-        padding: 14,
-        background: "rgba(10,16,34,0.55)",
-        backdropFilter: "blur(10px)",
-      }}
-    >
-      <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <div style={{ fontWeight: 700, letterSpacing: 0.2 }}>Draft Pick Tracker Alerts</div>
-          <div style={{ opacity: 0.75, fontSize: 13 }}>
-            Get “on the clock” alerts — even when the app is closed.
+          <div className="text-sm font-semibold">Pick Alerts</div>
+          <div className="text-xs text-white/70">
+            Get notified when it’s your pick (or when your subscribed drafts advance).
           </div>
         </div>
 
-        <button
-          onClick={enable}
-          disabled={status === "loading"}
-          style={{
-            borderRadius: 999,
-            padding: "10px 14px",
-            border: "1px solid rgba(122,212,242,0.35)",
-            background: "rgba(122,212,242,0.14)",
-            color: "white",
-            fontWeight: 700,
-            cursor: status === "loading" ? "not-allowed" : "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {status === "enabled" ? "Enabled" : status === "loading" ? "Enabling…" : "Enable Alerts"}
-        </button>
+        {status === "enabled" ? (
+          <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200">
+            Enabled
+          </span>
+        ) : status === "denied" ? (
+          <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-200">
+            Blocked
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={enable}
+            disabled={status === "loading"}
+            className="rounded-lg bg-cyan-500/90 px-3 py-1.5 text-xs font-semibold text-black hover:bg-cyan-400 disabled:opacity-50"
+          >
+            {status === "loading" ? "Enabling..." : "Enable Alerts"}
+          </button>
+        )}
       </div>
 
-      {msg ? <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>{msg}</div> : null}
+      {msg ? <div className="mt-2 text-xs text-white/70">{msg}</div> : null}
+
+      <div className="mt-2 text-[11px] text-white/50">
+        Alerts are tied to this browser/device. If you clear site data, you’ll need to re-enable.
+      </div>
     </div>
   );
 }

@@ -3,191 +3,115 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-function safeJsonParse(value, fallback = null) {
-  if (!value) return fallback;
+function safeNum(v) {
+  const x = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function safeJsonParse(s) {
   try {
-    return typeof value === "string" ? JSON.parse(value) : value;
+    if (!s) return null;
+    return JSON.parse(s);
   } catch {
-    return fallback;
+    return null;
+  }
+}
+
+async function kickDraftRegistry(env) {
+  // Best-effort: tell the DO to run a tick now.
+  try {
+    const id = env?.DRAFT_REGISTRY?.idFromName("master");
+    const stub = env?.DRAFT_REGISTRY?.get(id);
+    if (stub) await stub.fetch("https://do/tick");
+  } catch {
+    // ignore
   }
 }
 
 function getDb(env) {
-  // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
-  return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
-}
-
-function getDraftRegistryStub(env) {
-  const ns = env?.DRAFT_REGISTRY;
-  if (!ns) return null;
-  // One shared instance for the whole site.
-  const id = ns.idFromName("master"); // IMPORTANT: match other routes
-  return ns.get(id);
-}
-
-async function kickDraftRegistry(env) {
-  try {
-    const stub = getDraftRegistryStub(env);
-    if (!stub) return;
-    await stub.fetch("https://do/tick", { method: "POST" });
-  } catch {
-    // ignore
-  }
-}
-
-// Public read-only endpoint used by the Draft Monitor page.
-// Returns the shared draft registry rows (draft_json + pick_count) so clients don't need to poll Sleeper.
-
-async function ensureDraftRegistryTable(db) {
-  await db
-    .prepare(
-      `CREATE TABLE IF NOT EXISTS push_draft_registry (
-        draft_id TEXT PRIMARY KEY,
-        active INTEGER,
-        status TEXT,
-        last_checked_at INTEGER,
-        last_active_at INTEGER,
-        last_inactive_at INTEGER,
-        last_picked INTEGER,
-        pick_count INTEGER,
-        draft_order_json TEXT,
-        draft_json TEXT,
-        slot_to_roster_json TEXT,
-        roster_names_json TEXT,
-        roster_by_username_json TEXT,
-        traded_pick_owner_json TEXT,
-        teams INTEGER,
-        rounds INTEGER,
-        timer_sec INTEGER,
-        reversal_round INTEGER,
-        league_id TEXT,
-        league_name TEXT,
-        league_avatar TEXT,
-        best_ball INTEGER,
-        current_pick INTEGER,
-        current_owner_name TEXT,
-        next_owner_name TEXT,
-        clock_ends_at INTEGER,
-        completed_at INTEGER,
-        updated_at INTEGER
-      )`
-    )
-    .run();
-
-  // Back-compat for older deployments.
-  try {
-    const info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
-    const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
-    const ensure = async (name, type) => {
-      if (!existing.has(name)) {
-        await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
-      }
-    };
-    await ensure("draft_json", "TEXT");
-    await ensure("slot_to_roster_json", "TEXT");
-    await ensure("roster_names_json", "TEXT");
-    await ensure("roster_by_username_json", "TEXT");
-    await ensure("traded_pick_owner_json", "TEXT");
-    await ensure("rounds", "INTEGER");
-    await ensure("reversal_round", "INTEGER");
-    await ensure("best_ball", "INTEGER");
-    await ensure("current_pick", "INTEGER");
-    await ensure("current_owner_name", "TEXT");
-    await ensure("next_owner_name", "TEXT");
-    await ensure("clock_ends_at", "INTEGER");
-    await ensure("completed_at", "INTEGER");
-    await ensure("updated_at", "INTEGER");
-  } catch {
-    // ignore
-  }
+  return env?.PUSH_DB;
 }
 
 export async function GET(req) {
   try {
-    const { env } = getRequestContext();
+    const ctx = getRequestContext();
+    const { env } = ctx;
     const db = getDb(env);
     if (!db?.prepare) {
       return NextResponse.json(
         {
           ok: false,
-          error: "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB.",
+          error: "Missing D1 binding: PUSH_DB",
         },
         { status: 500 }
       );
     }
 
-    await ensureDraftRegistryTable(db);
-
     const url = new URL(req.url);
     const idsRaw = url.searchParams.get("ids") || url.searchParams.get("draft_ids") || "";
     const activeOnly = url.searchParams.get("active") === "1";
-    const ids = idsRaw
-      .split(",")
-      .map((x) => String(x || "").trim())
-      .filter(Boolean)
-      .slice(0, 200);
+    const lite = url.searchParams.get("lite") === "1";
 
-    // If no ids are provided, return the shared active registry snapshot for Draft Monitor.
+    // If no ids provided, return the active registry subset (bounded)
+    const ids = String(idsRaw)
+      .split(",")
+      .map((s) => String(s || "").trim())
+      .filter(Boolean)
+      .slice(0, 1000);
+
     if (!ids.length) {
-      const where = activeOnly ? "WHERE active=1" : "";
-      const rows = await db
+      const res = await db
         .prepare(
-          `SELECT draft_id, active, status, last_checked_at, last_picked, pick_count, draft_json,
-                  slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-                  teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                  best_ball, completed_at
+          `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
+                  slot_to_roster_json, roster_names_json, roster_by_username_json,
+                  traded_pick_owner_json, teams, rounds, timer_sec, reversal_round,
+                  league_id, league_name, league_avatar, best_ball,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                  completed_at, updated_at
            FROM push_draft_registry
-           ${where}
-           ORDER BY COALESCE(last_active_at, last_checked_at) DESC
-           LIMIT 500`
+           WHERE active = 1
+           ORDER BY updated_at DESC
+           LIMIT 1000`
         )
         .all();
 
-      const list = [];
-      for (const r of rows?.results || []) {
-        let draft = null;
-        try {
-          draft = r.draft_json ? JSON.parse(r.draft_json) : null;
-        } catch {
-          draft = null;
-        }
-
-        const storedStatus = String(r.status || "").toLowerCase().trim();
-        const draftStatus = String(draft?.status || "").toLowerCase().trim();
-        const effectiveStatus =
-          storedStatus && storedStatus !== "unknown" ? storedStatus : (draftStatus || null);
-
-        list.push({
-          draftId: String(r.draft_id),
-          active: Number(r.active || 0) === 1,
-          status: effectiveStatus,
-          lastCheckedAt: Number(r.last_checked_at || 0),
-          lastPicked: r.last_picked == null ? null : Number(r.last_picked),
-          pickCount: r.pick_count == null ? null : Number(r.pick_count),
-          draft,
-          slotToRoster: safeJsonParse(r.slot_to_roster_json),
-          rosterNames: safeJsonParse(r.roster_names_json),
-          rosterByUsername: safeJsonParse(r.roster_by_username_json),
-          tradedPickOwners: safeJsonParse(r.traded_pick_owner_json),
-          teams: r.teams == null ? null : Number(r.teams),
-          rounds: r.rounds == null ? null : Number(r.rounds),
-          timerSec: r.timer_sec == null ? null : Number(r.timer_sec),
-          reversalRound: r.reversal_round == null ? null : Number(r.reversal_round),
-          leagueId: r.league_id || null,
-          leagueName: r.league_name || null,
-          leagueAvatar: r.league_avatar || null,
-          bestBall: Number(r.best_ball || 0) === 1,
-          completedAt: r.completed_at == null ? null : Number(r.completed_at),
-        });
+      const out = {};
+      for (const row of res?.results || []) {
+        out[String(row.draft_id)] = {
+          draft_id: String(row.draft_id),
+          active: safeNum(row.active) === 1,
+          status: row.status || null,
+          last_picked: row.last_picked == null ? null : Number(row.last_picked),
+          pick_count: safeNum(row.pick_count) || 0,
+          draft_json: row.draft_json || null,
+          slot_to_roster_json: safeJsonParse(row?.slot_to_roster_json) || {},
+          roster_names_json: safeJsonParse(row?.roster_names_json) || {},
+          roster_by_username_json: safeJsonParse(row?.roster_by_username_json) || {},
+          traded_pick_owner_json: safeJsonParse(row?.traded_pick_owner_json) || {},
+          teams: safeNum(row.teams) || null,
+          rounds: safeNum(row.rounds) || null,
+          timer_sec: safeNum(row.timer_sec) || null,
+          reversal_round: safeNum(row.reversal_round) || null,
+          league_id: row.league_id || null,
+          league_name: row.league_name || null,
+          league_avatar: row.league_avatar || null,
+          best_ball: safeNum(row.best_ball) === 1,
+          current_pick: row.current_pick == null ? null : Number(row.current_pick),
+          current_owner_name: row.current_owner_name || null,
+          next_owner_name: row.next_owner_name || null,
+          clock_ends_at: row.clock_ends_at == null ? null : Number(row.clock_ends_at),
+          completed_at: row.completed_at == null ? null : Number(row.completed_at),
+          updated_at: row.updated_at == null ? null : Number(row.updated_at),
+        };
       }
 
-      return NextResponse.json({ ok: true, rows: list });
+      return NextResponse.json({ ok: true, drafts: out });
     }
 
+    // Fetch requested ids
     const placeholders = ids.map(() => "?").join(",");
-    const rows = await db
-      .prepare(
-        `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
+    const selectSql = lite
+      ? `SELECT draft_id, active, status, last_picked, pick_count,
                 slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                 teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
                 best_ball,
@@ -195,55 +119,81 @@ export async function GET(req) {
                 completed_at, updated_at
          FROM push_draft_registry
          WHERE draft_id IN (${placeholders})`
-      )
-      .bind(...ids)
-      .all();
+      : `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
+                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+                teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
+                best_ball,
+                current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                completed_at, updated_at
+         FROM push_draft_registry
+         WHERE draft_id IN (${placeholders})`;
+
+    const rows = await db.prepare(selectSql).bind(...ids).all();
 
     const out = {};
     let needsKick = false;
+    const nowMs = Date.now();
 
     for (const r of rows?.results || []) {
       let draft = null;
-      try {
-        draft = r.draft_json ? JSON.parse(r.draft_json) : null;
-      } catch {
-        draft = null;
+      if (!lite) {
+        try {
+          draft = r.draft_json ? JSON.parse(r.draft_json) : null;
+        } catch {
+          draft = null;
+        }
       }
 
       const storedStatus = String(r.status || "").toLowerCase().trim();
       const draftStatus = String(draft?.status || "").toLowerCase().trim();
-      const effectiveStatus =
-        storedStatus && storedStatus !== "unknown" ? storedStatus : (draftStatus || null);
+      const effectiveStatus = lite
+        ? (storedStatus || null)
+        : storedStatus && storedStatus !== "unknown"
+        ? storedStatus
+        : (draftStatus || null);
+
+      const updatedAt = r.updated_at == null ? 0 : Number(r.updated_at);
+      const isStale = !updatedAt || nowMs - updatedAt > 2 * 15_000;
+      if (isStale) needsKick = true;
+
+      // Derive "active" if missing
+      let active = safeNum(r.active) === 1;
+      if (!activeOnly && !active) {
+        // allow non-active drafts through in requested id mode
+      }
 
       out[String(r.draft_id)] = {
-        active: Number(r.active || 0) === 1,
+        draftId: String(r.draft_id),
+        active,
         status: effectiveStatus,
-        lastPicked: Number(r.last_picked || 0),
-        pickCount: Number(r.pick_count ?? NaN),
+        lastPicked: r.last_picked == null ? null : Number(r.last_picked),
+        pickCount: safeNum(r.pick_count) || 0,
+        teams: safeNum(r.teams) || null,
+        rounds: safeNum(r.rounds) || null,
+        timerSec: safeNum(r.timer_sec) || null,
+        reversalRound: safeNum(r.reversal_round) || null,
+        leagueId: r.league_id || null,
+        leagueName: r.league_name || null,
+        leagueAvatar: r.league_avatar || null,
+        bestBall: safeNum(r.best_ball) === 1,
         currentPick: r.current_pick == null ? null : Number(r.current_pick),
         currentOwnerName: r.current_owner_name || null,
         nextOwnerName: r.next_owner_name || null,
         clockEndsAt: r.clock_ends_at == null ? null : Number(r.clock_ends_at),
         draft,
-        slotToRoster: safeJsonParse(r.slot_to_roster_json),
-        rosterNames: safeJsonParse(r.roster_names_json),
-        rosterByUsername: safeJsonParse(r.roster_by_username_json),
-        tradedPickOwners: safeJsonParse(r.traded_pick_owner_json),
-        teams: Number(r.teams || 0),
-        rounds: Number(r.rounds || 0),
-        timerSec: Number(r.timer_sec || 0),
-        reversalRound: Number(r.reversal_round || 0),
-        leagueId: r.league_id || null,
-        leagueName: r.league_name || null,
-        leagueAvatar: r.league_avatar || null,
-        bestBall: Number(r.best_ball || 0) === 1,
+        // parsed maps (used by UI)
+        slotToRoster: safeJsonParse(r.slot_to_roster_json) || {},
+        rosterNames: safeJsonParse(r.roster_names_json) || {},
+        rosterByUsername: safeJsonParse(r.roster_by_username_json) || {},
+        tradedPickOwner: safeJsonParse(r.traded_pick_owner_json) || {},
+        // timestamps
         completedAt: r.completed_at == null ? null : Number(r.completed_at),
         updatedAt: r.updated_at == null ? null : Number(r.updated_at),
       };
 
       // If not hydrated yet, kick the DO so the UI fills in quickly.
       if (
-        !r?.draft_json ||
+        (!lite && !r?.draft_json) ||
         !String(effectiveStatus || "").trim() ||
         !r?.roster_names_json ||
         ["null", "{}", "[]"].includes(String(r.roster_names_json)) ||
@@ -254,7 +204,25 @@ export async function GET(req) {
       }
     }
 
-    if (needsKick) await kickDraftRegistry(env);
+    // If registry looks stale, nudge the DO to tick.
+    // NOTE: do NOT block the UI on this.
+    const maxAgeMs = 2 * 15_000;
+    if (!needsKick) {
+      needsKick = Object.values(out).some((d) => {
+        const u = Number(d?.updatedAt || 0);
+        return !u || nowMs - u > maxAgeMs;
+      });
+    }
+
+    if (needsKick) {
+      // Never block the UI on a DO tick.
+      // A tick can fan out to many Sleeper calls + D1 writes and take 10-30s.
+      try {
+        ctx.waitUntil(kickDraftRegistry(env));
+      } catch {
+        // ignore
+      }
+    }
 
     return NextResponse.json({ ok: true, drafts: out });
   } catch (e) {
@@ -262,85 +230,59 @@ export async function GET(req) {
   }
 }
 
-// Register draft ids into the shared registry so the DO will hydrate them.
+// POST: register user drafts into the registry (so DO knows what to keep fresh).
 export async function POST(req) {
   try {
     const { env } = getRequestContext();
     const db = getDb(env);
     if (!db?.prepare) {
       return NextResponse.json(
-        { ok: false, error: "D1 binding not found. Expected one of: PUSH_DB, DB, D1, DRAFT_DB." },
+        {
+          ok: false,
+          error: "Missing D1 binding: PUSH_DB",
+        },
         { status: 500 }
       );
     }
 
-    await ensureDraftRegistryTable(db);
+    const body = await req.json().catch(() => null);
+    const username = String(body?.username || "").trim();
+    const draftIds = Array.isArray(body?.draftIds) ? body.draftIds : [];
+    const leagueIds = Array.isArray(body?.leagueIds) ? body.leagueIds : [];
 
-    let payload = null;
-    try {
-      payload = await req.json();
-    } catch {
-      payload = null;
-    }
-
-    const drafts = Array.isArray(payload?.drafts) ? payload.drafts : [];
+    // store minimal mapping for discover/registry (idempotent)
+    // NOTE: DO will hydrate details.
     const now = Date.now();
 
-    let upserted = 0;
-    for (const d of drafts) {
-      const draftId = d?.draft_id != null ? String(d.draft_id).trim() : "";
-      if (!draftId) continue;
+    // Ensure table exists (cheap)
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS push_user_drafts (
+          username TEXT PRIMARY KEY,
+          draft_ids_json TEXT,
+          league_ids_json TEXT,
+          updated_at INTEGER
+        )`
+      )
+      .run();
 
-      const leagueId = d?.league_id != null ? String(d.league_id) : null;
-      const leagueName = d?.league_name != null ? String(d.league_name) : null;
-      const leagueAvatar = d?.league_avatar != null ? String(d.league_avatar) : null;
-      const bestBall = d?.best_ball == null ? null : Number(d.best_ball) ? 1 : 0;
-      const status = d?.status != null ? String(d.status).toLowerCase() : null;
+    await db
+      .prepare(
+        `INSERT INTO push_user_drafts (username, draft_ids_json, league_ids_json, updated_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(username) DO UPDATE SET
+          draft_ids_json=excluded.draft_ids_json,
+          league_ids_json=excluded.league_ids_json,
+          updated_at=excluded.updated_at`
+      )
+      .bind(username, JSON.stringify(draftIds || []), JSON.stringify(leagueIds || []), now)
+      .run();
 
-      await db
-        .prepare(
-          `INSERT INTO push_draft_registry (
-            draft_id, active, status, last_checked_at, last_active_at,
-            league_id, league_name, league_avatar, best_ball
-          ) VALUES (
-            ?,
-            1,
-            COALESCE(?, 'unknown'),
-            ?,
-            CASE WHEN LOWER(COALESCE(?, '')) IN ('drafting','paused') THEN ? ELSE NULL END,
-            ?, ?, ?, ?
-          )
-          ON CONFLICT(draft_id) DO UPDATE SET
-            active=1,
-            status=COALESCE(excluded.status, push_draft_registry.status),
-            league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
-            league_name=COALESCE(excluded.league_name, push_draft_registry.league_name),
-            league_avatar=COALESCE(excluded.league_avatar, push_draft_registry.league_avatar),
-            best_ball=COALESCE(excluded.best_ball, push_draft_registry.best_ball),
-            last_checked_at=MAX(COALESCE(push_draft_registry.last_checked_at, 0), excluded.last_checked_at),
-            last_active_at=COALESCE(excluded.last_active_at, push_draft_registry.last_active_at)`
-        )
-        .bind(
-          draftId,
-          status,
-          now,
-          status,
-          now,
-          leagueId,
-          leagueName,
-          leagueAvatar,
-          bestBall
-        )
-        .run();
-
-      upserted++;
-    }
-
-    // Kick the shared DO (same name as everywhere else) so it hydrates immediately.
+    // Nudge the DO to tick soon.
     await kickDraftRegistry(env);
 
-    return NextResponse.json({ ok: true, upserted });
+    return NextResponse.json({ ok: true });
   } catch (e) {
-    return new NextResponse(e?.message || "Registry write failed", { status: 500 });
+    return new NextResponse(e?.message || "Registry register failed", { status: 500 });
   }
 }
