@@ -9,17 +9,30 @@
 // D1 binding expected: PUSH_DB (wrangler.toml / Cloudflare dashboard)
 
 const TICK_MS = 15_000;
-const ACTIVE_REFRESH_MS = 20_000; // treat active drafts as stale after ~1 tick
+
+// Treat active drafts as stale after ~1 tick.
+const ACTIVE_REFRESH_MS = 20_000;
+
 // Pre-draft drafts can flip to drafting quickly.
-// We keep this fairly tight so we notice the transition without needing a UI visit.
-const PRE_DRAFT_REFRESH_MS = 60 * 1000; // 1 minute
-const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000; // recheck other inactive drafts every 6h
+// Keep this tight enough to notice the transition without requiring a UI visit.
+const PRE_DRAFT_REFRESH_MS = 60 * 1000;
+
+// Recheck other inactive drafts.
+const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
+
+// Only call /picks when we actually need to (and never more often than this per draft).
 const PICKS_SYNC_COOLDOWN_MS = 20_000;
+
+// Store per-draft scheduling metadata in DO storage so we don't write D1 when nothing changes.
+// Key: meta:<draftId> -> { lastCheckedAt, lastStatus }
+const META_PREFIX = "meta:";
+
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Sleeper fetch failed ${res.status} for ${url}`);
   return res.json();
 }
+
 // ------------------------------------------------------------
 // Discovery: keep push_subscriptions.draft_ids_json fresh WITHOUT requiring a UI visit.
 // Goal: sweep all subscribed usernames quickly but safely (bounded API calls).
@@ -28,7 +41,7 @@ const DISCOVERY_TARGET_SWEEP_MS = 2 * 60 * 1000;
 const DISCOVERY_MIN_BATCH = 10;
 const DISCOVERY_MAX_BATCH = 60;
 const DISCOVERY_CONCURRENCY = 6;
-const USERID_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+const USERID_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 async function ensurePushSubscriptionsTable(db) {
   await db
@@ -269,7 +282,6 @@ async function discoveryBatch(env, state) {
         }
 
         // Update ALL endpoints for that username so devices stay in sync.
-        // Also keep updated_at + league_count fresh so next sweep ordering is correct.
         await db
           .prepare(
             `UPDATE push_subscriptions
@@ -287,6 +299,9 @@ async function discoveryBatch(env, state) {
   return { ok: true, discoveredDrafts, discoveredUsers, checkedUsers: rows.length, userCount };
 }
 
+// ------------------------------------------------------------
+// Registry + Cache schema
+// ------------------------------------------------------------
 
 async function ensureDraftRegistryTable(db) {
   await db
@@ -318,8 +333,8 @@ async function ensureDraftRegistryTable(db) {
         current_owner_name TEXT,
         next_owner_name TEXT,
         clock_ends_at INTEGER,
-	        completed_at INTEGER,
-	        updated_at INTEGER
+        completed_at INTEGER,
+        updated_at INTEGER
       )`
     )
     .run();
@@ -349,12 +364,11 @@ async function ensureDraftRegistryTable(db) {
     await add("league_avatar", "TEXT");
     await add("best_ball", "INTEGER");
     await add("completed_at", "INTEGER");
-    // computed columns (optional but helps UI)
     await add("current_pick", "INTEGER");
     await add("current_owner_name", "TEXT");
     await add("next_owner_name", "TEXT");
     await add("clock_ends_at", "INTEGER");
-	    await add("updated_at", "INTEGER");
+    await add("updated_at", "INTEGER");
   } catch {
     // ignore
   }
@@ -382,9 +396,7 @@ async function ensureDraftCacheTable(db) {
         context_updated_at INTEGER,
         updated_at INTEGER
       )`
-      
     )
-    
     .run();
 
   // Back-compat for cache table too.
@@ -414,6 +426,100 @@ async function ensureDraftCacheTable(db) {
   }
 }
 
+// ------------------------------------------------------------
+// Batch helpers + diffing
+// ------------------------------------------------------------
+
+function chunks(arr, size) {
+  const a = Array.isArray(arr) ? arr : [];
+  const out = [];
+  for (let i = 0; i < a.length; i += size) out.push(a.slice(i, i + size));
+  return out;
+}
+
+async function loadRegistryRowsMap(db, draftIds) {
+  const ids = (draftIds || []).map(String).filter(Boolean);
+  const map = new Map();
+  if (!ids.length) return map;
+
+  for (const group of chunks(ids, 80)) {
+    const qs = group.map(() => "?").join(",");
+    const res = await db
+      .prepare(
+        `SELECT draft_id, active, status,
+                last_checked_at, last_active_at, last_inactive_at,
+                last_picked, pick_count,
+                draft_order_json, draft_json,
+                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+                teams, rounds, timer_sec, reversal_round,
+                league_id, league_name, league_avatar, best_ball,
+                current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                completed_at, updated_at
+         FROM push_draft_registry
+         WHERE draft_id IN (${qs})`
+      )
+      .bind(...group)
+      .all();
+    for (const r of res?.results || []) {
+      if (r?.draft_id) map.set(String(r.draft_id), r);
+    }
+  }
+  return map;
+}
+
+async function loadCacheRowsMap(db, draftIds) {
+  const ids = (draftIds || []).map(String).filter(Boolean);
+  const map = new Map();
+  if (!ids.length) return map;
+
+  for (const group of chunks(ids, 80)) {
+    const qs = group.map(() => "?").join(",");
+    const res = await db
+      .prepare(`SELECT * FROM push_draft_cache WHERE draft_id IN (${qs})`)
+      .bind(...group)
+      .all();
+    for (const r of res?.results || []) {
+      if (r?.draft_id) map.set(String(r.draft_id), r);
+    }
+  }
+  return map;
+}
+
+function jsonStable(v) {
+  if (v == null) return null;
+  const s = String(v);
+  if (!s || s === "null" || s === "undefined") return null;
+  try {
+    return JSON.stringify(JSON.parse(s));
+  } catch {
+    return s;
+  }
+}
+
+function same(a, b) {
+  const aa = a == null ? null : a;
+  const bb = b == null ? null : b;
+  return aa === bb;
+}
+
+function shouldWriteRow(cur, patch) {
+  if (!patch || typeof patch !== "object") return false;
+  for (const k of Object.keys(patch)) {
+    const a = cur?.[k];
+    const b = patch[k];
+    if (k.endsWith("_json")) {
+      if (jsonStable(a) !== jsonStable(b)) return true;
+    } else if (!same(a, b)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// ------------------------------------------------------------
+// Load/save helpers
+// ------------------------------------------------------------
+
 async function loadDraftCache(db, draftId) {
   return (
     (await db.prepare(`SELECT * FROM push_draft_cache WHERE draft_id=?`).bind(String(draftId)).first()) ||
@@ -421,46 +527,7 @@ async function loadDraftCache(db, draftId) {
   );
 }
 
-async function saveDraftCache(db, draftId, patch) {
-  const now = Date.now();
-  const cur = (await loadDraftCache(db, draftId)) || {};
-  const next = { ...cur, ...patch, draft_id: String(draftId), updated_at: now };
-  await db
-    .prepare(
-      `INSERT OR REPLACE INTO push_draft_cache (
-        draft_id,
-        last_picked, pick_count,
-        pick_count_synced_last_picked,
-        last_picks_sync_at,
-        league_id, league_name, league_avatar,
-        slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-        rounds, timer_sec, reversal_round,
-        context_updated_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .bind(
-      next.draft_id,
-      next.last_picked ?? null,
-      next.pick_count ?? null,
-      next.pick_count_synced_last_picked ?? null,
-      next.last_picks_sync_at ?? null,
-      next.league_id ?? null,
-      next.league_name ?? null,
-      next.league_avatar ?? null,
-      next.slot_to_roster_json ?? null,
-      next.roster_names_json ?? null,
-      next.roster_by_username_json ?? null,
-      next.traded_pick_owner_json ?? null,
-      next.rounds ?? null,
-      next.timer_sec ?? null,
-      next.reversal_round ?? null,
-      next.context_updated_at ?? null,
-      next.updated_at
-    )
-    .run();
-  return next;
-}
+
 
 async function getDraft(draftId) {
   return sleeperJson(`https://api.sleeper.app/v1/draft/${draftId}`);
@@ -497,7 +564,7 @@ function coerceJsonStr(v) {
       return Object.keys(j).length ? s : null;
     }
   } catch {
-    // ignore parse failures
+    // ignore
   }
 
   return s;
@@ -538,33 +605,12 @@ async function listUniqueDraftIds(db) {
   return Array.from(new Set([...(subs || []), ...(reg || [])]));
 }
 
-async function getRegistryRow(db, draftId) {
-  return (
-    (await db
-      .prepare(
-        `SELECT draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
-                last_picked, pick_count,
-                draft_order_json, draft_json,
-                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-                teams, rounds, timer_sec, reversal_round,
-                league_id, league_name, league_avatar, best_ball,
-                current_pick, current_owner_name, next_owner_name, clock_ends_at,
-		        completed_at,
-		        updated_at
-         FROM push_draft_registry
-         WHERE draft_id=?`
-      )
-      .bind(String(draftId))
-      .first()) || null
-  );
-}
 
-async function upsertRegistry(db, draftId, patch) {
+function buildUpsertRegistryStmt(db, draftId, cur, patch) {
   const now = Date.now();
-  const cur = (await getRegistryRow(db, draftId)) || {};
-  const next = { ...cur, ...patch };
+  const next = { ...(cur || {}), ...(patch || {}), draft_id: String(draftId), updated_at: now };
 
-  await db
+  return db
     .prepare(
       `INSERT INTO push_draft_registry (
         draft_id, active, status, last_checked_at, last_active_at, last_inactive_at,
@@ -574,13 +620,13 @@ async function upsertRegistry(db, draftId, patch) {
         teams, rounds, timer_sec, reversal_round,
         league_id, league_name, league_avatar, best_ball,
         current_pick, current_owner_name, next_owner_name, clock_ends_at,
-	      completed_at,
-	      updated_at
-	    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        completed_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(draft_id) DO UPDATE SET
         active=excluded.active,
         status=excluded.status,
-        last_checked_at=excluded.last_checked_at,
+        last_checked_at=COALESCE(excluded.last_checked_at, push_draft_registry.last_checked_at),
         last_active_at=excluded.last_active_at,
         last_inactive_at=excluded.last_inactive_at,
         last_picked=excluded.last_picked,
@@ -603,14 +649,15 @@ async function upsertRegistry(db, draftId, patch) {
         current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
         next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
         clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
-	      completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
-	      updated_at=excluded.updated_at`
+        completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
+        updated_at=excluded.updated_at`
     )
     .bind(
       String(draftId),
       next.active ?? 0,
       String(next.status || ""),
-      now,
+      // scheduling is DO-storage-driven now; only write if patch sets it
+      patch?.last_checked_at ?? null,
       next.active ? now : (Number(cur?.last_active_at || 0) || null),
       !next.active ? now : (Number(cur?.last_inactive_at || 0) || null),
       next.last_picked ?? null,
@@ -633,10 +680,9 @@ async function upsertRegistry(db, draftId, patch) {
       next.current_owner_name ?? null,
       next.next_owner_name ?? null,
       next.clock_ends_at ?? null,
-	    next.completed_at ?? null,
-	    now
-    )
-    .run();
+      next.completed_at ?? null,
+      now
+    );
 }
 
 function safeNum(v) {
@@ -675,35 +721,57 @@ function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, s
   return traded || String(origRosterId);
 }
 
+// ------------------------------------------------------------
+// Tick
+// ------------------------------------------------------------
+
 async function tickOnce(env, state) {
-  const db = env?.PUSH_DB; // ✅ this worker's D1 binding is PUSH_DB
+  const db = env?.PUSH_DB;
   if (!db?.prepare) return { ok: false, error: "PUSH_DB binding not found" };
 
   await ensureDraftRegistryTable(db);
   await ensureDraftCacheTable(db);
-  // Discovery runs on every tick (bounded) so alerts don't depend on someone visiting the UI.
-  // It refreshes push_subscriptions.draft_ids_json in a fair, oldest-first sweep by username.
+
+  // Discovery runs each tick (bounded) so alerts don't depend on a UI visit.
   try {
     await discoveryBatch(env, state);
   } catch {
     // discovery should never block registry updates
   }
 
-
   const now = Date.now();
   const uniqueDraftIds = await listUniqueDraftIds(db);
   if (!uniqueDraftIds.length) return { ok: true, drafts: 0, active: 0, updated: 0 };
 
+  // Batch-load D1 rows.
+  const [registryMap, cacheMap] = await Promise.all([
+    loadRegistryRowsMap(db, uniqueDraftIds),
+    loadCacheRowsMap(db, uniqueDraftIds),
+  ]);
+
+  // Load DO metadata for scheduling.
+  const metaKeys = uniqueDraftIds.map((id) => `${META_PREFIX}${String(id)}`);
+  let metas = new Map();
+  try {
+    metas = await state.storage.get(metaKeys);
+  } catch {
+    metas = new Map();
+  }
+
   // decide what needs to be checked this tick
   const toCheck = [];
   for (const draftId of uniqueDraftIds) {
-    const reg = await getRegistryRow(db, draftId);
-    const lastChecked = Number(reg?.last_checked_at || 0);
+    const id = String(draftId);
+    const reg = registryMap.get(id) || null;
+    const metasObj = await state.storage.get(metaKeys);
+    const meta = metasObj?.[`${META_PREFIX}${id}`] || null;
+
+    const lastChecked = Number(meta?.lastCheckedAt || reg?.last_checked_at || 0);
     const wasActive = Number(reg?.active || 0) === 1;
     const statusLower = String(reg?.status || "").toLowerCase();
-    // If a draft is complete, we do not need to keep re-checking it forever.
-    // New drafts get discovered separately via the discover flow.
+
     if (reg && statusLower === "complete") continue;
+
     const staleMs = wasActive
       ? ACTIVE_REFRESH_MS
       : statusLower === "pre_draft"
@@ -711,22 +779,27 @@ async function tickOnce(env, state) {
       : INACTIVE_REFRESH_MS;
 
     const needs = !lastChecked || now - lastChecked > staleMs;
-    if (!reg || needs) toCheck.push({ draftId, wasActive, reg });
+    if (!reg || needs) toCheck.push({ draftId: id, wasActive, reg });
   }
 
   let updated = 0;
   let active = 0;
 
+  // Collect writes for batching.
+  const registryWrites = [];
+  const cacheWrites = new Map(); // draftId -> merged patch
+  const metaWrites = new Map();
+
   const CONCURRENCY = 6;
   for (let i = 0; i < toCheck.length; i += CONCURRENCY) {
     const batch = toCheck.slice(i, i + CONCURRENCY);
+
     await Promise.all(
       batch.map(async ({ draftId, wasActive, reg }) => {
         let draft;
         try {
           draft = await getDraft(draftId);
         } catch {
-          // if we fail to fetch but it was previously active, keep it counted so UI doesn't flicker
           if (wasActive) active++;
           return;
         }
@@ -735,13 +808,11 @@ async function tickOnce(env, state) {
         const isActive = status === "drafting" || status === "paused";
         if (isActive) active++;
 
-        // If we just transitioned from pre_draft/inactive -> active, force a context rebuild.
-        // Reason: Sleeper can populate/change slot/order at draft start; stale-but-non-null JSON
-        // will otherwise prevent hydration and break on-clock resolution.
+        metaWrites.set(`${META_PREFIX}${draftId}`, { lastCheckedAt: now, lastStatus: status });
+
         const prevStatus = String(reg?.status || "").toLowerCase();
         const prevWasActive = prevStatus === "drafting" || prevStatus === "paused";
         const becameActive = isActive && !prevWasActive;
-
 
         const teams = Number(draft?.settings?.teams || 0) || null;
         const timerSec = Number(draft?.settings?.pick_timer || draft?.settings?.pick_timer_seconds || 0) || null;
@@ -749,57 +820,58 @@ async function tickOnce(env, state) {
         const reversalRound = Number(draft?.settings?.reversal_round || 0) || null;
         const leagueId = draft?.league_id || draft?.metadata?.league_id || null;
 
-        const cacheRow = await loadDraftCache(db, draftId);
+        const cacheRow = cacheMap.get(draftId) || null;
 
         const draftLastPicked = draft?.last_picked != null ? Number(draft.last_picked) : null;
-
-        // "lastPicked" is the value we write into cache during sync attempts
         const lastPicked = draftLastPicked;
-
-        // "lastPickedEffective" is what we write into the registry if draft doesn't provide it yet
         const lastPickedEffective =
           draftLastPicked != null
             ? draftLastPicked
             : (Number.isFinite(Number(cacheRow?.last_picked)) ? Number(cacheRow.last_picked) : null);
 
+        // ---------------------------------
+        // pick_count sync (ONLY when last_picked moved and /picks not synced for that last_picked)
+        // ---------------------------------
         let pickCount = Number(cacheRow?.pick_count);
         const cacheLastPicked = Number(cacheRow?.last_picked || 0);
         const cacheSyncedLastPicked = Number(cacheRow?.pick_count_synced_last_picked || 0);
         const cacheLastSyncAt = Number(cacheRow?.last_picks_sync_at || 0);
-
-        // Keep pick_count accurate even if /picks temporarily fails.
-        // Only mark pick_count as "synced" when /picks succeeded for the current draft last_picked.
         const lastPickedNum = Number(draftLastPicked || 0);
 
         const wantsPickSync =
           isActive &&
-          (draftLastPicked != null) &&
+          draftLastPicked != null &&
           (!Number.isFinite(pickCount) || cacheSyncedLastPicked !== lastPickedNum);
 
-        const canPickSync = wantsPickSync && (now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS);
+        const canPickSync = wantsPickSync && now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS;
+
+        const stageCachePatch = (patch) => {
+          const cur = cacheWrites.get(draftId) || {};
+          cacheWrites.set(draftId, { ...cur, ...patch });
+        };
 
         if (canPickSync) {
           try {
             pickCount = await getPickCount(draftId);
-            await saveDraftCache(db, draftId, {
+            stageCachePatch({
               last_picked: lastPicked,
               pick_count: Number.isFinite(pickCount) ? pickCount : null,
               pick_count_synced_last_picked: lastPickedNum || null,
               last_picks_sync_at: now,
             });
           } catch {
-            // We saw draftLastPicked move, but couldn't fetch /picks.
-            // Keep retrying next ticks by NOT updating pick_count_synced_last_picked.
-            await saveDraftCache(db, draftId, {
+            stageCachePatch({
               last_picked: lastPicked,
               last_picks_sync_at: now,
             });
           }
         } else if (draftLastPicked != null && cacheLastPicked !== lastPickedNum) {
-          // last_picked advanced but we’re on cooldown; still update last_picked for clock rendering.
-          await saveDraftCache(db, draftId, { last_picked: lastPicked });
+          stageCachePatch({ last_picked: lastPicked });
         }
-        
+
+        // ---------------------------------
+        // League meta (only if missing)
+        // ---------------------------------
         let leagueName = reg?.league_name || cacheRow?.league_name || null;
         let leagueAvatarUrl = reg?.league_avatar || cacheRow?.league_avatar || null;
         let bestBall = reg?.best_ball;
@@ -810,7 +882,7 @@ async function tickOnce(env, state) {
             leagueName = leagueName || lg?.name || null;
             leagueAvatarUrl = leagueAvatarUrl || toLeagueAvatarUrl(lg?.avatar || null);
             bestBall = bestBall == null ? (Number(lg?.settings?.best_ball) ? 1 : 0) : bestBall;
-            await saveDraftCache(db, draftId, {
+            stageCachePatch({
               league_id: String(leagueId),
               league_name: leagueName,
               league_avatar: leagueAvatarUrl,
@@ -818,32 +890,24 @@ async function tickOnce(env, state) {
           }
         }
 
-        // Best-ball "complete" is a TFA concept (we don't need to keep rechecking forever).
+        // Best-ball "complete" is a TFA concept.
         const completedAt = !isActive && Number(bestBall || 0) === 1 ? now : null;
 
-        // ------------------------------------------------------------
-        // Shared league context (cached in D1) so clients do NOT
-        // hit Sleeper users/rosters/traded_picks endpoints.
-        // ------------------------------------------------------------
-        const CONTEXT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+        // ---------------------------------
+        // Shared league context (only hydrate while ACTIVE)
+        // ---------------------------------
+        const CONTEXT_TTL_MS = 6 * 60 * 60 * 1000;
         let lastContextAt = Number(cacheRow?.context_updated_at || 0) || 0;
         let contextStale = !lastContextAt || now - lastContextAt > CONTEXT_TTL_MS;
 
-        // NOTE: older code wrote the literal string "null" into these columns.
-        // Treat that as missing so the DO will re-hydrate the context.
-        let slotToRosterJson =
-          coerceJsonStr(reg?.slot_to_roster_json) || coerceJsonStr(cacheRow?.slot_to_roster_json);
-        let rosterNamesJson =
-          coerceJsonStr(reg?.roster_names_json) || coerceJsonStr(cacheRow?.roster_names_json);
+        let slotToRosterJson = coerceJsonStr(reg?.slot_to_roster_json) || coerceJsonStr(cacheRow?.slot_to_roster_json);
+        let rosterNamesJson = coerceJsonStr(reg?.roster_names_json) || coerceJsonStr(cacheRow?.roster_names_json);
         let rosterByUsernameJson =
           coerceJsonStr(reg?.roster_by_username_json) || coerceJsonStr(cacheRow?.roster_by_username_json);
         let tradedPickOwnerJson =
           coerceJsonStr(reg?.traded_pick_owner_json) || coerceJsonStr(cacheRow?.traded_pick_owner_json);
 
         if (becameActive) {
-          // Force a fresh context hydrate at draft start. Sleeper can populate/change
-          // slot/order when the draft begins; stale-but-non-null JSON will otherwise
-          // block hydration and break on-clock resolution.
           slotToRosterJson = null;
           rosterNamesJson = null;
           rosterByUsernameJson = null;
@@ -852,12 +916,10 @@ async function tickOnce(env, state) {
           contextStale = true;
         }
 
-	      // Track whether we *successfully* hydrated non-empty context, so we don't
-	      // advance context_updated_at when we only produced empty {} values.
-	      let didHydrateRosterContext = false;
+        let didHydrateRosterContext = false;
 
         const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
-        const canHydrateRosterContext = Boolean(leagueId) && (needsRosterContext || contextStale);
+        const canHydrateRosterContext = Boolean(leagueId) && isActive && (needsRosterContext || contextStale);
 
         if (canHydrateRosterContext) {
           try {
@@ -885,15 +947,10 @@ async function tickOnce(env, state) {
               const ownerId = String(u?.user_id || "");
               if (!ownerId) continue;
 
-              const roster = (Array.isArray(rosters) ? rosters : []).find(
-                (x) => String(x?.owner_id) === ownerId
-              );
+              const roster = (Array.isArray(rosters) ? rosters : []).find((x) => String(x?.owner_id) === ownerId);
               if (roster?.roster_id == null) continue;
 
               const rid = String(roster.roster_id);
-
-              // Map BOTH username and display_name to roster_id (lowercased).
-              // Some league-user records can be missing `username` but still have `display_name`.
               const u1 = String(u?.username || "").toLowerCase().trim();
               const u2 = String(u?.display_name || "").toLowerCase().trim();
 
@@ -931,24 +988,22 @@ async function tickOnce(env, state) {
             rosterByUsernameJson = JSON.stringify(rosterByUsername);
             slotToRosterJson = JSON.stringify(slotToRoster);
 
-	          if (
-	            Object.keys(rosterNames || {}).length > 0 &&
-	            Object.keys(rosterByUsername || {}).length > 0 &&
-	            Object.keys(slotToRoster || {}).length > 0
-	          ) {
-	            didHydrateRosterContext = true;
-	          }
+            if (
+              Object.keys(rosterNames || {}).length > 0 &&
+              Object.keys(rosterByUsername || {}).length > 0 &&
+              Object.keys(slotToRoster || {}).length > 0
+            ) {
+              didHydrateRosterContext = true;
+            }
           } catch {
-            // ignore hydration failure; we will try again on next context refresh
+            // ignore
           }
         }
 
-        // traded_picks: skip for bestball. only hydrate when missing.
-        if (Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
+        // traded_picks: only needed for on-clock owner resolution; hydrate only while ACTIVE.
+        if (isActive && Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
           try {
-            const traded = await sleeperJson(
-              `https://api.sleeper.app/v1/draft/${draftId}/traded_picks`
-            );
+            const traded = await sleeperJson(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`);
             const seasonStr = String(draft?.season || "");
             const best = new Map();
             for (let idx = 0; idx < (Array.isArray(traded) ? traded.length : 0); idx++) {
@@ -975,8 +1030,7 @@ async function tickOnce(env, state) {
           }
         }
 
-        // persist context in cache as well
-        await saveDraftCache(db, draftId, {
+        stageCachePatch({
           slot_to_roster_json: slotToRosterJson,
           roster_names_json: rosterNamesJson,
           roster_by_username_json: rosterByUsernameJson,
@@ -984,11 +1038,10 @@ async function tickOnce(env, state) {
           rounds,
           timer_sec: timerSec,
           reversal_round: reversalRound,
-	        // Only move the TTL forward when we hydrated meaningful context.
-	        context_updated_at: didHydrateRosterContext ? now : (lastContextAt || null),
+          context_updated_at: didHydrateRosterContext ? now : (lastContextAt || null),
         });
 
-        // -------- computed convenience fields (optional) --------
+        // -------- computed convenience fields --------
         let currentPick = null;
         let currentOwnerName = null;
         let nextOwnerName = null;
@@ -1026,21 +1079,19 @@ async function tickOnce(env, state) {
             nextOwnerName = rosterNames?.[String(ridNext)] || null;
           }
         } catch {
-          // ignore computed failure
+          // ignore
         }
 
-        const clockEndsAt =
-        lastPickedEffective != null && timerSec
-          ? Number(lastPickedEffective) + Number(timerSec) * 1000
-          : null;
+        const clockEndsAt = lastPickedEffective != null && timerSec ? Number(lastPickedEffective) + Number(timerSec) * 1000 : null;
 
-        await upsertRegistry(db, draftId, {
+        const registryPatch = {
           active: isActive ? 1 : 0,
           status,
           last_picked: lastPickedEffective,
           pick_count: Number.isFinite(Number(pickCount)) ? Number(pickCount) : null,
-          draft_json: JSON.stringify(draft || {}),
-          draft_order_json: draft?.draft_order ? JSON.stringify(draft.draft_order) : null,
+          // Huge fields: only store when something actually changes.
+          draft_json: null,
+          draft_order_json: null,
           slot_to_roster_json: slotToRosterJson,
           roster_names_json: rosterNamesJson,
           roster_by_username_json: rosterByUsernameJson,
@@ -1058,11 +1109,105 @@ async function tickOnce(env, state) {
           next_owner_name: nextOwnerName,
           clock_ends_at: clockEndsAt,
           completed_at: completedAt,
-        });
+        };
 
-        updated++;
+        const regCur = reg || registryMap.get(draftId) || null;
+        const changed = shouldWriteRow(regCur, registryPatch);
+
+        if (changed) {
+          registryPatch.draft_json = JSON.stringify(draft || {});
+          registryPatch.draft_order_json = draft?.draft_order ? JSON.stringify(draft.draft_order) : null;
+
+          registryWrites.push(buildUpsertRegistryStmt(db, draftId, regCur, registryPatch));
+          registryMap.set(draftId, { ...(regCur || {}), ...registryPatch, draft_id: draftId, updated_at: now });
+          updated++;
+        }
       })
     );
+  }
+
+  // Persist DO scheduling metadata.
+  try {
+    if (metaWrites.size) await state.storage.put(metaWrites);
+  } catch {
+    // ignore
+  }
+
+  // Flush cache writes (batched)
+  if (cacheWrites.size) {
+    const stmts = [];
+    for (const [draftId, patch] of cacheWrites.entries()) {
+      const cur = cacheMap.get(draftId) || (await loadDraftCache(db, draftId)) || {};
+      const next = { ...cur, ...patch, draft_id: String(draftId), updated_at: now };
+      if (!shouldWriteRow(cur, patch)) continue;
+      stmts.push(
+        db
+          .prepare(
+            `INSERT OR REPLACE INTO push_draft_cache (
+              draft_id,
+              last_picked, pick_count,
+              pick_count_synced_last_picked,
+              last_picks_sync_at,
+              league_id, league_name, league_avatar,
+              slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+              rounds, timer_sec, reversal_round,
+              context_updated_at,
+              updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          )
+          .bind(
+            next.draft_id,
+            next.last_picked ?? null,
+            next.pick_count ?? null,
+            next.pick_count_synced_last_picked ?? null,
+            next.last_picks_sync_at ?? null,
+            next.league_id ?? null,
+            next.league_name ?? null,
+            next.league_avatar ?? null,
+            next.slot_to_roster_json ?? null,
+            next.roster_names_json ?? null,
+            next.roster_by_username_json ?? null,
+            next.traded_pick_owner_json ?? null,
+            next.rounds ?? null,
+            next.timer_sec ?? null,
+            next.reversal_round ?? null,
+            next.context_updated_at ?? null,
+            next.updated_at
+          )
+      );
+      cacheMap.set(draftId, next);
+    }
+
+    for (const group of chunks(stmts, 40)) {
+      try {
+        await db.batch(group);
+      } catch {
+        for (const s of group) {
+          try {
+            await s.run();
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
+
+  // Flush registry writes (batched)
+  if (registryWrites.length) {
+    for (const group of chunks(registryWrites, 40)) {
+      try {
+        await db.batch(group);
+      } catch {
+        for (const s of group) {
+          try {
+            await s.run();
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
   }
 
   return { ok: true, drafts: uniqueDraftIds.length, active, updated };
