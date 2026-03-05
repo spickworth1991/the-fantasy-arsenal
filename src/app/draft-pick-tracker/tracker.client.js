@@ -338,6 +338,28 @@ export default function DraftPickTrackerClient() {
       const json = await res.json();
       const registryDrafts = json?.drafts || {};
 
+      // After the first registry read, seed any missing draftIds into D1.
+      // This restores "non-subscriber discovery" without making the registry logic depend on a UI visit *every time*.
+      if (!seededOnceRef.current) {
+        seededOnceRef.current = true;
+
+        const have = new Set(Object.keys(registryDrafts || {}).map(String));
+        const missing = eligible
+          .map((l) => String(l?.draft_id || ""))
+          .filter((id) => id && !have.has(id));
+
+        if (missing.length) {
+          // only send the leagues that are missing from the registry
+          const missingLeagues = eligible.filter((l) => missing.includes(String(l?.draft_id || "")));
+
+          // Fire-and-forget; DO tick will pick them up next tick anyway
+          fetch("/api/draft-pick-tracker/seed", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ leagues: missingLeagues }),
+          }).catch(() => {});
+        }
+      }
       const nowMs = Date.now();
       const uname = safeLower(username);
 
@@ -537,6 +559,7 @@ export default function DraftPickTrackerClient() {
   const lastAlertKeyRef = useRef("");
   const originalTitleRef = useRef(typeof document !== "undefined" ? document.title : "");
   const flashTimerRef = useRef(null);
+  const seededOnceRef = useRef(false);
 
   function beep() {
     try {
