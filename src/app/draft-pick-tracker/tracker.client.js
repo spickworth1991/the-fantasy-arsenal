@@ -193,6 +193,13 @@ function onDeckTintStyles() {
 export default function DraftPickTrackerClient() {
   const { username, leagues, year } = useSleeper();
 
+  const draftIdsKey = useMemo(() => {
+    const ids = (Array.isArray(leagues) ? leagues : [])
+      .map((l) => (l?.draft_id != null ? String(l.draft_id) : ""))
+      .filter(Boolean)
+      .sort();
+    return ids.join(",");
+  }, [leagues]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -210,6 +217,8 @@ export default function DraftPickTrackerClient() {
 
   const [rows, setRows] = useState([]);
 
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [didDiscover, setDidDiscover] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [now, setNow] = useState(0);
@@ -324,6 +333,7 @@ export default function DraftPickTrackerClient() {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
       if (!eligible.length) {
         setRows([]);
+        setHasLoadedOnce(true);
         return;
       }
 
@@ -525,7 +535,8 @@ export default function DraftPickTrackerClient() {
         });
       }
 
-      setRows(draftRows);
+        setRows(draftRows);
+        setHasLoadedOnce(true);
     } catch (e) {
       console.error(e);
       setErr("Failed to load drafts from registry.");
@@ -536,9 +547,55 @@ export default function DraftPickTrackerClient() {
 
   useEffect(() => {
     if (!username) return;
+    if (!draftIdsKey) return;
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username]);
+  }, [username, draftIdsKey]);
+
+   // Background discovery: seed any missing drafts into the registry AFTER the first registry load,
+  // so the initial page paint is fast (registry read only).
+  useEffect(() => {
+    if (!username) return;
+    if (!hasLoadedOnce) return;
+    if (didDiscover) return;
+
+    const eligible = (Array.isArray(leagues) ? leagues : []).filter((lg) => !!lg?.draft_id);
+    if (!eligible.length) return;
+
+    setDidDiscover(true);
+
+    (async () => {
+      try {
+        // This route only seeds missing draft_ids (no heavy hydration).
+        await fetch("/api/draft-pick-tracker/discover", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            username,
+            year,
+            // pass leagues so the server doesn't need to call Sleeper here
+            leagues: eligible.map((lg) => ({
+              league_id: lg?.league_id ?? null,
+              name: lg?.name ?? null,
+              avatar: lg?.avatar ?? null,
+              draft_id: lg?.draft_id ?? null,
+              season: lg?.season ?? null,
+              settings: lg?.settings ?? null,
+            })),
+          }),
+        });
+
+        // Give the DO a moment to tick, then refresh the registry view.
+        setTimeout(() => {
+          refresh();
+        }, 500);
+      } catch {
+        // ignore
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, hasLoadedOnce, didDiscover, draftIdsKey]);
 
   const anyDrafting = useMemo(() => {
     const ACTIVE = new Set(["drafting", "paused"]);

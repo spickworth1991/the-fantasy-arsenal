@@ -763,9 +763,7 @@ async function tickOnce(env, state) {
   for (const draftId of uniqueDraftIds) {
     const id = String(draftId);
     const reg = registryMap.get(id) || null;
-    const metasObj = await state.storage.get(metaKeys);
-    const meta = metasObj?.[`${META_PREFIX}${id}`] || null;
-
+    const meta = (metas && typeof metas === "object") ? metas[`${META_PREFIX}${id}`] : null;
     const lastChecked = Number(meta?.lastCheckedAt || reg?.last_checked_at || 0);
     const wasActive = Number(reg?.active || 0) === 1;
     const statusLower = String(reg?.status || "").toLowerCase();
