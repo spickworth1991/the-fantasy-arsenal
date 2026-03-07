@@ -24,7 +24,7 @@ export default function DraftPickTrackerPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <div aria-hidden className="h-[72px]" />
+      <div aria-hidden className="" />
 
       <BackgroundParticles />
       <Navbar pageTitle="Draft Monitor" />

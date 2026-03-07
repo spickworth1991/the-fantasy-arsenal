@@ -1,4 +1,3 @@
-// src/app/draft-pick-tracker/tracker.client.js
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -228,6 +227,27 @@ export default function DraftPickTrackerClient() {
 
   // Toast for copy
   const [toast, setToast] = useState("");
+
+  // Hide push alerts when mounted inside Ballsville
+  const [hidePushAlerts, setHidePushAlerts] = useState(false);
+
+  useEffect(() => {
+    try {
+      const host = String(window.location.hostname || "").toLowerCase();
+      const path = String(window.location.pathname || "").toLowerCase();
+
+      const isOnBallsvilleDomain =
+        host === "theballsvillegame.com" || host.endsWith(".theballsvillegame.com");
+
+      const isBallsvilleMountedArsenal = path.startsWith("/tools/app");
+
+      if (isOnBallsvilleDomain || isBallsvilleMountedArsenal) {
+        setHidePushAlerts(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     setNow(Date.now());
@@ -535,8 +555,8 @@ export default function DraftPickTrackerClient() {
         });
       }
 
-        setRows(draftRows);
-        setHasLoadedOnce(true);
+      setRows(draftRows);
+      setHasLoadedOnce(true);
     } catch (e) {
       console.error(e);
       setErr("Failed to load drafts from registry.");
@@ -552,7 +572,7 @@ export default function DraftPickTrackerClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, draftIdsKey]);
 
-   // Background discovery: seed any missing drafts into the registry AFTER the first registry load,
+  // Background discovery: seed any missing drafts into the registry AFTER the first registry load,
   // so the initial page paint is fast (registry read only).
   useEffect(() => {
     if (!username) return;
@@ -802,7 +822,6 @@ export default function DraftPickTrackerClient() {
       setToast("Copied draft link");
     } catch {
       try {
-        // fallback
         const ta = document.createElement("textarea");
         ta.value = url;
         document.body.appendChild(ta);
@@ -823,14 +842,12 @@ export default function DraftPickTrackerClient() {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-24">
-        {/* Toast */}
         {toast ? (
           <div className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-2xl border border-white/10 bg-black/70 px-4 py-2 text-sm text-white shadow-xl backdrop-blur">
             {toast}
           </div>
         ) : null}
 
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
@@ -854,16 +871,16 @@ export default function DraftPickTrackerClient() {
               </button>
             </div>
 
-            {/* keep your push UI */}
-            <PushAlerts
-              username={username}
-              draftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
-              selectedDraftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
-            />
+            {!hidePushAlerts && (
+              <PushAlerts
+                username={username}
+                draftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
+                selectedDraftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
+              />
+            )}
           </div>
         </div>
 
-        {/* Controls */}
         <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-b from-gray-900/80 to-black/40 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-hidden">
           <div className="px-5 py-4 bg-black/20 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 flex-wrap">
@@ -1018,7 +1035,6 @@ export default function DraftPickTrackerClient() {
           )}
         </div>
 
-        {/* Card view */}
         {view === "cards" && (
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
             {filteredDraftRows.map((r, idx) => {
@@ -1252,7 +1268,6 @@ export default function DraftPickTrackerClient() {
           </div>
         )}
 
-        {/* Table view */}
         {view === "table" && (
           <div className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-black/20">
