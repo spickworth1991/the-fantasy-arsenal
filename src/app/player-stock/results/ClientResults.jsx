@@ -119,13 +119,19 @@ const TRENDING_LIMIT = 50;
 const DYNASTY_LINEAGE_LIMIT = 12;
 const SCAN_CONCURRENCY = 4;
 
-const BALLSVILLE_CANDIDATE_BASES = [
-  (typeof process !== "undefined" && process?.env?.NEXT_PUBLIC_BALLSVILLE_BASE_URL) || "",
-  "https://www.theballsvillegame.com",
-  "https://theballsvillegame.com",
-  "https://preview.theballsvillegame.com",
-].filter(Boolean);
 const BALLSVILLE_FETCH_CONCURRENCY = 3;
+const BALLSVILLE_PROXY_PATH = "/api/ballsville-adp";
+
+const getBallsvilleProxyUrl = (key) => {
+  const normalizedKey = String(key || "").replace(/^\/+/, "");
+  if (!normalizedKey) return "";
+  return `${BALLSVILLE_PROXY_PATH}?key=${encodeURIComponent(normalizedKey)}`;
+};
+
+const isTruthyId = (value) => {
+  const s = cleanText(value);
+  return !!s && s !== "0" && s.toLowerCase() !== "null" && s.toLowerCase() !== "undefined" && s.toLowerCase() !== "false";
+};
 
 const cleanText = (v) => String(v ?? "").trim();
 const slugText = (v) =>
@@ -136,8 +142,8 @@ const slugText = (v) =>
 
 const normalizePlayerName = (name) =>
   cleanText(name)
-    .replace(/(jr\.?|sr\.?|ii|iii|iv|v)/gi, "")
-    .replace(/[.'’-]/g, "")
+    .replace(/\b(jr\.?|sr\.?|ii|iii|iv|v)\b/gi, "")
+    .replace(/[.'’\-]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -154,7 +160,7 @@ const classifyBallsvilleMode = (row = {}) => {
   const title = cleanText(row?.title || row?.name || "").toLowerCase();
   const subtitle = cleanText(row?.subtitle || row?.blurb || "").toLowerCase();
   const hay = `${slug} ${title} ${subtitle}`;
-  const isDynasty = /dynasty/.test(hay);
+  const isDynasty = /\\bdynasty\\b/.test(hay);
   const isStartup = /startup/.test(hay);
   return {
     key: isDynasty ? "dynasty" : "redraft",
@@ -182,10 +188,9 @@ const normalizeBallsvilleModesPayload = (payload, fallbackSeason) => {
     .sort((a, b) => a.title.localeCompare(b.title));
 };
 
-const getBallsvilleJsonUrl = (baseUrl, key) => {
-  const base = cleanText(baseUrl).replace(/\/$/, "");
+const getBallsvilleJsonUrl = (key) => {
   const normalizedKey = String(key || "").replace(/^\/+/, "");
-  return base ? `${base}/r2/${normalizedKey}` : "";
+  return normalizedKey ? getBallsvilleProxyUrl(normalizedKey) : "";
 };
 
 const extractBallsvilleLeagueRows = (raw) => {
@@ -385,7 +390,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
   const [forceScanNonce, setForceScanNonce] = useState(0);
 
-  const [ballsvilleBaseUrl, setBallsvilleBaseUrl] = useState("");
   const [ballsvilleModes, setBallsvilleModes] = useState([]);
   const [ballsvilleModesLoading, setBallsvilleModesLoading] = useState(false);
   const [ballsvilleModesError, setBallsvilleModesError] = useState("");
@@ -453,31 +457,38 @@ export default function ClientResults({ initialSearchParams = {} }) {
   useEffect(() => {
     let cancelled = false;
     const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    const cacheKey = `ps:ballsville:modes:${targetSeason}`;
 
     async function loadBallsvilleModes() {
       setBallsvilleModesLoading(true);
       setBallsvilleModesError("");
 
-      for (const base of BALLSVILLE_CANDIDATE_BASES) {
-        try {
-          const url = getBallsvilleJsonUrl(base, `data/draft-compare/modes_${targetSeason}.json`);
-          if (!url) continue;
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) continue;
-          const json = await res.json();
-          const rows = normalizeBallsvilleModesPayload(json, targetSeason);
-          if (!rows.length) continue;
-          if (cancelled) return;
-          setBallsvilleBaseUrl(base);
-          setBallsvilleModes(rows);
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const rows = normalizeBallsvilleModesPayload(parsed, targetSeason);
+          if (!cancelled) setBallsvilleModes(rows);
           return;
-        } catch {}
-      }
+        }
 
-      if (!cancelled) {
-        setBallsvilleBaseUrl("");
-        setBallsvilleModes([]);
-        setBallsvilleModesError("Ballsville ADP modes could not be loaded.");
+        const url = getBallsvilleJsonUrl(`data/draft-compare/modes_${targetSeason}.json`);
+        if (!url) throw new Error("Missing Ballsville modes URL");
+
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Ballsville modes request failed (${res.status})`);
+
+        const json = await res.json();
+        const rows = normalizeBallsvilleModesPayload(json, targetSeason);
+        if (!rows.length) throw new Error("No Ballsville modes found");
+
+        sessionStorage.setItem(cacheKey, JSON.stringify(json));
+        if (!cancelled) setBallsvilleModes(rows);
+      } catch (e) {
+        if (!cancelled) {
+          setBallsvilleModes([]);
+          setBallsvilleModesError(e?.message || "Ballsville ADP modes could not be loaded.");
+        }
       }
     }
 
@@ -517,31 +528,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
     let cancelled = false;
     const targetSeason = String(getParam("year") || year || new Date().getFullYear());
 
-    async function fetchModeAggregate(modeSlugs) {
-      const slugs = Array.from(modeSlugs || []).filter(Boolean);
-      if (!ballsvilleBaseUrl || !slugs.length) return new Map();
-
-      let cursor = 0;
-      const maps = [];
-      const workers = Array.from({ length: Math.min(BALLSVILLE_FETCH_CONCURRENCY, slugs.length) }, async () => {
-        while (!cancelled) {
-          const index = cursor++;
-          if (index >= slugs.length) break;
-          const slug = slugs[index];
-          try {
-            const url = getBallsvilleJsonUrl(ballsvilleBaseUrl, `data/draft-compare/drafts_${targetSeason}_${slug}.json`);
-            if (!url) continue;
-            const res = await fetch(url, { cache: "no-store" });
-            if (!res.ok) continue;
-            const json = await res.json();
-          } catch {}
-        }
-      });
-      return maps;
-    }
-
     async function loadBallsvilleAdp() {
-      if (!ballsvilleBaseUrl || !ballsvilleModes.length) {
+      if (!ballsvilleModes.length) {
         setBallsvilleRedraftAdpMap(new Map());
         setBallsvilleDynastyAdpMap(new Map());
         return;
@@ -549,9 +537,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
       setBallsvilleAdpLoading(true);
       setBallsvilleAdpError("");
       try {
-        const fetchCombined = async (modeSlugs) => {
-          const slugs = Array.from(modeSlugs || []).filter(Boolean);
+        const fetchCombined = async (modeSlugs, bucketKey) => {
+          const slugs = Array.from(modeSlugs || []).filter(Boolean).sort();
           if (!slugs.length) return new Map();
+
+          const cacheKey = `ps:ballsville:${targetSeason}:${bucketKey}:${slugs.join(",")}`;
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            return new Map(JSON.parse(cached));
+          }
+
           let cursor = 0;
           const maps = [];
           const workers = Array.from({ length: Math.min(BALLSVILLE_FETCH_CONCURRENCY, slugs.length) }, async () => {
@@ -561,7 +556,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
               if (index >= slugs.length) break;
               const slug = slugs[index];
               try {
-                const url = getBallsvilleJsonUrl(ballsvilleBaseUrl, `data/draft-compare/drafts_${targetSeason}_${slug}.json`);
+                const url = getBallsvilleJsonUrl(`data/draft-compare/drafts_${targetSeason}_${slug}.json`);
+                if (!url) continue;
                 const res = await fetch(url, { cache: "no-store" });
                 if (!res.ok) continue;
                 const json = await res.json();
@@ -570,12 +566,14 @@ export default function ClientResults({ initialSearchParams = {} }) {
             }
           });
           await Promise.all(workers);
-          return mergeBallsvilleModeMaps(maps);
+          const merged = mergeBallsvilleModeMaps(maps);
+          sessionStorage.setItem(cacheKey, JSON.stringify(Array.from(merged.entries())));
+          return merged;
         };
 
         const [redraftMap, dynastyMap] = await Promise.all([
-          fetchCombined(selectedBallsvilleRedraftModes),
-          fetchCombined(selectedBallsvilleDynastyModes),
+          fetchCombined(selectedBallsvilleRedraftModes, "redraft"),
+          fetchCombined(selectedBallsvilleDynastyModes, "dynasty"),
         ]);
         if (cancelled) return;
         setBallsvilleRedraftAdpMap(redraftMap);
@@ -595,7 +593,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return () => {
       cancelled = true;
     };
-  }, [ballsvilleBaseUrl, ballsvilleModes, selectedBallsvilleRedraftModes, selectedBallsvilleDynastyModes, year, paramsKey]);
+  }, [ballsvilleModes, selectedBallsvilleRedraftModes, selectedBallsvilleDynastyModes, year, paramsKey]);
 
   const getMetricRaw = (p) => safeNum(getPlayerValueForSelectedSource?.(p));
 
@@ -758,8 +756,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         const ownerIdSetCache = new Map();
 
         const getLeagueById = async (leagueId) => {
-          const key = String(leagueId || "");
-          if (!key) return null;
+          const key = cleanText(leagueId);
+          if (!isTruthyId(key)) return null;
           if (leagueDataCache.has(key)) return leagueDataCache.get(key);
 
           const known = leagueMap.get(key);
@@ -775,8 +773,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         };
 
         const getRostersForLeague = async (leagueId) => {
-          const key = String(leagueId || "");
-          if (!key) return [];
+          const key = cleanText(leagueId);
+          if (!isTruthyId(key)) return [];
           if (rostersCache.has(key)) return rostersCache.get(key);
 
           const rosters = await fetchJson(`https://api.sleeper.app/v1/league/${key}/rosters`);
@@ -786,7 +784,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         };
 
         const getDraftsForLeague = async (leagueId, fallbackDraftId = null) => {
-          const key = String(leagueId);
+          const key = cleanText(leagueId);
+          if (!isTruthyId(key)) return [];
           if (draftListCache.has(key)) return draftListCache.get(key);
 
           let drafts = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
@@ -805,8 +804,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         };
 
         const getPicksForDraft = async (draftId) => {
-          const key = String(draftId || "");
-          if (!key) return [];
+          const key = cleanText(draftId);
+          if (!isTruthyId(key)) return [];
           if (draftPicksCache.has(key)) return draftPicksCache.get(key);
 
           const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${key}/picks`);
@@ -837,14 +836,14 @@ export default function ClientResults({ initialSearchParams = {} }) {
           let current = leagueObj;
 
           for (let i = 0; i < DYNASTY_LINEAGE_LIMIT; i++) {
-            const currentId = String(current?.league_id || "");
-            if (!currentId || seen.has(currentId)) break;
+            const currentId = cleanText(current?.league_id);
+            if (!isTruthyId(currentId) || seen.has(currentId)) break;
 
             out.push(currentId);
             seen.add(currentId);
 
-            const prevId = String(current?.previous_league_id || "");
-            if (!prevId || seen.has(prevId)) break;
+            const prevId = cleanText(current?.previous_league_id);
+            if (!isTruthyId(prevId) || seen.has(prevId)) break;
 
             current = await getLeagueById(prevId);
             if (!current) break;
@@ -1517,7 +1516,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         Refresh
                       </button>
                       {ballsvilleAdpLoading ? <span className="ml-3 text-xs text-gray-500">Loading Ballsville ADP…</span> : null}
-                      {ballsvilleBaseUrl ? <span className="ml-3 text-xs text-gray-500">BS: {cleanText(ballsvilleBaseUrl).replace(/^https?:\/\//, "")}</span> : null}
                       {error && <span className="text-red-400 ml-3">{error}</span>}
                       {ballsvilleModesError ? <span className="text-amber-400 ml-3">{ballsvilleModesError}</span> : null}
                       {ballsvilleAdpError ? <span className="text-amber-400 ml-3">{ballsvilleAdpError}</span> : null}
