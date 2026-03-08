@@ -62,18 +62,42 @@ const buildDraftInfo = (pick, draftMeta = {}) => {
       )
     )
   );
+  const rounds = safeNum(
+    draftMeta?.settings?.rounds ??
+      draftMeta?.rounds ??
+      draftMeta?.settings?.draft_rounds ??
+      draftMeta?.draft_rounds
+  );
 
   return {
-    draftId: pick?.draft_id ? String(pick.draft_id) : draftMeta?.draft_id ? String(draftMeta.draft_id) : "",
+    draftId: pick?.draft_id
+      ? String(pick.draft_id)
+      : draftMeta?.draft_id
+      ? String(draftMeta.draft_id)
+      : "",
     pickNo,
     draftSlot: formatDraftSlot(pickNo, teams),
     round: teams && pickNo ? Math.floor((pickNo - 1) / teams) + 1 : 0,
     slot: teams && pickNo ? ((pickNo - 1) % teams) + 1 : 0,
     teams,
+    rounds,
     season: String(draftMeta?.season || ""),
     draftType: String(draftMeta?.type || ""),
     label: pickNo ? `${formatDraftSlot(pickNo, teams)}${teams ? ` (pick ${pickNo})` : ""}` : "—",
   };
+};
+
+const isAdpEligibleDraftInfo = (draftInfo, currentSeason) => {
+  const pickNo = safeNum(draftInfo?.pickNo);
+  if (!pickNo) return false;
+
+  const season = String(draftInfo?.season || "").trim();
+  if (!season || season !== String(currentSeason || "").trim()) return false;
+
+  const rounds = safeNum(draftInfo?.rounds);
+  if (rounds > 0 && rounds < 7) return false;
+
+  return true;
 };
 
 const compareDraftPosition = (a, b, dir = 1) => {
@@ -86,12 +110,194 @@ const compareDraftPosition = (a, b, dir = 1) => {
   if (bMissing) return -1;
   return (av - bv) * dir;
 };
-// League avatar helpers
+
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const leagueAvatarUrl = (avatarId) =>
   avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : DEFAULT_LEAGUE_IMG;
 
 const TRENDING_LIMIT = 50;
+const DYNASTY_LINEAGE_LIMIT = 12;
+const SCAN_CONCURRENCY = 4;
+
+const BALLSVILLE_CANDIDATE_BASES = [
+  (typeof process !== "undefined" && process?.env?.NEXT_PUBLIC_BALLSVILLE_BASE_URL) || "",
+  "https://www.theballsvillegame.com",
+  "https://theballsvillegame.com",
+  "https://preview.theballsvillegame.com",
+].filter(Boolean);
+const BALLSVILLE_FETCH_CONCURRENCY = 3;
+
+const cleanText = (v) => String(v ?? "").trim();
+const slugText = (v) =>
+  cleanText(v)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const normalizePlayerName = (name) =>
+  cleanText(name)
+    .replace(/(jr\.?|sr\.?|ii|iii|iv|v)/gi, "")
+    .replace(/[.'’-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const buildPlayerLookupKeys = (name, position = "") => {
+  const nm = normalizePlayerName(name);
+  const pos = cleanText(position).toUpperCase();
+  if (!nm) return [];
+  return pos ? [`${nm}|||${pos}`, nm] : [nm];
+};
+
+const classifyBallsvilleMode = (row = {}) => {
+  const slug = slugText(row?.modeSlug || row?.slug || row?.id || row?.name);
+  const title = cleanText(row?.title || row?.name || "").toLowerCase();
+  const subtitle = cleanText(row?.subtitle || row?.blurb || "").toLowerCase();
+  const hay = `${slug} ${title} ${subtitle}`;
+  const isDynasty = /dynasty/.test(hay);
+  const isStartup = /startup/.test(hay);
+  return {
+    key: isDynasty ? "dynasty" : "redraft",
+    startupLike: isDynasty && isStartup,
+  };
+};
+
+const normalizeBallsvilleModesPayload = (payload, fallbackSeason) => {
+  const rows = Array.isArray(payload?.rows) ? payload.rows : Array.isArray(payload) ? payload : [];
+  return rows
+    .map((row) => {
+      const modeSlug = slugText(row?.modeSlug || row?.slug || row?.id || row?.name);
+      const title = cleanText(row?.title || row?.name || modeSlug);
+      if (!modeSlug || !title) return null;
+      const season = cleanText(row?.year || row?.season || fallbackSeason);
+      return {
+        modeSlug,
+        title,
+        subtitle: cleanText(row?.subtitle || row?.blurb || ""),
+        season,
+        ...classifyBallsvilleMode(row),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.title.localeCompare(b.title));
+};
+
+const getBallsvilleJsonUrl = (baseUrl, key) => {
+  const base = cleanText(baseUrl).replace(/\/$/, "");
+  const normalizedKey = String(key || "").replace(/^\/+/, "");
+  return base ? `${base}/r2/${normalizedKey}` : "";
+};
+
+const extractBallsvilleLeagueRows = (raw) => {
+  const perLeague = raw?.perLeague || {};
+  return [
+    ...(Array.isArray(perLeague?.sideA) ? perLeague.sideA : []),
+    ...(Array.isArray(perLeague?.sideB) ? perLeague.sideB : []),
+    ...(Array.isArray(raw?.leagues) ? raw.leagues : []),
+  ];
+};
+
+const aggregateBallsvilleModeJson = (raw) => {
+  const leagueRows = extractBallsvilleLeagueRows(raw);
+  const byLeaguePlayer = new Map();
+
+  for (const league of leagueRows) {
+    const leagueId = cleanText(league?.leagueId || league?.id || league?.name || Math.random());
+    const playersMap = league?.players && typeof league.players === "object" ? league.players : {};
+    const seen = new Set();
+
+    for (const [rawKey, player] of Object.entries(playersMap)) {
+      const obj = player && typeof player === "object" ? player : {};
+      const [nameFromKey = "", posFromKey = ""] = String(rawKey).split("|||");
+      const name = cleanText(obj?.name || nameFromKey);
+      const position = cleanText(obj?.position || posFromKey).toUpperCase();
+      const overallPick = safeNum(obj?.modeOverallPick ?? obj?.avgOverallPick ?? obj?.adp ?? obj?.avgPick);
+      if (!name || !overallPick) continue;
+
+      const dedupeKey = `${normalizePlayerName(name)}|||${position}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      if (!byLeaguePlayer.has(dedupeKey)) {
+        byLeaguePlayer.set(dedupeKey, {
+          name,
+          position,
+          sumPick: 0,
+          sampleCount: 0,
+          leagueIds: new Set(),
+        });
+      }
+      const entry = byLeaguePlayer.get(dedupeKey);
+      if (entry.leagueIds.has(leagueId)) continue;
+      entry.leagueIds.add(leagueId);
+      entry.sumPick += overallPick;
+      entry.sampleCount += 1;
+    }
+  }
+
+  if (byLeaguePlayer.size === 0 && raw?.players && typeof raw.players === "object") {
+    for (const [rawKey, player] of Object.entries(raw.players)) {
+      const obj = player && typeof player === "object" ? player : {};
+      const [nameFromKey = "", posFromKey = ""] = String(rawKey).split("|||");
+      const name = cleanText(obj?.name || nameFromKey);
+      const position = cleanText(obj?.position || posFromKey).toUpperCase();
+      const overallPick = safeNum(obj?.avgOverallPick ?? obj?.modeOverallPick ?? obj?.adp ?? obj?.avgPick);
+      const sampleCount = safeNum(obj?.count || obj?.leagueCount || 0) || 1;
+      if (!name || !overallPick) continue;
+      byLeaguePlayer.set(`${normalizePlayerName(name)}|||${position}`, {
+        name,
+        position,
+        sumPick: overallPick * sampleCount,
+        sampleCount,
+        leagueIds: new Set(),
+      });
+    }
+  }
+
+  return byLeaguePlayer;
+};
+
+const mergeBallsvilleModeMaps = (maps) => {
+  const out = new Map();
+  for (const modeMap of maps) {
+    for (const [key, entry] of modeMap.entries()) {
+      if (!out.has(key)) {
+        out.set(key, {
+          name: entry.name,
+          position: entry.position,
+          sumPick: 0,
+          sampleCount: 0,
+        });
+      }
+      const dest = out.get(key);
+      dest.sumPick += safeNum(entry?.sumPick);
+      dest.sampleCount += safeNum(entry?.sampleCount);
+    }
+  }
+  return new Map(
+    Array.from(out.entries()).map(([key, entry]) => [
+      key,
+      {
+        ...entry,
+        avgOverallPick: entry.sampleCount > 0 ? entry.sumPick / entry.sampleCount : 0,
+      },
+    ])
+  );
+};
+
+const resolveBallsvilleAdp = (map, playerName, playerPosition, fallbackName = "") => {
+  if (!(map instanceof Map) || map.size === 0) return null;
+  const keys = [
+    ...buildPlayerLookupKeys(playerName, playerPosition),
+    ...buildPlayerLookupKeys(fallbackName, playerPosition),
+  ];
+  for (const key of keys) {
+    const hit = map.get(key);
+    if (hit && safeNum(hit?.avgOverallPick) > 0) return hit;
+  }
+  return null;
+};
+
 
 export default function ClientResults({ initialSearchParams = {} }) {
   const {
@@ -102,17 +308,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
     qbType,
     setFormat,
     setQbType,
-
-    // unified source selection (values OR projections)
     selectedSource,
     sourceKey,
     setSourceKey,
-
     metricType,
     getPlayerValueForSelectedSource,
   } = useSleeper();
 
-  // Support either "selectedSource" or "sourceKey" naming, depending on your context
   const effectiveSourceKey = sourceKey ?? selectedSource ?? "";
   const setEffectiveSourceKey = setSourceKey ?? (() => {});
 
@@ -122,7 +324,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
   };
   const paramsKey = JSON.stringify({ year: getParam("year"), force: getParam("force") });
 
-  // UI state
   const [loading, setLoading] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const [progressText, setProgressText] = useState("Preparing scan…");
@@ -142,26 +343,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [highlightStarters, setHighlightStarters] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Scan data
   const [leagueCount, setLeagueCount] = useState(0);
   const [scanLeagues, setScanLeagues] = useState([]);
   const [rows, setRows] = useState([]);
 
-  // Modals
   const [openPid, setOpenPid] = useState(null);
   const [showLeaguesModal, setShowLeaguesModal] = useState(false);
   const [showVisibleLeaguesModal, setShowVisibleLeaguesModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
 
-  // Sorting
-  const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | adp | value | proj
-  const [sortDir, setSortDir] = useState("desc"); // asc | desc
+  const [sortKey, setSortKey] = useState("count"); // name | count | adp | ballsvilleRedraftAdp | ballsvilleDynastyAdp | value | proj
+  const [sortDir, setSortDir] = useState("desc");
 
-  // Pagination
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Exposure guardrails (and persistence)
   const guardKey = username ? `ps:guard:${username}` : null;
   const [maxExposurePct, setMaxExposurePct] = useState(() => {
     if (typeof window === "undefined" || !guardKey) return 35;
@@ -173,29 +369,33 @@ export default function ClientResults({ initialSearchParams = {} }) {
     if (guardKey) localStorage.setItem(guardKey, String(maxExposurePct));
   }, [guardKey, maxExposurePct]);
 
-  // 🔥/🧊 Trending
   const [trendingHours, setTrendingHours] = useState(24);
-  const [trendingMode, setTrendingMode] = useState("all"); // all | adds | drops
+  const [trendingMode, setTrendingMode] = useState("all");
   const [trendingAddMap, setTrendingAddMap] = useState(() => new Map());
   const [trendingDropMap, setTrendingDropMap] = useState(() => new Map());
 
-  // Display-side league filters
-  const [onlyBestBall, setOnlyBestBall] = useState(false);
-  const [excludeBestBall, setExcludeBestBall] = useState(false);
   const [includeDrafting, setIncludeDrafting] = useState(true);
   const [showRedraft, setShowRedraft] = useState(true);
   const [showKeeper, setShowKeeper] = useState(true);
   const [showDynasty, setShowDynasty] = useState(true);
   const [showBestBallFormat, setShowBestBallFormat] = useState(true);
 
-  // Manual league selection
   const [manualLeagueSelect, setManualLeagueSelect] = useState(false);
   const [selectedLeagueIds, setSelectedLeagueIds] = useState(() => new Set());
 
-  // Force rescan w/o nav
   const [forceScanNonce, setForceScanNonce] = useState(0);
 
-  // Load trending adds
+  const [ballsvilleBaseUrl, setBallsvilleBaseUrl] = useState("");
+  const [ballsvilleModes, setBallsvilleModes] = useState([]);
+  const [ballsvilleModesLoading, setBallsvilleModesLoading] = useState(false);
+  const [ballsvilleModesError, setBallsvilleModesError] = useState("");
+  const [selectedBallsvilleRedraftModes, setSelectedBallsvilleRedraftModes] = useState(() => new Set());
+  const [selectedBallsvilleDynastyModes, setSelectedBallsvilleDynastyModes] = useState(() => new Set());
+  const [ballsvilleRedraftAdpMap, setBallsvilleRedraftAdpMap] = useState(() => new Map());
+  const [ballsvilleDynastyAdpMap, setBallsvilleDynastyAdpMap] = useState(() => new Map());
+  const [ballsvilleAdpLoading, setBallsvilleAdpLoading] = useState(false);
+  const [ballsvilleAdpError, setBallsvilleAdpError] = useState("");
+
   useEffect(() => {
     const key = `ps:trending:add:${trendingHours}:L${TRENDING_LIMIT}`;
     const cached = sessionStorage.getItem(key);
@@ -223,7 +423,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
     })();
   }, [trendingHours]);
 
-  // Load trending drops
   useEffect(() => {
     const key = `ps:trending:drop:${trendingHours}:L${TRENDING_LIMIT}`;
     const cached = sessionStorage.getItem(key);
@@ -251,20 +450,184 @@ export default function ClientResults({ initialSearchParams = {} }) {
     })();
   }, [trendingHours]);
 
-  // === Unified metric helper ===
+  useEffect(() => {
+    let cancelled = false;
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+
+    async function loadBallsvilleModes() {
+      setBallsvilleModesLoading(true);
+      setBallsvilleModesError("");
+
+      for (const base of BALLSVILLE_CANDIDATE_BASES) {
+        try {
+          const url = getBallsvilleJsonUrl(base, `data/draft-compare/modes_${targetSeason}.json`);
+          if (!url) continue;
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+          const json = await res.json();
+          const rows = normalizeBallsvilleModesPayload(json, targetSeason);
+          if (!rows.length) continue;
+          if (cancelled) return;
+          setBallsvilleBaseUrl(base);
+          setBallsvilleModes(rows);
+          return;
+        } catch {}
+      }
+
+      if (!cancelled) {
+        setBallsvilleBaseUrl("");
+        setBallsvilleModes([]);
+        setBallsvilleModesError("Ballsville ADP modes could not be loaded.");
+      }
+    }
+
+    loadBallsvilleModes().finally(() => {
+      if (!cancelled) setBallsvilleModesLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [year, paramsKey]);
+
+  useEffect(() => {
+    if (!ballsvilleModes.length) return;
+
+    setSelectedBallsvilleRedraftModes((prev) => {
+      if (prev.size > 0) return prev;
+      const defaults = ballsvilleModes
+        .filter((row) => row.key === "redraft")
+        .map((row) => row.modeSlug);
+      return new Set(defaults);
+    });
+
+    setSelectedBallsvilleDynastyModes((prev) => {
+      if (prev.size > 0) return prev;
+      const startupDefaults = ballsvilleModes
+        .filter((row) => row.key === "dynasty" && row.startupLike)
+        .map((row) => row.modeSlug);
+      const fallback = ballsvilleModes
+        .filter((row) => row.key === "dynasty")
+        .map((row) => row.modeSlug);
+      return new Set(startupDefaults.length ? startupDefaults : fallback);
+    });
+  }, [ballsvilleModes]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+
+    async function fetchModeAggregate(modeSlugs) {
+      const slugs = Array.from(modeSlugs || []).filter(Boolean);
+      if (!ballsvilleBaseUrl || !slugs.length) return new Map();
+
+      let cursor = 0;
+      const maps = [];
+      const workers = Array.from({ length: Math.min(BALLSVILLE_FETCH_CONCURRENCY, slugs.length) }, async () => {
+        while (!cancelled) {
+          const index = cursor++;
+          if (index >= slugs.length) break;
+          const slug = slugs[index];
+          try {
+            const url = getBallsvilleJsonUrl(ballsvilleBaseUrl, `data/draft-compare/drafts_${targetSeason}_${slug}.json`);
+            if (!url) continue;
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const json = await res.json();
+          } catch {}
+        }
+      });
+      return maps;
+    }
+
+    async function loadBallsvilleAdp() {
+      if (!ballsvilleBaseUrl || !ballsvilleModes.length) {
+        setBallsvilleRedraftAdpMap(new Map());
+        setBallsvilleDynastyAdpMap(new Map());
+        return;
+      }
+      setBallsvilleAdpLoading(true);
+      setBallsvilleAdpError("");
+      try {
+        const fetchCombined = async (modeSlugs) => {
+          const slugs = Array.from(modeSlugs || []).filter(Boolean);
+          if (!slugs.length) return new Map();
+          let cursor = 0;
+          const maps = [];
+          const workers = Array.from({ length: Math.min(BALLSVILLE_FETCH_CONCURRENCY, slugs.length) }, async () => {
+            while (!cancelled) {
+              const index = cursor;
+              cursor += 1;
+              if (index >= slugs.length) break;
+              const slug = slugs[index];
+              try {
+                const url = getBallsvilleJsonUrl(ballsvilleBaseUrl, `data/draft-compare/drafts_${targetSeason}_${slug}.json`);
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) continue;
+                const json = await res.json();
+                maps.push(aggregateBallsvilleModeJson(json));
+              } catch {}
+            }
+          });
+          await Promise.all(workers);
+          return mergeBallsvilleModeMaps(maps);
+        };
+
+        const [redraftMap, dynastyMap] = await Promise.all([
+          fetchCombined(selectedBallsvilleRedraftModes),
+          fetchCombined(selectedBallsvilleDynastyModes),
+        ]);
+        if (cancelled) return;
+        setBallsvilleRedraftAdpMap(redraftMap);
+        setBallsvilleDynastyAdpMap(dynastyMap);
+      } catch (e) {
+        if (!cancelled) {
+          setBallsvilleAdpError(e?.message || "Ballsville ADP could not be loaded.");
+          setBallsvilleRedraftAdpMap(new Map());
+          setBallsvilleDynastyAdpMap(new Map());
+        }
+      } finally {
+        if (!cancelled) setBallsvilleAdpLoading(false);
+      }
+    }
+
+    loadBallsvilleAdp();
+    return () => {
+      cancelled = true;
+    };
+  }, [ballsvilleBaseUrl, ballsvilleModes, selectedBallsvilleRedraftModes, selectedBallsvilleDynastyModes, year, paramsKey]);
+
   const getMetricRaw = (p) => safeNum(getPlayerValueForSelectedSource?.(p));
 
   const withLocalPlayerData = (row) => {
     const p = players?.[row.player_id];
+    const resolvedName =
+      row.name ||
+      p?.full_name ||
+      `${p?.first_name || ""} ${p?.last_name || ""}`.trim() ||
+      "Unknown";
+    const resolvedPos = (row.position || p?.position || "").toUpperCase();
+    const resolvedTeam = (row.team || p?.team || "").toUpperCase();
+    const ballsvilleRedraft = resolveBallsvilleAdp(
+      ballsvilleRedraftAdpMap,
+      resolvedName,
+      resolvedPos,
+      p?.full_name
+    );
+    const ballsvilleDynasty = resolveBallsvilleAdp(
+      ballsvilleDynastyAdpMap,
+      resolvedName,
+      resolvedPos,
+      p?.full_name
+    );
+
     const base = {
       ...row,
-      _name:
-        row.name ||
-        p?.full_name ||
-        `${p?.first_name || ""} ${p?.last_name || ""}`.trim() ||
-        "Unknown",
-      _pos: (row.position || p?.position || "").toUpperCase(),
-      _team: (row.team || p?.team || "").toUpperCase(),
+      _name: resolvedName,
+      _pos: resolvedPos,
+      _team: resolvedTeam,
+      _ballsvilleRedraftAdp: safeNum(ballsvilleRedraft?.avgOverallPick),
+      _ballsvilleDynastyAdp: safeNum(ballsvilleDynasty?.avgOverallPick),
     };
 
     const raw = p ? getMetricRaw(p) : 0;
@@ -282,20 +645,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return base;
   };
 
-  // "Draft-like" for UI filtering only (pre_draft OR drafting)
   const isDraftLike = (status) => {
     const s = String(status || "").toLowerCase();
     return s.includes("pre_draft") || s.includes("drafting") || s === "draft";
   };
 
-  // ✅ Only true when the league is ACTUALLY drafting (this is the ONLY time we fetch picks)
   const isActivelyDrafting = (status) => {
     const s = String(status || "").toLowerCase();
     return s.includes("drafting") || s === "drafting";
   };
 
-
-  // One-time scan (always all leagues; filters are display-side)
   useEffect(() => {
     if (!username) return;
 
@@ -336,16 +695,27 @@ export default function ClientResults({ initialSearchParams = {} }) {
           return;
         }
 
-        // 1) user id
         const userRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
         if (!userRes.ok) throw new Error("User not found");
         const user = await userRes.json();
         const userId = user.user_id;
 
+        const ownerAliases = new Set(
+          [
+            userId,
+            user?.user_id,
+            user?.username,
+            user?.display_name,
+            user?.metadata?.team_name,
+            user?.metadata?.nickname,
+          ]
+            .map((v) => String(v || "").trim())
+            .filter(Boolean)
+        );
+
         setProgressText("Fetching leagues…");
         setProgressPct(8);
 
-        // 2) leagues
         const leaguesRes = await fetch(
           `https://api.sleeper.app/v1/user/${userId}/leagues/nfl/${yr}`
         );
@@ -363,12 +733,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
           return;
         }
 
-        // 3) iterate:
-        // - if drafting => picks only
-        // - else => rosters only
         const playerCounts = {};
         const playerLeagues = {};
         const includedLeagues = [];
+        let processedLeagueCount = 0;
 
         const fetchJson = async (url) => {
           const r = await fetch(url);
@@ -380,8 +748,42 @@ export default function ClientResults({ initialSearchParams = {} }) {
           }
         };
 
+        const leagueMap = new Map(
+          (Array.isArray(leagues) ? leagues : []).map((lg) => [String(lg?.league_id || ""), lg])
+        );
+        const leagueDataCache = new Map();
+        const rostersCache = new Map();
         const draftListCache = new Map();
         const draftPicksCache = new Map();
+        const ownerIdSetCache = new Map();
+
+        const getLeagueById = async (leagueId) => {
+          const key = String(leagueId || "");
+          if (!key) return null;
+          if (leagueDataCache.has(key)) return leagueDataCache.get(key);
+
+          const known = leagueMap.get(key);
+          if (known) {
+            leagueDataCache.set(key, known);
+            return known;
+          }
+
+          const leagueObj = await fetchJson(`https://api.sleeper.app/v1/league/${key}`);
+          const normalized = leagueObj && typeof leagueObj === "object" ? leagueObj : null;
+          leagueDataCache.set(key, normalized);
+          return normalized;
+        };
+
+        const getRostersForLeague = async (leagueId) => {
+          const key = String(leagueId || "");
+          if (!key) return [];
+          if (rostersCache.has(key)) return rostersCache.get(key);
+
+          const rosters = await fetchJson(`https://api.sleeper.app/v1/league/${key}/rosters`);
+          const arr = Array.isArray(rosters) ? rosters : [];
+          rostersCache.set(key, arr);
+          return arr;
+        };
 
         const getDraftsForLeague = async (leagueId, fallbackDraftId = null) => {
           const key = String(leagueId);
@@ -390,7 +792,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
           let drafts = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
           drafts = Array.isArray(drafts) ? drafts : [];
 
-          if (fallbackDraftId && !drafts.some((d) => String(d?.draft_id || "") === String(fallbackDraftId))) {
+          if (
+            fallbackDraftId &&
+            !drafts.some((d) => String(d?.draft_id || "") === String(fallbackDraftId))
+          ) {
             const single = await fetchJson(`https://api.sleeper.app/v1/draft/${fallbackDraftId}`);
             if (single?.draft_id) drafts.unshift(single);
           }
@@ -404,15 +809,104 @@ export default function ClientResults({ initialSearchParams = {} }) {
           if (!key) return [];
           if (draftPicksCache.has(key)) return draftPicksCache.get(key);
 
-          const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}/picks`);
+          const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${key}/picks`);
           const arr = Array.isArray(picks) ? picks : [];
           draftPicksCache.set(key, arr);
           return arr;
         };
 
+        const sortDraftsChronologically = (drafts) => {
+          const list = Array.isArray(drafts) ? [...drafts] : [];
+          list.sort((a, b) => {
+            const aSeason = safeNum(a?.season);
+            const bSeason = safeNum(b?.season);
+            if (aSeason !== bSeason) return aSeason - bSeason;
+
+            const aStart = safeNum(a?.start_time ?? a?.created ?? a?.created_at);
+            const bStart = safeNum(b?.start_time ?? b?.created ?? b?.created_at);
+            if (aStart !== bStart) return aStart - bStart;
+
+            return String(a?.draft_id || "").localeCompare(String(b?.draft_id || ""));
+          });
+          return list;
+        };
+
+        const getDynastyLineageLeagueIds = async (leagueObj) => {
+          const out = [];
+          const seen = new Set();
+          let current = leagueObj;
+
+          for (let i = 0; i < DYNASTY_LINEAGE_LIMIT; i++) {
+            const currentId = String(current?.league_id || "");
+            if (!currentId || seen.has(currentId)) break;
+
+            out.push(currentId);
+            seen.add(currentId);
+
+            const prevId = String(current?.previous_league_id || "");
+            if (!prevId || seen.has(prevId)) break;
+
+            current = await getLeagueById(prevId);
+            if (!current) break;
+          }
+
+          return out;
+        };
+
+        const getOwnerIdsForLeague = async (leagueId, currentUserId) => {
+          const key = `${leagueId}:${currentUserId}`;
+          if (ownerIdSetCache.has(key)) return ownerIdSetCache.get(key);
+
+          const rosters = await getRostersForLeague(leagueId);
+          const ids = new Set([String(currentUserId)]);
+
+          for (const roster of rosters) {
+            const ownerId = String(roster?.owner_id || "").trim();
+            const coOwners = Array.isArray(roster?.co_owners) ? roster.co_owners : [];
+            const rosterId = String(roster?.roster_id || "").trim();
+
+            if (ownerId && ownerId === String(currentUserId)) {
+              ids.add(ownerId);
+              if (rosterId) ids.add(rosterId);
+              for (const co of coOwners) {
+                const coId = String(co || "").trim();
+                if (coId) ids.add(coId);
+              }
+            } else if (coOwners.some((co) => String(co || "").trim() === String(currentUserId))) {
+              if (ownerId) ids.add(ownerId);
+              if (rosterId) ids.add(rosterId);
+              for (const co of coOwners) {
+                const coId = String(co || "").trim();
+                if (coId) ids.add(coId);
+              }
+            }
+          }
+
+          ownerIdSetCache.set(key, ids);
+          return ids;
+        };
+
+        const pickBelongsToManager = (pick, ownerIdSet) => {
+          const candidates = [
+            pick?.picked_by,
+            pick?.owner_id,
+            pick?.user_id,
+            pick?.roster_id,
+            pick?.metadata?.picked_by,
+            pick?.metadata?.owner_id,
+            pick?.metadata?.username,
+            pick?.metadata?.display_name,
+            pick?.metadata?.team_name,
+          ]
+            .map((v) => String(v || "").trim())
+            .filter(Boolean);
+
+          return candidates.some((value) => ownerIdSet.has(value) || ownerAliases.has(value));
+        };
+
         const getMyDraftInfoForLeaguePlayers = async (
-          leagueId,
-          userId,
+          leagueObj,
+          currentUserId,
           playerIds,
           fallbackDraftId = null,
           includeAllDrafts = false
@@ -421,10 +915,43 @@ export default function ClientResults({ initialSearchParams = {} }) {
           const out = {};
           if (wanted.size === 0) return out;
 
-          const drafts = await getDraftsForLeague(leagueId, fallbackDraftId);
-          const draftPool = includeAllDrafts ? drafts : (Array.isArray(drafts) && drafts.length > 0 ? [drafts[0]] : []);
+          let drafts = [];
+          let ownerIdSet = new Set([String(currentUserId)]);
 
-          for (const draft of draftPool) {
+          if (includeAllDrafts) {
+            const lineageIds = await getDynastyLineageLeagueIds(leagueObj);
+            for (const lineageLeagueId of lineageIds) {
+              const lineageLeague = await getLeagueById(lineageLeagueId);
+              if (!lineageLeague) continue;
+
+              const lineageDrafts = await getDraftsForLeague(
+                lineageLeagueId,
+                lineageLeague?.draft_id || null
+              );
+              drafts.push(
+                ...lineageDrafts.map((draft) => ({
+                  ...draft,
+                  __leagueId: String(lineageLeagueId),
+                }))
+              );
+
+              const lineageOwnerIds = await getOwnerIdsForLeague(lineageLeagueId, currentUserId);
+              lineageOwnerIds.forEach((id) => ownerIdSet.add(id));
+            }
+            drafts = sortDraftsChronologically(drafts);
+          } else {
+            const singleLeagueId = String(leagueObj?.league_id || "");
+            const singleDrafts = await getDraftsForLeague(singleLeagueId, fallbackDraftId);
+            drafts =
+              Array.isArray(singleDrafts) && singleDrafts.length > 0
+                ? [{ ...singleDrafts[0], __leagueId: singleLeagueId }]
+                : [];
+
+            ownerIdSet = await getOwnerIdsForLeague(singleLeagueId, currentUserId);
+            ownerIdSet.add(String(currentUserId));
+          }
+
+          for (const draft of drafts) {
             if (wanted.size === Object.keys(out).length) break;
 
             const picks = await getPicksForDraft(draft?.draft_id);
@@ -433,7 +960,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
             for (const pick of picks) {
               const pid = pick?.player_id != null ? String(pick.player_id) : "";
               if (!pid || !wanted.has(pid) || out[pid]) continue;
-              if (String(pick?.picked_by || "") !== String(userId)) continue;
+              if (!pickBelongsToManager(pick, ownerIdSet)) continue;
+
               out[pid] = buildDraftInfo(pick, draft);
             }
           }
@@ -441,44 +969,51 @@ export default function ClientResults({ initialSearchParams = {} }) {
           return out;
         };
 
-        // prefer league.draft_id; otherwise fetch most recent draft for league (ONLY when drafting)
-        const getMostRecentDraftIdForLeague = async (leagueId, fallbackDraftId) => {
-          if (fallbackDraftId) return String(fallbackDraftId);
+        const getMostRecentDraftForLeague = async (leagueId, fallbackDraftId) => {
+          if (fallbackDraftId) {
+            const drafts = await getDraftsForLeague(leagueId, fallbackDraftId);
+            const found = Array.isArray(drafts)
+              ? drafts.find((d) => String(d?.draft_id || "") === String(fallbackDraftId))
+              : null;
+            return found || { draft_id: String(fallbackDraftId) };
+          }
+
           const drafts = await getDraftsForLeague(leagueId, null);
-          if (Array.isArray(drafts) && drafts.length > 0)
-            return drafts[0]?.draft_id ? String(drafts[0].draft_id) : null;
+          if (Array.isArray(drafts) && drafts.length > 0) return drafts[0];
           return null;
         };
 
-        const getMyDraftPickedPlayerIds = async (leagueId, userId, fallbackDraftId) => {
-          const draftId = await getMostRecentDraftIdForLeague(leagueId, fallbackDraftId);
+        const getMyDraftPickedPlayerIds = async (leagueObj, currentUserId, fallbackDraftId) => {
+          const recentDraft = await getMostRecentDraftForLeague(
+            leagueObj?.league_id,
+            fallbackDraftId
+          );
+          const draftId = recentDraft?.draft_id ? String(recentDraft.draft_id) : null;
           if (!draftId) return { playerIds: [], draftInfoByPid: {} };
 
-          const draftMeta = (await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}`)) || { draft_id: draftId };
+          const ownerIdSet = await getOwnerIdsForLeague(leagueObj?.league_id, currentUserId);
+          ownerIdSet.add(String(currentUserId));
+
           const picks = await getPicksForDraft(draftId);
-          if (!Array.isArray(picks) || picks.length === 0) return { playerIds: [], draftInfoByPid: {} };
+          if (!Array.isArray(picks) || picks.length === 0) {
+            return { playerIds: [], draftInfoByPid: {} };
+          }
 
           const mine = [];
           const draftInfoByPid = {};
-          for (const p of picks) {
-            const pickedByMe = p?.picked_by != null && String(p.picked_by) === String(userId);
-            if (pickedByMe) {
-              const pid = p?.player_id != null ? String(p.player_id) : "";
-              if (pid) {
-                mine.push(pid);
-                if (!draftInfoByPid[pid]) draftInfoByPid[pid] = buildDraftInfo(p, draftMeta);
-              }
+          for (const pick of picks) {
+            if (!pickBelongsToManager(pick, ownerIdSet)) continue;
+
+            const pid = pick?.player_id != null ? String(pick.player_id) : "";
+            if (pid) {
+              mine.push(pid);
+              if (!draftInfoByPid[pid]) draftInfoByPid[pid] = buildDraftInfo(pick, recentDraft);
             }
           }
           return { playerIds: mine, draftInfoByPid };
         };
 
-        for (let i = 0; i < leagues.length; i++) {
-          const lg = leagues[i];
-
-          setProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-          setProgressPct(Math.round(((i + 1) / leagues.length) * 100 * 0.92) + 8);
-
+        const processLeague = async (lg) => {
           if (cancel) return;
 
           const draftingNow = isActivelyDrafting(lg.status);
@@ -501,29 +1036,31 @@ export default function ClientResults({ initialSearchParams = {} }) {
           let draftInfoByPid = {};
 
           if (draftingNow) {
-            // Draft picks ONLY when actively drafting
             const draftResult = await getMyDraftPickedPlayerIds(
-              lg.league_id,
+              lg,
               userId,
               lg.draft_id || null
             );
             draftPlayers = draftResult.playerIds || [];
             draftInfoByPid = draftResult.draftInfoByPid || {};
 
-            if (draftPlayers.length === 0) continue; // not your draft / no picks yet
+            if (draftPlayers.length === 0) return;
           } else {
-            // Rosters ONLY when NOT actively drafting
-            const rosters = await fetchJson(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+            const rosters = await getRostersForLeague(lg.league_id);
 
             const mineRoster = Array.isArray(rosters)
-              ? rosters.find((r) => String(r?.owner_id) === String(userId))
+              ? rosters.find(
+                  (r) =>
+                    String(r?.owner_id) === String(userId) ||
+                    (Array.isArray(r?.co_owners) &&
+                      r.co_owners.some((co) => String(co) === String(userId)))
+                )
               : null;
 
             rosterPlayers = Array.isArray(mineRoster?.players) ? mineRoster.players.map(String) : [];
             startersSet = new Set(Array.isArray(mineRoster?.starters) ? mineRoster.starters.map(String) : []);
             leagueInfo.hasRoster = rosterPlayers.length > 0;
 
-            // Keeper leagues should not count carried-over rosters as exposure before the draft happens.
             if (leagueFormat.key === "keeper" && isDraftLike(lg.status)) {
               rosterPlayers = [];
               startersSet = new Set();
@@ -531,7 +1068,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
             if (rosterPlayers.length > 0) {
               draftInfoByPid = await getMyDraftInfoForLeaguePlayers(
-                lg.league_id,
+                lg,
                 userId,
                 rosterPlayers,
                 lg.draft_id || null,
@@ -541,7 +1078,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
           }
 
           const mergedPids = new Set([...rosterPlayers, ...draftPlayers]);
-          if (mergedPids.size === 0) continue;
+          if (mergedPids.size === 0) return;
 
           includedLeagues.push(leagueInfo);
 
@@ -564,13 +1101,30 @@ export default function ClientResults({ initialSearchParams = {} }) {
               draftSlot: draftInfo?.draftSlot || "",
               draftRound: draftInfo?.round || 0,
               draftTeams: draftInfo?.teams || 0,
+              draftRounds: draftInfo?.rounds || 0,
               draftSeason: draftInfo?.season || "",
+              adpEligible: isAdpEligibleDraftInfo(draftInfo, yr),
               draftedByManager: !!draftInfo,
             });
           }
+        };
 
-          if (cancel) return;
-        }
+        let cursor = 0;
+        const workers = Array.from({ length: Math.min(SCAN_CONCURRENCY, leagues.length) }, async () => {
+          while (!cancel) {
+            const index = cursor++;
+            if (index >= leagues.length) break;
+
+            const lg = leagues[index];
+            processedLeagueCount += 1;
+            setProgressText(`Scanning leagues… (${processedLeagueCount}/${leagues.length})`);
+            setProgressPct(Math.round((processedLeagueCount / leagues.length) * 100 * 0.92) + 8);
+
+            await processLeague(lg);
+          }
+        });
+
+        await Promise.all(workers);
 
         if (includedLeagues.length === 0) {
           setRows([]);
@@ -583,7 +1137,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
           return;
         }
 
-        // 4) shape rows (use already-loaded players map; avoid /players/nfl)
         const built = Object.entries(playerCounts)
           .map(([pid, count]) => {
             const base = players?.[pid] || {};
@@ -597,7 +1150,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
               String(pid);
 
             const leaguesForPlayer = playerLeagues[pid] || [];
-            const draftedEntries = leaguesForPlayer.filter((lg) => safeNum(lg?.draftPickNo) > 0);
+            const draftedEntries = leaguesForPlayer.filter((lg) => lg?.adpEligible && safeNum(lg?.draftPickNo) > 0);
             const avgDraftPickNo = draftedEntries.length
               ? draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftPickNo), 0) / draftedEntries.length
               : 0;
@@ -655,38 +1208,30 @@ export default function ClientResults({ initialSearchParams = {} }) {
     };
   }, [username, year, paramsKey, forceScanNonce]);
 
-  // Enriched rows (metric from context)
   const enriched = useMemo(
     () => rows.map(withLocalPlayerData),
-    [rows, players, isProj, metricType, effectiveSourceKey]
+    [rows, players, isProj, metricType, effectiveSourceKey, ballsvilleRedraftAdpMap, ballsvilleDynastyAdpMap]
   );
 
-  // Visible league IDs after display filters
   const visibleLeagueIds = useMemo(() => {
     if (!scanLeagues || scanLeagues.length === 0) return new Set();
     const arr = scanLeagues
       .filter((lg) => {
         const formatKey = String(lg?.format?.key || "redraft").toLowerCase();
 
-        if (onlyBestBall && !lg.isBestBall) return false;
-        if (excludeBestBall && lg.isBestBall) return false;
-
         if (formatKey === "bestball" && !showBestBallFormat) return false;
         if (formatKey === "dynasty" && !showDynasty) return false;
         if (formatKey === "keeper" && !showKeeper) return false;
         if (formatKey === "redraft" && !showRedraft) return false;
 
-        // If "Include drafting" is OFF, hide draft-like leagues ONLY when they do NOT have rosters.
-        // (Drafting-only leagues have hasRoster=false; offseason dynasty leagues with rosters stay visible.)
         if (!includeDrafting && isDraftLike(lg.status) && !lg.hasRoster) return false;
 
         return true;
       })
       .map((lg) => String(lg.id));
     return new Set(arr);
-  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting, showRedraft, showKeeper, showDynasty, showBestBallFormat]);
+  }, [scanLeagues, includeDrafting, showRedraft, showKeeper, showDynasty, showBestBallFormat]);
 
-  // Apply manual league selection (if enabled) ON TOP of visible filters
   const activeLeagueIds = useMemo(() => {
     if (!manualLeagueSelect) return visibleLeagueIds;
     const out = new Set();
@@ -698,7 +1243,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
   const visibleLeagueCount = activeLeagueIds.size || 0;
 
-  // Project rows to active leagues, drop zeroes
   const projectedRows = useMemo(() => {
     if (!activeLeagueIds) return enriched;
     return enriched
@@ -706,7 +1250,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         const leagues = (row.leagues || []).filter((lg) =>
           activeLeagueIds.has(String(lg.id))
         );
-        const draftedEntries = leagues.filter((lg) => safeNum(lg?.draftPickNo) > 0);
+        const draftedEntries = leagues.filter((lg) => lg?.adpEligible && safeNum(lg?.draftPickNo) > 0);
         const avgDraftPickNo = draftedEntries.length
           ? draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftPickNo), 0) / draftedEntries.length
           : 0;
@@ -727,7 +1271,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
       .filter((r) => r.count > 0);
   }, [enriched, activeLeagueIds]);
 
-  // Starter PID set (for highlight toggle)
   const starterPidSet = useMemo(() => {
     const s = new Set();
     projectedRows.forEach((r) => {
@@ -736,7 +1279,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return s;
   }, [projectedRows]);
 
-  // Search + trending filter
   const filteredRows = useMemo(() => {
     let list = projectedRows;
     if (query) {
@@ -753,7 +1295,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return list;
   }, [projectedRows, query, trendingMode, trendingAddMap, trendingDropMap]);
 
-  // Sort
   const toggleSort = (key) => {
     setCurrentPage(1);
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -785,6 +1326,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
         if (sortKey === "value" || sortKey === "proj") return (getMetricVal(a) - getMetricVal(b)) * dir;
         if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
+        if (sortKey === "ballsvilleRedraftAdp") return compareDraftPosition(a._ballsvilleRedraftAdp, b._ballsvilleRedraftAdp, dir);
+        if (sortKey === "ballsvilleDynastyAdp") return compareDraftPosition(a._ballsvilleDynastyAdp, b._ballsvilleDynastyAdp, dir);
         return ((a.count || 0) - (b.count || 0)) * dir;
       });
     }
@@ -799,18 +1342,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
         return (av - bv) * dir;
       }
       if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
+      if (sortKey === "ballsvilleRedraftAdp") return compareDraftPosition(a._ballsvilleRedraftAdp, b._ballsvilleRedraftAdp, dir);
+      if (sortKey === "ballsvilleDynastyAdp") return compareDraftPosition(a._ballsvilleDynastyAdp, b._ballsvilleDynastyAdp, dir);
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
   }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, isProj]);
 
-  // Paging
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const pageStart = (currentPage - 1) * pageSize;
   const pageRows = sorted.slice(pageStart, pageStart + pageSize);
 
   const resetFilters = () => {
-    setOnlyBestBall(false);
-    setExcludeBestBall(false);
     setIncludeDrafting(true);
     setShowRedraft(true);
     setShowKeeper(true);
@@ -832,7 +1374,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setForceScanNonce((n) => n + 1);
   };
 
-  // Helpers for manual selection UI
   const toggleLeagueSelected = (id) => {
     const sid = String(id);
     setSelectedLeagueIds((prev) => {
@@ -859,7 +1400,31 @@ export default function ClientResults({ initialSearchParams = {} }) {
     });
   };
 
-  // UI
+  const ballsvilleRedraftModes = useMemo(
+    () => ballsvilleModes.filter((row) => row.key === "redraft"),
+    [ballsvilleModes]
+  );
+  const ballsvilleDynastyModes = useMemo(
+    () => ballsvilleModes.filter((row) => row.key === "dynasty"),
+    [ballsvilleModes]
+  );
+
+  const toggleBallsvilleMode = (bucket, slug) => {
+    const setter = bucket === "dynasty" ? setSelectedBallsvilleDynastyModes : setSelectedBallsvilleRedraftModes;
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+
+  const setAllBallsvilleModes = (bucket, enabled) => {
+    const source = bucket === "dynasty" ? ballsvilleDynastyModes : ballsvilleRedraftModes;
+    const setter = bucket === "dynasty" ? setSelectedBallsvilleDynastyModes : setSelectedBallsvilleRedraftModes;
+    setter(enabled ? new Set(source.map((row) => row.modeSlug)) : new Set());
+  };
+
   return (
     <>
       <BackgroundParticles />
@@ -951,7 +1516,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       >
                         Refresh
                       </button>
+                      {ballsvilleAdpLoading ? <span className="ml-3 text-xs text-gray-500">Loading Ballsville ADP…</span> : null}
+                      {ballsvilleBaseUrl ? <span className="ml-3 text-xs text-gray-500">BS: {cleanText(ballsvilleBaseUrl).replace(/^https?:\/\//, "")}</span> : null}
                       {error && <span className="text-red-400 ml-3">{error}</span>}
+                      {ballsvilleModesError ? <span className="text-amber-400 ml-3">{ballsvilleModesError}</span> : null}
+                      {ballsvilleAdpError ? <span className="text-amber-400 ml-3">{ballsvilleAdpError}</span> : null}
                     </div>
                   </div>
                 </div>
@@ -976,6 +1545,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("adp")}>
                         ADP <span className="ml-1 inline-block">{sortIndicator("adp")}</span>
                       </th>
+                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("ballsvilleRedraftAdp")}>
+                        BS Redraft <span className="ml-1 inline-block">{sortIndicator("ballsvilleRedraftAdp")}</span>
+                      </th>
+                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
+                        BS Dynasty <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
+                      </th>
                       <th
                         className="text-right px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort(valueOrProjSortKey)}
@@ -996,6 +1571,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
                       const metricVal = isProj ? (r._projAvg || 0) : (r._value || 0);
                       const avgDraftLabel = formatAverageDraftPosition(r.avgDraftPickNo, r.avgDraftTeams);
+                      const ballsvilleRedraftLabel = formatAverageDraftPosition(r._ballsvilleRedraftAdp, 12);
+                      const ballsvilleDynastyLabel = formatAverageDraftPosition(r._ballsvilleDynastyAdp, 12);
 
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
@@ -1057,6 +1634,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
                           <td className="px-4 py-2 text-right">{r.count}</td>
                           <td className="px-4 py-2 text-right">{avgDraftLabel}</td>
+                          <td className="px-4 py-2 text-right">{ballsvilleRedraftLabel}</td>
+                          <td className="px-4 py-2 text-right">{ballsvilleDynastyLabel}</td>
                           <td className="px-4 py-2 text-right">{Math.round(metricVal)}</td>
 
                           <td className="px-4 py-2 hidden md:table-cell">
@@ -1131,7 +1710,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
         )}
       </div>
 
-      {/* Filters modal (SMALLER) */}
       {showFiltersModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
@@ -1197,95 +1775,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     onQbTypeChange={setQbType}
                   />
                 </div>
-
-                <div className="mt-4">
-                  <div className="text-sm text-gray-400 mb-2">Trending players</div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="all"
-                        checked={trendingMode === "all"}
-                        onChange={() => setTrendingMode("all")}
-                      />
-                      All players
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="adds"
-                        checked={trendingMode === "adds"}
-                        onChange={() => setTrendingMode("adds")}
-                      />
-                      Only trending adds
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="drops"
-                        checked={trendingMode === "drops"}
-                        onChange={() => setTrendingMode("drops")}
-                      />
-                      Only trending drops
-                    </label>
-                  </div>
-
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-sm text-gray-400">Lookback</span>
-                    <select
-                      value={trendingHours}
-                      onChange={(e) => setTrendingHours(Number(e.target.value))}
-                      className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                      title="How far back to consider for trending adds/drops"
-                    >
-                      <option value={6}>6h</option>
-                      <option value={12}>12h</option>
-                      <option value={24}>24h</option>
-                      <option value={48}>48h</option>
-                      <option value={72}>72h</option>
-                      <option value={168}>7d</option>
-                    </select>
-                    <span className="text-xs text-gray-500">Sleeper top 50 per window</span>
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-3">
                 <div className="text-sm text-gray-400">League filters (display only)</div>
-                <label className="flex items-center justify-between">
-                  <span>Only Best Ball</span>
-                  <input
-                    type="checkbox"
-                    checked={onlyBestBall}
-                    onChange={() => {
-                      setOnlyBestBall((v) => {
-                        const next = !v;
-                        if (next) setExcludeBestBall(false);
-                        return next;
-                      });
-                      setCurrentPage(1);
-                    }}
-                  />
-                </label>
-                <label className="flex items-center justify-between">
-                  <span>Exclude Best Ball</span>
-                  <input
-                    type="checkbox"
-                    checked={excludeBestBall}
-                    onChange={() => {
-                      setExcludeBestBall((v) => {
-                        const next = !v;
-                        if (next) setOnlyBestBall(false);
-                        return next;
-                      });
-                      setCurrentPage(1);
-                    }}
-                  />
-                </label>
                 <label className="flex items-center justify-between">
                   <span>Include drafting leagues</span>
                   <input
@@ -1345,7 +1838,116 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </label>
                 </div>
 
-                {/* Manual league selection */}
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <div className="text-sm text-gray-400 mb-2">Trending players</div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="all"
+                        checked={trendingMode === "all"}
+                        onChange={() => setTrendingMode("all")}
+                      />
+                      All players
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="adds"
+                        checked={trendingMode === "adds"}
+                        onChange={() => setTrendingMode("adds")}
+                      />
+                      Only trending adds
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="trending-mode"
+                        value="drops"
+                        checked={trendingMode === "drops"}
+                        onChange={() => setTrendingMode("drops")}
+                      />
+                      Only trending drops
+                    </label>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Lookback</span>
+                    <select
+                      value={trendingHours}
+                      onChange={(e) => setTrendingHours(Number(e.target.value))}
+                      className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
+                      title="How far back to consider for trending adds/drops"
+                    >
+                      <option value={6}>6h</option>
+                      <option value={12}>12h</option>
+                      <option value={24}>24h</option>
+                      <option value={48}>48h</option>
+                      <option value={72}>72h</option>
+                      <option value={168}>7d</option>
+                    </select>
+                    <span className="text-xs text-gray-500">Sleeper top 50 per window</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm text-gray-400">Ballsville ADP modes</div>
+                    {ballsvilleModesLoading ? <span className="text-[11px] text-gray-500">Loading…</span> : null}
+                  </div>
+                  <div className="mt-2 text-[11px] text-gray-500">
+                    Redraft combines all selected Ballsville redraft / keeper / best ball mode JSONs. Dynasty uses selected startup JSONs.
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3">
+                    <div>
+                      <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500">
+                        <span>Ballsville Redraft Pool</span>
+                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("redraft", true)}>All</button>
+                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("redraft", false)}>None</button>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                        {ballsvilleRedraftModes.map((mode) => (
+                          <label key={`bs-redraft-${mode.modeSlug}`} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-800/60 border border-white/10">
+                            <input
+                              type="checkbox"
+                              checked={selectedBallsvilleRedraftModes.has(mode.modeSlug)}
+                              onChange={() => toggleBallsvilleMode("redraft", mode.modeSlug)}
+                            />
+                            <span className="truncate">{mode.title}</span>
+                          </label>
+                        ))}
+                        {!ballsvilleRedraftModes.length ? <div className="text-xs text-gray-500">No redraft Ballsville modes found.</div> : null}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500">
+                        <span>Ballsville Dynasty Startup Pool</span>
+                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", true)}>All</button>
+                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", false)}>None</button>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                        {ballsvilleDynastyModes.map((mode) => (
+                          <label key={`bs-dynasty-${mode.modeSlug}`} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-800/60 border border-white/10">
+                            <input
+                              type="checkbox"
+                              checked={selectedBallsvilleDynastyModes.has(mode.modeSlug)}
+                              onChange={() => toggleBallsvilleMode("dynasty", mode.modeSlug)}
+                            />
+                            <span className="truncate">{mode.title}</span>
+                            {mode.startupLike ? <span className="ml-auto text-[10px] text-gray-500">startup</span> : null}
+                          </label>
+                        ))}
+                        {!ballsvilleDynastyModes.length ? <div className="text-xs text-gray-500">No dynasty Ballsville modes found.</div> : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-4 border-t border-white/10 pt-3">
                   <label className="flex items-center justify-between">
                     <span className="text-sm">Manually select leagues</span>
@@ -1410,10 +2012,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                 <span className="truncate">{lg.name}</span>
                                 <span className="ml-auto text-[10px] text-gray-400">
                                   <LeagueFormatBadge
-                        format={lg.format}
-                        compact
-                        title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
-                      />
+                                    format={lg.format}
+                                    compact
+                                    title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
+                                  />
                                   {lg.hasRoster ? " • roster" : ""}
                                 </span>
                               </label>
@@ -1422,7 +2024,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       </div>
 
                       <div className="mt-2 text-xs text-gray-500">
-                        Selection stacks on top of Best Ball / Drafting / Format filters.
+                        Selection stacks on top of Drafting / Format filters.
                       </div>
                     </>
                   )}
@@ -1462,7 +2064,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>
       )}
 
-      {/* Scan leagues modal */}
       {showLeaguesModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
@@ -1527,7 +2128,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>
       )}
 
-      {/* Visible leagues modal */}
       {showVisibleLeaguesModal && (
         <div
           className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
@@ -1586,7 +2186,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>
       )}
 
-      {/* Player detail modal */}
       {openPid &&
         (() => {
           const openRow = projectedRows.find((r) => r.player_id === openPid) || null;
@@ -1631,7 +2230,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">Leagues Rostered (visible)</div>
                     <div className="text-2xl font-bold">{visibleLeaguesForRow.length}</div>
@@ -1639,7 +2238,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">Avg Draft Position</div>
                     <div className="text-2xl font-bold">{avgDraftLabel}</div>
-                    <div className="text-[11px] text-gray-500 mt-1">{openRow.draftedCount || 0} drafted league{openRow.draftedCount === 1 ? "" : "s"}</div>
+                    <div className="text-[11px] text-gray-500 mt-1">
+                      {openRow.draftedCount || 0} drafted league{openRow.draftedCount === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className="bg-gray-800/60 rounded p-3">
+                    <div className="text-xs text-gray-400">Ballsville Redraft</div>
+                    <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleRedraftAdp, 12)}</div>
+                  </div>
+                  <div className="bg-gray-800/60 rounded p-3">
+                    <div className="text-xs text-gray-400">Ballsville Dynasty</div>
+                    <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}</div>
                   </div>
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">{valueOrProjLabel}</div>
@@ -1658,7 +2267,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             lg.isStarter ? "ring-1 ring-blue-500" : ""
                           }`}
                           title={lg.name}
->
+                        >
                           <img
                             src={leagueAvatarUrl(lg.avatar)}
                             alt=""
