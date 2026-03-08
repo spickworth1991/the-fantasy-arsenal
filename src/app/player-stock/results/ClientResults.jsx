@@ -95,7 +95,7 @@ const isAdpEligibleDraftInfo = (draftInfo, currentSeason) => {
   if (!season || season !== String(currentSeason || "").trim()) return false;
 
   const rounds = safeNum(draftInfo?.rounds);
-  if (rounds > 0 && rounds < 7) return false;
+  if (rounds > 0 && rounds < 10) return false;
 
   return true;
 };

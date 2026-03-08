@@ -118,6 +118,58 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "You're drafting now",
     "You're officially up",
   ];
+
+  function buildOnClockSummary(onClockSnapshot, maxLines = 8) {
+    const list = Array.isArray(onClockSnapshot) ? onClockSnapshot.slice() : [];
+    if (!list.length) return "";
+
+    list.sort((a, b) => {
+      const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
+      const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
+      return ar - br;
+    });
+
+    const lines = list.slice(0, maxLines).map((x) => {
+      const lbl = stageLabel(x.stage || "onclock");
+      const showTime = x.stage !== "paused" && x.stage !== "unpaused" && Number.isFinite(x.remainingMs);
+      const t = showTime ? ` — ${msToClock(x.remainingMs)}` : "";
+      return `• ${x.leagueName} — ${lbl}${t}`;
+    });
+
+    const more = list.length > maxLines ? `\n+${list.length - maxLines} more` : "";
+    return `On clock now:\n${lines.join("\n")}${more}`;
+  }
+
+  function getReachedStageFlags(totalMs, remainingMs) {
+    const safeTotal = Number(totalMs || 0);
+    const safeRemaining = Math.max(0, Number(remainingMs || 0));
+    const usedFrac = safeTotal > 0 ? 1 - safeRemaining / safeTotal : 0;
+
+    const canTen = safeTotal > 600000;
+    const tenEligible = canTen && safeRemaining <= 600000 && safeRemaining < safeTotal - 30000;
+
+    const canFive = safeTotal > 300000;
+    const fiveEligible = canFive && safeRemaining <= 300000 && safeRemaining < safeTotal - 30000;
+
+    const quarterLeftEligible =
+      safeTotal > 0 &&
+      safeRemaining <= Math.floor(safeTotal * 0.25) &&
+      safeRemaining > 600000;
+
+    const finalThresholdMs = clamp(Math.floor(safeTotal * 0.1), 15000, 60000);
+    const finalEligible = safeRemaining <= finalThresholdMs;
+    const urgentEligible = safeRemaining <= 120000;
+
+    return {
+      sent_onclock: 1,
+      sent_50: usedFrac >= 0.5 ? 1 : 0,
+      sent_25: quarterLeftEligible ? 1 : 0,
+      sent_10min: tenEligible ? 1 : 0,
+      sent_5min: fiveEligible ? 1 : 0,
+      sent_urgent: urgentEligible ? 1 : 0,
+      sent_final: finalEligible ? 1 : 0,
+    };
+  }
   const ONCLOCK_BODIES = [
     `You're on the clock in "${leagueName}". Time left: ${timeLeftText}.`,
     `It's your pick in "${leagueName}". ${timeLeftText} remaining.`,
@@ -132,6 +184,8 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     `Your turn in "${leagueName}". Make it count — ${timeLeftText} left.`,
     `You're on the clock in "${leagueName}" — ${timeLeftText} left.`,
   ];
+
+  
 
   const P50_TITLES = [
     "Half your clock is gone",
@@ -302,12 +356,12 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "Draft resumed — you're on the clock",
   ];
   const UNPAUSED_BODIES = [
-    `"${leagueName}" resumed — it's still your pick.`,
-    `Unpaused in "${leagueName}" — you're still up.`,
-    `We're back. "${leagueName}" resumed and it's your pick.`,
-    `"${leagueName}" unpaused — you're the current pick.`,
-    `"${leagueName}" is live again — still your turn.`,
-    `Draft resumed in "${leagueName}" — you’re still the pick.`,
+    `"${leagueName}" resumed — it's still your pick. ${timeLeftText} left.`,
+    `Unpaused in "${leagueName}" — you're still up. ${timeLeftText} remaining.`,
+    `We're back. "${leagueName}" resumed and it's your pick. ${timeLeftText} left.`,
+    `"${leagueName}" unpaused — you're the current pick. Clock: ${timeLeftText}.`,
+    `"${leagueName}" is live again — still your turn. ${timeLeftText} left.`,
+    `Draft resumed in "${leagueName}" — you’re still the pick. ${timeLeftText} remaining.`,
   ];
 
   if (stage === "onclock") return { title: pickRandom(ONCLOCK_TITLES), body: pickRandom(ONCLOCK_BODIES) };
@@ -718,6 +772,7 @@ async function handler(req) {
       const clockStateMap = await loadClockStatesForEndpoint(db, s.endpoint, activeDraftIdsForSub);
 
       const events = [];
+      const onClockSnapshot = [];
       const stateStatements = [];
       const clearStatements = [];
       const deleteSubStatements = [];
@@ -807,6 +862,12 @@ async function handler(req) {
             remainingMs = frozenPausedRemaining;
           }
         }
+        onClockSnapshot.push({
+          draftId: String(draftId),
+          leagueName: String(reg?.league_name || "your league"),
+          stage: status === "paused" ? "paused" : "onclock",
+          remainingMs: Number.isFinite(remainingMs) ? remainingMs : 0,
+        });
 
         const baseFlags = makeBaseFlags(clockState, nextPickNo, status, isNewPick);
 
@@ -895,7 +956,19 @@ async function handler(req) {
         if (stageToSend === "urgent") nextFlags.sent_urgent = 1;
         if (stageToSend === "final") nextFlags.sent_final = 1;
         if (stageToSend === "paused") nextFlags.sent_paused = 1;
-        if (stageToSend === "unpaused") nextFlags.sent_unpaused = 1;
+
+        if (stageToSend === "unpaused") {
+          nextFlags.sent_unpaused = 1;
+
+          const reached = getReachedStageFlags(totalMs, remainingMs);
+          nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reached.sent_onclock);
+          nextFlags.sent_50 = Math.max(nextFlags.sent_50, reached.sent_50);
+          nextFlags.sent_25 = Math.max(nextFlags.sent_25, reached.sent_25);
+          nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reached.sent_10min);
+          nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reached.sent_5min);
+          nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reached.sent_urgent);
+          nextFlags.sent_final = Math.max(nextFlags.sent_final, reached.sent_final);
+        }
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
@@ -928,11 +1001,15 @@ async function handler(req) {
         continue;
       }
 
+      const onClockSummary = buildOnClockSummary(onClockSnapshot);
+
       const sendIndividual = async (ev) => {
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
+        const bodyWithSummary = onClockSummary ? `${ev.body}\n\n${onClockSummary}` : ev.body;
+
         const pushRes = await sendPayload(s, {
           title: ev.title,
-          body: ev.body,
+          body: bodyWithSummary,
           url: "/draft-pick-tracker",
           tag: `draft:${ev.draftId}`,
           renotify: true,
@@ -1014,7 +1091,10 @@ async function handler(req) {
 
       const pushRes = await sendPayload(s, {
         title,
-        body: `${lines}${more}`,
+        body: [
+          `Triggered now:\n${lines}${more}`,
+          onClockSummary,
+        ].filter(Boolean).join("\n\n"),
         url: "/draft-pick-tracker",
         tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
         renotify: true,
