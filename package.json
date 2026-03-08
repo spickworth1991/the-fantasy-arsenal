@@ -6,7 +6,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,7 +18,7 @@
     "git": "git add . && git commit -m \"PlayerStock&WaiverFix\" && git push origin main",
     "stick": "node ./sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
-    "gip": "git add . && git commit -m \"clean\" && git push origin preview"
+    "gip": "git add . && git commit -m \"ADPPlayerstock\" && git push origin preview"
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

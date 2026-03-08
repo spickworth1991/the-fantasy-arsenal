@@ -13,6 +13,8 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import SourceSelector from "../../../components/SourceSelector";
 import { useSleeper } from "../../../context/SleeperContext";
 import AvatarImage from "../../../components/AvatarImage";
+import LeagueFormatBadge from "../../../components/LeagueFormatBadge";
+import { classifyLeagueFormat } from "../../../lib/leagueFormat";
 
 const safeNum = (v) => {
   if (v == null) return 0;
@@ -28,6 +30,62 @@ const safeNum = (v) => {
   return Number.isFinite(x) ? x : 0;
 };
 
+const formatDraftSlot = (pickNo, teams) => {
+  const pick = safeNum(pickNo);
+  const totalTeams = Math.max(0, Math.floor(safeNum(teams)));
+  if (!pick) return "—";
+  if (!totalTeams) return String(pick);
+
+  const round = Math.floor((pick - 1) / totalTeams) + 1;
+  const slot = ((pick - 1) % totalTeams) + 1;
+  return `${round}.${String(slot).padStart(2, "0")}`;
+};
+
+const formatAverageDraftPosition = (avgPickNo, avgTeams) => {
+  const pick = safeNum(avgPickNo);
+  if (!pick) return "—";
+
+  const rounded = pick >= 100 ? pick.toFixed(0) : pick.toFixed(1);
+  const slot = formatDraftSlot(Math.round(pick), avgTeams);
+  return slot !== "—" ? `${slot} (${rounded})` : rounded;
+};
+
+const buildDraftInfo = (pick, draftMeta = {}) => {
+  const pickNo = safeNum(pick?.pick_no);
+  const teams = Math.max(
+    0,
+    Math.floor(
+      safeNum(
+        draftMeta?.teams ??
+          draftMeta?.settings?.teams ??
+          draftMeta?.total_rosters
+      )
+    )
+  );
+
+  return {
+    draftId: pick?.draft_id ? String(pick.draft_id) : draftMeta?.draft_id ? String(draftMeta.draft_id) : "",
+    pickNo,
+    draftSlot: formatDraftSlot(pickNo, teams),
+    round: teams && pickNo ? Math.floor((pickNo - 1) / teams) + 1 : 0,
+    slot: teams && pickNo ? ((pickNo - 1) % teams) + 1 : 0,
+    teams,
+    season: String(draftMeta?.season || ""),
+    draftType: String(draftMeta?.type || ""),
+    label: pickNo ? `${formatDraftSlot(pickNo, teams)}${teams ? ` (pick ${pickNo})` : ""}` : "—",
+  };
+};
+
+const compareDraftPosition = (a, b, dir = 1) => {
+  const av = safeNum(a);
+  const bv = safeNum(b);
+  const aMissing = !av;
+  const bMissing = !bv;
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  return (av - bv) * dir;
+};
 // League avatar helpers
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const leagueAvatarUrl = (avatarId) =>
@@ -96,7 +154,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [showFiltersModal, setShowFiltersModal] = useState(false);
 
   // Sorting
-  const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | value | proj
+  const [sortKey, setSortKey] = useState("count"); // name | team | pos | count | adp | value | proj
   const [sortDir, setSortDir] = useState("desc"); // asc | desc
 
   // Pagination
@@ -125,6 +183,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [onlyBestBall, setOnlyBestBall] = useState(false);
   const [excludeBestBall, setExcludeBestBall] = useState(false);
   const [includeDrafting, setIncludeDrafting] = useState(true);
+  const [showRedraft, setShowRedraft] = useState(true);
+  const [showKeeper, setShowKeeper] = useState(true);
+  const [showDynasty, setShowDynasty] = useState(true);
+  const [showBestBallFormat, setShowBestBallFormat] = useState(true);
 
   // Manual league selection
   const [manualLeagueSelect, setManualLeagueSelect] = useState(false);
@@ -232,6 +294,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     return s.includes("drafting") || s === "drafting";
   };
 
+
   // One-time scan (always all leagues; filters are display-side)
   useEffect(() => {
     if (!username) return;
@@ -317,10 +380,71 @@ export default function ClientResults({ initialSearchParams = {} }) {
           }
         };
 
+        const draftListCache = new Map();
+        const draftPicksCache = new Map();
+
+        const getDraftsForLeague = async (leagueId, fallbackDraftId = null) => {
+          const key = String(leagueId);
+          if (draftListCache.has(key)) return draftListCache.get(key);
+
+          let drafts = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
+          drafts = Array.isArray(drafts) ? drafts : [];
+
+          if (fallbackDraftId && !drafts.some((d) => String(d?.draft_id || "") === String(fallbackDraftId))) {
+            const single = await fetchJson(`https://api.sleeper.app/v1/draft/${fallbackDraftId}`);
+            if (single?.draft_id) drafts.unshift(single);
+          }
+
+          draftListCache.set(key, drafts);
+          return drafts;
+        };
+
+        const getPicksForDraft = async (draftId) => {
+          const key = String(draftId || "");
+          if (!key) return [];
+          if (draftPicksCache.has(key)) return draftPicksCache.get(key);
+
+          const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}/picks`);
+          const arr = Array.isArray(picks) ? picks : [];
+          draftPicksCache.set(key, arr);
+          return arr;
+        };
+
+        const getMyDraftInfoForLeaguePlayers = async (
+          leagueId,
+          userId,
+          playerIds,
+          fallbackDraftId = null,
+          includeAllDrafts = false
+        ) => {
+          const wanted = new Set((Array.isArray(playerIds) ? playerIds : []).map(String).filter(Boolean));
+          const out = {};
+          if (wanted.size === 0) return out;
+
+          const drafts = await getDraftsForLeague(leagueId, fallbackDraftId);
+          const draftPool = includeAllDrafts ? drafts : (Array.isArray(drafts) && drafts.length > 0 ? [drafts[0]] : []);
+
+          for (const draft of draftPool) {
+            if (wanted.size === Object.keys(out).length) break;
+
+            const picks = await getPicksForDraft(draft?.draft_id);
+            if (!Array.isArray(picks) || picks.length === 0) continue;
+
+            for (const pick of picks) {
+              const pid = pick?.player_id != null ? String(pick.player_id) : "";
+              if (!pid || !wanted.has(pid) || out[pid]) continue;
+              if (String(pick?.picked_by || "") !== String(userId)) continue;
+              out[pid] = buildDraftInfo(pick, draft);
+            }
+          }
+
+          return out;
+        };
+
         // prefer league.draft_id; otherwise fetch most recent draft for league (ONLY when drafting)
         const getMostRecentDraftIdForLeague = async (leagueId, fallbackDraftId) => {
           if (fallbackDraftId) return String(fallbackDraftId);
-          const drafts = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
+          const drafts = await getDraftsForLeague(leagueId, null);
           if (Array.isArray(drafts) && drafts.length > 0)
             return drafts[0]?.draft_id ? String(drafts[0].draft_id) : null;
           return null;
@@ -328,20 +452,25 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
         const getMyDraftPickedPlayerIds = async (leagueId, userId, fallbackDraftId) => {
           const draftId = await getMostRecentDraftIdForLeague(leagueId, fallbackDraftId);
-          if (!draftId) return [];
+          if (!draftId) return { playerIds: [], draftInfoByPid: {} };
 
-          const picks = await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}/picks`);
-          if (!Array.isArray(picks) || picks.length === 0) return [];
+          const draftMeta = (await fetchJson(`https://api.sleeper.app/v1/draft/${draftId}`)) || { draft_id: draftId };
+          const picks = await getPicksForDraft(draftId);
+          if (!Array.isArray(picks) || picks.length === 0) return { playerIds: [], draftInfoByPid: {} };
 
           const mine = [];
+          const draftInfoByPid = {};
           for (const p of picks) {
             const pickedByMe = p?.picked_by != null && String(p.picked_by) === String(userId);
             if (pickedByMe) {
               const pid = p?.player_id != null ? String(p.player_id) : "";
-              if (pid) mine.push(pid);
+              if (pid) {
+                mine.push(pid);
+                if (!draftInfoByPid[pid]) draftInfoByPid[pid] = buildDraftInfo(p, draftMeta);
+              }
             }
           }
-          return mine;
+          return { playerIds: mine, draftInfoByPid };
         };
 
         for (let i = 0; i < leagues.length; i++) {
@@ -353,23 +482,37 @@ export default function ClientResults({ initialSearchParams = {} }) {
           if (cancel) return;
 
           const draftingNow = isActivelyDrafting(lg.status);
+          const leagueDrafts = await getDraftsForLeague(lg.league_id, lg.draft_id || null);
+          const leagueFormat = classifyLeagueFormat(lg, leagueDrafts);
+          const leagueInfo = {
+            id: lg.league_id,
+            name: lg.name,
+            avatar: lg.avatar || null,
+            roster_positions: lg.roster_positions || [],
+            status: lg.status || "",
+            isBestBall: lg?.settings?.best_ball === 1,
+            format: leagueFormat,
+            hasRoster: false,
+          };
 
           let rosterPlayers = [];
           let startersSet = new Set();
           let draftPlayers = [];
+          let draftInfoByPid = {};
 
           if (draftingNow) {
-            // ✅ Draft picks ONLY when actively drafting
-            draftPlayers = await getMyDraftPickedPlayerIds(
+            // Draft picks ONLY when actively drafting
+            const draftResult = await getMyDraftPickedPlayerIds(
               lg.league_id,
               userId,
               lg.draft_id || null
             );
+            draftPlayers = draftResult.playerIds || [];
+            draftInfoByPid = draftResult.draftInfoByPid || {};
 
             if (draftPlayers.length === 0) continue; // not your draft / no picks yet
-
           } else {
-            // ✅ Rosters ONLY when NOT actively drafting
+            // Rosters ONLY when NOT actively drafting
             const rosters = await fetchJson(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
 
             const mineRoster = Array.isArray(rosters)
@@ -378,39 +521,51 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
             rosterPlayers = Array.isArray(mineRoster?.players) ? mineRoster.players.map(String) : [];
             startersSet = new Set(Array.isArray(mineRoster?.starters) ? mineRoster.starters.map(String) : []);
+            leagueInfo.hasRoster = rosterPlayers.length > 0;
 
-            if (rosterPlayers.length === 0) continue; // ignore empty/non-owned leagues
+            // Keeper leagues should not count carried-over rosters as exposure before the draft happens.
+            if (leagueFormat.key === "keeper" && isDraftLike(lg.status)) {
+              rosterPlayers = [];
+              startersSet = new Set();
+            }
+
+            if (rosterPlayers.length > 0) {
+              draftInfoByPid = await getMyDraftInfoForLeaguePlayers(
+                lg.league_id,
+                userId,
+                rosterPlayers,
+                lg.draft_id || null,
+                leagueFormat.key === "dynasty"
+              );
+            }
           }
 
-          const leagueInfo = {
-            id: lg.league_id,
-            name: lg.name,
-            avatar: lg.avatar || null,
-            roster_positions: lg.roster_positions || [],
-            status: lg.status || "",
-            isBestBall: lg?.settings?.best_ball === 1,
-
-            // ✅ used by "Include drafting leagues" filter:
-            // treat roster leagues as true; drafting-only leagues as false
-            hasRoster: rosterPlayers.length > 0,
-          };
+          const mergedPids = new Set([...rosterPlayers, ...draftPlayers]);
+          if (mergedPids.size === 0) continue;
 
           includedLeagues.push(leagueInfo);
-
-          const mergedPids = new Set([...rosterPlayers, ...draftPlayers]);
 
           for (const pid of mergedPids) {
             playerCounts[pid] = (playerCounts[pid] || 0) + 1;
 
             if (!playerLeagues[pid]) playerLeagues[pid] = [];
+            const draftInfo = draftInfoByPid[pid] || null;
             playerLeagues[pid].push({
               id: leagueInfo.id,
               name: leagueInfo.name,
               avatar: leagueInfo.avatar,
               status: leagueInfo.status,
               isBestBall: leagueInfo.isBestBall,
+              format: leagueInfo.format,
               hasRoster: leagueInfo.hasRoster,
-              isStarter: startersSet.has(pid), // drafting leagues => false for all
+              isStarter: startersSet.has(pid),
+              draftLabel: draftInfo?.label || "—",
+              draftPickNo: draftInfo?.pickNo || 0,
+              draftSlot: draftInfo?.draftSlot || "",
+              draftRound: draftInfo?.round || 0,
+              draftTeams: draftInfo?.teams || 0,
+              draftSeason: draftInfo?.season || "",
+              draftedByManager: !!draftInfo,
             });
           }
 
@@ -441,13 +596,27 @@ export default function ClientResults({ initialSearchParams = {} }) {
               (team && team.length <= 4 ? team : "") ||
               String(pid);
 
+            const leaguesForPlayer = playerLeagues[pid] || [];
+            const draftedEntries = leaguesForPlayer.filter((lg) => safeNum(lg?.draftPickNo) > 0);
+            const avgDraftPickNo = draftedEntries.length
+              ? draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftPickNo), 0) / draftedEntries.length
+              : 0;
+            const avgDraftTeams = draftedEntries.length
+              ? Math.round(
+                  draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftTeams), 0) / draftedEntries.length
+                )
+              : 0;
+
             return {
               player_id: String(pid),
               name,
               team,
               position: pos,
               count,
-              leagues: playerLeagues[pid] || [],
+              leagues: leaguesForPlayer,
+              draftedCount: draftedEntries.length,
+              avgDraftPickNo,
+              avgDraftTeams,
             };
           })
           .sort((a, b) => b.count - a.count);
@@ -497,8 +666,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
     if (!scanLeagues || scanLeagues.length === 0) return new Set();
     const arr = scanLeagues
       .filter((lg) => {
+        const formatKey = String(lg?.format?.key || "redraft").toLowerCase();
+
         if (onlyBestBall && !lg.isBestBall) return false;
         if (excludeBestBall && lg.isBestBall) return false;
+
+        if (formatKey === "bestball" && !showBestBallFormat) return false;
+        if (formatKey === "dynasty" && !showDynasty) return false;
+        if (formatKey === "keeper" && !showKeeper) return false;
+        if (formatKey === "redraft" && !showRedraft) return false;
 
         // If "Include drafting" is OFF, hide draft-like leagues ONLY when they do NOT have rosters.
         // (Drafting-only leagues have hasRoster=false; offseason dynasty leagues with rosters stay visible.)
@@ -508,7 +684,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
       })
       .map((lg) => String(lg.id));
     return new Set(arr);
-  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting]);
+  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting, showRedraft, showKeeper, showDynasty, showBestBallFormat]);
 
   // Apply manual league selection (if enabled) ON TOP of visible filters
   const activeLeagueIds = useMemo(() => {
@@ -530,7 +706,23 @@ export default function ClientResults({ initialSearchParams = {} }) {
         const leagues = (row.leagues || []).filter((lg) =>
           activeLeagueIds.has(String(lg.id))
         );
-        return { ...row, leagues, count: leagues.length };
+        const draftedEntries = leagues.filter((lg) => safeNum(lg?.draftPickNo) > 0);
+        const avgDraftPickNo = draftedEntries.length
+          ? draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftPickNo), 0) / draftedEntries.length
+          : 0;
+        const avgDraftTeams = draftedEntries.length
+          ? Math.round(
+              draftedEntries.reduce((sum, lg) => sum + safeNum(lg.draftTeams), 0) / draftedEntries.length
+            )
+          : 0;
+        return {
+          ...row,
+          leagues,
+          count: leagues.length,
+          draftedCount: draftedEntries.length,
+          avgDraftPickNo,
+          avgDraftTeams,
+        };
       })
       .filter((r) => r.count > 0);
   }, [enriched, activeLeagueIds]);
@@ -592,6 +784,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
         if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
         if (sortKey === "value" || sortKey === "proj") return (getMetricVal(a) - getMetricVal(b)) * dir;
+        if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
         return ((a.count || 0) - (b.count || 0)) * dir;
       });
     }
@@ -605,6 +798,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         const bv = isProj ? (b._projAvg || 0) : (b._value || 0);
         return (av - bv) * dir;
       }
+      if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
   }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, isProj]);
@@ -618,6 +812,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setOnlyBestBall(false);
     setExcludeBestBall(false);
     setIncludeDrafting(true);
+    setShowRedraft(true);
+    setShowKeeper(true);
+    setShowDynasty(true);
+    setShowBestBallFormat(true);
     setHighlightStarters(false);
     setQuery("");
     setMaxExposurePct(initialExposureRef.current ?? 25);
@@ -775,6 +973,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("count")}>
                         Leagues <span className="ml-1 inline-block">{sortIndicator("count")}</span>
                       </th>
+                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("adp")}>
+                        ADP <span className="ml-1 inline-block">{sortIndicator("adp")}</span>
+                      </th>
                       <th
                         className="text-right px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort(valueOrProjSortKey)}
@@ -794,6 +995,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       const dropCount = trendingDropMap.get(r.player_id);
 
                       const metricVal = isProj ? (r._projAvg || 0) : (r._value || 0);
+                      const avgDraftLabel = formatAverageDraftPosition(r.avgDraftPickNo, r.avgDraftTeams);
 
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
@@ -854,6 +1056,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           </td>
 
                           <td className="px-4 py-2 text-right">{r.count}</td>
+                          <td className="px-4 py-2 text-right">{avgDraftLabel}</td>
                           <td className="px-4 py-2 text-right">{Math.round(metricVal)}</td>
 
                           <td className="px-4 py-2 hidden md:table-cell">
@@ -1094,6 +1297,53 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     }}
                   />
                 </label>
+                <div className="pt-2 border-t border-white/10">
+                  <div className="mb-2 text-xs uppercase tracking-wide text-gray-500">Formats</div>
+                  <label className="flex items-center justify-between">
+                    <span>Redraft</span>
+                    <input
+                      type="checkbox"
+                      checked={showRedraft}
+                      onChange={() => {
+                        setShowRedraft((v) => !v);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <span>Keeper</span>
+                    <input
+                      type="checkbox"
+                      checked={showKeeper}
+                      onChange={() => {
+                        setShowKeeper((v) => !v);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <span>Dynasty</span>
+                    <input
+                      type="checkbox"
+                      checked={showDynasty}
+                      onChange={() => {
+                        setShowDynasty((v) => !v);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <span>Best Ball</span>
+                    <input
+                      type="checkbox"
+                      checked={showBestBallFormat}
+                      onChange={() => {
+                        setShowBestBallFormat((v) => !v);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </label>
+                </div>
 
                 {/* Manual league selection */}
                 <div className="mt-4 border-t border-white/10 pt-3">
@@ -1159,7 +1409,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                 />
                                 <span className="truncate">{lg.name}</span>
                                 <span className="ml-auto text-[10px] text-gray-400">
-                                  {lg.isBestBall ? "BB" : "STD"}
+                                  <LeagueFormatBadge
+                        format={lg.format}
+                        compact
+                        title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
+                      />
                                   {lg.hasRoster ? " • roster" : ""}
                                 </span>
                               </label>
@@ -1168,7 +1422,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       </div>
 
                       <div className="mt-2 text-xs text-gray-500">
-                        Selection stacks on top of Best Ball / Drafting filters.
+                        Selection stacks on top of Best Ball / Drafting / Format filters.
                       </div>
                     </>
                   )}
@@ -1257,10 +1511,14 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       }}
                     />
                     <span className="truncate">{lg.name}</span>
-                    <span className="ml-auto text-[10px] text-gray-400">
-                      {lg.isBestBall ? "BB" : "STD"}
-                      {lg.hasRoster ? " • roster" : ""}
-                      {lg.status ? ` • ${lg.status}` : ""}
+                    <span className="ml-auto flex items-center gap-1 text-[10px] text-gray-400">
+                      <LeagueFormatBadge
+                        format={lg.format}
+                        compact
+                        title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
+                      />
+                      {lg.hasRoster ? <span>• roster</span> : null}
+                      {lg.status ? <span>• {lg.status}</span> : null}
                     </span>
                   </div>
                 ))}
@@ -1309,10 +1567,14 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       }}
                     />
                     <span className="truncate">{lg.name}</span>
-                    <span className="ml-auto text-[10px] text-gray-400">
-                      {lg.isBestBall ? "BB" : "STD"}
-                      {lg.hasRoster ? " • roster" : ""}
-                      {lg.status ? ` • ${lg.status}` : ""}
+                    <span className="ml-auto flex items-center gap-1 text-[10px] text-gray-400">
+                      <LeagueFormatBadge
+                        format={lg.format}
+                        compact
+                        title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
+                      />
+                      {lg.hasRoster ? <span>• roster</span> : null}
+                      {lg.status ? <span>• {lg.status}</span> : null}
                     </span>
                   </div>
                 ))}
@@ -1327,7 +1589,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
       {/* Player detail modal */}
       {openPid &&
         (() => {
-          const openRow = enriched.find((r) => r.player_id === openPid) || null;
+          const openRow = projectedRows.find((r) => r.player_id === openPid) || null;
           if (!openRow) return null;
 
           const visibleLeaguesForRow = (openRow.leagues || []).filter((lg) =>
@@ -1335,6 +1597,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
           );
 
           const metricVal = isProj ? Math.round(openRow._projAvg || 0) : Math.round(openRow._value || 0);
+          const avgDraftLabel = formatAverageDraftPosition(openRow.avgDraftPickNo, openRow.avgDraftTeams);
 
           return (
             <div
@@ -1368,10 +1631,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">Leagues Rostered (visible)</div>
                     <div className="text-2xl font-bold">{visibleLeaguesForRow.length}</div>
+                  </div>
+                  <div className="bg-gray-800/60 rounded p-3">
+                    <div className="text-xs text-gray-400">Avg Draft Position</div>
+                    <div className="text-2xl font-bold">{avgDraftLabel}</div>
+                    <div className="text-[11px] text-gray-500 mt-1">{openRow.draftedCount || 0} drafted league{openRow.draftedCount === 1 ? "" : "s"}</div>
                   </div>
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">{valueOrProjLabel}</div>
@@ -1390,16 +1658,27 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             lg.isStarter ? "ring-1 ring-blue-500" : ""
                           }`}
                           title={lg.name}
-                        >
+>
                           <img
                             src={leagueAvatarUrl(lg.avatar)}
                             alt=""
-                            className="w-5 h-5 rounded object-cover bg-gray-700"
+                            className="w-5 h-5 rounded object-cover bg-gray-700 self-start"
                             onError={(e) => {
                               e.currentTarget.src = DEFAULT_LEAGUE_IMG;
                             }}
                           />
-                          <span className="truncate">{lg.name}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate">{lg.name}</div>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
+                              <LeagueFormatBadge
+                                format={lg.format}
+                                compact
+                                title={lg.format?.reasons?.join(" • ") || lg.format?.label || "League format"}
+                              />
+                              <span>Drafted: {lg.draftedByManager ? lg.draftLabel : "Not drafted by this manager"}</span>
+                              {lg.draftSeason ? <span>• {lg.draftSeason}</span> : null}
+                            </div>
+                          </div>
                           {lg.isStarter ? <span className="ml-auto text-[10px] text-blue-300">• starter</span> : null}
                         </div>
                       ))}
