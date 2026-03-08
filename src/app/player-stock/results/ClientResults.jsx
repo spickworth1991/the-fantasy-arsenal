@@ -1257,6 +1257,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
   }, [manualLeagueSelect, selectedLeagueIds, visibleLeagueIds]);
 
   const visibleLeagueCount = activeLeagueIds.size || 0;
+  const showBallsvilleRedraftColumn = showRedraft || showKeeper || showBestBallFormat;
+  const showBallsvilleDynastyColumn = showDynasty;
+
 
   const projectedRows = useMemo(() => {
     if (!activeLeagueIds) return enriched;
@@ -1559,19 +1562,22 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <th className="text-right px-3 md:px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("adp")}>
                         ADP <span className="ml-1 inline-block">{sortIndicator("adp")}</span>
                       </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleRedraftAdp")}>
-                        BS Redraft <span className="ml-1 inline-block">{sortIndicator("ballsvilleRedraftAdp")}</span>
-                      </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
-                        BS Dynasty <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
-                      </th>
+                      {showBallsvilleRedraftColumn ? (
+                        <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleRedraftAdp")}>
+                          BS Redraft <span className="ml-1 inline-block">{sortIndicator("ballsvilleRedraftAdp")}</span>
+                        </th>
+                      ) : null}
+                      {showBallsvilleDynastyColumn ? (
+                        <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
+                          BS Dynasty <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
+                        </th>
+                      ) : null}
                       <th
                         className="text-right px-3 md:px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort(valueOrProjSortKey)}
                       >
                         {valueOrProjLabel} <span className="ml-1 inline-block">{sortIndicator(valueOrProjSortKey)}</span>
                       </th>
-                      <th className="text-left px-4 py-2 hidden md:table-cell">Teams</th>
                     </tr>
                   </thead>
 
@@ -1596,11 +1602,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       return (
                         <tr
                           key={r.player_id}
-                          className="border-b border-white/5 hover:bg-white/5"
+                          className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
                           title={titleBits.join(" • ")}
+                          onClick={() => setOpenPid(r.player_id)}
                         >
                           <td className="px-3 md:px-4 py-2 text-left">
-                            <button className="text-left w-full" onClick={() => setOpenPid(r.player_id)}>
+                            <div className="text-left w-full">
                               <div className="flex items-center gap-1">
                                 <AvatarImage
                                   name={r._name}
@@ -1643,36 +1650,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                 {r._pos || "—"} • {r._team || "FA"}
                                 {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
                               </div>
-                            </button>
+                            </div>
                           </td>
 
                           <td className="px-3 md:px-4 py-2 text-right">{r.count}</td>
                           <td className="px-3 md:px-4 py-2 text-right">{avgDraftLabel}</td>
-                          <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleRedraftLabel}</td>
-                          <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleDynastyLabel}</td>
+                          {showBallsvilleRedraftColumn ? (
+                            <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleRedraftLabel}</td>
+                          ) : null}
+                          {showBallsvilleDynastyColumn ? (
+                            <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleDynastyLabel}</td>
+                          ) : null}
                           <td className="px-3 md:px-4 py-2 text-right">{Math.round(metricVal)}</td>
-
-                          <td className="px-4 py-2 hidden md:table-cell">
-                            <div className="flex -space-x-2">
-                              {(r.leagues || []).slice(0, 7).map((lg) => (
-                                <img
-                                  key={lg.id}
-                                  src={leagueAvatarUrl(lg.avatar)}
-                                  alt=""
-                                  className={`w-6 h-6 rounded ring-1 ring-black object-cover ${
-                                    highlightStarters && lg.isStarter ? "ring-blue-500" : ""
-                                  }`}
-                                  onError={(e) => {
-                                    e.currentTarget.src = DEFAULT_LEAGUE_IMG;
-                                  }}
-                                  title={`${lg.name}${lg.isStarter ? " • starter" : ""}`}
-                                />
-                              ))}
-                              {(r.leagues || []).length > 7 ? (
-                                <span className="text-xs text-gray-400 pl-2">+{(r.leagues || []).length - 7}</span>
-                              ) : null}
-                            </div>
-                          </td>
                         </tr>
                       );
                     })}
@@ -2244,7 +2233,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className={`mt-4 grid grid-cols-1 ${showBallsvilleRedraftColumn && showBallsvilleDynastyColumn ? "md:grid-cols-5" : showBallsvilleRedraftColumn || showBallsvilleDynastyColumn ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">Leagues Rostered (visible)</div>
                     <div className="text-2xl font-bold">{visibleLeaguesForRow.length}</div>
@@ -2256,14 +2245,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       {openRow.draftedCount || 0} drafted league{openRow.draftedCount === 1 ? "" : "s"}
                     </div>
                   </div>
-                  <div className="bg-gray-800/60 rounded p-3">
-                    <div className="text-xs text-gray-400">Ballsville Redraft</div>
-                    <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleRedraftAdp, 12)}</div>
-                  </div>
-                  <div className="bg-gray-800/60 rounded p-3">
-                    <div className="text-xs text-gray-400">Ballsville Dynasty</div>
-                    <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}</div>
-                  </div>
+                  {showBallsvilleRedraftColumn ? (
+                    <div className="bg-gray-800/60 rounded p-3">
+                      <div className="text-xs text-gray-400">Ballsville Redraft</div>
+                      <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleRedraftAdp, 12)}</div>
+                    </div>
+                  ) : null}
+                  {showBallsvilleDynastyColumn ? (
+                    <div className="bg-gray-800/60 rounded p-3">
+                      <div className="text-xs text-gray-400">Ballsville Dynasty</div>
+                      <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}</div>
+                    </div>
+                  ) : null}
                   <div className="bg-gray-800/60 rounded p-3">
                     <div className="text-xs text-gray-400">{valueOrProjLabel}</div>
                     <div className="text-2xl font-bold">{metricVal}</div>

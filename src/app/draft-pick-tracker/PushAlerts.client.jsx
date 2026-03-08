@@ -141,7 +141,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds }) {
         <div>
           <div className="text-sm font-semibold">Pick Alerts</div>
           <div className="text-xs text-white/70">
-            Get notified when it’s your pick (or when your subscribed drafts advance).
+            Get notified when it’s your pick.
           </div>
         </div>
 
