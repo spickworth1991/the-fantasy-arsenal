@@ -159,9 +159,25 @@ const classifyBallsvilleMode = (row = {}) => {
   const slug = slugText(row?.modeSlug || row?.slug || row?.id || row?.name);
   const title = cleanText(row?.title || row?.name || "").toLowerCase();
   const subtitle = cleanText(row?.subtitle || row?.blurb || "").toLowerCase();
-  const hay = `${slug} ${title} ${subtitle}`;
-  const isDynasty = /\\bdynasty\\b/.test(hay);
-  const isStartup = /startup/.test(hay);
+  const explicitType = cleanText(row?.type || row?.bucket || row?.category || "").toLowerCase();
+  const hay = `${slug} ${title} ${subtitle} ${explicitType}`;
+
+  const dynastyStartupSlug =
+    slug === "dynasty-startup" ||
+    slug.startsWith("dynasty-startup-") ||
+    slug.includes("-dynasty-startup") ||
+    slug.includes("dynasty-startup");
+
+  const isDynasty =
+    dynastyStartupSlug ||
+    /\\bdynasty\\b/.test(hay) ||
+    slug.startsWith("dynasty-") ||
+    explicitType === "dynasty";
+
+  const isStartup =
+    dynastyStartupSlug ||
+    /startup/.test(hay);
+
   return {
     key: isDynasty ? "dynasty" : "redraft",
     startupLike: isDynasty && isStartup,
@@ -1534,23 +1550,23 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 <table className="min-w-full bg-gray-900">
                   <thead className="bg-gray-800/60">
                     <tr>
-                      <th className="text-left px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                      <th className="text-left px-3 md:px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("name")}>
                         Player <span className="ml-1 inline-block">{sortIndicator("name")}</span>
                       </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("count")}>
+                      <th className="text-right px-3 md:px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("count")}>
                         Leagues <span className="ml-1 inline-block">{sortIndicator("count")}</span>
                       </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("adp")}>
+                      <th className="text-right px-3 md:px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("adp")}>
                         ADP <span className="ml-1 inline-block">{sortIndicator("adp")}</span>
                       </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("ballsvilleRedraftAdp")}>
+                      <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleRedraftAdp")}>
                         BS Redraft <span className="ml-1 inline-block">{sortIndicator("ballsvilleRedraftAdp")}</span>
                       </th>
-                      <th className="text-right px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
+                      <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
                         BS Dynasty <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
                       </th>
                       <th
-                        className="text-right px-4 py-2 cursor-pointer select-none"
+                        className="text-right px-3 md:px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort(valueOrProjSortKey)}
                       >
                         {valueOrProjLabel} <span className="ml-1 inline-block">{sortIndicator(valueOrProjSortKey)}</span>
@@ -1583,7 +1599,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           className="border-b border-white/5 hover:bg-white/5"
                           title={titleBits.join(" • ")}
                         >
-                          <td className="px-4 py-2 text-left">
+                          <td className="px-3 md:px-4 py-2 text-left">
                             <button className="text-left w-full" onClick={() => setOpenPid(r.player_id)}>
                               <div className="flex items-center gap-1">
                                 <AvatarImage
@@ -1630,11 +1646,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             </button>
                           </td>
 
-                          <td className="px-4 py-2 text-right">{r.count}</td>
-                          <td className="px-4 py-2 text-right">{avgDraftLabel}</td>
-                          <td className="px-4 py-2 text-right">{ballsvilleRedraftLabel}</td>
-                          <td className="px-4 py-2 text-right">{ballsvilleDynastyLabel}</td>
-                          <td className="px-4 py-2 text-right">{Math.round(metricVal)}</td>
+                          <td className="px-3 md:px-4 py-2 text-right">{r.count}</td>
+                          <td className="px-3 md:px-4 py-2 text-right">{avgDraftLabel}</td>
+                          <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleRedraftLabel}</td>
+                          <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleDynastyLabel}</td>
+                          <td className="px-3 md:px-4 py-2 text-right">{Math.round(metricVal)}</td>
 
                           <td className="px-4 py-2 hidden md:table-cell">
                             <div className="flex -space-x-2">
