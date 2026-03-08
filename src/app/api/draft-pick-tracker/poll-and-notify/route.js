@@ -61,15 +61,9 @@ function msToClock(ms) {
   return `${mm}:${pad(ss)}`;
 }
 
-function hash32(str) {
-  str = String(str ?? "");
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
-  return h >>> 0;
-}
-function pickVariant(list, seed) {
+function pickRandom(list) {
   if (!Array.isArray(list) || list.length === 0) return "";
-  const idx = hash32(seed) % list.length;
+  const idx = Math.floor(Math.random() * list.length);
   return list[idx];
 }
 
@@ -84,12 +78,14 @@ function stageLabel(stage) {
   switch (stage) {
     case "onclock":
       return "ON CLOCK";
-    case "p25":
-      return "25% used";
     case "p50":
-      return "50% used";
+      return "50% left";
+    case "p25":
+      return "25% left";
     case "ten":
       return "10 min left";
+    case "five":
+      return "5 min left";
     case "urgent":
       return "URGENT (<2 min)";
     case "final":
@@ -103,9 +99,7 @@ function stageLabel(stage) {
   }
 }
 
-function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
-  const baseSeed = `${stage}|${leagueName}|${timerSec}`;
-
+function buildMessage({ stage, leagueName, timeLeftText }) {
   const ONCLOCK_TITLES = [
     "You're on the clock",
     "Your pick is up",
@@ -122,6 +116,7 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     "Make the pick",
     "Draft ping",
     "You're drafting now",
+    "You're officially up",
   ];
   const ONCLOCK_BODIES = [
     `You're on the clock in "${leagueName}". Time left: ${timeLeftText}.`,
@@ -136,33 +131,6 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `Clock started for you in "${leagueName}". ${timeLeftText} remaining.`,
     `Your turn in "${leagueName}". Make it count — ${timeLeftText} left.`,
     `You're on the clock in "${leagueName}" — ${timeLeftText} left.`,
-  ];
-
-  const P25_TITLES = [
-    "Clock check: 25% used",
-    "Quick reminder",
-    "Don't forget your pick",
-    "Gentle nudge",
-    "Timer check-in",
-    "Clock update",
-    "Draft reminder",
-    "Still your pick",
-    "Clock is moving",
-    "Just checking in",
-    "Draft: small nudge",
-    "Pick reminder",
-  ];
-  const P25_BODIES = [
-    `You've used ~25% of your clock in "${leagueName}". Don't forget to pick. (${timeLeftText} left)`,
-    `"${leagueName}": 25% of your timer is gone. Make your pick when ready. (${timeLeftText} left)`,
-    `Friendly nudge — "${leagueName}" clock is moving. (${timeLeftText} left)`,
-    `"${leagueName}": clock check — you're about 25% in. (${timeLeftText} left)`,
-    `Reminder: it's still your pick in "${leagueName}". (${timeLeftText} left)`,
-    `Just a heads up — "${leagueName}" timer is rolling. (${timeLeftText} left)`,
-    `You’re a quarter into the clock in "${leagueName}". (${timeLeftText} left)`,
-    `"${leagueName}" check-in: you’ve used some clock. (${timeLeftText} left)`,
-    `Still on the clock in "${leagueName}". (${timeLeftText} left)`,
-    `Draft reminder for "${leagueName}". (${timeLeftText} left)`,
   ];
 
   const P50_TITLES = [
@@ -180,66 +148,105 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     "Draft: halfway point",
   ];
   const P50_BODIES = [
-    `You've used ~50% of your clock in "${leagueName}". Did you forget? (${timeLeftText} left)`,
-    `"${leagueName}": halfway through your timer. Don't get auto-picked. (${timeLeftText} left)`,
-    `Just checking — still your pick in "${leagueName}". (${timeLeftText} left)`,
-    `"${leagueName}": you’re halfway through the clock. (${timeLeftText} left)`,
+    `You've hit the halfway point in "${leagueName}". ${timeLeftText} left.`,
+    `"${leagueName}": half your timer is gone. ${timeLeftText} remains.`,
+    `Still your pick in "${leagueName}" — halfway through the clock. (${timeLeftText} left)`,
+    `"${leagueName}": clock check, you're at the halfway mark. (${timeLeftText} left)`,
+    `Mid-clock alert in "${leagueName}". ${timeLeftText} to go.`,
+    `You're halfway through your timer in "${leagueName}". (${timeLeftText} left)`,
+    `Still on the clock in "${leagueName}". Halfway point reached. (${timeLeftText} left)`,
     `Clock warning — "${leagueName}" is still waiting on you. (${timeLeftText} left)`,
-    `You’re mid-clock in "${leagueName}". Don’t sleep on this. (${timeLeftText} left)`,
-    `Halfway mark reached in "${leagueName}". (${timeLeftText} left)`,
-    `"${leagueName}" — you're burning clock. (${timeLeftText} left)`,
-    `Still your pick in "${leagueName}". (${timeLeftText} left)`,
-    `Draft alert: you're halfway through your timer in "${leagueName}". (${timeLeftText} left)`,
+  ];
+
+  const P25_TITLES = [
+    "Friendly nudge",
+    "Quarter left on the clock",
+    "Clock's getting shorter",
+    "Pick check-in",
+    "25% left",
+    "Just a reminder",
+    "Still your pick",
+    "Draft reminder",
+    "Heads up",
+    "Clock check",
+  ];
+  const P25_BODIES = [
+    `Friendly nudge — only about 25% of your clock remains in "${leagueName}". (${timeLeftText} left)`,
+    `"${leagueName}": you're down to roughly the last quarter of your timer. (${timeLeftText} left)`,
+    `Still your pick in "${leagueName}". About 25% of the clock is left. (${timeLeftText} left)`,
+    `Clock check — "${leagueName}" is into the last quarter now. (${timeLeftText} left)`,
+    `Don't forget about "${leagueName}" — you're in the last 25% of your timer. (${timeLeftText} left)`,
+    `"${leagueName}": final quarter of your clock. (${timeLeftText} left)`,
+    `Quick reminder: only the last quarter of the timer is left in "${leagueName}". (${timeLeftText} left)`,
   ];
 
   const TEN_TITLES = [
     "10 minutes left",
-    "Seriously... 10 minutes left",
-    "Final stretch",
     "10-minute warning",
+    "Final stretch",
     "Clock warning: 10 min",
     "Last 10 minutes",
     "Time's getting tight",
     "Draft clock: 10 min",
     "Pick soon",
     "10 minutes — make a move",
-    "Final 10 minutes",
     "Heads up: 10 minutes",
   ];
   const TEN_BODIES = [
-    `Seriously — you only have 10 minutes left in "${leagueName}". Make your pick.`,
-    `"${leagueName}": 10 minutes remaining. Lock it in.`,
-    `10 minutes left on the clock in "${leagueName}". Don't get burned.`,
-    `10-minute warning in "${leagueName}". Make your selection soon.`,
-    `"${leagueName}": you’re down to 10 minutes. Pick now.`,
-    `Clock check — "${leagueName}" has 10 minutes left for you.`,
-    `Final 10 minutes in "${leagueName}". Don’t risk an auto-pick.`,
-    `You’ve got 10 minutes left in "${leagueName}". Choose wisely.`,
-    `"${leagueName}": 10 minutes remain. Time to decide.`,
-    `10 minutes left in "${leagueName}". Make the pick before it gets ugly.`,
+    `10 minutes left in "${leagueName}". Time to lock in your pick.`,
+    `"${leagueName}": 10 minutes remaining. Make your move.`,
+    `Clock warning — 10 minutes left for your pick in "${leagueName}".`,
+    `You're into the final 10 minutes in "${leagueName}".`,
+    `"${leagueName}": final 10 minutes. Don't get caught sleeping.`,
+    `10-minute warning in "${leagueName}". Pick when ready — but ready soon.`,
+    `The clock's down to 10 minutes in "${leagueName}".`,
+    `10 minutes remain in "${leagueName}". This is where the pressure starts.`,
+  ];
+
+  const FIVE_TITLES = [
+    "5 minutes left",
+    "Seriously, it's getting close",
+    "Clock is getting real",
+    "Final 5 minutes",
+    "This is your 5-minute warning",
+    "You're getting very close",
+    "Alright, seriously now",
+    "Clock's almost a problem",
+    "This pick needs to happen",
+    "5 minutes — let's go",
+  ];
+  const FIVE_BODIES = [
+    `Seriously, it's getting close in "${leagueName}" — only 5 minutes left.`,
+    `"${leagueName}": 5 minutes remaining. Time to make the pick.`,
+    `Alright, seriously now — "${leagueName}" is down to 5 minutes.`,
+    `Final 5 minutes in "${leagueName}". Don't let this become an auto-pick.`,
+    `You're getting close in "${leagueName}". Just 5 minutes left.`,
+    `"${leagueName}": this is the 5-minute warning. Pick soon.`,
+    `The clock is getting real in "${leagueName}" — 5 minutes left.`,
+    `This pick needs to happen soon in "${leagueName}". 5 minutes left.`,
+    `No more casual browsing — "${leagueName}" has 5 minutes left.`,
+    `Five minutes left in "${leagueName}". This is where it gets serious.`,
   ];
 
   const URGENT_TITLES = [
-    "⚠️ URGENT: 2 minutes",
-    "🚨 PICK NOW – 2 MIN",
+    "⚠️ URGENT: under 2 minutes",
+    "🚨 PICK NOW",
     "⏱️ CLOCK CRITICAL",
     "🔥 LAST 2 MINUTES",
     "🚨 Under 2 minutes",
     "⚠️ Draft emergency",
-    "🚨 Pick now",
+    "🚨 Auto-pick danger",
     "⏱️ Clock is red",
     "🔥 FINAL MOMENTS",
-    "🚨 Auto-pick risk",
-    "⚠️ Critical timer",
     "🚨 You're about to time out",
   ];
   const URGENT_BODIES = [
-    `🚨 "${leagueName}": under 2 minutes left (${timeLeftText}). Draft NOW.`,
-    `⚠️ "${leagueName}" pick timer is about to expire (${timeLeftText}).`,
+    `🚨 "${leagueName}": under 2 minutes left (${timeLeftText}). Draft now.`,
+    `⚠️ "${leagueName}" pick timer is nearly gone (${timeLeftText}).`,
     `🔥 "${leagueName}": final moments (${timeLeftText}). Don't get auto-picked.`,
     `🚨 "${leagueName}": clock is critical — ${timeLeftText} left.`,
     `⚠️ Time is almost out in "${leagueName}" (${timeLeftText}).`,
-    `🔥 "${leagueName}" — you’re under 2 minutes. (${timeLeftText})`,
+    `🔥 "${leagueName}" — you're under 2 minutes. (${timeLeftText})`,
     `🚨 Pick immediately in "${leagueName}". (${timeLeftText} left)`,
     `⚠️ "${leagueName}": you are about to time out. (${timeLeftText})`,
     `🔥 Auto-pick danger in "${leagueName}". (${timeLeftText} left)`,
@@ -256,9 +263,7 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     "Time running out",
     "Final seconds",
     "Pick or regret",
-    "Clock warning",
     "Last chance",
-    "Auto-pick imminent",
   ];
   const FINAL_BODIES = [
     `"${leagueName}": you're almost out of time. (${timeLeftText} left)`,
@@ -269,8 +274,6 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `Clock nearly done in "${leagueName}". (${timeLeftText} left)`,
     `Time is running out in "${leagueName}". (${timeLeftText} left)`,
     `"${leagueName}": you’re at the end of the clock. (${timeLeftText} left)`,
-    `Pick now in "${leagueName}". (${timeLeftText} left)`,
-    `"${leagueName}": don’t let this auto-pick. (${timeLeftText} left)`,
   ];
 
   const PAUSED_TITLES = [
@@ -280,11 +283,6 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     "Draft is paused (you're the pick)",
     "Paused — you're currently on the clock",
     "Draft paused — you’re the current pick",
-    "Hold up — paused on your pick",
-    "Paused in your league (still your turn)",
-    "Draft paused — your turn is waiting",
-    "Paused — your pick is pending",
-    "Draft paused — don’t forget you’re up",
   ];
   const PAUSED_BODIES = [
     `"${leagueName}" is paused, but it's still your pick.`,
@@ -293,10 +291,6 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `Paused in "${leagueName}" — you're still the pick when it resumes.`,
     `"${leagueName}" is paused — you’re still the active pick.`,
     `Draft paused in "${leagueName}" — your pick is waiting.`,
-    `Paused state in "${leagueName}" — you're still up.`,
-    `"${leagueName}" paused — when it resumes, you're the pick.`,
-    `Heads up: "${leagueName}" paused and your pick is pending.`,
-    `Draft is paused in "${leagueName}". You're still on the clock when it resumes.`,
   ];
 
   const UNPAUSED_TITLES = [
@@ -306,12 +300,6 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     "Draft unpaused (still your turn)",
     "Resumed — you're still the pick",
     "Draft resumed — you're on the clock",
-    "We’re live again — your pick",
-    "Unpaused — your turn is active",
-    "Draft back on (still your pick)",
-    "Resumed — pick is yours",
-    "Draft resumed — make your move",
-    "Unpaused — you’re still up",
   ];
   const UNPAUSED_BODIES = [
     `"${leagueName}" resumed — it's still your pick.`,
@@ -320,20 +308,17 @@ function buildMessage({ stage, leagueName, timeLeftText, timerSec }) {
     `"${leagueName}" unpaused — you're the current pick.`,
     `"${leagueName}" is live again — still your turn.`,
     `Draft resumed in "${leagueName}" — you’re still the pick.`,
-    `Unpaused: "${leagueName}" is running again and you're up.`,
-    `Back on in "${leagueName}" — your pick is active.`,
-    `Draft resumed — "${leagueName}" still needs your pick.`,
-    `Unpaused in "${leagueName}". You’re still on the clock.`,
   ];
 
-  if (stage === "onclock") return { title: pickVariant(ONCLOCK_TITLES, baseSeed), body: pickVariant(ONCLOCK_BODIES, baseSeed) };
-  if (stage === "p25") return { title: pickVariant(P25_TITLES, baseSeed), body: pickVariant(P25_BODIES, baseSeed) };
-  if (stage === "p50") return { title: pickVariant(P50_TITLES, baseSeed), body: pickVariant(P50_BODIES, baseSeed) };
-  if (stage === "ten") return { title: pickVariant(TEN_TITLES, baseSeed), body: pickVariant(TEN_BODIES, baseSeed) };
-  if (stage === "urgent") return { title: pickVariant(URGENT_TITLES, baseSeed), body: pickVariant(URGENT_BODIES, baseSeed) };
-  if (stage === "final") return { title: pickVariant(FINAL_TITLES, baseSeed), body: pickVariant(FINAL_BODIES, baseSeed) };
-  if (stage === "paused") return { title: pickVariant(PAUSED_TITLES, baseSeed), body: pickVariant(PAUSED_BODIES, baseSeed) };
-  if (stage === "unpaused") return { title: pickVariant(UNPAUSED_TITLES, baseSeed), body: pickVariant(UNPAUSED_BODIES, baseSeed) };
+  if (stage === "onclock") return { title: pickRandom(ONCLOCK_TITLES), body: pickRandom(ONCLOCK_BODIES) };
+  if (stage === "p50") return { title: pickRandom(P50_TITLES), body: pickRandom(P50_BODIES) };
+  if (stage === "p25") return { title: pickRandom(P25_TITLES), body: pickRandom(P25_BODIES) };
+  if (stage === "ten") return { title: pickRandom(TEN_TITLES), body: pickRandom(TEN_BODIES) };
+  if (stage === "five") return { title: pickRandom(FIVE_TITLES), body: pickRandom(FIVE_BODIES) };
+  if (stage === "urgent") return { title: pickRandom(URGENT_TITLES), body: pickRandom(URGENT_BODIES) };
+  if (stage === "final") return { title: pickRandom(FINAL_TITLES), body: pickRandom(FINAL_BODIES) };
+  if (stage === "paused") return { title: pickRandom(PAUSED_TITLES), body: pickRandom(PAUSED_BODIES) };
+  if (stage === "unpaused") return { title: pickRandom(UNPAUSED_TITLES), body: pickRandom(UNPAUSED_BODIES) };
 
   return { title: "Draft Update", body: `Update in "${leagueName}".` };
 }
@@ -392,6 +377,7 @@ async function ensurePushTables(db) {
       sent_25 INTEGER,
       sent_50 INTEGER,
       sent_10min INTEGER,
+      sent_5min INTEGER,
       sent_urgent INTEGER,
       sent_final INTEGER,
       sent_paused INTEGER,
@@ -404,6 +390,7 @@ async function ensurePushTables(db) {
     )`,
     [
       { name: "sent_urgent", type: "INTEGER" },
+      { name: "sent_5min", type: "INTEGER" },
       { name: "paused_remaining_ms", type: "INTEGER" },
       { name: "paused_at_ms", type: "INTEGER" },
       { name: "resume_clock_start_ms", type: "INTEGER" },
@@ -508,7 +495,7 @@ async function loadClockStatesForEndpoint(db, endpoint, draftIds) {
     const rows = await db
       .prepare(
         `SELECT pick_no, last_status,
-                sent_onclock, sent_25, sent_50, sent_10min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+                sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
                 paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
                 draft_id
          FROM push_clock_state
@@ -533,10 +520,10 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
     .prepare(
       `INSERT INTO push_clock_state
          (endpoint, draft_id, pick_no, last_status,
-          sent_onclock, sent_25, sent_50, sent_10min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+          sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
           paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
           updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(endpoint, draft_id) DO UPDATE SET
          pick_no=excluded.pick_no,
          last_status=excluded.last_status,
@@ -544,6 +531,7 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
          sent_25=excluded.sent_25,
          sent_50=excluded.sent_50,
          sent_10min=excluded.sent_10min,
+         sent_5min=excluded.sent_5min,
          sent_urgent=excluded.sent_urgent,
          sent_final=excluded.sent_final,
          sent_paused=excluded.sent_paused,
@@ -562,6 +550,7 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
       Number(row.sent_25 || 0),
       Number(row.sent_50 || 0),
       Number(row.sent_10min || 0),
+      Number(row.sent_5min || 0),
       Number(row.sent_urgent || 0),
       Number(row.sent_final || 0),
       Number(row.sent_paused || 0),
@@ -587,6 +576,7 @@ function makeBaseFlags(clockState, nextPickNo, status, isNewPick) {
     sent_25: isNewPick ? 0 : Number(clockState?.sent_25 || 0) ? 1 : 0,
     sent_50: isNewPick ? 0 : Number(clockState?.sent_50 || 0) ? 1 : 0,
     sent_10min: isNewPick ? 0 : Number(clockState?.sent_10min || 0) ? 1 : 0,
+    sent_5min: isNewPick ? 0 : Number(clockState?.sent_5min || 0) ? 1 : 0,
     sent_urgent: isNewPick ? 0 : Number(clockState?.sent_urgent || 0) ? 1 : 0,
     sent_final: isNewPick ? 0 : Number(clockState?.sent_final || 0) ? 1 : 0,
     sent_paused: isNewPick ? 0 : Number(clockState?.sent_paused || 0) ? 1 : 0,
@@ -756,19 +746,27 @@ async function handler(req) {
         const rosterNames = jsonParseSafe(reg?.roster_names_json || "{}", {});
 
         const hasRosterCtx =
-          rosterByUsername && typeof rosterByUsername === "object" && Object.keys(rosterByUsername).length > 0 &&
-          rosterNames && typeof rosterNames === "object" && Object.keys(rosterNames).length > 0;
+          rosterByUsername &&
+          typeof rosterByUsername === "object" &&
+          Object.keys(rosterByUsername).length > 0 &&
+          rosterNames &&
+          typeof rosterNames === "object" &&
+          Object.keys(rosterNames).length > 0;
 
         if (!hasRosterCtx) {
           skippedMissingRosterCtx++;
           continue;
         }
 
-        const userRosterId = rosterByUsername?.[uname] != null ? String(rosterByUsername[uname]) : null;
+        const userRosterId =
+          rosterByUsername?.[uname] != null ? String(rosterByUsername[uname]) : null;
         const userRosterName = userRosterId ? String(rosterNames?.[userRosterId] || "") : "";
 
         const currentOwnerName = String(reg?.current_owner_name || "");
-        const isOnClock = Boolean(userRosterName) && Boolean(currentOwnerName) && userRosterName === currentOwnerName;
+        const isOnClock =
+          Boolean(userRosterName) &&
+          Boolean(currentOwnerName) &&
+          userRosterName === currentOwnerName;
 
         if (!isOnClock) {
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
@@ -801,7 +799,10 @@ async function handler(req) {
           remainingMs = pausedRemainingKnown ? frozenPausedRemaining : rawRemainingMs;
         } else if (wasPaused && pausedRemainingKnown) {
           if (resumeStartKnown) {
-            remainingMs = Math.max(0, frozenPausedRemaining - Math.max(0, now - resumeClockStartMs));
+            remainingMs = Math.max(
+              0,
+              frozenPausedRemaining - Math.max(0, now - resumeClockStartMs)
+            );
           } else {
             remainingMs = frozenPausedRemaining;
           }
@@ -810,7 +811,9 @@ async function handler(req) {
         const baseFlags = makeBaseFlags(clockState, nextPickNo, status, isNewPick);
 
         if (isPaused) {
-          baseFlags.paused_remaining_ms = pausedRemainingKnown ? frozenPausedRemaining : remainingMs;
+          baseFlags.paused_remaining_ms = pausedRemainingKnown
+            ? frozenPausedRemaining
+            : remainingMs;
           baseFlags.paused_at_ms = Number.isFinite(Number(clockState?.paused_at_ms))
             ? Number(clockState.paused_at_ms)
             : now;
@@ -831,6 +834,7 @@ async function handler(req) {
         const sent25 = baseFlags.sent_25 === 1;
         const sent50 = baseFlags.sent_50 === 1;
         const sent10 = baseFlags.sent_10min === 1;
+        const sent5 = baseFlags.sent_5min === 1;
         const sentUrgent = baseFlags.sent_urgent === 1;
         const sentFinal = baseFlags.sent_final === 1;
 
@@ -848,13 +852,24 @@ async function handler(req) {
               stageToSend = "urgent";
             } else {
               const canTen = totalMs > 600000;
-              const tenEligible = canTen && remainingMs <= 600000 && remainingMs < totalMs - 30000;
+              const tenEligible =
+                canTen && remainingMs <= 600000 && remainingMs < totalMs - 30000;
 
-              if (tenEligible && !sent10) stageToSend = "ten";
+              const canFive = totalMs > 300000;
+              const fiveEligible =
+                canFive && remainingMs <= 300000 && remainingMs < totalMs - 30000;
+
+              const quarterLeftEligible =
+                totalMs > 0 &&
+                remainingMs <= Math.floor(totalMs * 0.25) &&
+                remainingMs > 600000;
+
+              if (fiveEligible && !sent5) stageToSend = "five";
+              else if (tenEligible && !sent10) stageToSend = "ten";
+              else if (quarterLeftEligible && !sent25) stageToSend = "p25";
               else if (usedFrac >= 0.5 && !sent50) stageToSend = "p50";
-              else if (usedFrac >= 0.25 && !sent25) stageToSend = "p25";
               else {
-                const finalThresholdMs = clamp(Math.floor(totalMs * 0.2), 20000, 120000);
+                const finalThresholdMs = clamp(Math.floor(totalMs * 0.1), 15000, 60000);
                 if (remainingMs <= finalThresholdMs && !sentFinal) stageToSend = "final";
               }
             }
@@ -876,6 +891,7 @@ async function handler(req) {
         if (stageToSend === "p25") nextFlags.sent_25 = 1;
         if (stageToSend === "p50") nextFlags.sent_50 = 1;
         if (stageToSend === "ten") nextFlags.sent_10min = 1;
+        if (stageToSend === "five") nextFlags.sent_5min = 1;
         if (stageToSend === "urgent") nextFlags.sent_urgent = 1;
         if (stageToSend === "final") nextFlags.sent_final = 1;
         if (stageToSend === "paused") nextFlags.sent_paused = 1;
@@ -913,7 +929,7 @@ async function handler(req) {
       }
 
       const sendIndividual = async (ev) => {
-        const isUrgent = ev.stage === "urgent";
+        const isUrgent = ev.stage === "urgent" || ev.stage === "five";
         const pushRes = await sendPayload(s, {
           title: ev.title,
           body: ev.body,
@@ -957,7 +973,10 @@ async function handler(req) {
         continue;
       }
 
-      const isUrg = (ev) => ev.stage === "urgent" || (ev.remainingMs > 0 && ev.remainingMs <= 120000 && ev.stage !== "paused");
+      const isUrg = (ev) =>
+        ev.stage === "urgent" ||
+        ev.stage === "five" ||
+        (ev.remainingMs > 0 && ev.remainingMs <= 120000 && ev.stage !== "paused");
       const isPausedStage = (ev) => ev.stage === "paused";
       const isResumedStage = (ev) => ev.stage === "unpaused";
 
