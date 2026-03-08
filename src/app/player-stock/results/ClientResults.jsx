@@ -319,6 +319,45 @@ const resolveBallsvilleAdp = (map, playerName, playerPosition, fallbackName = ""
   return null;
 };
 
+const getAdpToneClass = (kind, enabled = true) => {
+  if (!enabled) return "text-gray-200";
+  if (kind === "local") return "text-violet-200";
+  if (kind === "redraft") return "text-amber-200";
+  if (kind === "dynasty") return "text-cyan-200";
+  return "text-gray-200";
+};
+
+const ToggleRow = ({ label, checked, onChange, description = "", compact = false }) => (
+  <button
+    type="button"
+    onClick={onChange}
+    className={`w-full rounded-2xl border transition text-left ${
+      checked
+        ? "border-cyan-400/25 bg-cyan-500/10"
+        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"
+    } ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
+    aria-pressed={checked}
+  >
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm font-medium text-white">{label}</div>
+        {description ? <div className="mt-0.5 text-xs text-gray-500">{description}</div> : null}
+      </div>
+      <span
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+          checked ? "bg-cyan-400/80" : "bg-white/15"
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+            checked ? "translate-x-5" : "translate-x-1"
+          }`}
+        />
+      </span>
+    </div>
+  </button>
+);
+
 
 export default function ClientResults({ initialSearchParams = {} }) {
   const {
@@ -400,6 +439,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [showKeeper, setShowKeeper] = useState(true);
   const [showDynasty, setShowDynasty] = useState(true);
   const [showBestBallFormat, setShowBestBallFormat] = useState(true);
+  const [showAdpAccents, setShowAdpAccents] = useState(true);
+  const [showExposureBars, setShowExposureBars] = useState(false);
+
 
   const [manualLeagueSelect, setManualLeagueSelect] = useState(false);
   const [selectedLeagueIds, setSelectedLeagueIds] = useState(() => new Set());
@@ -1225,7 +1267,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
   const enriched = useMemo(
     () => rows.map(withLocalPlayerData),
-    [rows, players, isProj, metricType, effectiveSourceKey, ballsvilleRedraftAdpMap, ballsvilleDynastyAdpMap]
+    [
+      rows,
+      players,
+      isProj,
+      metricType,
+      effectiveSourceKey,
+      format,
+      qbType,
+      getPlayerValueForSelectedSource,
+      ballsvilleRedraftAdpMap,
+      ballsvilleDynastyAdpMap,
+    ]
   );
 
   const visibleLeagueIds = useMemo(() => {
@@ -1376,6 +1429,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setShowKeeper(true);
     setShowDynasty(true);
     setShowBestBallFormat(true);
+    setShowAdpAccents(true);
+    setShowExposureBars(false);
     setHighlightStarters(false);
     setQuery("");
     setMaxExposurePct(initialExposureRef.current ?? 25);
@@ -1460,86 +1515,141 @@ export default function ClientResults({ initialSearchParams = {} }) {
           </div>
         ) : (
           <div className="mb-4">
-            <div className="bg-gray-900 rounded-lg border border-white/10 p-4">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <input
-                      value={query}
-                      onChange={(e) => {
-                        setQuery(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      placeholder="Search name/team/pos"
-                      className="bg-gray-800 border border-white/10 rounded px-3 py-1.5 text-sm w-full md:w-64"
-                    />
+            <div className="rounded-2xl border border-white/10 bg-gray-950/80 shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+              <div className="border-b border-white/10 p-4 md:p-5">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                    <div className="flex flex-1 flex-col gap-3">
+                      <div className="flex flex-col gap-3">
+                        <div className="relative w-full md:w-72">
+                          <input
+                            value={query}
+                            onChange={(e) => {
+                              setQuery(e.target.value);
+                              setCurrentPage(1);
+                            }}
+                            placeholder="Search name, team, or position"
+                            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-gray-500 shadow-inner shadow-black/20"
+                          />
+                        </div>
 
-                    <SourceSelector
-                      value={effectiveSourceKey}
-                      onChange={setEffectiveSourceKey}
-                      mode={format}
-                      qbType={qbType}
-                      onModeChange={setFormat}
-                      onQbTypeChange={setQbType}
-                    />
-                  </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
+                          <ToggleRow
+                            label="Include drafting"
+                            checked={includeDrafting}
+                            onChange={() => {
+                              setIncludeDrafting((v) => !v);
+                              setCurrentPage(1);
+                            }}
+                            compact
+                          />
+                          <ToggleRow
+                            label="Redraft"
+                            checked={showRedraft}
+                            onChange={() => {
+                              setShowRedraft((v) => !v);
+                              setCurrentPage(1);
+                            }}
+                            compact
+                          />
+                          <ToggleRow
+                            label="Keeper"
+                            checked={showKeeper}
+                            onChange={() => {
+                              setShowKeeper((v) => !v);
+                              setCurrentPage(1);
+                            }}
+                            compact
+                          />
+                          <ToggleRow
+                            label="Dynasty"
+                            checked={showDynasty}
+                            onChange={() => {
+                              setShowDynasty((v) => !v);
+                              setCurrentPage(1);
+                            }}
+                            compact
+                          />
+                          <ToggleRow
+                            label="Best Ball"
+                            checked={showBestBallFormat}
+                            onChange={() => {
+                              setShowBestBallFormat((v) => !v);
+                              setCurrentPage(1);
+                            }}
+                            compact
+                          />
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="relative rounded px-3 py-1 border border-white/20 hover:bg-white/10"
-                      onClick={() => setShowFiltersModal(true)}
-                      title="Filters & options"
-                    >
-                      Filters
-                    </button>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] md:text-xs">
+                        <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-violet-200">Local ADP</span>
+                        {showBallsvilleRedraftColumn ? (
+                          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-200">Ballsville Redraft</span>
+                        ) : null}
+                        {showBallsvilleDynastyColumn ? (
+                          <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200">Ballsville Dynasty</span>
+                        ) : null}
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-gray-300">
+                          Exposure cap {maxExposurePct}%
+                        </span>
+                      </div>
+                    </div>
 
-                    <div className="text-sm text-gray-400">
-                      {leagueCount > 0 && (
-                        <span>
-                          Scanned{" "}
-                          <button
-                            type="button"
-                            className="underline decoration-dotted hover:text-white"
-                            onClick={() => setShowLeaguesModal(true)}
-                            title="All leagues included in this scan"
-                          >
-                            <span className="text-white font-semibold">{leagueCount}</span>
-                          </button>{" "}
-                          leagues
-                        </span>
-                      )}
-                      {visibleLeagueCount > 0 && (
-                        <span className="ml-2">
-                          • Showing{" "}
-                          <button
-                            type="button"
-                            className="underline decoration-dotted hover:text-white"
-                            onClick={() => setShowVisibleLeaguesModal(true)}
-                            title="Leagues currently visible by filters/selection"
-                          >
-                            <span className="text-white font-semibold">{visibleLeagueCount}</span>
-                          </button>
-                        </span>
-                      )}
-                      {lastUpdated && (
-                        <span className="ml-3 text-xs text-gray-500" suppressHydrationWarning>
-                          Last scan: {lastUpdated.toLocaleTimeString()}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2 self-start xl:self-center">
                       <button
-                        className="ml-3 text-xs rounded px-2 py-0.5 border border-white/20 hover:bg-white/10"
+                        type="button"
+                        className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15"
+                        onClick={() => setShowFiltersModal(true)}
+                        title="Filters & options"
+                      >
+                        Filters & Display
+                      </button>
+                      <button
+                        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-gray-200 transition hover:bg-white/[0.08]"
                         onClick={doRefresh}
                         title="Rescan now (ignores cache)"
                       >
                         Refresh
                       </button>
-                      {ballsvilleAdpLoading ? <span className="ml-3 text-xs text-gray-500">Loading Ballsville ADP…</span> : null}
-                      {error && <span className="text-red-400 ml-3">{error}</span>}
-                      {ballsvilleModesError ? <span className="text-amber-400 ml-3">{ballsvilleModesError}</span> : null}
-                      {ballsvilleAdpError ? <span className="text-amber-400 ml-3">{ballsvilleAdpError}</span> : null}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="p-4 md:p-5">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                  {leagueCount > 0 ? (
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 transition hover:bg-white/[0.08]"
+                      onClick={() => setShowLeaguesModal(true)}
+                      title="All leagues included in this scan"
+                    >
+                      Scanned <span className="font-semibold text-white">{leagueCount}</span> leagues
+                    </button>
+                  ) : null}
+                  {visibleLeagueCount > 0 ? (
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 transition hover:bg-white/[0.08]"
+                      onClick={() => setShowVisibleLeaguesModal(true)}
+                      title="Leagues currently visible by filters/selection"
+                    >
+                      Showing <span className="font-semibold text-white">{visibleLeagueCount}</span>
+                    </button>
+                  ) : null}
+                  {lastUpdated ? (
+                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-gray-500" suppressHydrationWarning>
+                      Last scan: {lastUpdated.toLocaleTimeString()}
+                    </span>
+                  ) : null}
+                  {ballsvilleAdpLoading ? (
+                    <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-3 py-1.5 text-cyan-200">Loading Ballsville ADP…</span>
+                  ) : null}
+                  {error ? <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-red-300">{error}</span> : null}
+                  {ballsvilleModesError ? <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-amber-200">{ballsvilleModesError}</span> : null}
+                  {ballsvilleAdpError ? <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-amber-200">{ballsvilleAdpError}</span> : null}
                 </div>
               </div>
             </div>
@@ -1549,9 +1659,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 {loading ? "Working…" : trendingMode !== "all" ? "No matching trending players." : "No players found."}
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg shadow ring-1 ring-white/10 mt-3">
-                <table className="min-w-full bg-gray-900">
-                  <thead className="bg-gray-800/60">
+              <div className="overflow-x-auto rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 mt-4 bg-gray-950/70 backdrop-blur">
+                <table className="min-w-full bg-transparent">
+                  <thead className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur">
                     <tr>
                       <th className="text-left px-3 md:px-4 py-2 cursor-pointer select-none" onClick={() => toggleSort("name")}>
                         Player <span className="ml-1 inline-block">{sortIndicator("name")}</span>
@@ -1602,13 +1712,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       return (
                         <tr
                           key={r.player_id}
-                          className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                          className="border-b border-white/5 hover:bg-white/[0.06] active:bg-white/[0.08] cursor-pointer transition-colors"
                           title={titleBits.join(" • ")}
                           onClick={() => setOpenPid(r.player_id)}
                         >
-                          <td className="px-3 md:px-4 py-2 text-left">
+                          <td className="px-3 md:px-4 py-3 text-left">
                             <div className="text-left w-full">
-                              <div className="flex items-center gap-1">
+                              {showExposureBars && visibleLeagueCount ? (
+                                <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.05]">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${overCap ? "bg-red-400" : exposure >= Math.max(1, maxExposurePct - 10) ? "bg-amber-300" : "bg-cyan-300"}`}
+                                    style={{ width: `${Math.min(100, exposure)}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                              <div className="flex items-center gap-2">
                                 <AvatarImage
                                   name={r._name}
                                   width={28}
@@ -1654,14 +1772,14 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           </td>
 
                           <td className="px-3 md:px-4 py-2 text-right">{r.count}</td>
-                          <td className="px-3 md:px-4 py-2 text-right">{avgDraftLabel}</td>
+                          <td className={`px-3 md:px-4 py-3 text-right font-medium ${getAdpToneClass("local", showAdpAccents)}`}>{avgDraftLabel}</td>
                           {showBallsvilleRedraftColumn ? (
-                            <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleRedraftLabel}</td>
+                            <td className={`px-4 py-3 text-right hidden md:table-cell font-medium ${getAdpToneClass("redraft", showAdpAccents)}`}>{ballsvilleRedraftLabel}</td>
                           ) : null}
                           {showBallsvilleDynastyColumn ? (
-                            <td className="px-4 py-2 text-right hidden md:table-cell">{ballsvilleDynastyLabel}</td>
+                            <td className={`px-4 py-3 text-right hidden md:table-cell font-medium ${getAdpToneClass("dynasty", showAdpAccents)}`}>{ballsvilleDynastyLabel}</td>
                           ) : null}
-                          <td className="px-3 md:px-4 py-2 text-right">{Math.round(metricVal)}</td>
+                          <td className="px-3 md:px-4 py-3 text-right text-white font-semibold">{Math.round(metricVal)}</td>
                         </tr>
                       );
                     })}
@@ -1719,11 +1837,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
           onClick={() => setShowFiltersModal(false)}
         >
           <div
-            className="w-full max-w-xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-xl shadow-xl p-4 border border-white/10"
+            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gray-950/95 backdrop-blur rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="text-lg font-bold">Filters & Options</div>
+              <div><div className="text-xl font-bold text-white">Filters & Display</div><div className="mt-1 text-sm text-gray-500">Tune league scope, ADP presentation, and comparison pools without changing scan results.</div></div>
               <button
                 className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
                 onClick={() => setShowFiltersModal(false)}
@@ -1732,9 +1850,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="text-sm text-gray-400">Search</div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5 mt-4">
+              <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+                <div>
+                  <div className="text-sm font-semibold text-white">Search & source</div>
+                  <div className="mt-1 text-xs text-gray-500">Narrow the table and choose the value source shown throughout the page.</div>
+                </div>
+
                 <input
                   value={query}
                   onChange={(e) => {
@@ -1742,33 +1864,29 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     setCurrentPage(1);
                   }}
                   placeholder="Search name/team/pos"
-                  className="w-full bg-gray-800 border border-white/10 rounded px-3 py-2 text-sm"
+                  className="w-full rounded-xl bg-gray-800 border border-white/10 px-3 py-2.5 text-sm"
                 />
 
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={highlightStarters}
-                    onChange={() => setHighlightStarters((v) => !v)}
-                  />
-                  Highlight starters
-                </label>
-
-                <div className="mt-2">
-                  <div className="text-sm text-gray-400 mb-1">Max Exposure %</div>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={maxExposurePct}
-                    onChange={(e) => setMaxExposurePct(Number(e.target.value || 0))}
-                    className="w-28 bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                    title="Rows over this % (count / visible leagues) are flagged"
-                  />
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="text-sm font-medium text-white">Exposure threshold</div>
+                  <div className="mt-1 text-xs text-gray-500">Rows above this percentage are flagged as overexposed.</div>
+                  <div className="mt-3 flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={maxExposurePct}
+                      onChange={(e) => setMaxExposurePct(Number(e.target.value || 0))}
+                      className="w-full accent-cyan-400"
+                    />
+                    <div className="w-14 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1 text-center text-sm font-semibold text-white">
+                      {maxExposurePct}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-3">
-                  <div className="text-sm text-gray-400 mb-2">Metric & Source</div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="text-sm font-medium text-white mb-2">Metric & source</div>
                   <SourceSelector
                     value={effectiveSourceKey}
                     onChange={setEffectiveSourceKey}
@@ -1778,67 +1896,37 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     onQbTypeChange={setQbType}
                   />
                 </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="mb-2 text-sm font-medium text-white">Display accents</div>
+                  <div className="space-y-2.5">
+                    <ToggleRow
+                      label="Highlight starters"
+                      checked={highlightStarters}
+                      onChange={() => setHighlightStarters((v) => !v)}
+                      description="Emphasize players who start in at least one visible league."
+                      compact
+                    />
+                    <ToggleRow
+                      label="Colored ADP columns"
+                      checked={showAdpAccents}
+                      onChange={() => setShowAdpAccents((v) => !v)}
+                      compact
+                    />
+                    <ToggleRow
+                      label="Exposure bars"
+                      checked={showExposureBars}
+                      onChange={() => setShowExposureBars((v) => !v)}
+                      compact
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="text-sm text-gray-400">League filters (display only)</div>
-                <label className="flex items-center justify-between">
-                  <span>Include drafting leagues</span>
-                  <input
-                    type="checkbox"
-                    checked={includeDrafting}
-                    onChange={() => {
-                      setIncludeDrafting((v) => !v);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </label>
-                <div className="pt-2 border-t border-white/10">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-gray-500">Formats</div>
-                  <label className="flex items-center justify-between">
-                    <span>Redraft</span>
-                    <input
-                      type="checkbox"
-                      checked={showRedraft}
-                      onChange={() => {
-                        setShowRedraft((v) => !v);
-                        setCurrentPage(1);
-                      }}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between">
-                    <span>Keeper</span>
-                    <input
-                      type="checkbox"
-                      checked={showKeeper}
-                      onChange={() => {
-                        setShowKeeper((v) => !v);
-                        setCurrentPage(1);
-                      }}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between">
-                    <span>Dynasty</span>
-                    <input
-                      type="checkbox"
-                      checked={showDynasty}
-                      onChange={() => {
-                        setShowDynasty((v) => !v);
-                        setCurrentPage(1);
-                      }}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between">
-                    <span>Best Ball</span>
-                    <input
-                      type="checkbox"
-                      checked={showBestBallFormat}
-                      onChange={() => {
-                        setShowBestBallFormat((v) => !v);
-                        setCurrentPage(1);
-                      }}
-                    />
-                  </label>
+              <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+                <div>
+                  <div className="text-sm font-semibold text-white">Comparison pools & manual selection</div>
+                  <div className="mt-1 text-xs text-gray-500">Use these to tune Ballsville ADP pools and optionally narrow visible leagues further.</div>
                 </div>
 
                 <div className="mt-4 border-t border-white/10 pt-3">
@@ -2073,7 +2161,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
           onClick={() => setShowLeaguesModal(false)}
         >
           <div
-            className="w-full max-w-xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+            className="w-full max-w-2xl bg-gray-950/95 backdrop-blur rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-2">
@@ -2137,7 +2225,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
           onClick={() => setShowVisibleLeaguesModal(false)}
         >
           <div
-            className="w-full max-w-xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+            className="w-full max-w-2xl bg-gray-950/95 backdrop-blur rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-2">
@@ -2207,21 +2295,32 @@ export default function ClientResults({ initialSearchParams = {} }) {
               onClick={() => setOpenPid(null)}
             >
               <div
-                className="w-full max-w-xl bg-gray-900 rounded-xl shadow-xl p-5 border border-white/10"
+                className="w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-gray-950/95 backdrop-blur rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-3 sm:p-4 md:p-5 border border-white/10"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.03] to-transparent p-3 sm:p-4">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     <AvatarImage
                       name={openRow._name}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded-full border object-cover bg-gray-800"
+                      width={56}
+                      height={56}
+                      className="w-14 h-14 rounded-full border border-white/15 object-cover bg-gray-800 shadow-lg shadow-black/30"
                     />
                     <div>
-                      <div className="text-xl font-bold">{openRow._name}</div>
-                      <div className="text-xs text-gray-400">
-                        {openRow._pos || "—"} • {openRow._team || "FA"}
+                      <div className="text-xl sm:text-2xl font-bold tracking-tight text-white">{openRow._name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-gray-300">{openRow._pos || "—"}</span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-gray-300">{openRow._team || "FA"}</span>
+                        {showBallsvilleRedraftColumn ? (
+                          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-200">
+                            Redraft {formatAverageDraftPosition(openRow._ballsvilleRedraftAdp, 12)}
+                          </span>
+                        ) : null}
+                        {showBallsvilleDynastyColumn ? (
+                          <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200">
+                            Dynasty {formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2234,11 +2333,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 </div>
 
                 <div className={`mt-4 grid grid-cols-1 ${showBallsvilleRedraftColumn && showBallsvilleDynastyColumn ? "md:grid-cols-5" : showBallsvilleRedraftColumn || showBallsvilleDynastyColumn ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
-                  <div className="bg-gray-800/60 rounded p-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
                     <div className="text-xs text-gray-400">Leagues Rostered (visible)</div>
                     <div className="text-2xl font-bold">{visibleLeaguesForRow.length}</div>
                   </div>
-                  <div className="bg-gray-800/60 rounded p-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
                     <div className="text-xs text-gray-400">Avg Draft Position</div>
                     <div className="text-2xl font-bold">{avgDraftLabel}</div>
                     <div className="text-[11px] text-gray-500 mt-1">
@@ -2246,18 +2345,18 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     </div>
                   </div>
                   {showBallsvilleRedraftColumn ? (
-                    <div className="bg-gray-800/60 rounded p-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
                       <div className="text-xs text-gray-400">Ballsville Redraft</div>
                       <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleRedraftAdp, 12)}</div>
                     </div>
                   ) : null}
                   {showBallsvilleDynastyColumn ? (
-                    <div className="bg-gray-800/60 rounded p-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
                       <div className="text-xs text-gray-400">Ballsville Dynasty</div>
                       <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}</div>
                     </div>
                   ) : null}
-                  <div className="bg-gray-800/60 rounded p-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
                     <div className="text-xs text-gray-400">{valueOrProjLabel}</div>
                     <div className="text-2xl font-bold">{metricVal}</div>
                   </div>
@@ -2266,11 +2365,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 {visibleLeaguesForRow.length > 0 && (
                   <div className="mt-5">
                     <div className="text-xs text-gray-400 mb-2">Leagues (• indicates starter)</div>
-                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-2 max-h-[38vh] sm:max-h-72 overflow-y-auto pr-1">
                       {visibleLeaguesForRow.map((lg) => (
                         <div
                           key={lg.id}
-                          className={`flex items-center gap-3 text-sm px-2 py-1 rounded bg-gray-800 border border-white/10 ${
+                          className={`flex items-center gap-3 text-sm px-3 py-2 rounded-xl bg-gray-800 border border-white/10 ${
                             lg.isStarter ? "ring-1 ring-blue-500" : ""
                           }`}
                           title={lg.name}
