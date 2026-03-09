@@ -4,8 +4,14 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-function buildOnClockSummary(onClockSnapshot, maxItems = 3) {
-    const list = Array.isArray(onClockSnapshot) ? onClockSnapshot.slice() : [];
+function buildOnClockSummary(onClockSnapshot, options = {}) {
+    const { maxItems = 3, excludeDraftIds = [] } = options || {};
+    const exclude = new Set((Array.isArray(excludeDraftIds) ? excludeDraftIds : []).map((x) => String(x || "")));
+
+    const list = (Array.isArray(onClockSnapshot) ? onClockSnapshot : [])
+      .filter((x) => !exclude.has(String(x?.draftId || "")))
+      .slice();
+
     if (!list.length) return "";
 
     list.sort((a, b) => {
@@ -16,12 +22,14 @@ function buildOnClockSummary(onClockSnapshot, maxItems = 3) {
 
     const items = list.slice(0, maxItems).map((x) => {
       const name = String(x?.leagueName || "League");
+      const ms = Number(x?.remainingMs || 0);
       const showTime =
         x?.stage !== "paused" &&
         x?.stage !== "unpaused" &&
-        Number.isFinite(x?.remainingMs);
+        Number.isFinite(ms) &&
+        ms > 0;
 
-      if (showTime) return `${name}: ${msToClock(x.remainingMs)}`;
+      if (showTime) return `${name}: ${msToClock(ms)}`;
       return `${name}: ${stageLabel(x?.stage || "onclock")}`;
     });
 
@@ -964,17 +972,18 @@ async function handler(req) {
         if (stageToSend === "paused") nextFlags.sent_paused = 1;
 
         if (stageToSend === "unpaused") {
-          nextFlags.sent_unpaused = 1;
+        nextFlags.sent_unpaused = 1;
+        nextFlags.sent_paused = 0;
 
-          const reached = getReachedStageFlags(totalMs, remainingMs);
-          nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reached.sent_onclock);
-          nextFlags.sent_50 = Math.max(nextFlags.sent_50, reached.sent_50);
-          nextFlags.sent_25 = Math.max(nextFlags.sent_25, reached.sent_25);
-          nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reached.sent_10min);
-          nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reached.sent_5min);
-          nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reached.sent_urgent);
-          nextFlags.sent_final = Math.max(nextFlags.sent_final, reached.sent_final);
-        }
+        const reached = getReachedStageFlags(totalMs, remainingMs);
+        nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reached.sent_onclock);
+        nextFlags.sent_50 = Math.max(nextFlags.sent_50, reached.sent_50);
+        nextFlags.sent_25 = Math.max(nextFlags.sent_25, reached.sent_25);
+        nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reached.sent_10min);
+        nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reached.sent_5min);
+        nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reached.sent_urgent);
+        nextFlags.sent_final = Math.max(nextFlags.sent_final, reached.sent_final);
+      }
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
@@ -1007,10 +1016,11 @@ async function handler(req) {
         continue;
       }
 
-      const onClockSummary = buildOnClockSummary(onClockSnapshot);
-
       const sendIndividual = async (ev) => {
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
+        const onClockSummary = buildOnClockSummary(onClockSnapshot, {
+          excludeDraftIds: [ev.draftId],
+        });
         const bodyWithSummary = onClockSummary
           ? `${ev.body} | ${onClockSummary}`
           : ev.body;
@@ -1101,7 +1111,9 @@ async function handler(req) {
               return `${ev.leagueName} ${lbl}${t}`;
             })
             .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
-          onClockSummary,
+          buildOnClockSummary(onClockSnapshot, {
+            excludeDraftIds: sorted.map((ev) => ev.draftId),
+          }),
         ].filter(Boolean).join(" || "),
         url: "/draft-pick-tracker",
         tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
