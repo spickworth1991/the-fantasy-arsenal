@@ -1160,9 +1160,12 @@ export default function DraftPickTrackerClient() {
 
                   <div className="p-4 border-b border-white/10 bg-black/20">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="text-white font-semibold truncate">{r.leagueName}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-white font-semibold leading-tight break-words pr-2">
+                          {r.leagueName}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           <Pill tone={statusTone} size="sm">
                             {r.draftStatus || "—"}
                           </Pill>
@@ -1191,7 +1194,7 @@ export default function DraftPickTrackerClient() {
                           ) : null}
                         </div>
 
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="text-xs text-gray-400 mt-2">
                           {r.teams ? `${r.teams} teams` : "—"}
                           {r.rounds ? ` · ${r.rounds} rounds` : ""}
                           {r.draftType ? ` · ${String(r.draftType).toUpperCase()}` : ""}
@@ -1199,7 +1202,7 @@ export default function DraftPickTrackerClient() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         {r.onClockIsMe && (
                           <span className={classNames("inline-flex", hasTimer && !isPaused ? clockHeat?.shake : "")}>
                             <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="lg">
@@ -1294,170 +1297,196 @@ export default function DraftPickTrackerClient() {
               </div>
             </div>
 
-            <div className="sm:hidden divide-y divide-white/10">
-              {filteredDraftRows.map((r, idx) => {
-                const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                const status = String(r?.draftStatus || "").toLowerCase();
-                const isDrafting = status === "drafting";
-                const isPaused = status === "paused";
-                const hasTimer = safeNum(r.timerSec) > 0;
+            <div className="sm:hidden overflow-x-auto">
+              <table className="w-full min-w-[620px] text-xs">
+                <thead className="bg-black/20 text-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left">League</th>
+                    <th className="px-3 py-2 text-left">Current</th>
+                    <th className="px-3 py-2 text-left">Next</th>
+                    <th className="px-3 py-2 text-left">ETA</th>
+                    <th className="px-3 py-2 text-left">Links</th>
+                  </tr>
+                </thead>
 
-                const liveClockLeft = hasTimer
-                  ? isPaused
-                    ? Math.max(0, safeNum(r.clockLeftMs))
-                    : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
-                  : 0;
+                <tbody>
+                  {filteredDraftRows.map((r, idx) => {
+                    const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                    const status = String(r?.draftStatus || "").toLowerCase();
+                    const isDrafting = status === "drafting";
+                    const isPaused = status === "paused";
+                    const hasTimer = safeNum(r.timerSec) > 0;
 
-                const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+                    const liveClockLeft = hasTimer
+                      ? isPaused
+                        ? Math.max(0, safeNum(r.clockLeftMs))
+                        : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                      : 0;
 
-                const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
+                    const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
 
-                const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
-                let liveEta = null;
-                if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
-                  if (isDrafting && r.onClockIsMe) {
-                    const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
-                    liveEta = liveClockLeft + gap * perPickMs;
-                  } else {
-                    liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-                  }
-                }
+                    const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
-                const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+                    const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+                    let liveEta = null;
+                    if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+                      if (isDrafting && r.onClockIsMe) {
+                        const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+                        liveEta = liveClockLeft + gap * perPickMs;
+                      } else {
+                        liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+                      }
+                    }
 
-                const statusTone =
-                  r.draftStatus === "drafting"
-                    ? "green"
-                    : r.draftStatus === "paused"
-                    ? "yellow"
-                    : r.draftStatus === "complete"
-                    ? "gray"
-                    : "yellow";
+                    const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
-                const autoActive = (() => {
-                  const ts = autoByDraftId?.[String(r.draftId)];
-                  if (!ts) return false;
-                  return Date.now() - Number(ts) < 15 * 60 * 1000;
-                })();
+                    const statusTone =
+                      r.draftStatus === "drafting"
+                        ? "green"
+                        : r.draftStatus === "paused"
+                        ? "yellow"
+                        : r.draftStatus === "complete"
+                        ? "gray"
+                        : "yellow";
 
-                return (
-                  <div
-                    key={r.__rowKey || r.draftId || r.leagueId || `mrow:${idx}`}
-                    className={classNames(
-                      "px-4 py-4",
-                      isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/5"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-white font-semibold truncate">{r.leagueName}</div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <Pill tone={statusTone} size="sm">
-                            {r.draftStatus || "—"}
-                          </Pill>
-                          <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="sm">
-                            {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
-                          </Pill>
-                          {r.onClockIsMe ? (
-                            <Pill
-                              tone={
-                                hasTimer
-                                  ? onClockHeatStyles(
-                                      getOnClockHeatMsForUI({
-                                        isPaused,
-                                        liveClockLeft,
-                                        timerSec: r.timerSec,
-                                      }),
-                                      r.timerSec
-                                    )?.badgeTone
-                                  : "green"
-                              }
-                              size="sm"
+                    const autoActive = (() => {
+                      const ts = autoByDraftId?.[String(r.draftId)];
+                      if (!ts) return false;
+                      return Date.now() - Number(ts) < 15 * 60 * 1000;
+                    })();
+
+                    const deckTint = isDrafting && !r.onClockIsMe && r.onDeck ? onDeckTintStyles() : null;
+                    const clockHeat =
+                      r.onClockIsMe && hasTimer
+                        ? onClockHeatStyles(
+                            getOnClockHeatMsForUI({
+                              isPaused,
+                              liveClockLeft,
+                              timerSec: r.timerSec,
+                            }),
+                            r.timerSec
+                          )
+                        : null;
+
+                    const mobileRowTone =
+                      autoActive
+                        ? "bg-red-500/10"
+                        : clockHeat?.tier === "red"
+                        ? "bg-red-500/10"
+                        : clockHeat?.tier === "orange"
+                        ? "bg-orange-500/10"
+                        : clockHeat?.tier === "yellow"
+                        ? "bg-yellow-500/10"
+                        : clockHeat?.tier === "green"
+                        ? "bg-emerald-500/10"
+                        : deckTint
+                        ? "bg-amber-500/5"
+                        : "";
+
+                    return (
+                      <tr
+                        key={r.__rowKey || r.draftId || r.leagueId || `mrow:${idx}`}
+                        className={classNames("border-t border-white/5", mobileRowTone)}
+                      >
+                        <td className="px-3 py-3 align-top">
+                          <div className="min-w-[170px]">
+                            <div className="font-semibold text-white leading-tight break-words">
+                              {r.leagueName}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                              <Pill tone={statusTone} size="xs">
+                                {r.draftStatus || "—"}
+                              </Pill>
+                              <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="xs">
+                                {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
+                              </Pill>
+                              {r.onClockIsMe ? (
+                                <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="xs">
+                                  ON CLOCK
+                                </Pill>
+                              ) : null}
+                              {isDrafting && !r.onClockIsMe && r.onDeck ? (
+                                <Pill tone="yellow" size="xs">
+                                  ON DECK
+                                </Pill>
+                              ) : null}
+                              {autoActive ? (
+                                <Pill tone="red" size="xs">
+                                  AUTO
+                                </Pill>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3 align-top">
+                          <div className="min-w-[110px]">
+                            <div className="text-white font-semibold truncate">
+                              {r.currentOwnerName || "—"}
+                            </div>
+                            <div className="mt-1 text-[11px] text-gray-300">
+                              {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
+                            </div>
+                            <div className="mt-1 text-[11px] font-bold tabular-nums text-white">
+                              {clockText}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3 align-top">
+                          <div className="min-w-[84px]">
+                            <div className="text-white font-semibold">
+                              {shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}
+                            </div>
+                            <div className="mt-1 text-[11px] text-gray-300">
+                              {r.picksUntilMyPick != null ? `${r.picksUntilMyPick} away` : "—"}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3 align-top">
+                          <div className="min-w-[84px]">
+                            <div className="text-white font-extrabold tabular-nums tracking-wide">
+                              {etaClock}
+                            </div>
+                            <div className="mt-1 text-[11px] text-gray-400">
+                              {hasTimer ? "timer" : "—"}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3 align-top">
+                          <div className="flex flex-col gap-2 min-w-[74px]">
+                            <a
+                              href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-lg bg-cyan-500/90 px-2 py-1 text-[11px] font-semibold text-black hover:bg-cyan-400 border border-white/10 text-center"
                             >
-                              ON CLOCK
-                            </Pill>
-                          ) : null}
-                          {isDrafting && !r.onClockIsMe && r.onDeck ? (
-                            <Pill tone="yellow" size="sm">
-                              ON DECK
-                            </Pill>
-                          ) : null}
-                          {autoActive ? (
-                            <Pill tone="red" size="sm">
-                              🚨 AUTO
-                            </Pill>
-                          ) : null}
-                        </div>
-                      </div>
+                              Open
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyInviteLink(r.draftId)}
+                              className="rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white hover:bg-white/15 border border-white/10"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
 
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase tracking-wide text-gray-400">ETA</div>
-                        <div className="text-lg font-extrabold text-white tabular-nums tracking-wide">
-                          {etaClock}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-                        <div className="text-[10px] uppercase tracking-wide text-gray-400">Current</div>
-                        <div className="mt-1 text-sm font-semibold text-white truncate">
-                          {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
-                        </div>
-                        <div className="text-xs text-gray-300 truncate">
-                          {r.currentOwnerName || "—"}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-                        <div className="text-[10px] uppercase tracking-wide text-gray-400">
-                          {r.onClockIsMe ? "After This" : "Your Next"}
-                        </div>
-                        <div className="mt-1 text-sm font-semibold text-white truncate">
-                          {shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}
-                        </div>
-                        <div className="text-xs text-gray-300 truncate">
-                          {r.picksUntilMyPick != null ? `${r.picksUntilMyPick} away` : "—"}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-                        <div className="text-[10px] uppercase tracking-wide text-gray-400">Clock</div>
-                        <div className="mt-1 text-sm font-semibold text-white tabular-nums truncate">
-                          {clockText}
-                        </div>
-                        <div className="text-xs text-gray-300 truncate">
-                          {r.teams ? `${r.teams} teams` : "—"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <a
-                        href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-xl bg-cyan-500/90 px-3 py-1.5 text-xs font-semibold text-black hover:bg-cyan-400 border border-white/10"
-                      >
-                        Open
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => copyInviteLink(r.draftId)}
-                        className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 border border-white/10"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {filteredDraftRows.length === 0 && (
-                <div className="px-5 py-10 text-center text-gray-300">
-                  No leagues found. Try adjusting filters or hit Refresh.
-                </div>
-              )}
+                  {filteredDraftRows.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-10 text-center text-gray-300">
+                        No leagues found. Try adjusting filters or hit Refresh.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
             <div className="hidden sm:block overflow-x-auto">
