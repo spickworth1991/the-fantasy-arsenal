@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-function buildOnClockSummary(onClockSnapshot, maxLines = 8) {
+function buildOnClockSummary(onClockSnapshot, maxItems = 3) {
     const list = Array.isArray(onClockSnapshot) ? onClockSnapshot.slice() : [];
     if (!list.length) return "";
 
@@ -14,15 +14,19 @@ function buildOnClockSummary(onClockSnapshot, maxLines = 8) {
       return ar - br;
     });
 
-    const lines = list.slice(0, maxLines).map((x) => {
-      const lbl = stageLabel(x.stage || "onclock");
-      const showTime = x.stage !== "paused" && x.stage !== "unpaused" && Number.isFinite(x.remainingMs);
-      const t = showTime ? ` — ${msToClock(x.remainingMs)}` : "";
-      return `• ${x.leagueName} — ${lbl}${t}`;
+    const items = list.slice(0, maxItems).map((x) => {
+      const name = String(x?.leagueName || "League");
+      const showTime =
+        x?.stage !== "paused" &&
+        x?.stage !== "unpaused" &&
+        Number.isFinite(x?.remainingMs);
+
+      if (showTime) return `${name}: ${msToClock(x.remainingMs)}`;
+      return `${name}: ${stageLabel(x?.stage || "onclock")}`;
     });
 
-    const more = list.length > maxLines ? `\n+${list.length - maxLines} more` : "";
-    return `On clock now:\n${lines.join("\n")}${more}`;
+    const more = list.length > maxItems ? ` +${list.length - maxItems} more` : "";
+    return items.length ? `Also up: ${items.join(" | ")}${more}` : "";
   }
 
   function getReachedStageFlags(totalMs, remainingMs) {
@@ -1007,7 +1011,9 @@ async function handler(req) {
 
       const sendIndividual = async (ev) => {
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
-        const bodyWithSummary = onClockSummary ? `${ev.body}\n\n${onClockSummary}` : ev.body;
+        const bodyWithSummary = onClockSummary
+          ? `${ev.body} | ${onClockSummary}`
+          : ev.body;
 
         const pushRes = await sendPayload(s, {
           title: ev.title,
@@ -1094,9 +1100,17 @@ async function handler(req) {
       const pushRes = await sendPayload(s, {
         title,
         body: [
-          `Triggered now:\n${lines}${more}`,
-          onClockSummary,
-        ].filter(Boolean).join("\n\n"),
+        `Triggered: ${sorted
+          .slice(0, 3)
+          .map((ev) => {
+            const lbl = stageLabel(ev.stage);
+            const showTime = ev.stage !== "paused" && ev.stage !== "unpaused" && ev.remainingMs > 0;
+            const t = showTime ? ` ${msToClock(ev.remainingMs)}` : "";
+            return `${ev.leagueName} ${lbl}${t}`;
+          })
+          .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
+        onClockSummary,
+      ].filter(Boolean).join(" || "),
         url: "/draft-pick-tracker",
         tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
         renotify: true,
