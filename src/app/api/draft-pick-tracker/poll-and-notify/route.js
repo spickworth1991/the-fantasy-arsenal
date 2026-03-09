@@ -1084,33 +1084,25 @@ async function handler(req) {
       const anyUrgent = sorted.some((x) => isUrg(x));
       const title = anyUrgent ? "⚠️ URGENT" : `Draft updates (${sorted.length})`;
 
-      const formatLine = (ev) => {
-        const lbl = stageLabel(ev.stage);
-        const showTime = ev.stage !== "paused" && ev.stage !== "unpaused" && ev.remainingMs > 0;
-        const t = showTime ? ` — ${msToClock(ev.remainingMs)}` : "";
-        return `• ${ev.leagueName} — ${lbl}${t}`;
-      };
-
-      const maxLines = 8;
-      const lines = sorted.slice(0, maxLines).map(formatLine).join("\n");
-      const more = sorted.length > maxLines ? `\n+${sorted.length - maxLines} more` : "";
-
       const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
 
       const pushRes = await sendPayload(s, {
         title,
         body: [
-        `Triggered: ${sorted
-          .slice(0, 3)
-          .map((ev) => {
-            const lbl = stageLabel(ev.stage);
-            const showTime = ev.stage !== "paused" && ev.stage !== "unpaused" && ev.remainingMs > 0;
-            const t = showTime ? ` ${msToClock(ev.remainingMs)}` : "";
-            return `${ev.leagueName} ${lbl}${t}`;
-          })
-          .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
-        onClockSummary,
-      ].filter(Boolean).join(" || "),
+          `Triggered: ${sorted
+            .slice(0, 3)
+            .map((ev) => {
+              const lbl = stageLabel(ev.stage);
+              const showTime =
+                ev.stage !== "paused" &&
+                ev.stage !== "unpaused" &&
+                ev.remainingMs > 0;
+              const t = showTime ? ` ${msToClock(ev.remainingMs)}` : "";
+              return `${ev.leagueName} ${lbl}${t}`;
+            })
+            .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
+          onClockSummary,
+        ].filter(Boolean).join(" || "),
         url: "/draft-pick-tracker",
         tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
         renotify: true,
