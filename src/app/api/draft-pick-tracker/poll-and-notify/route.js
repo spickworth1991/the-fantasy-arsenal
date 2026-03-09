@@ -4,6 +4,58 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+function buildOnClockSummary(onClockSnapshot, maxLines = 8) {
+    const list = Array.isArray(onClockSnapshot) ? onClockSnapshot.slice() : [];
+    if (!list.length) return "";
+
+    list.sort((a, b) => {
+      const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
+      const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
+      return ar - br;
+    });
+
+    const lines = list.slice(0, maxLines).map((x) => {
+      const lbl = stageLabel(x.stage || "onclock");
+      const showTime = x.stage !== "paused" && x.stage !== "unpaused" && Number.isFinite(x.remainingMs);
+      const t = showTime ? ` — ${msToClock(x.remainingMs)}` : "";
+      return `• ${x.leagueName} — ${lbl}${t}`;
+    });
+
+    const more = list.length > maxLines ? `\n+${list.length - maxLines} more` : "";
+    return `On clock now:\n${lines.join("\n")}${more}`;
+  }
+
+  function getReachedStageFlags(totalMs, remainingMs) {
+    const safeTotal = Number(totalMs || 0);
+    const safeRemaining = Math.max(0, Number(remainingMs || 0));
+    const usedFrac = safeTotal > 0 ? 1 - safeRemaining / safeTotal : 0;
+
+    const canTen = safeTotal > 600000;
+    const tenEligible = canTen && safeRemaining <= 600000 && safeRemaining < safeTotal - 30000;
+
+    const canFive = safeTotal > 300000;
+    const fiveEligible = canFive && safeRemaining <= 300000 && safeRemaining < safeTotal - 30000;
+
+    const quarterLeftEligible =
+      safeTotal > 0 &&
+      safeRemaining <= Math.floor(safeTotal * 0.25) &&
+      safeRemaining > 600000;
+
+    const finalThresholdMs = clamp(Math.floor(safeTotal * 0.1), 15000, 60000);
+    const finalEligible = safeRemaining <= finalThresholdMs;
+    const urgentEligible = safeRemaining <= 120000;
+
+    return {
+      sent_onclock: 1,
+      sent_50: usedFrac >= 0.5 ? 1 : 0,
+      sent_25: quarterLeftEligible ? 1 : 0,
+      sent_10min: tenEligible ? 1 : 0,
+      sent_5min: fiveEligible ? 1 : 0,
+      sent_urgent: urgentEligible ? 1 : 0,
+      sent_final: finalEligible ? 1 : 0,
+    };
+  }
+
 async function kickDraftRegistry(env) {
   try {
     if (!env?.DRAFT_REGISTRY?.idFromName) return;
@@ -119,57 +171,7 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "You're officially up",
   ];
 
-  function buildOnClockSummary(onClockSnapshot, maxLines = 8) {
-    const list = Array.isArray(onClockSnapshot) ? onClockSnapshot.slice() : [];
-    if (!list.length) return "";
-
-    list.sort((a, b) => {
-      const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
-      const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
-      return ar - br;
-    });
-
-    const lines = list.slice(0, maxLines).map((x) => {
-      const lbl = stageLabel(x.stage || "onclock");
-      const showTime = x.stage !== "paused" && x.stage !== "unpaused" && Number.isFinite(x.remainingMs);
-      const t = showTime ? ` — ${msToClock(x.remainingMs)}` : "";
-      return `• ${x.leagueName} — ${lbl}${t}`;
-    });
-
-    const more = list.length > maxLines ? `\n+${list.length - maxLines} more` : "";
-    return `On clock now:\n${lines.join("\n")}${more}`;
-  }
-
-  function getReachedStageFlags(totalMs, remainingMs) {
-    const safeTotal = Number(totalMs || 0);
-    const safeRemaining = Math.max(0, Number(remainingMs || 0));
-    const usedFrac = safeTotal > 0 ? 1 - safeRemaining / safeTotal : 0;
-
-    const canTen = safeTotal > 600000;
-    const tenEligible = canTen && safeRemaining <= 600000 && safeRemaining < safeTotal - 30000;
-
-    const canFive = safeTotal > 300000;
-    const fiveEligible = canFive && safeRemaining <= 300000 && safeRemaining < safeTotal - 30000;
-
-    const quarterLeftEligible =
-      safeTotal > 0 &&
-      safeRemaining <= Math.floor(safeTotal * 0.25) &&
-      safeRemaining > 600000;
-
-    const finalThresholdMs = clamp(Math.floor(safeTotal * 0.1), 15000, 60000);
-    const finalEligible = safeRemaining <= finalThresholdMs;
-    const urgentEligible = safeRemaining <= 120000;
-
-    return {
-      sent_onclock: 1,
-      sent_50: usedFrac >= 0.5 ? 1 : 0,
-      sent_25: quarterLeftEligible ? 1 : 0,
-      sent_10min: tenEligible ? 1 : 0,
-      sent_5min: fiveEligible ? 1 : 0,
-      sent_urgent: urgentEligible ? 1 : 0,
-      sent_final: finalEligible ? 1 : 0,
-    };
-  }
+  
   const ONCLOCK_BODIES = [
     `You're on the clock in "${leagueName}". Time left: ${timeLeftText}.`,
     `It's your pick in "${leagueName}". ${timeLeftText} remaining.`,
