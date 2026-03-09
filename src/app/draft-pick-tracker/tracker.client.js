@@ -1294,6 +1294,172 @@ export default function DraftPickTrackerClient() {
               </div>
             </div>
 
+            <div className="sm:hidden divide-y divide-white/10">
+              {filteredDraftRows.map((r, idx) => {
+                const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                const status = String(r?.draftStatus || "").toLowerCase();
+                const isDrafting = status === "drafting";
+                const isPaused = status === "paused";
+                const hasTimer = safeNum(r.timerSec) > 0;
+
+                const liveClockLeft = hasTimer
+                  ? isPaused
+                    ? Math.max(0, safeNum(r.clockLeftMs))
+                    : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+                  : 0;
+
+                const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+
+                const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
+
+                const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+                let liveEta = null;
+                if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+                  if (isDrafting && r.onClockIsMe) {
+                    const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+                    liveEta = liveClockLeft + gap * perPickMs;
+                  } else {
+                    liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+                  }
+                }
+
+                const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+
+                const statusTone =
+                  r.draftStatus === "drafting"
+                    ? "green"
+                    : r.draftStatus === "paused"
+                    ? "yellow"
+                    : r.draftStatus === "complete"
+                    ? "gray"
+                    : "yellow";
+
+                const autoActive = (() => {
+                  const ts = autoByDraftId?.[String(r.draftId)];
+                  if (!ts) return false;
+                  return Date.now() - Number(ts) < 15 * 60 * 1000;
+                })();
+
+                return (
+                  <div
+                    key={r.__rowKey || r.draftId || r.leagueId || `mrow:${idx}`}
+                    className={classNames(
+                      "px-4 py-4",
+                      isDrafting && !r.onClockIsMe && r.onDeck && "bg-amber-500/5"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-white font-semibold truncate">{r.leagueName}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <Pill tone={statusTone} size="sm">
+                            {r.draftStatus || "—"}
+                          </Pill>
+                          <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="sm">
+                            {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
+                          </Pill>
+                          {r.onClockIsMe ? (
+                            <Pill
+                              tone={
+                                hasTimer
+                                  ? onClockHeatStyles(
+                                      getOnClockHeatMsForUI({
+                                        isPaused,
+                                        liveClockLeft,
+                                        timerSec: r.timerSec,
+                                      }),
+                                      r.timerSec
+                                    )?.badgeTone
+                                  : "green"
+                              }
+                              size="sm"
+                            >
+                              ON CLOCK
+                            </Pill>
+                          ) : null}
+                          {isDrafting && !r.onClockIsMe && r.onDeck ? (
+                            <Pill tone="yellow" size="sm">
+                              ON DECK
+                            </Pill>
+                          ) : null}
+                          {autoActive ? (
+                            <Pill tone="red" size="sm">
+                              🚨 AUTO
+                            </Pill>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase tracking-wide text-gray-400">ETA</div>
+                        <div className="text-lg font-extrabold text-white tabular-nums tracking-wide">
+                          {etaClock}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="text-[10px] uppercase tracking-wide text-gray-400">Current</div>
+                        <div className="mt-1 text-sm font-semibold text-white truncate">
+                          {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
+                        </div>
+                        <div className="text-xs text-gray-300 truncate">
+                          {r.currentOwnerName || "—"}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                          {r.onClockIsMe ? "After This" : "Your Next"}
+                        </div>
+                        <div className="mt-1 text-sm font-semibold text-white truncate">
+                          {shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}
+                        </div>
+                        <div className="text-xs text-gray-300 truncate">
+                          {r.picksUntilMyPick != null ? `${r.picksUntilMyPick} away` : "—"}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="text-[10px] uppercase tracking-wide text-gray-400">Clock</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums truncate">
+                          {clockText}
+                        </div>
+                        <div className="text-xs text-gray-300 truncate">
+                          {r.teams ? `${r.teams} teams` : "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <a
+                        href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-cyan-500/90 px-3 py-1.5 text-xs font-semibold text-black hover:bg-cyan-400 border border-white/10"
+                      >
+                        Open
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => copyInviteLink(r.draftId)}
+                        className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 border border-white/10"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredDraftRows.length === 0 && (
+                <div className="px-5 py-10 text-center text-gray-300">
+                  No leagues found. Try adjusting filters or hit Refresh.
+                </div>
+              )}
+            </div>
+
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-black/20 text-gray-200">
