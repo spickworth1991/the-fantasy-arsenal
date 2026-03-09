@@ -304,11 +304,16 @@ export default function DraftPickTrackerClient() {
 
     const safeLower = (s) => String(s || "").trim().toLowerCase();
 
-    const getSnakeSlotForPick = ({ pickNo, teams, reversalRound }) => {
+    const getDraftSlotForPick = ({ pickNo, teams, reversalRound, draftType }) => {
       if (!pickNo || !teams) return null;
       const idx0 = pickNo - 1;
       const round = Math.floor(idx0 / teams) + 1;
       const pickInRound0 = idx0 % teams;
+      const normalizedType = String(draftType || "").toLowerCase();
+
+      if (normalizedType === "linear") {
+        return { round, slot: pickInRound0 + 1 };
+      }
 
       const rr = safeNum(reversalRound);
       let forward = true;
@@ -330,11 +335,12 @@ export default function DraftPickTrackerClient() {
       pickNo,
       teams,
       reversalRound,
+      draftType,
       slotToRoster,
       tradedPickOwner,
       seasonStr,
     }) => {
-      const rs = getSnakeSlotForPick({ pickNo, teams, reversalRound });
+      const rs = getDraftSlotForPick({ pickNo, teams, reversalRound, draftType });
       if (!rs) return null;
       const { round, slot } = rs;
       const origRosterId = slotToRoster?.[String(slot)] ?? slotToRoster?.[slot] ?? null;
@@ -434,6 +440,7 @@ export default function DraftPickTrackerClient() {
             0
         );
         const reversalRound = safeNum(reg?.reversal_round || draft?.settings?.reversal_round || 0);
+        const draftType = String(draft?.type || reg?.type || "snake").toLowerCase();
 
         const pickCount = safeNum((reg?.pickCount ?? reg?.pick_count) ?? 0);
         const currentPick = pickCount + 1;
@@ -446,6 +453,7 @@ export default function DraftPickTrackerClient() {
               pickNo: currentPick,
               teams,
               reversalRound,
+              draftType,
               slotToRoster,
               tradedPickOwner,
               seasonStr,
@@ -456,6 +464,7 @@ export default function DraftPickTrackerClient() {
               pickNo: currentPick + 1,
               teams,
               reversalRound,
+              draftType,
               slotToRoster,
               tradedPickOwner,
               seasonStr,
@@ -480,6 +489,7 @@ export default function DraftPickTrackerClient() {
               pickNo: pk,
               teams,
               reversalRound,
+              draftType,
               slotToRoster,
               tradedPickOwner,
               seasonStr,
@@ -500,6 +510,7 @@ export default function DraftPickTrackerClient() {
               pickNo: pk,
               teams,
               reversalRound,
+              draftType,
               slotToRoster,
               tradedPickOwner,
               seasonStr,
@@ -550,6 +561,7 @@ export default function DraftPickTrackerClient() {
           teams: teams || null,
           rounds: rounds || null,
           reversalRound: reversalRound || 0,
+          draftType,
           recent: [],
           computedAt: nowMs,
         });
@@ -1154,6 +1166,9 @@ export default function DraftPickTrackerClient() {
                           <Pill tone={statusTone} size="sm">
                             {r.draftStatus || "—"}
                           </Pill>
+                          <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="sm">
+                            {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
+                          </Pill>
 
                           {r.onClockIsMe && (
                             <span className={classNames("inline-flex", hasTimer && !isPaused ? clockHeat?.shake : "")}>
@@ -1179,6 +1194,7 @@ export default function DraftPickTrackerClient() {
                         <div className="text-xs text-gray-400 mt-1">
                           {r.teams ? `${r.teams} teams` : "—"}
                           {r.rounds ? ` · ${r.rounds} rounds` : ""}
+                          {r.draftType ? ` · ${String(r.draftType).toUpperCase()}` : ""}
                           {timerLabel ? ` · ${timerLabel}` : ""}
                         </div>
                       </div>
@@ -1354,6 +1370,7 @@ export default function DraftPickTrackerClient() {
                             <div className="text-xs text-gray-400">
                               {r.teams ? `${r.teams} teams` : "—"}
                               {r.rounds ? ` · ${r.rounds} rounds` : ""}
+                              {r.draftType ? ` · ${String(r.draftType).toUpperCase()}` : ""}
                               {timerLabel ? ` · ${timerLabel}` : ""}
                             </div>
                           </div>
@@ -1363,6 +1380,9 @@ export default function DraftPickTrackerClient() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <Pill tone={statusTone} size="sm">
                               {r.draftStatus || "—"}
+                            </Pill>
+                            <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="sm">
+                              {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
                             </Pill>
                             {autoActive ? (
                               <Pill tone="red" size="sm">
