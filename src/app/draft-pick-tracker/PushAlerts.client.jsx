@@ -2,6 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
+const PUSH_ENDPOINT_CACHE_KEY = "tfa_push_endpoint_cache";
+const PUSH_STATUS_CACHE_KEY = "tfa_push_status_cache";
+
 const DEFAULT_SETTINGS = {
   onClock: true,
   progress: true,
@@ -18,10 +21,80 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-async function getCurrentSubscription() {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getPushRegistration() {
   if (!("serviceWorker" in navigator)) return null;
-  const reg = await navigator.serviceWorker.ready;
-  return reg.pushManager.getSubscription();
+
+  try {
+    const direct = await navigator.serviceWorker.getRegistration("/");
+    if (direct?.pushManager) return direct;
+  } catch {
+    // ignore
+  }
+
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    const match = (regs || []).find((reg) => reg?.scope && reg.scope.includes(location.origin));
+    if (match?.pushManager) return match;
+  } catch {
+    // ignore
+  }
+
+  try {
+    const ready = await navigator.serviceWorker.ready;
+    if (ready?.pushManager) return ready;
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
+async function getCurrentSubscription(options = {}) {
+  const { retries = 0, delayMs = 350 } = options || {};
+  if (!("serviceWorker" in navigator)) return null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const reg = await getPushRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      if (sub?.endpoint) return sub;
+    } catch {
+      // ignore
+    }
+
+    if (attempt < retries) await sleep(delayMs);
+  }
+
+  return null;
+}
+
+function readCachedEndpoint() {
+  try {
+    return localStorage.getItem(PUSH_ENDPOINT_CACHE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function cacheEndpoint(endpoint) {
+  try {
+    if (endpoint) localStorage.setItem(PUSH_ENDPOINT_CACHE_KEY, endpoint);
+  } catch {
+    // ignore
+  }
+}
+
+function clearCachedEndpoint() {
+  try {
+    localStorage.removeItem(PUSH_ENDPOINT_CACHE_KEY);
+    localStorage.removeItem(PUSH_STATUS_CACHE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export default function PushAlerts({ username, draftIds, selectedDraftIds, activeOnClockCount = 0 }) {
@@ -39,8 +112,11 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
   const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
 
-  async function fetchSettingsForSubscription(subscription) {
-    const endpoint = subscription?.endpoint;
+  async function fetchSettingsForSubscription(subscriptionOrEndpoint) {
+    const endpoint =
+      typeof subscriptionOrEndpoint === "string"
+        ? subscriptionOrEndpoint
+        : subscriptionOrEndpoint?.endpoint;
     if (!endpoint) return DEFAULT_SETTINGS;
 
     const res = await fetch(`/api/push/settings?endpoint=${encodeURIComponent(endpoint)}`, {
@@ -81,6 +157,13 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       const t = await res.text().catch(() => "");
       throw new Error(t || "Subscribe failed");
     }
+
+    cacheEndpoint(endpoint);
+    try {
+      localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
+    } catch {
+      // ignore
+    }
   }
 
   async function persistSettings(nextSettings) {
@@ -110,14 +193,32 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       try {
         if (!hasNotification) return;
         if (globalThis.Notification.permission === "denied") {
-          if (!cancelled) setStatus("denied");
+          if (!cancelled) {
+            clearCachedEndpoint();
+            setStatus("denied");
+          }
           return;
         }
         if (globalThis.Notification.permission !== "granted") return;
-        const sub = await getCurrentSubscription();
-        if (!cancelled && sub) {
+
+        const cachedEndpoint = readCachedEndpoint();
+        if (!cancelled && cachedEndpoint) {
+          setStatus("enabled");
+          fetchSettingsForSubscription(cachedEndpoint).catch(() => {});
+        }
+
+        const sub = await getCurrentSubscription({ retries: 5, delayMs: 500 });
+        if (!cancelled && sub?.endpoint) {
+          cacheEndpoint(sub.endpoint);
+          try {
+            localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
+          } catch {
+            // ignore
+          }
           setStatus("enabled");
           await fetchSettingsForSubscription(sub);
+        } else if (!cancelled && !cachedEndpoint) {
+          setStatus("idle");
         }
       } catch {
         // ignore
@@ -144,8 +245,10 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       }
 
       if (!("serviceWorker" in navigator)) throw new Error("No service worker");
-      const reg = await navigator.serviceWorker.ready;
-      const existing = await reg.pushManager.getSubscription();
+      const reg = await getPushRegistration();
+      if (!reg?.pushManager) throw new Error("Push registration unavailable");
+
+      const existing = await getCurrentSubscription({ retries: 4, delayMs: 500 });
       const sub =
         existing ||
         (await reg.pushManager.subscribe({
@@ -181,6 +284,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
           // ignore
         }
       }
+      clearCachedEndpoint();
       setStatus("idle");
       setSettingsOpen(false);
       setSettings(DEFAULT_SETTINGS);
@@ -220,7 +324,7 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
         if (globalThis.Notification.permission !== "granted") return;
         if (status !== "enabled") return;
 
-        const sub = await getCurrentSubscription();
+        const sub = await getCurrentSubscription({ retries: 2, delayMs: 400 });
         if (!sub) return;
 
         await saveSubscription(sub, { includeUsername: true });
