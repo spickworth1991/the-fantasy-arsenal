@@ -846,7 +846,14 @@ async function tickOnce(env, state) {
           status === "drafting" &&
           (!Number.isFinite(pickCount) || !cacheLastSyncAt || now - cacheLastSyncAt >= ACTIVE_PICKS_FORCE_RESYNC_MS);
 
+        const forcePausedTransitionPickSync =
+          status === "paused" &&
+          draftLastPicked != null &&
+          cacheSyncedLastPicked !== lastPickedNum &&
+          prevStatus !== "paused";
+
         const canPickSync =
+          forcePausedTransitionPickSync ||
           (wantsPickSync && (status === "drafting" || now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS)) ||
           forceActivePickSync;
 

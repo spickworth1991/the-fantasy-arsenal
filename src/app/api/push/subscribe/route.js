@@ -137,6 +137,17 @@ export async function POST(req) {
     )
     .run();
 
+  if (usernameIn) {
+    await db
+      .prepare(
+        `UPDATE push_subscriptions
+         SET draft_ids_json=?, league_count=?, updated_at=?
+         WHERE username=? AND endpoint<>?`
+      )
+      .bind(draftIdsJson, draftIds.length, now, usernameIn, endpoint)
+      .run();
+  }
+
   return NextResponse.json({ ok: true, endpoint, draftCount: draftIds.length, settings });
 }
 
