@@ -691,11 +691,16 @@ function safeNum(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
-function getSnakeSlotForPick({ pickNo, teams, reversalRound }) {
+function getDraftSlotForPick({ pickNo, teams, reversalRound, draftType }) {
   if (!pickNo || !teams) return null;
   const idx0 = pickNo - 1;
   const round = Math.floor(idx0 / teams) + 1;
   const pickInRound0 = idx0 % teams;
+  const normalizedType = String(draftType || "snake").toLowerCase();
+
+  if (normalizedType === "linear") {
+    return { round, slot: pickInRound0 + 1 };
+  }
 
   const rr = safeNum(reversalRound);
   let forward = true;
@@ -713,10 +718,10 @@ function getSnakeSlotForPick({ pickNo, teams, reversalRound }) {
   return { round, slot };
 }
 
-function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, seasonStr, reversalRound }) {
-  const rs = getSnakeSlotForPick({ pickNo, teams, reversalRound });
+function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, seasonStr, reversalRound, draftType }) {
+  const rs = getDraftSlotForPick({ pickNo, teams, reversalRound, draftType });
   if (!rs) return null;
-  const origRosterId = slotToRoster?.[String(rs.slot)] || null;
+  const origRosterId = slotToRoster?.[String(rs.slot)] || slotToRoster?.[rs.slot] || null;
   if (!origRosterId) return null;
   const traded = tradedPickOwners?.[`${seasonStr}|${rs.round}|${String(origRosterId)}`] || null;
   return traded || String(origRosterId);
@@ -1069,6 +1074,7 @@ async function tickOnce(env, state) {
           const teamsNum = Number(teams || 0) || (slotToRoster ? Object.keys(slotToRoster).length : 0);
 
           if (currentPick != null && teamsNum > 0 && slotToRoster && rosterNames) {
+            const draftType = String(draft?.type || "snake").toLowerCase();
             const ridCur = resolveRosterForPick({
               pickNo: currentPick,
               teams: teamsNum,
@@ -1076,6 +1082,7 @@ async function tickOnce(env, state) {
               tradedPickOwners: tradedOwners,
               seasonStr,
               reversalRound: reversalRound || 0,
+              draftType,
             });
             const ridNext = resolveRosterForPick({
               pickNo: currentPick + 1,
@@ -1084,6 +1091,7 @@ async function tickOnce(env, state) {
               tradedPickOwners: tradedOwners,
               seasonStr,
               reversalRound: reversalRound || 0,
+              draftType,
             });
 
             currentOwnerName = rosterNames?.[String(ridCur)] || null;
