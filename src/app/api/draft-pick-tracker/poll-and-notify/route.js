@@ -4,52 +4,92 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
-function buildOnClockSummary(onClockSnapshot, options = {}) {
-    const { maxItems = 3, excludeDraftIds = [] } = options || {};
-    const exclude = new Set((Array.isArray(excludeDraftIds) ? excludeDraftIds : []).map((x) => String(x || "")));
+function buildAlsoUpSummary(onClockSnapshot, options = {}) {
+  const { excludeDraftIds = [] } = options || {};
+  const exclude = new Set(
+    (Array.isArray(excludeDraftIds) ? excludeDraftIds : []).map((x) => String(x || ""))
+  );
 
-    const list = (Array.isArray(onClockSnapshot) ? onClockSnapshot : [])
-      .filter((x) => !exclude.has(String(x?.draftId || "")))
-      .slice();
+  const list = (Array.isArray(onClockSnapshot) ? onClockSnapshot : [])
+    .filter((x) => !exclude.has(String(x?.draftId || "")))
+    .slice();
 
-    if (!list.length) return "";
+  if (!list.length) return "";
 
-    list.sort((a, b) => {
-      const aStage = String(a?.stage || "");
-      const bStage = String(b?.stage || "");
+  list.sort((a, b) => {
+    const aStage = String(a?.stage || "");
+    const bStage = String(b?.stage || "");
 
-      const aResumed = aStage === "unpaused" ? 1 : 0;
-      const bResumed = bStage === "unpaused" ? 1 : 0;
-      if (aResumed !== bResumed) return bResumed - aResumed;
+    const aResumed = aStage === "unpaused" ? 1 : 0;
+    const bResumed = bStage === "unpaused" ? 1 : 0;
+    if (aResumed !== bResumed) return bResumed - aResumed;
 
-      const aUrgent = aStage === "urgent" || aStage === "five" ? 1 : 0;
-      const bUrgent = bStage === "urgent" || bStage === "five" ? 1 : 0;
-      if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+    const aUrgent = aStage === "urgent" || aStage === "five" ? 1 : 0;
+    const bUrgent = bStage === "urgent" || bStage === "five" ? 1 : 0;
+    if (aUrgent !== bUrgent) return bUrgent - aUrgent;
 
-      const aPaused = aStage === "paused" ? 1 : 0;
-      const bPaused = bStage === "paused" ? 1 : 0;
-      if (aPaused !== bPaused) return aPaused - bPaused;
+    const aPaused = aStage === "paused" ? 1 : 0;
+    const bPaused = bStage === "paused" ? 1 : 0;
+    if (aPaused !== bPaused) return aPaused - bPaused;
 
-      const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
-      const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
-      return ar - br;
-    });
+    const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
+    const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
+    return ar - br;
+  });
 
-    const items = list.slice(0, maxItems).map((x) => {
-      const name = String(x?.leagueName || "League");
-      const ms = Number(x?.remainingMs || 0);
-      const showTime = Number.isFinite(ms) && ms > 0;
+  const count = list.length;
+  const urgent25 = list.find((x) => {
+    const ms = Number(x?.remainingMs || 0);
+    const total = Number(x?.timerMs || 0);
+    return total > 0 && ms > 0 && ms <= Math.floor(total * 0.25);
+  });
 
-      if (showTime) return `${name}: ${msToClock(ms)}`;
-
-      return `${name}: ${stageLabel(x?.stage || "onclock")}`;
-    });
-
-    const more = list.length > maxItems ? ` +${list.length - maxItems} more` : "";
-    return items.length ? `Also up: ${items.join(" | ")}${more}` : "";
+  if (urgent25) {
+    const name = String(urgent25?.leagueName || "One league");
+    const urgentByCount =
+      count === 1
+        ? [
+            `You're also up elsewhere — ${name} is already under 25%.`,
+            `One other league is live, and ${name} is already under 25%.`,
+            `You also have another clock running — ${name} is getting tight.`,
+          ]
+        : count <= 3
+        ? [
+            `You're also on the clock in ${count} other leagues. ${name} is already under 25%.`,
+            `Also up in ${count} other leagues — ${name} is getting tight.`,
+            `${count} other leagues are live too. ${name} is already in the last 25%.`,
+          ]
+        : [
+            `You've got ${count} other clocks running. ${name} is already under 25%.`,
+            `${count} other leagues are still live, and ${name} is getting tight.`,
+            `Multiple other clocks are running (${count} total). ${name} is already in the last 25%.`,
+          ];
+    return pickRandom(urgentByCount);
   }
 
-  function getReachedStageFlags(totalMs, remainingMs) {
+  const baseByCount =
+    count === 1
+      ? [
+          `You're also up in 1 other league.`,
+          `You also have 1 other league on the clock.`,
+          `You're also on the clock elsewhere.`,
+        ]
+      : count <= 3
+      ? [
+          `You're also on the clock in ${count} other leagues.`,
+          `You also have ${count} other leagues on the clock.`,
+          `Also up in ${count} other leagues.`,
+        ]
+      : [
+          `You've got ${count} other clocks running too.`,
+          `Multiple other leagues are live for you (${count}).`,
+          `You're also on the clock across ${count} other leagues.`,
+        ];
+
+  return pickRandom(baseByCount);
+}
+
+function getReachedStageFlags(totalMs, remainingMs) {
     const safeTotal = Number(totalMs || 0);
     const safeRemaining = Math.max(0, Number(remainingMs || 0));
     const usedFrac = safeTotal > 0 ? 1 - safeRemaining / safeTotal : 0;
@@ -167,12 +207,31 @@ function stageLabel(stage) {
     case "final":
       return "FINAL";
     case "paused":
-      return "PAUSED (your pick)";
+      return "PAUSED";
     case "unpaused":
-      return "RESUMED (your pick)";
+      return "RESUMED";
     default:
       return "UPDATE";
   }
+}
+
+function buildGroupedTitle(sortedEvents = []) {
+  const list = Array.isArray(sortedEvents) ? sortedEvents : [];
+  if (!list.length) return "Draft updates";
+
+  const hasCritical = list.some((ev) => {
+    const stage = String(ev?.stage || "");
+    return stage === "urgent" || stage === "final" || stage === "five";
+  });
+
+  const hasResumed = list.some((ev) => String(ev?.stage || "") === "unpaused");
+  const hasPaused = list.some((ev) => String(ev?.stage || "") === "paused");
+
+  if (hasCritical) return "Urgent draft alerts";
+  if (hasResumed) return "Drafts resumed";
+  if (hasPaused) return "Draft status updates";
+  if (list.length > 1) return "Multiple picks live";
+  return "Draft update";
 }
 
 function buildMessage({ stage, leagueName, timeLeftText }) {
@@ -202,7 +261,7 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     `"${leagueName}" — you're up. Clock: ${timeLeftText}.`,
     `Your pick is live in "${leagueName}". ${timeLeftText} to decide.`,
     `Draft time in "${leagueName}". You have ${timeLeftText}.`,
-    `You're on deck in "${leagueName}" — clock is running (${timeLeftText}).`,
+    `You're on the clock in "${leagueName}" — clock is running (${timeLeftText}).`,
     `"${leagueName}": you're the current pick. ${timeLeftText} left.`,
     `Heads up — it's your turn in "${leagueName}". Remaining: ${timeLeftText}.`,
     `Your pick is due in "${leagueName}". ${timeLeftText} left on the clock.`,
@@ -359,8 +418,8 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
   const PAUSED_TITLES = [
     "Draft paused — but it's your pick",
     "Paused… you're still up",
-    "League paused (your pick next)",
-    "Draft is paused (you're the pick)",
+    "League paused - your pick is waiting",
+    "Draft is paused — but you're the pick",
     "Paused — you're currently on the clock",
     "Draft paused — you’re the current pick",
   ];
@@ -897,6 +956,7 @@ async function handler(req) {
           leagueName: String(reg?.league_name || "your league"),
           stage: wasPaused && !isPaused ? "unpaused" : status === "paused" ? "paused" : "onclock",
           remainingMs: Number.isFinite(remainingMs) ? remainingMs : 0,
+          timerMs: totalMs > 0 ? totalMs : 0,
         });
 
         const baseFlags = makeBaseFlags(clockState, nextPickNo, status, isNewPick);
@@ -1034,11 +1094,11 @@ async function handler(req) {
 
       const sendIndividual = async (ev) => {
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
-        const onClockSummary = buildOnClockSummary(onClockSnapshot, {
+        const alsoUpSummary = buildAlsoUpSummary(onClockSnapshot, {
           excludeDraftIds: [ev.draftId],
         });
-        const bodyWithSummary = onClockSummary
-          ? `${ev.body} | ${onClockSummary}`
+        const bodyWithSummary = alsoUpSummary
+          ? `${ev.body} ${alsoUpSummary}`
           : ev.body;
 
         const pushRes = await sendPayload(s, {
@@ -1108,7 +1168,7 @@ async function handler(req) {
       });
 
       const anyUrgent = sorted.some((x) => isUrg(x));
-      const title = anyUrgent ? "⚠️ URGENT" : `Draft updates (${sorted.length})`;
+      const title = buildGroupedTitle(sorted);
 
       const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
 
@@ -1127,10 +1187,10 @@ async function handler(req) {
               return `${ev.leagueName} ${lbl}${t}`;
             })
             .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
-          buildOnClockSummary(onClockSnapshot, {
+          buildAlsoUpSummary(onClockSnapshot, {
             excludeDraftIds: sorted.map((ev) => ev.draftId),
           }),
-        ].filter(Boolean).join(" || "),
+        ].filter(Boolean).join(" "),
         url: "/draft-pick-tracker",
         tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
         renotify: true,
