@@ -233,6 +233,22 @@ function stageLabel(stage) {
   }
 }
 
+function buildEventNotificationTag(ev) {
+  const draftId = String(ev?.draftId || "draft");
+  const pickNo = Number(ev?.pickNo || 0);
+  const stage = String(ev?.stage || "update");
+  return `draft:${draftId}:pick:${pickNo || "na"}:stage:${stage}`;
+}
+
+function buildGroupedNotificationTag(sortedEvents = [], anyUrgent = false) {
+  const list = Array.isArray(sortedEvents) ? sortedEvents : [];
+  const sig = list
+    .slice(0, 4)
+    .map((ev) => `${String(ev?.draftId || "d")}:${Number(ev?.pickNo || 0) || "na"}:${String(ev?.stage || "u")}`)
+    .join("|") || "none";
+  return `${anyUrgent ? "draft-summary-urgent" : "draft-summary"}:${sig}`;
+}
+
 function buildGroupedTitle(sortedEvents = []) {
   const list = Array.isArray(sortedEvents) ? sortedEvents : [];
   if (!list.length) return "Draft updates";
@@ -1194,32 +1210,36 @@ async function handler(req) {
       const activeBadgeCount = onClockSnapshot.length;
       const shouldBadge = !!s.settings?.badges;
       const badgeCountChanged = Number(s.lastBadgeCount || 0) !== activeBadgeCount;
+      const eventsToNotifyPreview = events.filter((ev) => shouldSendStageForSettings(ev.stage, s.settings));
+      const willSendVisibleNotification = eventsToNotifyPreview.length > 0;
 
-      if (shouldBadge && badgeCountChanged) {
-        const badgeRes = await sendPayload(s, {
-          silent: true,
-          badgesEnabled: true,
-          appBadgeCount: activeBadgeCount,
-          clearAppBadge: activeBadgeCount <= 0,
-          url: "/draft-pick-tracker",
-        });
-        if (badgeRes?.ok) {
-          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
-        } else if (badgeRes?.status === 404 || badgeRes?.status === 410) {
-          deleteSubStatements.push(
-            db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
-          );
-        }
-      } else if (!shouldBadge && Number(s.lastBadgeCount || 0) !== 0) {
-        const badgeRes = await sendPayload(s, {
-          silent: true,
-          badgesEnabled: true,
-          appBadgeCount: 0,
-          clearAppBadge: true,
-          url: "/draft-pick-tracker",
-        });
-        if (badgeRes?.ok) {
-          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
+      if (!willSendVisibleNotification) {
+        if (shouldBadge && badgeCountChanged) {
+          const badgeRes = await sendPayload(s, {
+            silent: true,
+            badgesEnabled: true,
+            appBadgeCount: activeBadgeCount,
+            clearAppBadge: activeBadgeCount <= 0,
+            url: "/draft-pick-tracker",
+          });
+          if (badgeRes?.ok) {
+            badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
+          } else if (badgeRes?.status === 404 || badgeRes?.status === 410) {
+            deleteSubStatements.push(
+              db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
+            );
+          }
+        } else if (!shouldBadge && Number(s.lastBadgeCount || 0) !== 0) {
+          const badgeRes = await sendPayload(s, {
+            silent: true,
+            badgesEnabled: true,
+            appBadgeCount: 0,
+            clearAppBadge: true,
+            url: "/draft-pick-tracker",
+          });
+          if (badgeRes?.ok) {
+            badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
+          }
         }
       }
 
@@ -1245,7 +1265,7 @@ async function handler(req) {
           title: ev.title,
           body: bodyWithSummary,
           url: "/draft-pick-tracker",
-          tag: `draft:${ev.draftId}`,
+          tag: buildEventNotificationTag(ev),
           renotify: true,
           icon: ev.icon,
           badge: "/android-chrome-192x192.png",
@@ -1273,6 +1293,11 @@ async function handler(req) {
         if (pushRes?.ok) {
           sent++;
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          if (shouldBadge) {
+            badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
+          } else if (Number(s.lastBadgeCount || 0) !== 0) {
+            badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
+          }
         } else if (pushRes?.status === 404 || pushRes?.status === 410) {
           deleteSubStatements.push(
             db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
@@ -1294,7 +1319,7 @@ async function handler(req) {
       const isPausedStage = (ev) => ev.stage === "paused";
       const isResumedStage = (ev) => ev.stage === "unpaused";
 
-      const eventsToNotify = events.filter((ev) => shouldSendStageForSettings(ev.stage, s.settings));
+      const eventsToNotify = eventsToNotifyPreview;
       if (!eventsToNotify.length) {
         for (const ev of events) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
@@ -1344,7 +1369,7 @@ async function handler(req) {
           }),
         ].filter(Boolean).join(" "),
         url: "/draft-pick-tracker",
-        tag: anyUrgent ? "draft-summary-urgent" : "draft-summary",
+        tag: buildGroupedNotificationTag(sorted, anyUrgent),
         renotify: true,
         icon: summaryIcon,
         badge: "/android-chrome-192x192.png",
@@ -1366,6 +1391,11 @@ async function handler(req) {
         sent++;
         for (const ev of events) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+        }
+        if (shouldBadge) {
+          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
+        } else if (Number(s.lastBadgeCount || 0) !== 0) {
+          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
         }
       } else if (pushRes?.status === 404 || pushRes?.status === 410) {
         deleteSubStatements.push(
