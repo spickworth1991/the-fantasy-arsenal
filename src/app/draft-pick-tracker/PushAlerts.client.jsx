@@ -97,31 +97,77 @@ function clearCachedEndpoint() {
   }
 }
 
-export default function PushAlerts({ username, draftIds, selectedDraftIds, activeOnClockCount = 0 }) {
+function hasAnyVisibleAlerts(s) {
+  return !!(s?.onClock || s?.progress || s?.paused);
+}
+
+async function syncAppBadgeCount(count, badgesEnabled) {
+  try {
+    const safeCount = Math.max(0, Number(count || 0));
+
+    if (!badgesEnabled) {
+      if (typeof navigator !== "undefined" && typeof navigator.clearAppBadge === "function") {
+        await navigator.clearAppBadge();
+        return;
+      }
+      return;
+    }
+
+    if (safeCount > 0) {
+      if (typeof navigator !== "undefined" && typeof navigator.setAppBadge === "function") {
+        await navigator.setAppBadge(safeCount);
+        return;
+      }
+    } else {
+      if (typeof navigator !== "undefined" && typeof navigator.clearAppBadge === "function") {
+        await navigator.clearAppBadge();
+        return;
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export default function PushAlerts({
+  username,
+  draftIds,
+  selectedDraftIds,
+  activeOnClockCount = 0,
+}) {
   const [status, setStatus] = useState("idle");
   const [msg, setMsg] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [endpoint, setEndpoint] = useState("");
+  const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
 
   const chosenDraftIds = useMemo(() => {
-    const raw = Array.isArray(selectedDraftIds) && selectedDraftIds.length ? selectedDraftIds : draftIds;
+    const raw =
+      Array.isArray(selectedDraftIds) && selectedDraftIds.length
+        ? selectedDraftIds
+        : draftIds;
     return Array.isArray(raw) ? raw.filter(Boolean) : [];
   }, [draftIds, selectedDraftIds]);
 
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
-  const hasNotification = typeof globalThis !== "undefined" && "Notification" in globalThis;
+  const hasNotification =
+    typeof globalThis !== "undefined" && "Notification" in globalThis;
 
   async function fetchSettingsForSubscription(subscriptionOrEndpoint) {
-    const endpoint =
+    const nextEndpoint =
       typeof subscriptionOrEndpoint === "string"
         ? subscriptionOrEndpoint
         : subscriptionOrEndpoint?.endpoint;
-    if (!endpoint) return DEFAULT_SETTINGS;
 
-    const res = await fetch(`/api/push/settings?endpoint=${encodeURIComponent(endpoint)}`, {
-      cache: "no-store",
-    });
+    if (!nextEndpoint) return DEFAULT_SETTINGS;
+
+    const res = await fetch(
+      `/api/push/settings?endpoint=${encodeURIComponent(nextEndpoint)}`,
+      { cache: "no-store" }
+    );
+
     if (!res.ok) return DEFAULT_SETTINGS;
 
     const json = await res.json().catch(() => ({}));
@@ -129,13 +175,41 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       ...DEFAULT_SETTINGS,
       ...(json?.settings && typeof json.settings === "object" ? json.settings : {}),
     };
+
     setSettings(next);
+    setEndpoint(nextEndpoint);
+    cacheEndpoint(nextEndpoint);
     return next;
   }
 
-  async function saveSubscription(subscription, { includeUsername = false, settingsOverride } = {}) {
-    const endpoint = subscription?.endpoint;
-    if (!endpoint) return;
+  async function resolveEndpoint(options = {}) {
+    const { allowCached = true, retries = 4, delayMs = 450 } = options || {};
+
+    const sub = await getCurrentSubscription({ retries, delayMs });
+    if (sub?.endpoint) {
+      setHasBrowserSubscription(true);
+      setEndpoint(sub.endpoint);
+      cacheEndpoint(sub.endpoint);
+      return { endpoint: sub.endpoint, subscription: sub, source: "browser" };
+    }
+
+    if (allowCached) {
+      const cached = readCachedEndpoint();
+      if (cached) {
+        setEndpoint(cached);
+        return { endpoint: cached, subscription: null, source: "cache" };
+      }
+    }
+
+    return { endpoint: "", subscription: null, source: "none" };
+  }
+
+  async function saveSubscription(
+    subscription,
+    { includeUsername = false, settingsOverride } = {}
+  ) {
+    const subEndpoint = subscription?.endpoint;
+    if (!subEndpoint) return;
 
     const payload = {
       subscription,
@@ -158,7 +232,10 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       throw new Error(t || "Subscribe failed");
     }
 
-    cacheEndpoint(endpoint);
+    setEndpoint(subEndpoint);
+    setHasBrowserSubscription(true);
+    cacheEndpoint(subEndpoint);
+
     try {
       localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
     } catch {
@@ -167,14 +244,27 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
   }
 
   async function persistSettings(nextSettings) {
-    const sub = await getCurrentSubscription();
-    if (!sub?.endpoint) throw new Error("No active subscription found");
+    if (nextSettings.badges && !hasAnyVisibleAlerts(nextSettings)) {
+      throw new Error(
+        "Badges alone may not update reliably on all devices. Turn on at least one notification type too. Recommended: On-clock alerts."
+      );
+    }
+
+    const resolved = await resolveEndpoint({
+      allowCached: true,
+      retries: 5,
+      delayMs: 500,
+    });
+
+    if (!resolved.endpoint) {
+      throw new Error("No active subscription found");
+    }
 
     const res = await fetch("/api/push/settings", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        endpoint: sub.endpoint,
+        endpoint: resolved.endpoint,
         settings: nextSettings,
       }),
     });
@@ -184,50 +274,126 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
       throw new Error(t || "Failed to save settings");
     }
 
-    await saveSubscription(sub, { includeUsername: true, settingsOverride: nextSettings });
+    if (resolved.subscription?.endpoint) {
+      await saveSubscription(resolved.subscription, {
+        includeUsername: true,
+        settingsOverride: nextSettings,
+      });
+    }
+
+    setSettings(nextSettings);
   }
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         if (!hasNotification) return;
+
         if (globalThis.Notification.permission === "denied") {
           if (!cancelled) {
             clearCachedEndpoint();
+            setEndpoint("");
+            setHasBrowserSubscription(false);
             setStatus("denied");
           }
           return;
         }
-        if (globalThis.Notification.permission !== "granted") return;
 
         const cachedEndpoint = readCachedEndpoint();
         if (!cancelled && cachedEndpoint) {
+          setEndpoint(cachedEndpoint);
           setStatus("enabled");
           fetchSettingsForSubscription(cachedEndpoint).catch(() => {});
         }
 
-        const sub = await getCurrentSubscription({ retries: 5, delayMs: 500 });
+        if (globalThis.Notification.permission !== "granted") {
+          if (!cancelled && !cachedEndpoint) setStatus("idle");
+          return;
+        }
+
+        const sub = await getCurrentSubscription({ retries: 6, delayMs: 500 });
+
         if (!cancelled && sub?.endpoint) {
+          setHasBrowserSubscription(true);
+          setEndpoint(sub.endpoint);
           cacheEndpoint(sub.endpoint);
+
           try {
             localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
           } catch {
             // ignore
           }
+
           setStatus("enabled");
           await fetchSettingsForSubscription(sub);
-        } else if (!cancelled && !cachedEndpoint) {
-          setStatus("idle");
+        } else if (!cancelled) {
+          setHasBrowserSubscription(false);
+          if (cachedEndpoint) {
+            setStatus("enabled");
+          } else {
+            setStatus("idle");
+          }
         }
       } catch {
         // ignore
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, [hasNotification]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncSubscriptionMetadata() {
+      try {
+        if (cancelled) return;
+        if (!hasNotification) return;
+        if (globalThis.Notification.permission !== "granted") return;
+        if (status !== "enabled") return;
+
+        const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
+        if (!sub?.endpoint) return;
+
+        await saveSubscription(sub, { includeUsername: true });
+      } catch {
+        // ignore
+      }
+    }
+
+    if (status === "enabled") syncSubscriptionMetadata();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chosenDraftIds.join("|"), status, hasNotification, username]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncBadgeFromUI() {
+      try {
+        if (cancelled) return;
+        if (!hasNotification) return;
+        if (globalThis.Notification.permission !== "granted") return;
+        if (status !== "enabled") return;
+
+        await syncAppBadgeCount(activeOnClockCount, !!settings.badges);
+      } catch {
+        // ignore
+      }
+    }
+
+    syncBadgeFromUI();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOnClockCount, settings.badges, status, hasNotification]);
 
   async function enable() {
     try {
@@ -244,11 +410,17 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
         return;
       }
 
-      if (!("serviceWorker" in navigator)) throw new Error("No service worker");
-      const reg = await getPushRegistration();
-      if (!reg?.pushManager) throw new Error("Push registration unavailable");
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("No service worker");
+      }
 
-      const existing = await getCurrentSubscription({ retries: 4, delayMs: 500 });
+      const reg = await getPushRegistration();
+      if (!reg?.pushManager) {
+        throw new Error("Push registration unavailable");
+      }
+
+      const existing = await getCurrentSubscription({ retries: 5, delayMs: 500 });
+
       const sub =
         existing ||
         (await reg.pushManager.subscribe({
@@ -256,8 +428,20 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         }));
 
-      await saveSubscription(sub, { includeUsername: true, settingsOverride: settings });
+      const normalizedSettings =
+        settings.badges && !hasAnyVisibleAlerts(settings)
+          ? { ...settings, onClock: true }
+          : settings;
+
+      await saveSubscription(sub, {
+        includeUsername: true,
+        settingsOverride: normalizedSettings,
+      });
+
+      setSettings(normalizedSettings);
       await fetchSettingsForSubscription(sub);
+      await syncAppBadgeCount(activeOnClockCount, !!normalizedSettings.badges);
+
       setStatus("enabled");
       setMsg("Alerts enabled for this device.");
     } catch (e) {
@@ -271,20 +455,32 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
     try {
       setSaving(true);
       setMsg("");
-      const sub = await getCurrentSubscription();
-      if (sub?.endpoint) {
+
+      const sub = await getCurrentSubscription({ retries: 3, delayMs: 400 });
+      const cached = readCachedEndpoint();
+      const endpointToRemove = sub?.endpoint || cached;
+
+      if (endpointToRemove) {
         await fetch("/api/push/unsubscribe", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
+          body: JSON.stringify({ endpoint: endpointToRemove }),
         });
+      }
+
+      if (sub?.unsubscribe) {
         try {
           await sub.unsubscribe();
         } catch {
           // ignore
         }
       }
+
+      await syncAppBadgeCount(0, false);
+
       clearCachedEndpoint();
+      setEndpoint("");
+      setHasBrowserSubscription(false);
       setStatus("idle");
       setSettingsOpen(false);
       setSettings(DEFAULT_SETTINGS);
@@ -298,47 +494,40 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
   }
 
   async function handleToggle(key) {
+    const prev = settings;
     const next = { ...settings, [key]: !settings[key] };
+
+    if (next.badges && !hasAnyVisibleAlerts(next)) {
+      setMsg(
+        "Badges alone may not update reliably on all devices. Turn on at least one notification type too. Recommended: On-clock alerts."
+      );
+      return;
+    }
+
     setSettings(next);
     setSaving(true);
     setMsg("");
+
     try {
       await persistSettings(next);
+
+      if (!next.badges) {
+        await syncAppBadgeCount(0, false);
+      } else {
+        await syncAppBadgeCount(activeOnClockCount, true);
+      }
+
       setMsg("Notification settings saved.");
     } catch (e) {
       console.error(e);
-      setSettings(settings);
+      setSettings(prev);
       setMsg(e?.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
   }
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function sync() {
-      try {
-        if (cancelled) return;
-        if (!hasNotification) return;
-        if (globalThis.Notification.permission !== "granted") return;
-        if (status !== "enabled") return;
-
-        const sub = await getCurrentSubscription({ retries: 2, delayMs: 400 });
-        if (!sub) return;
-
-        await saveSubscription(sub, { includeUsername: true });
-      } catch {
-        // ignore
-      }
-    }
-
-    if (status === "enabled") sync();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [chosenDraftIds.join("|"), status, hasNotification]);
+  const visibleAlertsEnabled = hasAnyVisibleAlerts(settings);
 
   return (
     <div className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 p-3">
@@ -348,18 +537,30 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
           <div className="text-xs text-white/70">
             Home-screen notifications for your active draft leagues.
           </div>
+
           {status === "enabled" ? (
             <div className="mt-1 text-[11px] text-white/50">
-              Badge count follows your exact live on-clock leagues{typeof activeOnClockCount === "number" ? ` (${activeOnClockCount} right now)` : ""}.
+              Badge count follows your exact live on-clock leagues
+              {typeof activeOnClockCount === "number"
+                ? ` (${activeOnClockCount} right now)`
+                : ""}
+              .
             </div>
           ) : null}
         </div>
 
         {status === "enabled" ? (
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200">
-              Enabled
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                visibleAlertsEnabled
+                  ? "bg-emerald-500/20 text-emerald-200"
+                  : "bg-yellow-500/20 text-yellow-200"
+              }`}
+            >
+              {visibleAlertsEnabled ? "Enabled" : "Subscribed"}
             </span>
+
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
@@ -391,28 +592,59 @@ export default function PushAlerts({ username, draftIds, selectedDraftIds, activ
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
             This device
           </div>
+
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
               <span>On-clock alerts</span>
-              <input type="checkbox" checked={!!settings.onClock} onChange={() => handleToggle("onClock")} disabled={saving} />
+              <input
+                type="checkbox"
+                checked={!!settings.onClock}
+                onChange={() => handleToggle("onClock")}
+                disabled={saving}
+              />
             </label>
+
             <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
               <span>Progress alerts</span>
-              <input type="checkbox" checked={!!settings.progress} onChange={() => handleToggle("progress")} disabled={saving} />
+              <input
+                type="checkbox"
+                checked={!!settings.progress}
+                onChange={() => handleToggle("progress")}
+                disabled={saving}
+              />
             </label>
+
             <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
               <span>Paused / resumed</span>
-              <input type="checkbox" checked={!!settings.paused} onChange={() => handleToggle("paused")} disabled={saving} />
+              <input
+                type="checkbox"
+                checked={!!settings.paused}
+                onChange={() => handleToggle("paused")}
+                disabled={saving}
+              />
             </label>
+
             <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
               <span>App icon badges</span>
-              <input type="checkbox" checked={!!settings.badges} onChange={() => handleToggle("badges")} disabled={saving} />
+              <input
+                type="checkbox"
+                checked={!!settings.badges}
+                onChange={() => handleToggle("badges")}
+                disabled={saving}
+              />
             </label>
           </div>
+
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-white/60">
+            Badges can update from push and from opening the tracker, but badges alone may not be reliable on every device.
+            Recommended: leave <span className="font-semibold text-white">On-clock alerts</span> on.
+          </div>
+
           <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="text-[11px] text-white/50">
-              Badge updates happen from push, so the count can change without opening the app.
+            <div className="text-[11px] text-white/50 break-all">
+              Endpoint: {endpoint || (hasBrowserSubscription ? "browser subscription found" : "cached")}
             </div>
+
             <button
               type="button"
               onClick={disableAlerts}

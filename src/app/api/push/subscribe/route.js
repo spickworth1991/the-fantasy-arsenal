@@ -54,9 +54,11 @@ function uniqStrings(arr) {
   const out = [];
   const seen = new Set();
   for (const v of arr || []) {
-    const s = v == null ? "" : String(v);
-    if (!s || seen.has(s)) continue;
-    seen.add(s);
+    const s = v == null ? "" : String(v).trim();
+    if (!s) continue;
+    const key = s;
+    if (seen.has(key)) continue;
+    seen.add(key);
     out.push(s);
   }
   return out;
@@ -90,7 +92,7 @@ export async function POST(req) {
   }
 
   const sub = body?.subscription || null;
-  const endpoint = String(sub?.endpoint || "");
+  const endpoint = String(sub?.endpoint || "").trim();
   if (!endpoint) {
     return NextResponse.json({ ok: false, error: "Missing subscription endpoint" }, { status: 400 });
   }
@@ -99,7 +101,36 @@ export async function POST(req) {
   const usernameIn = body?.username != null ? normalizeUsername(body.username) : "";
   const draftIdsIn = Array.isArray(body?.draftIds) ? body.draftIds : [];
   const draftIds = uniqStrings(draftIdsIn).map(String);
-  const settings = normalizeSettings(body?.settings);
+
+  let settings = normalizeSettings(body?.settings);
+
+  // If this looks like a new endpoint for the same user/device family,
+  // carry forward their most recent saved settings so iOS endpoint rotation
+  // does not feel like a fresh setup.
+  if (usernameIn) {
+    const prior = await db
+      .prepare(
+        `SELECT endpoint, settings_json
+         FROM push_subscriptions
+         WHERE LOWER(username)=?
+         ORDER BY updated_at DESC, created_at DESC
+         LIMIT 1`
+      )
+      .bind(usernameIn)
+      .first();
+
+    if (prior?.settings_json) {
+      try {
+        const priorSettings = normalizeSettings(JSON.parse(prior.settings_json || "{}"));
+        settings = normalizeSettings({
+          ...priorSettings,
+          ...(body?.settings && typeof body.settings === "object" ? body.settings : {}),
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   const subscriptionJson = JSON.stringify(sub || {});
   const draftIdsJson = JSON.stringify(draftIds);
@@ -108,8 +139,16 @@ export async function POST(req) {
   await db
     .prepare(
       `INSERT INTO push_subscriptions (
-        endpoint, subscription_json, draft_ids_json, username, league_count, settings_json,
-        last_badge_count, last_badge_synced_at, updated_at, created_at
+        endpoint,
+        subscription_json,
+        draft_ids_json,
+        username,
+        league_count,
+        settings_json,
+        last_badge_count,
+        last_badge_synced_at,
+        updated_at,
+        created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(endpoint) DO UPDATE SET
         subscription_json=excluded.subscription_json,
@@ -117,11 +156,7 @@ export async function POST(req) {
         league_count=excluded.league_count,
         settings_json=excluded.settings_json,
         updated_at=excluded.updated_at,
-        username=CASE
-          WHEN (push_subscriptions.username IS NULL OR push_subscriptions.username='')
-          THEN excluded.username
-          ELSE push_subscriptions.username
-        END`
+        username=excluded.username`
     )
     .bind(
       endpoint,
@@ -142,13 +177,18 @@ export async function POST(req) {
       .prepare(
         `UPDATE push_subscriptions
          SET draft_ids_json=?, league_count=?, updated_at=?
-         WHERE username=? AND endpoint<>?`
+         WHERE LOWER(username)=? AND endpoint<>?`
       )
       .bind(draftIdsJson, draftIds.length, now, usernameIn, endpoint)
       .run();
   }
 
-  return NextResponse.json({ ok: true, endpoint, draftCount: draftIds.length, settings });
+  return NextResponse.json({
+    ok: true,
+    endpoint,
+    draftCount: draftIds.length,
+    settings,
+  });
 }
 
 export async function PUT(req) {
@@ -167,7 +207,7 @@ export async function PUT(req) {
     body = {};
   }
 
-  const endpoint = String(body?.endpoint || "");
+  const endpoint = String(body?.endpoint || "").trim();
   const username = normalizeUsername(body?.username || "");
   if (!endpoint || !username) {
     return NextResponse.json({ ok: false, error: "Missing endpoint or username" }, { status: 400 });
