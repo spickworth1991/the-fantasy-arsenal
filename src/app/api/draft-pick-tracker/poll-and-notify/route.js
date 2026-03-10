@@ -836,13 +836,31 @@ async function handler(req) {
     let skippedMissingRosterCtx = 0;
 
     const sendPayload = async (subRow, payload) => {
-      const { endpoint, fetchInit } = await buildWebPushRequest({
-        subscription: subRow.sub,
-        payload,
-        vapidSubject,
-        vapidPrivateJwk,
-      });
-      return fetch(endpoint, fetchInit);
+      try {
+        if (!subRow?.sub?.endpoint) {
+          return { ok: false, status: 0, error: "missing-endpoint" };
+        }
+
+        const { endpoint, fetchInit } = await buildWebPushRequest({
+          subscription: subRow.sub,
+          payload,
+          vapidSubject,
+          vapidPrivateJwk,
+        });
+
+        const res = await fetch(endpoint, fetchInit);
+        return {
+          ok: !!res?.ok,
+          status: Number(res?.status || 0),
+          response: res,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          status: 0,
+          error: err?.message || "push-send-failed",
+        };
+      }
     };
 
     const buildBadgeSyncStmt = (endpoint, count) =>
@@ -895,7 +913,7 @@ async function handler(req) {
             clearAppBadge: true,
             url: "/draft-pick-tracker",
           });
-          if (badgeRes.ok) {
+          if (badgeRes?.ok) {
             await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
           }
         }
@@ -912,7 +930,7 @@ async function handler(req) {
             clearAppBadge: true,
             url: "/draft-pick-tracker",
           });
-          if (badgeRes.ok) {
+          if (badgeRes?.ok) {
             await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
           }
         }
@@ -932,7 +950,7 @@ async function handler(req) {
             clearAppBadge: true,
             url: "/draft-pick-tracker",
           });
-          if (badgeRes.ok) {
+          if (badgeRes?.ok) {
             await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
           }
         }
@@ -1185,9 +1203,9 @@ async function handler(req) {
           clearAppBadge: activeBadgeCount <= 0,
           url: "/draft-pick-tracker",
         });
-        if (badgeRes.ok) {
+        if (badgeRes?.ok) {
           badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
-        } else if (badgeRes.status === 404 || badgeRes.status === 410) {
+        } else if (badgeRes?.status === 404 || badgeRes?.status === 410) {
           deleteSubStatements.push(
             db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
           );
@@ -1200,7 +1218,7 @@ async function handler(req) {
           clearAppBadge: true,
           url: "/draft-pick-tracker",
         });
-        if (badgeRes.ok) {
+        if (badgeRes?.ok) {
           badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
         }
       }
@@ -1252,10 +1270,10 @@ async function handler(req) {
           ],
         });
 
-        if (pushRes.ok) {
+        if (pushRes?.ok) {
           sent++;
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
-        } else if (pushRes.status === 404 || pushRes.status === 410) {
+        } else if (pushRes?.status === 404 || pushRes?.status === 410) {
           deleteSubStatements.push(
             db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
           );
@@ -1344,12 +1362,12 @@ async function handler(req) {
         actions: [{ action: "open_tracker", title: "Open Tracker" }],
       });
 
-      if (pushRes.ok) {
+      if (pushRes?.ok) {
         sent++;
         for (const ev of events) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
         }
-      } else if (pushRes.status === 404 || pushRes.status === 410) {
+      } else if (pushRes?.status === 404 || pushRes?.status === 410) {
         deleteSubStatements.push(
           db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
         );
