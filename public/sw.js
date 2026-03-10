@@ -1,18 +1,40 @@
-/* public/sw.js
-   Push-only service worker (stable).
-   - Never fails install
-   - Supports push + notification click
-*/
+/* public/sw.js */
+const CACHE = "tfa-static-v3";
 
-const CACHE = "tfa-static-v2";
-
-// Optional: cache only safe static assets (not HTML routes)
 const STATIC_ASSETS = [
   "/site.webmanifest",
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",
   "/favicon.ico",
 ];
+
+async function setAppBadgeCount(count) {
+  const n = Number(count || 0);
+  try {
+    if (n > 0) {
+      if (typeof self.navigator?.setAppBadge === "function") {
+        await self.navigator.setAppBadge(n);
+        return true;
+      }
+      if (typeof self.registration?.setAppBadge === "function") {
+        await self.registration.setAppBadge(n);
+        return true;
+      }
+    } else {
+      if (typeof self.navigator?.clearAppBadge === "function") {
+        await self.navigator.clearAppBadge();
+        return true;
+      }
+      if (typeof self.registration?.clearAppBadge === "function") {
+        await self.registration.clearAppBadge();
+        return true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
@@ -21,7 +43,6 @@ self.addEventListener("message", (event) => {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      // Never let install fail because an asset 404s
       try {
         const cache = await caches.open(CACHE);
         await Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)));
@@ -36,7 +57,6 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      // clean older caches
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
       await self.clients.claim();
@@ -44,17 +64,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Push handler
 self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       let payload = {};
-
-      // Prefer JSON payloads
       try {
         if (event.data) payload = await event.data.json();
       } catch {
-        // Fallback to text payloads
         try {
           const t = event.data ? await event.data.text() : "";
           payload = t ? { body: t } : {};
@@ -63,14 +79,12 @@ self.addEventListener("push", (event) => {
         }
       }
 
-      // ✅ handle wrapped payloads: { data: "{...}" }
       if (payload && typeof payload.data === "string") {
         try {
           payload = JSON.parse(payload.data);
         } catch {}
       }
 
-      // Some senders wrap under { notification: {...} }
       if (
         payload &&
         typeof payload === "object" &&
@@ -80,14 +94,37 @@ self.addEventListener("push", (event) => {
         payload = payload.notification;
       }
 
+      const appBadgeCount = Number(payload.appBadgeCount || 0);
+      const shouldClearAppBadge = !!payload.clearAppBadge || appBadgeCount <= 0;
+      if (payload.badgesEnabled !== false) {
+        if (shouldClearAppBadge) await setAppBadgeCount(0);
+        else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
+      }
+
       const title = payload.title || "Draft Update";
       const body = payload.body || "New draft activity.";
       const url = payload.url || payload?.data?.url || "/draft-pick-tracker";
-
-      // Allow server-controlled presentation (tag/renotify/icon/etc)
+      const silent = !!payload.silent;
       const icon = payload.icon || "/android-chrome-192x192.png";
       const badge = payload.badge || "/android-chrome-192x192.png";
       const image = payload.image || undefined;
+
+      const clientsList = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of clientsList) {
+        try {
+          client.postMessage({
+            type: "push-event",
+            stage: payload?.data?.stage || payload?.stage || null,
+            draftId: payload?.data?.draftId || payload?.draftId || null,
+            ts: Date.now(),
+            appBadgeCount,
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      if (silent) return;
 
       await self.registration.showNotification(title, {
         body,

@@ -3,6 +3,13 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
+const DEFAULT_SETTINGS = {
+  onClock: true,
+  progress: true,
+  paused: true,
+  badges: true,
+};
+
 async function ensureTable(db) {
   await db
     .prepare(
@@ -12,13 +19,15 @@ async function ensureTable(db) {
         draft_ids_json TEXT,
         username TEXT,
         league_count INTEGER,
+        settings_json TEXT,
+        last_badge_count INTEGER,
+        last_badge_synced_at INTEGER,
         updated_at INTEGER,
         created_at INTEGER
       )`
     )
     .run();
 
-  // Back-compat: add missing columns if the table already exists.
   try {
     const info = await db.prepare(`PRAGMA table_info(push_subscriptions)`).all();
     const existing = new Set((info?.results || []).map((r) => String(r?.name || "")));
@@ -31,6 +40,9 @@ async function ensureTable(db) {
     await add("draft_ids_json", "TEXT");
     await add("username", "TEXT");
     await add("league_count", "INTEGER");
+    await add("settings_json", "TEXT");
+    await add("last_badge_count", "INTEGER");
+    await add("last_badge_synced_at", "INTEGER");
     await add("updated_at", "INTEGER");
     await add("created_at", "INTEGER");
   } catch {
@@ -48,6 +60,17 @@ function uniqStrings(arr) {
     out.push(s);
   }
   return out;
+}
+
+function normalizeUsername(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeSettings(input) {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(input && typeof input === "object" ? input : {}),
+  };
 }
 
 export async function POST(req) {
@@ -73,24 +96,26 @@ export async function POST(req) {
   }
 
   const now = Date.now();
-  const usernameIn = body?.username != null ? String(body.username).trim() : "";
+  const usernameIn = body?.username != null ? normalizeUsername(body.username) : "";
   const draftIdsIn = Array.isArray(body?.draftIds) ? body.draftIds : [];
   const draftIds = uniqStrings(draftIdsIn).map(String);
+  const settings = normalizeSettings(body?.settings);
 
   const subscriptionJson = JSON.stringify(sub || {});
   const draftIdsJson = JSON.stringify(draftIds);
+  const settingsJson = JSON.stringify(settings);
 
-  // Preserve the existing username once set.
-  // Only set it if it's currently empty OR this is a brand new row.
   await db
     .prepare(
       `INSERT INTO push_subscriptions (
-        endpoint, subscription_json, draft_ids_json, username, league_count, updated_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        endpoint, subscription_json, draft_ids_json, username, league_count, settings_json,
+        last_badge_count, last_badge_synced_at, updated_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(endpoint) DO UPDATE SET
         subscription_json=excluded.subscription_json,
         draft_ids_json=excluded.draft_ids_json,
         league_count=excluded.league_count,
+        settings_json=excluded.settings_json,
         updated_at=excluded.updated_at,
         username=CASE
           WHEN (push_subscriptions.username IS NULL OR push_subscriptions.username='')
@@ -104,16 +129,17 @@ export async function POST(req) {
       draftIdsJson,
       usernameIn || null,
       draftIds.length,
+      settingsJson,
+      0,
+      null,
       now,
       now
     )
     .run();
 
-  return NextResponse.json({ ok: true, endpoint, draftCount: draftIds.length });
+  return NextResponse.json({ ok: true, endpoint, draftCount: draftIds.length, settings });
 }
 
-// Optional: allow clients/ops to explicitly change the username for an endpoint.
-// This should ONLY be called by the "Enable Alerts" action (not by auto-sync).
 export async function PUT(req) {
   const { env } = getRequestContext();
   const db = env?.PUSH_DB;
@@ -131,7 +157,7 @@ export async function PUT(req) {
   }
 
   const endpoint = String(body?.endpoint || "");
-  const username = String(body?.username || "").trim();
+  const username = normalizeUsername(body?.username || "");
   if (!endpoint || !username) {
     return NextResponse.json({ ok: false, error: "Missing endpoint or username" }, { status: 400 });
   }

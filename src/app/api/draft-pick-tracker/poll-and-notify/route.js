@@ -4,6 +4,20 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
 
+const DEFAULT_PUSH_SETTINGS = {
+  onClock: true,
+  progress: true,
+  paused: true,
+  badges: true,
+};
+
+function normalizePushSettings(input) {
+  return {
+    ...DEFAULT_PUSH_SETTINGS,
+    ...(input && typeof input === "object" ? input : {}),
+  };
+}
+
 function buildAlsoUpSummary(onClockSnapshot, options = {}) {
   const { excludeDraftIds = [] } = options || {};
   const exclude = new Set(
@@ -144,6 +158,10 @@ function registryAvatarUrl(v) {
   if (!s) return null;
   if (s.startsWith("http://") || s.startsWith("https://")) return s;
   return `https://sleepercdn.com/avatars/thumbs/${s}`;
+}
+
+function safeLower(v) {
+  return String(v || "").trim().toLowerCase();
 }
 
 function assertAuth(req, env) {
@@ -491,6 +509,9 @@ async function ensurePushTables(db) {
       draft_ids_json TEXT,
       username TEXT,
       league_count INTEGER,
+      settings_json TEXT,
+      last_badge_count INTEGER,
+      last_badge_synced_at INTEGER,
       updated_at INTEGER,
       created_at INTEGER
     )`,
@@ -499,6 +520,9 @@ async function ensurePushTables(db) {
       { name: "draft_ids_json", type: "TEXT" },
       { name: "username", type: "TEXT" },
       { name: "league_count", type: "INTEGER" },
+      { name: "settings_json", type: "TEXT" },
+      { name: "last_badge_count", type: "INTEGER" },
+      { name: "last_badge_synced_at", type: "INTEGER" },
       { name: "updated_at", type: "INTEGER" },
       { name: "created_at", type: "INTEGER" },
     ]
@@ -769,7 +793,7 @@ async function handler(req) {
 
     const subRows = await db
       .prepare(
-        `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, updated_at
+        `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, settings_json, last_badge_count, last_badge_synced_at, updated_at
          FROM push_subscriptions`
       )
       .all();
@@ -784,12 +808,19 @@ async function handler(req) {
         try {
           draftIds = JSON.parse(r.draft_ids_json || "[]");
         } catch {}
+        let settings = DEFAULT_PUSH_SETTINGS;
+        try {
+          settings = normalizePushSettings(JSON.parse(r.settings_json || "{}"));
+        } catch {}
         return {
           endpoint: r.endpoint,
           sub,
           username: r.username || null,
           draftIds: Array.isArray(draftIds) ? draftIds : [],
           leagueCount: Number(r.league_count || 0),
+          settings,
+          lastBadgeCount: Number(r.last_badge_count || 0),
+          lastBadgeSyncedAt: Number(r.last_badge_synced_at || 0),
           updatedAt: Number(r.updated_at || 0),
         };
       })
@@ -812,6 +843,22 @@ async function handler(req) {
         vapidPrivateJwk,
       });
       return fetch(endpoint, fetchInit);
+    };
+
+    const buildBadgeSyncStmt = (endpoint, count) =>
+      db
+        .prepare(
+          `UPDATE push_subscriptions
+           SET last_badge_count=?, last_badge_synced_at=?, updated_at=?
+           WHERE endpoint=?`
+        )
+        .bind(Number(count || 0), now, now, endpoint);
+
+    const shouldSendStageForSettings = (stage, settings) => {
+      const s = normalizePushSettings(settings);
+      if (stage === "onclock") return !!s.onClock;
+      if (stage === "paused" || stage === "unpaused") return !!s.paused;
+      return !!s.progress;
     };
 
     const activeRows = await db
@@ -840,11 +887,35 @@ async function handler(req) {
     for (const s of subs) {
       if (!s.username) {
         skippedNoUsername++;
+        if (s.settings?.badges && s.lastBadgeCount > 0) {
+          const badgeRes = await sendPayload(s, {
+            silent: true,
+            badgesEnabled: true,
+            appBadgeCount: 0,
+            clearAppBadge: true,
+            url: "/draft-pick-tracker",
+          });
+          if (badgeRes.ok) {
+            await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
+          }
+        }
         continue;
       }
 
       if (!s.draftIds.length) {
         skippedNoDrafts++;
+        if (s.settings?.badges && s.lastBadgeCount > 0) {
+          const badgeRes = await sendPayload(s, {
+            silent: true,
+            badgesEnabled: true,
+            appBadgeCount: 0,
+            clearAppBadge: true,
+            url: "/draft-pick-tracker",
+          });
+          if (badgeRes.ok) {
+            await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
+          }
+        }
         continue;
       }
 
@@ -852,7 +923,21 @@ async function handler(req) {
         .map(String)
         .filter((id) => activeDraftIdSet.has(id));
 
-      if (!activeDraftIdsForSub.length) continue;
+      if (!activeDraftIdsForSub.length) {
+        if (s.settings?.badges && s.lastBadgeCount > 0) {
+          const badgeRes = await sendPayload(s, {
+            silent: true,
+            badgesEnabled: true,
+            appBadgeCount: 0,
+            clearAppBadge: true,
+            url: "/draft-pick-tracker",
+          });
+          if (badgeRes.ok) {
+            await batchRun(db, [buildBadgeSyncStmt(s.endpoint, 0)]);
+          }
+        }
+        continue;
+      }
 
       const clockStateMap = await loadClockStatesForEndpoint(db, s.endpoint, activeDraftIdsForSub);
 
@@ -861,6 +946,7 @@ async function handler(req) {
       const stateStatements = [];
       const clearStatements = [];
       const deleteSubStatements = [];
+      const badgeStatements = [];
 
       for (const draftId of activeDraftIdsForSub) {
         checked++;
@@ -880,7 +966,7 @@ async function handler(req) {
           continue;
         }
 
-        const uname = String(s.username || "").toLowerCase().trim();
+        const uname = safeLower(s.username);
 
         const rosterByUsername = jsonParseSafe(reg?.roster_by_username_json || "{}", {});
         const rosterNames = jsonParseSafe(reg?.roster_names_json || "{}", {});
@@ -906,7 +992,7 @@ async function handler(req) {
         const isOnClock =
           Boolean(userRosterName) &&
           Boolean(currentOwnerName) &&
-          userRosterName === currentOwnerName;
+          safeLower(userRosterName) === safeLower(currentOwnerName);
 
         if (!isOnClock) {
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
@@ -1087,12 +1173,48 @@ async function handler(req) {
         });
       }
 
+      const activeBadgeCount = onClockSnapshot.length;
+      const shouldBadge = !!s.settings?.badges;
+      const badgeCountChanged = Number(s.lastBadgeCount || 0) !== activeBadgeCount;
+
+      if (shouldBadge && badgeCountChanged) {
+        const badgeRes = await sendPayload(s, {
+          silent: true,
+          badgesEnabled: true,
+          appBadgeCount: activeBadgeCount,
+          clearAppBadge: activeBadgeCount <= 0,
+          url: "/draft-pick-tracker",
+        });
+        if (badgeRes.ok) {
+          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
+        } else if (badgeRes.status === 404 || badgeRes.status === 410) {
+          deleteSubStatements.push(
+            db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
+          );
+        }
+      } else if (!shouldBadge && Number(s.lastBadgeCount || 0) !== 0) {
+        const badgeRes = await sendPayload(s, {
+          silent: true,
+          badgesEnabled: true,
+          appBadgeCount: 0,
+          clearAppBadge: true,
+          url: "/draft-pick-tracker",
+        });
+        if (badgeRes.ok) {
+          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
+        }
+      }
+
       if (!events.length) {
-        await batchRun(db, [...clearStatements, ...stateStatements]);
+        await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
 
       const sendIndividual = async (ev) => {
+        if (!shouldSendStageForSettings(ev.stage, s.settings)) {
+          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          return;
+        }
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
         const alsoUpSummary = buildAlsoUpSummary(onClockSnapshot, {
           excludeDraftIds: [ev.draftId],
@@ -1109,6 +1231,9 @@ async function handler(req) {
           renotify: true,
           icon: ev.icon,
           badge: "/android-chrome-192x192.png",
+          appBadgeCount: activeBadgeCount,
+          clearAppBadge: activeBadgeCount <= 0,
+          badgesEnabled: !!s.settings?.badges,
           requireInteraction: isUrgent ? true : undefined,
           vibrate: isUrgent ? [100, 60, 100, 60, 180] : undefined,
           data: {
@@ -1140,7 +1265,7 @@ async function handler(req) {
 
       if (events.length === 1) {
         await sendIndividual(events[0]);
-        await batchRun(db, [...clearStatements, ...stateStatements, ...deleteSubStatements]);
+        await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
 
@@ -1151,7 +1276,16 @@ async function handler(req) {
       const isPausedStage = (ev) => ev.stage === "paused";
       const isResumedStage = (ev) => ev.stage === "unpaused";
 
-      const sorted = events.slice().sort((a, b) => {
+      const eventsToNotify = events.filter((ev) => shouldSendStageForSettings(ev.stage, s.settings));
+      if (!eventsToNotify.length) {
+        for (const ev of events) {
+          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+        }
+        await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
+        continue;
+      }
+
+      const sorted = eventsToNotify.slice().sort((a, b) => {
         const au = isUrg(a) ? 1 : 0;
         const bu = isUrg(b) ? 1 : 0;
         if (au !== bu) return bu - au;
@@ -1196,6 +1330,9 @@ async function handler(req) {
         renotify: true,
         icon: summaryIcon,
         badge: "/android-chrome-192x192.png",
+        appBadgeCount: activeBadgeCount,
+        clearAppBadge: activeBadgeCount <= 0,
+        badgesEnabled: !!s.settings?.badges,
         requireInteraction: anyUrgent ? true : undefined,
         vibrate: anyUrgent ? [100, 60, 100, 60, 180] : undefined,
         data: {
@@ -1221,7 +1358,7 @@ async function handler(req) {
         }
       }
 
-      await batchRun(db, [...clearStatements, ...stateStatements, ...deleteSubStatements]);
+      await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
     }
 
     return NextResponse.json({

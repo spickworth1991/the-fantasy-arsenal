@@ -826,6 +826,12 @@ export default function DraftPickTrackerClient() {
   ]);
 
   const totalLeagues = filteredDraftRows.length;
+  const activeOnClockCount = useMemo(() => {
+    return (rows || []).filter((r) => {
+      const st = String(r?.draftStatus || "").toLowerCase();
+      return (st === "drafting" || st === "paused") && r?.onClockIsMe;
+    }).length;
+  }, [rows]);
 
   const copyInviteLink = async (draftId) => {
     const url = `https://sleeper.com/draft/nfl/${String(draftId)}`;
@@ -888,6 +894,7 @@ export default function DraftPickTrackerClient() {
                 username={username}
                 draftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
                 selectedDraftIds={(leagues || []).filter((l) => l?.draft_id).map((l) => String(l.draft_id))}
+                activeOnClockCount={activeOnClockCount}
               />
             )}
           </div>
