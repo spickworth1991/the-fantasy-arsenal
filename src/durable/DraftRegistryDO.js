@@ -11,7 +11,7 @@
 const TICK_MS = 15_000;
 
 // Treat active drafts as stale after ~1 tick.
-const ACTIVE_REFRESH_MS = 20_000;
+const ACTIVE_REFRESH_MS = 15_000;
 
 // Pre-draft drafts can flip to drafting quickly.
 // Keep this tight enough to notice the transition without requiring a UI visit.
@@ -22,6 +22,7 @@ const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
 
 // Only call /picks when we actually need to (and never more often than this per draft).
 const PICKS_SYNC_COOLDOWN_MS = 20_000;
+const ACTIVE_PICKS_FORCE_RESYNC_MS = 15_000;
 
 // Store per-draft scheduling metadata in DO storage so we don't write D1 when nothing changes.
 // Key: meta:<draftId> -> { lastCheckedAt, lastStatus }
@@ -841,7 +842,13 @@ async function tickOnce(env, state) {
           draftLastPicked != null &&
           (!Number.isFinite(pickCount) || cacheSyncedLastPicked !== lastPickedNum);
 
-        const canPickSync = wantsPickSync && now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS;
+        const forceActivePickSync =
+          status === "drafting" &&
+          (!Number.isFinite(pickCount) || !cacheLastSyncAt || now - cacheLastSyncAt >= ACTIVE_PICKS_FORCE_RESYNC_MS);
+
+        const canPickSync =
+          (wantsPickSync && (status === "drafting" || now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS)) ||
+          forceActivePickSync;
 
         const stageCachePatch = (patch) => {
           const cur = cacheWrites.get(draftId) || {};
@@ -860,7 +867,6 @@ async function tickOnce(env, state) {
           } catch {
             stageCachePatch({
               last_picked: lastPicked,
-              last_picks_sync_at: now,
             });
           }
         } else if (draftLastPicked != null && cacheLastPicked !== lastPickedNum) {

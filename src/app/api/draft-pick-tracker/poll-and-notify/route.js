@@ -15,6 +15,21 @@ function buildOnClockSummary(onClockSnapshot, options = {}) {
     if (!list.length) return "";
 
     list.sort((a, b) => {
+      const aStage = String(a?.stage || "");
+      const bStage = String(b?.stage || "");
+
+      const aResumed = aStage === "unpaused" ? 1 : 0;
+      const bResumed = bStage === "unpaused" ? 1 : 0;
+      if (aResumed !== bResumed) return bResumed - aResumed;
+
+      const aUrgent = aStage === "urgent" || aStage === "five" ? 1 : 0;
+      const bUrgent = bStage === "urgent" || bStage === "five" ? 1 : 0;
+      if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+
+      const aPaused = aStage === "paused" ? 1 : 0;
+      const bPaused = bStage === "paused" ? 1 : 0;
+      if (aPaused !== bPaused) return aPaused - bPaused;
+
       const ar = Number.isFinite(a?.remainingMs) ? a.remainingMs : Number.MAX_SAFE_INTEGER;
       const br = Number.isFinite(b?.remainingMs) ? b.remainingMs : Number.MAX_SAFE_INTEGER;
       return ar - br;
@@ -23,13 +38,10 @@ function buildOnClockSummary(onClockSnapshot, options = {}) {
     const items = list.slice(0, maxItems).map((x) => {
       const name = String(x?.leagueName || "League");
       const ms = Number(x?.remainingMs || 0);
-      const showTime =
-        x?.stage !== "paused" &&
-        x?.stage !== "unpaused" &&
-        Number.isFinite(ms) &&
-        ms > 0;
+      const showTime = Number.isFinite(ms) && ms > 0;
 
       if (showTime) return `${name}: ${msToClock(ms)}`;
+
       return `${name}: ${stageLabel(x?.stage || "onclock")}`;
     });
 
@@ -353,12 +365,12 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "Draft paused — you’re the current pick",
   ];
   const PAUSED_BODIES = [
-    `"${leagueName}" is paused, but it's still your pick.`,
-    `Heads up — "${leagueName}" is paused, but you're the current pick.`,
-    `"${leagueName}" paused. You're still on deck for the pick.`,
-    `Paused in "${leagueName}" — you're still the pick when it resumes.`,
-    `"${leagueName}" is paused — you’re still the active pick.`,
-    `Draft paused in "${leagueName}" — your pick is waiting.`,
+    `"${leagueName}" is paused, but it's still your pick. ${timeLeftText} left.`,
+    `Heads up — "${leagueName}" is paused, but you're the current pick. ${timeLeftText} remaining.`,
+    `"${leagueName}" paused. The pick stopped with ${timeLeftText} left.`,
+    `Paused in "${leagueName}" — you're still the pick when it resumes. ${timeLeftText} left.`,
+    `"${leagueName}" is paused — you’re still the active pick. ${timeLeftText} remaining.`,
+    `Draft paused in "${leagueName}" — your pick is waiting with ${timeLeftText} left.`,
   ];
 
   const UNPAUSED_TITLES = [
@@ -876,10 +888,14 @@ async function handler(req) {
             remainingMs = frozenPausedRemaining;
           }
         }
+
+        if (!isPaused && rawRemainingMs > 0 && remainingMs <= 0) {
+          remainingMs = rawRemainingMs;
+        }
         onClockSnapshot.push({
           draftId: String(draftId),
           leagueName: String(reg?.league_name || "your league"),
-          stage: status === "paused" ? "paused" : "onclock",
+          stage: wasPaused && !isPaused ? "unpaused" : status === "paused" ? "paused" : "onclock",
           remainingMs: Number.isFinite(remainingMs) ? remainingMs : 0,
         });
 
