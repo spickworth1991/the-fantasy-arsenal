@@ -249,6 +249,11 @@ function buildGroupedNotificationTag(sortedEvents = [], anyUrgent = false) {
   return `${anyUrgent ? "draft-summary-urgent" : "draft-summary"}:${sig}`;
 }
 
+function isAppleSubscriptionEndpoint(endpoint) {
+  const s = String(endpoint || "").trim().toLowerCase();
+  return s.includes("push.apple.com") || s.includes("web.push.apple.com");
+}
+
 function buildGroupedTitle(sortedEvents = []) {
   const list = Array.isArray(sortedEvents) ? sortedEvents : [];
   if (!list.length) return "Draft updates";
@@ -859,7 +864,10 @@ async function handler(req) {
 
         const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: subRow.sub,
-          payload,
+          payload: {
+            ...(payload && typeof payload === "object" ? payload : {}),
+            isAppleWebPush: appleWebPush,
+          },
           vapidSubject,
           vapidPrivateJwk,
         });

@@ -1,6 +1,12 @@
 /* public/sw.js */
 const CACHE = "tfa-static-v3";
 
+function isAppleWebPushPayload(payload) {
+  if (payload?.isAppleWebPush === true) return true;
+  const endpoint = String(payload?.endpoint || payload?.subscriptionEndpoint || payload?.data?.subscriptionEndpoint || "").toLowerCase();
+  return endpoint.includes("push.apple.com") || endpoint.includes("web.push.apple.com");
+}
+
 const STATIC_ASSETS = [
   "/site.webmanifest",
   "/android-chrome-192x192.png",
@@ -108,6 +114,7 @@ self.addEventListener("push", (event) => {
       const icon = payload.icon || "/android-chrome-192x192.png";
       const badge = payload.badge || "/android-chrome-192x192.png";
       const image = payload.image || undefined;
+      const isAppleWebPush = isAppleWebPushPayload(payload);
 
       const clientsList = await clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of clientsList) {
@@ -126,20 +133,31 @@ self.addEventListener("push", (event) => {
 
       if (silent) return;
 
-      await self.registration.showNotification(title, {
-        body,
-        icon,
-        badge,
-        image,
-        tag: payload.tag,
-        renotify: !!payload.renotify,
-        requireInteraction: !!payload.requireInteraction,
-        actions: Array.isArray(payload.actions) ? payload.actions : undefined,
-        data: {
-          ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
-          url,
-        },
-      });
+      const notificationData = {
+        ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
+        url,
+      };
+
+      const options = isAppleWebPush
+        ? {
+            body,
+            icon,
+            tag: payload.tag,
+            data: notificationData,
+          }
+        : {
+            body,
+            icon,
+            badge,
+            image,
+            tag: payload.tag,
+            renotify: !!payload.renotify,
+            requireInteraction: !!payload.requireInteraction,
+            actions: Array.isArray(payload.actions) ? payload.actions : undefined,
+            data: notificationData,
+          };
+
+      await self.registration.showNotification(title, options);
     })()
   );
 });
