@@ -646,10 +646,10 @@ function buildUpsertRegistryStmt(db, draftId, cur, patch) {
         league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
         league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
         best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball),
-        current_pick=COALESCE(excluded.current_pick, push_draft_registry.current_pick),
-        current_owner_name=COALESCE(excluded.current_owner_name, push_draft_registry.current_owner_name),
-        next_owner_name=COALESCE(excluded.next_owner_name, push_draft_registry.next_owner_name),
-        clock_ends_at=COALESCE(excluded.clock_ends_at, push_draft_registry.clock_ends_at),
+        current_pick=excluded.current_pick,
+        current_owner_name=excluded.current_owner_name,
+        next_owner_name=excluded.next_owner_name,
+        clock_ends_at=excluded.clock_ends_at,
         completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
         updated_at=excluded.updated_at`
     )
@@ -854,8 +854,10 @@ async function tickOnce(env, state) {
         const forcePausedTransitionPickSync =
           status === "paused" &&
           draftLastPicked != null &&
-          cacheSyncedLastPicked !== lastPickedNum &&
-          prevStatus !== "paused";
+          (
+            cacheSyncedLastPicked !== lastPickedNum ||
+            prevStatus !== "paused"
+          );
 
         const canPickSync =
           forcePausedTransitionPickSync ||
@@ -935,8 +937,19 @@ async function tickOnce(env, state) {
         let didHydrateRosterContext = false;
 
         const needsRosterContext = !slotToRosterJson || !rosterNamesJson || !rosterByUsernameJson;
-        const canHydrateRosterContext = Boolean(leagueId) && isActive && (needsRosterContext || contextStale);
 
+        const forcePausedOwnerRefresh =
+          status === "paused" &&
+          draftLastPicked != null &&
+          (
+            cacheSyncedLastPicked !== lastPickedNum ||
+            prevStatus !== "paused"
+          );
+
+        const canHydrateRosterContext =
+          Boolean(leagueId) &&
+          isActive &&
+          (needsRosterContext || contextStale || forcePausedOwnerRefresh);
         if (canHydrateRosterContext) {
           try {
             const [users, rosters] = await Promise.all([
@@ -1131,8 +1144,9 @@ async function tickOnce(env, state) {
         };
 
         const regCur = reg || registryMap.get(draftId) || null;
-        const changed = shouldWriteRow(regCur, registryPatch);
-
+        const changed =
+          shouldWriteRow(regCur, registryPatch) ||
+          forcePausedTransitionPickSync;
         if (changed) {
           registryPatch.draft_json = JSON.stringify(draft || {});
           registryPatch.draft_order_json = draft?.draft_order ? JSON.stringify(draft.draft_order) : null;
