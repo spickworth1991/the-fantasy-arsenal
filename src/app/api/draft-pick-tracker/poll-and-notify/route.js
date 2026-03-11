@@ -857,35 +857,37 @@ async function handler(req) {
     let skippedMissingRosterCtx = 0;
 
     const sendPayload = async (subRow, payload) => {
-      try {
-        if (!subRow?.sub?.endpoint) {
-          return { ok: false, status: 0, error: "missing-endpoint" };
-        }
+  try {
+    if (!subRow?.sub?.endpoint) {
+      return { ok: false, status: 0, error: "missing-endpoint" };
+    }
 
-        const { endpoint, fetchInit } = await buildWebPushRequest({
-          subscription: subRow.sub,
-          payload: {
-            ...(payload && typeof payload === "object" ? payload : {}),
-            isAppleWebPush: appleWebPush,
-          },
-          vapidSubject,
-          vapidPrivateJwk,
-        });
+    const appleWebPush = isAppleSubscriptionEndpoint(subRow?.sub?.endpoint);
 
-        const res = await fetch(endpoint, fetchInit);
-        return {
-          ok: !!res?.ok,
-          status: Number(res?.status || 0),
-          response: res,
-        };
-      } catch (err) {
-        return {
-          ok: false,
-          status: 0,
-          error: err?.message || "push-send-failed",
-        };
-      }
+    const { endpoint, fetchInit } = await buildWebPushRequest({
+      subscription: subRow.sub,
+      payload: {
+        ...(payload && typeof payload === "object" ? payload : {}),
+        isAppleWebPush: appleWebPush,
+      },
+      vapidSubject,
+      vapidPrivateJwk,
+    });
+
+    const res = await fetch(endpoint, fetchInit);
+    return {
+      ok: !!res?.ok,
+      status: Number(res?.status || 0),
+      response: res,
     };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: err?.message || "push-send-failed",
+    };
+  }
+};
 
     const buildBadgeSyncStmt = (endpoint, count) =>
       db
