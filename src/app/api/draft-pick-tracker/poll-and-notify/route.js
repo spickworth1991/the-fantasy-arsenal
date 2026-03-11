@@ -164,6 +164,44 @@ function safeLower(v) {
   return String(v || "").trim().toLowerCase();
 }
 
+
+function getDebugConfig(req) {
+  try {
+    const url = new URL(req.url);
+    const enabled = [
+      url.searchParams.get("debug"),
+      req.headers.get("x-debug-push"),
+    ].some((v) => {
+      const s = String(v || "").trim().toLowerCase();
+      return s === "1" || s === "true" || s === "yes" || s === "on";
+    });
+
+    const username = safeLower(
+      url.searchParams.get("debug_username") || req.headers.get("x-debug-username") || ""
+    );
+    const endpoint = String(
+      url.searchParams.get("debug_endpoint") || req.headers.get("x-debug-endpoint") || ""
+    ).trim();
+    const maxEntriesRaw = Number(
+      url.searchParams.get("debug_max") || req.headers.get("x-debug-max") || 40
+    );
+    const maxEntries = Number.isFinite(maxEntriesRaw)
+      ? Math.max(1, Math.min(200, Math.floor(maxEntriesRaw)))
+      : 40;
+
+    return { enabled, username, endpoint, maxEntries };
+  } catch {
+    return { enabled: false, username: "", endpoint: "", maxEntries: 40 };
+  }
+}
+
+function makeEndpointLabel(endpoint) {
+  const s = String(endpoint || "").trim();
+  if (!s) return "";
+  if (s.length <= 20) return s;
+  return `${s.slice(0, 8)}…${s.slice(-8)}`;
+}
+
 function assertAuth(req, env) {
   const expected = env?.PUSH_ADMIN_SECRET;
   if (!expected) return false;
@@ -811,6 +849,13 @@ async function handler(req) {
     }
 
     const now = Date.now();
+    const debug = getDebugConfig(req);
+    const debugEntries = [];
+    const pushDebug = (entry) => {
+      if (!debug.enabled) return;
+      if (debugEntries.length >= debug.maxEntries) return;
+      debugEntries.push(entry);
+    };
 
     const subRows = await db
       .prepare(
@@ -857,37 +902,62 @@ async function handler(req) {
     let skippedMissingRosterCtx = 0;
 
     const sendPayload = async (subRow, payload) => {
-  try {
-    if (!subRow?.sub?.endpoint) {
-      return { ok: false, status: 0, error: "missing-endpoint" };
-    }
+      try {
+        if (!subRow?.sub?.endpoint) {
+          return { ok: false, status: 0, error: "missing-endpoint" };
+        }
 
-    const appleWebPush = isAppleSubscriptionEndpoint(subRow?.sub?.endpoint);
+        const appleWebPush = isAppleSubscriptionEndpoint(subRow?.sub?.endpoint);
+        const mergedPayload = {
+          ...(payload && typeof payload === "object" ? payload : {}),
+          isAppleWebPush: appleWebPush,
+        };
 
-    const { endpoint, fetchInit } = await buildWebPushRequest({
-      subscription: subRow.sub,
-      payload: {
-        ...(payload && typeof payload === "object" ? payload : {}),
-        isAppleWebPush: appleWebPush,
-      },
-      vapidSubject,
-      vapidPrivateJwk,
-    });
+        const { endpoint, fetchInit } = await buildWebPushRequest({
+          subscription: subRow.sub,
+          payload: mergedPayload,
+          vapidSubject,
+          vapidPrivateJwk,
+        });
 
-    const res = await fetch(endpoint, fetchInit);
-    return {
-      ok: !!res?.ok,
-      status: Number(res?.status || 0),
-      response: res,
+        const res = await fetch(endpoint, fetchInit);
+        let responseText = null;
+        try {
+          responseText = await res.clone().text();
+        } catch {
+          responseText = null;
+        }
+        return {
+          ok: !!res?.ok,
+          status: Number(res?.status || 0),
+          statusText: String(res?.statusText || ""),
+          endpoint,
+          endpointLabel: makeEndpointLabel(endpoint),
+          isAppleWebPush: appleWebPush,
+          responseText,
+          payloadMeta: {
+            silent: !!mergedPayload?.silent,
+            hasTitle: !!mergedPayload?.title,
+            tag: String(mergedPayload?.tag || ""),
+            appBadgeCount: Number.isFinite(Number(mergedPayload?.appBadgeCount))
+              ? Number(mergedPayload.appBadgeCount)
+              : null,
+            clearAppBadge: !!mergedPayload?.clearAppBadge,
+            badgesEnabled: mergedPayload?.badgesEnabled !== false,
+          },
+          response: res,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          status: 0,
+          error: err?.message || "push-send-failed",
+          endpoint: String(subRow?.sub?.endpoint || ""),
+          endpointLabel: makeEndpointLabel(subRow?.sub?.endpoint || ""),
+          isAppleWebPush: isAppleSubscriptionEndpoint(subRow?.sub?.endpoint),
+        };
+      }
     };
-  } catch (err) {
-    return {
-      ok: false,
-      status: 0,
-      error: err?.message || "push-send-failed",
-    };
-  }
-};
 
     const buildBadgeSyncStmt = (endpoint, count) =>
       db
@@ -920,6 +990,11 @@ async function handler(req) {
 
     const allRelevantDraftIds = [];
     for (const s of subs) {
+      if (debug.enabled) {
+        const usernameMatch = !debug.username || safeLower(s.username) === debug.username;
+        const endpointMatch = !debug.endpoint || String(s.endpoint || "") === debug.endpoint;
+        if (!usernameMatch || !endpointMatch) continue;
+      }
       for (const id of s.draftIds || []) {
         const draftId = String(id || "");
         if (draftId && activeDraftIdSet.has(draftId)) allRelevantDraftIds.push(draftId);
@@ -931,6 +1006,7 @@ async function handler(req) {
     for (const s of subs) {
       if (!s.username) {
         skippedNoUsername++;
+        pushDebug({ endpoint: s.endpoint, username: s.username, reason: "no-username" });
         if (s.settings?.badges && s.lastBadgeCount > 0) {
           const badgeRes = await sendPayload(s, {
             silent: true,
@@ -948,6 +1024,7 @@ async function handler(req) {
 
       if (!s.draftIds.length) {
         skippedNoDrafts++;
+        pushDebug({ endpoint: s.endpoint, username: s.username, reason: "no-drafts" });
         if (s.settings?.badges && s.lastBadgeCount > 0) {
           const badgeRes = await sendPayload(s, {
             silent: true,
@@ -968,6 +1045,7 @@ async function handler(req) {
         .filter((id) => activeDraftIdSet.has(id));
 
       if (!activeDraftIdsForSub.length) {
+        pushDebug({ endpoint: s.endpoint, username: s.username, reason: "no-active-drafts" });
         if (s.settings?.badges && s.lastBadgeCount > 0) {
           const badgeRes = await sendPayload(s, {
             silent: true,
@@ -1007,6 +1085,7 @@ async function handler(req) {
         const nextPickNo = Number(reg?.current_pick || 0);
         if (!nextPickNo) {
           skippedNoOrder++;
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-current-pick" });
           continue;
         }
 
@@ -1025,6 +1104,7 @@ async function handler(req) {
 
         if (!hasRosterCtx) {
           skippedMissingRosterCtx++;
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "missing-roster-context" });
           continue;
         }
 
@@ -1041,6 +1121,7 @@ async function handler(req) {
         if (!isOnClock) {
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
           skippedNotOnClock++;
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "not-on-clock", currentOwnerName, userRosterName });
           continue;
         }
 
@@ -1164,6 +1245,7 @@ async function handler(req) {
 
         if (!stageToSend) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, draftId, baseFlags));
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus });
           continue;
         }
 
@@ -1254,6 +1336,7 @@ async function handler(req) {
       }
 
       if (!events.length) {
+        pushDebug({ endpoint: s.endpoint, username: s.username, reason: "no-events", activeBadgeCount, onClockSnapshotCount: onClockSnapshot.length });
         await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
@@ -1300,6 +1383,8 @@ async function handler(req) {
           ],
         });
 
+        pushDebug({ endpoint: s.endpoint, username: s.username, draftId: ev.draftId, send: "individual", stage: ev.stage, pickNo: ev.pickNo, result: pushRes });
+
         if (pushRes?.ok) {
           sent++;
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
@@ -1331,6 +1416,7 @@ async function handler(req) {
 
       const eventsToNotify = eventsToNotifyPreview;
       if (!eventsToNotify.length) {
+        pushDebug({ endpoint: s.endpoint, username: s.username, reason: "events-filtered-by-settings", eventStages: events.map((ev) => ev.stage), settings: s.settings });
         for (const ev of events) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
         }
@@ -1397,6 +1483,8 @@ async function handler(req) {
         actions: [{ action: "open_tracker", title: "Open Tracker" }],
       });
 
+      pushDebug({ endpoint: s.endpoint, username: s.username, send: "grouped", stages: sorted.map((ev) => ev.stage), draftIds: sorted.map((ev) => ev.draftId), pickNos: sorted.map((ev) => ev.pickNo), result: pushRes });
+
       if (pushRes?.ok) {
         sent++;
         for (const ev of events) {
@@ -1429,6 +1517,18 @@ async function handler(req) {
       skippedNoOrder,
       skippedNotOnClock,
       skippedMissingRosterCtx,
+      ...(debug.enabled
+        ? {
+            debug: {
+              filter: {
+                username: debug.username || null,
+                endpoint: debug.endpoint || null,
+                maxEntries: debug.maxEntries,
+              },
+              entries: debugEntries,
+            },
+          }
+        : {}),
     });
   } catch (e) {
     return new NextResponse(e?.message || "Poll failed", { status: 500 });
