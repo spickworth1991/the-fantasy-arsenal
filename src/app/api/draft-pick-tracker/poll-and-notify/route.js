@@ -1200,10 +1200,13 @@ async function handler(req) {
         const sentUrgent = baseFlags.sent_urgent === 1;
         const sentFinal = baseFlags.sent_final === 1;
 
+        const transitionedToPaused = status === "paused" && prevStatus !== "paused";
+        const transitionedFromPaused = status !== "paused" && prevStatus === "paused";
+
         if (status === "paused") {
-          if (isNewPick || !sentPaused) stageToSend = "paused";
+          if (transitionedToPaused || isNewPick || !sentPaused) stageToSend = "paused";
         } else {
-          if (prevStatus === "paused" && !sentUnpaused) {
+          if (transitionedFromPaused) {
             stageToSend = "unpaused";
           } else if (isNewPick || !sentOnclock) {
             stageToSend = "onclock";
@@ -1245,7 +1248,7 @@ async function handler(req) {
 
         if (!stageToSend) {
           stateStatements.push(buildClockStateStmt(db, s.endpoint, draftId, baseFlags));
-          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus });
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus, sentPaused, sentUnpaused, sentOnclock, transitionedToPaused, transitionedFromPaused, isNewPick });
           continue;
         }
 
@@ -1257,7 +1260,10 @@ async function handler(req) {
         if (stageToSend === "five") nextFlags.sent_5min = 1;
         if (stageToSend === "urgent") nextFlags.sent_urgent = 1;
         if (stageToSend === "final") nextFlags.sent_final = 1;
-        if (stageToSend === "paused") nextFlags.sent_paused = 1;
+        if (stageToSend === "paused") {
+          nextFlags.sent_paused = 1;
+          nextFlags.sent_unpaused = 0;
+        }
 
         if (stageToSend === "unpaused") {
         nextFlags.sent_unpaused = 1;
