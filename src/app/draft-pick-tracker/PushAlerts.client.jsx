@@ -88,6 +88,14 @@ function cacheEndpoint(endpoint) {
   }
 }
 
+function readCachedStatus() {
+  try {
+    return localStorage.getItem(PUSH_STATUS_CACHE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
 function clearCachedEndpoint() {
   try {
     localStorage.removeItem(PUSH_ENDPOINT_CACHE_KEY);
@@ -302,10 +310,16 @@ export default function PushAlerts({
         }
 
         const cachedEndpoint = readCachedEndpoint();
+        const cachedStatus = readCachedStatus() === "enabled";
+
         if (!cancelled && cachedEndpoint) {
           setEndpoint(cachedEndpoint);
-          setStatus("enabled");
-          fetchSettingsForSubscription(cachedEndpoint).catch(() => {});
+          if (cachedStatus) {
+            setStatus("enabled");
+            fetchSettingsForSubscription(cachedEndpoint).catch(() => {});
+          } else {
+            setStatus("idle");
+          }
         }
 
         if (globalThis.Notification.permission !== "granted") {
@@ -317,20 +331,18 @@ export default function PushAlerts({
 
         if (!cancelled && sub?.endpoint) {
           setHasBrowserSubscription(true);
-          setEndpoint(sub.endpoint);
-          cacheEndpoint(sub.endpoint);
 
-          try {
-            localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
-          } catch {
-            // ignore
+          if (cachedStatus) {
+            setEndpoint(sub.endpoint);
+            cacheEndpoint(sub.endpoint);
+            setStatus("enabled");
+            await fetchSettingsForSubscription(sub);
+          } else {
+            setStatus(cachedEndpoint ? "idle" : "idle");
           }
-
-          setStatus("enabled");
-          await fetchSettingsForSubscription(sub);
         } else if (!cancelled) {
           setHasBrowserSubscription(false);
-          if (cachedEndpoint) {
+          if (cachedEndpoint && cachedStatus) {
             setStatus("enabled");
           } else {
             setStatus("idle");
@@ -355,6 +367,7 @@ export default function PushAlerts({
         if (!hasNotification) return;
         if (globalThis.Notification.permission !== "granted") return;
         if (status !== "enabled") return;
+        if (readCachedStatus() !== "enabled") return;
 
         const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
         if (!sub?.endpoint) return;
@@ -365,7 +378,7 @@ export default function PushAlerts({
       }
     }
 
-    if (status === "enabled") syncSubscriptionMetadata();
+    if (status === "enabled" && readCachedStatus() === "enabled") syncSubscriptionMetadata();
 
     return () => {
       cancelled = true;
