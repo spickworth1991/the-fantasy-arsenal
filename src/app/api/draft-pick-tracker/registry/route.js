@@ -141,7 +141,8 @@ export async function GET(req) {
     let needsKick = false;
     const nowMs = Date.now();
 
-    for (const idGroup of chunk(ids, 200)) {
+    const REGISTRY_READ_CHUNK_SIZE = 50;
+    for (const idGroup of chunk(ids, REGISTRY_READ_CHUNK_SIZE)) {
       const rows = await db.prepare(selectSqlFor(idGroup.length)).bind(...idGroup).all();
 
       for (const r of rows?.results || []) {
