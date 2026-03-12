@@ -50,7 +50,8 @@ async function ensureDraftRegistryTable(db) {
  */
 export async function POST(request) {
   try {
-    const { env, ctx } = getRequestContext();
+    const ctx = getRequestContext();
+    const { env } = ctx;
     const db = getDb(env);
     if (!db) {
       return NextResponse.json(
@@ -77,9 +78,9 @@ export async function POST(request) {
       if (!draftId) continue;
 
       const leagueId = item?.league_id ? String(item.league_id) : null;
-      const leagueName = item?.league_name ? String(item.league_name) : null;
-      const leagueAvatar = item?.league_avatar ? String(item.league_avatar) : null;
-      const bestBall = Number(item?.best_ball || 0) === 1 ? 1 : 0;
+      const leagueName = item?.league_name ? String(item.league_name) : (item?.name ? String(item.name) : null);
+      const leagueAvatar = item?.league_avatar ? String(item.league_avatar) : (item?.avatar ? String(item.avatar) : null);
+      const bestBall = Number(item?.best_ball || item?.settings?.best_ball || 0) === 1 ? 1 : 0;
 
       // Upsert minimal metadata; DO will fill in everything else.
       // IMPORTANT:
@@ -121,7 +122,7 @@ export async function POST(request) {
     try {
       const id = env.DRAFT_REGISTRY.idFromName("master");
       const stub = env.DRAFT_REGISTRY.get(id);
-      ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick"));
+      (ctx?.waitUntil ? ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick")) : stub.fetch("https://draft-registry.internal/kick").catch(() => {}));
     } catch {
       // ignore
     }
