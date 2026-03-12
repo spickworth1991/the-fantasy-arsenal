@@ -192,9 +192,6 @@ async function listDraftIdsForUsername(db, username) {
 }
 
 async function discoveryBatch(env, state) {
-  const forceActive = !!options?.forceActive;
-  const forceAll = !!options?.forceAll;
-
   const db = env?.PUSH_DB;
   if (!db?.prepare) return { ok: false, discoveredDrafts: 0, discoveredUsers: 0 };
 
@@ -542,6 +539,18 @@ async function getPickCount(draftId) {
   return Array.isArray(picks) ? picks.length : 0;
 }
 
+async function getPickCountWithRetry(draftId, attempts = 2) {
+  let lastErr = null;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await getPickCount(draftId);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('pick-count-sync-failed');
+}
+
 async function getLeague(leagueId) {
   if (!leagueId) return null;
   try {
@@ -735,6 +744,9 @@ function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, s
 // ------------------------------------------------------------
 
 async function tickOnce(env, state, options = {}) {
+  const forceActive = !!options?.forceActive;
+  const forceAll = !!options?.forceAll;
+
   const db = env?.PUSH_DB;
   if (!db?.prepare) return { ok: false, error: "PUSH_DB binding not found" };
 
@@ -866,8 +878,27 @@ async function tickOnce(env, state, options = {}) {
             prevStatus !== "paused"
           );
 
+        const forcePausedSteadyPickSync =
+          status === "paused" &&
+          (
+            !Number.isFinite(pickCount) ||
+            !cacheLastSyncAt ||
+            now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS
+          );
+
+        const forceKickActivePickSync =
+          forceActive &&
+          isActive &&
+          (
+            !cacheLastSyncAt ||
+            now - cacheLastSyncAt >= 2_000 ||
+            !Number.isFinite(pickCount)
+          );
+
         const canPickSync =
           forcePausedTransitionPickSync ||
+          forcePausedSteadyPickSync ||
+          forceKickActivePickSync ||
           (wantsPickSync && (status === "drafting" || now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS)) ||
           forceActivePickSync;
 
@@ -878,7 +909,7 @@ async function tickOnce(env, state, options = {}) {
 
         if (canPickSync) {
           try {
-            pickCount = await getPickCount(draftId);
+            pickCount = await getPickCountWithRetry(draftId, forceActive || status === 'paused' ? 3 : 2);
             stageCachePatch({
               last_picked: lastPicked,
               pick_count: Number.isFinite(pickCount) ? pickCount : null,
@@ -953,10 +984,12 @@ async function tickOnce(env, state, options = {}) {
             prevStatus !== "paused"
           );
 
+        const forceActiveOwnerRefresh = forceActive && isActive;
+
         const canHydrateRosterContext =
           Boolean(leagueId) &&
           isActive &&
-          (needsRosterContext || contextStale || forcePausedOwnerRefresh);
+          (needsRosterContext || contextStale || forcePausedOwnerRefresh || forceActiveOwnerRefresh);
         if (canHydrateRosterContext) {
           try {
             const [users, rosters] = await Promise.all([
@@ -1037,7 +1070,7 @@ async function tickOnce(env, state, options = {}) {
         }
 
         // traded_picks: only needed for on-clock owner resolution; hydrate only while ACTIVE.
-        if (isActive && Number(bestBall || 0) !== 1 && leagueId && !tradedPickOwnerJson) {
+        if (isActive && Number(bestBall || 0) !== 1 && leagueId && (!tradedPickOwnerJson || forceActive)) {
           try {
             const traded = await sleeperJson(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`);
             const seasonStr = String(draft?.season || "");
@@ -1153,7 +1186,8 @@ async function tickOnce(env, state, options = {}) {
         const regCur = reg || registryMap.get(draftId) || null;
         const changed =
           shouldWriteRow(regCur, registryPatch) ||
-          forcePausedTransitionPickSync;
+          forcePausedTransitionPickSync ||
+          (forceActive && isActive);
         if (changed) {
           registryPatch.draft_json = JSON.stringify(draft || {});
           registryPatch.draft_order_json = draft?.draft_order ? JSON.stringify(draft.draft_order) : null;
