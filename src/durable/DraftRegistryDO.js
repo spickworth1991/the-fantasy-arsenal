@@ -192,6 +192,9 @@ async function listDraftIdsForUsername(db, username) {
 }
 
 async function discoveryBatch(env, state) {
+  const forceActive = !!options?.forceActive;
+  const forceAll = !!options?.forceAll;
+
   const db = env?.PUSH_DB;
   if (!db?.prepare) return { ok: false, discoveredDrafts: 0, discoveredUsers: 0 };
 
@@ -731,7 +734,7 @@ function resolveRosterForPick({ pickNo, teams, slotToRoster, tradedPickOwners, s
 // Tick
 // ------------------------------------------------------------
 
-async function tickOnce(env, state) {
+async function tickOnce(env, state, options = {}) {
   const db = env?.PUSH_DB;
   if (!db?.prepare) return { ok: false, error: "PUSH_DB binding not found" };
 
@@ -783,7 +786,11 @@ async function tickOnce(env, state) {
       : INACTIVE_REFRESH_MS;
 
     const needs = !lastChecked || now - lastChecked > staleMs;
-    if (!reg || needs) toCheck.push({ draftId: id, wasActive, reg });
+    const shouldForce =
+      forceAll ||
+      (forceActive && (wasActive || statusLower === "drafting" || statusLower === "paused"));
+
+    if (!reg || needs || shouldForce) toCheck.push({ draftId: id, wasActive, reg });
   }
 
   let updated = 0;
@@ -1262,8 +1269,17 @@ export class DraftRegistry {
 
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname === "/tick" || url.pathname === "/kick") {
+    if (url.pathname === "/tick") {
       const result = await tickOnce(this.env, this.state);
+      await this.state.storage.setAlarm(Date.now() + TICK_MS);
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (url.pathname === "/kick") {
+      const result = await tickOnce(this.env, this.state, { forceActive: true });
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
       return new Response(JSON.stringify(result), {
         status: 200,

@@ -312,6 +312,15 @@ function buildGroupedTitle(sortedEvents = []) {
 }
 
 function buildMessage({ stage, leagueName, timeLeftText }) {
+  const hasUsefulTime =
+    typeof timeLeftText === "string" &&
+    timeLeftText.trim() !== "" &&
+    timeLeftText.trim() !== "-" &&
+    timeLeftText.trim() !== "0:00" &&
+    timeLeftText.trim() !== "00:00" &&
+    timeLeftText.trim() !== "0:00:00" &&
+    timeLeftText.trim() !== "00:00:00";
+
   const ONCLOCK_TITLES = [
     "You're on the clock",
     "Your pick is up",
@@ -331,7 +340,6 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "You're officially up",
   ];
 
-  
   const ONCLOCK_BODIES = [
     `You're on the clock in "${leagueName}". Time left: ${timeLeftText}.`,
     `It's your pick in "${leagueName}". ${timeLeftText} remaining.`,
@@ -346,8 +354,6 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     `Your turn in "${leagueName}". Make it count — ${timeLeftText} left.`,
     `You're on the clock in "${leagueName}" — ${timeLeftText} left.`,
   ];
-
-  
 
   const P50_TITLES = [
     "Half your clock is gone",
@@ -500,13 +506,23 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     "Paused — you're currently on the clock",
     "Draft paused — you’re the current pick",
   ];
-  const PAUSED_BODIES = [
+
+  const PAUSED_BODIES_WITH_TIME = [
     `"${leagueName}" is paused, but it's still your pick. ${timeLeftText} left.`,
     `Heads up — "${leagueName}" is paused, but you're the current pick. ${timeLeftText} remaining.`,
     `"${leagueName}" paused. The pick stopped with ${timeLeftText} left.`,
     `Paused in "${leagueName}" — you're still the pick when it resumes. ${timeLeftText} left.`,
     `"${leagueName}" is paused — you’re still the active pick. ${timeLeftText} remaining.`,
     `Draft paused in "${leagueName}" — your pick is waiting with ${timeLeftText} left.`,
+  ];
+
+  const PAUSED_BODIES_NO_TIME = [
+    `"${leagueName}" is paused, but it's still your pick.`,
+    `Heads up — "${leagueName}" is paused, and you're still the current pick.`,
+    `"${leagueName}" paused while your pick was up.`,
+    `Paused in "${leagueName}" — you're still the pick when it resumes.`,
+    `"${leagueName}" is paused — you’re still the active pick.`,
+    `Draft paused in "${leagueName}" — your pick is waiting.`,
   ];
 
   const UNPAUSED_TITLES = [
@@ -533,7 +549,14 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
   if (stage === "five") return { title: pickRandom(FIVE_TITLES), body: pickRandom(FIVE_BODIES) };
   if (stage === "urgent") return { title: pickRandom(URGENT_TITLES), body: pickRandom(URGENT_BODIES) };
   if (stage === "final") return { title: pickRandom(FINAL_TITLES), body: pickRandom(FINAL_BODIES) };
-  if (stage === "paused") return { title: pickRandom(PAUSED_TITLES), body: pickRandom(PAUSED_BODIES) };
+
+  if (stage === "paused") {
+    return {
+      title: pickRandom(PAUSED_TITLES),
+      body: pickRandom(hasUsefulTime ? PAUSED_BODIES_WITH_TIME : PAUSED_BODIES_NO_TIME),
+    };
+  }
+
   if (stage === "unpaused") return { title: pickRandom(UNPAUSED_TITLES), body: pickRandom(UNPAUSED_BODIES) };
 
   return { title: "Draft Update", body: `Update in "${leagueName}".` };
