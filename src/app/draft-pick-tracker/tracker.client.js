@@ -365,14 +365,30 @@ export default function DraftPickTrackerClient() {
 
       const ids = eligible.map((l) => String(l.draft_id)).filter(Boolean);
 
-      const res = await fetch(
-        `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`,
-        { cache: "no-store" }
-      );
-      if (!res.ok) throw new Error("Registry fetch failed");
+      let json = null;
+      let registryDrafts = {};
+      let usedLite = false;
+      let fullFetchError = null;
 
-      const json = await res.json();
-      const registryDrafts = json?.drafts || {};
+      try {
+        const res = await fetch(
+          `/api/draft-pick-tracker/registry?ids=${encodeURIComponent(ids.join(","))}`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) throw new Error(`Registry fetch failed (${res.status})`);
+        json = await res.json();
+        registryDrafts = json?.drafts || {};
+      } catch (e) {
+        fullFetchError = e;
+        const liteRes = await fetch(
+          `/api/draft-pick-tracker/registry?lite=1&ids=${encodeURIComponent(ids.join(","))}`,
+          { cache: "no-store" }
+        );
+        if (!liteRes.ok) throw fullFetchError || new Error(`Registry lite fetch failed (${liteRes.status})`);
+        json = await liteRes.json();
+        registryDrafts = json?.drafts || {};
+        usedLite = true;
+      }
 
       // After the first registry read, seed any missing draftIds into D1.
       // This restores "non-subscriber discovery" without making the registry logic depend on a UI visit *every time*.
@@ -385,10 +401,7 @@ export default function DraftPickTrackerClient() {
           .filter((id) => id && !have.has(id));
 
         if (missing.length) {
-          // only send the leagues that are missing from the registry
           const missingLeagues = eligible.filter((l) => missing.includes(String(l?.draft_id || "")));
-
-          // Fire-and-forget; DO tick will pick them up next tick anyway
           fetch("/api/draft-pick-tracker/seed", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -408,7 +421,7 @@ export default function DraftPickTrackerClient() {
         const draft =
           reg?.draft ?? (reg?.draft_json ? jsonParseSafe(reg.draft_json, null) : null);
 
-        const draftStatus = String(draft?.status || reg?.status || "").toLowerCase();
+        const draftStatus = String(draft?.status || reg?.status || lg?.status || "").toLowerCase();
 
         const slotToRoster =
           reg?.slotToRoster ??
@@ -440,12 +453,12 @@ export default function DraftPickTrackerClient() {
             0
         );
         const reversalRound = safeNum(reg?.reversal_round || draft?.settings?.reversal_round || 0);
-        const draftType = String(draft?.type || reg?.type || "snake").toLowerCase();
+        const draftType = String(draft?.type || reg?.type || lg?.type || "snake").toLowerCase();
 
         const pickCount = safeNum((reg?.pickCount ?? reg?.pick_count) ?? 0);
         const currentPick = pickCount + 1;
 
-        const seasonStr = String(draft?.season || lg?.season || year || "");
+        const seasonStr = String(draft?.season || reg?.season || lg?.season || year || "");
         const myRosterId = rosterByUsername?.[uname] ? String(rosterByUsername[uname]) : null;
 
         const currentRosterId = teams
@@ -568,10 +581,11 @@ export default function DraftPickTrackerClient() {
       }
 
       setRows(draftRows);
+      setErr("");
       setHasLoadedOnce(true);
     } catch (e) {
       console.error(e);
-      setErr("Failed to load drafts from registry.");
+      setErr((rows && rows.length) ? "" : "Failed to load drafts from registry.");
     } finally {
       setLoading(false);
     }
