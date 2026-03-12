@@ -1,7 +1,6 @@
 /* public/sw.js */
 const CACHE = "tfa-static-v3";
 
-
 const STATIC_ASSETS = [
   "/site.webmanifest",
   "/android-chrome-192x192.png",
@@ -35,6 +34,23 @@ async function setAppBadgeCount(count) {
     // ignore
   }
   return false;
+}
+
+async function postPushMessage(payload, appBadgeCount) {
+  const clientsList = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of clientsList) {
+    try {
+      client.postMessage({
+        type: "push-event",
+        stage: payload?.data?.stage || payload?.stage || null,
+        draftId: payload?.data?.draftId || payload?.draftId || null,
+        ts: Date.now(),
+        appBadgeCount,
+      });
+    } catch {
+      // ignore
+    }
+  }
 }
 
 self.addEventListener("message", (event) => {
@@ -97,27 +113,16 @@ self.addEventListener("push", (event) => {
 
       const appBadgeCount = Number(payload.appBadgeCount || 0);
       const shouldClearAppBadge = !!payload.clearAppBadge || appBadgeCount <= 0;
-      if (payload.badgesEnabled !== false) {
-        if (shouldClearAppBadge) await setAppBadgeCount(0);
-        else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
-      }
+      const isAppleWebPush = !!payload.isAppleWebPush;
 
-      const clientsList = await clients.matchAll({ type: "window", includeUncontrolled: true });
-      for (const client of clientsList) {
-        try {
-          client.postMessage({
-            type: "push-event",
-            stage: payload?.data?.stage || payload?.stage || null,
-            draftId: payload?.data?.draftId || payload?.draftId || null,
-            ts: Date.now(),
-            appBadgeCount,
-          });
-        } catch {
-          // ignore
+      if (!!payload.silent) {
+        if (payload.badgesEnabled !== false) {
+          if (shouldClearAppBadge) await setAppBadgeCount(0);
+          else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
         }
+        await postPushMessage(payload, appBadgeCount);
+        return;
       }
-
-      if (!!payload.silent) return;
 
       const title = payload.title || "Draft Update";
       const body = payload.body || "New draft activity.";
@@ -125,6 +130,32 @@ self.addEventListener("push", (event) => {
       const icon = payload.icon || "/android-chrome-192x192.png";
       const badge = payload.badge || "/android-chrome-192x192.png";
       const image = payload.image || undefined;
+      const data = {
+        ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
+        url,
+      };
+
+      if (isAppleWebPush) {
+        let shown = false;
+        try {
+          await self.registration.showNotification(title, { body, icon, data });
+          shown = true;
+        } catch {
+          try {
+            await self.registration.showNotification(title, { body, data });
+            shown = true;
+          } catch {
+            // ignore
+          }
+        }
+
+        if (payload.badgesEnabled !== false) {
+          if (shouldClearAppBadge) await setAppBadgeCount(0);
+          else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
+        }
+        await postPushMessage(payload, appBadgeCount);
+        return shown;
+      }
 
       await self.registration.showNotification(title, {
         body,
@@ -135,11 +166,14 @@ self.addEventListener("push", (event) => {
         renotify: !!payload.renotify,
         requireInteraction: !!payload.requireInteraction,
         actions: Array.isArray(payload.actions) ? payload.actions : undefined,
-        data: {
-          ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
-          url,
-        },
+        data,
       });
+
+      if (payload.badgesEnabled !== false) {
+        if (shouldClearAppBadge) await setAppBadgeCount(0);
+        else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
+      }
+      await postPushMessage(payload, appBadgeCount);
     })()
   );
 });
