@@ -12,6 +12,23 @@ const DEFAULT_SETTINGS = {
   badges: true,
 };
 
+function isMobileBrowser() {
+  if (typeof window === "undefined") return false;
+  const ua = String(window.navigator?.userAgent || "").toLowerCase();
+  return /iphone|ipad|ipod|android|mobile/.test(ua);
+}
+
+function isIOSBrowser() {
+  if (typeof window === "undefined") return false;
+  const ua = String(window.navigator?.userAgent || "").toLowerCase();
+  return /iphone|ipad|ipod/.test(ua);
+}
+
+function isStandaloneDisplay() {
+  if (typeof window === "undefined") return false;
+  return !!(window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator?.standalone);
+}
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -150,6 +167,7 @@ export default function PushAlerts({
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [endpoint, setEndpoint] = useState("");
   const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
+  const [installHelpOpen, setInstallHelpOpen] = useState(false);
 
   const chosenDraftIds = useMemo(() => {
     const raw =
@@ -411,10 +429,22 @@ export default function PushAlerts({
   async function enable() {
     try {
       setMsg("");
+      setInstallHelpOpen(false);
       setStatus("loading");
 
       if (!hasNotification) throw new Error("Notifications not supported");
       if (!vapidKey) throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY");
+
+      if (isMobileBrowser() && !isStandaloneDisplay()) {
+        setStatus("idle");
+        setInstallHelpOpen(true);
+        setMsg(
+          isIOSBrowser()
+            ? "Install the app to your home screen first. iPhone notifications only work from the installed app."
+            : "Install the app to your home screen first. Mobile notifications work best from the installed app."
+        );
+        return;
+      }
 
       const perm = await globalThis.Notification.requestPermission();
       if (perm !== "granted") {
@@ -598,7 +628,28 @@ export default function PushAlerts({
         )}
       </div>
 
-      {msg ? <div className="mt-2 text-xs text-white/70">{msg}</div> : null}
+            {msg ? <div className="mt-2 text-xs text-white/70">{msg}</div> : null}
+
+      {installHelpOpen ? (
+        <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3 text-xs text-cyan-50">
+          <div className="font-semibold text-cyan-100">Install the app first</div>
+          {isIOSBrowser() ? (
+            <div className="mt-2 space-y-1 text-cyan-50/90">
+              <div>1. Tap the Share button in Safari.</div>
+              <div>2. Tap <span className="font-semibold">Add to Home Screen</span>.</div>
+              <div>3. Open the installed app from your home screen.</div>
+              <div>4. Tap <span className="font-semibold">Enable Alerts</span> again inside the app.</div>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-1 text-cyan-50/90">
+              <div>1. Open the browser menu.</div>
+              <div>2. Tap <span className="font-semibold">Install app</span> or <span className="font-semibold">Add to Home screen</span>.</div>
+              <div>3. Open the installed app from your home screen.</div>
+              <div>4. Tap <span className="font-semibold">Enable Alerts</span> again inside the app.</div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {status === "enabled" && settingsOpen ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">

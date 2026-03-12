@@ -227,6 +227,7 @@ export default function DraftPickTrackerClient() {
 
   // Toast for copy
   const [toast, setToast] = useState("");
+  const [mobileDetailRow, setMobileDetailRow] = useState(null);
 
   // Hide push alerts when mounted inside Ballsville
   const [hidePushAlerts, setHidePushAlerts] = useState(false);
@@ -868,6 +869,105 @@ export default function DraftPickTrackerClient() {
     setTimeout(() => setToast(""), 1800);
   };
 
+  const renderMobileDetailModal = () => {
+    if (!mobileDetailRow) return null;
+
+    const r = mobileDetailRow;
+    const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+    const status = String(r?.draftStatus || "").toLowerCase();
+    const isDrafting = status === "drafting";
+    const isPaused = status === "paused";
+    const hasTimer = safeNum(r.timerSec) > 0;
+
+    const liveClockLeft = hasTimer
+      ? isPaused
+        ? Math.max(0, safeNum(r.clockLeftMs))
+        : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
+      : 0;
+
+    const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+    const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
+    const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
+    let liveEta = null;
+    if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
+      if (isDrafting && r.onClockIsMe) {
+        const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
+        liveEta = liveClockLeft + gap * perPickMs;
+      } else {
+        liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
+      }
+    }
+    const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+    const statusTone =
+      r.draftStatus === "drafting"
+        ? "green"
+        : r.draftStatus === "paused"
+        ? "yellow"
+        : r.draftStatus === "complete"
+        ? "gray"
+        : "yellow";
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:hidden">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-gray-950/95 p-4 text-white shadow-2xl backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-lg font-semibold leading-tight">{r.leagueName}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Pill tone={statusTone} size="xs">{r.draftStatus || "—"}</Pill>
+                <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="xs">
+                  {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
+                </Pill>
+                {r.onClockIsMe ? <Pill tone="green" size="xs">ON CLOCK</Pill> : null}
+                {isDrafting && !r.onClockIsMe && r.onDeck ? <Pill tone="yellow" size="xs">ON DECK</Pill> : null}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileDetailRow(null)}
+              className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="text-[11px] text-gray-400">Current Pick</div>
+              <div className="mt-1 font-semibold">{r.currentOwnerName || "—"}</div>
+              <div className="mt-1 text-xs text-gray-300">{r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}</div>
+              <div className="mt-2 text-sm font-bold tabular-nums">{clockText}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="text-[11px] text-gray-400">Your Next Pick</div>
+              <div className="mt-1 font-semibold">{shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}</div>
+              <div className="mt-1 text-xs text-gray-300">{r.picksUntilMyPick != null ? `${r.picksUntilMyPick} away` : "—"}</div>
+              <div className="mt-2 text-sm font-bold tabular-nums">{etaClock}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <a
+              href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-2xl bg-cyan-500/90 px-4 py-2 text-center text-sm font-semibold text-black"
+            >
+              Open Draft
+            </a>
+            <button
+              type="button"
+              onClick={() => copyInviteLink(r.draftId)}
+              className="flex-1 rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Copy Invite Link
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen">
       <BackgroundParticles />
@@ -1318,15 +1418,12 @@ export default function DraftPickTrackerClient() {
               </div>
             </div>
 
-            <div className="sm:hidden overflow-x-auto">
-              <table className="w-full min-w-[620px] text-xs">
+            <div className="sm:hidden overflow-hidden">
+              <table className="w-full text-xs">
                 <thead className="bg-black/20 text-gray-200">
                   <tr>
                     <th className="px-3 py-2 text-left">League</th>
                     <th className="px-3 py-2 text-left">Current</th>
-                    <th className="px-3 py-2 text-left">Next</th>
-                    <th className="px-3 py-2 text-left">ETA</th>
-                    <th className="px-3 py-2 text-left">Links</th>
                   </tr>
                 </thead>
 
@@ -1345,21 +1442,6 @@ export default function DraftPickTrackerClient() {
                       : 0;
 
                     const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
-
-                    const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
-
-                    const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
-                    let liveEta = null;
-                    if (hasTimer && r.etaMs != null && shownPickNo != null && r.currentPick != null) {
-                      if (isDrafting && r.onClockIsMe) {
-                        const gap = Math.max(0, safeNum(shownPickNo) - safeNum(r.currentPick) - 1);
-                        liveEta = liveClockLeft + gap * perPickMs;
-                      } else {
-                        liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-                      }
-                    }
-
-                    const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
                     const statusTone =
                       r.draftStatus === "drafting"
@@ -1410,16 +1492,17 @@ export default function DraftPickTrackerClient() {
                         className={classNames("border-t border-white/5", mobileRowTone)}
                       >
                         <td className="px-3 py-3 align-top">
-                          <div className="min-w-[170px]">
+                          <button
+                            type="button"
+                            onClick={() => setMobileDetailRow(r)}
+                            className="w-full text-left"
+                          >
                             <div className="font-semibold text-white leading-tight break-words">
                               {r.leagueName}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-1.5">
                               <Pill tone={statusTone} size="xs">
                                 {r.draftStatus || "—"}
-                              </Pill>
-                              <Pill tone={r.draftType === "linear" ? "purple" : "cyan"} size="xs">
-                                {r.draftType === "linear" ? "LINEAR" : "SNAKE"}
                               </Pill>
                               {r.onClockIsMe ? (
                                 <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="xs">
@@ -1431,13 +1514,9 @@ export default function DraftPickTrackerClient() {
                                   ON DECK
                                 </Pill>
                               ) : null}
-                              {autoActive ? (
-                                <Pill tone="red" size="xs">
-                                  AUTO
-                                </Pill>
-                              ) : null}
                             </div>
-                          </div>
+                            <div className="mt-1 text-[11px] text-cyan-200/80">Tap for details</div>
+                          </button>
                         </td>
 
                         <td className="px-3 py-3 align-top">
@@ -1453,61 +1532,21 @@ export default function DraftPickTrackerClient() {
                             </div>
                           </div>
                         </td>
-
-                        <td className="px-3 py-3 align-top">
-                          <div className="min-w-[84px]">
-                            <div className="text-white font-semibold">
-                              {shownPickNo ? `#${nf0.format(shownPickNo)}` : "—"}
-                            </div>
-                            <div className="mt-1 text-[11px] text-gray-300">
-                              {r.picksUntilMyPick != null ? `${r.picksUntilMyPick} away` : "—"}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-3 align-top">
-                          <div className="min-w-[84px]">
-                            <div className="text-white font-extrabold tabular-nums tracking-wide">
-                              {etaClock}
-                            </div>
-                            <div className="mt-1 text-[11px] text-gray-400">
-                              {hasTimer ? "timer" : "—"}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-3 align-top">
-                          <div className="flex flex-col gap-2 min-w-[74px]">
-                            <a
-                              href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-lg bg-cyan-500/90 px-2 py-1 text-[11px] font-semibold text-black hover:bg-cyan-400 border border-white/10 text-center"
-                            >
-                              Open
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => copyInviteLink(r.draftId)}
-                              className="rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white hover:bg-white/15 border border-white/10"
-                            >
-                              Copy
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })}
 
                   {filteredDraftRows.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-5 py-10 text-center text-gray-300">
+                      <td colSpan={2} className="px-5 py-10 text-center text-gray-300">
                         No leagues found. Try adjusting filters or hit Refresh.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+
+              {renderMobileDetailModal()}
             </div>
 
             <div className="hidden sm:block overflow-x-auto">
