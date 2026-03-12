@@ -432,9 +432,6 @@ export default function PushAlerts({
       setInstallHelpOpen(false);
       setStatus("loading");
 
-      if (!hasNotification) throw new Error("Notifications not supported");
-      if (!vapidKey) throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY");
-
       if (isMobileBrowser() && !isStandaloneDisplay()) {
         setStatus("idle");
         setInstallHelpOpen(true);
@@ -445,6 +442,9 @@ export default function PushAlerts({
         );
         return;
       }
+
+      if (!hasNotification) throw new Error("Notifications not supported");
+      if (!vapidKey) throw new Error("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY");
 
       const perm = await globalThis.Notification.requestPermission();
       if (perm !== "granted") {

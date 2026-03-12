@@ -1489,34 +1489,29 @@ export default function DraftPickTrackerClient() {
                     return (
                       <tr
                         key={r.__rowKey || r.draftId || r.leagueId || `mrow:${idx}`}
-                        className={classNames("border-t border-white/5", mobileRowTone)}
+                        className={classNames("border-t border-white/5 cursor-pointer", mobileRowTone)}
+                        onClick={() => setMobileDetailRow(r)}
                       >
                         <td className="px-3 py-3 align-top">
-                          <button
-                            type="button"
-                            onClick={() => setMobileDetailRow(r)}
-                            className="w-full text-left"
-                          >
-                            <div className="font-semibold text-white leading-tight break-words">
-                              {r.leagueName}
-                            </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                              <Pill tone={statusTone} size="xs">
-                                {r.draftStatus || "—"}
+                          <div className="font-semibold text-white leading-tight break-words">
+                            {r.leagueName}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <Pill tone={statusTone} size="xs">
+                              {r.draftStatus || "—"}
+                            </Pill>
+                            {r.onClockIsMe ? (
+                              <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="xs">
+                                ON CLOCK
                               </Pill>
-                              {r.onClockIsMe ? (
-                                <Pill tone={(hasTimer ? clockHeat?.badgeTone : "green") || "green"} size="xs">
-                                  ON CLOCK
-                                </Pill>
-                              ) : null}
-                              {isDrafting && !r.onClockIsMe && r.onDeck ? (
-                                <Pill tone="yellow" size="xs">
-                                  ON DECK
-                                </Pill>
-                              ) : null}
-                            </div>
-                            <div className="mt-1 text-[11px] text-cyan-200/80">Tap for details</div>
-                          </button>
+                            ) : null}
+                            {isDrafting && !r.onClockIsMe && r.onDeck ? (
+                              <Pill tone="yellow" size="xs">
+                                ON DECK
+                              </Pill>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 text-[11px] text-cyan-200/80">Tap for details</div>
                         </td>
 
                         <td className="px-3 py-3 align-top">
