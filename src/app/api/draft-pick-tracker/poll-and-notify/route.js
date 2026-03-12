@@ -1454,7 +1454,6 @@ async function handler(req) {
 
       const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
 
-      const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
       const pushRes = await sendPayload(s, {
         title,
         body: [
@@ -1475,22 +1474,22 @@ async function handler(req) {
           }),
         ].filter(Boolean).join(" "),
         url: "/draft-pick-tracker",
-        tag: isAppleEndpoint ? undefined : buildGroupedNotificationTag(sorted, anyUrgent),
-        renotify: isAppleEndpoint ? undefined : true,
+        tag: buildGroupedNotificationTag(sorted, anyUrgent),
+        renotify: true,
         icon: summaryIcon,
-        badge: isAppleEndpoint ? undefined : "/android-chrome-192x192.png",
+        badge: "/android-chrome-192x192.png",
         appBadgeCount: activeBadgeCount,
         clearAppBadge: activeBadgeCount <= 0,
         badgesEnabled: !!s.settings?.badges,
-        requireInteraction: isAppleEndpoint ? undefined : (anyUrgent ? true : undefined),
-        vibrate: isAppleEndpoint ? undefined : (anyUrgent ? [100, 60, 100, 60, 180] : undefined),
+        requireInteraction: anyUrgent ? true : undefined,
+        vibrate: anyUrgent ? [100, 60, 100, 60, 180] : undefined,
         data: {
           url: "/draft-pick-tracker",
           summary: true,
           count: sorted.length,
           urgent: anyUrgent ? 1 : 0,
         },
-        actions: isAppleEndpoint ? undefined : [{ action: "open_tracker", title: "Open Tracker" }],
+        actions: [{ action: "open_tracker", title: "Open Tracker" }],
       });
 
       pushDebug({ endpoint: s.endpoint, username: s.username, send: "grouped", stages: sorted.map((ev) => ev.stage), draftIds: sorted.map((ev) => ev.draftId), pickNos: sorted.map((ev) => ev.pickNo), result: pushRes });

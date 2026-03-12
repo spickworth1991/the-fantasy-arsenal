@@ -1,11 +1,6 @@
 /* public/sw.js */
 const CACHE = "tfa-static-v3";
 
-function isAppleWebPushPayload(payload) {
-  if (payload?.isAppleWebPush === true) return true;
-  const endpoint = String(payload?.endpoint || payload?.subscriptionEndpoint || payload?.data?.subscriptionEndpoint || "").toLowerCase();
-  return endpoint.includes("push.apple.com") || endpoint.includes("web.push.apple.com");
-}
 
 const STATIC_ASSETS = [
   "/site.webmanifest",
@@ -107,15 +102,6 @@ self.addEventListener("push", (event) => {
         else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
       }
 
-      const title = payload.title || "Draft Update";
-      const body = payload.body || "New draft activity.";
-      const url = payload.url || payload?.data?.url || "/draft-pick-tracker";
-      const silent = !!payload.silent;
-      const icon = payload.icon || "/android-chrome-192x192.png";
-      const badge = payload.badge || "/android-chrome-192x192.png";
-      const image = payload.image || undefined;
-      const isAppleWebPush = isAppleWebPushPayload(payload);
-
       const clientsList = await clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of clientsList) {
         try {
@@ -131,41 +117,29 @@ self.addEventListener("push", (event) => {
         }
       }
 
-      if (silent) return;
+      if (!!payload.silent) return;
 
-      const notificationData = {
-        ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
-        url,
-      };
+      const title = payload.title || "Draft Update";
+      const body = payload.body || "New draft activity.";
+      const url = payload.url || payload?.data?.url || "/draft-pick-tracker";
+      const icon = payload.icon || "/android-chrome-192x192.png";
+      const badge = payload.badge || "/android-chrome-192x192.png";
+      const image = payload.image || undefined;
 
-      const options = isAppleWebPush
-        ? {
-            body,
-            data: notificationData,
-            // Intentionally omit tag/icon/badge/actions/renotify/requireInteraction/image on Apple.
-            // Apple is already accepting the push; this keeps the visible notification payload as simple
-            // as possible so it continues surfacing reliably instead of silently replacing/collapsing.
-          }
-        : {
-            body,
-            icon,
-            badge,
-            image,
-            tag: payload.tag,
-            renotify: !!payload.renotify,
-            requireInteraction: !!payload.requireInteraction,
-            actions: Array.isArray(payload.actions) ? payload.actions : undefined,
-            data: notificationData,
-          };
-
-      try {
-        await self.registration.showNotification(title, options);
-      } catch {
-        await self.registration.showNotification(title, {
-          body,
-          data: notificationData,
-        });
-      }
+      await self.registration.showNotification(title, {
+        body,
+        icon,
+        badge,
+        image,
+        tag: payload.tag,
+        renotify: !!payload.renotify,
+        requireInteraction: !!payload.requireInteraction,
+        actions: Array.isArray(payload.actions) ? payload.actions : undefined,
+        data: {
+          ...(payload.data && typeof payload.data === "object" ? payload.data : {}),
+          url,
+        },
+      });
     })()
   );
 });
