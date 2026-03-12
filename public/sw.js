@@ -141,9 +141,10 @@ self.addEventListener("push", (event) => {
       const options = isAppleWebPush
         ? {
             body,
-            icon,
-            tag: payload.tag,
             data: notificationData,
+            // Intentionally omit tag/icon/badge/actions/renotify/requireInteraction/image on Apple.
+            // Apple is already accepting the push; this keeps the visible notification payload as simple
+            // as possible so it continues surfacing reliably instead of silently replacing/collapsing.
           }
         : {
             body,
@@ -157,7 +158,14 @@ self.addEventListener("push", (event) => {
             data: notificationData,
           };
 
-      await self.registration.showNotification(title, options);
+      try {
+        await self.registration.showNotification(title, options);
+      } catch {
+        await self.registration.showNotification(title, {
+          body,
+          data: notificationData,
+        });
+      }
     })()
   );
 });
