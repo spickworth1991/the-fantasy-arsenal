@@ -17,12 +17,6 @@ function safeJsonParse(s) {
   }
 }
 
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 async function kickDraftRegistry(env) {
   // Best-effort: tell the DO to run a tick now.
   try {
@@ -36,6 +30,12 @@ async function kickDraftRegistry(env) {
 
 function getDb(env) {
   return env?.PUSH_DB;
+}
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 export async function GET(req) {
@@ -117,40 +117,34 @@ export async function GET(req) {
       return NextResponse.json({ ok: true, drafts: out });
     }
 
-    // Fetch requested ids in chunks to stay under SQLite/D1 variable limits.
-    const selectBase = lite
-      ? `SELECT draft_id, active, status, last_picked, pick_count,
-                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-                teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                best_ball,
-                current_pick, current_owner_name, next_owner_name, clock_ends_at,
-                completed_at, updated_at
-         FROM push_draft_registry
-         WHERE draft_id IN (__PLACEHOLDERS__)`
-      : `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
-                slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
-                teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
-                best_ball,
-                current_pick, current_owner_name, next_owner_name, clock_ends_at,
-                completed_at, updated_at
-         FROM push_draft_registry
-         WHERE draft_id IN (__PLACEHOLDERS__)`;
-
-    const allRows = [];
-    for (const group of chunk(ids, 200)) {
-      const placeholders = group.map(() => "?").join(",");
-      const sql = selectBase.replace("__PLACEHOLDERS__", placeholders);
-      const res = await db.prepare(sql).bind(...group).all();
-      if (Array.isArray(res?.results)) allRows.push(...res.results);
-    }
-
-    const rows = { results: allRows };
+    // Fetch requested ids in chunks so D1/SQLite never exceeds variable limits
+    const selectSqlFor = (count) =>
+      lite
+        ? `SELECT draft_id, active, status, last_picked, pick_count,
+                  slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+                  teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
+                  best_ball,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                  completed_at, updated_at
+           FROM push_draft_registry
+           WHERE draft_id IN (${Array.from({ length: count }, () => "?").join(",")})`
+        : `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
+                  slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
+                  teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
+                  best_ball,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                  completed_at, updated_at
+           FROM push_draft_registry
+           WHERE draft_id IN (${Array.from({ length: count }, () => "?").join(",")})`;
 
     const out = {};
     let needsKick = false;
     const nowMs = Date.now();
 
-    for (const r of rows?.results || []) {
+    for (const idGroup of chunk(ids, 200)) {
+      const rows = await db.prepare(selectSqlFor(idGroup.length)).bind(...idGroup).all();
+
+      for (const r of rows?.results || []) {
       let draft = null;
       if (!lite) {
         try {
@@ -217,6 +211,7 @@ export async function GET(req) {
         ["null", "{}", "[]"].includes(String(r.slot_to_roster_json))
       ) {
         needsKick = true;
+      }
       }
     }
 
