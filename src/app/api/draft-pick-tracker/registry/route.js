@@ -17,6 +17,12 @@ function safeJsonParse(s) {
   }
 }
 
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 async function kickDraftRegistry(env) {
   // Best-effort: tell the DO to run a tick now.
   try {
@@ -53,11 +59,14 @@ export async function GET(req) {
     const lite = url.searchParams.get("lite") === "1";
 
     // If no ids provided, return the active registry subset (bounded)
-    const ids = String(idsRaw)
-      .split(",")
-      .map((s) => String(s || "").trim())
-      .filter(Boolean)
-      .slice(0, 1000);
+    const ids = Array.from(
+      new Set(
+        String(idsRaw)
+          .split(",")
+          .map((s) => String(s || "").trim())
+          .filter(Boolean)
+      )
+    ).slice(0, 1000);
 
     if (!ids.length) {
       const res = await db
@@ -108,9 +117,8 @@ export async function GET(req) {
       return NextResponse.json({ ok: true, drafts: out });
     }
 
-    // Fetch requested ids
-    const placeholders = ids.map(() => "?").join(",");
-    const selectSql = lite
+    // Fetch requested ids in chunks to stay under SQLite/D1 variable limits.
+    const selectBase = lite
       ? `SELECT draft_id, active, status, last_picked, pick_count,
                 slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                 teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
@@ -118,7 +126,7 @@ export async function GET(req) {
                 current_pick, current_owner_name, next_owner_name, clock_ends_at,
                 completed_at, updated_at
          FROM push_draft_registry
-         WHERE draft_id IN (${placeholders})`
+         WHERE draft_id IN (__PLACEHOLDERS__)`
       : `SELECT draft_id, active, status, last_picked, pick_count, draft_json,
                 slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                 teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
@@ -126,9 +134,17 @@ export async function GET(req) {
                 current_pick, current_owner_name, next_owner_name, clock_ends_at,
                 completed_at, updated_at
          FROM push_draft_registry
-         WHERE draft_id IN (${placeholders})`;
+         WHERE draft_id IN (__PLACEHOLDERS__)`;
 
-    const rows = await db.prepare(selectSql).bind(...ids).all();
+    const allRows = [];
+    for (const group of chunk(ids, 200)) {
+      const placeholders = group.map(() => "?").join(",");
+      const sql = selectBase.replace("__PLACEHOLDERS__", placeholders);
+      const res = await db.prepare(sql).bind(...group).all();
+      if (Array.isArray(res?.results)) allRows.push(...res.results);
+    }
+
+    const rows = { results: allRows };
 
     const out = {};
     let needsKick = false;
