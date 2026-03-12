@@ -217,7 +217,7 @@ export default function DraftPickTrackerClient() {
   const [rows, setRows] = useState([]);
 
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [didDiscover, setDidDiscover] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [now, setNow] = useState(0);
@@ -227,6 +227,7 @@ export default function DraftPickTrackerClient() {
 
   // Toast for copy
   const [toast, setToast] = useState("");
+  const discoverTimerRef = useRef(null);
   const [mobileDetailRow, setMobileDetailRow] = useState(null);
 
   // Hide push alerts when mounted inside Ballsville
@@ -592,6 +593,49 @@ export default function DraftPickTrackerClient() {
     }
   }
 
+  async function runDiscovery({ manual = false } = {}) {
+    const eligible = (Array.isArray(leagues) ? leagues : []).filter((lg) => !!lg?.draft_id);
+    if (!username || !eligible.length) return;
+
+    try {
+      setDiscovering(true);
+      await fetch("/api/draft-pick-tracker/discover", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          username,
+          year,
+          leagues: eligible.map((lg) => ({
+            league_id: lg?.league_id ?? null,
+            name: lg?.name ?? null,
+            avatar: lg?.avatar ?? null,
+            draft_id: lg?.draft_id ?? null,
+            season: lg?.season ?? null,
+            settings: lg?.settings ?? null,
+          })),
+        }),
+      });
+
+      if (discoverTimerRef.current) clearTimeout(discoverTimerRef.current);
+      discoverTimerRef.current = setTimeout(() => {
+        refresh();
+      }, 800);
+
+      if (manual) {
+        setToast("Checking for new leagues");
+        setTimeout(() => setToast(""), 1800);
+      }
+    } catch {
+      if (manual) {
+        setToast("League discovery failed");
+        setTimeout(() => setToast(""), 1800);
+      }
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
   useEffect(() => {
     if (!username) return;
     if (!draftIdsKey) return;
@@ -599,50 +643,21 @@ export default function DraftPickTrackerClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, draftIdsKey]);
 
-  // Background discovery: seed any missing drafts into the registry AFTER the first registry load,
-  // so the initial page paint is fast (registry read only).
+  // Background discovery: show current registry rows first, then keep checking for new leagues.
   useEffect(() => {
     if (!username) return;
     if (!hasLoadedOnce) return;
-    if (didDiscover) return;
+    if (!draftIdsKey) return;
 
-    const eligible = (Array.isArray(leagues) ? leagues : []).filter((lg) => !!lg?.draft_id);
-    if (!eligible.length) return;
+    runDiscovery();
 
-    setDidDiscover(true);
+    const t = setInterval(() => {
+      runDiscovery();
+    }, 5 * 60_000);
 
-    (async () => {
-      try {
-        // This route only seeds missing draft_ids (no heavy hydration).
-        await fetch("/api/draft-pick-tracker/discover", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({
-            username,
-            year,
-            // pass leagues so the server doesn't need to call Sleeper here
-            leagues: eligible.map((lg) => ({
-              league_id: lg?.league_id ?? null,
-              name: lg?.name ?? null,
-              avatar: lg?.avatar ?? null,
-              draft_id: lg?.draft_id ?? null,
-              season: lg?.season ?? null,
-              settings: lg?.settings ?? null,
-            })),
-          }),
-        });
-
-        // Give the DO a moment to tick, then refresh the registry view.
-        setTimeout(() => {
-          refresh();
-        }, 500);
-      } catch {
-        // ignore
-      }
-    })();
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, hasLoadedOnce, didDiscover, draftIdsKey]);
+  }, [username, hasLoadedOnce, draftIdsKey]);
 
   const anyDrafting = useMemo(() => {
     const ACTIVE = new Set(["drafting", "paused"]);
@@ -653,7 +668,7 @@ export default function DraftPickTrackerClient() {
     if (!username) return;
     if (!autoRefresh) return;
     if (!anyDrafting) return;
-    const t = setInterval(() => refresh(), 60_000);
+    const t = setInterval(() => refresh(), 20_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, autoRefresh, anyDrafting]);
@@ -968,6 +983,12 @@ export default function DraftPickTrackerClient() {
     );
   };
 
+  useEffect(() => {
+    return () => {
+      if (discoverTimerRef.current) clearTimeout(discoverTimerRef.current);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen">
       <BackgroundParticles />
@@ -993,13 +1014,20 @@ export default function DraftPickTrackerClient() {
           </div>
 
           <div className="flex flex-col gap-2 items-start sm:items-end">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={refresh}
                 disabled={loading}
                 className="px-5 py-2.5 rounded-2xl bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-700 disabled:opacity-60 text-white font-semibold shadow-[0_18px_40px_rgba(37,99,235,0.25)] border border-white/10"
               >
                 {loading ? "Refreshing..." : "Refresh"}
+              </button>
+              <button
+                onClick={() => runDiscovery({ manual: true })}
+                disabled={discovering}
+                className="px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 disabled:opacity-60 text-white font-semibold border border-white/10"
+              >
+                {discovering ? "Checking..." : "Discover Leagues"}
               </button>
             </div>
 
