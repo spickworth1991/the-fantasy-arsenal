@@ -22,7 +22,6 @@ const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
 
 // Only call /picks when we actually need to (and never more often than this per draft).
 const PICKS_SYNC_COOLDOWN_MS = 20_000;
-const ACTIVE_PICKS_FORCE_RESYNC_MS = 15_000;
 
 // Store per-draft scheduling metadata in DO storage so we don't write D1 when nothing changes.
 // Key: meta:<draftId> -> { lastCheckedAt, lastStatus }
@@ -866,41 +865,36 @@ async function tickOnce(env, state, options = {}) {
           draftLastPicked != null &&
           (!Number.isFinite(pickCount) || cacheSyncedLastPicked !== lastPickedNum);
 
-        const forceActivePickSync =
-          status === "drafting" &&
-          (!Number.isFinite(pickCount) || !cacheLastSyncAt || now - cacheLastSyncAt >= ACTIVE_PICKS_FORCE_RESYNC_MS);
-
+        // Only force a sync when a pause transition itself matters, or when pick_count is missing.
+        // Do NOT resync active drafts every kick/tick just because they're active.
         const forcePausedTransitionPickSync =
           status === "paused" &&
-          draftLastPicked != null &&
           (
-            cacheSyncedLastPicked !== lastPickedNum ||
-            prevStatus !== "paused"
+            prevStatus !== "paused" ||
+            !Number.isFinite(pickCount) ||
+            cacheSyncedLastPicked !== lastPickedNum
           );
 
-        const forcePausedSteadyPickSync =
-          status === "paused" &&
+        // If a draft just resumed after being paused, we also want one reconciliation pass
+        // in case picks moved during the pause window.
+        const forceResumedTransitionPickSync =
+          status === "drafting" &&
+          prevStatus === "paused" &&
           (
             !Number.isFinite(pickCount) ||
-            !cacheLastSyncAt ||
-            now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS
+            cacheSyncedLastPicked !== lastPickedNum
           );
 
-        const forceKickActivePickSync =
-          forceActive &&
-          isActive &&
-          (
-            !cacheLastSyncAt ||
-            now - cacheLastSyncAt >= 2_000 ||
-            !Number.isFinite(pickCount)
-          );
-
+        // Only sync /picks when:
+        // - we are missing pick_count
+        // - Sleeper last_picked changed vs what we synced
+        // - a pause/resume transition happened
         const canPickSync =
+          wantsPickSync ||
           forcePausedTransitionPickSync ||
-          forcePausedSteadyPickSync ||
-          forceKickActivePickSync ||
-          (wantsPickSync && (status === "drafting" || now - cacheLastSyncAt >= PICKS_SYNC_COOLDOWN_MS)) ||
-          forceActivePickSync;
+          forceResumedTransitionPickSync;
+
+              
 
         const stageCachePatch = (patch) => {
           const cur = cacheWrites.get(draftId) || {};
@@ -909,7 +903,11 @@ async function tickOnce(env, state, options = {}) {
 
         if (canPickSync) {
           try {
-            pickCount = await getPickCountWithRetry(draftId, forceActive || status === 'paused' ? 3 : 2);
+            pickCount = await getPickCountWithRetry(
+              draftId,
+              status === "paused" || prevStatus === "paused" ? 3 : 2
+            );
+
             stageCachePatch({
               last_picked: lastPicked,
               pick_count: Number.isFinite(pickCount) ? pickCount : null,
@@ -917,9 +915,13 @@ async function tickOnce(env, state, options = {}) {
               last_picks_sync_at: now,
             });
           } catch {
-            stageCachePatch({
-              last_picked: lastPicked,
-            });
+            // Still keep last_picked in cache if draft payload moved,
+            // but do not write noisy sync timestamps by themselves.
+            if (draftLastPicked != null && cacheLastPicked !== lastPickedNum) {
+              stageCachePatch({
+                last_picked: lastPicked,
+              });
+            }
           }
         } else if (draftLastPicked != null && cacheLastPicked !== lastPickedNum) {
           stageCachePatch({ last_picked: lastPicked });
@@ -978,18 +980,25 @@ async function tickOnce(env, state, options = {}) {
 
         const forcePausedOwnerRefresh =
           status === "paused" &&
-          draftLastPicked != null &&
           (
-            cacheSyncedLastPicked !== lastPickedNum ||
-            prevStatus !== "paused"
+            prevStatus !== "paused" ||
+            cacheSyncedLastPicked !== lastPickedNum
           );
 
-        const forceActiveOwnerRefresh = forceActive && isActive;
+        const forceResumedOwnerRefresh =
+          status === "drafting" &&
+          prevStatus === "paused" &&
+          cacheSyncedLastPicked !== lastPickedNum;
 
         const canHydrateRosterContext =
           Boolean(leagueId) &&
           isActive &&
-          (needsRosterContext || contextStale || forcePausedOwnerRefresh || forceActiveOwnerRefresh);
+          (
+            needsRosterContext ||
+            contextStale ||
+            forcePausedOwnerRefresh ||
+            forceResumedOwnerRefresh
+          );
         if (canHydrateRosterContext) {
           try {
             const [users, rosters] = await Promise.all([
@@ -1070,7 +1079,17 @@ async function tickOnce(env, state, options = {}) {
         }
 
         // traded_picks: only needed for on-clock owner resolution; hydrate only while ACTIVE.
-        if (isActive && Number(bestBall || 0) !== 1 && leagueId && (!tradedPickOwnerJson || forceActive)) {
+        if (
+          isActive &&
+          Number(bestBall || 0) !== 1 &&
+          leagueId &&
+          (
+            !tradedPickOwnerJson ||
+            contextStale ||
+            prevStatus === "paused" ||
+            status === "paused"
+          )
+        ) {
           try {
             const traded = await sleeperJson(`https://api.sleeper.app/v1/draft/${draftId}/traded_picks`);
             const seasonStr = String(draft?.season || "");
@@ -1184,10 +1203,7 @@ async function tickOnce(env, state, options = {}) {
         };
 
         const regCur = reg || registryMap.get(draftId) || null;
-        const changed =
-          shouldWriteRow(regCur, registryPatch) ||
-          forcePausedTransitionPickSync ||
-          (forceActive && isActive);
+        const changed = shouldWriteRow(regCur, registryPatch);
         if (changed) {
           registryPatch.draft_json = JSON.stringify(draft || {});
           registryPatch.draft_order_json = draft?.draft_order ? JSON.stringify(draft.draft_order) : null;
