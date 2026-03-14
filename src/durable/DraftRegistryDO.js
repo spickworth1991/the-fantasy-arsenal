@@ -1268,9 +1268,6 @@ async function tickOnce(env, state, options = {}) {
           status,
           last_picked: lastPickedEffective,
           pick_count: Number.isFinite(Number(pickCount)) ? Number(pickCount) : null,
-          // Huge fields: only store when something actually changes.
-          draft_json: null,
-          draft_order_json: null,
           slot_to_roster_json: slotToRosterJson,
           roster_names_json: rosterNamesJson,
           roster_by_username_json: rosterByUsernameJson,
