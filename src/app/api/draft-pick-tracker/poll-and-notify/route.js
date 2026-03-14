@@ -942,6 +942,10 @@ async function handler(req) {
 
     let sent = 0;
     let checked = 0;
+    let stateWriteCount = 0;
+    let clearWriteCount = 0;
+    let badgeWriteCount = 0;
+    let deleteSubWriteCount = 0;
 
     let skippedNoDrafts = 0;
     let skippedNoUsername = 0;
@@ -1123,10 +1127,13 @@ async function handler(req) {
 
         const reg = registryMap.get(String(draftId));
         if (!reg) continue;
+        const clockState = clockStateMap.get(String(draftId)) || null;
 
         const status = String(reg?.status || "").toLowerCase();
         if (status !== "drafting" && status !== "paused") {
-          clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
+          if (clockState) {
+            clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
+          }
           continue;
         }
 
@@ -1167,13 +1174,14 @@ async function handler(req) {
           safeLower(userRosterName) === safeLower(currentOwnerName);
 
         if (!isOnClock) {
-          clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
+          if (clockState) {
+            clearStatements.push(buildClearClockStateStmt(db, s.endpoint, draftId));
+          }
           skippedNotOnClock++;
           pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "not-on-clock", currentOwnerName, userRosterName });
           continue;
         }
 
-        const clockState = clockStateMap.get(String(draftId)) || null;
         const prevPickNo = Number(clockState?.pick_no ?? 0);
         const prevStatus = String(clockState?.last_status || "");
         const isNewPick = prevPickNo !== nextPickNo;
@@ -1393,6 +1401,10 @@ async function handler(req) {
 
       if (!events.length) {
         pushDebug({ endpoint: s.endpoint, username: s.username, reason: "no-events", activeBadgeCount, onClockSnapshotCount: onClockSnapshot.length });
+        stateWriteCount += stateStatements.length;
+        clearWriteCount += clearStatements.length;
+        badgeWriteCount += badgeStatements.length;
+        deleteSubWriteCount += deleteSubStatements.length;
         await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
@@ -1468,6 +1480,10 @@ async function handler(req) {
 
       if (events.length === 1) {
         await sendIndividual(events[0]);
+        stateWriteCount += stateStatements.length;
+        clearWriteCount += clearStatements.length;
+        badgeWriteCount += badgeStatements.length;
+        deleteSubWriteCount += deleteSubStatements.length;
         await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
@@ -1488,6 +1504,10 @@ async function handler(req) {
             stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
           }
         }
+        stateWriteCount += stateStatements.length;
+        clearWriteCount += clearStatements.length;
+        badgeWriteCount += badgeStatements.length;
+        deleteSubWriteCount += deleteSubStatements.length;
         await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
       }
@@ -1576,6 +1596,10 @@ async function handler(req) {
         }
       }
 
+      stateWriteCount += stateStatements.length;
+      clearWriteCount += clearStatements.length;
+      badgeWriteCount += badgeStatements.length;
+      deleteSubWriteCount += deleteSubStatements.length;
       await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
     }
 
@@ -1584,6 +1608,10 @@ async function handler(req) {
       subs: subs.length,
       checked,
       sent,
+      stateWriteCount,
+      clearWriteCount,
+      badgeWriteCount,
+      deleteSubWriteCount,
       skippedNoDrafts,
       skippedNoUsername,
       skippedNoOrder,
