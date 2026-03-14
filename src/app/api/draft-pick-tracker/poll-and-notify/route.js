@@ -685,6 +685,28 @@ async function ensureDraftRegistryTable(db) {
   );
 }
 
+async function ensureDraftCacheTable(db) {
+  await ensureTable(
+    db,
+    "push_draft_cache",
+    `CREATE TABLE IF NOT EXISTS push_draft_cache (
+      draft_id TEXT PRIMARY KEY,
+      last_picked INTEGER,
+      pick_count INTEGER,
+      pick_count_synced_last_picked INTEGER,
+      last_picks_sync_at INTEGER,
+      updated_at INTEGER
+    )`,
+    [
+      { name: "last_picked", type: "INTEGER" },
+      { name: "pick_count", type: "INTEGER" },
+      { name: "pick_count_synced_last_picked", type: "INTEGER" },
+      { name: "last_picks_sync_at", type: "INTEGER" },
+      { name: "updated_at", type: "INTEGER" },
+    ]
+  );
+}
+
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -716,7 +738,7 @@ async function loadRegistryRowsMap(db, draftIds) {
     const rows = await db
       .prepare(
         `SELECT draft_id, active, status, league_name, league_id, league_avatar,
-                timer_sec, current_pick, current_owner_name, clock_ends_at,
+                last_picked, timer_sec, current_pick, current_owner_name, clock_ends_at,
                 roster_names_json, roster_by_username_json
          FROM push_draft_registry
          WHERE draft_id IN (${qs})`
@@ -727,6 +749,29 @@ async function loadRegistryRowsMap(db, draftIds) {
       if (row?.draft_id) out.set(String(row.draft_id), row);
     }
   }
+  return out;
+}
+
+async function loadDraftCacheRowsMap(db, draftIds) {
+  const ids = Array.from(new Set((draftIds || []).map(String).filter(Boolean)));
+  const out = new Map();
+  if (!ids.length) return out;
+
+  for (const group of chunk(ids, 80)) {
+    const qs = group.map(() => "?").join(",");
+    const rows = await db
+      .prepare(
+        `SELECT draft_id, last_picked, pick_count, pick_count_synced_last_picked, last_picks_sync_at
+         FROM push_draft_cache
+         WHERE draft_id IN (${qs})`
+      )
+      .bind(...group)
+      .all();
+    for (const row of rows?.results || []) {
+      if (row?.draft_id) out.set(String(row.draft_id), row);
+    }
+  }
+
   return out;
 }
 
@@ -882,6 +927,7 @@ async function handler(req) {
 
     await ensurePushTables(db);
     await ensureDraftRegistryTable(db);
+    await ensureDraftCacheTable(db);
 
     const vapidPrivateRaw = env?.VAPID_PRIVATE_KEY;
     const vapidSubject = env?.VAPID_SUBJECT;
@@ -1039,6 +1085,7 @@ async function handler(req) {
     for (const r of activeRows?.results || []) {
       if (r?.draft_id) activeDraftIdSet.add(String(r.draft_id));
     }
+    const activeDraftCacheMap = await loadDraftCacheRowsMap(db, Array.from(activeDraftIdSet));
 
     const allRelevantDraftIds = [];
     for (const s of subs) {
@@ -1127,6 +1174,7 @@ async function handler(req) {
 
         const reg = registryMap.get(String(draftId));
         if (!reg) continue;
+        const cacheRow = activeDraftCacheMap.get(String(draftId)) || null;
         const clockState = clockStateMap.get(String(draftId)) || null;
 
         const status = String(reg?.status || "").toLowerCase();
@@ -1141,6 +1189,29 @@ async function handler(req) {
         if (!nextPickNo) {
           skippedNoOrder++;
           pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-current-pick" });
+          continue;
+        }
+
+        const regLastPicked = Number.isFinite(Number(reg?.last_picked))
+          ? Number(reg.last_picked)
+          : null;
+        const cacheSyncedLastPicked = Number.isFinite(Number(cacheRow?.pick_count_synced_last_picked))
+          ? Number(cacheRow.pick_count_synced_last_picked)
+          : null;
+        const awaitingPickSync =
+          regLastPicked != null &&
+          regLastPicked > 0 &&
+          cacheSyncedLastPicked !== regLastPicked;
+        if (awaitingPickSync) {
+          pushDebug({
+            endpoint: s.endpoint,
+            username: s.username,
+            draftId,
+            reason: "awaiting-pick-sync",
+            status,
+            regLastPicked,
+            cacheSyncedLastPicked,
+          });
           continue;
         }
 
