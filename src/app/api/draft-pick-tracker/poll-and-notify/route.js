@@ -1209,9 +1209,15 @@ async function handler(req) {
 
         const stateMarker = buildRegistryPickSyncMarker(reg);
         const syncedStateMarker = String(cacheRow?.pick_sync_state_marker || "");
+        const cacheLastPicked = Number.isFinite(Number(cacheRow?.last_picked))
+          ? Number(cacheRow.last_picked)
+          : null;
+        const cacheSyncedLastPicked = Number.isFinite(Number(cacheRow?.pick_count_synced_last_picked))
+          ? Number(cacheRow.pick_count_synced_last_picked)
+          : null;
         const awaitingPickSync =
-          !!stateMarker &&
-          syncedStateMarker !== stateMarker;
+          (cacheLastPicked != null && cacheLastPicked > 0 && cacheSyncedLastPicked !== cacheLastPicked) ||
+          (!!stateMarker && syncedStateMarker !== stateMarker);
         if (awaitingPickSync) {
           pushDebug({
             endpoint: s.endpoint,
@@ -1221,6 +1227,8 @@ async function handler(req) {
             status,
             stateMarker,
             syncedStateMarker,
+            cacheLastPicked,
+            cacheSyncedLastPicked,
           });
           continue;
         }

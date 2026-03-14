@@ -980,9 +980,12 @@ async function tickOnce(env, state, options = {}) {
         const expectedTotalPicks = teams && rounds ? Number(teams) * Number(rounds) : 0;
         const needsStateSync = prevRegistrySyncMarker !== cacheSyncedStateMarker;
 
+        const needsLastPickedSync =
+          lastPickedNum > 0 &&
+          cacheSyncedLastPicked !== lastPickedNum;
         const wantsPickSync =
           (isActive || status === "complete") &&
-          (!Number.isFinite(pickCount) || needsStateSync);
+          (!Number.isFinite(pickCount) || needsStateSync || needsLastPickedSync);
 
         // Only force a sync when a pause transition itself matters, or when pick_count is missing.
         // Do NOT resync active drafts every kick/tick just because they're active.
@@ -1030,6 +1033,8 @@ async function tickOnce(env, state, options = {}) {
           cacheWrites.set(draftId, { ...cur, ...patch });
         };
 
+        let nextSyncedLastPicked = cacheSyncedLastPicked;
+
         if (canPickSync) {
           try {
             pickCount = await getPickCountWithRetry(
@@ -1061,21 +1066,18 @@ async function tickOnce(env, state, options = {}) {
               }
             }
 
-            const requiresConfirmationSync =
-              status === "paused" ||
-              status === "complete" ||
-              prevStatus === "paused" ||
-              prevStatus === "complete";
             const suspiciousPickSync =
               lastPickedMoved &&
               prevPickCountKnown != null &&
               Number.isFinite(Number(pickCount)) &&
               Number(pickCount) <= prevPickCountKnown;
             const holdSyncedLastPickedOnce =
-              requiresConfirmationSync &&
-              lastPickedNum > 0 &&
-              (cacheSyncedLastPicked !== lastPickedNum || suspiciousPickSync) &&
-              cacheLastPicked !== lastPickedNum;
+              (
+                lastPickedNum > 0 &&
+                cacheSyncedLastPicked !== lastPickedNum &&
+                cacheLastPicked !== lastPickedNum
+              ) ||
+              suspiciousPickSync;
 
             stageCachePatch({
               last_picked: lastPicked,
@@ -1085,6 +1087,9 @@ async function tickOnce(env, state, options = {}) {
                 : (lastPickedNum || null),
               last_picks_sync_at: now,
             });
+            nextSyncedLastPicked = holdSyncedLastPickedOnce
+              ? cacheSyncedLastPicked
+              : lastPickedNum;
           } catch {
             // Still keep last_picked in cache if draft payload moved,
             // but do not write noisy sync timestamps by themselves.
@@ -1369,6 +1374,7 @@ async function tickOnce(env, state, options = {}) {
           stageCachePatch({
             pick_count_synced_last_picked: cacheSyncedLastPicked || null,
           });
+          nextSyncedLastPicked = cacheSyncedLastPicked;
         }
         const nextSyncMarker = buildPickSyncMarker({
           status,
@@ -1382,16 +1388,38 @@ async function tickOnce(env, state, options = {}) {
           pick_sync_state_marker: suspiciousPickSync ? (cacheSyncedStateMarker || null) : nextSyncMarker,
         });
 
+        const prevPublishedLastPicked = Number.isFinite(Number(reg?.last_picked))
+          ? Number(reg.last_picked)
+          : (cacheSyncedLastPicked > 0 ? cacheSyncedLastPicked : null);
+        const publishSyncedPickState =
+          !lastPickedMoved || (lastPickedNum > 0 && nextSyncedLastPicked === lastPickedNum);
+        const publishedLastPicked = publishSyncedPickState
+          ? lastPickedEffective
+          : prevPublishedLastPicked;
+        const publishedPickCount = publishSyncedPickState
+          ? (Number.isFinite(Number(pickCount)) ? Number(pickCount) : null)
+          : (Number.isFinite(Number(reg?.pick_count))
+              ? Number(reg.pick_count)
+              : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null));
+        const publishedCurrentPick = publishSyncedPickState
+          ? currentPick
+          : (Number.isFinite(Number(reg?.current_pick)) ? Number(reg.current_pick) : null);
+        const publishedCurrentOwnerName = publishSyncedPickState
+          ? currentOwnerName
+          : (reg?.current_owner_name != null ? String(reg.current_owner_name) : null);
+        const publishedNextOwnerName = publishSyncedPickState
+          ? nextOwnerName
+          : (reg?.next_owner_name != null ? String(reg.next_owner_name) : null);
         const clockEndsAt =
           status === "complete"
             ? null
-            : (lastPickedEffective != null && timerSec ? Number(lastPickedEffective) + Number(timerSec) * 1000 : null);
+            : (publishedLastPicked != null && timerSec ? Number(publishedLastPicked) + Number(timerSec) * 1000 : null);
 
         const registryPatch = {
           active: isActive ? 1 : 0,
           status,
-          last_picked: lastPickedEffective,
-          pick_count: Number.isFinite(Number(pickCount)) ? Number(pickCount) : null,
+          last_picked: publishedLastPicked,
+          pick_count: publishedPickCount,
           slot_to_roster_json: slotToRosterJson,
           roster_names_json: rosterNamesJson,
           roster_by_username_json: rosterByUsernameJson,
@@ -1404,9 +1432,9 @@ async function tickOnce(env, state, options = {}) {
           league_name: leagueName,
           league_avatar: leagueAvatarUrl,
           best_ball: bestBall == null ? null : Number(bestBall),
-          current_pick: currentPick,
-          current_owner_name: currentOwnerName,
-          next_owner_name: nextOwnerName,
+          current_pick: publishedCurrentPick,
+          current_owner_name: publishedCurrentOwnerName,
+          next_owner_name: publishedNextOwnerName,
           clock_ends_at: clockEndsAt,
           completed_at: completedAt,
         };
