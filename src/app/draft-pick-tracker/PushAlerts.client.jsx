@@ -372,7 +372,7 @@ export default function PushAlerts({
   useEffect(() => {
     let cancelled = false;
 
-    async function syncRotatedSubscription() {
+    async function syncSubscriptionMetadata() {
       try {
         if (cancelled) return;
         if (!hasNotification) return;
@@ -383,21 +383,28 @@ export default function PushAlerts({
         const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
         if (!sub?.endpoint) return;
 
-        const cachedEndpoint = readCachedEndpoint();
-        if (cachedEndpoint && cachedEndpoint === sub.endpoint) return;
-
         await saveSubscription(sub, { includeUsername: true });
       } catch {
         // ignore
       }
     }
 
-    if (status === "enabled" && readCachedStatus() === "enabled") syncRotatedSubscription();
+    if (status === "enabled" && readCachedStatus() === "enabled") {
+      syncSubscriptionMetadata();
+      const t = setInterval(() => {
+        syncSubscriptionMetadata();
+      }, 30 * 60 * 1000);
+
+      return () => {
+        cancelled = true;
+        clearInterval(t);
+      };
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [status, hasNotification, username]);
+  }, [chosenDraftIds.join("|"), status, hasNotification, username]);
 
   useEffect(() => {
     let cancelled = false;

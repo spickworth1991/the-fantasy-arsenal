@@ -22,8 +22,6 @@ const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
 const COMPLETE_REFRESH_MS = 60 * 1000;
 const COMPLETE_RECHECK_WINDOW_MS = 10 * 60 * 1000;
 
-// Only call /picks when we actually need to (and never more often than this per draft).
-const PICKS_SYNC_COOLDOWN_MS = 20_000;
 
 // Store per-draft scheduling metadata in DO storage so we don't write D1 when nothing changes.
 // Key: meta:<draftId> -> { lastCheckedAt, lastStatus }
@@ -1253,6 +1251,10 @@ async function tickOnce(env, state, options = {}) {
         let currentPick = null;
         let currentOwnerName = null;
         let nextOwnerName = null;
+        const prevPickCountKnown = Number.isFinite(Number(reg?.pick_count))
+          ? Number(reg.pick_count)
+          : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null);
+        const prevCurrentPick = Number.isFinite(Number(reg?.current_pick)) ? Number(reg.current_pick) : null;
 
         try {
           const pickCountNum = Number.isFinite(Number(pickCount)) ? Number(pickCount) : null;
@@ -1296,6 +1298,22 @@ async function tickOnce(env, state, options = {}) {
           }
         } catch {
           // ignore
+        }
+
+        const lastPickedMoved = lastPickedNum > 0 && cacheLastPicked !== lastPickedNum;
+        const suspiciousPickSync =
+          lastPickedMoved &&
+          status !== "complete" &&
+          Number.isFinite(Number(pickCount)) &&
+          (
+            (prevPickCountKnown != null && Number(pickCount) <= prevPickCountKnown) ||
+            (prevCurrentPick != null && currentPick != null && Number(currentPick) <= prevCurrentPick)
+          );
+
+        if (suspiciousPickSync) {
+          stageCachePatch({
+            pick_count_synced_last_picked: cacheSyncedLastPicked || null,
+          });
         }
 
         const clockEndsAt =
