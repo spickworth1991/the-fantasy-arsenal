@@ -36,6 +36,11 @@ function formatTimerHoursLabel(timerSec) {
   return `${txt} HR Timer`;
 }
 
+function isCompleteDraftRow(row) {
+  const st = String(row?.draftStatus || "").toLowerCase();
+  return st === "complete" || Number(row?.completedAt || 0) > 0;
+}
+
 function Pill({ children, tone = "blue", size = "md" }) {
   const tones = {
     blue: "bg-blue-500/20 text-blue-200 border-blue-400/30",
@@ -892,7 +897,8 @@ export default function DraftPickTrackerClient() {
     const status = String(r?.draftStatus || "").toLowerCase();
     const isDrafting = status === "drafting";
     const isPaused = status === "paused";
-    const hasTimer = safeNum(r.timerSec) > 0;
+    const isComplete = isCompleteDraftRow(r);
+    const hasTimer = safeNum(r.timerSec) > 0 && !isComplete;
 
     const liveClockLeft = hasTimer
       ? isPaused
@@ -900,7 +906,7 @@ export default function DraftPickTrackerClient() {
         : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
       : 0;
 
-    const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+    const clockText = isComplete ? "complete" : isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
     const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
     const perPickMs = hasTimer ? safeNum(r.timerSec) * 1000 : 0;
     let liveEta = null;
@@ -912,7 +918,7 @@ export default function DraftPickTrackerClient() {
         liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
       }
     }
-    const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+    const etaClock = isComplete ? "complete" : isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
     const statusTone =
       r.draftStatus === "drafting"
         ? "green"
@@ -1203,7 +1209,8 @@ export default function DraftPickTrackerClient() {
               const status = String(r?.draftStatus || "").toLowerCase();
               const isDrafting = status === "drafting";
               const isPaused = status === "paused";
-              const hasTimer = safeNum(r.timerSec) > 0;
+              const isComplete = isCompleteDraftRow(r);
+              const hasTimer = safeNum(r.timerSec) > 0 && !isComplete;
 
               const liveClockLeft = hasTimer
                 ? isPaused
@@ -1211,7 +1218,7 @@ export default function DraftPickTrackerClient() {
                   : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
                 : 0;
 
-              const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+              const clockText = isComplete ? "complete" : isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
 
               const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
@@ -1228,7 +1235,7 @@ export default function DraftPickTrackerClient() {
               }
 
               const etaClock =
-                isPaused ? "paused" : hasTimer && liveEtaToShownPick != null ? msToClock(liveEtaToShownPick) : "—";
+                isComplete ? "complete" : isPaused ? "paused" : hasTimer && liveEtaToShownPick != null ? msToClock(liveEtaToShownPick) : "—";
 
               const statusTone =
                 r.draftStatus === "drafting"
@@ -1461,7 +1468,8 @@ export default function DraftPickTrackerClient() {
                     const status = String(r?.draftStatus || "").toLowerCase();
                     const isDrafting = status === "drafting";
                     const isPaused = status === "paused";
-                    const hasTimer = safeNum(r.timerSec) > 0;
+                    const isComplete = isCompleteDraftRow(r);
+                    const hasTimer = safeNum(r.timerSec) > 0 && !isComplete;
 
                     const liveClockLeft = hasTimer
                       ? isPaused
@@ -1469,7 +1477,7 @@ export default function DraftPickTrackerClient() {
                         : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
                       : 0;
 
-                    const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+                    const clockText = isComplete ? "complete" : isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
 
                     const statusTone =
                       r.draftStatus === "drafting"
@@ -1592,7 +1600,8 @@ export default function DraftPickTrackerClient() {
                     const status = String(r?.draftStatus || "").toLowerCase();
                     const isDrafting = status === "drafting";
                     const isPaused = status === "paused";
-                    const hasTimer = safeNum(r.timerSec) > 0;
+                    const isComplete = isCompleteDraftRow(r);
+                    const hasTimer = safeNum(r.timerSec) > 0 && !isComplete;
 
                     const liveClockLeft = hasTimer
                       ? isPaused
@@ -1600,7 +1609,7 @@ export default function DraftPickTrackerClient() {
                         : Math.max(0, safeNum(r.clockLeftMs) - elapsed)
                       : 0;
 
-                    const clockText = isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
+                    const clockText = isComplete ? "complete" : isPaused ? "paused" : hasTimer ? msToClock(liveClockLeft) : "—";
 
                     const shownPickNo = r.onClockIsMe ? r.myNextPickAfterThis : r.myNextPickOverall;
 
@@ -1615,7 +1624,7 @@ export default function DraftPickTrackerClient() {
                       }
                     }
 
-                    const etaClock = isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
+                    const etaClock = isComplete ? "complete" : isPaused ? "paused" : hasTimer && liveEta != null ? msToClock(liveEta) : "—";
 
                     const statusTone =
                       r.draftStatus === "drafting"
@@ -1720,7 +1729,7 @@ export default function DraftPickTrackerClient() {
                         <td className="px-5 py-4">
                           <div className="flex flex-col">
                             <span className="text-lg text-white font-extrabold tabular-nums tracking-wide">{etaClock}</span>
-                            <span className="text-xs text-gray-400">{hasTimer ? "timer-based" : "no timer"}</span>
+                            <span className="text-xs text-gray-400">{isComplete ? "complete" : hasTimer ? "timer-based" : "no timer"}</span>
                           </div>
                         </td>
 

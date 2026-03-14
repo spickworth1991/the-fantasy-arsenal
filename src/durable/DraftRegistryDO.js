@@ -860,6 +860,8 @@ async function tickOnce(env, state, options = {}) {
         const cacheLastSyncAt = Number(cacheRow?.last_picks_sync_at || 0);
         const lastPickedNum = Number(draftLastPicked || 0);
 
+        const expectedTotalPicks = teams && rounds ? Number(teams) * Number(rounds) : 0;
+
         const wantsPickSync =
           isActive &&
           draftLastPicked != null &&
@@ -885,14 +887,24 @@ async function tickOnce(env, state, options = {}) {
             cacheSyncedLastPicked !== lastPickedNum
           );
 
+        const forceCompletePickSync =
+          status === "complete" &&
+          (
+            prevStatus !== "complete" ||
+            !Number.isFinite(pickCount) ||
+            (expectedTotalPicks > 0 && Number(pickCount || 0) < expectedTotalPicks)
+          );
+
         // Only sync /picks when:
         // - we are missing pick_count
         // - Sleeper last_picked changed vs what we synced
         // - a pause/resume transition happened
+        // - the draft just completed or still needs final reconciliation
         const canPickSync =
           wantsPickSync ||
           forcePausedTransitionPickSync ||
-          forceResumedTransitionPickSync;
+          forceResumedTransitionPickSync ||
+          forceCompletePickSync;
 
               
 
@@ -948,8 +960,10 @@ async function tickOnce(env, state, options = {}) {
           }
         }
 
-        // Best-ball "complete" is a TFA concept.
-        const completedAt = !isActive && Number(bestBall || 0) === 1 ? now : null;
+        const completedAt =
+          status === "complete"
+            ? (Number(reg?.completed_at || 0) || now)
+            : null;
 
         // ---------------------------------
         // Shared league context (only hydrate while ACTIVE)
@@ -1136,7 +1150,7 @@ async function tickOnce(env, state, options = {}) {
 
         try {
           const pickCountNum = Number.isFinite(Number(pickCount)) ? Number(pickCount) : null;
-          currentPick = pickCountNum == null ? null : pickCountNum + 1;
+          currentPick = status === "complete" ? null : (pickCountNum == null ? null : pickCountNum + 1);
 
           const slotToRoster = slotToRosterJson ? JSON.parse(slotToRosterJson) : null;
           const rosterNames = rosterNamesJson ? JSON.parse(rosterNamesJson) : null;
@@ -1169,11 +1183,19 @@ async function tickOnce(env, state, options = {}) {
             currentOwnerName = rosterNames?.[String(ridCur)] || null;
             nextOwnerName = rosterNames?.[String(ridNext)] || null;
           }
+
+          if (status === "complete") {
+            currentOwnerName = null;
+            nextOwnerName = null;
+          }
         } catch {
           // ignore
         }
 
-        const clockEndsAt = lastPickedEffective != null && timerSec ? Number(lastPickedEffective) + Number(timerSec) * 1000 : null;
+        const clockEndsAt =
+          status === "complete"
+            ? null
+            : (lastPickedEffective != null && timerSec ? Number(lastPickedEffective) + Number(timerSec) * 1000 : null);
 
         const registryPatch = {
           active: isActive ? 1 : 0,

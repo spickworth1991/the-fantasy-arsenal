@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 function getDb(env) {
-  // Support multiple binding names (Cloudflare dashboard vs local wrangler, etc.)
   return env?.PUSH_DB || env?.DB || env?.D1 || env?.DRAFT_DB || null;
 }
 
@@ -40,13 +39,45 @@ async function ensureDraftRegistryTable(db) {
     .run();
 }
 
+async function loadExistingRowsMap(db, draftIds) {
+  const ids = Array.from(new Set((draftIds || []).map((x) => String(x || "").trim()).filter(Boolean)));
+  const out = new Map();
+  if (!ids.length) return out;
+
+  for (let i = 0; i < ids.length; i += 50) {
+    const group = ids.slice(i, i + 50);
+    const qs = group.map(() => "?").join(",");
+    const res = await db
+      .prepare(
+        `SELECT draft_id, status, league_id, league_name, league_avatar, best_ball
+         FROM push_draft_registry
+         WHERE draft_id IN (${qs})`
+      )
+      .bind(...group)
+      .all();
+
+    for (const row of res?.results || []) {
+      if (row?.draft_id) out.set(String(row.draft_id), row);
+    }
+  }
+
+  return out;
+}
+
+function shouldRefreshSeedRow(existingRow, nextMeta) {
+  if (!existingRow) return true;
+  const status = String(existingRow?.status || "").trim().toLowerCase();
+  if (!status || status === "unknown") return true;
+  if (!existingRow?.league_id && nextMeta?.leagueId) return true;
+  if (!existingRow?.league_name && nextMeta?.leagueName) return true;
+  if (!existingRow?.league_avatar && nextMeta?.leagueAvatar) return true;
+  if (existingRow?.best_ball == null && nextMeta?.bestBall != null) return true;
+  return false;
+}
+
 /**
  * Lightweight discovery endpoint.
- *
- * The client calls this every ~60s with the user's known league + draft IDs.
- * This route:
- *  - upserts missing draft_ids into the shared registry (D1)
- *  - triggers the Durable Object to hydrate/refresh separately (does NOT block UI)
+ * Seeds missing draft ids into the shared registry without touching push subscriptions.
  */
 export async function POST(request) {
   try {
@@ -71,7 +102,9 @@ export async function POST(request) {
 
     let inserted = 0;
     let updated = 0;
-    const now = Date.now();
+
+    const draftIds = leagues.map((item) => String(item?.draft_id || "").trim()).filter(Boolean);
+    const existingRows = await loadExistingRowsMap(db, draftIds);
 
     for (const item of leagues) {
       const draftId = String(item?.draft_id || "").trim();
@@ -81,32 +114,30 @@ export async function POST(request) {
       const leagueName = item?.league_name ? String(item.league_name) : (item?.name ? String(item.name) : null);
       const leagueAvatar = item?.league_avatar ? String(item.league_avatar) : (item?.avatar ? String(item.avatar) : null);
       const bestBall = Number(item?.best_ball || item?.settings?.best_ball || 0) === 1 ? 1 : 0;
+      const existingRow = existingRows.get(draftId) || null;
 
-      // Upsert minimal metadata; DO will fill in everything else.
-      // IMPORTANT:
-      // - Do NOT mark as active/unknown here. That can push the draft into the "inactive" bucket,
-      //   which is only refreshed every ~6 hours.
-      // - Seed as pre_draft with last_checked_at=0 so the DO picks it up quickly.
-      const res = await db
+      if (!shouldRefreshSeedRow(existingRow, { leagueId, leagueName, leagueAvatar, bestBall })) {
+        continue;
+      }
+
+      await db
         .prepare(
           `INSERT INTO push_draft_registry (
             draft_id, active, status, last_checked_at,
             league_id, league_name, league_avatar, best_ball
           ) VALUES (?, 0, 'pre_draft', 0, ?, ?, ?, ?)
           ON CONFLICT(draft_id) DO UPDATE SET
-            -- If we only had a placeholder status, make it eligible for the DO pre_draft refresh.
             status=CASE
               WHEN push_draft_registry.status IS NULL OR push_draft_registry.status='' OR push_draft_registry.status='unknown'
               THEN 'pre_draft'
               ELSE push_draft_registry.status
             END,
-            -- Force a near-immediate refresh if we were stuck in the placeholder state.
             last_checked_at=CASE
-              WHEN push_draft_registry.status='unknown'
+              WHEN push_draft_registry.status IS NULL OR push_draft_registry.status='' OR push_draft_registry.status='unknown'
               THEN 0
               ELSE COALESCE(push_draft_registry.last_checked_at, 0)
             END,
-            league_id=COALESCE(excluded.league_id, push_draft_registry.league_id),
+            league_id=COALESCE(push_draft_registry.league_id, excluded.league_id),
             league_name=COALESCE(push_draft_registry.league_name, excluded.league_name),
             league_avatar=COALESCE(push_draft_registry.league_avatar, excluded.league_avatar),
             best_ball=COALESCE(push_draft_registry.best_ball, excluded.best_ball)`
@@ -114,17 +145,20 @@ export async function POST(request) {
         .bind(draftId, leagueId, leagueName, leagueAvatar, bestBall)
         .run();
 
-      if (res?.meta?.changes === 1) inserted += 1;
-      else updated += 1;
+      if (existingRow) updated += 1;
+      else inserted += 1;
     }
 
-    // Kick the DO to hydrate asynchronously (do not block UI)
-    try {
-      const id = env.DRAFT_REGISTRY.idFromName("master");
-      const stub = env.DRAFT_REGISTRY.get(id);
-      (ctx?.waitUntil ? ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick")) : stub.fetch("https://draft-registry.internal/kick").catch(() => {}));
-    } catch {
-      // ignore
+    if (inserted || updated) {
+      try {
+        const id = env.DRAFT_REGISTRY.idFromName("master");
+        const stub = env.DRAFT_REGISTRY.get(id);
+        (ctx?.waitUntil
+          ? ctx.waitUntil(stub.fetch("https://draft-registry.internal/kick"))
+          : stub.fetch("https://draft-registry.internal/kick").catch(() => {}));
+      } catch {
+        // ignore
+      }
     }
 
     return NextResponse.json({ ok: true, inserted, updated });

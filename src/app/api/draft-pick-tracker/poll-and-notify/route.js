@@ -813,6 +813,31 @@ function buildClearClockStateStmt(db, endpoint, draftId) {
     .bind(endpoint, String(draftId));
 }
 
+function shouldPersistClockState(prevRow, nextRow) {
+  if (!nextRow || typeof nextRow !== "object") return false;
+  if (!prevRow) return true;
+
+  return !(
+    Number(prevRow?.pick_no ?? 0) === Number(nextRow?.pick_no ?? 0) &&
+    String(prevRow?.last_status || "") === String(nextRow?.last_status || "") &&
+    Number(prevRow?.sent_onclock || 0) === Number(nextRow?.sent_onclock || 0) &&
+    Number(prevRow?.sent_25 || 0) === Number(nextRow?.sent_25 || 0) &&
+    Number(prevRow?.sent_50 || 0) === Number(nextRow?.sent_50 || 0) &&
+    Number(prevRow?.sent_10min || 0) === Number(nextRow?.sent_10min || 0) &&
+    Number(prevRow?.sent_5min || 0) === Number(nextRow?.sent_5min || 0) &&
+    Number(prevRow?.sent_urgent || 0) === Number(nextRow?.sent_urgent || 0) &&
+    Number(prevRow?.sent_final || 0) === Number(nextRow?.sent_final || 0) &&
+    Number(prevRow?.sent_paused || 0) === Number(nextRow?.sent_paused || 0) &&
+    Number(prevRow?.sent_unpaused || 0) === Number(nextRow?.sent_unpaused || 0) &&
+    ((prevRow?.paused_remaining_ms == null ? null : Number(prevRow?.paused_remaining_ms)) ===
+      (nextRow?.paused_remaining_ms == null ? null : Number(nextRow?.paused_remaining_ms))) &&
+    ((prevRow?.paused_at_ms == null ? null : Number(prevRow?.paused_at_ms)) ===
+      (nextRow?.paused_at_ms == null ? null : Number(nextRow?.paused_at_ms))) &&
+    ((prevRow?.resume_clock_start_ms == null ? null : Number(prevRow?.resume_clock_start_ms)) ===
+      (nextRow?.resume_clock_start_ms == null ? null : Number(nextRow?.resume_clock_start_ms)))
+  );
+}
+
 function makeBaseFlags(clockState, nextPickNo, status, isNewPick) {
   return {
     pick_no: nextPickNo,
@@ -1270,7 +1295,9 @@ async function handler(req) {
         const timeLeftText = totalMs > 0 ? msToClock(remainingMs) : "-";
 
         if (!stageToSend) {
-          stateStatements.push(buildClockStateStmt(db, s.endpoint, draftId, baseFlags));
+          if (shouldPersistClockState(clockState, baseFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, draftId, baseFlags));
+          }
           pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus, sentPaused, sentUnpaused, sentOnclock, transitionedToPaused, transitionedFromPaused, isNewPick });
           continue;
         }
@@ -1372,7 +1399,10 @@ async function handler(req) {
 
       const sendIndividual = async (ev) => {
         if (!shouldSendStageForSettings(ev.stage, s.settings)) {
-          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
+          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          }
           return;
         }
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
@@ -1419,10 +1449,13 @@ async function handler(req) {
 
         if (pushRes?.ok) {
           sent++;
-          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
-          if (shouldBadge) {
+          const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
+          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          }
+          if (shouldBadge && Number(s.lastBadgeCount || 0) !== activeBadgeCount) {
             badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
-          } else if (Number(s.lastBadgeCount || 0) !== 0) {
+          } else if (!shouldBadge && Number(s.lastBadgeCount || 0) !== 0) {
             badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
           }
         } else if (pushRes?.status === 404 || pushRes?.status === 410) {
@@ -1450,7 +1483,10 @@ async function handler(req) {
       if (!eventsToNotify.length) {
         pushDebug({ endpoint: s.endpoint, username: s.username, reason: "events-filtered-by-settings", eventStages: events.map((ev) => ev.stage), settings: s.settings });
         for (const ev of events) {
-          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
+          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          }
         }
         await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
         continue;
@@ -1521,9 +1557,12 @@ async function handler(req) {
       if (pushRes?.ok) {
         sent++;
         for (const ev of events) {
-          stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
+          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          }
         }
-        if (shouldBadge) {
+        if (shouldBadge && Number(s.lastBadgeCount || 0) !== activeBadgeCount) {
           badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
         } else if (Number(s.lastBadgeCount || 0) !== 0) {
           badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
