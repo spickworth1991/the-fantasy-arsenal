@@ -300,13 +300,6 @@ export default function PushAlerts({
       throw new Error(t || "Failed to save settings");
     }
 
-    if (resolved.subscription?.endpoint) {
-      await saveSubscription(resolved.subscription, {
-        includeUsername: true,
-        settingsOverride: nextSettings,
-      });
-    }
-
     setSettings(nextSettings);
   }
 
@@ -379,7 +372,7 @@ export default function PushAlerts({
   useEffect(() => {
     let cancelled = false;
 
-    async function syncSubscriptionMetadata() {
+    async function syncRotatedSubscription() {
       try {
         if (cancelled) return;
         if (!hasNotification) return;
@@ -390,18 +383,21 @@ export default function PushAlerts({
         const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
         if (!sub?.endpoint) return;
 
+        const cachedEndpoint = readCachedEndpoint();
+        if (cachedEndpoint && cachedEndpoint === sub.endpoint) return;
+
         await saveSubscription(sub, { includeUsername: true });
       } catch {
         // ignore
       }
     }
 
-    if (status === "enabled" && readCachedStatus() === "enabled") syncSubscriptionMetadata();
+    if (status === "enabled" && readCachedStatus() === "enabled") syncRotatedSubscription();
 
     return () => {
       cancelled = true;
     };
-  }, [chosenDraftIds.join("|"), status, hasNotification, username]);
+  }, [status, hasNotification, username]);
 
   useEffect(() => {
     let cancelled = false;

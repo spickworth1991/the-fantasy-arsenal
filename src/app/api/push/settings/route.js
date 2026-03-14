@@ -53,6 +53,14 @@ function normalizeSettings(input) {
   };
 }
 
+function stableJson(value, fallback = null) {
+  try {
+    return JSON.stringify(JSON.parse(value));
+  } catch {
+    return fallback;
+  }
+}
+
 export async function GET(req) {
   const { env } = getRequestContext();
   const db = env?.PUSH_DB;
@@ -122,7 +130,7 @@ export async function POST(req) {
   }
 
   const existing = await db
-    .prepare(`SELECT endpoint FROM push_subscriptions WHERE endpoint=?`)
+    .prepare(`SELECT endpoint, settings_json FROM push_subscriptions WHERE endpoint=?`)
     .bind(endpoint)
     .first();
 
@@ -134,6 +142,12 @@ export async function POST(req) {
   }
 
   const settings = normalizeSettings(body?.settings);
+  const settingsJson = JSON.stringify(settings);
+  const existingSettingsJson = stableJson(existing?.settings_json, null);
+  if (existingSettingsJson === stableJson(settingsJson, null)) {
+    return NextResponse.json({ ok: true, settings });
+  }
+
   const now = Date.now();
 
   await db
@@ -142,7 +156,7 @@ export async function POST(req) {
        SET settings_json=?, updated_at=?
        WHERE endpoint=?`
     )
-    .bind(JSON.stringify(settings), now, endpoint)
+    .bind(settingsJson, now, endpoint)
     .run();
 
   return NextResponse.json({ ok: true, settings });

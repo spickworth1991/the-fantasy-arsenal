@@ -64,6 +64,27 @@ function uniqStrings(arr) {
   return out;
 }
 
+function stableDraftIds(arr) {
+  return uniqStrings(arr).map(String).sort();
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function stableJson(value, fallback = null) {
+  try {
+    return JSON.stringify(JSON.parse(value));
+  } catch {
+    return fallback;
+  }
+}
+
 function normalizeUsername(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -100,7 +121,7 @@ export async function POST(req) {
   const now = Date.now();
   const usernameIn = body?.username != null ? normalizeUsername(body.username) : "";
   const draftIdsIn = Array.isArray(body?.draftIds) ? body.draftIds : [];
-  const draftIds = uniqStrings(draftIdsIn).map(String);
+  const draftIds = stableDraftIds(draftIdsIn);
 
   let settings = normalizeSettings(body?.settings);
 
@@ -136,51 +157,87 @@ export async function POST(req) {
   const draftIdsJson = JSON.stringify(draftIds);
   const settingsJson = JSON.stringify(settings);
 
-  await db
+  const existingRow = await db
     .prepare(
-      `INSERT INTO push_subscriptions (
-        endpoint,
-        subscription_json,
-        draft_ids_json,
-        username,
-        league_count,
-        settings_json,
-        last_badge_count,
-        last_badge_synced_at,
-        updated_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(endpoint) DO UPDATE SET
-        subscription_json=excluded.subscription_json,
-        draft_ids_json=excluded.draft_ids_json,
-        league_count=excluded.league_count,
-        settings_json=excluded.settings_json,
-        updated_at=excluded.updated_at,
-        username=excluded.username`
+      `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, settings_json,
+              last_badge_count, last_badge_synced_at, created_at
+       FROM push_subscriptions
+       WHERE endpoint=?`
     )
-    .bind(
-      endpoint,
-      subscriptionJson,
-      draftIdsJson,
-      usernameIn || null,
-      draftIds.length,
-      settingsJson,
-      0,
-      null,
-      now,
-      now
-    )
-    .run();
+    .bind(endpoint)
+    .first();
+  const nextUsername = usernameIn || normalizeUsername(existingRow?.username || "") || null;
 
-  if (usernameIn) {
+  const sameEndpointRow =
+    !!existingRow?.endpoint &&
+    stableJson(existingRow?.subscription_json, null) === stableJson(subscriptionJson, null) &&
+    JSON.stringify(stableDraftIds(parseJsonArray(existingRow?.draft_ids_json))) === draftIdsJson &&
+    normalizeUsername(existingRow?.username || "") === normalizeUsername(nextUsername || "") &&
+    Number(existingRow?.league_count || 0) === draftIds.length &&
+    stableJson(existingRow?.settings_json, null) === stableJson(settingsJson, null);
+  if (!sameEndpointRow) {
     await db
       .prepare(
-        `UPDATE push_subscriptions
-         SET draft_ids_json=?, league_count=?, updated_at=?
+        `INSERT INTO push_subscriptions (
+          endpoint,
+          subscription_json,
+          draft_ids_json,
+          username,
+          league_count,
+          settings_json,
+          last_badge_count,
+          last_badge_synced_at,
+          updated_at,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(endpoint) DO UPDATE SET
+          subscription_json=excluded.subscription_json,
+          draft_ids_json=excluded.draft_ids_json,
+          league_count=excluded.league_count,
+          settings_json=excluded.settings_json,
+          updated_at=excluded.updated_at,
+          username=excluded.username`
+      )
+      .bind(
+        endpoint,
+        subscriptionJson,
+        draftIdsJson,
+        nextUsername,
+        draftIds.length,
+        settingsJson,
+        Number(existingRow?.last_badge_count || 0) || 0,
+        existingRow?.last_badge_synced_at ?? null,
+        now,
+        Number(existingRow?.created_at || 0) || now
+      )
+      .run();
+  }
+
+  if (usernameIn) {
+    const siblingRows = await db
+      .prepare(
+        `SELECT endpoint, draft_ids_json
+         FROM push_subscriptions
          WHERE LOWER(username)=? AND endpoint<>?`
       )
-      .bind(draftIdsJson, draftIds.length, now, usernameIn, endpoint)
-      .run();
+      .bind(usernameIn, endpoint)
+      .all();
+
+    const siblingNeedsSync = (siblingRows?.results || []).some((row) => {
+      const existingDraftIdsJson = JSON.stringify(stableDraftIds(parseJsonArray(row?.draft_ids_json)));
+      return existingDraftIdsJson !== draftIdsJson;
+    });
+
+    if (siblingNeedsSync) {
+      await db
+        .prepare(
+          `UPDATE push_subscriptions
+           SET draft_ids_json=?, league_count=?, updated_at=?
+           WHERE LOWER(username)=? AND endpoint<>?`
+        )
+        .bind(draftIdsJson, draftIds.length, now, usernameIn, endpoint)
+        .run();
+    }
   }
 
   return NextResponse.json({
@@ -213,11 +270,18 @@ export async function PUT(req) {
     return NextResponse.json({ ok: false, error: "Missing endpoint or username" }, { status: 400 });
   }
 
-  const now = Date.now();
-  await db
-    .prepare(`UPDATE push_subscriptions SET username=?, updated_at=? WHERE endpoint=?`)
-    .bind(username, now, endpoint)
-    .run();
+  const existing = await db
+    .prepare(`SELECT username FROM push_subscriptions WHERE endpoint=?`)
+    .bind(endpoint)
+    .first();
+
+  if (!existing?.username || normalizeUsername(existing.username) !== username) {
+    const now = Date.now();
+    await db
+      .prepare(`UPDATE push_subscriptions SET username=?, updated_at=? WHERE endpoint=?`)
+      .bind(username, now, endpoint)
+      .run();
+  }
 
   return NextResponse.json({ ok: true });
 }

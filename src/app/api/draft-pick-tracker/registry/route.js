@@ -139,7 +139,6 @@ export async function GET(req) {
 
     const out = {};
     let needsKick = false;
-    const nowMs = Date.now();
 
     const REGISTRY_READ_CHUNK_SIZE = 50;
     for (const idGroup of chunk(ids, REGISTRY_READ_CHUNK_SIZE)) {
@@ -162,10 +161,6 @@ export async function GET(req) {
         : storedStatus && storedStatus !== "unknown"
         ? storedStatus
         : (draftStatus || null);
-
-      const updatedAt = r.updated_at == null ? 0 : Number(r.updated_at);
-      const isStale = !updatedAt || nowMs - updatedAt > 2 * 15_000;
-      if (isStale) needsKick = true;
 
       // Derive "active" if missing
       let active = safeNum(r.active) === 1;
@@ -214,16 +209,6 @@ export async function GET(req) {
         needsKick = true;
       }
       }
-    }
-
-    // If registry looks stale, nudge the DO to tick.
-    // NOTE: do NOT block the UI on this.
-    const maxAgeMs = 2 * 15_000;
-    if (!needsKick) {
-      needsKick = Object.values(out).some((d) => {
-        const u = Number(d?.updatedAt || 0);
-        return !u || nowMs - u > maxAgeMs;
-      });
     }
 
     if (needsKick) {

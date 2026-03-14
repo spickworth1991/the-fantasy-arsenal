@@ -42,6 +42,7 @@ const DISCOVERY_MIN_BATCH = 10;
 const DISCOVERY_MAX_BATCH = 60;
 const DISCOVERY_CONCURRENCY = 6;
 const USERID_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const DISCOVERY_CURSOR_KEY = "discovery:cursor";
 
 async function ensurePushSubscriptionsTable(db) {
   await db
@@ -88,6 +89,19 @@ function uniqStrings(arr) {
     out.push(s);
   }
   return out;
+}
+
+function stableStringArray(arr) {
+  return uniqStrings((arr || []).map((v) => String(v || "").trim()).filter(Boolean)).sort();
+}
+
+function parseStableStringArray(json) {
+  try {
+    const parsed = JSON.parse(json || "[]");
+    return Array.isArray(parsed) ? stableStringArray(parsed) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function getUserIdByUsername(username) {
@@ -157,19 +171,23 @@ async function seedRegistryFromLeagues(db, leagues, onlyDraftIdsSet) {
   }
 }
 
-async function listDiscoveryUsernames(db, limit) {
-  // Sweep by username (not endpoint) so multiple devices for the same user stay in sync.
-  const res = await db
-    .prepare(
-      `SELECT username, MIN(COALESCE(updated_at, 0)) AS oldest
+async function listDiscoveryUsernames(db, limit, afterUsername = "") {
+  const cursor = String(afterUsername || "").trim().toLowerCase();
+  const sql = cursor
+    ? `SELECT DISTINCT lower(username) AS username
+       FROM push_subscriptions
+       WHERE username IS NOT NULL AND username != '' AND lower(username) > ?
+       ORDER BY username ASC
+       LIMIT ?`
+    : `SELECT DISTINCT lower(username) AS username
        FROM push_subscriptions
        WHERE username IS NOT NULL AND username != ''
-       GROUP BY username
-       ORDER BY oldest ASC
-       LIMIT ?`
-    )
-    .bind(Number(limit || 0))
-    .all();
+       ORDER BY username ASC
+       LIMIT ?`;
+  const stmt = db.prepare(sql);
+  const res = cursor
+    ? await stmt.bind(cursor, Number(limit || 0)).all()
+    : await stmt.bind(Number(limit || 0)).all();
   return res?.results || [];
 }
 
@@ -188,6 +206,33 @@ async function listDraftIdsForUsername(db, username) {
     }
   }
   return Array.from(set);
+}
+
+async function syncDraftIdsForUsername(db, username, draftIds, leagueCount, now) {
+  const targetIds = stableStringArray(draftIds);
+  const targetJson = JSON.stringify(targetIds);
+  const rows = await db
+    .prepare(`SELECT endpoint, draft_ids_json FROM push_subscriptions WHERE lower(username)=lower(?)`)
+    .bind(String(username))
+    .all();
+
+  const needsUpdate = (rows?.results || []).some((row) => {
+    const existingJson = JSON.stringify(parseStableStringArray(row?.draft_ids_json));
+    return existingJson !== targetJson;
+  });
+
+  if (!needsUpdate) return false;
+
+  await db
+    .prepare(
+      `UPDATE push_subscriptions
+       SET draft_ids_json=?, league_count=?, updated_at=?
+       WHERE lower(username)=lower(?)`
+    )
+    .bind(targetJson, Number(leagueCount || 0), now, username)
+    .run();
+
+  return true;
 }
 
 async function discoveryBatch(env, state) {
@@ -218,7 +263,25 @@ async function discoveryBatch(env, state) {
   const rawBatch = Math.ceil((userCount * TICK_MS) / DISCOVERY_TARGET_SWEEP_MS);
   const batchSize = Math.max(DISCOVERY_MIN_BATCH, Math.min(DISCOVERY_MAX_BATCH, rawBatch));
 
-  const rows = await listDiscoveryUsernames(db, batchSize);
+  let discoveryCursor = "";
+  try {
+    discoveryCursor = String((await state?.storage?.get(DISCOVERY_CURSOR_KEY)) || "").trim().toLowerCase();
+  } catch {
+    discoveryCursor = "";
+  }
+
+  let rows = await listDiscoveryUsernames(db, batchSize, discoveryCursor);
+  if (rows.length < batchSize) {
+    const seen = new Set(rows.map((row) => String(row?.username || "").trim().toLowerCase()).filter(Boolean));
+    const wrapped = await listDiscoveryUsernames(db, batchSize - rows.length);
+    for (const row of wrapped) {
+      const username = String(row?.username || "").trim().toLowerCase();
+      if (!username || seen.has(username)) continue;
+      seen.add(username);
+      rows.push({ username });
+      if (rows.length >= batchSize) break;
+    }
+  }
   if (!rows.length) return { ok: true, discoveredDrafts: 0, discoveredUsers: 0, userCount };
 
   const getCachedUserId = async (username) => {
@@ -263,15 +326,15 @@ async function discoveryBatch(env, state) {
         const username = String(row.username || "").trim();
         if (!username) continue;
 
-        const existing = await listDraftIdsForUsername(db, username);
+        const existing = stableStringArray(await listDraftIdsForUsername(db, username));
         const existingSet = new Set(existing.map(String));
 
         const userId = await getCachedUserId(username);
         if (!userId) continue;
 
         const leagues = await getUserLeaguesById(userId, seasonYear);
-        const leagueDraftIds = uniqStrings(leagues.map((lg) => lg?.draft_id).filter(Boolean));
-        const combined = uniqStrings([...existing, ...leagueDraftIds]);
+        const leagueDraftIds = stableStringArray(leagues.map((lg) => lg?.draft_id).filter(Boolean));
+        const combined = stableStringArray([...existing, ...leagueDraftIds]);
 
         const newOnes = combined.filter((id) => !existingSet.has(String(id)));
         if (newOnes.length) {
@@ -281,20 +344,21 @@ async function discoveryBatch(env, state) {
           await seedRegistryFromLeagues(db, leagues, only);
         }
 
-        // Update ALL endpoints for that username so devices stay in sync.
-        await db
-          .prepare(
-            `UPDATE push_subscriptions
-             SET draft_ids_json=?, league_count=?, updated_at=?
-             WHERE lower(username)=lower(?)`
-          )
-          .bind(JSON.stringify(combined), Number(leagues.length || 0), now, username)
-          .run();
+        if (newOnes.length) {
+          await syncDraftIdsForUsername(db, username, combined, leagues.length, now);
+        }
       }
     })()
   );
 
   await Promise.all(workers);
+
+  try {
+    const lastUsername = String(rows[rows.length - 1]?.username || "").trim().toLowerCase();
+    if (lastUsername) await state?.storage?.put(DISCOVERY_CURSOR_KEY, lastUsername);
+  } catch {
+    // ignore
+  }
 
   return { ok: true, discoveredDrafts, discoveredUsers, checkedUsers: rows.length, userCount };
 }
