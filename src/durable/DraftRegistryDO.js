@@ -26,6 +26,7 @@ const PICKS_SYNC_COOLDOWN_MS = 20_000;
 // Store per-draft scheduling metadata in DO storage so we don't write D1 when nothing changes.
 // Key: meta:<draftId> -> { lastCheckedAt, lastStatus }
 const META_PREFIX = "meta:";
+const LAST_TICK_RESULT_KEY = "tick:last-result";
 
 async function sleeperJson(url) {
   const res = await fetch(url, { cache: "no-store" });
@@ -817,8 +818,9 @@ async function tickOnce(env, state, options = {}) {
   await ensureDraftCacheTable(db);
 
   // Discovery runs each tick (bounded) so alerts don't depend on a UI visit.
+  let discoveryResult = { ok: true, discoveredDrafts: 0, discoveredUsers: 0, checkedUsers: 0, userCount: 0 };
   try {
-    await discoveryBatch(env, state);
+    discoveryResult = (await discoveryBatch(env, state)) || discoveryResult;
   } catch {
     // discovery should never block registry updates
   }
@@ -1310,6 +1312,7 @@ async function tickOnce(env, state, options = {}) {
   }
 
   // Flush cache writes (batched)
+  let cacheWriteCount = 0;
   if (cacheWrites.size) {
     const stmts = [];
     for (const [draftId, patch] of cacheWrites.entries()) {
@@ -1353,6 +1356,7 @@ async function tickOnce(env, state, options = {}) {
       );
       cacheMap.set(draftId, next);
     }
+    cacheWriteCount = stmts.length;
 
     for (const group of chunks(stmts, 40)) {
       try {
@@ -1370,6 +1374,7 @@ async function tickOnce(env, state, options = {}) {
   }
 
   // Flush registry writes (batched)
+  const registryWriteCount = registryWrites.length;
   if (registryWrites.length) {
     for (const group of chunks(registryWrites, 40)) {
       try {
@@ -1386,7 +1391,24 @@ async function tickOnce(env, state, options = {}) {
     }
   }
 
-  return { ok: true, drafts: uniqueDraftIds.length, active, updated };
+  const result = {
+    ok: true,
+    drafts: uniqueDraftIds.length,
+    active,
+    updated,
+    checked: toCheck.length,
+    registryWriteCount,
+    cacheWriteCount,
+    discovery: discoveryResult,
+  };
+
+  try {
+    await state.storage.put(LAST_TICK_RESULT_KEY, { ...result, ts: Date.now() });
+  } catch {
+    // ignore
+  }
+
+  return result;
 }
 
 export class DraftRegistry {
@@ -1418,6 +1440,14 @@ export class DraftRegistry {
       const result = await tickOnce(this.env, this.state, { forceActive: true });
       await this.state.storage.setAlarm(Date.now() + TICK_MS);
       return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (url.pathname === "/stats") {
+      const result = (await this.state.storage.get(LAST_TICK_RESULT_KEY)) || null;
+      return new Response(JSON.stringify({ ok: true, lastTick: result }), {
         status: 200,
         headers: { "content-type": "application/json" },
       });

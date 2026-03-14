@@ -42,6 +42,25 @@ export async function GET(req) {
   try {
     const ctx = getRequestContext();
     const { env } = ctx;
+    const url = new URL(req.url);
+    const statsOnly = url.searchParams.get("stats") === "1";
+
+    if (statsOnly) {
+      try {
+        const id = env?.DRAFT_REGISTRY?.idFromName?.("master");
+        const stub = id ? env?.DRAFT_REGISTRY?.get(id) : null;
+        if (!stub) {
+          return NextResponse.json({ ok: false, error: "DRAFT_REGISTRY binding missing" }, { status: 500 });
+        }
+
+        const res = await stub.fetch("https://do/stats");
+        const json = await res.json().catch(() => ({}));
+        return NextResponse.json(json);
+      } catch (err) {
+        return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
+      }
+    }
+
     const db = getDb(env);
     if (!db?.prepare) {
       return NextResponse.json(
@@ -52,8 +71,6 @@ export async function GET(req) {
         { status: 500 }
       );
     }
-
-    const url = new URL(req.url);
     const idsRaw = url.searchParams.get("ids") || url.searchParams.get("draft_ids") || "";
     const activeOnly = url.searchParams.get("active") === "1";
     const lite = url.searchParams.get("lite") === "1";
