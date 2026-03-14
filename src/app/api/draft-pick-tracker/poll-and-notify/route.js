@@ -1007,6 +1007,9 @@ async function handler(req) {
     let clearWriteCount = 0;
     let badgeWriteCount = 0;
     let deleteSubWriteCount = 0;
+    let visibleSendAttemptCount = 0;
+    let visibleSendFailureCount = 0;
+    let suppressedBySettingsCount = 0;
 
     let skippedNoDrafts = 0;
     let skippedNoUsername = 0;
@@ -1448,6 +1451,7 @@ async function handler(req) {
           pickNo: nextPickNo,
           title,
           body,
+          baseFlags,
           nextFlags,
         });
       }
@@ -1500,9 +1504,10 @@ async function handler(req) {
 
       const sendIndividual = async (ev) => {
         if (!shouldSendStageForSettings(ev.stage, s.settings)) {
+          suppressedBySettingsCount++;
           const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
-            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          if (shouldPersistClockState(prevClockState, ev.baseFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.baseFlags));
           }
           return;
         }
@@ -1515,6 +1520,7 @@ async function handler(req) {
           : ev.body;
         const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
 
+        visibleSendAttemptCount++;
         const pushRes = await sendPayload(s, {
           title: ev.title,
           body: bodyWithSummary,
@@ -1560,10 +1566,13 @@ async function handler(req) {
             badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
           }
         } else if (pushRes?.status === 404 || pushRes?.status === 410) {
+          visibleSendFailureCount++;
           deleteSubStatements.push(
             db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
           );
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, ev.draftId));
+        } else {
+          visibleSendFailureCount++;
         }
       };
 
@@ -1586,11 +1595,12 @@ async function handler(req) {
 
       const eventsToNotify = eventsToNotifyPreview;
       if (!eventsToNotify.length) {
+        suppressedBySettingsCount += events.length;
         pushDebug({ endpoint: s.endpoint, username: s.username, reason: "events-filtered-by-settings", eventStages: events.map((ev) => ev.stage), settings: s.settings });
         for (const ev of events) {
           const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
-            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          if (shouldPersistClockState(prevClockState, ev.baseFlags)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.baseFlags));
           }
         }
         stateWriteCount += stateStatements.length;
@@ -1623,6 +1633,7 @@ async function handler(req) {
       const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
 
       const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
+      visibleSendAttemptCount++;
       const pushRes = await sendPayload(s, {
         title,
         body: [
@@ -1667,8 +1678,9 @@ async function handler(req) {
         sent++;
         for (const ev of events) {
           const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
-            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          const nextState = shouldSendStageForSettings(ev.stage, s.settings) ? ev.nextFlags : ev.baseFlags;
+          if (shouldPersistClockState(prevClockState, nextState)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, nextState));
           }
         }
         if (shouldBadge && Number(s.lastBadgeCount || 0) !== activeBadgeCount) {
@@ -1677,12 +1689,15 @@ async function handler(req) {
           badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
         }
       } else if (pushRes?.status === 404 || pushRes?.status === 410) {
+        visibleSendFailureCount++;
         deleteSubStatements.push(
           db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
         );
         for (const ev of events) {
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, ev.draftId));
         }
+      } else {
+        visibleSendFailureCount++;
       }
 
       stateWriteCount += stateStatements.length;
@@ -1701,6 +1716,9 @@ async function handler(req) {
       clearWriteCount,
       badgeWriteCount,
       deleteSubWriteCount,
+      visibleSendAttemptCount,
+      visibleSendFailureCount,
+      suppressedBySettingsCount,
       skippedNoDrafts,
       skippedNoUsername,
       skippedNoOrder,
