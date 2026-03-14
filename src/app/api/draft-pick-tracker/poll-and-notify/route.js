@@ -10,6 +10,7 @@ const DEFAULT_PUSH_SETTINGS = {
   paused: true,
   badges: true,
 };
+const PICK_SYNC_GRACE_MS = 45_000;
 
 function normalizePushSettings(input) {
   return {
@@ -1010,6 +1011,7 @@ async function handler(req) {
     let visibleSendAttemptCount = 0;
     let visibleSendFailureCount = 0;
     let suppressedBySettingsCount = 0;
+    let awaitingPickSyncCount = 0;
 
     let skippedNoDrafts = 0;
     let skippedNoUsername = 0;
@@ -1210,28 +1212,43 @@ async function handler(req) {
           continue;
         }
 
-        const stateMarker = buildRegistryPickSyncMarker(reg);
-        const syncedStateMarker = String(cacheRow?.pick_sync_state_marker || "");
+        const regLastPicked = Number.isFinite(Number(reg?.last_picked))
+          ? Number(reg.last_picked)
+          : null;
         const cacheLastPicked = Number.isFinite(Number(cacheRow?.last_picked))
           ? Number(cacheRow.last_picked)
           : null;
         const cacheSyncedLastPicked = Number.isFinite(Number(cacheRow?.pick_count_synced_last_picked))
           ? Number(cacheRow.pick_count_synced_last_picked)
           : null;
+        const lastPicksSyncAt = Number.isFinite(Number(cacheRow?.last_picks_sync_at))
+          ? Number(cacheRow.last_picks_sync_at)
+          : 0;
+        const syncAgeMs = lastPicksSyncAt > 0 ? Math.max(0, now - lastPicksSyncAt) : Number.MAX_SAFE_INTEGER;
+        const hasNewerUnpublishedPickState =
+          cacheLastPicked != null &&
+          cacheLastPicked > 0 &&
+          regLastPicked != null &&
+          cacheLastPicked > regLastPicked;
+        const hasFreshUnsyncedPickState =
+          hasNewerUnpublishedPickState &&
+          cacheSyncedLastPicked !== cacheLastPicked &&
+          syncAgeMs <= PICK_SYNC_GRACE_MS;
         const awaitingPickSync =
-          (cacheLastPicked != null && cacheLastPicked > 0 && cacheSyncedLastPicked !== cacheLastPicked) ||
-          (!!stateMarker && syncedStateMarker !== stateMarker);
+          hasFreshUnsyncedPickState;
         if (awaitingPickSync) {
+          awaitingPickSyncCount++;
           pushDebug({
             endpoint: s.endpoint,
             username: s.username,
             draftId,
             reason: "awaiting-pick-sync",
             status,
-            stateMarker,
-            syncedStateMarker,
+            regLastPicked,
             cacheLastPicked,
             cacheSyncedLastPicked,
+            lastPicksSyncAt,
+            syncAgeMs,
           });
           continue;
         }
@@ -1719,6 +1736,7 @@ async function handler(req) {
       visibleSendAttemptCount,
       visibleSendFailureCount,
       suppressedBySettingsCount,
+      awaitingPickSyncCount,
       skippedNoDrafts,
       skippedNoUsername,
       skippedNoOrder,
