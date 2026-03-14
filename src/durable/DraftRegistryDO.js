@@ -19,6 +19,8 @@ const PRE_DRAFT_REFRESH_MS = 60 * 1000;
 
 // Recheck other inactive drafts.
 const INACTIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
+const COMPLETE_REFRESH_MS = 60 * 1000;
+const COMPLETE_RECHECK_WINDOW_MS = 10 * 60 * 1000;
 
 // Only call /picks when we actually need to (and never more often than this per draft).
 const PICKS_SYNC_COOLDOWN_MS = 20_000;
@@ -849,17 +851,40 @@ async function tickOnce(env, state, options = {}) {
   for (const draftId of uniqueDraftIds) {
     const id = String(draftId);
     const reg = registryMap.get(id) || null;
+    const cacheRow = cacheMap.get(id) || null;
     const meta = (metas && typeof metas === "object") ? metas[`${META_PREFIX}${id}`] : null;
     const lastChecked = Number(meta?.lastCheckedAt || reg?.last_checked_at || 0);
     const wasActive = Number(reg?.active || 0) === 1;
     const statusLower = String(reg?.status || "").toLowerCase();
+    const regLastPicked = Number.isFinite(Number(reg?.last_picked)) ? Number(reg.last_picked) : null;
+    const cacheSyncedLastPicked = Number.isFinite(Number(cacheRow?.pick_count_synced_last_picked))
+      ? Number(cacheRow.pick_count_synced_last_picked)
+      : null;
+    const pickCountKnown = Number.isFinite(Number(reg?.pick_count))
+      ? Number(reg.pick_count)
+      : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null);
+    const teamsKnown = Number.isFinite(Number(reg?.teams)) ? Number(reg.teams) : null;
+    const roundsKnown = Number.isFinite(Number(reg?.rounds)) ? Number(reg.rounds) : null;
+    const expectedTotalPicks = teamsKnown && roundsKnown ? teamsKnown * roundsKnown : 0;
+    const completedAt = Number(reg?.completed_at || 0) || 0;
+    const completeNeedsRecheck =
+      statusLower === "complete" &&
+      now - completedAt <= COMPLETE_RECHECK_WINDOW_MS &&
+      (
+        regLastPicked == null ||
+        cacheSyncedLastPicked !== regLastPicked ||
+        !Number.isFinite(pickCountKnown) ||
+        (expectedTotalPicks > 0 && Number(pickCountKnown || 0) < expectedTotalPicks)
+      );
 
-    if (reg && statusLower === "complete") continue;
+    if (reg && statusLower === "complete" && !completeNeedsRecheck) continue;
 
     const staleMs = wasActive
       ? ACTIVE_REFRESH_MS
       : statusLower === "pre_draft"
       ? PRE_DRAFT_REFRESH_MS
+      : statusLower === "complete"
+      ? COMPLETE_REFRESH_MS
       : INACTIVE_REFRESH_MS;
 
     const needs = !lastChecked || now - lastChecked > staleMs;
@@ -867,7 +892,9 @@ async function tickOnce(env, state, options = {}) {
       forceAll ||
       (forceActive && (wasActive || statusLower === "drafting" || statusLower === "paused"));
 
-    if (!reg || needs || shouldForce) toCheck.push({ draftId: id, wasActive, reg });
+    if (!reg || needs || shouldForce || completeNeedsRecheck) {
+      toCheck.push({ draftId: id, wasActive, reg });
+    }
   }
 
   let updated = 0;
@@ -986,10 +1013,23 @@ async function tickOnce(env, state, options = {}) {
               status === "paused" || prevStatus === "paused" ? 3 : 2
             );
 
+            const requiresConfirmationSync =
+              status === "paused" ||
+              status === "complete" ||
+              prevStatus === "paused" ||
+              prevStatus === "complete";
+            const holdSyncedLastPickedOnce =
+              requiresConfirmationSync &&
+              lastPickedNum > 0 &&
+              cacheSyncedLastPicked !== lastPickedNum &&
+              cacheLastPicked !== lastPickedNum;
+
             stageCachePatch({
               last_picked: lastPicked,
               pick_count: Number.isFinite(pickCount) ? pickCount : null,
-              pick_count_synced_last_picked: lastPickedNum || null,
+              pick_count_synced_last_picked: holdSyncedLastPickedOnce
+                ? (cacheSyncedLastPicked || null)
+                : (lastPickedNum || null),
               last_picks_sync_at: now,
             });
           } catch {

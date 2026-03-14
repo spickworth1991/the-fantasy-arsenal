@@ -1436,7 +1436,7 @@ async function handler(req) {
           badge: isAppleEndpoint ? undefined : "/android-chrome-192x192.png",
           appBadgeCount: activeBadgeCount,
           clearAppBadge: activeBadgeCount <= 0,
-          badgesEnabled: isAppleEndpoint ? false : !!s.settings?.badges,
+          badgesEnabled: !!s.settings?.badges,
           requireInteraction: isAppleEndpoint ? undefined : (isUrgent ? true : undefined),
           vibrate: isAppleEndpoint ? undefined : (isUrgent ? [100, 60, 100, 60, 180] : undefined),
           data: {
@@ -1560,7 +1560,7 @@ async function handler(req) {
         badge: isAppleEndpoint ? undefined : "/android-chrome-192x192.png",
         appBadgeCount: activeBadgeCount,
         clearAppBadge: activeBadgeCount <= 0,
-        badgesEnabled: isAppleEndpoint ? false : !!s.settings?.badges,
+        badgesEnabled: !!s.settings?.badges,
         requireInteraction: isAppleEndpoint ? undefined : (anyUrgent ? true : undefined),
         vibrate: isAppleEndpoint ? undefined : (anyUrgent ? [100, 60, 100, 60, 180] : undefined),
         data: {
