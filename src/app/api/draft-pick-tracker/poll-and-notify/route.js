@@ -695,6 +695,8 @@ async function ensureDraftCacheTable(db) {
       pick_count INTEGER,
       pick_count_synced_last_picked INTEGER,
       last_picks_sync_at INTEGER,
+      state_marker TEXT,
+      pick_sync_state_marker TEXT,
       updated_at INTEGER
     )`,
     [
@@ -702,6 +704,8 @@ async function ensureDraftCacheTable(db) {
       { name: "pick_count", type: "INTEGER" },
       { name: "pick_count_synced_last_picked", type: "INTEGER" },
       { name: "last_picks_sync_at", type: "INTEGER" },
+      { name: "state_marker", type: "TEXT" },
+      { name: "pick_sync_state_marker", type: "TEXT" },
       { name: "updated_at", type: "INTEGER" },
     ]
   );
@@ -761,7 +765,8 @@ async function loadDraftCacheRowsMap(db, draftIds) {
     const qs = group.map(() => "?").join(",");
     const rows = await db
       .prepare(
-        `SELECT draft_id, last_picked, pick_count, pick_count_synced_last_picked, last_picks_sync_at
+        `SELECT draft_id, last_picked, pick_count, pick_count_synced_last_picked, last_picks_sync_at,
+                state_marker, pick_sync_state_marker
          FROM push_draft_cache
          WHERE draft_id IN (${qs})`
       )
@@ -900,6 +905,16 @@ function makeBaseFlags(clockState, nextPickNo, status, isNewPick) {
     paused_at_ms: null,
     resume_clock_start_ms: null,
   };
+}
+
+function buildRegistryPickSyncMarker(reg) {
+  return [
+    String(reg?.status || ""),
+    String(reg?.last_picked == null ? "" : Number(reg.last_picked)),
+    String(reg?.pick_count == null ? "" : Number(reg.pick_count)),
+    String(reg?.current_pick == null ? "" : Number(reg.current_pick)),
+    String(reg?.current_owner_name || ""),
+  ].join("|");
 }
 
 export async function POST(req) {
@@ -1192,16 +1207,11 @@ async function handler(req) {
           continue;
         }
 
-        const regLastPicked = Number.isFinite(Number(reg?.last_picked))
-          ? Number(reg.last_picked)
-          : null;
-        const cacheSyncedLastPicked = Number.isFinite(Number(cacheRow?.pick_count_synced_last_picked))
-          ? Number(cacheRow.pick_count_synced_last_picked)
-          : null;
+        const stateMarker = buildRegistryPickSyncMarker(reg);
+        const syncedStateMarker = String(cacheRow?.pick_sync_state_marker || "");
         const awaitingPickSync =
-          regLastPicked != null &&
-          regLastPicked > 0 &&
-          cacheSyncedLastPicked !== regLastPicked;
+          !!stateMarker &&
+          syncedStateMarker !== stateMarker;
         if (awaitingPickSync) {
           pushDebug({
             endpoint: s.endpoint,
@@ -1209,8 +1219,8 @@ async function handler(req) {
             draftId,
             reason: "awaiting-pick-sync",
             status,
-            regLastPicked,
-            cacheSyncedLastPicked,
+            stateMarker,
+            syncedStateMarker,
           });
           continue;
         }

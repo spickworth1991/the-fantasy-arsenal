@@ -448,6 +448,8 @@ async function ensureDraftCacheTable(db) {
         pick_count INTEGER,
         pick_count_synced_last_picked INTEGER,
         last_picks_sync_at INTEGER,
+        state_marker TEXT,
+        pick_sync_state_marker TEXT,
         league_id TEXT,
         league_name TEXT,
         league_avatar TEXT,
@@ -486,6 +488,8 @@ async function ensureDraftCacheTable(db) {
     await add("league_avatar", "TEXT");
     await add("pick_count_synced_last_picked", "INTEGER");
     await add("last_picks_sync_at", "INTEGER");
+    await add("state_marker", "TEXT");
+    await add("pick_sync_state_marker", "TEXT");
   } catch {
     // ignore
   }
@@ -567,6 +571,16 @@ function same(a, b) {
   return aa === bb;
 }
 
+function buildPickSyncMarker({ status, lastPicked, pickCount, currentPick, currentOwnerName }) {
+  return [
+    String(status || ""),
+    String(lastPicked == null ? "" : Number(lastPicked)),
+    String(pickCount == null ? "" : Number(pickCount)),
+    String(currentPick == null ? "" : Number(currentPick)),
+    String(currentOwnerName || ""),
+  ].join("|");
+}
+
 function shouldWriteRow(cur, patch) {
   if (!patch || typeof patch !== "object") return false;
   for (const k of Object.keys(patch)) {
@@ -613,6 +627,10 @@ async function getPickCountWithRetry(draftId, attempts = 2) {
     }
   }
   throw lastErr || new Error('pick-count-sync-failed');
+}
+
+async function waitMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms || 0))));
 }
 
 async function getLeague(leagueId) {
@@ -949,14 +967,22 @@ async function tickOnce(env, state, options = {}) {
         const cacheLastPicked = Number(cacheRow?.last_picked || 0);
         const cacheSyncedLastPicked = Number(cacheRow?.pick_count_synced_last_picked || 0);
         const cacheLastSyncAt = Number(cacheRow?.last_picks_sync_at || 0);
+        const cacheSyncedStateMarker = String(cacheRow?.pick_sync_state_marker || "");
         const lastPickedNum = Number(draftLastPicked || 0);
+        const prevRegistrySyncMarker = buildPickSyncMarker({
+          status: prevStatus,
+          lastPicked: reg?.last_picked,
+          pickCount: reg?.pick_count,
+          currentPick: reg?.current_pick,
+          currentOwnerName: reg?.current_owner_name,
+        });
 
         const expectedTotalPicks = teams && rounds ? Number(teams) * Number(rounds) : 0;
+        const needsStateSync = prevRegistrySyncMarker !== cacheSyncedStateMarker;
 
         const wantsPickSync =
-          isActive &&
-          draftLastPicked != null &&
-          (!Number.isFinite(pickCount) || cacheSyncedLastPicked !== lastPickedNum);
+          (isActive || status === "complete") &&
+          (!Number.isFinite(pickCount) || needsStateSync);
 
         // Only force a sync when a pause transition itself matters, or when pick_count is missing.
         // Do NOT resync active drafts every kick/tick just because they're active.
@@ -1011,15 +1037,44 @@ async function tickOnce(env, state, options = {}) {
               status === "paused" || prevStatus === "paused" ? 3 : 2
             );
 
+            const prevPickCountKnown = Number.isFinite(Number(reg?.pick_count))
+              ? Number(reg.pick_count)
+              : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null);
+            const lastPickedMoved = lastPickedNum > 0 && cacheLastPicked !== lastPickedNum;
+            if (
+              lastPickedMoved &&
+              prevPickCountKnown != null &&
+              Number.isFinite(Number(pickCount)) &&
+              Number(pickCount) <= prevPickCountKnown
+            ) {
+              try {
+                await waitMs(750);
+                const retryCount = await getPickCountWithRetry(
+                  draftId,
+                  status === "paused" || prevStatus === "paused" ? 2 : 1
+                );
+                if (Number.isFinite(Number(retryCount)) && Number(retryCount) > Number(pickCount)) {
+                  pickCount = Number(retryCount);
+                }
+              } catch {
+                // ignore
+              }
+            }
+
             const requiresConfirmationSync =
               status === "paused" ||
               status === "complete" ||
               prevStatus === "paused" ||
               prevStatus === "complete";
+            const suspiciousPickSync =
+              lastPickedMoved &&
+              prevPickCountKnown != null &&
+              Number.isFinite(Number(pickCount)) &&
+              Number(pickCount) <= prevPickCountKnown;
             const holdSyncedLastPickedOnce =
               requiresConfirmationSync &&
               lastPickedNum > 0 &&
-              cacheSyncedLastPicked !== lastPickedNum &&
+              (cacheSyncedLastPicked !== lastPickedNum || suspiciousPickSync) &&
               cacheLastPicked !== lastPickedNum;
 
             stageCachePatch({
@@ -1315,6 +1370,17 @@ async function tickOnce(env, state, options = {}) {
             pick_count_synced_last_picked: cacheSyncedLastPicked || null,
           });
         }
+        const nextSyncMarker = buildPickSyncMarker({
+          status,
+          lastPicked: lastPickedEffective,
+          pickCount: Number.isFinite(Number(pickCount)) ? Number(pickCount) : null,
+          currentPick,
+          currentOwnerName,
+        });
+        stageCachePatch({
+          state_marker: nextSyncMarker,
+          pick_sync_state_marker: suspiciousPickSync ? (cacheSyncedStateMarker || null) : nextSyncMarker,
+        });
 
         const clockEndsAt =
           status === "complete"
@@ -1382,12 +1448,14 @@ async function tickOnce(env, state, options = {}) {
               last_picked, pick_count,
               pick_count_synced_last_picked,
               last_picks_sync_at,
+              state_marker,
+              pick_sync_state_marker,
               league_id, league_name, league_avatar,
               slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
               rounds, timer_sec, reversal_round,
               context_updated_at,
               updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           )
           .bind(
             next.draft_id,
@@ -1395,6 +1463,8 @@ async function tickOnce(env, state, options = {}) {
             next.pick_count ?? null,
             next.pick_count_synced_last_picked ?? null,
             next.last_picks_sync_at ?? null,
+            next.state_marker ?? null,
+            next.pick_sync_state_marker ?? null,
             next.league_id ?? null,
             next.league_name ?? null,
             next.league_avatar ?? null,
