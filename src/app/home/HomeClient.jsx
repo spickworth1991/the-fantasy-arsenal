@@ -67,13 +67,12 @@ export default function HomeClient() {
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
-      badge: "UPDATED",
+      badge: "DEVELOPING",
     },
     {
       name: "Player Availability",
       link: "/player-availability",
       description: "Find which leagues have a player available",
-      badge: "UPDATED",
     },
     {
       name: "League Hub",

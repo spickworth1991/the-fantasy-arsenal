@@ -23,8 +23,7 @@ const ICONS = {
 
 // Set badges for sidebar links here (optional).
 const NAV_BADGES = {
-  "/player-availability": "UPDATED",
-  "/draft-pick-tracker": "UPDATED",
+  "/draft-pick-tracker": "DEVELOPING",
   "/league-hub": "DEVELOPING",
   "/player-stock": "UPDATED",
 };
