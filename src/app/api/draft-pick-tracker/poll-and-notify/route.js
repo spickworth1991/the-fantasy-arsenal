@@ -1030,12 +1030,17 @@ async function handler(req) {
           ...(payload && typeof payload === "object" ? payload : {}),
           isAppleWebPush: appleWebPush,
         };
+        const isVisibleNotification = !mergedPayload?.silent && !!mergedPayload?.title;
+        const urgency = isVisibleNotification ? "high" : "very-low";
+        const ttlSeconds = isVisibleNotification ? 15 * 60 : 5 * 60;
 
         const { endpoint, fetchInit } = await buildWebPushRequest({
           subscription: subRow.sub,
           payload: mergedPayload,
           vapidSubject,
           vapidPrivateJwk,
+          urgency,
+          ttlSeconds,
         });
 
         const res = await fetch(endpoint, fetchInit);
@@ -1494,6 +1499,9 @@ async function handler(req) {
             deleteSubStatements.push(
               db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
             );
+            deleteSubStatements.push(
+              db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(s.endpoint)
+            );
           }
         } else if (!shouldBadge && Number(s.lastBadgeCount || 0) !== 0) {
           const badgeRes = await sendPayload(s, {
@@ -1587,6 +1595,9 @@ async function handler(req) {
           deleteSubStatements.push(
             db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
           );
+          deleteSubStatements.push(
+            db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(s.endpoint)
+          );
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, ev.draftId));
         } else {
           visibleSendFailureCount++;
@@ -1650,6 +1661,37 @@ async function handler(req) {
       const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
 
       const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
+      if (isAppleEndpoint) {
+        const appleOrderedEvents = events.slice().sort((a, b) => {
+          const aVisible = shouldSendStageForSettings(a.stage, s.settings) ? 1 : 0;
+          const bVisible = shouldSendStageForSettings(b.stage, s.settings) ? 1 : 0;
+          if (aVisible !== bVisible) return bVisible - aVisible;
+
+          const au = isUrg(a) ? 1 : 0;
+          const bu = isUrg(b) ? 1 : 0;
+          if (au !== bu) return bu - au;
+
+          const ap = isPausedStage(a) ? 1 : 0;
+          const bp = isPausedStage(b) ? 1 : 0;
+          if (ap !== bp) return ap - bp;
+
+          const ar = isResumedStage(a) ? 1 : 0;
+          const br = isResumedStage(b) ? 1 : 0;
+          if (ar !== br) return br - ar;
+
+          return (a.remainingMs || 0) - (b.remainingMs || 0);
+        });
+
+        for (const ev of appleOrderedEvents) {
+          await sendIndividual(ev);
+        }
+        stateWriteCount += stateStatements.length;
+        clearWriteCount += clearStatements.length;
+        badgeWriteCount += badgeStatements.length;
+        deleteSubWriteCount += deleteSubStatements.length;
+        await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
+        continue;
+      }
       visibleSendAttemptCount++;
       const pushRes = await sendPayload(s, {
         title,
@@ -1709,6 +1751,9 @@ async function handler(req) {
         visibleSendFailureCount++;
         deleteSubStatements.push(
           db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
+        );
+        deleteSubStatements.push(
+          db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(s.endpoint)
         );
         for (const ev of events) {
           clearStatements.push(buildClearClockStateStmt(db, s.endpoint, ev.draftId));

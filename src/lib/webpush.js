@@ -220,6 +220,15 @@ export async function buildWebPushRequest(args) {
       : args?.vapid?.privateKeyJwk != null
         ? args.vapid.privateKeyJwk
         : undefined;
+  const ttlSecondsRaw = Number(args?.ttlSeconds);
+  const ttlSeconds = Number.isFinite(ttlSecondsRaw)
+    ? Math.max(0, Math.min(2419200, Math.floor(ttlSecondsRaw)))
+    : null;
+  const urgencyRaw = String(args?.urgency || "").trim().toLowerCase();
+  const urgency =
+    urgencyRaw === "very-low" || urgencyRaw === "low" || urgencyRaw === "normal" || urgencyRaw === "high"
+      ? urgencyRaw
+      : null;
 
   if (!subscription?.endpoint) throw new Error("Missing subscription.endpoint");
   if (!vapidSubject) throw new Error("Missing vapid subject");
@@ -243,7 +252,8 @@ export async function buildWebPushRequest(args) {
       fetchInit: {
         method: "POST",
         headers: {
-          TTL: "60",
+          TTL: String(ttlSeconds ?? 60),
+          ...(urgency ? { Urgency: urgency } : {}),
           "Crypto-Key": `p256ecdsa=${uint8ToB64url(vapidPublicRaw)}`,
           ...vapidAuthHeader,
         },
@@ -267,6 +277,8 @@ export async function buildWebPushRequest(args) {
       method: "POST",
       headers: {
         ...enc.headers,
+        TTL: String(ttlSeconds ?? 300),
+        ...(urgency ? { Urgency: urgency } : {}),
         ...vapidAuthHeader,
       },
       body: bodyBuf,
