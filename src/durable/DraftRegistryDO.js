@@ -12,6 +12,7 @@ const TICK_MS = 15_000;
 
 // Treat active drafts as stale after ~1 tick.
 const ACTIVE_REFRESH_MS = 15_000;
+const ACTIVE_PICK_RECONCILE_MS = 60_000;
 
 // Pre-draft drafts can flip to drafting quickly.
 // Keep this tight enough to notice the transition without requiring a UI visit.
@@ -979,13 +980,20 @@ async function tickOnce(env, state, options = {}) {
 
         const expectedTotalPicks = teams && rounds ? Number(teams) * Number(rounds) : 0;
         const needsStateSync = prevRegistrySyncMarker !== cacheSyncedStateMarker;
+        const staleActivePickSync =
+          isActive &&
+          (
+            !Number.isFinite(cacheLastSyncAt) ||
+            cacheLastSyncAt <= 0 ||
+            now - cacheLastSyncAt >= ACTIVE_PICK_RECONCILE_MS
+          );
 
         const needsLastPickedSync =
           lastPickedNum > 0 &&
           cacheSyncedLastPicked !== lastPickedNum;
         const wantsPickSync =
           (isActive || status === "complete") &&
-          (!Number.isFinite(pickCount) || needsStateSync || needsLastPickedSync);
+          (!Number.isFinite(pickCount) || needsStateSync || needsLastPickedSync || staleActivePickSync);
 
         // Only force a sync when a pause transition itself matters, or when pick_count is missing.
         // Do NOT resync active drafts every kick/tick just because they're active.
