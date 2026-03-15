@@ -1045,9 +1045,10 @@ async function tickOnce(env, state, options = {}) {
             const prevPickCountKnown = Number.isFinite(Number(reg?.pick_count))
               ? Number(reg.pick_count)
               : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null);
+            const lastPickedNeedsSync = lastPickedNum > 0 && cacheSyncedLastPicked !== lastPickedNum;
             const lastPickedMoved = lastPickedNum > 0 && cacheLastPicked !== lastPickedNum;
             if (
-              lastPickedMoved &&
+              lastPickedNeedsSync &&
               prevPickCountKnown != null &&
               Number.isFinite(Number(pickCount)) &&
               Number(pickCount) <= prevPickCountKnown
@@ -1067,7 +1068,7 @@ async function tickOnce(env, state, options = {}) {
             }
 
             const suspiciousPickSync =
-              lastPickedMoved &&
+              lastPickedNeedsSync &&
               prevPickCountKnown != null &&
               Number.isFinite(Number(pickCount)) &&
               Number(pickCount) <= prevPickCountKnown;
@@ -1075,7 +1076,14 @@ async function tickOnce(env, state, options = {}) {
               (
                 lastPickedNum > 0 &&
                 cacheSyncedLastPicked !== lastPickedNum &&
-                cacheLastPicked !== lastPickedNum
+                (
+                  cacheLastPicked !== lastPickedNum ||
+                  (
+                    prevPickCountKnown != null &&
+                    Number.isFinite(Number(pickCount)) &&
+                    Number(pickCount) <= prevPickCountKnown
+                  )
+                )
               ) ||
               suspiciousPickSync;
 
@@ -1360,9 +1368,10 @@ async function tickOnce(env, state, options = {}) {
           // ignore
         }
 
+        const lastPickedNeedsSync = lastPickedNum > 0 && nextSyncedLastPicked !== lastPickedNum;
         const lastPickedMoved = lastPickedNum > 0 && cacheLastPicked !== lastPickedNum;
         const suspiciousPickSync =
-          lastPickedMoved &&
+          lastPickedNeedsSync &&
           status !== "complete" &&
           Number.isFinite(Number(pickCount)) &&
           (
@@ -1392,7 +1401,7 @@ async function tickOnce(env, state, options = {}) {
           ? Number(reg.last_picked)
           : (cacheSyncedLastPicked > 0 ? cacheSyncedLastPicked : null);
         const publishSyncedPickState =
-          !lastPickedMoved || (lastPickedNum > 0 && nextSyncedLastPicked === lastPickedNum);
+          lastPickedNum <= 0 || nextSyncedLastPicked === lastPickedNum;
         const publishedLastPicked = publishSyncedPickState
           ? lastPickedEffective
           : prevPublishedLastPicked;
