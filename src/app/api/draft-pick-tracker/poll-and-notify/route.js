@@ -21,6 +21,15 @@ function normalizePushSettings(input) {
   };
 }
 
+function buildPickStateCoreMarker({ status, pickCount, currentPick, currentOwnerName }) {
+  return [
+    String(status || ""),
+    String(pickCount == null ? "" : Number(pickCount)),
+    String(currentPick == null ? "" : Number(currentPick)),
+    String(currentOwnerName || ""),
+  ].join("|");
+}
+
 function buildAlsoUpSummary(onClockSnapshot, options = {}) {
   const { excludeDraftIds = [] } = options || {};
   const exclude = new Set(
@@ -751,7 +760,7 @@ async function loadRegistryRowsMap(db, draftIds) {
     const rows = await db
       .prepare(
         `SELECT draft_id, active, status, league_name, league_id, league_avatar,
-                last_picked, timer_sec, current_pick, current_owner_name, clock_ends_at,
+                last_picked, pick_count, timer_sec, current_pick, current_owner_name, clock_ends_at,
                 roster_names_json, roster_by_username_json
          FROM push_draft_registry
          WHERE draft_id IN (${qs})`
@@ -1275,6 +1284,24 @@ async function handler(req) {
         const lastPicksSyncAt = Number.isFinite(Number(cacheRow?.last_picks_sync_at))
           ? Number(cacheRow.last_picks_sync_at)
           : 0;
+        const cacheStateMarker = String(cacheRow?.state_marker || "");
+        const cachePickSyncStateMarker = String(cacheRow?.pick_sync_state_marker || "");
+        const regPickStateCoreMarker = buildPickStateCoreMarker({
+          status,
+          pickCount: Number.isFinite(Number(reg?.pick_count)) ? Number(reg.pick_count) : null,
+          currentPick: nextPickNo,
+          currentOwnerName: reg?.current_owner_name != null ? String(reg.current_owner_name) : "",
+        });
+        const cachePickStateCoreMarker = buildPickStateCoreMarker({
+          status,
+          pickCount: Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null,
+          currentPick: nextPickNo,
+          currentOwnerName: reg?.current_owner_name != null ? String(reg.current_owner_name) : "",
+        });
+        const registryAlreadyMatchesSyncedPickState =
+          !!cacheStateMarker &&
+          cacheStateMarker === cachePickSyncStateMarker &&
+          regPickStateCoreMarker === cachePickStateCoreMarker;
         const syncAgeMs = lastPicksSyncAt > 0 ? Math.max(0, now - lastPicksSyncAt) : Number.MAX_SAFE_INTEGER;
         const hasNewerUnpublishedPickState =
           cacheLastPicked != null &&
@@ -1283,6 +1310,7 @@ async function handler(req) {
           cacheLastPicked > regLastPicked;
         const hasFreshUnsyncedPickState =
           hasNewerUnpublishedPickState &&
+          !registryAlreadyMatchesSyncedPickState &&
           cacheSyncedLastPicked !== cacheLastPicked &&
           syncAgeMs <= PICK_SYNC_GRACE_MS;
         const awaitingPickSync =
@@ -1296,8 +1324,15 @@ async function handler(req) {
             reason: "awaiting-pick-sync",
             status,
             regLastPicked,
+            regPickCount: reg?.pick_count ?? null,
+            regCurrentPick: reg?.current_pick ?? null,
+            regCurrentOwnerName: reg?.current_owner_name ?? null,
             cacheLastPicked,
+            cachePickCount: cacheRow?.pick_count ?? null,
             cacheSyncedLastPicked,
+            cacheStateMarker,
+            cachePickSyncStateMarker,
+            registryAlreadyMatchesSyncedPickState,
             lastPicksSyncAt,
             syncAgeMs,
           });
