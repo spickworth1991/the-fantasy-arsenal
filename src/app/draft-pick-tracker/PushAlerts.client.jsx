@@ -45,48 +45,97 @@ function sleep(ms) {
 async function getPushRegistration() {
   if (!("serviceWorker" in navigator)) return null;
 
+  const seen = new Set();
+  const out = [];
+  const push = (reg) => {
+    if (!reg?.pushManager) return;
+    const key = String(reg.scope || "");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(reg);
+  };
+
+  try {
+    const ready = await navigator.serviceWorker.ready;
+    push(ready);
+  } catch {
+    // ignore
+  }
+
   try {
     const direct = await navigator.serviceWorker.getRegistration("/");
-    if (direct?.pushManager) return direct;
+    push(direct);
   } catch {
     // ignore
   }
 
   try {
     const regs = await navigator.serviceWorker.getRegistrations();
-    const match = (regs || []).find((reg) => reg?.scope && reg.scope.includes(location.origin));
-    if (match?.pushManager) return match;
+    for (const reg of regs || []) push(reg);
   } catch {
     // ignore
   }
 
-  try {
-    const ready = await navigator.serviceWorker.ready;
-    if (ready?.pushManager) return ready;
-  } catch {
-    // ignore
+  return out[0] || null;
+}
+
+async function getRegistrationWithSubscription(options = {}) {
+  const { retries = 0, delayMs = 350 } = options || {};
+  if (!("serviceWorker" in navigator)) return { registration: null, subscription: null };
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const checked = [];
+    const seen = new Set();
+    const remember = (reg) => {
+      if (!reg?.pushManager) return;
+      const key = String(reg.scope || "");
+      if (seen.has(key)) return;
+      seen.add(key);
+      checked.push(reg);
+    };
+
+    try {
+      const ready = await navigator.serviceWorker.ready;
+      remember(ready);
+    } catch {
+      // ignore
+    }
+
+    try {
+      const direct = await navigator.serviceWorker.getRegistration("/");
+      remember(direct);
+    } catch {
+      // ignore
+    }
+
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs || []) remember(reg);
+    } catch {
+      // ignore
+    }
+
+    for (const reg of checked) {
+      try {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub?.endpoint) return { registration: reg, subscription: sub };
+      } catch {
+        // ignore
+      }
+    }
+
+    if (attempt < retries) await sleep(delayMs);
   }
 
-  return null;
+  return { registration: null, subscription: null };
 }
 
 async function getCurrentSubscription(options = {}) {
   const { retries = 0, delayMs = 350 } = options || {};
   if (!("serviceWorker" in navigator)) return null;
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      const reg = await getPushRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      if (sub?.endpoint) return sub;
-    } catch {
-      // ignore
-    }
-
-    if (attempt < retries) await sleep(delayMs);
-  }
-
-  return null;
+  const { subscription } = await getRegistrationWithSubscription({ retries, delayMs });
+  return subscription?.endpoint ? subscription : null;
 }
 
 function readCachedEndpoint() {
@@ -394,6 +443,9 @@ export default function PushAlerts({
 
     if (status === "enabled" && readCachedStatus() === "enabled") {
       syncSubscriptionMetadata();
+      const onControllerChange = () => {
+        syncSubscriptionMetadata();
+      };
       const onVisible = () => {
         if (document.visibilityState === "visible") {
           syncSubscriptionMetadata();
@@ -403,14 +455,16 @@ export default function PushAlerts({
         syncSubscriptionMetadata();
       };
 
+      navigator.serviceWorker?.addEventListener?.("controllerchange", onControllerChange);
       document.addEventListener("visibilitychange", onVisible);
       window.addEventListener("focus", onFocus);
       const t = setInterval(() => {
         syncSubscriptionMetadata();
-      }, 30 * 60 * 1000);
+      }, isIOSBrowser() ? 10 * 60 * 1000 : 30 * 60 * 1000);
 
       return () => {
         cancelled = true;
+        navigator.serviceWorker?.removeEventListener?.("controllerchange", onControllerChange);
         document.removeEventListener("visibilitychange", onVisible);
         window.removeEventListener("focus", onFocus);
         clearInterval(t);
@@ -476,12 +530,16 @@ export default function PushAlerts({
         throw new Error("No service worker");
       }
 
-      const reg = await getPushRegistration();
+      const { registration: subReg, subscription: existingSub } = await getRegistrationWithSubscription({
+        retries: 2,
+        delayMs: 300,
+      });
+      const reg = subReg || (await getPushRegistration());
       if (!reg?.pushManager) {
         throw new Error("Push registration unavailable");
       }
 
-      const existing = await getCurrentSubscription({ retries: 5, delayMs: 500 });
+      const existing = existingSub || (await getCurrentSubscription({ retries: 5, delayMs: 500 }));
 
       const sub =
         existing ||

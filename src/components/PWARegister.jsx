@@ -18,13 +18,30 @@ export default function PWARegister() {
       }
     };
 
-    const refreshRegistration = async () => {
+    const getExistingRegistration = async () => {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/",
-          updateViaCache: "none",
-        });
-        await reg.update().catch(() => {});
+        const direct = await navigator.serviceWorker.getRegistration("/");
+        if (direct) return direct;
+      } catch {
+        // ignore
+      }
+
+      try {
+        return await navigator.serviceWorker.ready;
+      } catch {
+        return null;
+      }
+    };
+
+    const ensureRegistration = async () => {
+      try {
+        const existing = await getExistingRegistration();
+        const reg =
+          existing ||
+          (await navigator.serviceWorker.register("/sw.js", {
+            scope: "/",
+            updateViaCache: "none",
+          }));
         await activateWaitingWorker(reg);
         return reg;
       } catch (e) {
@@ -33,18 +50,23 @@ export default function PWARegister() {
       }
     };
 
-    (async () => {
-      const reg = await refreshRegistration();
-      if (cancelled || !reg) return;
-
-      if (!navigator.serviceWorker.controller) {
-        const onChange = () => {
-          navigator.serviceWorker.removeEventListener("controllerchange", onChange);
-          window.location.reload();
-        };
-
-        navigator.serviceWorker.addEventListener("controllerchange", onChange);
+    const refreshRegistration = async () => {
+      try {
+        const reg = await ensureRegistration();
+        await reg?.update?.().catch(() => {});
+        await activateWaitingWorker(reg);
+        return reg;
+      } catch (e) {
+        console.error("[SW] refresh failed:", e);
+        return null;
       }
+    };
+
+    (async () => {
+      const reg = await ensureRegistration();
+      if (cancelled || !reg) return;
+      await reg.update().catch(() => {});
+      await activateWaitingWorker(reg);
     })();
 
     const onVisible = () => {
