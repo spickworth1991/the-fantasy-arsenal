@@ -4,42 +4,72 @@ import { useEffect } from "react";
 
 export default function PWARegister() {
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) return undefined;
 
-    (async () => {
+    let cancelled = false;
+
+    const activateWaitingWorker = async (reg) => {
       try {
-        // console.log("[SW] registering /sw.js …");
-
-        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-
-        // console.log("[SW] registered scope:", reg.scope);
-        // console.log("[SW] installing:", !!reg.installing, "waiting:", !!reg.waiting, "active:", !!reg.active);
-
-        // If not controlled yet, reload once when controller is acquired
-        if (!navigator.serviceWorker.controller) {
-          console.log("[SW] controller is null (expected on first load). Waiting for controllerchange…");
-
-          const onChange = () => {
-            console.log("[SW] controllerchange fired -> reloading once");
-            navigator.serviceWorker.removeEventListener("controllerchange", onChange);
-            window.location.reload();
-          };
-
-          navigator.serviceWorker.addEventListener("controllerchange", onChange);
-        } else {
-          // console.log("[SW] controller already present");
+        if (reg?.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
         }
+      } catch {
+        // ignore
+      }
+    };
 
-        // Snapshot registrations AFTER register (async)
-        setTimeout(async () => {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          // console.log("[SW] registrations after 1s:", regs.map(r => r.scope));
-          // console.log("[SW] controller after 1s:", navigator.serviceWorker.controller);
-        }, 1000);
+    const refreshRegistration = async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+        await reg.update().catch(() => {});
+        await activateWaitingWorker(reg);
+        return reg;
       } catch (e) {
         console.error("[SW] register failed:", e);
+        return null;
+      }
+    };
+
+    (async () => {
+      const reg = await refreshRegistration();
+      if (cancelled || !reg) return;
+
+      if (!navigator.serviceWorker.controller) {
+        const onChange = () => {
+          navigator.serviceWorker.removeEventListener("controllerchange", onChange);
+          window.location.reload();
+        };
+
+        navigator.serviceWorker.addEventListener("controllerchange", onChange);
       }
     })();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshRegistration().catch(() => {});
+      }
+    };
+
+    const onFocus = () => {
+      refreshRegistration().catch(() => {});
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+
+    const periodic = window.setInterval(() => {
+      refreshRegistration().catch(() => {});
+    }, 15 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(periodic);
+    };
   }, []);
 
   return null;

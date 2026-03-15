@@ -11,6 +11,8 @@ const DEFAULT_PUSH_SETTINGS = {
   badges: true,
 };
 const PICK_SYNC_GRACE_MS = 45_000;
+const APPLE_VISIBLE_RETRY_MS = 3 * 60 * 1000;
+const APPLE_VISIBLE_MAX_RETRIES = 1;
 
 function normalizePushSettings(input) {
   return {
@@ -628,6 +630,9 @@ async function ensurePushTables(db) {
       sent_final INTEGER,
       sent_paused INTEGER,
       sent_unpaused INTEGER,
+      last_visible_stage TEXT,
+      last_visible_sent_at INTEGER,
+      visible_retry_count INTEGER,
       paused_remaining_ms INTEGER,
       paused_at_ms INTEGER,
       resume_clock_start_ms INTEGER,
@@ -637,6 +642,9 @@ async function ensurePushTables(db) {
     [
       { name: "sent_urgent", type: "INTEGER" },
       { name: "sent_5min", type: "INTEGER" },
+      { name: "last_visible_stage", type: "TEXT" },
+      { name: "last_visible_sent_at", type: "INTEGER" },
+      { name: "visible_retry_count", type: "INTEGER" },
       { name: "paused_remaining_ms", type: "INTEGER" },
       { name: "paused_at_ms", type: "INTEGER" },
       { name: "resume_clock_start_ms", type: "INTEGER" },
@@ -792,8 +800,9 @@ async function loadClockStatesForEndpoint(db, endpoint, draftIds) {
       .prepare(
         `SELECT pick_no, last_status,
                 sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+                last_visible_stage, last_visible_sent_at, visible_retry_count,
                 paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
-                draft_id
+                updated_at, draft_id
          FROM push_clock_state
          WHERE endpoint=? AND draft_id IN (${qs})`
       )
@@ -817,9 +826,10 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
       `INSERT INTO push_clock_state
          (endpoint, draft_id, pick_no, last_status,
           sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+          last_visible_stage, last_visible_sent_at, visible_retry_count,
           paused_remaining_ms, paused_at_ms, resume_clock_start_ms,
           updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(endpoint, draft_id) DO UPDATE SET
          pick_no=excluded.pick_no,
          last_status=excluded.last_status,
@@ -832,6 +842,9 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
          sent_final=excluded.sent_final,
          sent_paused=excluded.sent_paused,
          sent_unpaused=excluded.sent_unpaused,
+         last_visible_stage=excluded.last_visible_stage,
+         last_visible_sent_at=excluded.last_visible_sent_at,
+         visible_retry_count=excluded.visible_retry_count,
          paused_remaining_ms=excluded.paused_remaining_ms,
          paused_at_ms=excluded.paused_at_ms,
          resume_clock_start_ms=excluded.resume_clock_start_ms,
@@ -851,6 +864,9 @@ function buildClockStateStmt(db, endpoint, draftId, row) {
       Number(row.sent_final || 0),
       Number(row.sent_paused || 0),
       Number(row.sent_unpaused || 0),
+      row.last_visible_stage == null ? null : String(row.last_visible_stage || ""),
+      row.last_visible_sent_at == null ? null : Number(row.last_visible_sent_at),
+      Number(row.visible_retry_count || 0),
       row.paused_remaining_ms == null ? null : Number(row.paused_remaining_ms),
       row.paused_at_ms == null ? null : Number(row.paused_at_ms),
       row.resume_clock_start_ms == null ? null : Number(row.resume_clock_start_ms),
@@ -880,6 +896,10 @@ function shouldPersistClockState(prevRow, nextRow) {
     Number(prevRow?.sent_final || 0) === Number(nextRow?.sent_final || 0) &&
     Number(prevRow?.sent_paused || 0) === Number(nextRow?.sent_paused || 0) &&
     Number(prevRow?.sent_unpaused || 0) === Number(nextRow?.sent_unpaused || 0) &&
+    String(prevRow?.last_visible_stage || "") === String(nextRow?.last_visible_stage || "") &&
+    ((prevRow?.last_visible_sent_at == null ? null : Number(prevRow?.last_visible_sent_at)) ===
+      (nextRow?.last_visible_sent_at == null ? null : Number(nextRow?.last_visible_sent_at))) &&
+    Number(prevRow?.visible_retry_count || 0) === Number(nextRow?.visible_retry_count || 0) &&
     ((prevRow?.paused_remaining_ms == null ? null : Number(prevRow?.paused_remaining_ms)) ===
       (nextRow?.paused_remaining_ms == null ? null : Number(nextRow?.paused_remaining_ms))) &&
     ((prevRow?.paused_at_ms == null ? null : Number(prevRow?.paused_at_ms)) ===
@@ -902,9 +922,34 @@ function makeBaseFlags(clockState, nextPickNo, status, isNewPick) {
     sent_final: isNewPick ? 0 : Number(clockState?.sent_final || 0) ? 1 : 0,
     sent_paused: isNewPick ? 0 : Number(clockState?.sent_paused || 0) ? 1 : 0,
     sent_unpaused: isNewPick ? 0 : Number(clockState?.sent_unpaused || 0) ? 1 : 0,
+    last_visible_stage: isNewPick ? null : (clockState?.last_visible_stage != null ? String(clockState.last_visible_stage) : null),
+    last_visible_sent_at: isNewPick
+      ? null
+      : (clockState?.last_visible_sent_at == null ? null : Number(clockState.last_visible_sent_at)),
+    visible_retry_count: isNewPick ? 0 : Number(clockState?.visible_retry_count || 0) || 0,
     paused_remaining_ms: null,
     paused_at_ms: null,
     resume_clock_start_ms: null,
+  };
+}
+
+function shouldRetryAppleVisibleStage(clockState, stage, now) {
+  const prevStage = String(clockState?.last_visible_stage || "");
+  const prevSentAt = Number(clockState?.last_visible_sent_at || 0);
+  const retryCount = Number(clockState?.visible_retry_count || 0);
+  if (!stage || prevStage !== String(stage)) return false;
+  if (!prevSentAt || retryCount >= APPLE_VISIBLE_MAX_RETRIES) return false;
+  return now - prevSentAt >= APPLE_VISIBLE_RETRY_MS;
+}
+
+function applyVisibleDeliveryState(prevClockState, nextFlags, stage, now) {
+  const prevStage = String(prevClockState?.last_visible_stage || "");
+  const sameStage = prevStage === String(stage || "");
+  return {
+    ...nextFlags,
+    last_visible_stage: stage || null,
+    last_visible_sent_at: now,
+    visible_retry_count: sameStage ? Number(prevClockState?.visible_retry_count || 0) + 1 : 0,
   };
 }
 
@@ -1201,6 +1246,7 @@ async function handler(req) {
         if (!reg) continue;
         const cacheRow = activeDraftCacheMap.get(String(draftId)) || null;
         const clockState = clockStateMap.get(String(draftId)) || null;
+        const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
 
         const status = String(reg?.status || "").toLowerCase();
         if (status !== "drafting" && status !== "paused") {
@@ -1372,13 +1418,20 @@ async function handler(req) {
 
         const transitionedToPaused = status === "paused" && prevStatus !== "paused";
         const transitionedFromPaused = status !== "paused" && prevStatus === "paused";
+        const appleRetryPaused = isAppleEndpoint && !transitionedToPaused && shouldRetryAppleVisibleStage(clockState, "paused", now);
+        const appleRetryUnpaused = isAppleEndpoint && !transitionedFromPaused && shouldRetryAppleVisibleStage(clockState, "unpaused", now);
+        const appleRetryOnclock =
+          isAppleEndpoint &&
+          !transitionedFromPaused &&
+          !isNewPick &&
+          shouldRetryAppleVisibleStage(clockState, "onclock", now);
 
         if (status === "paused") {
-          if (transitionedToPaused || isNewPick || !sentPaused) stageToSend = "paused";
+          if (transitionedToPaused || isNewPick || !sentPaused || appleRetryPaused) stageToSend = "paused";
         } else {
-          if (transitionedFromPaused) {
+          if (transitionedFromPaused || appleRetryUnpaused) {
             stageToSend = "unpaused";
-          } else if (isNewPick || !sentOnclock) {
+          } else if (isNewPick || !sentOnclock || appleRetryOnclock) {
             stageToSend = "onclock";
           } else if (totalMs > 0) {
             const usedFrac = 1 - remainingMs / totalMs;
@@ -1420,7 +1473,7 @@ async function handler(req) {
           if (shouldPersistClockState(clockState, baseFlags)) {
             stateStatements.push(buildClockStateStmt(db, s.endpoint, draftId, baseFlags));
           }
-          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus, sentPaused, sentUnpaused, sentOnclock, transitionedToPaused, transitionedFromPaused, isNewPick });
+          pushDebug({ endpoint: s.endpoint, username: s.username, draftId, reason: "no-stage-to-send", pickNo: nextPickNo, status, prevStatus, sentPaused, sentUnpaused, sentOnclock, transitionedToPaused, transitionedFromPaused, isNewPick, appleRetryPaused, appleRetryUnpaused, appleRetryOnclock });
           continue;
         }
 
@@ -1582,8 +1635,9 @@ async function handler(req) {
         if (pushRes?.ok) {
           sent++;
           const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          if (shouldPersistClockState(prevClockState, ev.nextFlags)) {
-            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, ev.nextFlags));
+          const deliveredState = applyVisibleDeliveryState(prevClockState, ev.nextFlags, ev.stage, now);
+          if (shouldPersistClockState(prevClockState, deliveredState)) {
+            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, deliveredState));
           }
           if (shouldBadge && Number(s.lastBadgeCount || 0) !== activeBadgeCount) {
             badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
@@ -1737,7 +1791,9 @@ async function handler(req) {
         sent++;
         for (const ev of events) {
           const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          const nextState = shouldSendStageForSettings(ev.stage, s.settings) ? ev.nextFlags : ev.baseFlags;
+          const nextState = shouldSendStageForSettings(ev.stage, s.settings)
+            ? applyVisibleDeliveryState(prevClockState, ev.nextFlags, ev.stage, now)
+            : ev.baseFlags;
           if (shouldPersistClockState(prevClockState, nextState)) {
             stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, nextState));
           }

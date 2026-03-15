@@ -394,12 +394,25 @@ export default function PushAlerts({
 
     if (status === "enabled" && readCachedStatus() === "enabled") {
       syncSubscriptionMetadata();
+      const onVisible = () => {
+        if (document.visibilityState === "visible") {
+          syncSubscriptionMetadata();
+        }
+      };
+      const onFocus = () => {
+        syncSubscriptionMetadata();
+      };
+
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onFocus);
       const t = setInterval(() => {
         syncSubscriptionMetadata();
       }, 30 * 60 * 1000);
 
       return () => {
         cancelled = true;
+        document.removeEventListener("visibilitychange", onVisible);
+        window.removeEventListener("focus", onFocus);
         clearInterval(t);
       };
     }
