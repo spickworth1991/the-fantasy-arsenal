@@ -15,6 +15,7 @@ async function ensureTable(db) {
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_subscriptions (
         endpoint TEXT PRIMARY KEY,
+        client_id TEXT,
         subscription_json TEXT,
         draft_ids_json TEXT,
         username TEXT,
@@ -37,6 +38,7 @@ async function ensureTable(db) {
       }
     };
     await add("subscription_json", "TEXT");
+    await add("client_id", "TEXT");
     await add("draft_ids_json", "TEXT");
     await add("username", "TEXT");
     await add("league_count", "INTEGER");
@@ -122,6 +124,8 @@ export async function POST(req) {
   const usernameIn = body?.username != null ? normalizeUsername(body.username) : "";
   const draftIdsIn = Array.isArray(body?.draftIds) ? body.draftIds : [];
   const draftIds = stableDraftIds(draftIdsIn);
+  const clientId = String(body?.clientId || "").trim();
+  const previousEndpoint = String(body?.previousEndpoint || "").trim();
 
   let settings = normalizeSettings(body?.settings);
 
@@ -160,12 +164,26 @@ export async function POST(req) {
   const existingRow = await db
     .prepare(
       `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, settings_json,
-              last_badge_count, last_badge_synced_at, created_at
+              client_id, last_badge_count, last_badge_synced_at, created_at
        FROM push_subscriptions
        WHERE endpoint=?`
     )
     .bind(endpoint)
     .first();
+  const priorClientRow =
+    clientId
+      ? await db
+          .prepare(
+            `SELECT endpoint, subscription_json, draft_ids_json, username, league_count, settings_json,
+                    client_id, last_badge_count, last_badge_synced_at, created_at
+             FROM push_subscriptions
+             WHERE client_id=? AND endpoint<>?
+             ORDER BY updated_at DESC, created_at DESC
+             LIMIT 1`
+          )
+          .bind(clientId, endpoint)
+          .first()
+      : null;
   const nextUsername = usernameIn || normalizeUsername(existingRow?.username || "") || null;
 
   const sameEndpointRow =
@@ -173,6 +191,7 @@ export async function POST(req) {
     stableJson(existingRow?.subscription_json, null) === stableJson(subscriptionJson, null) &&
     JSON.stringify(stableDraftIds(parseJsonArray(existingRow?.draft_ids_json))) === draftIdsJson &&
     normalizeUsername(existingRow?.username || "") === normalizeUsername(nextUsername || "") &&
+    String(existingRow?.client_id || "") === clientId &&
     Number(existingRow?.league_count || 0) === draftIds.length &&
     stableJson(existingRow?.settings_json, null) === stableJson(settingsJson, null);
   if (!sameEndpointRow) {
@@ -180,6 +199,7 @@ export async function POST(req) {
       .prepare(
         `INSERT INTO push_subscriptions (
           endpoint,
+          client_id,
           subscription_json,
           draft_ids_json,
           username,
@@ -189,8 +209,9 @@ export async function POST(req) {
           last_badge_synced_at,
           updated_at,
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(endpoint) DO UPDATE SET
+          client_id=excluded.client_id,
           subscription_json=excluded.subscription_json,
           draft_ids_json=excluded.draft_ids_json,
           league_count=excluded.league_count,
@@ -200,17 +221,41 @@ export async function POST(req) {
       )
       .bind(
         endpoint,
+        clientId || null,
         subscriptionJson,
         draftIdsJson,
         nextUsername,
         draftIds.length,
         settingsJson,
-        Number(existingRow?.last_badge_count || 0) || 0,
-        existingRow?.last_badge_synced_at ?? null,
+        Number(existingRow?.last_badge_count || priorClientRow?.last_badge_count || 0) || 0,
+        existingRow?.last_badge_synced_at ?? priorClientRow?.last_badge_synced_at ?? null,
         now,
-        Number(existingRow?.created_at || 0) || now
+        Number(existingRow?.created_at || priorClientRow?.created_at || 0) || now
       )
       .run();
+  }
+
+  const cleanupStatements = [];
+  if (clientId) {
+    cleanupStatements.push(
+      db.prepare(`DELETE FROM push_clock_state WHERE endpoint IN (
+          SELECT endpoint FROM push_subscriptions WHERE client_id=? AND endpoint<>?
+        )`).bind(clientId, endpoint)
+    );
+    cleanupStatements.push(
+      db.prepare(`DELETE FROM push_subscriptions WHERE client_id=? AND endpoint<>?`).bind(clientId, endpoint)
+    );
+  }
+  if (previousEndpoint && previousEndpoint !== endpoint) {
+    cleanupStatements.push(
+      db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(previousEndpoint)
+    );
+    cleanupStatements.push(
+      db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(previousEndpoint)
+    );
+  }
+  if (cleanupStatements.length) {
+    await db.batch(cleanupStatements);
   }
 
   if (usernameIn) {

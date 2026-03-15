@@ -15,6 +15,7 @@ async function ensureTable(db) {
     .prepare(
       `CREATE TABLE IF NOT EXISTS push_subscriptions (
         endpoint TEXT PRIMARY KEY,
+        client_id TEXT,
         subscription_json TEXT,
         draft_ids_json TEXT,
         username TEXT,
@@ -38,6 +39,7 @@ async function ensureTable(db) {
       }
     };
 
+    await add("client_id", "TEXT");
     await add("settings_json", "TEXT");
     await add("last_badge_count", "INTEGER");
     await add("last_badge_synced_at", "INTEGER");

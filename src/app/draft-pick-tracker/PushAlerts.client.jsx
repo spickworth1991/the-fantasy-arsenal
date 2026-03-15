@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const PUSH_ENDPOINT_CACHE_KEY = "tfa_push_endpoint_cache";
 const PUSH_STATUS_CACHE_KEY = "tfa_push_status_cache";
+const PUSH_CLIENT_ID_CACHE_KEY = "tfa_push_client_id";
 
 const DEFAULT_SETTINGS = {
   onClock: true,
@@ -162,6 +163,22 @@ function readCachedStatus() {
   }
 }
 
+function getPushClientId() {
+  try {
+    let id = localStorage.getItem(PUSH_CLIENT_ID_CACHE_KEY) || "";
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `tfa-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(PUSH_CLIENT_ID_CACHE_KEY, id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
+
 function clearCachedEndpoint() {
   try {
     localStorage.removeItem(PUSH_ENDPOINT_CACHE_KEY);
@@ -203,6 +220,37 @@ async function syncAppBadgeCount(count, badgesEnabled) {
   }
 }
 
+async function postMessageToServiceWorker(message) {
+  if (!("serviceWorker" in navigator)) return;
+
+  const sent = new Set();
+  const send = (target) => {
+    if (!target?.postMessage) return;
+    if (sent.has(target)) return;
+    sent.add(target);
+    try {
+      target.postMessage(message);
+    } catch {
+      // ignore
+    }
+  };
+
+  try {
+    if (navigator.serviceWorker.controller) send(navigator.serviceWorker.controller);
+  } catch {
+    // ignore
+  }
+
+  try {
+    const reg = await getPushRegistration();
+    send(reg?.active);
+    send(reg?.waiting);
+    send(reg?.installing);
+  } catch {
+    // ignore
+  }
+}
+
 export default function PushAlerts({
   username,
   draftIds,
@@ -217,6 +265,7 @@ export default function PushAlerts({
   const [endpoint, setEndpoint] = useState("");
   const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
+  const clientId = useMemo(() => getPushClientId(), []);
 
   const chosenDraftIds = useMemo(() => {
     const raw =
@@ -281,19 +330,24 @@ export default function PushAlerts({
 
   async function saveSubscription(
     subscription,
-    { includeUsername = false, settingsOverride } = {}
+    { includeUsername = false, settingsOverride, previousEndpoint } = {}
   ) {
     const subEndpoint = subscription?.endpoint;
     if (!subEndpoint) return;
+
+    const effectiveSettings = {
+      ...DEFAULT_SETTINGS,
+      ...(settingsOverride || settings || {}),
+    };
 
     const payload = {
       subscription,
       username: includeUsername ? username : undefined,
       draftIds: chosenDraftIds,
-      settings: {
-        ...DEFAULT_SETTINGS,
-        ...(settingsOverride || settings || {}),
-      },
+      settings: effectiveSettings,
+      clientId: clientId || undefined,
+      previousEndpoint:
+        previousEndpoint && previousEndpoint !== subEndpoint ? previousEndpoint : undefined,
     };
 
     const res = await fetch("/api/push/subscribe", {
@@ -316,6 +370,18 @@ export default function PushAlerts({
     } catch {
       // ignore
     }
+
+    await postMessageToServiceWorker({
+      type: "TFA_PUSH_CONTEXT_SAVE",
+      context: {
+        endpoint: subEndpoint,
+        username: includeUsername ? username : undefined,
+        draftIds: chosenDraftIds,
+        settings: effectiveSettings,
+        clientId: clientId || undefined,
+        vapidPublicKey: vapidKey || "",
+      },
+    });
   }
 
   async function persistSettings(nextSettings) {
@@ -350,6 +416,17 @@ export default function PushAlerts({
     }
 
     setSettings(nextSettings);
+    await postMessageToServiceWorker({
+      type: "TFA_PUSH_CONTEXT_SAVE",
+      context: {
+        endpoint: resolved.endpoint,
+        username,
+        draftIds: chosenDraftIds,
+        settings: nextSettings,
+        clientId: clientId || undefined,
+        vapidPublicKey: vapidKey || "",
+      },
+    });
   }
 
   useEffect(() => {
@@ -403,6 +480,7 @@ export default function PushAlerts({
           await saveSubscription(sub, {
             includeUsername: true,
             settingsOverride: existingSettings,
+            previousEndpoint: cachedEndpoint && cachedEndpoint !== sub.endpoint ? cachedEndpoint : undefined,
           }).catch(() => {});
         } else if (!cancelled) {
           setHasBrowserSubscription(false);
@@ -556,6 +634,7 @@ export default function PushAlerts({
       await saveSubscription(sub, {
         includeUsername: true,
         settingsOverride: normalizedSettings,
+        previousEndpoint: readCachedEndpoint() && readCachedEndpoint() !== sub.endpoint ? readCachedEndpoint() : undefined,
       });
 
       setSettings(normalizedSettings);
@@ -584,7 +663,7 @@ export default function PushAlerts({
         await fetch("/api/push/unsubscribe", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ endpoint: endpointToRemove }),
+          body: JSON.stringify({ endpoint: endpointToRemove, clientId: clientId || undefined }),
         });
       }
 
@@ -597,6 +676,7 @@ export default function PushAlerts({
       }
 
       await syncAppBadgeCount(0, false);
+      await postMessageToServiceWorker({ type: "TFA_PUSH_CONTEXT_CLEAR" });
 
       clearCachedEndpoint();
       setEndpoint("");

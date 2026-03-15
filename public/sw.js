@@ -1,5 +1,7 @@
 /* public/sw.js */
 const CACHE = "tfa-static-v3";
+const PUSH_CONTEXT_CACHE = "tfa-push-context-v1";
+const PUSH_CONTEXT_URL = "/__tfa_push_context__";
 
 const STATIC_ASSETS = [
   "/site.webmanifest",
@@ -7,6 +9,49 @@ const STATIC_ASSETS = [
   "/android-chrome-512x512.png",
   "/favicon.ico",
 ];
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function readPushContext() {
+  try {
+    const cache = await caches.open(PUSH_CONTEXT_CACHE);
+    const res = await cache.match(PUSH_CONTEXT_URL);
+    if (!res) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function writePushContext(context) {
+  try {
+    const cache = await caches.open(PUSH_CONTEXT_CACHE);
+    await cache.put(
+      PUSH_CONTEXT_URL,
+      new Response(JSON.stringify(context || {}), {
+        headers: { "content-type": "application/json" },
+      })
+    );
+  } catch {
+    // ignore
+  }
+}
+
+async function clearPushContext() {
+  try {
+    const cache = await caches.open(PUSH_CONTEXT_CACHE);
+    await cache.delete(PUSH_CONTEXT_URL);
+  } catch {
+    // ignore
+  }
+}
 
 async function setAppBadgeCount(count) {
   const n = Number(count || 0);
@@ -54,7 +99,19 @@ async function postPushMessage(payload, appBadgeCount) {
 }
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
+
+  if (event.data?.type === "TFA_PUSH_CONTEXT_SAVE") {
+    event.waitUntil(writePushContext(event.data?.context || {}));
+    return;
+  }
+
+  if (event.data?.type === "TFA_PUSH_CONTEXT_CLEAR") {
+    event.waitUntil(clearPushContext());
+  }
 });
 
 self.addEventListener("install", (event) => {
@@ -174,6 +231,52 @@ self.addEventListener("push", (event) => {
         else if (Number.isFinite(appBadgeCount) && appBadgeCount > 0) await setAppBadgeCount(appBadgeCount);
       }
       await postPushMessage(payload, appBadgeCount);
+    })()
+  );
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const context = await readPushContext();
+      const vapidPublicKey = String(context?.vapidPublicKey || "").trim();
+      if (!vapidPublicKey) return;
+
+      let nextSubscription = null;
+      try {
+        nextSubscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      } catch {
+        return;
+      }
+
+      if (!nextSubscription?.endpoint) return;
+
+      const payload = {
+        subscription: nextSubscription,
+        username: context?.username || undefined,
+        draftIds: Array.isArray(context?.draftIds) ? context.draftIds : [],
+        settings: context?.settings && typeof context.settings === "object" ? context.settings : undefined,
+        clientId: context?.clientId || undefined,
+        previousEndpoint:
+          String(event?.oldSubscription?.endpoint || context?.endpoint || "").trim() || undefined,
+      };
+
+      try {
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        await writePushContext({
+          ...(context && typeof context === "object" ? context : {}),
+          endpoint: nextSubscription.endpoint,
+        });
+      } catch {
+        // ignore
+      }
     })()
   );
 });
