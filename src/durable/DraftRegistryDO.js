@@ -1331,6 +1331,8 @@ async function tickOnce(env, state, options = {}) {
           ? Number(reg.pick_count)
           : (Number.isFinite(Number(cacheRow?.pick_count)) ? Number(cacheRow.pick_count) : null);
         const prevCurrentPick = Number.isFinite(Number(reg?.current_pick)) ? Number(reg.current_pick) : null;
+        const prevCurrentOwnerName = reg?.current_owner_name != null ? String(reg.current_owner_name) : null;
+        const prevNextOwnerName = reg?.next_owner_name != null ? String(reg.next_owner_name) : null;
 
         try {
           const pickCountNum = Number.isFinite(Number(pickCount)) ? Number(pickCount) : null;
@@ -1376,10 +1378,21 @@ async function tickOnce(env, state, options = {}) {
           // ignore
         }
 
+        const pickStateAlreadyPublished =
+          prevPickCountKnown != null &&
+          Number.isFinite(Number(pickCount)) &&
+          Number(pickCount) === Number(prevPickCountKnown) &&
+          prevCurrentPick != null &&
+          currentPick != null &&
+          Number(currentPick) === Number(prevCurrentPick) &&
+          String(currentOwnerName || "") === String(prevCurrentOwnerName || "") &&
+          String(nextOwnerName || "") === String(prevNextOwnerName || "");
+
         const lastPickedNeedsSync = lastPickedNum > 0 && nextSyncedLastPicked !== lastPickedNum;
         const lastPickedMoved = lastPickedNum > 0 && cacheLastPicked !== lastPickedNum;
         const suspiciousPickSync =
           lastPickedNeedsSync &&
+          !pickStateAlreadyPublished &&
           status !== "complete" &&
           Number.isFinite(Number(pickCount)) &&
           (
