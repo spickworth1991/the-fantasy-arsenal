@@ -342,15 +342,19 @@ export default function PushAlerts({
 
         if (!cancelled && sub?.endpoint) {
           setHasBrowserSubscription(true);
-
-          if (cachedStatus) {
-            setEndpoint(sub.endpoint);
-            cacheEndpoint(sub.endpoint);
-            setStatus("enabled");
-            await fetchSettingsForSubscription(sub);
-          } else {
-            setStatus(cachedEndpoint ? "idle" : "idle");
+          setEndpoint(sub.endpoint);
+          cacheEndpoint(sub.endpoint);
+          setStatus("enabled");
+          try {
+            localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
+          } catch {
+            // ignore
           }
+          const existingSettings = await fetchSettingsForSubscription(sub).catch(() => DEFAULT_SETTINGS);
+          await saveSubscription(sub, {
+            includeUsername: true,
+            settingsOverride: existingSettings,
+          }).catch(() => {});
         } else if (!cancelled) {
           setHasBrowserSubscription(false);
           if (cachedEndpoint && cachedStatus) {
@@ -378,7 +382,6 @@ export default function PushAlerts({
         if (!hasNotification) return;
         if (globalThis.Notification.permission !== "granted") return;
         if (status !== "enabled") return;
-        if (readCachedStatus() !== "enabled") return;
 
         const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
         if (!sub?.endpoint) return;
