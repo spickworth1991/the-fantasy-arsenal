@@ -92,10 +92,11 @@ export async function GET(req) {
     .first();
 
   if (!row?.endpoint) {
-    return NextResponse.json(
-      { ok: false, error: "Subscription endpoint not found", settings: DEFAULT_SETTINGS },
-      { status: 404 }
-    );
+    return NextResponse.json({
+      ok: true,
+      exists: false,
+      settings: DEFAULT_SETTINGS,
+    });
   }
 
   let settings = DEFAULT_SETTINGS;
@@ -105,7 +106,7 @@ export async function GET(req) {
     settings = DEFAULT_SETTINGS;
   }
 
-  return NextResponse.json({ ok: true, settings });
+  return NextResponse.json({ ok: true, exists: true, settings });
 }
 
 export async function POST(req) {

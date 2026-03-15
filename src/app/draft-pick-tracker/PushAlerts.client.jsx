@@ -77,6 +77,18 @@ async function getPushRegistration() {
     // ignore
   }
 
+  if (!out.length) {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js", {
+        scope: "/",
+        updateViaCache: "none",
+      });
+      push(reg);
+    } catch {
+      // ignore
+    }
+  }
+
   return out[0] || null;
 }
 
@@ -279,20 +291,28 @@ export default function PushAlerts({
   const hasNotification =
     typeof globalThis !== "undefined" && "Notification" in globalThis;
 
+  async function clearLocalPushState(nextStatus = "idle") {
+    clearCachedEndpoint();
+    setEndpoint("");
+    setHasBrowserSubscription(false);
+    setStatus(nextStatus);
+    await postMessageToServiceWorker({ type: "TFA_PUSH_CONTEXT_CLEAR" });
+  }
+
   async function fetchSettingsForSubscription(subscriptionOrEndpoint) {
     const nextEndpoint =
       typeof subscriptionOrEndpoint === "string"
         ? subscriptionOrEndpoint
         : subscriptionOrEndpoint?.endpoint;
 
-    if (!nextEndpoint) return DEFAULT_SETTINGS;
+    if (!nextEndpoint) return { settings: DEFAULT_SETTINGS, exists: false };
 
     const res = await fetch(
       `/api/push/settings?endpoint=${encodeURIComponent(nextEndpoint)}`,
       { cache: "no-store" }
     );
 
-    if (!res.ok) return DEFAULT_SETTINGS;
+    if (!res.ok) return { settings: DEFAULT_SETTINGS, exists: false };
 
     const json = await res.json().catch(() => ({}));
     const next = {
@@ -303,11 +323,14 @@ export default function PushAlerts({
     setSettings(next);
     setEndpoint(nextEndpoint);
     cacheEndpoint(nextEndpoint);
-    return next;
+    return {
+      settings: next,
+      exists: json?.exists !== false,
+    };
   }
 
   async function resolveEndpoint(options = {}) {
-    const { allowCached = true, retries = 4, delayMs = 450 } = options || {};
+    const { allowCached = true, validateCached = false, retries = 4, delayMs = 450 } = options || {};
 
     const sub = await getCurrentSubscription({ retries, delayMs });
     if (sub?.endpoint) {
@@ -320,6 +343,16 @@ export default function PushAlerts({
     if (allowCached) {
       const cached = readCachedEndpoint();
       if (cached) {
+        if (validateCached) {
+          const lookup = await fetchSettingsForSubscription(cached).catch(() => ({
+            settings: DEFAULT_SETTINGS,
+            exists: false,
+          }));
+          if (!lookup?.exists) {
+            await clearLocalPushState("idle");
+            return { endpoint: "", subscription: null, source: "none" };
+          }
+        }
         setEndpoint(cached);
         return { endpoint: cached, subscription: null, source: "cache" };
       }
@@ -393,6 +426,7 @@ export default function PushAlerts({
 
     const resolved = await resolveEndpoint({
       allowCached: true,
+      validateCached: true,
       retries: 5,
       delayMs: 500,
     });
@@ -438,22 +472,23 @@ export default function PushAlerts({
 
         if (globalThis.Notification.permission === "denied") {
           if (!cancelled) {
-            clearCachedEndpoint();
-            setEndpoint("");
-            setHasBrowserSubscription(false);
-            setStatus("denied");
+            await clearLocalPushState("denied");
           }
           return;
         }
 
         const cachedEndpoint = readCachedEndpoint();
         const cachedStatus = readCachedStatus() === "enabled";
+        let cachedLookup = null;
 
         if (!cancelled && cachedEndpoint) {
           setEndpoint(cachedEndpoint);
           if (cachedStatus) {
             setStatus("enabled");
-            fetchSettingsForSubscription(cachedEndpoint).catch(() => {});
+            cachedLookup = await fetchSettingsForSubscription(cachedEndpoint).catch(() => ({
+              settings: DEFAULT_SETTINGS,
+              exists: false,
+            }));
           } else {
             setStatus("idle");
           }
@@ -476,7 +511,15 @@ export default function PushAlerts({
           } catch {
             // ignore
           }
-          const existingSettings = await fetchSettingsForSubscription(sub).catch(() => DEFAULT_SETTINGS);
+          const existingSettings =
+            sub.endpoint === cachedEndpoint && cachedLookup
+              ? cachedLookup.settings
+              : (
+                  await fetchSettingsForSubscription(sub).catch(() => ({
+                    settings: DEFAULT_SETTINGS,
+                    exists: false,
+                  }))
+                ).settings;
           await saveSubscription(sub, {
             includeUsername: true,
             settingsOverride: existingSettings,
@@ -484,7 +527,9 @@ export default function PushAlerts({
           }).catch(() => {});
         } else if (!cancelled) {
           setHasBrowserSubscription(false);
-          if (cachedEndpoint && cachedStatus) {
+          if (cachedEndpoint && cachedStatus && cachedLookup?.exists === false) {
+            await clearLocalPushState("idle");
+          } else if (cachedEndpoint && cachedStatus) {
             setStatus("enabled");
           } else {
             setStatus("idle");
@@ -678,10 +723,7 @@ export default function PushAlerts({
       await syncAppBadgeCount(0, false);
       await postMessageToServiceWorker({ type: "TFA_PUSH_CONTEXT_CLEAR" });
 
-      clearCachedEndpoint();
-      setEndpoint("");
-      setHasBrowserSubscription(false);
-      setStatus("idle");
+      await clearLocalPushState("idle");
       setSettingsOpen(false);
       setSettings(DEFAULT_SETTINGS);
       setMsg("Alerts disabled for this device.");

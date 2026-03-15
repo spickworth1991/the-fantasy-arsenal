@@ -82,6 +82,10 @@ export default function PWARegister() {
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onFocus);
 
+    const ensurePresent = window.setInterval(() => {
+      ensureRegistration().catch(() => {});
+    }, 60 * 1000);
+
     const periodic = window.setInterval(() => {
       refreshRegistration().catch(() => {});
     }, 15 * 60 * 1000);
@@ -90,6 +94,7 @@ export default function PWARegister() {
       cancelled = true;
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onFocus);
+      window.clearInterval(ensurePresent);
       window.clearInterval(periodic);
     };
   }, []);
