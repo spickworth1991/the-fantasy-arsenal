@@ -1394,6 +1394,7 @@ async function handler(req) {
 
         const wasPaused = prevStatus === "paused";
         const isPaused = status === "paused";
+        let resumeClockLooksFresh = false;
 
         let remainingMs = rawRemainingMs;
 
@@ -1407,6 +1408,14 @@ async function handler(req) {
             );
           } else {
             remainingMs = frozenPausedRemaining;
+          }
+        }
+
+        if (!isPaused && wasPaused && rawRemainingMs > 0) {
+          const resumedGapMs = rawRemainingMs - remainingMs;
+          if (remainingMs <= 0 || resumedGapMs > 90_000) {
+            remainingMs = rawRemainingMs;
+            resumeClockLooksFresh = true;
           }
         }
 
@@ -1432,11 +1441,17 @@ async function handler(req) {
             : now;
           baseFlags.resume_clock_start_ms = null;
         } else if (wasPaused && pausedRemainingKnown) {
-          baseFlags.paused_remaining_ms = frozenPausedRemaining;
-          baseFlags.paused_at_ms = Number.isFinite(Number(clockState?.paused_at_ms))
-            ? Number(clockState.paused_at_ms)
-            : null;
-          baseFlags.resume_clock_start_ms = resumeStartKnown ? resumeClockStartMs : now;
+          if (resumeClockLooksFresh) {
+            baseFlags.paused_remaining_ms = null;
+            baseFlags.paused_at_ms = null;
+            baseFlags.resume_clock_start_ms = null;
+          } else {
+            baseFlags.paused_remaining_ms = frozenPausedRemaining;
+            baseFlags.paused_at_ms = Number.isFinite(Number(clockState?.paused_at_ms))
+              ? Number(clockState.paused_at_ms)
+              : null;
+            baseFlags.resume_clock_start_ms = resumeStartKnown ? resumeClockStartMs : now;
+          }
         }
 
         let stageToSend = null;
