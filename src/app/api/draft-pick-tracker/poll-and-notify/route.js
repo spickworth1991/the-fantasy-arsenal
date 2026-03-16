@@ -962,6 +962,21 @@ function applyVisibleDeliveryState(prevClockState, nextFlags, stage, now) {
   };
 }
 
+function pickCurrentReachedStage(reached, totalMs, remainingMs) {
+  if (!reached || !(totalMs > 0)) return null;
+
+  if (Number(reached.sent_urgent || 0) === 1) return "urgent";
+  if (Number(reached.sent_5min || 0) === 1) return "five";
+  if (Number(reached.sent_10min || 0) === 1) return "ten";
+  if (Number(reached.sent_25 || 0) === 1) return "p25";
+  if (Number(reached.sent_50 || 0) === 1) return "p50";
+
+  const finalThresholdMs = clamp(Math.floor(totalMs * 0.1), 15000, 60000);
+  if (remainingMs <= finalThresholdMs) return "final";
+
+  return null;
+}
+
 function buildRegistryPickSyncMarker(reg) {
   return [
     String(reg?.status || ""),
@@ -1465,6 +1480,11 @@ async function handler(req) {
         const sent5 = baseFlags.sent_5min === 1;
         const sentUrgent = baseFlags.sent_urgent === 1;
         const sentFinal = baseFlags.sent_final === 1;
+        const reachedNow = totalMs > 0 ? getReachedStageFlags(totalMs, remainingMs) : null;
+        const catchupStage =
+          !isNewPick && !sentOnclock
+            ? pickCurrentReachedStage(reachedNow, totalMs, remainingMs)
+            : null;
 
         const transitionedToPaused = status === "paused" && prevStatus !== "paused";
         const transitionedFromPaused = status !== "paused" && prevStatus === "paused";
@@ -1481,6 +1501,8 @@ async function handler(req) {
         } else {
           if (transitionedFromPaused || appleRetryUnpaused) {
             stageToSend = "unpaused";
+          } else if (catchupStage) {
+            stageToSend = catchupStage;
           } else if (isNewPick || !sentOnclock || appleRetryOnclock) {
             stageToSend = "onclock";
           } else if (totalMs > 0) {
@@ -1541,18 +1563,27 @@ async function handler(req) {
         }
 
         if (stageToSend === "unpaused") {
-        nextFlags.sent_unpaused = 1;
-        nextFlags.sent_paused = 0;
+          nextFlags.sent_unpaused = 1;
+          nextFlags.sent_paused = 0;
 
-        const reached = getReachedStageFlags(totalMs, remainingMs);
-        nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reached.sent_onclock);
-        nextFlags.sent_50 = Math.max(nextFlags.sent_50, reached.sent_50);
-        nextFlags.sent_25 = Math.max(nextFlags.sent_25, reached.sent_25);
-        nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reached.sent_10min);
-        nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reached.sent_5min);
-        nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reached.sent_urgent);
-        nextFlags.sent_final = Math.max(nextFlags.sent_final, reached.sent_final);
-      }
+          nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reachedNow?.sent_onclock || 0);
+          nextFlags.sent_50 = Math.max(nextFlags.sent_50, reachedNow?.sent_50 || 0);
+          nextFlags.sent_25 = Math.max(nextFlags.sent_25, reachedNow?.sent_25 || 0);
+          nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reachedNow?.sent_10min || 0);
+          nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reachedNow?.sent_5min || 0);
+          nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reachedNow?.sent_urgent || 0);
+          nextFlags.sent_final = Math.max(nextFlags.sent_final, reachedNow?.sent_final || 0);
+        }
+
+        if (stageToSend !== "paused" && stageToSend !== "unpaused" && reachedNow) {
+          nextFlags.sent_onclock = Math.max(nextFlags.sent_onclock, reachedNow.sent_onclock || 0);
+          nextFlags.sent_50 = Math.max(nextFlags.sent_50, reachedNow.sent_50 || 0);
+          nextFlags.sent_25 = Math.max(nextFlags.sent_25, reachedNow.sent_25 || 0);
+          nextFlags.sent_10min = Math.max(nextFlags.sent_10min, reachedNow.sent_10min || 0);
+          nextFlags.sent_5min = Math.max(nextFlags.sent_5min, reachedNow.sent_5min || 0);
+          nextFlags.sent_urgent = Math.max(nextFlags.sent_urgent, reachedNow.sent_urgent || 0);
+          nextFlags.sent_final = Math.max(nextFlags.sent_final, reachedNow.sent_final || 0);
+        }
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
