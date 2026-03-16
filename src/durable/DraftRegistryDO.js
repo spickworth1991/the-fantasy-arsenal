@@ -1450,17 +1450,6 @@ async function tickOnce(env, state, options = {}) {
         const prevClockRemainingMs = Number.isFinite(Number(reg?.clock_remaining_ms))
           ? Number(reg.clock_remaining_ms)
           : null;
-        const prevCheckedAt = Number.isFinite(Number(reg?.last_checked_at))
-          ? Number(reg.last_checked_at)
-          : now;
-        const samePublishedPickState =
-          Number.isFinite(Number(reg?.pick_count)) &&
-          publishedPickCount != null &&
-          Number(reg.pick_count) === Number(publishedPickCount) &&
-          Number.isFinite(Number(reg?.current_pick)) &&
-          publishedCurrentPick != null &&
-          Number(reg.current_pick) === Number(publishedCurrentPick) &&
-          String(reg?.current_owner_name || "") === String(publishedCurrentOwnerName || "");
         const rawClockEndsAt =
           publishedLastPicked != null && timerSec
             ? Number(publishedLastPicked) + Number(timerSec) * 1000
@@ -1484,28 +1473,9 @@ async function tickOnce(env, state, options = {}) {
 
           clockEndsAt = null;
           clockRemainingMs = frozenRemainingMs;
-        } else if (
-          status === "drafting" &&
-          prevStatus === "paused" &&
-          (prevClockRemainingMs != null || prevClockEndsAt != null)
-        ) {
-          const resumedRemainingMs =
-            prevClockRemainingMs != null
-              ? Math.max(0, prevClockRemainingMs)
-              : Math.max(0, prevClockEndsAt - prevCheckedAt);
-          clockEndsAt = now + resumedRemainingMs;
-          clockRemainingMs = resumedRemainingMs;
-        } else if (
-          status === "drafting" &&
-          prevStatus === "drafting" &&
-          prevClockEndsAt != null &&
-          samePublishedPickState
-        ) {
-          clockEndsAt = prevClockEndsAt;
-          clockRemainingMs = Math.max(0, prevClockEndsAt - now);
         } else {
           clockEndsAt = rawClockEndsAt;
-          clockRemainingMs = rawClockEndsAt != null ? Math.max(0, rawClockEndsAt - now) : null;
+          clockRemainingMs = null;
         }
 
         const registryPatch = {

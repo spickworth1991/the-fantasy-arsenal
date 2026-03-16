@@ -1398,11 +1398,15 @@ async function handler(req) {
 
         const timerSec = Number(reg?.timer_sec || 0);
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
-        const rawClockEndsAt = Number(reg?.clock_ends_at || 0);
+        const draftClockLastPicked = Number(reg?.last_picked || 0);
+        const draftingClockEndsAt =
+          status !== "paused" && totalMs > 0 && draftClockLastPicked > 0
+            ? draftClockLastPicked + totalMs
+            : 0;
         const registryClockRemainingMs = Number(reg?.clock_remaining_ms || 0);
         const rawRemainingMs =
-          totalMs > 0 && rawClockEndsAt > 0
-            ? Math.max(0, rawClockEndsAt - now)
+          draftingClockEndsAt > 0
+            ? Math.max(0, draftingClockEndsAt - now)
             : status === "paused" && registryClockRemainingMs > 0
             ? registryClockRemainingMs
             : 0;
@@ -1445,7 +1449,7 @@ async function handler(req) {
         const hasReliableActiveClock =
           isPaused
             ? totalMs > 0 && remainingMs >= 0
-            : totalMs > 0 && rawClockEndsAt > 0 && remainingMs > 0;
+            : totalMs > 0 && draftingClockEndsAt > 0 && remainingMs > 0;
         onClockSnapshot.push({
           draftId: String(draftId),
           leagueName: String(reg?.league_name || "your league"),
