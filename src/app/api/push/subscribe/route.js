@@ -52,6 +52,77 @@ async function ensureTable(db) {
   }
 }
 
+async function ensurePushClockStateTable(db) {
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS push_clock_state (
+        endpoint TEXT,
+        draft_id TEXT,
+        pick_no INTEGER,
+        last_status TEXT,
+        sent_onclock INTEGER,
+        sent_25 INTEGER,
+        sent_50 INTEGER,
+        sent_10min INTEGER,
+        sent_5min INTEGER,
+        sent_urgent INTEGER,
+        sent_final INTEGER,
+        sent_paused INTEGER,
+        sent_unpaused INTEGER,
+        last_visible_stage TEXT,
+        last_visible_sent_at INTEGER,
+        visible_retry_count INTEGER,
+        paused_remaining_ms INTEGER,
+        paused_at_ms INTEGER,
+        resume_clock_start_ms INTEGER,
+        updated_at INTEGER,
+        PRIMARY KEY (endpoint, draft_id)
+      )`
+    )
+    .run();
+}
+
+function uniqNonEmptyStrings(arr) {
+  return Array.from(new Set((arr || []).map((v) => String(v || "").trim()).filter(Boolean)));
+}
+
+function buildMigrateClockStateStmt(db, fromEndpoint, toEndpoint) {
+  return db.prepare(
+    `INSERT INTO push_clock_state (
+       endpoint, draft_id, pick_no, last_status,
+       sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+       last_visible_stage, last_visible_sent_at, visible_retry_count,
+       paused_remaining_ms, paused_at_ms, resume_clock_start_ms, updated_at
+     )
+     SELECT
+       ?, draft_id, pick_no, last_status,
+       sent_onclock, sent_25, sent_50, sent_10min, sent_5min, sent_urgent, sent_final, sent_paused, sent_unpaused,
+       last_visible_stage, last_visible_sent_at, visible_retry_count,
+       paused_remaining_ms, paused_at_ms, resume_clock_start_ms, updated_at
+     FROM push_clock_state
+     WHERE endpoint=?
+     ON CONFLICT(endpoint, draft_id) DO UPDATE SET
+       pick_no=excluded.pick_no,
+       last_status=excluded.last_status,
+       sent_onclock=excluded.sent_onclock,
+       sent_25=excluded.sent_25,
+       sent_50=excluded.sent_50,
+       sent_10min=excluded.sent_10min,
+       sent_5min=excluded.sent_5min,
+       sent_urgent=excluded.sent_urgent,
+       sent_final=excluded.sent_final,
+       sent_paused=excluded.sent_paused,
+       sent_unpaused=excluded.sent_unpaused,
+       last_visible_stage=excluded.last_visible_stage,
+       last_visible_sent_at=excluded.last_visible_sent_at,
+       visible_retry_count=excluded.visible_retry_count,
+       paused_remaining_ms=excluded.paused_remaining_ms,
+       paused_at_ms=excluded.paused_at_ms,
+       resume_clock_start_ms=excluded.resume_clock_start_ms,
+       updated_at=excluded.updated_at`
+  ).bind(toEndpoint, fromEndpoint);
+}
+
 function uniqStrings(arr) {
   const out = [];
   const seen = new Set();
@@ -184,6 +255,18 @@ export async function POST(req) {
           .bind(clientId, endpoint)
           .first()
       : null;
+  const priorClientRows =
+    clientId
+      ? await db
+          .prepare(
+            `SELECT endpoint
+             FROM push_subscriptions
+             WHERE client_id=? AND endpoint<>?
+             ORDER BY updated_at DESC, created_at DESC`
+          )
+          .bind(clientId, endpoint)
+          .all()
+      : null;
   const nextUsername = usernameIn || normalizeUsername(existingRow?.username || "") || null;
 
   const sameEndpointRow =
@@ -235,23 +318,29 @@ export async function POST(req) {
       .run();
   }
 
+  const endpointsToReplace = uniqNonEmptyStrings([
+    previousEndpoint && previousEndpoint !== endpoint ? previousEndpoint : "",
+    priorClientRow?.endpoint && priorClientRow.endpoint !== endpoint ? priorClientRow.endpoint : "",
+    ...((priorClientRows?.results || []).map((row) =>
+      row?.endpoint && row.endpoint !== endpoint ? String(row.endpoint) : ""
+    )),
+  ]);
+
   const cleanupStatements = [];
-  if (clientId) {
-    cleanupStatements.push(
-      db.prepare(`DELETE FROM push_clock_state WHERE endpoint IN (
-          SELECT endpoint FROM push_subscriptions WHERE client_id=? AND endpoint<>?
-        )`).bind(clientId, endpoint)
-    );
+  if (endpointsToReplace.length) {
+    await ensurePushClockStateTable(db);
+    for (const oldEndpoint of endpointsToReplace) {
+      cleanupStatements.push(buildMigrateClockStateStmt(db, oldEndpoint, endpoint));
+      cleanupStatements.push(
+        db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(oldEndpoint)
+      );
+      cleanupStatements.push(
+        db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(oldEndpoint)
+      );
+    }
+  } else if (clientId) {
     cleanupStatements.push(
       db.prepare(`DELETE FROM push_subscriptions WHERE client_id=? AND endpoint<>?`).bind(clientId, endpoint)
-    );
-  }
-  if (previousEndpoint && previousEndpoint !== endpoint) {
-    cleanupStatements.push(
-      db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(previousEndpoint)
-    );
-    cleanupStatements.push(
-      db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(previousEndpoint)
     );
   }
   if (cleanupStatements.length) {

@@ -12,7 +12,7 @@ const DEFAULT_PUSH_SETTINGS = {
 };
 const PICK_SYNC_GRACE_MS = 45_000;
 const APPLE_VISIBLE_RETRY_MS = 3 * 60 * 1000;
-const APPLE_VISIBLE_MAX_RETRIES = 1;
+const APPLE_VISIBLE_MAX_RETRIES = 0;
 
 function normalizePushSettings(input) {
   return {
