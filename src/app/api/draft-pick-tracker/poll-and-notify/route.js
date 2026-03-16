@@ -760,7 +760,7 @@ async function loadRegistryRowsMap(db, draftIds) {
     const rows = await db
       .prepare(
         `SELECT draft_id, active, status, league_name, league_id, league_avatar,
-                last_picked, pick_count, timer_sec, current_pick, current_owner_name, clock_ends_at,
+                last_picked, pick_count, timer_sec, current_pick, current_owner_name, clock_ends_at, clock_remaining_ms,
                 roster_names_json, roster_by_username_json
          FROM push_draft_registry
          WHERE draft_id IN (${qs})`
@@ -1399,8 +1399,13 @@ async function handler(req) {
         const timerSec = Number(reg?.timer_sec || 0);
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
         const rawClockEndsAt = Number(reg?.clock_ends_at || 0);
+        const registryClockRemainingMs = Number(reg?.clock_remaining_ms || 0);
         const rawRemainingMs =
-          totalMs > 0 && rawClockEndsAt > 0 ? Math.max(0, rawClockEndsAt - now) : 0;
+          totalMs > 0 && rawClockEndsAt > 0
+            ? Math.max(0, rawClockEndsAt - now)
+            : status === "paused" && registryClockRemainingMs > 0
+            ? registryClockRemainingMs
+            : 0;
 
         const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
         const pausedRemainingKnown = Number.isFinite(frozenPausedRemaining);

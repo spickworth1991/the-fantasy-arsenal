@@ -399,6 +399,7 @@ async function ensureDraftRegistryTable(db) {
         current_owner_name TEXT,
         next_owner_name TEXT,
         clock_ends_at INTEGER,
+        clock_remaining_ms INTEGER,
         completed_at INTEGER,
         updated_at INTEGER
       )`
@@ -434,6 +435,7 @@ async function ensureDraftRegistryTable(db) {
     await add("current_owner_name", "TEXT");
     await add("next_owner_name", "TEXT");
     await add("clock_ends_at", "INTEGER");
+    await add("clock_remaining_ms", "INTEGER");
     await add("updated_at", "INTEGER");
   } catch {
     // ignore
@@ -523,7 +525,7 @@ async function loadRegistryRowsMap(db, draftIds) {
                 slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                 teams, rounds, timer_sec, reversal_round,
                 league_id, league_name, league_avatar, best_ball,
-                current_pick, current_owner_name, next_owner_name, clock_ends_at,
+                current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms,
                 completed_at, updated_at
          FROM push_draft_registry
          WHERE draft_id IN (${qs})`
@@ -715,10 +717,10 @@ function buildUpsertRegistryStmt(db, draftId, cur, patch) {
         slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
         teams, rounds, timer_sec, reversal_round,
         league_id, league_name, league_avatar, best_ball,
-        current_pick, current_owner_name, next_owner_name, clock_ends_at,
+        current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms,
         completed_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(draft_id) DO UPDATE SET
         active=excluded.active,
         status=excluded.status,
@@ -745,6 +747,7 @@ function buildUpsertRegistryStmt(db, draftId, cur, patch) {
         current_owner_name=excluded.current_owner_name,
         next_owner_name=excluded.next_owner_name,
         clock_ends_at=excluded.clock_ends_at,
+        clock_remaining_ms=excluded.clock_remaining_ms,
         completed_at=COALESCE(push_draft_registry.completed_at, excluded.completed_at),
         updated_at=excluded.updated_at`
     )
@@ -776,6 +779,7 @@ function buildUpsertRegistryStmt(db, draftId, cur, patch) {
       next.current_owner_name ?? null,
       next.next_owner_name ?? null,
       next.clock_ends_at ?? null,
+      next.clock_remaining_ms ?? null,
       next.completed_at ?? null,
       now
     );
@@ -1443,6 +1447,9 @@ async function tickOnce(env, state, options = {}) {
         const prevClockEndsAt = Number.isFinite(Number(reg?.clock_ends_at))
           ? Number(reg.clock_ends_at)
           : null;
+        const prevClockRemainingMs = Number.isFinite(Number(reg?.clock_remaining_ms))
+          ? Number(reg.clock_remaining_ms)
+          : null;
         const prevCheckedAt = Number.isFinite(Number(reg?.last_checked_at))
           ? Number(reg.last_checked_at)
           : now;
@@ -1459,28 +1466,35 @@ async function tickOnce(env, state, options = {}) {
             ? Number(publishedLastPicked) + Number(timerSec) * 1000
             : null;
         let clockEndsAt = null;
+        let clockRemainingMs = null;
 
         if (status === "complete") {
           clockEndsAt = null;
+          clockRemainingMs = null;
         } else if (status === "paused") {
           let frozenRemainingMs = null;
 
-          if (prevStatus === "paused" && prevClockEndsAt != null) {
-            frozenRemainingMs = Math.max(0, prevClockEndsAt - prevCheckedAt);
+          if (prevStatus === "paused" && prevClockRemainingMs != null) {
+            frozenRemainingMs = Math.max(0, prevClockRemainingMs);
           } else if (prevClockEndsAt != null) {
             frozenRemainingMs = Math.max(0, prevClockEndsAt - now);
           } else if (rawClockEndsAt != null) {
             frozenRemainingMs = Math.max(0, rawClockEndsAt - now);
           }
 
-          clockEndsAt = frozenRemainingMs == null ? rawClockEndsAt : now + frozenRemainingMs;
+          clockEndsAt = null;
+          clockRemainingMs = frozenRemainingMs;
         } else if (
           status === "drafting" &&
           prevStatus === "paused" &&
-          prevClockEndsAt != null
+          (prevClockRemainingMs != null || prevClockEndsAt != null)
         ) {
-          const resumedRemainingMs = Math.max(0, prevClockEndsAt - prevCheckedAt);
+          const resumedRemainingMs =
+            prevClockRemainingMs != null
+              ? Math.max(0, prevClockRemainingMs)
+              : Math.max(0, prevClockEndsAt - prevCheckedAt);
           clockEndsAt = now + resumedRemainingMs;
+          clockRemainingMs = resumedRemainingMs;
         } else if (
           status === "drafting" &&
           prevStatus === "drafting" &&
@@ -1488,8 +1502,10 @@ async function tickOnce(env, state, options = {}) {
           samePublishedPickState
         ) {
           clockEndsAt = prevClockEndsAt;
+          clockRemainingMs = Math.max(0, prevClockEndsAt - now);
         } else {
           clockEndsAt = rawClockEndsAt;
+          clockRemainingMs = rawClockEndsAt != null ? Math.max(0, rawClockEndsAt - now) : null;
         }
 
         const registryPatch = {
@@ -1513,6 +1529,7 @@ async function tickOnce(env, state, options = {}) {
           current_owner_name: publishedCurrentOwnerName,
           next_owner_name: publishedNextOwnerName,
           clock_ends_at: clockEndsAt,
+          clock_remaining_ms: clockRemainingMs,
           completed_at: completedAt,
         };
 
