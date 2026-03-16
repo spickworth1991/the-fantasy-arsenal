@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 const PUSH_ENDPOINT_CACHE_KEY = "tfa_push_endpoint_cache";
 const PUSH_STATUS_CACHE_KEY = "tfa_push_status_cache";
 const PUSH_CLIENT_ID_CACHE_KEY = "tfa_push_client_id";
+const PUSH_LAST_IOS_REFRESH_KEY = "tfa_push_last_ios_refresh_at";
 
 const DEFAULT_SETTINGS = {
   onClock: true,
@@ -57,13 +58,6 @@ async function getPushRegistration() {
   };
 
   try {
-    const ready = await navigator.serviceWorker.ready;
-    push(ready);
-  } catch {
-    // ignore
-  }
-
-  try {
     const direct = await navigator.serviceWorker.getRegistration("/");
     push(direct);
   } catch {
@@ -89,6 +83,18 @@ async function getPushRegistration() {
     }
   }
 
+  if (!out.length) {
+    try {
+      const ready = await Promise.race([
+        navigator.serviceWorker.ready,
+        sleep(1200).then(() => null),
+      ]);
+      push(ready);
+    } catch {
+      // ignore
+    }
+  }
+
   return out[0] || null;
 }
 
@@ -108,13 +114,6 @@ async function getRegistrationWithSubscription(options = {}) {
     };
 
     try {
-      const ready = await navigator.serviceWorker.ready;
-      remember(ready);
-    } catch {
-      // ignore
-    }
-
-    try {
       const direct = await navigator.serviceWorker.getRegistration("/");
       remember(direct);
     } catch {
@@ -126,6 +125,30 @@ async function getRegistrationWithSubscription(options = {}) {
       for (const reg of regs || []) remember(reg);
     } catch {
       // ignore
+    }
+
+    if (!checked.length) {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+        remember(reg);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!checked.length) {
+      try {
+        const ready = await Promise.race([
+          navigator.serviceWorker.ready,
+          sleep(1200).then(() => null),
+        ]);
+        remember(ready);
+      } catch {
+        // ignore
+      }
     }
 
     for (const reg of checked) {
@@ -195,6 +218,7 @@ function clearCachedEndpoint() {
   try {
     localStorage.removeItem(PUSH_ENDPOINT_CACHE_KEY);
     localStorage.removeItem(PUSH_STATUS_CACHE_KEY);
+    localStorage.removeItem(PUSH_LAST_IOS_REFRESH_KEY);
   } catch {
     // ignore
   }
@@ -202,6 +226,22 @@ function clearCachedEndpoint() {
 
 function hasAnyVisibleAlerts(s) {
   return !!(s?.onClock || s?.progress || s?.paused);
+}
+
+function readLastIosRefreshAt() {
+  try {
+    return Number(localStorage.getItem(PUSH_LAST_IOS_REFRESH_KEY) || 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeLastIosRefreshAt(ts) {
+  try {
+    localStorage.setItem(PUSH_LAST_IOS_REFRESH_KEY, String(Number(ts || Date.now())));
+  } catch {
+    // ignore
+  }
 }
 
 async function syncAppBadgeCount(count, badgesEnabled) {
@@ -290,6 +330,7 @@ export default function PushAlerts({
   const vapidKey = useMemo(() => process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, []);
   const hasNotification =
     typeof globalThis !== "undefined" && "Notification" in globalThis;
+  const isStandaloneIos = isIOSBrowser() && isStandaloneDisplay();
 
   async function clearLocalPushState(nextStatus = "idle") {
     clearCachedEndpoint();
@@ -463,6 +504,55 @@ export default function PushAlerts({
     });
   }
 
+  async function refreshIosSubscription(options = {}) {
+    const { force = false } = options || {};
+
+    if (!isStandaloneIos) return null;
+    if (!("serviceWorker" in navigator)) return null;
+    if (globalThis.Notification.permission !== "granted") return null;
+    if (!vapidKey) return null;
+
+    const now = Date.now();
+    const lastRefreshAt = readLastIosRefreshAt();
+    if (!force && lastRefreshAt > 0 && now - lastRefreshAt < 6 * 60 * 60 * 1000) {
+      return getCurrentSubscription({ retries: 2, delayMs: 250 });
+    }
+
+    const current = await getCurrentSubscription({ retries: 2, delayMs: 250 });
+    const reg = await getPushRegistration();
+    if (!reg?.pushManager) return current;
+
+    let previousEndpoint = current?.endpoint || readCachedEndpoint() || "";
+
+    if (current?.unsubscribe) {
+      try {
+        await current.unsubscribe();
+      } catch {
+        // ignore
+      }
+    }
+
+    let nextSub = null;
+    try {
+      nextSub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+    } catch {
+      nextSub = await getCurrentSubscription({ retries: 4, delayMs: 350 });
+    }
+
+    if (!nextSub?.endpoint) return current;
+
+    writeLastIosRefreshAt(now);
+    await saveSubscription(nextSub, {
+      includeUsername: true,
+      settingsOverride: settings,
+      previousEndpoint: previousEndpoint && previousEndpoint !== nextSub.endpoint ? previousEndpoint : undefined,
+    });
+    return nextSub;
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -502,9 +592,16 @@ export default function PushAlerts({
         const sub = await getCurrentSubscription({ retries: 6, delayMs: 500 });
 
         if (!cancelled && sub?.endpoint) {
+          const recoveredSub =
+            status === "enabled" || cachedStatus || isStandaloneIos
+              ? await refreshIosSubscription({
+                  force: cachedEndpoint === sub.endpoint && cachedLookup?.exists === false,
+                }).catch(() => sub)
+              : sub;
+          const liveSub = recoveredSub?.endpoint ? recoveredSub : sub;
           setHasBrowserSubscription(true);
-          setEndpoint(sub.endpoint);
-          cacheEndpoint(sub.endpoint);
+          setEndpoint(liveSub.endpoint);
+          cacheEndpoint(liveSub.endpoint);
           setStatus("enabled");
           try {
             localStorage.setItem(PUSH_STATUS_CACHE_KEY, "enabled");
@@ -512,18 +609,18 @@ export default function PushAlerts({
             // ignore
           }
           const existingSettings =
-            sub.endpoint === cachedEndpoint && cachedLookup
+            liveSub.endpoint === cachedEndpoint && cachedLookup
               ? cachedLookup.settings
               : (
-                  await fetchSettingsForSubscription(sub).catch(() => ({
+                  await fetchSettingsForSubscription(liveSub).catch(() => ({
                     settings: DEFAULT_SETTINGS,
                     exists: false,
                   }))
                 ).settings;
-          await saveSubscription(sub, {
+          await saveSubscription(liveSub, {
             includeUsername: true,
             settingsOverride: existingSettings,
-            previousEndpoint: cachedEndpoint && cachedEndpoint !== sub.endpoint ? cachedEndpoint : undefined,
+            previousEndpoint: cachedEndpoint && cachedEndpoint !== liveSub.endpoint ? cachedEndpoint : undefined,
           }).catch(() => {});
         } else if (!cancelled) {
           setHasBrowserSubscription(false);
@@ -558,7 +655,11 @@ export default function PushAlerts({
         const sub = await getCurrentSubscription({ retries: 3, delayMs: 450 });
         if (!sub?.endpoint) return;
 
-        await saveSubscription(sub, { includeUsername: true });
+        const liveSub = isStandaloneIos
+          ? await refreshIosSubscription().catch(() => sub)
+          : sub;
+
+        await saveSubscription(liveSub?.endpoint ? liveSub : sub, { includeUsername: true });
       } catch {
         // ignore
       }

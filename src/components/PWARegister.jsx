@@ -27,7 +27,8 @@ export default function PWARegister() {
       }
 
       try {
-        return await navigator.serviceWorker.ready;
+        const regs = await navigator.serviceWorker.getRegistrations();
+        return (regs || [])[0] || null;
       } catch {
         return null;
       }
