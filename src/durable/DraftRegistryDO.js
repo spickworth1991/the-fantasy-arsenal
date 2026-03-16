@@ -1440,10 +1440,57 @@ async function tickOnce(env, state, options = {}) {
         const publishedNextOwnerName = publishSyncedPickState
           ? nextOwnerName
           : (reg?.next_owner_name != null ? String(reg.next_owner_name) : null);
-        const clockEndsAt =
-          status === "complete"
-            ? null
-            : (publishedLastPicked != null && timerSec ? Number(publishedLastPicked) + Number(timerSec) * 1000 : null);
+        const prevClockEndsAt = Number.isFinite(Number(reg?.clock_ends_at))
+          ? Number(reg.clock_ends_at)
+          : null;
+        const prevCheckedAt = Number.isFinite(Number(reg?.last_checked_at))
+          ? Number(reg.last_checked_at)
+          : now;
+        const samePublishedPickState =
+          Number.isFinite(Number(reg?.pick_count)) &&
+          publishedPickCount != null &&
+          Number(reg.pick_count) === Number(publishedPickCount) &&
+          Number.isFinite(Number(reg?.current_pick)) &&
+          publishedCurrentPick != null &&
+          Number(reg.current_pick) === Number(publishedCurrentPick) &&
+          String(reg?.current_owner_name || "") === String(publishedCurrentOwnerName || "");
+        const rawClockEndsAt =
+          publishedLastPicked != null && timerSec
+            ? Number(publishedLastPicked) + Number(timerSec) * 1000
+            : null;
+        let clockEndsAt = null;
+
+        if (status === "complete") {
+          clockEndsAt = null;
+        } else if (status === "paused") {
+          let frozenRemainingMs = null;
+
+          if (prevStatus === "paused" && prevClockEndsAt != null) {
+            frozenRemainingMs = Math.max(0, prevClockEndsAt - prevCheckedAt);
+          } else if (prevClockEndsAt != null) {
+            frozenRemainingMs = Math.max(0, prevClockEndsAt - now);
+          } else if (rawClockEndsAt != null) {
+            frozenRemainingMs = Math.max(0, rawClockEndsAt - now);
+          }
+
+          clockEndsAt = frozenRemainingMs == null ? rawClockEndsAt : now + frozenRemainingMs;
+        } else if (
+          status === "drafting" &&
+          prevStatus === "paused" &&
+          prevClockEndsAt != null
+        ) {
+          const resumedRemainingMs = Math.max(0, prevClockEndsAt - prevCheckedAt);
+          clockEndsAt = now + resumedRemainingMs;
+        } else if (
+          status === "drafting" &&
+          prevStatus === "drafting" &&
+          prevClockEndsAt != null &&
+          samePublishedPickState
+        ) {
+          clockEndsAt = prevClockEndsAt;
+        } else {
+          clockEndsAt = rawClockEndsAt;
+        }
 
         const registryPatch = {
           active: isActive ? 1 : 0,

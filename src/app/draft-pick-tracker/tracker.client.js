@@ -547,8 +547,13 @@ export default function DraftPickTrackerClient() {
 
         const lastPickedMs = safeNum(draft?.last_picked || reg?.last_picked || 0);
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
+        const registryClockEndsAt = safeNum(reg?.clockEndsAt ?? reg?.clock_ends_at ?? 0);
         const clockEndsAt =
-          draftStatus === "drafting" && lastPickedMs > 0 && totalMs > 0 ? lastPickedMs + totalMs : 0;
+          registryClockEndsAt > 0
+            ? registryClockEndsAt
+            : draftStatus === "drafting" && lastPickedMs > 0 && totalMs > 0
+            ? lastPickedMs + totalMs
+            : 0;
         const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
 
         const perPickMs = totalMs > 0 ? totalMs : 90 * 1000;
