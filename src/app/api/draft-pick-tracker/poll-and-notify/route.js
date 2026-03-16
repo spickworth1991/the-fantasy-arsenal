@@ -1437,6 +1437,10 @@ async function handler(req) {
         if (!isPaused && rawRemainingMs > 0 && remainingMs <= 0) {
           remainingMs = rawRemainingMs;
         }
+        const hasReliableActiveClock =
+          isPaused
+            ? totalMs > 0 && remainingMs >= 0
+            : totalMs > 0 && rawClockEndsAt > 0 && remainingMs > 0;
         onClockSnapshot.push({
           draftId: String(draftId),
           leagueName: String(reg?.league_name || "your league"),
@@ -1480,7 +1484,8 @@ async function handler(req) {
         const sent5 = baseFlags.sent_5min === 1;
         const sentUrgent = baseFlags.sent_urgent === 1;
         const sentFinal = baseFlags.sent_final === 1;
-        const reachedNow = totalMs > 0 ? getReachedStageFlags(totalMs, remainingMs) : null;
+        const reachedNow =
+          hasReliableActiveClock && totalMs > 0 ? getReachedStageFlags(totalMs, remainingMs) : null;
         const catchupStage =
           !isNewPick && !sentOnclock
             ? pickCurrentReachedStage(reachedNow, totalMs, remainingMs)
@@ -1500,12 +1505,12 @@ async function handler(req) {
           if (transitionedToPaused || isNewPick || !sentPaused || appleRetryPaused) stageToSend = "paused";
         } else {
           if (transitionedFromPaused || appleRetryUnpaused) {
-            stageToSend = "unpaused";
+            if (hasReliableActiveClock) stageToSend = "unpaused";
           } else if (catchupStage) {
             stageToSend = catchupStage;
-          } else if (isNewPick || !sentOnclock || appleRetryOnclock) {
+          } else if ((isNewPick || !sentOnclock || appleRetryOnclock) && hasReliableActiveClock) {
             stageToSend = "onclock";
-          } else if (totalMs > 0) {
+          } else if (hasReliableActiveClock && totalMs > 0) {
             const usedFrac = 1 - remainingMs / totalMs;
 
             if (remainingMs <= 120000 && !sentUrgent) {
