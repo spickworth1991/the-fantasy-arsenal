@@ -32,6 +32,22 @@ function getDb(env) {
   return env?.PUSH_DB;
 }
 
+async function ensureDraftRegistryColumns(db) {
+  try {
+    const info = await db.prepare(`PRAGMA table_info(push_draft_registry)`).all();
+    const existing = new Set((info?.results || []).map((row) => String(row?.name || "")));
+    const add = async (name, type) => {
+      if (!existing.has(name)) {
+        await db.prepare(`ALTER TABLE push_draft_registry ADD COLUMN ${name} ${type}`).run();
+      }
+    };
+    await add("clock_remaining_ms", "INTEGER");
+    await add("clock_anchor_at", "INTEGER");
+  } catch {
+    // ignore
+  }
+}
+
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -71,6 +87,7 @@ export async function GET(req) {
         { status: 500 }
       );
     }
+    await ensureDraftRegistryColumns(db);
     const idsRaw = url.searchParams.get("ids") || url.searchParams.get("draft_ids") || "";
     const activeOnly = url.searchParams.get("active") === "1";
     const lite = url.searchParams.get("lite") === "1";
@@ -92,7 +109,7 @@ export async function GET(req) {
                   slot_to_roster_json, roster_names_json, roster_by_username_json,
                   traded_pick_owner_json, teams, rounds, timer_sec, reversal_round,
                   league_id, league_name, league_avatar, best_ball,
-                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms, clock_anchor_at,
                   completed_at, updated_at
            FROM push_draft_registry
            WHERE active = 1
@@ -127,6 +144,7 @@ export async function GET(req) {
           next_owner_name: row.next_owner_name || null,
           clock_ends_at: row.clock_ends_at == null ? null : Number(row.clock_ends_at),
           clock_remaining_ms: row.clock_remaining_ms == null ? null : Number(row.clock_remaining_ms),
+          clock_anchor_at: row.clock_anchor_at == null ? null : Number(row.clock_anchor_at),
           completed_at: row.completed_at == null ? null : Number(row.completed_at),
           updated_at: row.updated_at == null ? null : Number(row.updated_at),
         };
@@ -142,7 +160,7 @@ export async function GET(req) {
                   slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                   teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
                   best_ball,
-                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms, clock_anchor_at,
                   completed_at, updated_at
            FROM push_draft_registry
            WHERE draft_id IN (${Array.from({ length: count }, () => "?").join(",")})`
@@ -150,7 +168,7 @@ export async function GET(req) {
                   slot_to_roster_json, roster_names_json, roster_by_username_json, traded_pick_owner_json,
                   teams, rounds, timer_sec, reversal_round, league_id, league_name, league_avatar,
                   best_ball,
-                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms,
+                  current_pick, current_owner_name, next_owner_name, clock_ends_at, clock_remaining_ms, clock_anchor_at,
                   completed_at, updated_at
            FROM push_draft_registry
            WHERE draft_id IN (${Array.from({ length: count }, () => "?").join(",")})`;
@@ -205,6 +223,7 @@ export async function GET(req) {
         nextOwnerName: r.next_owner_name || null,
         clockEndsAt: r.clock_ends_at == null ? null : Number(r.clock_ends_at),
         clockRemainingMs: r.clock_remaining_ms == null ? null : Number(r.clock_remaining_ms),
+        clockAnchorAt: r.clock_anchor_at == null ? null : Number(r.clock_anchor_at),
         draft,
         // parsed maps (used by UI)
         slotToRoster: safeJsonParse(r.slot_to_roster_json) || {},

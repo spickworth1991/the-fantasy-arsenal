@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { buildWebPushRequest } from "../../../../lib/webpush";
+import { getDraftClockState } from "../../../../lib/draftClock";
 
 const DEFAULT_PUSH_SETTINGS = {
   onClock: true,
@@ -697,6 +698,8 @@ async function ensureDraftRegistryTable(db) {
       { name: "current_pick", type: "INTEGER" },
       { name: "current_owner_name", type: "TEXT" },
       { name: "clock_ends_at", type: "INTEGER" },
+      { name: "clock_remaining_ms", type: "INTEGER" },
+      { name: "clock_anchor_at", type: "INTEGER" },
       { name: "roster_names_json", type: "TEXT" },
       { name: "roster_by_username_json", type: "TEXT" },
     ]
@@ -760,7 +763,7 @@ async function loadRegistryRowsMap(db, draftIds) {
     const rows = await db
       .prepare(
         `SELECT draft_id, active, status, league_name, league_id, league_avatar,
-                last_picked, pick_count, timer_sec, current_pick, current_owner_name, clock_ends_at, clock_remaining_ms,
+                last_picked, pick_count, timer_sec, current_pick, current_owner_name, clock_ends_at, clock_remaining_ms, clock_anchor_at,
                 roster_names_json, roster_by_username_json
          FROM push_draft_registry
          WHERE draft_id IN (${qs})`
@@ -1398,58 +1401,14 @@ async function handler(req) {
 
         const timerSec = Number(reg?.timer_sec || 0);
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
-        const draftClockLastPicked = Number(reg?.last_picked || 0);
-        const draftingClockEndsAt =
-          status !== "paused" && totalMs > 0 && draftClockLastPicked > 0
-            ? draftClockLastPicked + totalMs
-            : 0;
-        const registryClockRemainingMs = Number(reg?.clock_remaining_ms || 0);
-        const rawRemainingMs =
-          draftingClockEndsAt > 0
-            ? Math.max(0, draftingClockEndsAt - now)
-            : status === "paused" && registryClockRemainingMs > 0
-            ? registryClockRemainingMs
-            : 0;
-
-        const frozenPausedRemaining = Number(clockState?.paused_remaining_ms);
-        const pausedRemainingKnown = Number.isFinite(frozenPausedRemaining);
-        const resumeClockStartMs = Number(clockState?.resume_clock_start_ms);
-        const resumeStartKnown = Number.isFinite(resumeClockStartMs);
-
         const wasPaused = prevStatus === "paused";
         const isPaused = status === "paused";
-        let resumeClockLooksFresh = false;
-
-        let remainingMs = rawRemainingMs;
-
-        if (isPaused) {
-          remainingMs = pausedRemainingKnown ? frozenPausedRemaining : rawRemainingMs;
-        } else if (wasPaused && pausedRemainingKnown) {
-          if (resumeStartKnown) {
-            remainingMs = Math.max(
-              0,
-              frozenPausedRemaining - Math.max(0, now - resumeClockStartMs)
-            );
-          } else {
-            remainingMs = frozenPausedRemaining;
-          }
-        }
-
-        if (!isPaused && wasPaused && rawRemainingMs > 0) {
-          const resumedGapMs = rawRemainingMs - remainingMs;
-          if (remainingMs <= 0 || resumedGapMs > 90_000) {
-            remainingMs = rawRemainingMs;
-            resumeClockLooksFresh = true;
-          }
-        }
-
-        if (!isPaused && rawRemainingMs > 0 && remainingMs <= 0) {
-          remainingMs = rawRemainingMs;
-        }
+        const clockInfo = getDraftClockState(reg, now);
+        const remainingMs = Number.isFinite(Number(clockInfo?.remainingMs))
+          ? Number(clockInfo.remainingMs)
+          : 0;
         const hasReliableActiveClock =
-          isPaused
-            ? totalMs > 0 && remainingMs >= 0
-            : totalMs > 0 && draftingClockEndsAt > 0 && remainingMs > 0;
+          isPaused ? totalMs > 0 && remainingMs >= 0 : totalMs > 0 && remainingMs > 0;
         onClockSnapshot.push({
           draftId: String(draftId),
           leagueName: String(reg?.league_name || "your league"),
@@ -1459,28 +1418,9 @@ async function handler(req) {
         });
 
         const baseFlags = makeBaseFlags(clockState, nextPickNo, status, isNewPick);
-
-        if (isPaused) {
-          baseFlags.paused_remaining_ms = pausedRemainingKnown
-            ? frozenPausedRemaining
-            : remainingMs;
-          baseFlags.paused_at_ms = Number.isFinite(Number(clockState?.paused_at_ms))
-            ? Number(clockState.paused_at_ms)
-            : now;
-          baseFlags.resume_clock_start_ms = null;
-        } else if (wasPaused && pausedRemainingKnown) {
-          if (resumeClockLooksFresh) {
-            baseFlags.paused_remaining_ms = null;
-            baseFlags.paused_at_ms = null;
-            baseFlags.resume_clock_start_ms = null;
-          } else {
-            baseFlags.paused_remaining_ms = frozenPausedRemaining;
-            baseFlags.paused_at_ms = Number.isFinite(Number(clockState?.paused_at_ms))
-              ? Number(clockState.paused_at_ms)
-              : null;
-            baseFlags.resume_clock_start_ms = resumeStartKnown ? resumeClockStartMs : now;
-          }
-        }
+        baseFlags.paused_remaining_ms = null;
+        baseFlags.paused_at_ms = null;
+        baseFlags.resume_clock_start_ms = null;
 
         let stageToSend = null;
 

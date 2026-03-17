@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
+import { getDraftClockState } from "../../lib/draftClock";
 
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
@@ -545,13 +546,19 @@ export default function DraftPickTrackerClient() {
         const picksUntilMyPick =
           myNextPickOverall != null ? Math.max(0, myNextPickOverall - currentPick) : null;
 
-        const lastPickedMs = safeNum(draft?.last_picked || reg?.last_picked || 0);
         const totalMs = timerSec > 0 ? timerSec * 1000 : 0;
-        const clockEndsAt =
-          draftStatus === "drafting" && lastPickedMs > 0 && totalMs > 0
-            ? lastPickedMs + totalMs
-            : 0;
-        const clockLeftMs = clockEndsAt > 0 ? Math.max(0, clockEndsAt - nowMs) : 0;
+        const clockState = getDraftClockState(
+          {
+            status: draftStatus,
+            timerSec,
+            lastPicked: draft?.last_picked || reg?.last_picked || 0,
+            clockAnchorAt: reg?.clockAnchorAt ?? reg?.clock_anchor_at ?? 0,
+            clockRemainingMs: reg?.clockRemainingMs ?? reg?.clock_remaining_ms ?? 0,
+            clockEndsAt: reg?.clockEndsAt ?? reg?.clock_ends_at ?? 0,
+          },
+          nowMs
+        );
+        const clockLeftMs = safeNum(clockState?.remainingMs);
 
         const perPickMs = totalMs > 0 ? totalMs : 90 * 1000;
         let etaMs = 0;
