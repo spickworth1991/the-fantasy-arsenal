@@ -945,6 +945,18 @@ function makeBaseFlags(clockState, nextPickNo, status, isNewPick) {
   };
 }
 
+function buildMoreLeaguesSuffix(onClockSnapshot, options = {}) {
+  const { excludeDraftIds = [] } = options || {};
+  const exclude = new Set(
+    (Array.isArray(excludeDraftIds) ? excludeDraftIds : []).map((x) => String(x || ""))
+  );
+  const count = (Array.isArray(onClockSnapshot) ? onClockSnapshot : []).filter(
+    (x) => !exclude.has(String(x?.draftId || ""))
+  ).length;
+  if (count <= 0) return "";
+  return `+${count} more ${count === 1 ? "league" : "leagues"} on the clock.`;
+}
+
 function shouldRetryAppleVisibleStage(clockState, stage, now) {
   const prevStage = String(clockState?.last_visible_stage || "");
   const prevSentAt = Number(clockState?.last_visible_sent_at || 0);
@@ -1625,12 +1637,16 @@ async function handler(req) {
           return;
         }
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
-        const alsoUpSummary = buildAlsoUpSummary(onClockSnapshot, {
-          excludeDraftIds: [ev.draftId],
-        });
-        const bodyWithSummary = alsoUpSummary
-          ? `${ev.body} ${alsoUpSummary}`
-          : ev.body;
+        const compactMoreSuffix =
+          ev.stage === "urgent" ||
+          ev.stage === "five" ||
+          ev.stage === "p25" ||
+          ev.stage === "final"
+            ? buildMoreLeaguesSuffix(onClockSnapshot, {
+                excludeDraftIds: [ev.draftId],
+              })
+            : "";
+        const bodyWithSummary = compactMoreSuffix ? `${ev.body} ${compactMoreSuffix}` : ev.body;
         const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
 
         visibleSendAttemptCount++;
@@ -1744,113 +1760,8 @@ async function handler(req) {
         return (a.remainingMs || 0) - (b.remainingMs || 0);
       });
 
-      const anyUrgent = sorted.some((x) => isUrg(x));
-      const title = buildGroupedTitle(sorted);
-
-      const summaryIcon = sorted.find((x) => x.icon)?.icon || null;
-
-      const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
-      if (isAppleEndpoint) {
-        const appleOrderedEvents = events.slice().sort((a, b) => {
-          const aVisible = shouldSendStageForSettings(a.stage, s.settings) ? 1 : 0;
-          const bVisible = shouldSendStageForSettings(b.stage, s.settings) ? 1 : 0;
-          if (aVisible !== bVisible) return bVisible - aVisible;
-
-          const au = isUrg(a) ? 1 : 0;
-          const bu = isUrg(b) ? 1 : 0;
-          if (au !== bu) return bu - au;
-
-          const ap = isPausedStage(a) ? 1 : 0;
-          const bp = isPausedStage(b) ? 1 : 0;
-          if (ap !== bp) return ap - bp;
-
-          const ar = isResumedStage(a) ? 1 : 0;
-          const br = isResumedStage(b) ? 1 : 0;
-          if (ar !== br) return br - ar;
-
-          return (a.remainingMs || 0) - (b.remainingMs || 0);
-        });
-
-        for (const ev of appleOrderedEvents) {
-          await sendIndividual(ev);
-        }
-        stateWriteCount += stateStatements.length;
-        clearWriteCount += clearStatements.length;
-        badgeWriteCount += badgeStatements.length;
-        deleteSubWriteCount += deleteSubStatements.length;
-        await batchRun(db, [...clearStatements, ...stateStatements, ...badgeStatements, ...deleteSubStatements]);
-        continue;
-      }
-      visibleSendAttemptCount++;
-      const pushRes = await sendPayload(s, {
-        title,
-        body: [
-          `Triggered: ${sorted
-            .slice(0, 3)
-            .map((ev) => {
-              const lbl = stageLabel(ev.stage);
-              const showTime =
-                ev.stage !== "paused" &&
-                ev.stage !== "unpaused" &&
-                ev.remainingMs > 0;
-              const t = showTime ? ` ${msToClock(ev.remainingMs)}` : "";
-              return `${ev.leagueName} ${lbl}${t}`;
-            })
-            .join(" | ")}${sorted.length > 3 ? ` +${sorted.length - 3} more` : ""}`,
-          buildAlsoUpSummary(onClockSnapshot, {
-            excludeDraftIds: sorted.map((ev) => ev.draftId),
-          }),
-        ].filter(Boolean).join(" "),
-        url: "/draft-pick-tracker",
-        tag: isAppleEndpoint ? undefined : buildGroupedNotificationTag(sorted, anyUrgent),
-        renotify: isAppleEndpoint ? undefined : true,
-        icon: summaryIcon,
-        badge: isAppleEndpoint ? undefined : "/android-chrome-192x192.png",
-        appBadgeCount: activeBadgeCount,
-        clearAppBadge: activeBadgeCount <= 0,
-        badgesEnabled: !!s.settings?.badges,
-        requireInteraction: isAppleEndpoint ? undefined : (anyUrgent ? true : undefined),
-        vibrate: isAppleEndpoint ? undefined : (anyUrgent ? [100, 60, 100, 60, 180] : undefined),
-        data: {
-          url: "/draft-pick-tracker",
-          summary: true,
-          count: sorted.length,
-          urgent: anyUrgent ? 1 : 0,
-        },
-        actions: isAppleEndpoint ? undefined : [{ action: "open_tracker", title: "Open Tracker" }],
-      });
-
-      pushDebug({ endpoint: s.endpoint, username: s.username, send: "grouped", stages: sorted.map((ev) => ev.stage), draftIds: sorted.map((ev) => ev.draftId), pickNos: sorted.map((ev) => ev.pickNo), result: pushRes });
-
-      if (pushRes?.ok) {
-        sent++;
-        for (const ev of events) {
-          const prevClockState = clockStateMap.get(String(ev.draftId)) || null;
-          const nextState = shouldSendStageForSettings(ev.stage, s.settings)
-            ? applyVisibleDeliveryState(prevClockState, ev.nextFlags, ev.stage, now)
-            : ev.baseFlags;
-          if (shouldPersistClockState(prevClockState, nextState)) {
-            stateStatements.push(buildClockStateStmt(db, s.endpoint, ev.draftId, nextState));
-          }
-        }
-        if (shouldBadge && Number(s.lastBadgeCount || 0) !== activeBadgeCount) {
-          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, activeBadgeCount));
-        } else if (Number(s.lastBadgeCount || 0) !== 0) {
-          badgeStatements.push(buildBadgeSyncStmt(s.endpoint, 0));
-        }
-      } else if (pushRes?.status === 404 || pushRes?.status === 410) {
-        visibleSendFailureCount++;
-        deleteSubStatements.push(
-          db.prepare(`DELETE FROM push_subscriptions WHERE endpoint=?`).bind(s.endpoint)
-        );
-        deleteSubStatements.push(
-          db.prepare(`DELETE FROM push_clock_state WHERE endpoint=?`).bind(s.endpoint)
-        );
-        for (const ev of events) {
-          clearStatements.push(buildClearClockStateStmt(db, s.endpoint, ev.draftId));
-        }
-      } else {
-        visibleSendFailureCount++;
+      for (const ev of sorted) {
+        await sendIndividual(ev);
       }
 
       stateWriteCount += stateStatements.length;
