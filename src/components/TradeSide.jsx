@@ -1,4 +1,4 @@
-import { toSlug } from "../utils/slugify";
+import AvatarImage from "./AvatarImage";
 
 export default function TradeSide({
   title,
@@ -17,17 +17,18 @@ export default function TradeSide({
           <li className="text-gray-400 text-center mb-4">No players added yet.</li>
         ) : (
           players.map((p, i) => {
-            const avatar = `/avatars/${toSlug(p.full_name)}.webp`;
             return (
               <li
                 key={i}
                 className="flex items-center justify-between mb-2 bg-gray-800 p-2 rounded"
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src={avatar}
-                    onError={(e) => (e.target.src = "/avatars/default.webp")}
+                  <AvatarImage
+                    name={p.full_name}
+                    playerId={p.player_id}
                     alt={p.full_name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <div>
@@ -58,16 +59,17 @@ export default function TradeSide({
           <h3 className="text-lg font-semibold mb-2">Suggested Adds</h3>
           <div className="grid grid-cols-2 gap-2">
             {suggestedPlayers.map((p) => {
-              const avatar = `/avatars/${toSlug(p.full_name)}.webp`;
               return (
                 <div
                   key={p.player_id}
                   className="bg-gray-800 p-2 rounded flex items-center justify-between"
                 >
-                  <img
-                    src={avatar}
-                    onError={(e) => (e.target.src = "/avatars/default.webp")}
+                  <AvatarImage
+                    name={p.full_name}
+                    playerId={p.player_id}
                     alt={p.full_name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
                   />
                   <div className="ml-2 flex-1">

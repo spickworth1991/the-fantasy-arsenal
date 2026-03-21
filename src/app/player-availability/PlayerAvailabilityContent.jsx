@@ -21,6 +21,14 @@ const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
 
 function localPlayerAvatarUrl(player) {
+  const pid =
+    player?.player_id != null && /^\d+$/.test(String(player.player_id))
+      ? String(player.player_id)
+      : player?.id != null && /^\d+$/.test(String(player.id))
+      ? String(player.id)
+      : "";
+  if (pid) return `https://sleepercdn.com/content/nfl/players/thumb/${pid}.jpg`;
+
   const name =
     player?.full_name ||
     player?.name ||

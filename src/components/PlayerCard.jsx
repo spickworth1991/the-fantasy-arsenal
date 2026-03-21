@@ -1,15 +1,15 @@
-import { toSlug } from "../utils/slugify";
+import AvatarImage from "./AvatarImage";
 
 export default function PlayerCard({ player, onAddA, onAddB, value }) {
-  const avatar = `/avatars/${toSlug(player.full_name)}.webp`;
-
   return (
     <div className="bg-gray-800 rounded-lg p-4 text-center shadow hover:scale-105 transition hover:neon-hover">
-      <img
-        src={avatar}
+      <AvatarImage
+        name={player.full_name}
+        playerId={player.player_id}
         alt={player.full_name}
+        width={64}
+        height={64}
         className="w-16 h-16 rounded-full mx-auto mb-2 object-cover"
-        onError={(e) => (e.target.src = "/avatars/default.webp")}
       />
       <h3 className="font-bold">{player.full_name}</h3>
       <p className="text-gray-400">
