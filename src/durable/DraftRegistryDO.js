@@ -1518,14 +1518,12 @@ async function tickOnce(env, state, options = {}) {
             prevClockRemainingMs != null &&
             samePublishedTurn
           ) {
-            clockRemainingMs = Math.max(
-              0,
-              prevClockRemainingMs - Math.max(0, now - prevClockAnchorAt)
-            );
-            // `clock_remaining_ms` is interpreted relative to `clock_anchor_at`,
-            // so once we decay the remaining clock to "now" we must also move
-            // the anchor forward to avoid subtracting elapsed time again.
-            clockAnchorAt = now;
+            // Keep the stored drafting snapshot stable across ordinary refreshes.
+            // Consumers already compute the live countdown from this anchor.
+            // Re-decaying it here would both drift the displayed clock and
+            // force a write on every tick.
+            clockRemainingMs = Math.max(0, prevClockRemainingMs);
+            clockAnchorAt = prevClockAnchorAt;
           } else if (publishedLastPicked != null && timerSec) {
             clockRemainingMs = Number(timerSec) * 1000;
             clockAnchorAt = Number(publishedLastPicked);
