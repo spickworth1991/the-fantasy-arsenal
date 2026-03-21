@@ -9,10 +9,77 @@ const PUSH_LAST_IOS_REFRESH_KEY = "tfa_push_last_ios_refresh_at";
 
 const DEFAULT_SETTINGS = {
   onClock: true,
-  progress: true,
+  half: true,
+  quarter: true,
+  tenMin: true,
+  fiveMin: true,
+  urgent: true,
+  final: true,
   paused: true,
+  resumed: true,
   badges: true,
 };
+
+const VISIBLE_ALERT_SETTING_KEYS = [
+  "onClock",
+  "half",
+  "quarter",
+  "tenMin",
+  "fiveMin",
+  "urgent",
+  "final",
+  "paused",
+  "resumed",
+];
+
+const SETTINGS_SECTIONS = [
+  {
+    title: "Pick Events",
+    items: [
+      { key: "onClock", label: "On-clock alerts", hint: "When a league reaches your pick." },
+      { key: "paused", label: "Paused while on clock", hint: "When your active pick gets paused." },
+      { key: "resumed", label: "Resumed while on clock", hint: "When your paused pick resumes." },
+    ],
+  },
+  {
+    title: "Timer Warnings",
+    items: [
+      { key: "half", label: "Halfway", hint: "50% of the clock used." },
+      { key: "quarter", label: "25% left", hint: "Last quarter of the timer." },
+      { key: "tenMin", label: "10 min left", hint: "Ten-minute warning." },
+      { key: "fiveMin", label: "5 min left", hint: "Five-minute warning." },
+      { key: "urgent", label: "Urgent", hint: "Under two minutes remaining." },
+      { key: "final", label: "Final warning", hint: "End-of-clock last call." },
+    ],
+  },
+  {
+    title: "App State",
+    items: [
+      { key: "badges", label: "App icon badges", hint: "Keep the home-screen badge in sync." },
+    ],
+  },
+];
+
+function normalizeClientSettings(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const has = (key) => Object.prototype.hasOwnProperty.call(source, key);
+  const legacyProgress = has("progress") ? !!source.progress : null;
+  const legacyPaused = has("paused") ? !!source.paused : null;
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...source,
+    half: has("half") ? !!source.half : legacyProgress ?? DEFAULT_SETTINGS.half,
+    quarter: has("quarter") ? !!source.quarter : legacyProgress ?? DEFAULT_SETTINGS.quarter,
+    tenMin: has("tenMin") ? !!source.tenMin : legacyProgress ?? DEFAULT_SETTINGS.tenMin,
+    fiveMin: has("fiveMin") ? !!source.fiveMin : legacyProgress ?? DEFAULT_SETTINGS.fiveMin,
+    urgent: has("urgent") ? !!source.urgent : legacyProgress ?? DEFAULT_SETTINGS.urgent,
+    final: has("final") ? !!source.final : legacyProgress ?? DEFAULT_SETTINGS.final,
+    paused: has("paused") ? !!source.paused : legacyPaused ?? DEFAULT_SETTINGS.paused,
+    resumed: has("resumed") ? !!source.resumed : legacyPaused ?? DEFAULT_SETTINGS.resumed,
+    badges: has("badges") ? !!source.badges : DEFAULT_SETTINGS.badges,
+  };
+}
 
 function isMobileBrowser() {
   if (typeof window === "undefined") return false;
@@ -225,7 +292,8 @@ function clearCachedEndpoint() {
 }
 
 function hasAnyVisibleAlerts(s) {
-  return !!(s?.onClock || s?.progress || s?.paused);
+  const settings = normalizeClientSettings(s);
+  return VISIBLE_ALERT_SETTING_KEYS.some((key) => !!settings?.[key]);
 }
 
 function readLastIosRefreshAt() {
@@ -313,7 +381,7 @@ export default function PushAlerts({
   const [msg, setMsg] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState(() => normalizeClientSettings(DEFAULT_SETTINGS));
   const [endpoint, setEndpoint] = useState("");
   const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
@@ -346,20 +414,17 @@ export default function PushAlerts({
         ? subscriptionOrEndpoint
         : subscriptionOrEndpoint?.endpoint;
 
-    if (!nextEndpoint) return { settings: DEFAULT_SETTINGS, exists: false };
+    if (!nextEndpoint) return { settings: normalizeClientSettings(DEFAULT_SETTINGS), exists: false };
 
     const res = await fetch(
       `/api/push/settings?endpoint=${encodeURIComponent(nextEndpoint)}`,
       { cache: "no-store" }
     );
 
-    if (!res.ok) return { settings: DEFAULT_SETTINGS, exists: false };
+    if (!res.ok) return { settings: normalizeClientSettings(DEFAULT_SETTINGS), exists: false };
 
     const json = await res.json().catch(() => ({}));
-    const next = {
-      ...DEFAULT_SETTINGS,
-      ...(json?.settings && typeof json.settings === "object" ? json.settings : {}),
-    };
+    const next = normalizeClientSettings(json?.settings);
 
     setSettings(next);
     setEndpoint(nextEndpoint);
@@ -386,7 +451,7 @@ export default function PushAlerts({
       if (cached) {
         if (validateCached) {
           const lookup = await fetchSettingsForSubscription(cached).catch(() => ({
-            settings: DEFAULT_SETTINGS,
+            settings: normalizeClientSettings(DEFAULT_SETTINGS),
             exists: false,
           }));
           if (!lookup?.exists) {
@@ -409,10 +474,7 @@ export default function PushAlerts({
     const subEndpoint = subscription?.endpoint;
     if (!subEndpoint) return;
 
-    const effectiveSettings = {
-      ...DEFAULT_SETTINGS,
-      ...(settingsOverride || settings || {}),
-    };
+    const effectiveSettings = normalizeClientSettings(settingsOverride || settings || DEFAULT_SETTINGS);
 
     const payload = {
       subscription,
@@ -459,7 +521,9 @@ export default function PushAlerts({
   }
 
   async function persistSettings(nextSettings) {
-    if (nextSettings.badges && !hasAnyVisibleAlerts(nextSettings)) {
+    const normalizedSettings = normalizeClientSettings(nextSettings);
+
+    if (normalizedSettings.badges && !hasAnyVisibleAlerts(normalizedSettings)) {
       throw new Error(
         "Badges alone may not update reliably on all devices. Turn on at least one notification type too. Recommended: On-clock alerts."
       );
@@ -481,7 +545,7 @@ export default function PushAlerts({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         endpoint: resolved.endpoint,
-        settings: nextSettings,
+        settings: normalizedSettings,
       }),
     });
 
@@ -490,14 +554,14 @@ export default function PushAlerts({
       throw new Error(t || "Failed to save settings");
     }
 
-    setSettings(nextSettings);
+    setSettings(normalizedSettings);
     await postMessageToServiceWorker({
       type: "TFA_PUSH_CONTEXT_SAVE",
       context: {
         endpoint: resolved.endpoint,
         username,
         draftIds: chosenDraftIds,
-        settings: nextSettings,
+        settings: normalizedSettings,
         clientId: clientId || undefined,
         vapidPublicKey: vapidKey || "",
       },
@@ -576,7 +640,7 @@ export default function PushAlerts({
           if (cachedStatus) {
             setStatus("enabled");
             cachedLookup = await fetchSettingsForSubscription(cachedEndpoint).catch(() => ({
-              settings: DEFAULT_SETTINGS,
+              settings: normalizeClientSettings(DEFAULT_SETTINGS),
               exists: false,
             }));
           } else {
@@ -612,8 +676,8 @@ export default function PushAlerts({
             liveSub.endpoint === cachedEndpoint && cachedLookup
               ? cachedLookup.settings
               : (
-                  await fetchSettingsForSubscription(liveSub).catch(() => ({
-                    settings: DEFAULT_SETTINGS,
+                await fetchSettingsForSubscription(liveSub).catch(() => ({
+                    settings: normalizeClientSettings(DEFAULT_SETTINGS),
                     exists: false,
                   }))
                 ).settings;
@@ -772,10 +836,11 @@ export default function PushAlerts({
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         }));
 
-      const normalizedSettings =
+      const normalizedSettings = normalizeClientSettings(
         settings.badges && !hasAnyVisibleAlerts(settings)
           ? { ...settings, onClock: true }
-          : settings;
+          : settings
+      );
 
       await saveSubscription(sub, {
         includeUsername: true,
@@ -826,7 +891,7 @@ export default function PushAlerts({
 
       await clearLocalPushState("idle");
       setSettingsOpen(false);
-      setSettings(DEFAULT_SETTINGS);
+      setSettings(normalizeClientSettings(DEFAULT_SETTINGS));
       setMsg("Alerts disabled for this device.");
     } catch (e) {
       console.error(e);
@@ -838,7 +903,7 @@ export default function PushAlerts({
 
   async function handleToggle(key) {
     const prev = settings;
-    const next = { ...settings, [key]: !settings[key] };
+    const next = normalizeClientSettings({ ...settings, [key]: !settings[key] });
 
     if (next.badges && !hasAnyVisibleAlerts(next)) {
       setMsg(
@@ -957,46 +1022,33 @@ export default function PushAlerts({
             This device
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
-              <span>On-clock alerts</span>
-              <input
-                type="checkbox"
-                checked={!!settings.onClock}
-                onChange={() => handleToggle("onClock")}
-                disabled={saving}
-              />
-            </label>
-
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
-              <span>Progress alerts</span>
-              <input
-                type="checkbox"
-                checked={!!settings.progress}
-                onChange={() => handleToggle("progress")}
-                disabled={saving}
-              />
-            </label>
-
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
-              <span>Paused / resumed</span>
-              <input
-                type="checkbox"
-                checked={!!settings.paused}
-                onChange={() => handleToggle("paused")}
-                disabled={saving}
-              />
-            </label>
-
-            <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
-              <span>App icon badges</span>
-              <input
-                type="checkbox"
-                checked={!!settings.badges}
-                onChange={() => handleToggle("badges")}
-                disabled={saving}
-              />
-            </label>
+          <div className="space-y-3">
+            {SETTINGS_SECTIONS.map((section) => (
+              <div key={section.title}>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+                  {section.title}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {section.items.map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex items-start justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                    >
+                      <span>
+                        <div>{item.label}</div>
+                        <div className="text-[11px] text-white/50">{item.hint}</div>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={!!settings[item.key]}
+                        onChange={() => handleToggle(item.key)}
+                        disabled={saving}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-white/60">

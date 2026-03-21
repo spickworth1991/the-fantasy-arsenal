@@ -7,8 +7,14 @@ import { getDraftClockState } from "../../../../lib/draftClock";
 
 const DEFAULT_PUSH_SETTINGS = {
   onClock: true,
-  progress: true,
+  half: true,
+  quarter: true,
+  tenMin: true,
+  fiveMin: true,
+  urgent: true,
+  final: true,
   paused: true,
+  resumed: true,
   badges: true,
 };
 const PICK_SYNC_GRACE_MS = 45_000;
@@ -16,9 +22,22 @@ const APPLE_VISIBLE_RETRY_MS = 3 * 60 * 1000;
 const APPLE_VISIBLE_MAX_RETRIES = 0;
 
 function normalizePushSettings(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const has = (key) => Object.prototype.hasOwnProperty.call(source, key);
+  const legacyProgress = has("progress") ? !!source.progress : null;
+  const legacyPaused = has("paused") ? !!source.paused : null;
+
   return {
     ...DEFAULT_PUSH_SETTINGS,
-    ...(input && typeof input === "object" ? input : {}),
+    ...source,
+    half: has("half") ? !!source.half : legacyProgress ?? DEFAULT_PUSH_SETTINGS.half,
+    quarter: has("quarter") ? !!source.quarter : legacyProgress ?? DEFAULT_PUSH_SETTINGS.quarter,
+    tenMin: has("tenMin") ? !!source.tenMin : legacyProgress ?? DEFAULT_PUSH_SETTINGS.tenMin,
+    fiveMin: has("fiveMin") ? !!source.fiveMin : legacyProgress ?? DEFAULT_PUSH_SETTINGS.fiveMin,
+    urgent: has("urgent") ? !!source.urgent : legacyProgress ?? DEFAULT_PUSH_SETTINGS.urgent,
+    final: has("final") ? !!source.final : legacyProgress ?? DEFAULT_PUSH_SETTINGS.final,
+    paused: has("paused") ? !!source.paused : legacyPaused ?? DEFAULT_PUSH_SETTINGS.paused,
+    resumed: has("resumed") ? !!source.resumed : legacyPaused ?? DEFAULT_PUSH_SETTINGS.resumed,
   };
 }
 
@@ -324,7 +343,93 @@ function buildGroupedTitle(sortedEvents = []) {
   return "Draft update";
 }
 
-function buildMessage({ stage, leagueName, timeLeftText }) {
+function appendMessageSuffix(base, suffix) {
+  const head = String(base || "").trim();
+  const tail = String(suffix || "").trim();
+  if (!tail) return head;
+  if (!head) return tail;
+  return `${head} ${tail}`;
+}
+
+function buildNotificationTitle({ leagueName, stage, timeLeftText, hasUsefulTime }) {
+  const safeLeagueName = String(leagueName || "Draft Monitor").trim() || "Draft Monitor";
+  if (hasUsefulTime) return `${safeLeagueName} -- ${timeLeftText} left`;
+  if (stage === "paused") return `${safeLeagueName} -- Paused`;
+  if (stage === "unpaused") return `${safeLeagueName} -- Resumed`;
+  return safeLeagueName;
+}
+
+function pickStageBody(stage) {
+  switch (stage) {
+    case "onclock":
+      return pickRandom([
+        "You're on the clock.",
+        "Your pick is up.",
+        "It's your turn to draft.",
+        "You're live now.",
+      ]);
+    case "p50":
+      return pickRandom([
+        "Half your clock is gone.",
+        "You're at the halfway mark.",
+        "Half the timer is already used.",
+        "You've burned through half the clock.",
+      ]);
+    case "p25":
+      return pickRandom([
+        "You're under 25% remaining.",
+        "You're in the last quarter of the timer.",
+        "Clock is down to the final quarter.",
+        "You're getting short on time.",
+      ]);
+    case "ten":
+      return pickRandom([
+        "Ten minutes left.",
+        "Ten-minute warning.",
+        "Clock is down to ten minutes.",
+        "You're in the last ten minutes.",
+      ]);
+    case "five":
+      return pickRandom([
+        "Five minutes left.",
+        "Five-minute warning.",
+        "Clock is getting tight.",
+        "Time to make the pick.",
+      ]);
+    case "urgent":
+      return pickRandom([
+        "Urgent. You're under two minutes.",
+        "Clock is critical.",
+        "Pick now to avoid an auto.",
+        "You're almost out of time.",
+      ]);
+    case "final":
+      return pickRandom([
+        "Final warning. You're almost out of time.",
+        "Last call before timeout.",
+        "Final moments on the clock.",
+        "This pick needs to happen now.",
+      ]);
+    case "paused":
+      return pickRandom([
+        "Draft paused while you were on the clock.",
+        "Paused. Your pick is waiting.",
+        "The league paused with your pick active.",
+        "Your active pick is paused.",
+      ]);
+    case "unpaused":
+      return pickRandom([
+        "Draft resumed and you're still on the clock.",
+        "Resumed. Your pick is live again.",
+        "We're back up and you're still the active pick.",
+        "The draft resumed with your pick still live.",
+      ]);
+    default:
+      return "Draft update.";
+  }
+}
+
+function buildMessage({ stage, leagueName, timeLeftText, contextSuffix = "" }) {
   const hasUsefulTime =
     typeof timeLeftText === "string" &&
     timeLeftText.trim() !== "" &&
@@ -333,6 +438,17 @@ function buildMessage({ stage, leagueName, timeLeftText }) {
     timeLeftText.trim() !== "00:00" &&
     timeLeftText.trim() !== "0:00:00" &&
     timeLeftText.trim() !== "00:00:00";
+
+  const cleanTimeLeftText = hasUsefulTime ? String(timeLeftText || "").trim() : "";
+  return {
+    title: buildNotificationTitle({
+      leagueName,
+      stage,
+      timeLeftText: cleanTimeLeftText,
+      hasUsefulTime,
+    }),
+    body: appendMessageSuffix(pickStageBody(stage), contextSuffix),
+  };
 
   const ONCLOCK_TITLES = [
     "You're on the clock",
@@ -957,6 +1073,45 @@ function buildMoreLeaguesSuffix(onClockSnapshot, options = {}) {
   return `+${count} more ${count === 1 ? "league" : "leagues"} on the clock.`;
 }
 
+function buildStageContextSuffix(stage, onClockSnapshot, draftId) {
+  const others = (Array.isArray(onClockSnapshot) ? onClockSnapshot : []).filter(
+    (x) => String(x?.draftId || "") !== String(draftId || "")
+  );
+  if (!others.length) return "";
+
+  const otherCount = others.length;
+  const underQuarterCount = others.filter((x) => {
+    const remainingMs = Number(x?.remainingMs || 0);
+    const timerMs = Number(x?.timerMs || 0);
+    return timerMs > 0 && remainingMs > 0 && remainingMs <= Math.floor(timerMs * 0.25);
+  }).length;
+
+  const preferQuarterWarning =
+    stage === "p25" || stage === "five" || stage === "urgent" || stage === "final";
+
+  if (preferQuarterWarning && underQuarterCount > 1) {
+    return pickRandom([
+      "You have multiple leagues under 25%. Please check the app.",
+      "Several leagues are getting tight. Please check the app.",
+      "Multiple clocks are in the danger zone. Please check the app.",
+    ]);
+  }
+
+  if (preferQuarterWarning && underQuarterCount === 1) {
+    return pickRandom([
+      "Another league is also under 25%. Check the app.",
+      "You have another league getting tight. Please check the app.",
+      "Another clock is also in the danger zone. Check the app.",
+    ]);
+  }
+
+  return pickRandom([
+    `+${otherCount} more ${otherCount === 1 ? "league" : "leagues"} on the clock.`,
+    `You have ${otherCount} more ${otherCount === 1 ? "league" : "leagues"} on the clock.`,
+    `${otherCount} more ${otherCount === 1 ? "league is" : "leagues are"} also live.`,
+  ]);
+}
+
 function shouldRetryAppleVisibleStage(clockState, stage, now) {
   const prevStage = String(clockState?.last_visible_stage || "");
   const prevSentAt = Number(clockState?.last_visible_sent_at || 0);
@@ -1178,8 +1333,15 @@ async function handler(req) {
     const shouldSendStageForSettings = (stage, settings) => {
       const s = normalizePushSettings(settings);
       if (stage === "onclock") return !!s.onClock;
-      if (stage === "paused" || stage === "unpaused") return !!s.paused;
-      return !!s.progress;
+      if (stage === "p50") return !!s.half;
+      if (stage === "p25") return !!s.quarter;
+      if (stage === "ten") return !!s.tenMin;
+      if (stage === "five") return !!s.fiveMin;
+      if (stage === "urgent") return !!s.urgent;
+      if (stage === "final") return !!s.final;
+      if (stage === "paused") return !!s.paused;
+      if (stage === "unpaused") return !!s.resumed;
+      return false;
     };
 
     const activeRows = await db
@@ -1553,12 +1715,13 @@ async function handler(req) {
 
         const leagueUrl = sleeperLeagueUrl(leagueId) || sleeperDraftUrl(draftId);
         const draftUrl = sleeperDraftUrl(draftId);
+        const contextSuffix = buildStageContextSuffix(stageToSend, onClockSnapshot, draftId);
 
         const { title, body } = buildMessage({
           stage: stageToSend,
           leagueName,
           timeLeftText,
-          timerSec,
+          contextSuffix,
         });
 
         events.push({
@@ -1637,22 +1800,12 @@ async function handler(req) {
           return;
         }
         const isUrgent = ev.stage === "urgent" || ev.stage === "five";
-        const compactMoreSuffix =
-          ev.stage === "urgent" ||
-          ev.stage === "five" ||
-          ev.stage === "p25" ||
-          ev.stage === "final"
-            ? buildMoreLeaguesSuffix(onClockSnapshot, {
-                excludeDraftIds: [ev.draftId],
-              })
-            : "";
-        const bodyWithSummary = compactMoreSuffix ? `${ev.body} ${compactMoreSuffix}` : ev.body;
         const isAppleEndpoint = isAppleSubscriptionEndpoint(s?.sub?.endpoint || s?.endpoint || "");
 
         visibleSendAttemptCount++;
         const pushRes = await sendPayload(s, {
           title: ev.title,
-          body: bodyWithSummary,
+          body: ev.body,
           url: "/draft-pick-tracker",
           tag: isAppleEndpoint ? undefined : buildEventNotificationTag(ev),
           renotify: isAppleEndpoint ? undefined : true,

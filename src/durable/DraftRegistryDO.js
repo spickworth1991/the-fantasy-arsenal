@@ -1522,7 +1522,10 @@ async function tickOnce(env, state, options = {}) {
               0,
               prevClockRemainingMs - Math.max(0, now - prevClockAnchorAt)
             );
-            clockAnchorAt = prevClockAnchorAt;
+            // `clock_remaining_ms` is interpreted relative to `clock_anchor_at`,
+            // so once we decay the remaining clock to "now" we must also move
+            // the anchor forward to avoid subtracting elapsed time again.
+            clockAnchorAt = now;
           } else if (publishedLastPicked != null && timerSec) {
             clockRemainingMs = Number(timerSec) * 1000;
             clockAnchorAt = Number(publishedLastPicked);

@@ -5,8 +5,14 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 
 const DEFAULT_SETTINGS = {
   onClock: true,
-  progress: true,
+  half: true,
+  quarter: true,
+  tenMin: true,
+  fiveMin: true,
+  urgent: true,
+  final: true,
   paused: true,
+  resumed: true,
   badges: true,
 };
 
@@ -49,9 +55,22 @@ async function ensureTable(db) {
 }
 
 function normalizeSettings(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const has = (key) => Object.prototype.hasOwnProperty.call(source, key);
+  const legacyProgress = has("progress") ? !!source.progress : null;
+  const legacyPaused = has("paused") ? !!source.paused : null;
+
   return {
     ...DEFAULT_SETTINGS,
-    ...(input && typeof input === "object" ? input : {}),
+    ...source,
+    half: has("half") ? !!source.half : legacyProgress ?? DEFAULT_SETTINGS.half,
+    quarter: has("quarter") ? !!source.quarter : legacyProgress ?? DEFAULT_SETTINGS.quarter,
+    tenMin: has("tenMin") ? !!source.tenMin : legacyProgress ?? DEFAULT_SETTINGS.tenMin,
+    fiveMin: has("fiveMin") ? !!source.fiveMin : legacyProgress ?? DEFAULT_SETTINGS.fiveMin,
+    urgent: has("urgent") ? !!source.urgent : legacyProgress ?? DEFAULT_SETTINGS.urgent,
+    final: has("final") ? !!source.final : legacyProgress ?? DEFAULT_SETTINGS.final,
+    paused: has("paused") ? !!source.paused : legacyPaused ?? DEFAULT_SETTINGS.paused,
+    resumed: has("resumed") ? !!source.resumed : legacyPaused ?? DEFAULT_SETTINGS.resumed,
   };
 }
 
