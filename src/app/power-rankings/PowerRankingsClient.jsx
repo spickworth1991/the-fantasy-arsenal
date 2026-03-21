@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import { parsePickLabel } from "../../lib/picks";
+import {
+  metricModeFromSourceKey,
+  projectionSourceFromKey,
+  valueSourceFromKey,
+} from "../../lib/sourceSelection";
 
 /** Value sources support */
 const VALUE_SOURCES = {
@@ -340,6 +346,7 @@ function getSeasonPointsForPlayer(map, p) {
     const k = `${nn}|${pos}`;
     if (map.byNamePos[k] != null) return map.byNamePos[k];
   }
+  if (team || pos) return 0;
   if (nn && map.byName[nn] != null) return map.byName[nn];
   const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
   if (k2 && map.byName[k2] != null) return map.byName[k2];
@@ -373,6 +380,13 @@ export default function PowerRankingsPage() {
   const supports = VALUE_SOURCES[valueSource].supports;
   const [format, setFormat] = useState("dynasty");
   const [qbType, setQbType] = useState("sf");
+  const [sourceKey, setSourceKey] = useState("proj:ffa");
+
+  useEffect(() => {
+    setMetricMode(metricModeFromSourceKey(sourceKey));
+    setProjectionSource(projectionSourceFromKey(sourceKey));
+    setValueSource(valueSourceFromKey(sourceKey));
+  }, [sourceKey]);
 
   // Picks toggle (disabled on projections)
   const [includeIDP, setIncludeIDP] = useState(true);
@@ -408,24 +422,24 @@ export default function PowerRankingsPage() {
 
         // fallback selection
         if (projectionSource === "CBS" && !next.CBS) {
-          setProjectionSource(next.ESPN ? "ESPN" : (next.CSV ? "CSV" : "CBS"));
+          setSourceKey(next.ESPN ? "proj:espn" : (next.CSV ? "proj:ffa" : "proj:cbs"));
         }
         if (projectionSource === "CSV" && !next.CSV) {
-          setProjectionSource(next.ESPN ? "ESPN" : (next.CBS ? "CBS" : "CSV"));
+          setSourceKey(next.ESPN ? "proj:espn" : (next.CBS ? "proj:cbs" : "proj:ffa"));
         }
         if (projectionSource === "ESPN" && !next.ESPN) {
-          setProjectionSource(next.CSV ? "CSV" : (next.CBS ? "CBS" : "ESPN"));
+          setSourceKey(next.CSV ? "proj:ffa" : (next.CBS ? "proj:cbs" : "proj:espn"));
         }
 
         if (!next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — falling back to Values.");
-          setMetricMode("values");
+          setSourceKey("val:fantasycalc");
         }
       } catch (e) {
         if (!mounted) return;
         setProjMaps({ CSV: null, ESPN: null, CBS: null });
         setProjError("Projections unavailable — falling back to Values.");
-        setMetricMode("values");
+        setSourceKey("val:fantasycalc");
       } finally {
         if (mounted) setProjLoading(false);
       }
@@ -541,10 +555,20 @@ export default function PowerRankingsPage() {
       const nonPicks = roster.filter((p) => !isPick(p.position));
       const rosterFiltered = nonPicks.filter((p) => includeIDP || !isIDP(p.position));
 
-      const valued = rosterFiltered
-        .map((p) => ({ p, v: getMetricRaw(p) || 0, age: getPlayerAge(p) }))
+      const rosterValues = rosterFiltered.map((p) => ({ p, v: getMetricRaw(p) || 0, age: getPlayerAge(p) }));
+      const valued = rosterValues
         .filter((x) => x.v > 0)
         .sort((a, b) => b.v - a.v);
+      const unranked = rosterValues
+        .filter((x) => !(x.v > 0))
+        .sort((a, b) => {
+          const posA = String(a.p?.position || "");
+          const posB = String(b.p?.position || "");
+          if (posA !== posB) return posA.localeCompare(posB);
+          const nameA = a.p?.full_name || `${a.p?.first_name || ""} ${a.p?.last_name || ""}`.trim();
+          const nameB = b.p?.full_name || `${b.p?.first_name || ""} ${b.p?.last_name || ""}`.trim();
+          return nameA.localeCompare(nameB);
+        });
 
       const starters = valued.slice(0, startersCount);
       const bench = valued.slice(startersCount);
@@ -616,6 +640,7 @@ export default function PowerRankingsPage() {
         name,
         displayName: owner?.display_name || "",
         starters, bench,
+        unranked,
         picksDetail: matchedPicks,
         stars, depth, picksValue, total, rating,
         mix: posTotals, mixPct,
@@ -731,14 +756,49 @@ export default function PowerRankingsPage() {
           <>
             {/* Controls */}
             <Card className="p-4">
+              <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">League Snapshot</div>
+                  <div className="mt-1 text-sm text-white/65">
+                    Rank every roster through one scoring lens, then drill into stars, depth, and future picks.
+                  </div>
+                </div>
+                <div className="text-xs text-white/45">
+                  {metricMode === "projections"
+                    ? "Power built from projected season totals"
+                    : "Power built from the selected dynasty or redraft market"}
+                </div>
+              </div>
+
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+                <div className="rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+                  <SourceSelector
+                    sources={DEFAULT_SOURCES}
+                    value={sourceKey}
+                    onChange={setSourceKey}
+                    className="w-full"
+                    mode={format}
+                    qbType={qbType}
+                    onModeChange={setFormat}
+                    onQbTypeChange={setQbType}
+                    layout="inline"
+                  />
+                  <div className="mt-2 text-xs text-white/60">
+                    {projError && metricMode === "projections"
+                      ? "Projection feed missing, so rankings are falling back to values."
+                      : metricMode === "projections"
+                      ? "Use projections for a contender-style power board."
+                      : "Use values when you want roster strength through a trade-market lens."}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">League:</span>
                     <select
                       value={activeLeague || ""}
                       onChange={(e) => setActiveLeague(e.target.value)}
-                      className="bg-gray-800 text-white p-2 rounded"
+                      className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
                     >
                       <option value="">Choose a League</option>
                       {leagues.map((lg) => (
@@ -749,6 +809,8 @@ export default function PowerRankingsPage() {
                     </select>
                   </div>
 
+                  {false && (
+                    <>
                   {/* NEW: Metric switch */}
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">Metric:</span>
@@ -831,6 +893,8 @@ export default function PowerRankingsPage() {
                       </label>
                     </div>
                   )}
+                  </>
+                )}
 
                 {/* Starters/picks status */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -1170,6 +1234,30 @@ export default function PowerRankingsPage() {
                                     </div>
                                   ))}
                                 </div>
+
+                                {(t.unranked?.length || 0) > 0 && (
+                                  <>
+                                    <div className="text-sm font-semibold mt-4 mb-2">
+                                      {metricMode === "projections" ? "No projection provided" : "No value provided"}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      {t.unranked.map(({p}, i)=>(
+                                        <div
+                                          key={`${p.player_id || p.full_name || i}-missing-${i}`}
+                                          className="flex items-center justify-between bg-black/20 border border-dashed border-white/10 rounded-md px-2 py-1"
+                                        >
+                                          <div className="truncate">
+                                            <span className="opacity-70 text-xs mr-2">{p.position}</span>
+                                            <span className="font-medium">{p.full_name || `${p.first_name||""} ${p.last_name||""}`}</span>
+                                          </div>
+                                          <div className="text-xs font-medium text-white/55">
+                                            {metricMode === "projections" ? "No projection" : "No value"}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
 
                                 {metricMode === "values" && includePicks && (t.picksDetail?.length || 0) > 0 && (
                                   <>

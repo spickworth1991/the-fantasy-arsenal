@@ -248,6 +248,7 @@ function getSeasonPointsForPlayer(map, p) {
 
   if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
   if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] !=null) return map.byNamePos[`${nn}|${pos}`];
+  if (team || pos) return 0;
   if (nn && map.byName?.[nn] != null) return map.byName[nn];
 
   const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
@@ -1260,6 +1261,47 @@ useEffect(() => {
             <>
               {/* Premium Controls */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
+                <div className="mb-4 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">Availability Lens</div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="relative z-[80] min-w-[280px] flex-1">
+                      <SourceSelector
+                        sources={DEFAULT_SOURCES}
+                        value={sourceKey}
+                        onChange={setSourceKey}
+                        className="w-full"
+                        mode={mode}
+                        qbType={qb}
+                        onModeChange={setMode}
+                        onQbTypeChange={setQb}
+                        layout="inline"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                      onClick={() => setFiltersOpen(true)}
+                    >
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">⚙</span>
+                      Filters
+                      {(bestPos !== "ALL" || bestSort !== "metric" || minOpenSlots !== 1 || bestLimit !== 25 || bestMinOpenPct !== 0) ? (
+                        <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">Active</span>
+                      ) : null}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                      onClick={() => setShowIncludedLeaguesModal(true)}
+                    >
+                      Included Leagues ({includedLeaguesList.length})
+                    </button>
+                  </div>
+                  <div className="mt-2 text-[11px] text-white/45">
+                    Best Available uses <span className="text-white/70 font-semibold">{includedLeaguesList.length}</span> league(s). Click a player row to see open leagues.
+                  </div>
+                </div>
+
                 <div className="grid lg:grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm text-white/70 mb-2">Search & Add Player (manual)</div>
@@ -1312,7 +1354,7 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="hidden rounded-2xl border border-white/10 bg-black/20 p-3">
                       <div className="text-xs text-white/60 mb-2">Best Available ranking</div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="relative z-[1000] flex flex-wrap items-center gap-2 w-full">

@@ -89,12 +89,12 @@ export default function HomeClient() {
     {
       name: "Strength of Schedule",
       link: "/sos",
-      description: "Analyze team schedules based on various metrics.",
+      description: "- NEEDS BYE WEEKS FOR 2026 - Analyze team schedules based on various metrics.",
     },
     {
       name: "Lineup Optimizer",
       link: "/lineup",
-      description: "Optimize your weekly lineup for maximum points.",
+      description: "- NEEDS BYE WEEKS AND PROJECTIONS FOR 2026 - Optimize your weekly lineup for maximum points.",
     },
     
   ];

@@ -2,35 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
-import ValueSourceDropdown from "../../components/ValueSourceDropdown";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { makeGetPlayerValue } from "../../lib/values";
+import {
+  metricModeFromSourceKey,
+  projectionSourceFromKey,
+  valueSourceFromKey,
+} from "../../lib/sourceSelection";
 
-/** Visual */
 function Card({ children, className = "" }) {
   return <div className={`rounded-xl border border-white/10 bg-gray-900 ${className}`}>{children}</div>;
 }
 
-/** ===== Shared trade prefs (sync with Trade Analyzer) ===== */
-const TRADE_PREFS_EVENT = "trade-prefs-change";
-const getInitialTradePrefs = () => {
-  if (typeof window === "undefined") return { metricMode: "values", projectionSource: "CSV" };
-  const stored = window.__trade_prefs__ || {};
-  return {
-    metricMode: stored.metricMode || "values",
-    projectionSource: stored.projectionSource || "CSV",
-  };
-};
-
-const setTradePrefs = (next) => {
-  if (typeof window === "undefined") return;
-  window.__trade_prefs__ = { ...(window.__trade_prefs__ || {}), ...next };
-  window.dispatchEvent(new CustomEvent(TRADE_PREFS_EVENT, { detail: window.__trade_prefs__ }));
-};
-
-/** ===== Projections (same helpers as SOS/Analyzer) ===== */
-const PROJ_JSON_URL      = "/projections_2025.json";
+const PROJ_JSON_URL = "/projections_2025.json";
 const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
-const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";
+const PROJ_CBS_JSON_URL = "/projections_cbs_2025.json";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -40,134 +26,93 @@ function normNameForMap(name) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
 function normalizeTeamAbbr(x) {
   const s = String(x || "").toUpperCase().trim();
-  const map = { JAX:"JAC", LA:"LAR", STL:"LAR", SD:"LAC", OAK:"LV", WFT:"WAS", WSH:"WAS" };
+  const map = { JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV", WFT: "WAS", WSH: "WAS" };
   return map[s] || s;
 }
+
 function normalizePos(x) {
   const p = String(x || "").toUpperCase().trim();
   if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
   if (p === "PK") return "K";
   return p;
 }
+
 function buildProjectionMapFromJSON(json) {
-  const rows = Array.isArray(json) ? json : (json?.rows || []);
+  const rows = Array.isArray(json) ? json : json?.rows || [];
   const byId = Object.create(null);
   const byName = Object.create(null);
   const byNameTeam = Object.create(null);
-  const byNamePos  = Object.create(null);
+  const byNamePos = Object.create(null);
+
   rows.forEach((r) => {
     const pid = r.player_id != null ? String(r.player_id) : "";
     const name = r.name || r.player || r.full_name || "";
     const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
-    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
-    const team = normalizeTeamAbbr(rawTeam);
-    const rawPos = r.pos ?? r.position ?? r.player_position;
-    const pos = normalizePos(rawPos);
+    const team = normalizeTeamAbbr(r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team);
+    const pos = normalizePos(r.pos ?? r.position ?? r.player_position);
+
     if (pid) byId[pid] = seasonPts;
-    if (name) {
-      const nn = normNameForMap(name);
-      byName[nn] = seasonPts;
-      byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
-      if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
-      if (pos)  byNamePos[`${nn}|${pos}`]   = seasonPts;
-    }
+    if (!name) return;
+
+    const nn = normNameForMap(name);
+    byName[nn] = seasonPts;
+    byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
+    if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
+    if (pos) byNamePos[`${nn}|${pos}`] = seasonPts;
   });
+
   return { byId, byName, byNameTeam, byNamePos };
 }
+
 async function fetchProjectionMap(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  const json = await res.json();
-  return buildProjectionMapFromJSON(json);
+  return buildProjectionMapFromJSON(await res.json());
 }
+
 function getSeasonPointsForPlayer(map, p) {
   if (!map || !p) return 0;
+
   const hit = map.byId?.[String(p.player_id)];
   if (hit != null) return hit;
-  const nn   = normNameForMap(p.full_name || p.search_full_name || `${p.first_name||""} ${p.last_name||""}`);
+
+  const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`);
   const team = normalizeTeamAbbr(p.team);
-  const pos  = normalizePos(p.position);
+  const pos = normalizePos(p.position);
+
   if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
-  if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
+  if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] != null) return map.byNamePos[`${nn}|${pos}`];
+  if (team || pos) return 0;
   if (nn && map.byName?.[nn] != null) return map.byName[nn];
-  const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
-  return (k2 && map.byName?.[k2] != null) ? map.byName[k2] : 0;
+
+  const compact = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
+  return compact && map.byName?.[compact] != null ? map.byName[compact] : 0;
 }
 
 export default function TradeFinder() {
-  const { activeLeague, leagues, players, format, qbType } = useSleeper();
+  const {
+    activeLeague,
+    leagues,
+    players,
+    format,
+    qbType,
+    setFormat,
+    setQbType,
+    sourceKey,
+    setSourceKey,
+  } = useSleeper();
+
   const league = useMemo(() => (leagues || []).find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
+  const metricMode = metricModeFromSourceKey(sourceKey);
+  const projectionSource = projectionSourceFromKey(sourceKey);
+  const valueSource = valueSourceFromKey(sourceKey);
 
-  /** ===== Shared prefs with Analyzer ===== */
-  const [{ metricMode, projectionSource }, setPrefsState] = useState(getInitialTradePrefs());
-  useEffect(() => {
-    const onChange = () => setPrefsState(getInitialTradePrefs());
-    window.addEventListener(TRADE_PREFS_EVENT, onChange);
-    return () => window.removeEventListener(TRADE_PREFS_EVENT, onChange);
-  }, []);
-  const updatePrefs = (patch) => setTradePrefs({ ...getInitialTradePrefs(), ...patch });
-
-  /** ===== Projections loading ===== */
   const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setProjError(""); setProjLoading(true);
-      try {
-        const [csv, espn, cbs] = await Promise.allSettled([
-          fetchProjectionMap(PROJ_JSON_URL),
-          fetchProjectionMap(PROJ_ESPN_JSON_URL),
-          fetchProjectionMap(PROJ_CBS_JSON_URL),
-        ]);
-        if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null };
-        if (csv.status === "fulfilled")  next.CSV = csv.value;
-        if (espn.status === "fulfilled") next.ESPN = espn.value;
-        if (cbs.status === "fulfilled")  next.CBS = cbs.value;
-        setProjMaps(next);
-
-        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
-          setProjError("No projections found — using Values instead.");
-          updatePrefs({ metricMode: "values" });
-        } else {
-          const src = projectionSource;
-          if (src === "CBS"  && !next.CBS)  updatePrefs({ projectionSource: next.ESPN ? "ESPN" : "CSV" });
-          if (src === "ESPN" && !next.ESPN) updatePrefs({ projectionSource: next.CSV ? "CSV" : "CBS" });
-          if (src === "CSV"  && !next.CSV)  updatePrefs({ projectionSource: next.ESPN ? "ESPN" : "CBS" });
-        }
-      } catch {
-        if (!mounted) return;
-        setProjError("Projections unavailable — using Values.");
-        updatePrefs({ metricMode: "values" });
-      } finally {
-        if (mounted) setProjLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /** ===== Metric getters ===== */
-  const [valueSource, setValueSource] = useState("FantasyCalc");
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType), [valueSource, format, qbType]);
-
-  const getMetricRaw = useMemo(() => {
-    if (metricMode === "projections") {
-      const chosen =
-        projectionSource === "ESPN" ? projMaps.ESPN :
-        projectionSource === "CBS"  ? projMaps.CBS  :
-        projMaps.CSV;
-      if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
-      return () => 0;
-    }
-    return (p) => getPlayerValue(p) || 0;
-  }, [metricMode, projectionSource, projMaps, getPlayerValue]);
-
-  /** ===== Byes + time window ===== */
   const [nflWeek, setNflWeek] = useState(1);
   const [startWeek, setStartWeek] = useState(1);
   const [endWeek, setEndWeek] = useState(4);
@@ -175,6 +120,62 @@ export default function TradeFinder() {
   const [rows, setRows] = useState([]);
   const [minDelta, setMinDelta] = useState(0);
   const [byeMap, setByeMap] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setProjError("");
+      setProjLoading(true);
+      try {
+        const [csv, espn, cbs] = await Promise.allSettled([
+          fetchProjectionMap(PROJ_JSON_URL),
+          fetchProjectionMap(PROJ_ESPN_JSON_URL),
+          fetchProjectionMap(PROJ_CBS_JSON_URL),
+        ]);
+        if (!mounted) return;
+
+        const next = { CSV: null, ESPN: null, CBS: null };
+        if (csv.status === "fulfilled") next.CSV = csv.value;
+        if (espn.status === "fulfilled") next.ESPN = espn.value;
+        if (cbs.status === "fulfilled") next.CBS = cbs.value;
+        setProjMaps(next);
+
+        const fallbackKey = next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.CSV ? "proj:ffa" : null;
+        if (metricMode === "projections" && !fallbackKey) {
+          setProjError("No projections found. Using values instead.");
+          setSourceKey("val:fantasycalc");
+          return;
+        }
+        if (String(sourceKey || "").startsWith("proj:")) {
+          if (projectionSource === "CBS" && !next.CBS && fallbackKey) setSourceKey(fallbackKey);
+          if (projectionSource === "ESPN" && !next.ESPN && fallbackKey) setSourceKey(fallbackKey);
+          if (projectionSource === "CSV" && !next.CSV && fallbackKey) setSourceKey(fallbackKey);
+        }
+      } catch {
+        if (!mounted) return;
+        setProjError("Projections unavailable. Using values.");
+        setSourceKey("val:fantasycalc");
+      } finally {
+        if (mounted) setProjLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType), [valueSource, format, qbType]);
+
+  const getMetricRaw = useMemo(() => {
+    if (metricMode === "projections") {
+      const chosen =
+        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projMaps.CSV;
+      if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
+      return () => 0;
+    }
+    return (p) => getPlayerValue(p) || 0;
+  }, [metricMode, projectionSource, projMaps, getPlayerValue]);
 
   useEffect(() => {
     let mounted = true;
@@ -192,10 +193,11 @@ export default function TradeFinder() {
         if (byeRes.ok) setByeMap(await byeRes.json());
       } catch {}
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /** roster_id → nice name */
   const rosterName = useMemo(() => {
     const byRid = {};
     (league?.rosters || []).forEach((r) => {
@@ -205,21 +207,24 @@ export default function TradeFinder() {
     return byRid;
   }, [league]);
 
-  /** metric with bye-awareness: set to 0 on bye week */
   const valueWithBye = (p, week) => {
     const base = getMetricRaw(p) || 0;
     if (!p || !byeMap) return base;
     const team = (p.team || "").toUpperCase();
     const byeWeeks = byeMap.by_team?.[team] || [];
-    return (Array.isArray(byeWeeks) && byeWeeks.includes(week)) ? 0 : base;
+    return Array.isArray(byeWeeks) && byeWeeks.includes(week) ? 0 : base;
   };
 
-  /** load trades */
   const loadTrades = async () => {
-    if (!activeLeague) { setRows([]); return; }
+    if (!activeLeague) {
+      setRows([]);
+      return;
+    }
     setBusy(true);
     try {
-      const weeks = []; for (let w = startWeek; w <= endWeek; w++) weeks.push(w);
+      const weeks = [];
+      for (let w = startWeek; w <= endWeek; w++) weeks.push(w);
+
       const results = await Promise.all(
         weeks.map(async (w) => {
           const res = await fetch(`https://api.sleeper.app/v1/league/${activeLeague}/transactions/${w}`);
@@ -229,64 +234,79 @@ export default function TradeFinder() {
         })
       );
 
-      const trades = results.flat();
-      const parsed = trades
+      const parsed = results
+        .flat()
         .map((t) => {
           const teamIds = (t.roster_ids || []).filter((rid) => rosterName[rid]);
-          const sent = {}; const recv = {};
-          teamIds.forEach((rid) => { sent[rid] = []; recv[rid] = []; });
+          const sent = {};
+          const recv = {};
+          teamIds.forEach((rid) => {
+            sent[rid] = [];
+            recv[rid] = [];
+          });
 
           if (t.adds) {
             Object.entries(t.adds).forEach(([pid, rid]) => {
               if (!recv[rid]) return;
               const pobj = players?.[pid];
-              const val = valueWithBye(pobj, t.week);
               recv[rid].push({
-                kind: "player", id: pid,
+                kind: "player",
+                id: pid,
                 name: pobj?.full_name || pobj?.search_full_name || pid,
-                pos: pobj?.position || "", team: pobj?.team || "", value: val,
+                pos: pobj?.position || "",
+                team: pobj?.team || "",
+                value: valueWithBye(pobj, t.week),
               });
             });
           }
+
           if (t.drops) {
             Object.entries(t.drops).forEach(([pid, rid]) => {
               if (!sent[rid]) return;
               const pobj = players?.[pid];
-              const val = valueWithBye(pobj, t.week);
               sent[rid].push({
-                kind: "player", id: pid,
+                kind: "player",
+                id: pid,
                 name: pobj?.full_name || pobj?.search_full_name || pid,
-                pos: pobj?.position || "", team: pobj?.team || "", value: val,
+                pos: pobj?.position || "",
+                team: pobj?.team || "",
+                value: valueWithBye(pobj, t.week),
               });
             });
           }
+
           (t.draft_picks || []).forEach((pick) => {
             const fromRid = pick.previous_owner_id;
             const toRid = pick.owner_id;
             const label = `${pick.season} R${pick.round} (orig ${pick.roster_id})`;
-            if (recv[toRid])  recv[toRid].push({ kind: "pick", id: `${pick.season}-${pick.round}-${pick.roster_id}`, name: label, value: 0 });
+            if (recv[toRid]) recv[toRid].push({ kind: "pick", id: `${pick.season}-${pick.round}-${pick.roster_id}`, name: label, value: 0 });
             if (sent[fromRid]) sent[fromRid].push({ kind: "pick", id: `${pick.season}-${pick.round}-${pick.roster_id}`, name: label, value: 0 });
           });
 
           const teams = teamIds.map((rid) => {
-            const got = recv[rid] || []; const gave = sent[rid] || [];
+            const got = recv[rid] || [];
+            const gave = sent[rid] || [];
             const gotVal = got.reduce((s, x) => s + (x.value || 0), 0);
             const gaveVal = gave.reduce((s, x) => s + (x.value || 0), 0);
-            const delta = Math.round(gotVal - gaveVal);
             return {
-              rid, name: rosterName[rid],
-              got, gave,
-              gotVal: Math.round(gotVal), gaveVal: Math.round(gaveVal), delta,
+              rid,
+              name: rosterName[rid],
+              got,
+              gave,
+              gotVal: Math.round(gotVal),
+              gaveVal: Math.round(gaveVal),
+              delta: Math.round(gotVal - gaveVal),
             };
           });
 
           const best = Math.max(...teams.map((x) => x.delta));
-          const winners = teams.filter((x) => x.delta === best).map((x) => x.name);
-
           return {
-            id: t.transaction_id, leg: t.leg,
+            id: t.transaction_id,
+            leg: t.leg,
             when: new Date(t.created || t.status_updated || Date.now()).toLocaleString(),
-            week: t.week, teams, winners,
+            week: t.week,
+            teams,
+            winners: teams.filter((x) => x.delta === best).map((x) => x.name),
           };
         })
         .sort((a, b) => (b.leg || 0) - (a.leg || 0));
@@ -296,6 +316,7 @@ export default function TradeFinder() {
       setBusy(false);
     }
   };
+
   useEffect(() => {
     loadTrades();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -303,23 +324,24 @@ export default function TradeFinder() {
 
   const filtered = rows.filter((r) => Math.max(...r.teams.map((t) => t.delta)) >= minDelta);
 
-  /** suggested swaps (bye-aware, projections-aware) */
   const suggestions = useMemo(() => {
     if (!league?.rosters?.length || !byeMap) return [];
     const valued = [];
     (league.rosters || []).forEach((r) => {
-      const name = rosterName[r.roster_id];
-      if (!name) return;
+      const owner = rosterName[r.roster_id];
+      if (!owner) return;
       (r.players || []).forEach((pid) => {
         const p = players?.[pid];
         const v = valueWithBye(p, nflWeek);
         if (!p || !v) return;
         valued.push({
-          pid, val: v,
+          pid,
+          val: v,
           name: p.full_name || p.search_full_name || pid,
           pos: (p.position || "").toUpperCase(),
           team: (p.team || "").toUpperCase(),
-          rid: r.roster_id, owner: name,
+          rid: r.roster_id,
+          owner,
         });
       });
     });
@@ -327,17 +349,18 @@ export default function TradeFinder() {
     const out = [];
     for (let i = 0; i < valued.length; i++) {
       for (let j = i + 1; j < valued.length; j++) {
-        const A = valued[i], B = valued[j];
-        if (A.rid === B.rid) continue;
-        if (A.pos === B.pos) continue;
-        const diff = Math.abs(A.val - B.val);
-        const thresh = Math.max(100, 0.04 * (A.val + B.val));
+        const a = valued[i];
+        const b = valued[j];
+        if (a.rid === b.rid || a.pos === b.pos) continue;
+        const diff = Math.abs(a.val - b.val);
+        const thresh = Math.max(100, 0.04 * (a.val + b.val));
         if (diff <= thresh) {
           out.push({
-            aOwner: A.owner, bOwner: B.owner,
-            aGive: `${A.name} (${A.pos})`,
-            bGive: `${B.name} (${B.pos})`,
-            delta: Math.round(A.val - B.val),
+            aOwner: a.owner,
+            bOwner: b.owner,
+            aGive: `${a.name} (${a.pos})`,
+            bGive: `${b.name} (${b.pos})`,
+            delta: Math.round(a.val - b.val),
           });
         }
       }
@@ -347,110 +370,91 @@ export default function TradeFinder() {
 
   return (
     <Card className="max-w-6xl mx-auto px-4 pt-20 p-4 mt-8">
-      {/* header controls */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-      {/* Shared metric switch (syncs via TRADE_PREFS_EVENT) */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold">Metric:</span>
-        <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
-          <button
-            className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
-            onClick={() => setTradePrefs({ metricMode: "projections" })}
-            disabled={
-              !!projError ||
-              projLoading ||
-              (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS) // don't allow if no projection files loaded
-            }
-            title={projError || ""}
-          >
-            Projections{projLoading ? "…" : ""}
-          </button>
-          <button
-            className={`px-3 py-1 ${metricMode === "values" ? "bg-white/10" : "hover:bg-white/5"}`}
-            onClick={() => setTradePrefs({ metricMode: "values" })}
-          >
-            Values
-          </button>
+      <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Trade Review Window</div>
+          <div className="mt-1 text-sm text-white/65">
+            Scan completed league trades through one scoring lens and surface the most balanced swaps.
+          </div>
+        </div>
+        <div className="text-xs text-white/45">
+          {metricMode === "projections"
+            ? "Reviewing deals with projected season totals"
+            : "Reviewing deals with the selected trade market"}
         </div>
       </div>
 
-      {/* --- PROJECTIONS-ONLY --- */}
-      {metricMode === "projections" && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">Proj Source:</span>
-          <select
-            className="bg-gray-800 text-white p-2 rounded"
-            value={projectionSource}
-            onChange={(e) => setTradePrefs({ projectionSource: e.target.value })}
-            disabled={projLoading}
-          >
-            {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
-            {projMaps.ESPN && <option value="ESPN">ESPN</option>}
-            {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
-          </select>
+      <div className="flex flex-wrap items-end gap-4 mb-4">
+        <div className="min-w-[280px] rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+          <SourceSelector
+            sources={DEFAULT_SOURCES}
+            value={sourceKey}
+            onChange={setSourceKey}
+            className="w-full"
+            mode={format}
+            qbType={qbType}
+            onModeChange={setFormat}
+            onQbTypeChange={setQbType}
+            layout="inline"
+          />
+          <div className="mt-2 text-xs text-white/60">
+            {projError && metricMode === "projections"
+              ? projError
+              : metricMode === "projections"
+              ? "Trade results are scored with projection totals."
+              : "Trade results are scored with the selected value source."}
+          </div>
         </div>
-      )}
 
-      {/* --- VALUES-ONLY --- */}
-      {metricMode === "values" && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold mr-2">Values:</span>
-          <ValueSourceDropdown valueSource={valueSource} setValueSource={setValueSource} />
+        <div>
+          <label className="block text-sm font-medium mb-1">Start Week</label>
+          <input
+            type="number"
+            className="w-28 rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+            value={startWeek}
+            min={1}
+            max={18}
+            onChange={(e) => setStartWeek(parseInt(e.target.value || "1", 10))}
+          />
         </div>
-      )}
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Start Week</label>
-        <input
-          type="number"
-          className="bg-gray-800 text-white p-2 rounded w-28"
-          value={startWeek}
-          min={1}
-          max={18}
-          onChange={(e) => setStartWeek(parseInt(e.target.value || "1", 10))}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">End Week</label>
-        <input
-          type="number"
-          className="bg-gray-800 text-white p-2 rounded w-28"
-          value={endWeek}
-          min={startWeek}
-          max={18}
-          onChange={(e) => setEndWeek(parseInt(e.target.value || String(startWeek), 10))}
-        />
-      </div>
-      <div className="text-sm opacity-80 self-end mb-2">
-        NFL Week now: <b>{nflWeek}</b>
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Min Δ (filter)</label>
-        <input
-          type="number"
-          className="bg-gray-800 text-white p-2 rounded w-32"
-          value={minDelta}
-          min={0}
-          step={50}
-          onChange={(e) => setMinDelta(parseInt(e.target.value || "0", 10))}
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">End Week</label>
+          <input
+            type="number"
+            className="w-28 rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+            value={endWeek}
+            min={startWeek}
+            max={18}
+            onChange={(e) => setEndWeek(parseInt(e.target.value || String(startWeek), 10))}
+          />
+        </div>
+        <div className="text-sm opacity-80 self-end mb-2">
+          NFL Week now: <b>{nflWeek}</b>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Min Delta</label>
+          <input
+            type="number"
+            className="w-32 rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+            value={minDelta}
+            min={0}
+            step={50}
+            onChange={(e) => setMinDelta(parseInt(e.target.value || "0", 10))}
+          />
+        </div>
+        {busy ? <div className="text-sm opacity-70 self-end mb-2">Loading...</div> : null}
       </div>
 
-      {busy && <div className="text-sm opacity-70 self-end mb-2">Loading…</div>}
-    </div>
-
-
-      {/* Suggestions */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-3 mb-4">
-        <div className="font-semibold mb-2">Suggested even swaps (1–for–1, bye adjusted)</div>
+        <div className="font-semibold mb-2">Suggested even swaps (1-for-1, bye adjusted)</div>
         {suggestions.length ? (
           <ul className="text-sm space-y-1">
             {suggestions.map((s, idx) => (
               <li key={idx} className="flex justify-between gap-3">
-                <span>{s.aOwner} ➜ {s.bGive}</span>
-                <span className="opacity-70">⇄</span>
-                <span>{s.bOwner} ➜ {s.aGive}</span>
-                <span className="opacity-60 text-xs">Δ≈{Math.abs(s.delta)}</span>
+                <span>{s.aOwner} {"->"} {s.bGive}</span>
+                <span className="opacity-70">&lt;-&gt;</span>
+                <span>{s.bOwner} {"->"} {s.aGive}</span>
+                <span className="opacity-60 text-xs">delta~{Math.abs(s.delta)}</span>
               </li>
             ))}
           </ul>
@@ -459,74 +463,50 @@ export default function TradeFinder() {
         )}
       </div>
 
-      {/* Trade Log */}
-      <div className="rounded-xl border border-white/10 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-white/5">
-            <tr className="text-left">
-              <th className="py-2 px-3">Week</th>
-              <th className="py-2 px-3">When</th>
-              <th className="py-2 px-3">Winner(s)</th>
-              <th className="py-2 px-3">Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((t) => (
-              <tr key={t.id} className="border-t border-white/10 align-top">
-                <td className="py-2 px-3">W{t.leg ?? "?"}</td>
-                <td className="py-2 px-3 whitespace-nowrap">{t.when}</td>
-                <td className="py-2 px-3">{t.winners.join(", ") || "—"}</td>
-                <td className="py-2 px-3">
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {t.teams.map((team) => (
-                      <div key={team.rid} className="p-2 rounded border border-white/10 bg-white/5">
-                        <div className="font-semibold mb-1">
-                          {team.name} {team.delta >= 0 ? "🟢" : "🔴"}{" "}
-                          <span className="opacity-70">(Δ {team.delta})</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <div className="text-xs font-semibold mb-1">Got (≈{team.gotVal})</div>
-                            <ul className="text-xs space-y-1">
-                              {team.got.map((x) => (
-                                <li key={x.kind + x.id}>
-                                  {x.kind === "pick" ? "🎟️ " : ""}
-                                  {x.name}{x.pos ? ` (${x.pos})` : ""}{" "}
-                                  {x.kind === "player" ? <span className="opacity-60">· {Math.round(x.value)}</span> : null}
-                                </li>
-                              ))}
-                              {!team.got.length && <li className="opacity-60">—</li>}
-                            </ul>
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold mb-1">Gave (≈{team.gaveVal})</div>
-                            <ul className="text-xs space-y-1">
-                              {team.gave.map((x) => (
-                                <li key={x.kind + x.id}>
-                                  {x.kind === "pick" ? "🎟️ " : ""}
-                                  {x.name}{x.pos ? ` (${x.pos})` : ""}{" "}
-                                  {x.kind === "player" ? <span className="opacity-60">· {Math.round(x.value)}</span> : null}
-                                </li>
-                              ))}
-                              {!team.gave.length && <li className="opacity-60">—</li>}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+      <div className="space-y-4">
+        {filtered.map((row) => (
+          <div key={row.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-semibold">Week {row.week}</div>
+              <div className="text-xs opacity-70">{row.when}</div>
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {row.teams.map((team) => (
+                <div key={team.rid} className="rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-semibold">{team.name}</div>
+                    <div className="text-sm opacity-70">
+                      Net {team.delta >= 0 ? "+" : ""}
+                      {team.delta}
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {!filtered.length && (
-              <tr>
-                <td colSpan={4} className="py-4 px-3 text-sm opacity-70">
-                  No trades in range (or all below Δ filter).
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <div className="mt-3 text-sm">
+                    <div className="font-medium opacity-80">Got</div>
+                    <ul className="mt-1 space-y-1">
+                      {team.got.map((item) => (
+                        <li key={`got-${team.rid}-${item.id}`} className="flex justify-between gap-2">
+                          <span>{item.name}</span>
+                          <span className="opacity-70">{item.value || 0}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mt-3 text-sm">
+                    <div className="font-medium opacity-80">Gave</div>
+                    <ul className="mt-1 space-y-1">
+                      {team.gave.map((item) => (
+                        <li key={`gave-${team.rid}-${item.id}`} className="flex justify-between gap-2">
+                          <span>{item.name}</span>
+                          <span className="opacity-70">{item.value || 0}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </Card>
   );

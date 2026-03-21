@@ -2332,6 +2332,19 @@ export default function LeagueHubContent() {
 
             </div>
 
+            <div className="mt-4 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+              <SourceSelector
+                value={sourceKey}
+                onChange={setSourceKey}
+                className="w-full"
+                mode={mode}
+                qbType={qb}
+                onModeChange={setMode}
+                onQbTypeChange={setQb}
+                layout="inline"
+              />
+            </div>
+
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
                   <input
@@ -2377,19 +2390,7 @@ export default function LeagueHubContent() {
                 Include drafting
               </label> */}
 
-              <div className="ml-auto flex items-center gap-2">
-                <div className="relative min-w-[240px]">
-                  <SourceSelector
-                    value={sourceKey}
-                    onChange={setSourceKey}
-                    className="w-full"
-                    mode={mode}
-                    qbType={qb}
-                    onModeChange={setMode}
-                    onQbTypeChange={setQb}
-                  />
-                </div>
-              </div>
+              
             </div>
 
             {!projectionsReady && bestMetric === "projection" ? (

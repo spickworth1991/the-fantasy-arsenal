@@ -6,9 +6,15 @@ import dynamic from "next/dynamic";
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
 import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
+import {
+  metricModeFromSourceKey,
+  projectionSourceFromKey,
+  valueSourceFromKey,
+} from "../../lib/sourceSelection";
 
 /* ---------- Projections setup ---------- */
 const PROJ_JSON_URL      = "/projections_2025.json";
@@ -81,6 +87,7 @@ function getSeasonPointsForPlayer(map, p) {
 
   if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
   if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
+  if (team || pos) return 0;
   if (nn && map.byName?.[nn] != null) return map.byName[nn];
 
   const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
@@ -246,6 +253,7 @@ export default function LineupTool() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
+  const [sourceKey, setSourceKey] = useState("proj:ffa");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS
@@ -254,6 +262,12 @@ export default function LineupTool() {
   const [projError, setProjError] = useState("");
 
   const [valueSource, setValueSource] = useState("FantasyCalc");
+
+  useEffect(() => {
+    setMetricMode(metricModeFromSourceKey(sourceKey));
+    setProjectionSource(projectionSourceFromKey(sourceKey));
+    setValueSource(valueSourceFromKey(sourceKey));
+  }, [sourceKey]);
 
   const [week, setWeek] = useState(1);
   const [season, setSeason] = useState(new Date().getFullYear());
@@ -330,16 +344,16 @@ export default function LineupTool() {
 
         if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — using Values.");
-          setMetricMode("values");
+          setSourceKey("val:fantasycalc");
         } else {
-          if (projectionSource === "CBS"  && !next.CBS)  setProjectionSource(next.ESPN ? "ESPN" : "CSV");
-          if (projectionSource === "ESPN" && !next.ESPN) setProjectionSource(next.CSV ? "CSV" : "CBS");
-          if (projectionSource === "CSV"  && !next.CSV)  setProjectionSource(next.ESPN ? "ESPN" : "CBS");
+          if (projectionSource === "CBS"  && !next.CBS)  setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
+          if (projectionSource === "ESPN" && !next.ESPN) setSourceKey(next.CSV ? "proj:ffa" : "proj:cbs");
+          if (projectionSource === "CSV"  && !next.CSV)  setSourceKey(next.ESPN ? "proj:espn" : "proj:cbs");
         }
       } catch {
         if (!mounted) return;
         setProjError("Projections unavailable — using Values.");
-        setMetricMode("values");
+        setSourceKey("val:fantasycalc");
       } finally {
         if (mounted) setProjLoading(false);
       }
@@ -496,10 +510,38 @@ export default function LineupTool() {
         ) : (
           <>
             <Card className="p-4">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Weekly Setup</div>
+                  <div className="mt-1 text-sm text-white/65">
+                    Lock the league, choose the scoring lens, and preview the best lineup for that week.
+                  </div>
+                </div>
+                <div className="text-xs text-white/45">
+                  {metricMode === "projections"
+                    ? "Projection-based lineup strength with bye adjustments"
+                    : "Value-based lineup strength using your selected market"}
+                </div>
+              </div>
+
+              <div className="mb-4 rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-950 p-3">
+                <SourceSelector
+                  sources={DEFAULT_SOURCES}
+                  value={sourceKey}
+                  onChange={setSourceKey}
+                  className="w-full"
+                  mode={formatLocal}
+                  qbType={qbLocal}
+                  onModeChange={(v) => { setUserTouchedFormat(true); setFormatLocal(v); }}
+                  onQbTypeChange={(v) => { setUserTouchedQB(true); setQbLocal(v); }}
+                  layout="inline"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-end gap-4">
                 <span className="font-semibold">League:</span>
                 <select
-                  className="bg-gray-800 text-white p-2 rounded"
+                  className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
                   value={activeLeague || ""}
                   onChange={(e) => {
                     const id = e.target.value;
@@ -519,6 +561,8 @@ export default function LineupTool() {
                   ))}
                 </select>
 
+                {false && (
+                  <>
                 {/* Metric switch */}
                   <span className="font-semibold ml-4">Metric:</span>
                   <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
@@ -570,6 +614,8 @@ export default function LineupTool() {
                       />
                     </>
                   )}
+                  </>
+                )}
 
                   <span className="font-semibold ml-4">NFL Week:</span>
                   <input
@@ -578,12 +624,12 @@ export default function LineupTool() {
                     max={18}
                     value={week}
                     onChange={(e) => setWeek(parseInt(e.target.value || "1", 10))}
-                    className="bg-gray-800 text-white p-2 rounded w-24"
+                    className="w-24 rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
                     title="Changing the week auto-follows your scheduled opponent"
                   />
 
                   <span className="ml-auto text-sm opacity-80">
-                    {projError && metricMode === "projections" ? "Projection file missing — using Values." : null}
+                    {projError && metricMode === "projections" ? "Projection file missing - using values." : null}
                   </span>
 
 
