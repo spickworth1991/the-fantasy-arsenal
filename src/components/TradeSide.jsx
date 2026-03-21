@@ -29,7 +29,7 @@ export default function TradeSide({
                     alt={p.full_name}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full border object-cover bg-gray-800"
                   />
                   <div>
                     <span className="font-semibold">{p.full_name}</span>
@@ -70,7 +70,7 @@ export default function TradeSide({
                     alt={p.full_name}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-full"
+                    className="w-10 h-10 rounded-full border object-cover bg-gray-800"
                   />
                   <div className="ml-2 flex-1">
                     <p className="text-sm font-semibold">{p.full_name}</p>

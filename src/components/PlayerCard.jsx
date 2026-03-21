@@ -9,7 +9,8 @@ export default function PlayerCard({ player, onAddA, onAddB, value }) {
         alt={player.full_name}
         width={64}
         height={64}
-        className="w-16 h-16 rounded-full mx-auto mb-2 object-cover"
+        className="w-16 h-16 rounded-full mx-auto mb-2 object-cover border"
+        
       />
       <h3 className="font-bold">{player.full_name}</h3>
       <p className="text-gray-400">

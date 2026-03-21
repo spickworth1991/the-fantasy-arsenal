@@ -19,6 +19,7 @@ const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`
 
 // Player avatar helpers (match Trade Analyzer: /public/avatars via slug)
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
+const isPickPos = (pos) => String(pos || "").toUpperCase() === "PICK";
 
 function localPlayerAvatarUrl(player) {
   const pid =
@@ -534,6 +535,7 @@ useEffect(() => {
       const full = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
       if (!full) continue;
       const pos = (p.position || "").toUpperCase();
+      if (isPickPos(pos)) continue;
       const team = (p.team || "").toUpperCase();
 
       const variants = new Set([full]);
@@ -776,7 +778,11 @@ useEffect(() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setSelectedPlayers(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((p) => !isPickPos(p?.pos));
+          setSelectedPlayers(filtered);
+          sessionStorage.setItem("availabilitySelectedPlayers", JSON.stringify(filtered));
+        }
       } catch {}
     }
   }, []);
@@ -786,6 +792,7 @@ useEffect(() => {
 
   const addResolved = (t, { scrollToMatrix = false } = {}) => {
     if (!t || !t.id || !t.name) return;
+    if (isPickPos(t?.pos)) return;
     setSelectedPlayers((prev) => {
       if (prev.find((p) => p.id === t.id)) return prev;
       const next = [...prev, t];
@@ -920,7 +927,10 @@ useEffect(() => {
   const anySelected = selectedPlayers.length > 0;
 
   // ---------- Best Available Players ----------
-  const playerList = useMemo(() => Object.values(playersMap || {}), [playersMap]);
+  const playerList = useMemo(
+    () => Object.values(playersMap || {}).filter((p) => !isPickPos(p?.position)),
+    [playersMap]
+  );
   const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, mode, qb), [valueSource, mode, qb]);
 
 
@@ -953,6 +963,7 @@ useEffect(() => {
       .filter((p) => {
         if (!p || p.player_id == null) return false;
         const pos = String(p.position || "").toUpperCase();
+        if (isPickPos(pos)) return false;
         if (posFilter && pos !== posFilter) return false;
         return true;
       })
@@ -1490,7 +1501,7 @@ useEffect(() => {
                                       src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
-                                      className="w-7 h-7 rounded-full"
+                                      className="w-10 h-10 rounded-full border object-cover bg-gray-800"
                                     />
 
 
@@ -1562,7 +1573,7 @@ useEffect(() => {
                                       src={localPlayerAvatarUrl({ player_id: row.id, full_name: row.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={row.name}
-                                      className="w-8 h-8 rounded-full"
+                                      className="w-12 h-12 rounded-full border object-cover bg-gray-800"
                                     />
 
                                     <div className="min-w-0">
@@ -1636,7 +1647,7 @@ useEffect(() => {
                                       src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
-                                      className="w-7 h-7 rounded-full"
+                                      className="w-10 h-10 rounded-full border object-cover bg-gray-800"
                                     />
 
                                     <div className="min-w-0">

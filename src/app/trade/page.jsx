@@ -18,7 +18,7 @@ export default function Page() {
   return (
     <>
       <TradeClient />
-      <TradeFinder />
+      {/* <TradeFinder /> */}
     </>
   );
 }
