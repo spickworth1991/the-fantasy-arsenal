@@ -1729,9 +1729,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                               <div className="flex items-center gap-2">
                                 <AvatarImage
                                   name={r._name}
+                                  playerId={r.player_id}
                                   width={28}
                                   height={28}
-                                  className="w-7 h-7 rounded-full border object-cover bg-gray-800"
+                                  className="w-14 h-14 rounded-full border object-cover bg-gray-800"
                                 />
                                 <span
                                   className={
@@ -1742,7 +1743,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                       : ""
                                   }
                                 >
-                                  {r._name}
+                                  {r._name} <div className="text-xs text-gray-400">
+                                {r._pos || "—"} • {r._team || "FA"}
+                                {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
+                              </div>
                                 </span>
 
                                 {addCount ? (
@@ -1764,10 +1768,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                 ) : null}
                               </div>
 
-                              <div className="text-xs text-gray-400 ml-10">
-                                {r._pos || "—"} • {r._team || "FA"}
-                                {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
-                              </div>
+                              
                             </div>
                           </td>
 
@@ -2302,6 +2303,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     <AvatarImage
                       name={openRow._name}
+                      playerId={openRow.player_id}
                       width={56}
                       height={56}
                       className="w-14 h-14 rounded-full border border-white/15 object-cover bg-gray-800 shadow-lg shadow-black/30"

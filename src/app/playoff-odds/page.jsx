@@ -5,9 +5,15 @@ import Navbar from "../../components/Navbar";
 import dynamic from "next/dynamic";
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
 import { useSleeper } from "../../context/SleeperContext";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
+import {
+  metricModeFromSourceKey,
+  projectionSourceFromKey,
+  valueSourceFromKey,
+} from "../../lib/sourceSelection";
 
 /* === Projections setup (same scheme as your SOS/Lineup) === */
 const PROJ_JSON_URL      = "/projections_2025.json";
@@ -83,6 +89,7 @@ function getSeasonPointsForPlayer(map, p) {
 
   if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
   if (nn && pos  && map.byNamePos?.[`${nn}|${pos}`]   != null) return map.byNamePos[`${nn}|${pos}`];
+  if (team || pos) return 0;
   if (nn && map.byName?.[nn] != null) return map.byName[nn];
 
   const k2 = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
@@ -190,6 +197,7 @@ export default function PlayoffOddsPage() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
+  const [sourceKey, setSourceKey] = useState("proj:ffa");
   const handleSetFormat = (v) => { setUserTouchedFormat(true); setFormatLocal(v); };
   const handleSetQbType  = (v) => { setUserTouchedQB(true); setQbLocal(v); };
 
@@ -220,16 +228,16 @@ export default function PlayoffOddsPage() {
 
         if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — using Values.");
-          setMetricMode("values");
+          setSourceKey("val:fantasycalc");
         } else {
-          if (projectionSource === "CBS"  && !next.CBS)  setProjectionSource(next.ESPN ? "ESPN" : "CSV");
-          if (projectionSource === "ESPN" && !next.ESPN) setProjectionSource(next.CSV ? "CSV" : "CBS");
-          if (projectionSource === "CSV"  && !next.CSV)  setProjectionSource(next.ESPN ? "ESPN" : "CBS");
+          if (projectionSource === "CBS"  && !next.CBS)  setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
+          if (projectionSource === "ESPN" && !next.ESPN) setSourceKey(next.CSV ? "proj:ffa" : "proj:cbs");
+          if (projectionSource === "CSV"  && !next.CSV)  setSourceKey(next.ESPN ? "proj:espn" : "proj:cbs");
         }
       } catch {
         if (!mounted) return;
         setProjError("Projections unavailable — using Values.");
-        setMetricMode("values");
+        setSourceKey("val:fantasycalc");
       } finally {
         if (mounted) setProjLoading(false);
       }
@@ -241,6 +249,12 @@ export default function PlayoffOddsPage() {
   /* Value source (used in values mode) */
   const [valueSource, setValueSource] = useState("FantasyCalc");
   const getValue = useMemo(() => makeGetPlayerValue(valueSource, formatLocal, qbLocal), [valueSource, formatLocal, qbLocal]);
+
+  useEffect(() => {
+    setMetricMode(metricModeFromSourceKey(sourceKey));
+    setProjectionSource(projectionSourceFromKey(sourceKey));
+    setValueSource(valueSourceFromKey(sourceKey));
+  }, [sourceKey]);
 
   /* Build unified weekly metric */
   const [week, setWeek] = useState(1);
@@ -463,10 +477,24 @@ export default function PlayoffOddsPage() {
       <Navbar pageTitle="Playoff Odds" />
       <div className="max-w-7xl mx-auto px-4 pt-20 pb-10">
         <Card className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Simulation Setup</div>
+              <div className="mt-1 text-sm text-white/65">
+                Pick the league, scoring lens, and simulation window before we estimate playoff paths.
+              </div>
+            </div>
+            <div className="text-xs text-white/45">
+              {metricMode === "projections"
+                ? "Odds modeled from projected lineup strength"
+                : "Odds modeled from value-based roster strength"}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-4">
             <span className="font-semibold">League:</span>
             <select
-              className="bg-gray-800 text-white p-2 rounded"
+              className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
               value={activeLeague || ""}
               onChange={(e) => {
                 const id = e.target.value;
@@ -483,6 +511,28 @@ export default function PlayoffOddsPage() {
               ))}
             </select>
 
+            <div className="min-w-[280px] rounded-2xl border border-fuchsia-400/15 bg-gradient-to-br from-fuchsia-500/10 via-slate-900 to-slate-950 p-3 sm:ml-auto">
+              <SourceSelector
+                sources={DEFAULT_SOURCES}
+                value={sourceKey}
+                onChange={setSourceKey}
+                className="w-full"
+                mode={formatLocal}
+                qbType={qbLocal}
+                onModeChange={handleSetFormat}
+                onQbTypeChange={handleSetQbType}
+              />
+              <div className="mt-2 text-xs text-white/60">
+                {projError && metricMode === "projections"
+                  ? "Projection feed missing, so odds are using values."
+                  : metricMode === "projections"
+                  ? "Use projections for a contender-style playoff forecast."
+                  : "Use values for a market-based roster strength forecast."}
+              </div>
+            </div>
+
+            {false && (
+              <>
             {/* Metric switch */}
             <span className="font-semibold ml-2">Metric:</span>
             <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
@@ -539,6 +589,8 @@ export default function PlayoffOddsPage() {
                 />
               </>
             )}
+            </>
+          )}
 
             <span className="font-semibold ml-2">Weeks:</span>
             <input

@@ -685,8 +685,8 @@
       "value": 4169
     },
     {
-      "name": "Sonny Styles",
-      "position": "LB",
+      "name": "Arvell Reese",
+      "position": "ED",
       "team": "",
       "value": 4164
     },
@@ -841,63 +841,63 @@
       "value": 3655
     },
     {
+      "name": "Kyle Hamilton",
+      "position": "S",
+      "team": "BLT",
+      "value": 3611
+    },
+    {
       "name": "Caleb Downs",
       "position": "S",
       "team": "",
-      "value": 3611
+      "value": 3609
+    },
+    {
+      "name": "Sonny Styles",
+      "position": "LB",
+      "team": "",
+      "value": 3608
     },
     {
       "name": "Brian Burns",
       "position": "ED",
       "team": "NYG",
-      "value": 3609
-    },
-    {
-      "name": "Arvell Reese",
-      "position": "ED",
-      "team": "",
-      "value": 3608
+      "value": 3606
     },
     {
       "name": "Roquan Smith",
       "position": "LB",
       "team": "BAL",
-      "value": 3606
+      "value": 3605
     },
     {
       "name": "Ernest Jones",
       "position": "LB",
       "team": "SEA",
-      "value": 3605
+      "value": 3603
     },
     {
       "name": "Zack Baun",
       "position": "LB",
       "team": "PHI",
-      "value": 3603
+      "value": 3602
     },
     {
       "name": "Nik Bonitto",
       "position": "ED",
       "team": "DEN",
-      "value": 3602
+      "value": 3600
     },
     {
       "name": "Jared Verse",
       "position": "ED",
       "team": "LAR",
-      "value": 3600
+      "value": 3599
     },
     {
       "name": "Laiatu Latu",
       "position": "ED",
       "team": "IND",
-      "value": 3599
-    },
-    {
-      "name": "Kyle Hamilton",
-      "position": "S",
-      "team": "BLT",
       "value": 3598
     },
     {
@@ -1141,9 +1141,9 @@
       "value": 3284
     },
     {
-      "name": "CJ Allen",
+      "name": "Nate Landman",
       "position": "LB",
-      "team": "",
+      "team": "LAR",
       "value": 3264
     },
     {
@@ -1159,8 +1159,8 @@
       "value": 3253
     },
     {
-      "name": "Cedric Gray",
-      "position": "LB",
+      "name": "Jeffery Simmons",
+      "position": "IDL",
       "team": "TEN",
       "value": 3241
     },
@@ -1171,15 +1171,15 @@
       "value": 3222
     },
     {
-      "name": "Jamien Sherwood",
+      "name": "Devin Lloyd",
       "position": "LB",
-      "team": "NYJ",
+      "team": "JAX",
       "value": 3220
     },
     {
-      "name": "Nate Landman",
+      "name": "Devin Bush",
       "position": "LB",
-      "team": "LAR",
+      "team": "CLE",
       "value": 3200
     },
     {
@@ -1195,9 +1195,9 @@
       "value": 3184
     },
     {
-      "name": "Jeffery Simmons",
-      "position": "IDL",
-      "team": "TEN",
+      "name": "Jacob Rodriguez",
+      "position": "LB",
+      "team": "",
       "value": 3180
     },
     {
@@ -1207,7 +1207,7 @@
       "value": 3175
     },
     {
-      "name": "Jacob Rodriguez",
+      "name": "CJ Allen",
       "position": "LB",
       "team": "",
       "value": 3162
@@ -1219,9 +1219,9 @@
       "value": 3147
     },
     {
-      "name": "Quay Walker",
-      "position": "LB",
-      "team": "GB",
+      "name": "Nick Herbig",
+      "position": "ED",
+      "team": "PIT",
       "value": 3144
     },
     {
@@ -1237,9 +1237,9 @@
       "value": 3130
     },
     {
-      "name": "Payton Wilson",
-      "position": "LB",
-      "team": "PIT",
+      "name": "Jalen Carter",
+      "position": "IDL",
+      "team": "PHI",
       "value": 3127
     },
     {
@@ -1255,15 +1255,15 @@
       "value": 3120
     },
     {
-      "name": "Nick Herbig",
-      "position": "ED",
-      "team": "PIT",
+      "name": "Leo Chenal",
+      "position": "LB",
+      "team": "KC",
       "value": 3111
     },
     {
-      "name": "Byron Young",
-      "position": "ED",
-      "team": "LAR",
+      "name": "Dillon Thieneman",
+      "position": "S",
+      "team": "",
       "value": 3096
     },
     {
@@ -1279,21 +1279,21 @@
       "value": 3086
     },
     {
-      "name": "Byron Murphy II",
-      "position": "IDL",
-      "team": "SEA",
+      "name": "Emmanuel McNeil-Warren",
+      "position": "S",
+      "team": "",
       "value": 3082
     },
     {
-      "name": "Jalen Carter",
-      "position": "IDL",
-      "team": "PHI",
+      "name": "Cedric Gray",
+      "position": "LB",
+      "team": "TEN",
       "value": 3068
     },
     {
-      "name": "Jordyn Brooks",
+      "name": "Quay Walker",
       "position": "LB",
-      "team": "MIA",
+      "team": "GB",
       "value": 3055
     },
     {
@@ -1303,9 +1303,9 @@
       "value": 3052
     },
     {
-      "name": "Derwin James",
-      "position": "S",
-      "team": "LAC",
+      "name": "Jamien Sherwood",
+      "position": "LB",
+      "team": "NYJ",
       "value": 3043
     },
     {
@@ -1321,9 +1321,9 @@
       "value": 3036
     },
     {
-      "name": "Foye Oluokun",
+      "name": "Payton Wilson",
       "position": "LB",
-      "team": "JAX",
+      "team": "PIT",
       "value": 3031
     },
     {
@@ -1339,9 +1339,9 @@
       "value": 3021
     },
     {
-      "name": "Danielle Hunter",
+      "name": "Byron Young",
       "position": "ED",
-      "team": "HOU",
+      "team": "LAR",
       "value": 3020
     },
     {
@@ -1351,9 +1351,9 @@
       "value": 3017
     },
     {
-      "name": "Andrew Van Ginkel",
-      "position": "ED",
-      "team": "MIN",
+      "name": "Byron Murphy II",
+      "position": "IDL",
+      "team": "SEA",
       "value": 3009
     },
     {
@@ -1363,21 +1363,21 @@
       "value": 3002
     },
     {
-      "name": "Alex Highsmith",
+      "name": "Danielle Hunter",
       "position": "ED",
-      "team": "PIT",
+      "team": "HOU",
       "value": 2999
     },
     {
-      "name": "Zach Allen",
-      "position": "IDL",
-      "team": "DEN",
+      "name": "Derwin James",
+      "position": "S",
+      "team": "LAC",
       "value": 2989
     },
     {
-      "name": "Trey Hendrickson",
-      "position": "ED",
-      "team": "CIN",
+      "name": "Cooper Dejean",
+      "position": "CB",
+      "team": "PHI",
       "value": 2980
     },
     {
@@ -1387,21 +1387,21 @@
       "value": 2976
     },
     {
-      "name": "Dillon Thieneman",
-      "position": "S",
-      "team": "",
+      "name": "Devon Witherspoon",
+      "position": "CB",
+      "team": "SEA",
       "value": 2971
     },
     {
-      "name": "Emmanuel McNeil-Warren",
-      "position": "S",
-      "team": "",
+      "name": "Jordyn Brooks",
+      "position": "LB",
+      "team": "MIA",
       "value": 2963
     },
     {
-      "name": "Cooper Dejean",
-      "position": "CB",
-      "team": "PHI",
+      "name": "Foye Oluokun",
+      "position": "LB",
+      "team": "JAX",
       "value": 2955
     },
     {
@@ -1411,15 +1411,15 @@
       "value": 2954
     },
     {
-      "name": "Tremaine Edmunds",
-      "position": "LB",
-      "team": "CHI",
+      "name": "Andrew Van Ginkel",
+      "position": "ED",
+      "team": "MIN",
       "value": 2948
     },
     {
-      "name": "Blake Cashman",
-      "position": "LB",
-      "team": "MIN",
+      "name": "Alex Highsmith",
+      "position": "ED",
+      "team": "PIT",
       "value": 2940
     },
     {
@@ -1429,9 +1429,9 @@
       "value": 2937
     },
     {
-      "name": "Devin Lloyd",
-      "position": "LB",
-      "team": "JAX",
+      "name": "Zach Allen",
+      "position": "IDL",
+      "team": "DEN",
       "value": 2934
     },
     {
@@ -1441,9 +1441,9 @@
       "value": 2934
     },
     {
-      "name": "Danny Stutsman",
-      "position": "LB",
-      "team": "NO",
+      "name": "Trey Hendrickson",
+      "position": "ED",
+      "team": "CIN",
       "value": 2927
     },
     {
@@ -2065,9 +2065,9 @@
       "value": 2157
     },
     {
-      "name": "Leo Chenal",
+      "name": "Tremaine Edmunds",
       "position": "LB",
-      "team": "KC",
+      "team": "CHI",
       "value": 2153
     },
     {
@@ -2083,9 +2083,9 @@
       "value": 2143
     },
     {
-      "name": "Devon Witherspoon",
-      "position": "CB",
-      "team": "SEA",
+      "name": "Blake Cashman",
+      "position": "LB",
+      "team": "MIN",
       "value": 2141
     },
     {
@@ -2119,9 +2119,9 @@
       "value": 2130
     },
     {
-      "name": "Tykee Smith",
-      "position": "S",
-      "team": "TB",
+      "name": "Danny Stutsman",
+      "position": "LB",
+      "team": "NO",
       "value": 2129
     },
     {
@@ -2137,9 +2137,9 @@
       "value": 2122
     },
     {
-      "name": "Daiyan Henley",
-      "position": "LB",
-      "team": "LAC",
+      "name": "Tykee Smith",
+      "position": "S",
+      "team": "TB",
       "value": 2118
     },
     {
@@ -2155,15 +2155,15 @@
       "value": 2109
     },
     {
-      "name": "Calijah Kancey",
-      "position": "IDL",
-      "team": "TB",
+      "name": "Daiyan Henley",
+      "position": "LB",
+      "team": "LAC",
       "value": 2108
     },
     {
-      "name": "Jake Golday",
-      "position": "LB",
-      "team": "",
+      "name": "Calijah Kancey",
+      "position": "IDL",
+      "team": "TB",
       "value": 2098
     },
     {
@@ -2173,9 +2173,9 @@
       "value": 2094
     },
     {
-      "name": "Kayvon Thibodeaux",
-      "position": "ED",
-      "team": "NYG",
+      "name": "Jake Golday",
+      "position": "LB",
+      "team": "",
       "value": 2089
     },
     {
@@ -2191,9 +2191,9 @@
       "value": 2086
     },
     {
-      "name": "George Karlaftis",
+      "name": "Kayvon Thibodeaux",
       "position": "ED",
-      "team": "KC",
+      "team": "NYG",
       "value": 2080
     },
     {
@@ -2287,9 +2287,9 @@
       "value": 2022
     },
     {
-      "name": "Tyrel Dodson",
-      "position": "LB",
-      "team": "MIA",
+      "name": "George Karlaftis",
+      "position": "ED",
+      "team": "KC",
       "value": 2017
     },
     {
@@ -2329,9 +2329,9 @@
       "value": 2006
     },
     {
-      "name": "YaYa Diaby",
+      "name": "Jaelan Phillips",
       "position": "ED",
-      "team": "TB",
+      "team": "PHI",
       "value": 2001
     },
     {
@@ -2341,15 +2341,15 @@
       "value": 2001
     },
     {
-      "name": "Chop Robinson",
-      "position": "ED",
-      "team": "MIA",
-      "value": 1997
-    },
-    {
       "name": "Nolan Smith",
       "position": "ED",
       "team": "PHI",
+      "value": 1997
+    },
+    {
+      "name": "Odafe Oweh",
+      "position": "ED",
+      "team": "LAC",
       "value": 1992
     },
     {
@@ -2359,51 +2359,51 @@
       "value": 1992
     },
     {
-      "name": "Jaelan Phillips",
+      "name": "YaYa Diaby",
       "position": "ED",
-      "team": "PHI",
+      "team": "TB",
       "value": 1988
+    },
+    {
+      "name": "Tyrel Dodson",
+      "position": "LB",
+      "team": "MIA",
+      "value": 1984
+    },
+    {
+      "name": "Chop Robinson",
+      "position": "ED",
+      "team": "MIA",
+      "value": 1980
     },
     {
       "name": "Will Mcdonald",
       "position": "ED",
       "team": "NYJ",
-      "value": 1984
+      "value": 1977
     },
     {
       "name": "Chase Young",
       "position": "ED",
       "team": "NO",
-      "value": 1980
+      "value": 1973
     },
     {
       "name": "TJ Parker",
       "position": "ED",
       "team": "",
-      "value": 1977
-    },
-    {
-      "name": "James Pearce Jr",
-      "position": "ED",
-      "team": "ATL",
-      "value": 1973
+      "value": 1970
     },
     {
       "name": "Nic Scourton",
       "position": "ED",
       "team": "CAR",
-      "value": 1970
-    },
-    {
-      "name": "Josiah Trotter",
-      "position": "LB",
-      "team": "",
       "value": 1967
     },
     {
-      "name": "Anthony Hill Jr",
+      "name": "Kaden Elliss",
       "position": "LB",
-      "team": "",
+      "team": "ATL",
       "value": 1964
     },
     {
@@ -2419,9 +2419,9 @@
       "value": 1962
     },
     {
-      "name": "Zaire Franklin",
+      "name": "Anthony Hill Jr",
       "position": "LB",
-      "team": "IND",
+      "team": "",
       "value": 1961
     },
     {
@@ -2431,45 +2431,45 @@
       "value": 1960
     },
     {
+      "name": "Josiah Trotter",
+      "position": "LB",
+      "team": "",
+      "value": 1958
+    },
+    {
+      "name": "Zaire Franklin",
+      "position": "LB",
+      "team": "IND",
+      "value": 1956
+    },
+    {
       "name": "Demetrius Knight",
       "position": "LB",
       "team": "CIN",
-      "value": 1958
+      "value": 1953
     },
     {
       "name": "Nikolas Martin",
       "position": "LB",
       "team": "SF",
-      "value": 1956
+      "value": 1951
     },
     {
       "name": "Robert Spillane",
       "position": "LB",
       "team": "LVR",
-      "value": 1953
+      "value": 1949
     },
     {
       "name": "Jonathon Cooper",
       "position": "ED",
       "team": "DEN",
-      "value": 1951
+      "value": 1947
     },
     {
       "name": "Josh Sweat",
       "position": "ED",
       "team": "ARI",
-      "value": 1949
-    },
-    {
-      "name": "Travon Walker",
-      "position": "ED",
-      "team": "JAX",
-      "value": 1947
-    },
-    {
-      "name": "Quinnen Williams",
-      "position": "IDL",
-      "team": "DAL",
       "value": 1945
     },
     {
@@ -2479,118 +2479,124 @@
       "value": 1944
     },
     {
+      "name": "Travon Walker",
+      "position": "ED",
+      "team": "JAX",
+      "value": 1943
+    },
+    {
+      "name": "Quinnen Williams",
+      "position": "IDL",
+      "team": "DAL",
+      "value": 1941
+    },
+    {
       "name": "Azeez Al Shaair",
       "position": "LB",
       "team": "HOU",
-      "value": 1943
+      "value": 1939
     },
     {
       "name": "TJ Edwards",
       "position": "LB",
       "team": "CHI",
-      "value": 1941
-    },
-    {
-      "name": "Kaden Elliss",
-      "position": "LB",
-      "team": "ATL",
-      "value": 1939
+      "value": 1938
     },
     {
       "name": "Quincy Williams",
       "position": "LB",
       "team": "NYJ",
-      "value": 1938
+      "value": 1936
     },
     {
       "name": "Frankie Luvu",
       "position": "LB",
       "team": "WSH",
-      "value": 1936
+      "value": 1935
     },
     {
       "name": "Montez Sweat",
       "position": "ED",
       "team": "CHI",
-      "value": 1935
+      "value": 1933
     },
     {
       "name": "DeForest Buckner",
       "position": "IDL",
       "team": "SF",
-      "value": 1933
+      "value": 1932
+    },
+    {
+      "name": "Boye Mafe",
+      "position": "ED",
+      "team": "SEA",
+      "value": 1931
     },
     {
       "name": "Rashan Gary",
       "position": "ED",
       "team": "GB",
-      "value": 1932
+      "value": 1930
     },
     {
       "name": "Mykel Williams",
       "position": "ED",
       "team": "SF",
-      "value": 1931
+      "value": 1928
     },
     {
       "name": "Divine Deablo",
       "position": "LB",
       "team": "ATL",
-      "value": 1930
+      "value": 1927
     },
     {
       "name": "Bobby Okereke",
       "position": "LB",
       "team": "NYG",
-      "value": 1928
+      "value": 1926
     },
     {
       "name": "Carl Granderson",
       "position": "ED",
       "team": "NO",
-      "value": 1927
+      "value": 1925
     },
     {
       "name": "Xaiver Watts",
       "position": "S",
       "team": "ATL",
-      "value": 1926
+      "value": 1924
     },
     {
       "name": "Jalen Pitre",
       "position": "S",
       "team": "HOU",
-      "value": 1925
+      "value": 1923
     },
     {
       "name": "Budda Baker",
       "position": "S",
       "team": "ARZ",
-      "value": 1924
+      "value": 1923
     },
     {
       "name": "Trevon Moehrig",
       "position": "S",
       "team": "CAR",
-      "value": 1923
+      "value": 1922
     },
     {
       "name": "Talanoa Hufanga",
       "position": "S",
       "team": "DEN",
-      "value": 1923
+      "value": 1921
     },
     {
       "name": "Antoine Winfield Jr.",
       "position": "S",
       "team": "TB",
-      "value": 1922
-    },
-    {
-      "name": "Devin Bush",
-      "position": "LB",
-      "team": "CLE",
-      "value": 1921
+      "value": 1920
     },
     {
       "name": "Devin White",
@@ -2602,13 +2608,13 @@
       "name": "Bobby Wagner",
       "position": "LB",
       "team": "WSH",
-      "value": 1920
+      "value": 1919
     },
     {
       "name": "Lavonte David",
       "position": "LB",
       "team": "TB",
-      "value": 1919
+      "value": 1918
     },
     {
       "name": "Quentin Lake",
@@ -2620,7 +2626,7 @@
       "name": "Julian Love",
       "position": "S",
       "team": "SEA",
-      "value": 1918
+      "value": 1917
     },
     {
       "name": "Jeremy Chinn",
@@ -2632,18 +2638,12 @@
       "name": "Malaki Starks",
       "position": "S",
       "team": "BAL",
-      "value": 1917
+      "value": 1916
     },
     {
       "name": "Nick Cross",
       "position": "S",
       "team": "IND",
-      "value": 1916
-    },
-    {
-      "name": "Dadrion Taylor-Demerson",
-      "position": "S",
-      "team": "ARI",
       "value": 1916
     },
     {
@@ -2659,6 +2659,12 @@
       "value": 1916
     },
     {
+      "name": "Dadrion Taylor-Demerson",
+      "position": "S",
+      "team": "ARI",
+      "value": 1915
+    },
+    {
       "name": "Cole Bishop",
       "position": "S",
       "team": "BUF",
@@ -2668,7 +2674,7 @@
       "name": "Jessie Bates III",
       "position": "S",
       "team": "ATL",
-      "value": 1915
+      "value": 1914
     },
     {
       "name": "Walter Nolen",
@@ -2677,16 +2683,16 @@
       "value": 1914
     },
     {
-      "name": "Derrick Harmon",
-      "position": "IDL",
-      "team": "PIT",
-      "value": 1914
-    },
-    {
       "name": "Germie Bernard",
       "position": "WR",
       "team": "PHI",
       "value": 1914
+    },
+    {
+      "name": "Derrick Harmon",
+      "position": "IDL",
+      "team": "PIT",
+      "value": 1913
     },
     {
       "name": "Milton Williams",
@@ -2704,7 +2710,7 @@
       "name": "Johnny Newton",
       "position": "IDL",
       "team": "WSH",
-      "value": 1913
+      "value": 1912
     },
     {
       "name": "Kobie Turner",
@@ -2725,39 +2731,33 @@
       "value": 1912
     },
     {
-      "name": "Ashton Gillotte",
-      "position": "ED",
-      "team": "KC",
-      "value": 1912
-    },
-    {
       "name": "2026 Pick 3.11",
       "position": "PICK",
       "team": "",
       "value": 1912
     },
     {
+      "name": "Myles Murphy",
+      "position": "ED",
+      "team": "CIN",
+      "value": 1911
+    },
+    {
+      "name": "Jalyx Hunt",
+      "position": "ED",
+      "team": "PHI",
+      "value": 1911
+    },
+    {
+      "name": "Ashton Gillotte",
+      "position": "ED",
+      "team": "KC",
+      "value": 1911
+    },
+    {
       "name": "Christian Harris",
       "position": "LB",
       "team": "HOU",
-      "value": 1911
-    },
-    {
-      "name": "Trevin Wallace",
-      "position": "LB",
-      "team": "CAR",
-      "value": 1911
-    },
-    {
-      "name": "SirVocea Dennis",
-      "position": "LB",
-      "team": "TB",
-      "value": 1911
-    },
-    {
-      "name": "Cody Simon",
-      "position": "LB",
-      "team": "ARI",
       "value": 1911
     },
     {
@@ -2767,21 +2767,21 @@
       "value": 1911
     },
     {
-      "name": "Noah Sewell",
+      "name": "Trevin Wallace",
       "position": "LB",
-      "team": "CHI",
+      "team": "CAR",
       "value": 1910
     },
     {
-      "name": "Mason Graham",
-      "position": "IDL",
-      "team": "CLE",
+      "name": "SirVocea Dennis",
+      "position": "LB",
+      "team": "TB",
       "value": 1910
     },
     {
-      "name": "Leonard Williams",
-      "position": "IDL",
-      "team": "SEA",
+      "name": "Cody Simon",
+      "position": "LB",
+      "team": "ARI",
       "value": 1910
     },
     {
@@ -3307,9 +3307,9 @@
       "value": 1428
     },
     {
-      "name": "Mike Sainristill",
-      "position": "CB",
-      "team": "WSH",
+      "name": "Noah Sewell",
+      "position": "LB",
+      "team": "CHI",
       "value": 1425
     },
     {
@@ -3325,9 +3325,9 @@
       "value": 1422
     },
     {
-      "name": "Jalyx Hunt",
-      "position": "ED",
-      "team": "PHI",
+      "name": "Mason Graham",
+      "position": "IDL",
+      "team": "CLE",
       "value": 1415
     },
     {
@@ -3337,9 +3337,9 @@
       "value": 1412
     },
     {
-      "name": "Chris Jones",
+      "name": "Leonard Williams",
       "position": "IDL",
-      "team": "KC",
+      "team": "SEA",
       "value": 1406
     },
     {
@@ -3349,9 +3349,9 @@
       "value": 1401
     },
     {
-      "name": "Marcus Jones",
+      "name": "Mike Sainristill",
       "position": "CB",
-      "team": "NE",
+      "team": "WSH",
       "value": 1397
     },
     {
@@ -3361,9 +3361,9 @@
       "value": 1391
     },
     {
-      "name": "Alex Singleton",
-      "position": "LB",
-      "team": "DEN",
+      "name": "Chris Jones",
+      "position": "IDL",
+      "team": "KC",
       "value": 1388
     },
     {
@@ -3373,9 +3373,9 @@
       "value": 1381
     },
     {
-      "name": "Josh Metellus",
-      "position": "S",
-      "team": "MIN",
+      "name": "Marcus Jones",
+      "position": "CB",
+      "team": "NE",
       "value": 1380
     },
     {
@@ -3385,9 +3385,9 @@
       "value": 1377
     },
     {
-      "name": "Tyler Nubin",
-      "position": "S",
-      "team": "NYG",
+      "name": "Alex Singleton",
+      "position": "LB",
+      "team": "DEN",
       "value": 1373
     },
     {
@@ -3403,15 +3403,15 @@
       "value": 1367
     },
     {
-      "name": "Myles Murphy",
-      "position": "ED",
-      "team": "CIN",
+      "name": "Josh Metellus",
+      "position": "S",
+      "team": "MIN",
       "value": 1365
     },
     {
-      "name": "Jack Sawyer",
-      "position": "ED",
-      "team": "PIT",
+      "name": "Tyler Nubin",
+      "position": "S",
+      "team": "NYG",
       "value": 1359
     },
     {
@@ -3421,9 +3421,9 @@
       "value": 1359
     },
     {
-      "name": "Harold Landry",
+      "name": "Jack Sawyer",
       "position": "ED",
-      "team": "TEN",
+      "team": "PIT",
       "value": 1352
     },
     {
@@ -3439,15 +3439,15 @@
       "value": 1351
     },
     {
-      "name": "Kwity Paye",
+      "name": "Harold Landry",
       "position": "ED",
-      "team": "IND",
+      "team": "TEN",
       "value": 1346
     },
     {
-      "name": "Jahdae Barron",
-      "position": "CB",
-      "team": "DEN",
+      "name": "James Pearce Jr",
+      "position": "ED",
+      "team": "ATL",
       "value": 1340
     },
     {
@@ -3457,9 +3457,9 @@
       "value": 1336
     },
     {
-      "name": "Christian Rozeboom",
-      "position": "LB",
-      "team": "CAR",
+      "name": "Kwity Paye",
+      "position": "ED",
+      "team": "IND",
       "value": 1334
     },
     {
@@ -3469,9 +3469,9 @@
       "value": 1330
     },
     {
-      "name": "Kamari Lassiter",
+      "name": "Jahdae Barron",
       "position": "CB",
-      "team": "HOU",
+      "team": "DEN",
       "value": 1329
     },
     {
@@ -3481,9 +3481,9 @@
       "value": 1326
     },
     {
-      "name": "Chamarri Conner",
-      "position": "CB",
-      "team": "KC",
+      "name": "Christian Rozeboom",
+      "position": "LB",
+      "team": "CAR",
       "value": 1324
     },
     {
@@ -3499,15 +3499,15 @@
       "value": 1320
     },
     {
-      "name": "Ed Oliver",
-      "position": "IDL",
-      "team": "BUF",
+      "name": "Kamari Lassiter",
+      "position": "CB",
+      "team": "HOU",
       "value": 1319
     },
     {
-      "name": "Ventrell Miller",
-      "position": "LB",
-      "team": "JAX",
+      "name": "Chamarri Conner",
+      "position": "CB",
+      "team": "KC",
       "value": 1314
     },
     {
@@ -3517,15 +3517,15 @@
       "value": 1312
     },
     {
-      "name": "Jacob Parrish",
-      "position": "CB",
-      "team": "TB",
+      "name": "Ed Oliver",
+      "position": "IDL",
+      "team": "BUF",
       "value": 1310
     },
     {
-      "name": "Kamren Curl",
-      "position": "S",
-      "team": "LAR",
+      "name": "Ventrell Miller",
+      "position": "LB",
+      "team": "JAX",
       "value": 1306
     },
     {
@@ -3535,15 +3535,15 @@
       "value": 1306
     },
     {
-      "name": "Jordan Battle",
-      "position": "S",
-      "team": "CIN",
+      "name": "Jacob Parrish",
+      "position": "CB",
+      "team": "TB",
       "value": 1302
     },
     {
-      "name": "Derrick Brown",
-      "position": "IDL",
-      "team": "CAR",
+      "name": "Kamren Curl",
+      "position": "S",
+      "team": "LAR",
       "value": 1298
     },
     {
@@ -3559,21 +3559,21 @@
       "value": 1296
     },
     {
-      "name": "Jermaine Johnson",
-      "position": "ED",
-      "team": "NYJ",
+      "name": "Jordan Battle",
+      "position": "S",
+      "team": "CIN",
       "value": 1294
     },
     {
-      "name": "Jaquan Brisker",
-      "position": "S",
-      "team": "CHI",
+      "name": "Derrick Brown",
+      "position": "IDL",
+      "team": "CAR",
       "value": 1291
     },
     {
-      "name": "Trent McDuffie",
-      "position": "CB",
-      "team": "KC",
+      "name": "Jermaine Johnson",
+      "position": "ED",
+      "team": "NYJ",
       "value": 1288
     },
     {
@@ -3583,9 +3583,9 @@
       "value": 1286
     },
     {
-      "name": "K'lavon Chaisson",
-      "position": "ED",
-      "team": "NE",
+      "name": "Jaquan Brisker",
+      "position": "S",
+      "team": "CHI",
       "value": 1284
     },
     {
@@ -3595,9 +3595,9 @@
       "value": 1284
     },
     {
-      "name": "Shemar Stewart",
-      "position": "ED",
-      "team": "CIN",
+      "name": "Trent McDuffie",
+      "position": "CB",
+      "team": "KC",
       "value": 1282
     },
     {
@@ -3607,9 +3607,9 @@
       "value": 1281
     },
     {
-      "name": "Micah Mcfadden",
-      "position": "LB",
-      "team": "NYG",
+      "name": "K'lavon Chaisson",
+      "position": "ED",
+      "team": "NE",
       "value": 1279
     },
     {
@@ -3619,9 +3619,9 @@
       "value": 1279
     },
     {
-      "name": "Derrick Barnes",
-      "position": "LB",
-      "team": "DET",
+      "name": "Shemar Stewart",
+      "position": "ED",
+      "team": "CIN",
       "value": 1276
     },
     {
@@ -3631,39 +3631,39 @@
       "value": 1276
     },
     {
+      "name": "Micah Mcfadden",
+      "position": "LB",
+      "team": "NYG",
+      "value": 1273
+    },
+    {
+      "name": "Derrick Barnes",
+      "position": "LB",
+      "team": "DET",
+      "value": 1271
+    },
+    {
       "name": "Billy Bowman",
       "position": "S",
       "team": "ATL",
-      "value": 1273
+      "value": 1269
     },
     {
       "name": "Grant Delpit",
       "position": "S",
       "team": "CLE",
-      "value": 1271
+      "value": 1267
+    },
+    {
+      "name": "Bryan Cook",
+      "position": "S",
+      "team": "",
+      "value": 1265
     },
     {
       "name": "Malik Mustapha",
       "position": "S",
       "team": "SF",
-      "value": 1269
-    },
-    {
-      "name": "Landon Jackson",
-      "position": "ED",
-      "team": "BUF",
-      "value": 1267
-    },
-    {
-      "name": "Dee Winters",
-      "position": "LB",
-      "team": "SF",
-      "value": 1265
-    },
-    {
-      "name": "Teddye Buchanan",
-      "position": "LB",
-      "team": "BAL",
       "value": 1263
     },
     {
@@ -3673,9 +3673,9 @@
       "value": 1262
     },
     {
-      "name": "Dre Greenlaw",
-      "position": "LB",
-      "team": "DEN",
+      "name": "Landon Jackson",
+      "position": "ED",
+      "team": "BUF",
       "value": 1261
     },
     {
@@ -3685,9 +3685,9 @@
       "value": 1261
     },
     {
-      "name": "Mack Wilson",
+      "name": "Dee Winters",
       "position": "LB",
-      "team": "ARI",
+      "team": "SF",
       "value": 1259
     },
     {
@@ -3697,27 +3697,27 @@
       "value": 1259
     },
     {
-      "name": "Jonah Elliss",
-      "position": "ED",
-      "team": "DEN",
+      "name": "Teddye Buchanan",
+      "position": "LB",
+      "team": "BAL",
       "value": 1257
     },
     {
-      "name": "Jordan Burch",
-      "position": "ED",
-      "team": "ARI",
+      "name": "Dre Greenlaw",
+      "position": "LB",
+      "team": "DEN",
       "value": 1256
     },
     {
-      "name": "Josaiah Stewart",
-      "position": "ED",
-      "team": "LAR",
+      "name": "Mack Wilson",
+      "position": "LB",
+      "team": "ARI",
       "value": 1254
     },
     {
-      "name": "Khalil Mack",
+      "name": "Jonah Elliss",
       "position": "ED",
-      "team": "LAC",
+      "team": "DEN",
       "value": 1253
     },
     {
@@ -3727,93 +3727,93 @@
       "value": 1252
     },
     {
-      "name": "Odafe Oweh",
+      "name": "Jordan Burch",
+      "position": "ED",
+      "team": "ARI",
+      "value": 1251
+    },
+    {
+      "name": "Josaiah Stewart",
+      "position": "ED",
+      "team": "LAR",
+      "value": 1250
+    },
+    {
+      "name": "Khalil Mack",
       "position": "ED",
       "team": "LAC",
-      "value": 1251
+      "value": 1249
     },
     {
       "name": "Jack Kiser",
       "position": "LB",
       "team": "JAX",
-      "value": 1250
+      "value": 1247
     },
     {
       "name": "Drake Thomas",
       "position": "LB",
       "team": "SEA",
-      "value": 1249
+      "value": 1246
     },
     {
       "name": "Cody Barton",
       "position": "LB",
       "team": "TEN",
-      "value": 1247
+      "value": 1245
+    },
+    {
+      "name": "Bradley Chubb",
+      "position": "ED",
+      "team": "MIA",
+      "value": 1244
+    },
+    {
+      "name": "Joseph Ossai",
+      "position": "ED",
+      "team": "CIN",
+      "value": 1243
     },
     {
       "name": "Andru Phillips",
       "position": "CB",
       "team": "NYG",
-      "value": 1246
+      "value": 1242
     },
     {
       "name": "Jack Sanborn",
       "position": "LB",
       "team": "DAL",
-      "value": 1245
-    },
-    {
-      "name": "Boye Mafe",
-      "position": "ED",
-      "team": "SEA",
-      "value": 1244
+      "value": 1241
     },
     {
       "name": "Tyrice Knight",
       "position": "LB",
       "team": "SEA",
-      "value": 1243
+      "value": 1240
     },
     {
       "name": "Kenny Moore II",
       "position": "CB",
       "team": "IND",
-      "value": 1242
+      "value": 1240
     },
     {
       "name": "Gervon Dexter Dr",
       "position": "IDL",
       "team": "CHI",
-      "value": 1241
+      "value": 1239
     },
     {
       "name": "Devonte Wyatt",
       "position": "IDL",
       "team": "GB",
-      "value": 1240
+      "value": 1238
     },
     {
       "name": "Alex Anzalone",
       "position": "LB",
       "team": "DET",
-      "value": 1240
-    },
-    {
-      "name": "Brandon Jones",
-      "position": "S",
-      "team": "DEN",
-      "value": 1239
-    },
-    {
-      "name": "Camryn Bynum",
-      "position": "S",
-      "team": "IND",
-      "value": 1238
-    },
-    {
-      "name": "Daxton Hill",
-      "position": "S",
-      "team": "CIN",
       "value": 1237
     },
     {
@@ -3829,45 +3829,45 @@
       "value": 1236
     },
     {
-      "name": "Omarr Norman Lott",
-      "position": "IDL",
-      "team": "KC",
-      "value": 1236
-    },
-    {
       "name": "Jonas Sanker",
       "position": "S",
       "team": "NO",
-      "value": 1235
-    },
-    {
-      "name": "Kenneth Grant",
-      "position": "IDL",
-      "team": "MIA",
-      "value": 1235
-    },
-    {
-      "name": "Derick Hall",
-      "position": "ED",
-      "team": "SEA",
-      "value": 1234
-    },
-    {
-      "name": "Tyree Wilson",
-      "position": "ED",
-      "team": "LVR",
-      "value": 1234
+      "value": 1236
     },
     {
       "name": "Lukas Van Ness",
       "position": "ED",
       "team": "GB",
+      "value": 1235
+    },
+    {
+      "name": "Oluwafemi Oladejo",
+      "position": "ED",
+      "team": "TEN",
+      "value": 1235
+    },
+    {
+      "name": "Brandon Jones",
+      "position": "S",
+      "team": "DEN",
+      "value": 1234
+    },
+    {
+      "name": "Camryn Bynum",
+      "position": "S",
+      "team": "IND",
+      "value": 1234
+    },
+    {
+      "name": "Alohi Gilman",
+      "position": "S",
+      "team": "LAC",
       "value": 1233
     },
     {
-      "name": "Tatum Bethune",
-      "position": "LB",
-      "team": "SF",
+      "name": "Daxton Hill",
+      "position": "S",
+      "team": "CIN",
       "value": 1233
     },
     {
@@ -3877,15 +3877,15 @@
       "value": 1233
     },
     {
-      "name": "Pete Werner",
-      "position": "LB",
-      "team": "NO",
+      "name": "Omarr Norman Lott",
+      "position": "IDL",
+      "team": "KC",
       "value": 1232
     },
     {
-      "name": "Zaven Collins",
-      "position": "ED",
-      "team": "ARI",
+      "name": "Kenneth Grant",
+      "position": "IDL",
+      "team": "MIA",
       "value": 1232
     },
     {
@@ -3895,40 +3895,58 @@
       "value": 1232
     },
     {
-      "name": "Oluwafemi Oladejo",
+      "name": "Derick Hall",
       "position": "ED",
-      "team": "TEN",
+      "team": "SEA",
       "value": 1231
+    },
+    {
+      "name": "Tyree Wilson",
+      "position": "ED",
+      "team": "LVR",
+      "value": 1231
+    },
+    {
+      "name": "Tatum Bethune",
+      "position": "LB",
+      "team": "SF",
+      "value": 1231
+    },
+    {
+      "name": "Pete Werner",
+      "position": "LB",
+      "team": "NO",
+      "value": 1230
+    },
+    {
+      "name": "Zaven Collins",
+      "position": "ED",
+      "team": "ARI",
+      "value": 1230
     },
     {
       "name": "Demario Davis",
       "position": "LB",
       "team": "NO",
-      "value": 1231
+      "value": 1230
     },
     {
       "name": "Isaiah McGuire",
       "position": "ED",
       "team": "CLE",
-      "value": 1231
+      "value": 1229
     },
     {
       "name": "Andrew Mukuba",
       "position": "S",
       "team": "PHI",
-      "value": 1230
-    },
-    {
-      "name": "Bryce Huff",
-      "position": "ED",
-      "team": "SF",
-      "value": 1230
+      "value": 1229
     },
     {
       "name": "Logan Wilson",
       "position": "LB",
       "team": "CIN",
-      "value": 1230
+      "value": 1229
     },
     {
       "name": "Christian Gonzalez",
@@ -3940,19 +3958,19 @@
       "name": "Keisean Nixon",
       "position": "CB",
       "team": "GB",
-      "value": 1229
+      "value": 1228
     },
     {
       "name": "Uchenna Nwosu",
       "position": "ED",
       "team": "SEA",
-      "value": 1229
+      "value": 1228
     },
     {
       "name": "Dexter Lawrence",
       "position": "IDL",
       "team": "NYG",
-      "value": 1229
+      "value": 1228
     },
     {
       "name": "Justin Madubuike",
@@ -3970,19 +3988,19 @@
       "name": "Shemar James",
       "position": "LB",
       "team": "DAL",
-      "value": 1228
+      "value": 1227
     },
     {
       "name": "Shaun Dolac",
       "position": "LB",
       "team": "LAR",
-      "value": 1228
+      "value": 1227
     },
     {
       "name": "Lathan Ransom",
       "position": "S",
       "team": "CAR",
-      "value": 1228
+      "value": 1227
     },
     {
       "name": "Baron Browning",
@@ -4009,24 +4027,6 @@
       "value": 1227
     },
     {
-      "name": "Malcolm Koonce",
-      "position": "ED",
-      "team": "LVR",
-      "value": 1227
-    },
-    {
-      "name": "Christian Elliss",
-      "position": "LB",
-      "team": "NE",
-      "value": 1227
-    },
-    {
-      "name": "Kyler Gordon",
-      "position": "CB",
-      "team": "CHI",
-      "value": 1227
-    },
-    {
       "name": "Jalin Hyatt",
       "position": "WR",
       "team": "NYG",
@@ -4037,6 +4037,24 @@
       "position": "QB",
       "team": "GBP",
       "value": 1227
+    },
+    {
+      "name": "Malcolm Koonce",
+      "position": "ED",
+      "team": "LVR",
+      "value": 1226
+    },
+    {
+      "name": "Christian Elliss",
+      "position": "LB",
+      "team": "NE",
+      "value": 1226
+    },
+    {
+      "name": "Kyler Gordon",
+      "position": "CB",
+      "team": "CHI",
+      "value": 1226
     },
     {
       "name": "Taron Johnson",
@@ -4084,36 +4102,24 @@
       "name": "Princely Umanmielen",
       "position": "ED",
       "team": "CAR",
-      "value": 1226
+      "value": 1225
     },
     {
       "name": "Drue Tranquill",
       "position": "LB",
       "team": "KC",
-      "value": 1226
+      "value": 1225
     },
     {
       "name": "Jaycee Horn",
       "position": "CB",
       "team": "CAR",
-      "value": 1226
+      "value": 1225
     },
     {
       "name": "Germaine Pratt",
       "position": "LB",
       "team": "IND",
-      "value": 1225
-    },
-    {
-      "name": "Bradley Chubb",
-      "position": "ED",
-      "team": "MIA",
-      "value": 1225
-    },
-    {
-      "name": "Joseph Ossai",
-      "position": "ED",
-      "team": "CIN",
       "value": 1225
     },
     {
@@ -4186,12 +4192,6 @@
       "name": "Haason Reddick",
       "position": "ED",
       "team": "TB",
-      "value": 1225
-    },
-    {
-      "name": "Jevon Holland",
-      "position": "S",
-      "team": "NYG",
       "value": 1225
     },
     {
@@ -4525,9 +4525,9 @@
       "value": 956
     },
     {
-      "name": "Quan Martin",
+      "name": "Jevon Holland",
       "position": "S",
-      "team": "WAS",
+      "team": "NYG",
       "value": 951
     },
     {
@@ -4537,15 +4537,15 @@
       "value": 951
     },
     {
-      "name": "Reed Blankenship",
+      "name": "Quan Martin",
       "position": "S",
-      "team": "PHI",
+      "team": "WAS",
       "value": 945
     },
     {
-      "name": "Justin Reid",
+      "name": "Reed Blankenship",
       "position": "S",
-      "team": "NO",
+      "team": "PHI",
       "value": 939
     },
     {
@@ -4555,15 +4555,15 @@
       "value": 935
     },
     {
-      "name": "Jalen Thompson",
+      "name": "Justin Reid",
       "position": "S",
-      "team": "ARI",
+      "team": "NO",
       "value": 934
     },
     {
-      "name": "Theo Jackson",
+      "name": "Jalen Thompson",
       "position": "S",
-      "team": "MIN",
+      "team": "ARI",
       "value": 928
     },
     {
@@ -4795,9 +4795,9 @@
       "value": 860
     },
     {
-      "name": "Daron Payne",
-      "position": "IDL",
-      "team": "WSH",
+      "name": "Craig Woodson",
+      "position": "S",
+      "team": "NE",
       "value": 857
     },
     {
@@ -4813,9 +4813,9 @@
       "value": 855
     },
     {
-      "name": "Jonathan Allen",
-      "position": "IDL",
-      "team": "MIN",
+      "name": "Andrew Wingard",
+      "position": "S",
+      "team": "JAX",
       "value": 854
     },
     {
@@ -4825,15 +4825,15 @@
       "value": 854
     },
     {
-      "name": "Craig Woodson",
+      "name": "TY Okada",
       "position": "S",
-      "team": "NE",
+      "team": "SEA",
       "value": 851
     },
     {
-      "name": "Andrew Wingard",
-      "position": "S",
-      "team": "JAX",
+      "name": "Daron Payne",
+      "position": "IDL",
+      "team": "WSH",
       "value": 848
     },
     {
@@ -4843,51 +4843,51 @@
       "value": 846
     },
     {
+      "name": "Jonathan Allen",
+      "position": "IDL",
+      "team": "MIN",
+      "value": 845
+    },
+    {
       "name": "Dante Trader Jr",
       "position": "S",
       "team": "MIA",
-      "value": 845
+      "value": 842
     },
     {
       "name": "Tyson Campbell",
       "position": "CB",
       "team": "JAX",
-      "value": 842
+      "value": 839
     },
     {
       "name": "L'Jarius Sneed",
       "position": "CB",
       "team": "TEN",
-      "value": 839
+      "value": 837
     },
     {
       "name": "Nate Wiggins",
       "position": "CB",
       "team": "BAL",
-      "value": 837
+      "value": 834
     },
     {
       "name": "Byron Murphy",
       "position": "CB",
       "team": "MIN",
-      "value": 834
+      "value": 832
     },
     {
       "name": "Deommodore Lenoir",
       "position": "CB",
       "team": "SF",
-      "value": 832
+      "value": 829
     },
     {
       "name": "Terrion Arnold",
       "position": "CB",
       "team": "DET",
-      "value": 829
-    },
-    {
-      "name": "Tarheeb Still",
-      "position": "CB",
-      "team": "LAC",
       "value": 827
     },
     {
@@ -4897,8 +4897,8 @@
       "value": 827
     },
     {
-      "name": "Elijah Molden",
-      "position": "S",
+      "name": "Tarheeb Still",
+      "position": "CB",
       "team": "LAC",
       "value": 825
     },
@@ -4909,9 +4909,9 @@
       "value": 823
     },
     {
-      "name": "TY Okada",
+      "name": "Elijah Molden",
       "position": "S",
-      "team": "SEA",
+      "team": "LAC",
       "value": 822
     },
     {
@@ -4933,45 +4933,45 @@
       "value": 820
     },
     {
+      "name": "Theo Jackson",
+      "position": "S",
+      "team": "MIN",
+      "value": 818
+    },
+    {
       "name": "Sauce Gardner",
       "position": "CB",
       "team": "NYJ",
-      "value": 818
+      "value": 816
     },
     {
       "name": "Michael Hall Jr",
       "position": "IDL",
       "team": "CLE",
-      "value": 816
+      "value": 814
     },
     {
       "name": "Nate Hobbs",
       "position": "CB",
       "team": "GB",
-      "value": 814
+      "value": 812
     },
     {
       "name": "Will Johnson",
       "position": "CB",
       "team": "ARI",
-      "value": 812
+      "value": 810
     },
     {
       "name": "Quinyon Mitchell",
       "position": "CB",
       "team": "PHI",
-      "value": 810
+      "value": 809
     },
     {
       "name": "Keion White",
       "position": "ED",
       "team": "SF",
-      "value": 809
-    },
-    {
-      "name": "Chris Braswell",
-      "position": "ED",
-      "team": "TB",
       "value": 807
     },
     {
@@ -4987,9 +4987,9 @@
       "value": 806
     },
     {
-      "name": "AJ Epenesa",
+      "name": "Chris Braswell",
       "position": "ED",
-      "team": "BUF",
+      "team": "TB",
       "value": 805
     },
     {
@@ -4999,9 +4999,9 @@
       "value": 805
     },
     {
-      "name": "Joey Porter Jr",
-      "position": "CB",
-      "team": "PIT",
+      "name": "AJ Epenesa",
+      "position": "ED",
+      "team": "BUF",
       "value": 804
     },
     {
@@ -5017,21 +5017,21 @@
       "value": 804
     },
     {
+      "name": "Joey Porter Jr",
+      "position": "CB",
+      "team": "PIT",
+      "value": 802
+    },
+    {
       "name": "Anfernee Jennings",
       "position": "ED",
       "team": "NE",
-      "value": 802
+      "value": 801
     },
     {
       "name": "Javon Solomon",
       "position": "ED",
       "team": "BUF",
-      "value": 801
-    },
-    {
-      "name": "Azeez Ojulari",
-      "position": "ED",
-      "team": "PHI",
       "value": 799
     },
     {
@@ -5041,15 +5041,15 @@
       "value": 799
     },
     {
-      "name": "Jeremiah Trotter",
-      "position": "LB",
+      "name": "Azeez Ojulari",
+      "position": "ED",
       "team": "PHI",
       "value": 798
     },
     {
-      "name": "Tommy Eichenberg",
+      "name": "Jeremiah Trotter",
       "position": "LB",
-      "team": "LVR",
+      "team": "PHI",
       "value": 796
     },
     {
@@ -5059,51 +5059,51 @@
       "value": 796
     },
     {
+      "name": "Tommy Eichenberg",
+      "position": "LB",
+      "team": "LVR",
+      "value": 795
+    },
+    {
       "name": "Omar Speights",
       "position": "LB",
       "team": "LAR",
-      "value": 795
+      "value": 793
     },
     {
       "name": "Akeem Davis Gaither",
       "position": "LB",
       "team": "ARI",
-      "value": 793
+      "value": 792
     },
     {
       "name": "Arden Key",
       "position": "ED",
       "team": "TEN",
-      "value": 792
+      "value": 791
     },
     {
       "name": "Joey Bosa",
       "position": "ED",
       "team": "SF",
-      "value": 791
+      "value": 790
     },
     {
       "name": "Jordan Magee",
       "position": "LB",
       "team": "WSH",
-      "value": 790
+      "value": 789
     },
     {
       "name": "Drew Sanders",
       "position": "LB",
       "team": "DEN",
-      "value": 789
+      "value": 787
     },
     {
       "name": "Eric Wilson",
       "position": "LB",
       "team": "MIN",
-      "value": 787
-    },
-    {
-      "name": "Jeffrey Bassa",
-      "position": "LB",
-      "team": "KC",
       "value": 786
     },
     {
@@ -5113,33 +5113,33 @@
       "value": 786
     },
     {
+      "name": "Jeffrey Bassa",
+      "position": "LB",
+      "team": "KC",
+      "value": 785
+    },
+    {
       "name": "Kain Medrano",
       "position": "LB",
       "team": "WSH",
-      "value": 785
+      "value": 784
     },
     {
       "name": "Trenton Simpson",
       "position": "LB",
       "team": "BAL",
-      "value": 784
+      "value": 783
     },
     {
       "name": "Matt Milano",
       "position": "LB",
       "team": "BUF",
-      "value": 783
+      "value": 782
     },
     {
       "name": "Troy Andersen",
       "position": "LB",
       "team": "ATL",
-      "value": 782
-    },
-    {
-      "name": "Willie Gay",
-      "position": "LB",
-      "team": "MIA",
       "value": 781
     },
     {
@@ -5149,10 +5149,16 @@
       "value": 781
     },
     {
+      "name": "Willie Gay",
+      "position": "LB",
+      "team": "MIA",
+      "value": 780
+    },
+    {
       "name": "Isaiah Mcduffie",
       "position": "LB",
       "team": "GB",
-      "value": 780
+      "value": 779
     },
     {
       "name": "David Walker",
@@ -5164,25 +5170,25 @@
       "name": "Patrick Surtain",
       "position": "CB",
       "team": "DEN",
-      "value": 779
+      "value": 778
     },
     {
       "name": "Kevin Byard",
       "position": "S",
       "team": "PHI",
-      "value": 778
+      "value": 777
     },
     {
       "name": "Evan Williams",
       "position": "S",
       "team": "GB",
-      "value": 777
+      "value": 776
     },
     {
       "name": "Demarcus Lawrence",
       "position": "ED",
       "team": "SEA",
-      "value": 776
+      "value": 775
     },
     {
       "name": "John Franklin-Myers",
@@ -5194,19 +5200,19 @@
       "name": "Kyle Van Noy",
       "position": "ED",
       "team": "BAL",
-      "value": 775
+      "value": 774
     },
     {
       "name": "Cooper McDonald",
       "position": "LB",
       "team": "KC",
-      "value": 774
+      "value": 773
     },
     {
       "name": "Joe Bachie",
       "position": "LB",
       "team": "CIN",
-      "value": 773
+      "value": 772
     },
     {
       "name": "Marist Liufau",
@@ -5218,7 +5224,7 @@
       "name": "Darius Muasau",
       "position": "LB",
       "team": "NYG",
-      "value": 772
+      "value": 771
     },
     {
       "name": "Marlowe Wax",
@@ -5230,13 +5236,13 @@
       "name": "EJ Speed",
       "position": "LB",
       "team": "HOU",
-      "value": 771
+      "value": 770
     },
     {
       "name": "Bralen Trice",
       "position": "ED",
       "team": "ATL",
-      "value": 770
+      "value": 769
     },
     {
       "name": "Adisa Isaac",
@@ -5248,7 +5254,7 @@
       "name": "Javon Hargrave",
       "position": "IDL",
       "team": "MIN",
-      "value": 769
+      "value": 768
     },
     {
       "name": "Samuel Mondon Jr",
@@ -5260,12 +5266,6 @@
       "name": "Deone Walker",
       "position": "IDL",
       "team": "BUF",
-      "value": 768
-    },
-    {
-      "name": "Alohi Gilman",
-      "position": "S",
-      "team": "LAC",
       "value": 767
     },
     {
@@ -5524,6 +5524,12 @@
       "name": "Jaylon Jones",
       "position": "CB",
       "team": "IND",
+      "value": 755
+    },
+    {
+      "name": "Bryce Huff",
+      "position": "ED",
+      "team": "SF",
       "value": 755
     },
     {
@@ -6225,8 +6231,8 @@
       "value": 4918
     },
     {
-      "name": "Sonny Styles",
-      "position": "LB",
+      "name": "Arvell Reese",
+      "position": "ED",
       "team": "",
       "value": 4916
     },
@@ -6471,9 +6477,9 @@
       "value": 4215
     },
     {
-      "name": "Caleb Downs",
+      "name": "Kyle Hamilton",
       "position": "S",
-      "team": "",
+      "team": "BLT",
       "value": 4213
     },
     {
@@ -6483,9 +6489,9 @@
       "value": 4191
     },
     {
-      "name": "Brian Burns",
-      "position": "ED",
-      "team": "NYG",
+      "name": "Caleb Downs",
+      "position": "S",
+      "team": "",
       "value": 4185
     },
     {
@@ -6513,8 +6519,8 @@
       "value": 4159
     },
     {
-      "name": "Arvell Reese",
-      "position": "ED",
+      "name": "Sonny Styles",
+      "position": "LB",
       "team": "",
       "value": 4157
     },
@@ -6525,9 +6531,9 @@
       "value": 4144
     },
     {
-      "name": "Roquan Smith",
-      "position": "LB",
-      "team": "BAL",
+      "name": "Brian Burns",
+      "position": "ED",
+      "team": "NYG",
       "value": 4129
     },
     {
@@ -6537,9 +6543,9 @@
       "value": 4117
     },
     {
-      "name": "Ernest Jones",
+      "name": "Roquan Smith",
       "position": "LB",
-      "team": "SEA",
+      "team": "BAL",
       "value": 4102
     },
     {
@@ -6549,9 +6555,9 @@
       "value": 4084
     },
     {
-      "name": "Zack Baun",
+      "name": "Ernest Jones",
       "position": "LB",
-      "team": "PHI",
+      "team": "SEA",
       "value": 4075
     },
     {
@@ -6567,9 +6573,9 @@
       "value": 4057
     },
     {
-      "name": "Nik Bonitto",
-      "position": "ED",
-      "team": "DEN",
+      "name": "Zack Baun",
+      "position": "LB",
+      "team": "PHI",
       "value": 4048
     },
     {
@@ -6579,9 +6585,9 @@
       "value": 4029
     },
     {
-      "name": "Jared Verse",
+      "name": "Nik Bonitto",
       "position": "ED",
-      "team": "LAR",
+      "team": "DEN",
       "value": 4021
     },
     {
@@ -6591,15 +6597,15 @@
       "value": 4000
     },
     {
-      "name": "Laiatu Latu",
+      "name": "Jared Verse",
       "position": "ED",
-      "team": "IND",
+      "team": "LAR",
       "value": 3995
     },
     {
-      "name": "Kyle Hamilton",
-      "position": "S",
-      "team": "BLT",
+      "name": "Laiatu Latu",
+      "position": "ED",
+      "team": "IND",
       "value": 3969
     },
     {
@@ -6957,21 +6963,21 @@
       "value": 3478
     },
     {
-      "name": "CJ Allen",
+      "name": "Nate Landman",
       "position": "LB",
-      "team": "",
+      "team": "LAR",
       "value": 3473
     },
     {
-      "name": "Cedric Gray",
-      "position": "LB",
+      "name": "Jeffery Simmons",
+      "position": "IDL",
       "team": "TEN",
       "value": 3467
     },
     {
-      "name": "Jamien Sherwood",
+      "name": "Devin Lloyd",
       "position": "LB",
-      "team": "NYJ",
+      "team": "JAX",
       "value": 3462
     },
     {
@@ -6981,9 +6987,9 @@
       "value": 3461
     },
     {
-      "name": "Nate Landman",
+      "name": "Devin Bush",
       "position": "LB",
-      "team": "LAR",
+      "team": "CLE",
       "value": 3457
     },
     {
@@ -6993,21 +6999,21 @@
       "value": 3456
     },
     {
-      "name": "Jeffery Simmons",
-      "position": "IDL",
-      "team": "TEN",
+      "name": "Jacob Rodriguez",
+      "position": "LB",
+      "team": "",
       "value": 3452
     },
     {
-      "name": "Jacob Rodriguez",
+      "name": "CJ Allen",
       "position": "LB",
       "team": "",
       "value": 3447
     },
     {
-      "name": "Quay Walker",
-      "position": "LB",
-      "team": "GB",
+      "name": "Nick Herbig",
+      "position": "ED",
+      "team": "PIT",
       "value": 3443
     },
     {
@@ -7017,9 +7023,9 @@
       "value": 3442
     },
     {
-      "name": "Payton Wilson",
-      "position": "LB",
-      "team": "PIT",
+      "name": "Jalen Carter",
+      "position": "IDL",
+      "team": "PHI",
       "value": 3438
     },
     {
@@ -7029,75 +7035,75 @@
       "value": 3436
     },
     {
-      "name": "Nick Herbig",
-      "position": "ED",
-      "team": "PIT",
+      "name": "Leo Chenal",
+      "position": "LB",
+      "team": "KC",
       "value": 3434
+    },
+    {
+      "name": "Dillon Thieneman",
+      "position": "S",
+      "team": "",
+      "value": 3431
+    },
+    {
+      "name": "Emmanuel McNeil-Warren",
+      "position": "S",
+      "team": "",
+      "value": 3427
+    },
+    {
+      "name": "Cedric Gray",
+      "position": "LB",
+      "team": "TEN",
+      "value": 3423
+    },
+    {
+      "name": "Quay Walker",
+      "position": "LB",
+      "team": "GB",
+      "value": 3420
+    },
+    {
+      "name": "Jamien Sherwood",
+      "position": "LB",
+      "team": "NYJ",
+      "value": 3417
+    },
+    {
+      "name": "Payton Wilson",
+      "position": "LB",
+      "team": "PIT",
+      "value": 3414
     },
     {
       "name": "Byron Young",
       "position": "ED",
       "team": "LAR",
-      "value": 3431
+      "value": 3411
     },
     {
       "name": "Byron Murphy II",
       "position": "IDL",
       "team": "SEA",
-      "value": 3427
-    },
-    {
-      "name": "Jalen Carter",
-      "position": "IDL",
-      "team": "PHI",
-      "value": 3423
-    },
-    {
-      "name": "Jordyn Brooks",
-      "position": "LB",
-      "team": "MIA",
-      "value": 3420
-    },
-    {
-      "name": "Derwin James",
-      "position": "S",
-      "team": "LAC",
-      "value": 3417
-    },
-    {
-      "name": "Foye Oluokun",
-      "position": "LB",
-      "team": "JAX",
-      "value": 3414
+      "value": 3409
     },
     {
       "name": "Danielle Hunter",
       "position": "ED",
       "team": "HOU",
-      "value": 3411
-    },
-    {
-      "name": "Andrew Van Ginkel",
-      "position": "ED",
-      "team": "MIN",
-      "value": 3409
-    },
-    {
-      "name": "Alex Highsmith",
-      "position": "ED",
-      "team": "PIT",
       "value": 3406
     },
     {
-      "name": "Zach Allen",
-      "position": "IDL",
-      "team": "DEN",
+      "name": "Derwin James",
+      "position": "S",
+      "team": "LAC",
       "value": 3404
     },
     {
-      "name": "Trey Hendrickson",
-      "position": "ED",
-      "team": "CIN",
+      "name": "Cooper Dejean",
+      "position": "CB",
+      "team": "PHI",
       "value": 3401
     },
     {
@@ -7107,9 +7113,9 @@
       "value": 3401
     },
     {
-      "name": "Dillon Thieneman",
-      "position": "S",
-      "team": "",
+      "name": "Devon Witherspoon",
+      "position": "CB",
+      "team": "SEA",
       "value": 3399
     },
     {
@@ -7119,39 +7125,39 @@
       "value": 3399
     },
     {
-      "name": "Emmanuel McNeil-Warren",
-      "position": "S",
-      "team": "",
+      "name": "Jordyn Brooks",
+      "position": "LB",
+      "team": "MIA",
       "value": 3397
     },
     {
-      "name": "Cooper Dejean",
-      "position": "CB",
-      "team": "PHI",
+      "name": "Foye Oluokun",
+      "position": "LB",
+      "team": "JAX",
       "value": 3395
     },
     {
-      "name": "Tremaine Edmunds",
-      "position": "LB",
-      "team": "CHI",
+      "name": "Andrew Van Ginkel",
+      "position": "ED",
+      "team": "MIN",
       "value": 3393
     },
     {
-      "name": "Blake Cashman",
-      "position": "LB",
-      "team": "MIN",
+      "name": "Alex Highsmith",
+      "position": "ED",
+      "team": "PIT",
       "value": 3391
     },
     {
-      "name": "Devin Lloyd",
-      "position": "LB",
-      "team": "JAX",
+      "name": "Zach Allen",
+      "position": "IDL",
+      "team": "DEN",
       "value": 3390
     },
     {
-      "name": "Danny Stutsman",
-      "position": "LB",
-      "team": "NO",
+      "name": "Trey Hendrickson",
+      "position": "ED",
+      "team": "CIN",
       "value": 3388
     },
     {
@@ -7719,39 +7725,39 @@
       "value": 2488
     },
     {
-      "name": "Leo Chenal",
+      "name": "Tremaine Edmunds",
       "position": "LB",
-      "team": "KC",
+      "team": "CHI",
       "value": 2479
     },
     {
-      "name": "Devon Witherspoon",
-      "position": "CB",
-      "team": "SEA",
+      "name": "Blake Cashman",
+      "position": "LB",
+      "team": "MIN",
       "value": 2475
+    },
+    {
+      "name": "Danny Stutsman",
+      "position": "LB",
+      "team": "NO",
+      "value": 2471
     },
     {
       "name": "Tykee Smith",
       "position": "S",
       "team": "TB",
-      "value": 2471
+      "value": 2467
     },
     {
       "name": "Daiyan Henley",
       "position": "LB",
       "team": "LAC",
-      "value": 2467
+      "value": 2463
     },
     {
       "name": "Calijah Kancey",
       "position": "IDL",
       "team": "TB",
-      "value": 2463
-    },
-    {
-      "name": "Jake Golday",
-      "position": "LB",
-      "team": "",
       "value": 2460
     },
     {
@@ -7761,15 +7767,15 @@
       "value": 2460
     },
     {
-      "name": "Kayvon Thibodeaux",
-      "position": "ED",
-      "team": "NYG",
+      "name": "Jake Golday",
+      "position": "LB",
+      "team": "",
       "value": 2456
     },
     {
-      "name": "George Karlaftis",
+      "name": "Kayvon Thibodeaux",
       "position": "ED",
-      "team": "KC",
+      "team": "NYG",
       "value": 2452
     },
     {
@@ -7845,9 +7851,9 @@
       "value": 2424
     },
     {
-      "name": "Tyrel Dodson",
-      "position": "LB",
-      "team": "MIA",
+      "name": "George Karlaftis",
+      "position": "ED",
+      "team": "KC",
       "value": 2421
     },
     {
@@ -7863,21 +7869,21 @@
       "value": 2415
     },
     {
-      "name": "YaYa Diaby",
+      "name": "Jaelan Phillips",
       "position": "ED",
-      "team": "TB",
+      "team": "PHI",
       "value": 2412
-    },
-    {
-      "name": "Chop Robinson",
-      "position": "ED",
-      "team": "MIA",
-      "value": 2408
     },
     {
       "name": "Nolan Smith",
       "position": "ED",
       "team": "PHI",
+      "value": 2408
+    },
+    {
+      "name": "Odafe Oweh",
+      "position": "ED",
+      "team": "LAC",
       "value": 2405
     },
     {
@@ -7887,21 +7893,21 @@
       "value": 2404
     },
     {
-      "name": "Jaelan Phillips",
+      "name": "YaYa Diaby",
       "position": "ED",
-      "team": "PHI",
+      "team": "TB",
       "value": 2402
     },
     {
-      "name": "Will Mcdonald",
-      "position": "ED",
-      "team": "NYJ",
+      "name": "Tyrel Dodson",
+      "position": "LB",
+      "team": "MIA",
       "value": 2399
     },
     {
-      "name": "Chase Young",
+      "name": "Chop Robinson",
       "position": "ED",
-      "team": "NO",
+      "team": "MIA",
       "value": 2396
     },
     {
@@ -7911,57 +7917,57 @@
       "value": 2395
     },
     {
-      "name": "TJ Parker",
+      "name": "Will Mcdonald",
       "position": "ED",
-      "team": "",
+      "team": "NYJ",
       "value": 2393
     },
     {
-      "name": "James Pearce Jr",
+      "name": "Chase Young",
       "position": "ED",
-      "team": "ATL",
+      "team": "NO",
       "value": 2390
+    },
+    {
+      "name": "TJ Parker",
+      "position": "ED",
+      "team": "",
+      "value": 2387
     },
     {
       "name": "Nic Scourton",
       "position": "ED",
       "team": "CAR",
-      "value": 2387
+      "value": 2384
     },
     {
-      "name": "Josiah Trotter",
+      "name": "Kaden Elliss",
       "position": "LB",
-      "team": "",
-      "value": 2384
+      "team": "ATL",
+      "value": 2381
     },
     {
       "name": "Anthony Hill Jr",
       "position": "LB",
       "team": "",
-      "value": 2381
+      "value": 2378
+    },
+    {
+      "name": "Josiah Trotter",
+      "position": "LB",
+      "team": "",
+      "value": 2375
     },
     {
       "name": "Zaire Franklin",
       "position": "LB",
       "team": "IND",
-      "value": 2378
+      "value": 2373
     },
     {
       "name": "Demetrius Knight",
       "position": "LB",
       "team": "CIN",
-      "value": 2375
-    },
-    {
-      "name": "Nikolas Martin",
-      "position": "LB",
-      "team": "SF",
-      "value": 2373
-    },
-    {
-      "name": "Robert Spillane",
-      "position": "LB",
-      "team": "LVR",
       "value": 2370
     },
     {
@@ -7971,9 +7977,9 @@
       "value": 2369
     },
     {
-      "name": "Jonathon Cooper",
-      "position": "ED",
-      "team": "DEN",
+      "name": "Nikolas Martin",
+      "position": "LB",
+      "team": "SF",
       "value": 2367
     },
     {
@@ -7983,15 +7989,15 @@
       "value": 2366
     },
     {
-      "name": "Josh Sweat",
-      "position": "ED",
-      "team": "ARI",
+      "name": "Robert Spillane",
+      "position": "LB",
+      "team": "LVR",
       "value": 2364
     },
     {
-      "name": "Travon Walker",
+      "name": "Jonathon Cooper",
       "position": "ED",
-      "team": "JAX",
+      "team": "DEN",
       "value": 2362
     },
     {
@@ -8001,21 +8007,21 @@
       "value": 2362
     },
     {
-      "name": "Quinnen Williams",
-      "position": "IDL",
-      "team": "DAL",
+      "name": "Josh Sweat",
+      "position": "ED",
+      "team": "ARI",
       "value": 2359
     },
     {
-      "name": "Azeez Al Shaair",
-      "position": "LB",
-      "team": "HOU",
+      "name": "Travon Walker",
+      "position": "ED",
+      "team": "JAX",
       "value": 2356
     },
     {
-      "name": "TJ Edwards",
-      "position": "LB",
-      "team": "CHI",
+      "name": "Quinnen Williams",
+      "position": "IDL",
+      "team": "DAL",
       "value": 2354
     },
     {
@@ -8025,15 +8031,15 @@
       "value": 2352
     },
     {
-      "name": "Kaden Elliss",
+      "name": "Azeez Al Shaair",
       "position": "LB",
-      "team": "ATL",
+      "team": "HOU",
       "value": 2351
     },
     {
-      "name": "Quincy Williams",
+      "name": "TJ Edwards",
       "position": "LB",
-      "team": "NYJ",
+      "team": "CHI",
       "value": 2349
     },
     {
@@ -8043,9 +8049,9 @@
       "value": 2348
     },
     {
-      "name": "Frankie Luvu",
+      "name": "Quincy Williams",
       "position": "LB",
-      "team": "WSH",
+      "team": "NYJ",
       "value": 2346
     },
     {
@@ -8055,93 +8061,93 @@
       "value": 2346
     },
     {
+      "name": "Frankie Luvu",
+      "position": "LB",
+      "team": "WSH",
+      "value": 2343
+    },
+    {
       "name": "Montez Sweat",
       "position": "ED",
       "team": "CHI",
-      "value": 2343
+      "value": 2341
     },
     {
       "name": "DeForest Buckner",
       "position": "IDL",
       "team": "SF",
-      "value": 2341
+      "value": 2338
+    },
+    {
+      "name": "Boye Mafe",
+      "position": "ED",
+      "team": "SEA",
+      "value": 2336
     },
     {
       "name": "Rashan Gary",
       "position": "ED",
       "team": "GB",
-      "value": 2338
+      "value": 2334
     },
     {
       "name": "Mykel Williams",
       "position": "ED",
       "team": "SF",
-      "value": 2336
+      "value": 2331
     },
     {
       "name": "Divine Deablo",
       "position": "LB",
       "team": "ATL",
-      "value": 2334
+      "value": 2329
     },
     {
       "name": "Bobby Okereke",
       "position": "LB",
       "team": "NYG",
-      "value": 2331
+      "value": 2326
     },
     {
       "name": "Carl Granderson",
       "position": "ED",
       "team": "NO",
-      "value": 2329
+      "value": 2324
     },
     {
       "name": "Xaiver Watts",
       "position": "S",
       "team": "ATL",
-      "value": 2326
+      "value": 2322
     },
     {
       "name": "Jalen Pitre",
       "position": "S",
       "team": "HOU",
-      "value": 2324
+      "value": 2319
     },
     {
       "name": "Budda Baker",
       "position": "S",
       "team": "ARZ",
-      "value": 2322
+      "value": 2317
     },
     {
       "name": "Trevon Moehrig",
       "position": "S",
       "team": "CAR",
-      "value": 2319
+      "value": 2315
     },
     {
       "name": "Talanoa Hufanga",
       "position": "S",
       "team": "DEN",
-      "value": 2317
+      "value": 2313
     },
     {
       "name": "Antoine Winfield Jr.",
       "position": "S",
       "team": "TB",
-      "value": 2315
-    },
-    {
-      "name": "Devin Bush",
-      "position": "LB",
-      "team": "CLE",
-      "value": 2313
-    },
-    {
-      "name": "Devin White",
-      "position": "LB",
-      "team": "LV",
       "value": 2311
     },
     {
@@ -8151,21 +8157,21 @@
       "value": 2311
     },
     {
+      "name": "Devin White",
+      "position": "LB",
+      "team": "LV",
+      "value": 2308
+    },
+    {
       "name": "Bobby Wagner",
       "position": "LB",
       "team": "WSH",
-      "value": 2308
+      "value": 2306
     },
     {
       "name": "Lavonte David",
       "position": "LB",
       "team": "TB",
-      "value": 2306
-    },
-    {
-      "name": "Quentin Lake",
-      "position": "S",
-      "team": "LAR",
       "value": 2304
     },
     {
@@ -8181,39 +8187,39 @@
       "value": 2303
     },
     {
+      "name": "Quentin Lake",
+      "position": "S",
+      "team": "LAR",
+      "value": 2302
+    },
+    {
       "name": "Julian Love",
       "position": "S",
       "team": "SEA",
-      "value": 2302
+      "value": 2300
     },
     {
       "name": "Jeremy Chinn",
       "position": "S",
       "team": "LVR",
-      "value": 2300
+      "value": 2298
     },
     {
       "name": "Malaki Starks",
       "position": "S",
       "team": "BAL",
-      "value": 2298
+      "value": 2296
     },
     {
       "name": "Nick Cross",
       "position": "S",
       "team": "IND",
-      "value": 2296
+      "value": 2294
     },
     {
       "name": "Dadrion Taylor-Demerson",
       "position": "S",
       "team": "ARI",
-      "value": 2294
-    },
-    {
-      "name": "Cole Bishop",
-      "position": "S",
-      "team": "BUF",
       "value": 2292
     },
     {
@@ -8223,9 +8229,9 @@
       "value": 2292
     },
     {
-      "name": "Jessie Bates III",
+      "name": "Cole Bishop",
       "position": "S",
-      "team": "ATL",
+      "team": "BUF",
       "value": 2290
     },
     {
@@ -8235,9 +8241,9 @@
       "value": 2290
     },
     {
-      "name": "Walter Nolen",
-      "position": "IDL",
-      "team": "ARI",
+      "name": "Jessie Bates III",
+      "position": "S",
+      "team": "ATL",
       "value": 2288
     },
     {
@@ -8247,9 +8253,9 @@
       "value": 2287
     },
     {
-      "name": "Derrick Harmon",
+      "name": "Walter Nolen",
       "position": "IDL",
-      "team": "PIT",
+      "team": "ARI",
       "value": 2286
     },
     {
@@ -8259,9 +8265,9 @@
       "value": 2285
     },
     {
-      "name": "Milton Williams",
+      "name": "Derrick Harmon",
       "position": "IDL",
-      "team": "NE",
+      "team": "PIT",
       "value": 2284
     },
     {
@@ -8271,45 +8277,45 @@
       "value": 2284
     },
     {
+      "name": "Milton Williams",
+      "position": "IDL",
+      "team": "NE",
+      "value": 2282
+    },
+    {
       "name": "Braden Fiske",
       "position": "IDL",
       "team": "LAR",
-      "value": 2282
+      "value": 2280
     },
     {
       "name": "Johnny Newton",
       "position": "IDL",
       "team": "WSH",
-      "value": 2280
+      "value": 2278
     },
     {
       "name": "Kobie Turner",
       "position": "IDL",
       "team": "LAR",
-      "value": 2278
+      "value": 2276
     },
     {
       "name": "JT Tuimoloau",
       "position": "ED",
       "team": "IND",
-      "value": 2276
+      "value": 2275
     },
     {
       "name": "Austin Booker",
       "position": "ED",
       "team": "CHI",
-      "value": 2275
-    },
-    {
-      "name": "Ashton Gillotte",
-      "position": "ED",
-      "team": "KC",
       "value": 2273
     },
     {
-      "name": "Christian Harris",
-      "position": "LB",
-      "team": "HOU",
+      "name": "Myles Murphy",
+      "position": "ED",
+      "team": "CIN",
       "value": 2271
     },
     {
@@ -8319,39 +8325,39 @@
       "value": 2271
     },
     {
+      "name": "Jalyx Hunt",
+      "position": "ED",
+      "team": "PHI",
+      "value": 2269
+    },
+    {
+      "name": "Ashton Gillotte",
+      "position": "ED",
+      "team": "KC",
+      "value": 2267
+    },
+    {
+      "name": "Christian Harris",
+      "position": "LB",
+      "team": "HOU",
+      "value": 2266
+    },
+    {
       "name": "Trevin Wallace",
       "position": "LB",
       "team": "CAR",
-      "value": 2269
+      "value": 2264
     },
     {
       "name": "SirVocea Dennis",
       "position": "LB",
       "team": "TB",
-      "value": 2267
+      "value": 2262
     },
     {
       "name": "Cody Simon",
       "position": "LB",
       "team": "ARI",
-      "value": 2266
-    },
-    {
-      "name": "Noah Sewell",
-      "position": "LB",
-      "team": "CHI",
-      "value": 2264
-    },
-    {
-      "name": "Mason Graham",
-      "position": "IDL",
-      "team": "CLE",
-      "value": 2262
-    },
-    {
-      "name": "Leonard Williams",
-      "position": "IDL",
-      "team": "SEA",
       "value": 2261
     },
     {
@@ -8913,9 +8919,9 @@
       "value": 1589
     },
     {
-      "name": "Mike Sainristill",
-      "position": "CB",
-      "team": "WSH",
+      "name": "Noah Sewell",
+      "position": "LB",
+      "team": "CHI",
       "value": 1572
     },
     {
@@ -8925,27 +8931,27 @@
       "value": 1571
     },
     {
-      "name": "Jalyx Hunt",
-      "position": "ED",
-      "team": "PHI",
+      "name": "Mason Graham",
+      "position": "IDL",
+      "team": "CLE",
       "value": 1570
+    },
+    {
+      "name": "Leonard Williams",
+      "position": "IDL",
+      "team": "SEA",
+      "value": 1569
+    },
+    {
+      "name": "Mike Sainristill",
+      "position": "CB",
+      "team": "WSH",
+      "value": 1567
     },
     {
       "name": "Chris Jones",
       "position": "IDL",
       "team": "KC",
-      "value": 1569
-    },
-    {
-      "name": "Marcus Jones",
-      "position": "CB",
-      "team": "NE",
-      "value": 1567
-    },
-    {
-      "name": "Alex Singleton",
-      "position": "LB",
-      "team": "DEN",
       "value": 1566
     },
     {
@@ -8955,45 +8961,45 @@
       "value": 1566
     },
     {
+      "name": "Marcus Jones",
+      "position": "CB",
+      "team": "NE",
+      "value": 1565
+    },
+    {
+      "name": "Alex Singleton",
+      "position": "LB",
+      "team": "DEN",
+      "value": 1563
+    },
+    {
       "name": "Josh Metellus",
       "position": "S",
       "team": "MIN",
-      "value": 1565
+      "value": 1562
     },
     {
       "name": "Tyler Nubin",
       "position": "S",
       "team": "NYG",
-      "value": 1563
-    },
-    {
-      "name": "Myles Murphy",
-      "position": "ED",
-      "team": "CIN",
-      "value": 1562
+      "value": 1560
     },
     {
       "name": "Jack Sawyer",
       "position": "ED",
       "team": "PIT",
-      "value": 1560
+      "value": 1559
     },
     {
       "name": "Harold Landry",
       "position": "ED",
       "team": "TEN",
-      "value": 1559
-    },
-    {
-      "name": "Kwity Paye",
-      "position": "ED",
-      "team": "IND",
       "value": 1558
     },
     {
-      "name": "Jahdae Barron",
-      "position": "CB",
-      "team": "DEN",
+      "name": "James Pearce Jr",
+      "position": "ED",
+      "team": "ATL",
       "value": 1556
     },
     {
@@ -9003,129 +9009,129 @@
       "value": 1556
     },
     {
+      "name": "Kwity Paye",
+      "position": "ED",
+      "team": "IND",
+      "value": 1555
+    },
+    {
+      "name": "Jahdae Barron",
+      "position": "CB",
+      "team": "DEN",
+      "value": 1554
+    },
+    {
       "name": "Christian Rozeboom",
       "position": "LB",
       "team": "CAR",
-      "value": 1555
+      "value": 1552
     },
     {
       "name": "Kamari Lassiter",
       "position": "CB",
       "team": "HOU",
-      "value": 1554
+      "value": 1551
     },
     {
       "name": "Chamarri Conner",
       "position": "CB",
       "team": "KC",
-      "value": 1552
+      "value": 1550
     },
     {
       "name": "Ed Oliver",
       "position": "IDL",
       "team": "BUF",
-      "value": 1551
+      "value": 1549
     },
     {
       "name": "Ventrell Miller",
       "position": "LB",
       "team": "JAX",
-      "value": 1550
+      "value": 1547
     },
     {
       "name": "Jacob Parrish",
       "position": "CB",
       "team": "TB",
-      "value": 1549
+      "value": 1546
     },
     {
       "name": "Kamren Curl",
       "position": "S",
       "team": "LAR",
-      "value": 1547
+      "value": 1545
     },
     {
       "name": "Jordan Battle",
       "position": "S",
       "team": "CIN",
-      "value": 1546
+      "value": 1544
     },
     {
       "name": "Derrick Brown",
       "position": "IDL",
       "team": "CAR",
-      "value": 1545
+      "value": 1543
     },
     {
       "name": "Jermaine Johnson",
       "position": "ED",
       "team": "NYJ",
-      "value": 1544
+      "value": 1541
     },
     {
       "name": "Jaquan Brisker",
       "position": "S",
       "team": "CHI",
-      "value": 1543
+      "value": 1540
     },
     {
       "name": "Trent McDuffie",
       "position": "CB",
       "team": "KC",
-      "value": 1541
+      "value": 1539
     },
     {
       "name": "K'lavon Chaisson",
       "position": "ED",
       "team": "NE",
-      "value": 1540
+      "value": 1538
     },
     {
       "name": "Shemar Stewart",
       "position": "ED",
       "team": "CIN",
-      "value": 1539
+      "value": 1537
     },
     {
       "name": "Micah Mcfadden",
       "position": "LB",
       "team": "NYG",
-      "value": 1538
+      "value": 1536
     },
     {
       "name": "Derrick Barnes",
       "position": "LB",
       "team": "DET",
-      "value": 1537
+      "value": 1535
     },
     {
       "name": "Billy Bowman",
       "position": "S",
       "team": "ATL",
-      "value": 1536
+      "value": 1533
     },
     {
       "name": "Grant Delpit",
       "position": "S",
       "team": "CLE",
-      "value": 1535
-    },
-    {
-      "name": "Malik Mustapha",
-      "position": "S",
-      "team": "SF",
-      "value": 1533
-    },
-    {
-      "name": "Landon Jackson",
-      "position": "ED",
-      "team": "BUF",
       "value": 1532
     },
     {
-      "name": "Dee Winters",
-      "position": "LB",
-      "team": "SF",
+      "name": "Bryan Cook",
+      "position": "S",
+      "team": "",
       "value": 1531
     },
     {
@@ -9135,135 +9141,135 @@
       "value": 1531
     },
     {
+      "name": "Malik Mustapha",
+      "position": "S",
+      "team": "SF",
+      "value": 1530
+    },
+    {
+      "name": "Landon Jackson",
+      "position": "ED",
+      "team": "BUF",
+      "value": 1529
+    },
+    {
+      "name": "Dee Winters",
+      "position": "LB",
+      "team": "SF",
+      "value": 1528
+    },
+    {
       "name": "Teddye Buchanan",
       "position": "LB",
       "team": "BAL",
-      "value": 1530
+      "value": 1527
     },
     {
       "name": "Dre Greenlaw",
       "position": "LB",
       "team": "DEN",
-      "value": 1529
+      "value": 1526
     },
     {
       "name": "Mack Wilson",
       "position": "LB",
       "team": "ARI",
-      "value": 1528
+      "value": 1525
     },
     {
       "name": "Jonah Elliss",
       "position": "ED",
       "team": "DEN",
-      "value": 1527
+      "value": 1524
     },
     {
       "name": "Jordan Burch",
       "position": "ED",
       "team": "ARI",
-      "value": 1526
+      "value": 1523
     },
     {
       "name": "Josaiah Stewart",
       "position": "ED",
       "team": "LAR",
-      "value": 1525
+      "value": 1522
     },
     {
       "name": "Khalil Mack",
       "position": "ED",
       "team": "LAC",
-      "value": 1524
-    },
-    {
-      "name": "Odafe Oweh",
-      "position": "ED",
-      "team": "LAC",
-      "value": 1523
+      "value": 1521
     },
     {
       "name": "Jack Kiser",
       "position": "LB",
       "team": "JAX",
-      "value": 1522
+      "value": 1520
     },
     {
       "name": "Drake Thomas",
       "position": "LB",
       "team": "SEA",
-      "value": 1521
+      "value": 1519
     },
     {
       "name": "Cody Barton",
       "position": "LB",
       "team": "TEN",
-      "value": 1520
+      "value": 1518
+    },
+    {
+      "name": "Bradley Chubb",
+      "position": "ED",
+      "team": "MIA",
+      "value": 1517
+    },
+    {
+      "name": "Joseph Ossai",
+      "position": "ED",
+      "team": "CIN",
+      "value": 1516
     },
     {
       "name": "Andru Phillips",
       "position": "CB",
       "team": "NYG",
-      "value": 1519
+      "value": 1515
     },
     {
       "name": "Jack Sanborn",
       "position": "LB",
       "team": "DAL",
-      "value": 1518
-    },
-    {
-      "name": "Boye Mafe",
-      "position": "ED",
-      "team": "SEA",
-      "value": 1517
+      "value": 1515
     },
     {
       "name": "Tyrice Knight",
       "position": "LB",
       "team": "SEA",
-      "value": 1516
+      "value": 1514
     },
     {
       "name": "Kenny Moore II",
       "position": "CB",
       "team": "IND",
-      "value": 1515
+      "value": 1513
     },
     {
       "name": "Gervon Dexter Dr",
       "position": "IDL",
       "team": "CHI",
-      "value": 1515
+      "value": 1512
     },
     {
       "name": "Devonte Wyatt",
       "position": "IDL",
       "team": "GB",
-      "value": 1514
+      "value": 1511
     },
     {
       "name": "Alex Anzalone",
       "position": "LB",
       "team": "DET",
-      "value": 1513
-    },
-    {
-      "name": "Brandon Jones",
-      "position": "S",
-      "team": "DEN",
-      "value": 1512
-    },
-    {
-      "name": "Camryn Bynum",
-      "position": "S",
-      "team": "IND",
-      "value": 1511
-    },
-    {
-      "name": "Daxton Hill",
-      "position": "S",
-      "team": "CIN",
       "value": 1510
     },
     {
@@ -9279,45 +9285,45 @@
       "value": 1508
     },
     {
-      "name": "Omarr Norman Lott",
-      "position": "IDL",
-      "team": "KC",
-      "value": 1508
-    },
-    {
       "name": "Jonas Sanker",
       "position": "S",
       "team": "NO",
-      "value": 1507
-    },
-    {
-      "name": "Kenneth Grant",
-      "position": "IDL",
-      "team": "MIA",
-      "value": 1506
-    },
-    {
-      "name": "Derick Hall",
-      "position": "ED",
-      "team": "SEA",
-      "value": 1505
-    },
-    {
-      "name": "Tyree Wilson",
-      "position": "ED",
-      "team": "LVR",
-      "value": 1504
+      "value": 1508
     },
     {
       "name": "Lukas Van Ness",
       "position": "ED",
       "team": "GB",
+      "value": 1507
+    },
+    {
+      "name": "Oluwafemi Oladejo",
+      "position": "ED",
+      "team": "TEN",
+      "value": 1506
+    },
+    {
+      "name": "Brandon Jones",
+      "position": "S",
+      "team": "DEN",
+      "value": 1505
+    },
+    {
+      "name": "Camryn Bynum",
+      "position": "S",
+      "team": "IND",
+      "value": 1504
+    },
+    {
+      "name": "Alohi Gilman",
+      "position": "S",
+      "team": "LAC",
       "value": 1503
     },
     {
-      "name": "Tatum Bethune",
-      "position": "LB",
-      "team": "SF",
+      "name": "Daxton Hill",
+      "position": "S",
+      "team": "CIN",
       "value": 1503
     },
     {
@@ -9327,33 +9333,33 @@
       "value": 1503
     },
     {
-      "name": "Pete Werner",
-      "position": "LB",
-      "team": "NO",
+      "name": "Omarr Norman Lott",
+      "position": "IDL",
+      "team": "KC",
       "value": 1502
     },
     {
-      "name": "Zaven Collins",
-      "position": "ED",
-      "team": "ARI",
+      "name": "Kenneth Grant",
+      "position": "IDL",
+      "team": "MIA",
       "value": 1501
     },
     {
-      "name": "Oluwafemi Oladejo",
+      "name": "Derick Hall",
       "position": "ED",
-      "team": "TEN",
+      "team": "SEA",
       "value": 1500
     },
     {
-      "name": "Demario Davis",
+      "name": "Tyree Wilson",
+      "position": "ED",
+      "team": "LVR",
+      "value": 1500
+    },
+    {
+      "name": "Tatum Bethune",
       "position": "LB",
-      "team": "NO",
-      "value": 1500
-    },
-    {
-      "name": "Isaiah McGuire",
-      "position": "ED",
-      "team": "CLE",
+      "team": "SF",
       "value": 1499
     },
     {
@@ -9363,51 +9369,51 @@
       "value": 1499
     },
     {
-      "name": "Andrew Mukuba",
-      "position": "S",
-      "team": "PHI",
+      "name": "Pete Werner",
+      "position": "LB",
+      "team": "NO",
       "value": 1498
     },
     {
-      "name": "Bryce Huff",
+      "name": "Zaven Collins",
       "position": "ED",
-      "team": "SF",
+      "team": "ARI",
       "value": 1497
+    },
+    {
+      "name": "Demario Davis",
+      "position": "LB",
+      "team": "NO",
+      "value": 1497
+    },
+    {
+      "name": "Isaiah McGuire",
+      "position": "ED",
+      "team": "CLE",
+      "value": 1496
+    },
+    {
+      "name": "Andrew Mukuba",
+      "position": "S",
+      "team": "PHI",
+      "value": 1495
     },
     {
       "name": "Logan Wilson",
       "position": "LB",
       "team": "CIN",
-      "value": 1497
+      "value": 1494
     },
     {
       "name": "Christian Gonzalez",
       "position": "CB",
       "team": "NE",
-      "value": 1496
+      "value": 1494
     },
     {
       "name": "Keisean Nixon",
       "position": "CB",
       "team": "GB",
-      "value": 1495
-    },
-    {
-      "name": "Uchenna Nwosu",
-      "position": "ED",
-      "team": "SEA",
-      "value": 1494
-    },
-    {
-      "name": "Dexter Lawrence",
-      "position": "IDL",
-      "team": "NYG",
-      "value": 1494
-    },
-    {
-      "name": "Justin Madubuike",
-      "position": "IDL",
-      "team": "BLT",
       "value": 1493
     },
     {
@@ -9417,21 +9423,21 @@
       "value": 1493
     },
     {
-      "name": "Dorance Armstrong",
+      "name": "Uchenna Nwosu",
       "position": "ED",
-      "team": "WSH",
+      "team": "SEA",
       "value": 1492
     },
     {
-      "name": "Shemar James",
-      "position": "LB",
-      "team": "DAL",
+      "name": "Dexter Lawrence",
+      "position": "IDL",
+      "team": "NYG",
       "value": 1492
     },
     {
-      "name": "Shaun Dolac",
-      "position": "LB",
-      "team": "LAR",
+      "name": "Justin Madubuike",
+      "position": "IDL",
+      "team": "BLT",
       "value": 1491
     },
     {
@@ -9441,33 +9447,33 @@
       "value": 1491
     },
     {
+      "name": "Dorance Armstrong",
+      "position": "ED",
+      "team": "WSH",
+      "value": 1490
+    },
+    {
+      "name": "Shemar James",
+      "position": "LB",
+      "team": "DAL",
+      "value": 1490
+    },
+    {
+      "name": "Shaun Dolac",
+      "position": "LB",
+      "team": "LAR",
+      "value": 1489
+    },
+    {
       "name": "Lathan Ransom",
       "position": "S",
       "team": "CAR",
-      "value": 1490
+      "value": 1488
     },
     {
       "name": "Baron Browning",
       "position": "ED",
       "team": "ARI",
-      "value": 1490
-    },
-    {
-      "name": "Dayo Odeyingbo",
-      "position": "ED",
-      "team": "CHI",
-      "value": 1489
-    },
-    {
-      "name": "Zach Harrison",
-      "position": "ED",
-      "team": "ATL",
-      "value": 1488
-    },
-    {
-      "name": "Zach Sieler",
-      "position": "IDL",
-      "team": "MIA",
       "value": 1488
     },
     {
@@ -9477,15 +9483,15 @@
       "value": 1488
     },
     {
-      "name": "Malcolm Koonce",
+      "name": "Dayo Odeyingbo",
       "position": "ED",
-      "team": "LVR",
+      "team": "CHI",
       "value": 1487
     },
     {
-      "name": "Christian Elliss",
-      "position": "LB",
-      "team": "NE",
+      "name": "Zach Harrison",
+      "position": "ED",
+      "team": "ATL",
       "value": 1487
     },
     {
@@ -9495,27 +9501,27 @@
       "value": 1487
     },
     {
-      "name": "Kyler Gordon",
-      "position": "CB",
-      "team": "CHI",
+      "name": "Zach Sieler",
+      "position": "IDL",
+      "team": "MIA",
       "value": 1486
     },
     {
-      "name": "Taron Johnson",
+      "name": "Malcolm Koonce",
+      "position": "ED",
+      "team": "LVR",
+      "value": 1485
+    },
+    {
+      "name": "Christian Elliss",
+      "position": "LB",
+      "team": "NE",
+      "value": 1485
+    },
+    {
+      "name": "Kyler Gordon",
       "position": "CB",
-      "team": "BUF",
-      "value": 1485
-    },
-    {
-      "name": "Junior Colson",
-      "position": "LB",
-      "team": "LAC",
-      "value": 1485
-    },
-    {
-      "name": "Dorian Williams",
-      "position": "LB",
-      "team": "BUF",
+      "team": "CHI",
       "value": 1484
     },
     {
@@ -9525,70 +9531,76 @@
       "value": 1484
     },
     {
-      "name": "Henry To'oTo'o",
-      "position": "LB",
-      "team": "HOU",
+      "name": "Taron Johnson",
+      "position": "CB",
+      "team": "BUF",
       "value": 1483
     },
     {
-      "name": "Troy Dye",
+      "name": "Junior Colson",
       "position": "LB",
       "team": "LAC",
       "value": 1483
     },
     {
+      "name": "Dorian Williams",
+      "position": "LB",
+      "team": "BUF",
+      "value": 1482
+    },
+    {
+      "name": "Henry To'oTo'o",
+      "position": "LB",
+      "team": "HOU",
+      "value": 1482
+    },
+    {
+      "name": "Troy Dye",
+      "position": "LB",
+      "team": "LAC",
+      "value": 1481
+    },
+    {
       "name": "Minkah Fitzpatrick",
       "position": "S",
       "team": "MIA",
-      "value": 1482
+      "value": 1481
     },
     {
       "name": "Deshon Elliot",
       "position": "S",
       "team": "PIT",
-      "value": 1482
+      "value": 1480
     },
     {
       "name": "Princely Umanmielen",
       "position": "ED",
       "team": "CAR",
-      "value": 1481
+      "value": 1479
     },
     {
       "name": "Drue Tranquill",
       "position": "LB",
       "team": "KC",
-      "value": 1481
+      "value": 1479
     },
     {
       "name": "Jaycee Horn",
       "position": "CB",
       "team": "CAR",
-      "value": 1480
+      "value": 1478
     },
     {
       "name": "Germaine Pratt",
       "position": "LB",
       "team": "IND",
-      "value": 1479
-    },
-    {
-      "name": "Bradley Chubb",
-      "position": "ED",
-      "team": "MIA",
-      "value": 1479
-    },
-    {
-      "name": "Joseph Ossai",
-      "position": "ED",
-      "team": "CIN",
       "value": 1478
     },
     {
       "name": "Patrick Jones",
       "position": "ED",
       "team": "CAR",
-      "value": 1478
+      "value": 1477
     },
     {
       "name": "Kerby Joseph",
@@ -9600,7 +9612,7 @@
       "name": "Keeanu Benton",
       "position": "IDL",
       "team": "PIT",
-      "value": 1477
+      "value": 1476
     },
     {
       "name": "Darius Robinson",
@@ -9612,7 +9624,7 @@
       "name": "Bryan Bresee",
       "position": "IDL",
       "team": "NO",
-      "value": 1476
+      "value": 1475
     },
     {
       "name": "Cameron Heyward",
@@ -9624,7 +9636,7 @@
       "name": "Jalen Ramsey",
       "position": "CB",
       "team": "PHI",
-      "value": 1475
+      "value": 1474
     },
     {
       "name": "Alontae Taylor",
@@ -9636,18 +9648,12 @@
       "name": "Paulson Adebo",
       "position": "CB",
       "team": "NYG",
-      "value": 1474
+      "value": 1473
     },
     {
       "name": "Coby Bryant",
       "position": "CB",
       "team": "SEA",
-      "value": 1473
-    },
-    {
-      "name": "Riley Moss",
-      "position": "CB",
-      "team": "DEN",
       "value": 1473
     },
     {
@@ -9663,15 +9669,15 @@
       "value": 1473
     },
     {
-      "name": "Haason Reddick",
-      "position": "ED",
-      "team": "TB",
+      "name": "Riley Moss",
+      "position": "CB",
+      "team": "DEN",
       "value": 1472
     },
     {
-      "name": "Jevon Holland",
-      "position": "S",
-      "team": "NYG",
+      "name": "Haason Reddick",
+      "position": "ED",
+      "team": "TB",
       "value": 1472
     },
     {
@@ -10113,21 +10119,21 @@
       "value": 1027
     },
     {
+      "name": "Jevon Holland",
+      "position": "S",
+      "team": "NYG",
+      "value": 1025
+    },
+    {
       "name": "Quan Martin",
       "position": "S",
       "team": "WAS",
-      "value": 1025
+      "value": 1023
     },
     {
       "name": "Reed Blankenship",
       "position": "S",
       "team": "PHI",
-      "value": 1023
-    },
-    {
-      "name": "Justin Reid",
-      "position": "S",
-      "team": "NO",
       "value": 1022
     },
     {
@@ -10143,15 +10149,15 @@
       "value": 1021
     },
     {
-      "name": "Jalen Thompson",
+      "name": "Justin Reid",
       "position": "S",
-      "team": "ARI",
+      "team": "NO",
       "value": 1020
     },
     {
-      "name": "Theo Jackson",
+      "name": "Jalen Thompson",
       "position": "S",
-      "team": "MIN",
+      "team": "ARI",
       "value": 1018
     },
     {
@@ -10293,33 +10299,33 @@
       "value": 992
     },
     {
-      "name": "Daron Payne",
-      "position": "IDL",
-      "team": "WSH",
-      "value": 991
-    },
-    {
-      "name": "Jonathan Allen",
-      "position": "IDL",
-      "team": "MIN",
-      "value": 990
-    },
-    {
       "name": "Craig Woodson",
       "position": "S",
       "team": "NE",
-      "value": 988
+      "value": 991
     },
     {
       "name": "Andrew Wingard",
       "position": "S",
       "team": "JAX",
+      "value": 990
+    },
+    {
+      "name": "TY Okada",
+      "position": "S",
+      "team": "SEA",
+      "value": 988
+    },
+    {
+      "name": "Daron Payne",
+      "position": "IDL",
+      "team": "WSH",
       "value": 987
     },
     {
-      "name": "Dante Trader Jr",
-      "position": "S",
-      "team": "MIA",
+      "name": "Jonathan Allen",
+      "position": "IDL",
+      "team": "MIN",
       "value": 986
     },
     {
@@ -10329,57 +10335,57 @@
       "value": 985
     },
     {
+      "name": "Dante Trader Jr",
+      "position": "S",
+      "team": "MIA",
+      "value": 984
+    },
+    {
       "name": "Tyson Campbell",
       "position": "CB",
       "team": "JAX",
-      "value": 984
+      "value": 983
     },
     {
       "name": "L'Jarius Sneed",
       "position": "CB",
       "team": "TEN",
-      "value": 983
+      "value": 982
     },
     {
       "name": "Nate Wiggins",
       "position": "CB",
       "team": "BAL",
-      "value": 982
+      "value": 980
     },
     {
       "name": "Byron Murphy",
       "position": "CB",
       "team": "MIN",
-      "value": 980
+      "value": 979
     },
     {
       "name": "Deommodore Lenoir",
       "position": "CB",
       "team": "SF",
-      "value": 979
+      "value": 978
     },
     {
       "name": "Terrion Arnold",
       "position": "CB",
       "team": "DET",
-      "value": 978
+      "value": 976
     },
     {
       "name": "Tarheeb Still",
       "position": "CB",
       "team": "LAC",
-      "value": 976
+      "value": 975
     },
     {
       "name": "Elijah Molden",
       "position": "S",
       "team": "LAC",
-      "value": 975
-    },
-    {
-      "name": "TY Okada",
-      "position": "S",
-      "team": "SEA",
       "value": 974
     },
     {
@@ -10395,15 +10401,15 @@
       "value": 972
     },
     {
-      "name": "Sauce Gardner",
-      "position": "CB",
-      "team": "NYJ",
+      "name": "Theo Jackson",
+      "position": "S",
+      "team": "MIN",
       "value": 971
     },
     {
-      "name": "Michael Hall Jr",
-      "position": "IDL",
-      "team": "CLE",
+      "name": "Sauce Gardner",
+      "position": "CB",
+      "team": "NYJ",
       "value": 970
     },
     {
@@ -10413,45 +10419,45 @@
       "value": 970
     },
     {
+      "name": "Michael Hall Jr",
+      "position": "IDL",
+      "team": "CLE",
+      "value": 969
+    },
+    {
       "name": "Nate Hobbs",
       "position": "CB",
       "team": "GB",
-      "value": 969
+      "value": 968
     },
     {
       "name": "Will Johnson",
       "position": "CB",
       "team": "ARI",
-      "value": 968
+      "value": 966
     },
     {
       "name": "Quinyon Mitchell",
       "position": "CB",
       "team": "PHI",
-      "value": 966
+      "value": 965
     },
     {
       "name": "Keion White",
       "position": "ED",
       "team": "SF",
-      "value": 965
+      "value": 964
     },
     {
       "name": "Chris Braswell",
       "position": "ED",
       "team": "TB",
-      "value": 964
+      "value": 963
     },
     {
       "name": "AJ Epenesa",
       "position": "ED",
       "team": "BUF",
-      "value": 963
-    },
-    {
-      "name": "Joey Porter Jr",
-      "position": "CB",
-      "team": "PIT",
       "value": 962
     },
     {
@@ -10461,9 +10467,9 @@
       "value": 962
     },
     {
-      "name": "Anfernee Jennings",
-      "position": "ED",
-      "team": "NE",
+      "name": "Joey Porter Jr",
+      "position": "CB",
+      "team": "PIT",
       "value": 961
     },
     {
@@ -10473,93 +10479,93 @@
       "value": 961
     },
     {
+      "name": "Anfernee Jennings",
+      "position": "ED",
+      "team": "NE",
+      "value": 959
+    },
+    {
       "name": "Javon Solomon",
       "position": "ED",
       "team": "BUF",
-      "value": 959
+      "value": 958
     },
     {
       "name": "Azeez Ojulari",
       "position": "ED",
       "team": "PHI",
-      "value": 958
+      "value": 957
     },
     {
       "name": "Jeremiah Trotter",
       "position": "LB",
       "team": "PHI",
-      "value": 957
+      "value": 956
     },
     {
       "name": "Tommy Eichenberg",
       "position": "LB",
       "team": "LVR",
-      "value": 956
+      "value": 955
     },
     {
       "name": "Omar Speights",
       "position": "LB",
       "team": "LAR",
-      "value": 955
+      "value": 954
     },
     {
       "name": "Akeem Davis Gaither",
       "position": "LB",
       "team": "ARI",
-      "value": 954
+      "value": 953
     },
     {
       "name": "Arden Key",
       "position": "ED",
       "team": "TEN",
-      "value": 953
+      "value": 952
     },
     {
       "name": "Joey Bosa",
       "position": "ED",
       "team": "SF",
-      "value": 952
+      "value": 951
     },
     {
       "name": "Jordan Magee",
       "position": "LB",
       "team": "WSH",
-      "value": 951
+      "value": 950
     },
     {
       "name": "Drew Sanders",
       "position": "LB",
       "team": "DEN",
-      "value": 950
+      "value": 949
     },
     {
       "name": "Eric Wilson",
       "position": "LB",
       "team": "MIN",
-      "value": 949
+      "value": 948
     },
     {
       "name": "Jeffrey Bassa",
       "position": "LB",
       "team": "KC",
-      "value": 948
+      "value": 947
     },
     {
       "name": "Kain Medrano",
       "position": "LB",
       "team": "WSH",
-      "value": 947
+      "value": 946
     },
     {
       "name": "Trenton Simpson",
       "position": "LB",
       "team": "BAL",
-      "value": 946
-    },
-    {
-      "name": "Matt Milano",
-      "position": "LB",
-      "team": "BUF",
       "value": 945
     },
     {
@@ -10569,27 +10575,27 @@
       "value": 945
     },
     {
+      "name": "Matt Milano",
+      "position": "LB",
+      "team": "BUF",
+      "value": 944
+    },
+    {
       "name": "Troy Andersen",
       "position": "LB",
       "team": "ATL",
-      "value": 944
+      "value": 943
     },
     {
       "name": "Willie Gay",
       "position": "LB",
       "team": "MIA",
-      "value": 943
+      "value": 942
     },
     {
       "name": "Isaiah Mcduffie",
       "position": "LB",
       "team": "GB",
-      "value": 942
-    },
-    {
-      "name": "David Walker",
-      "position": "ED",
-      "team": "TB",
       "value": 941
     },
     {
@@ -10599,21 +10605,21 @@
       "value": 941
     },
     {
+      "name": "David Walker",
+      "position": "ED",
+      "team": "TB",
+      "value": 940
+    },
+    {
       "name": "Patrick Surtain",
       "position": "CB",
       "team": "DEN",
-      "value": 940
+      "value": 939
     },
     {
       "name": "Kevin Byard",
       "position": "S",
       "team": "PHI",
-      "value": 939
-    },
-    {
-      "name": "Evan Williams",
-      "position": "S",
-      "team": "GB",
       "value": 938
     },
     {
@@ -10623,16 +10629,22 @@
       "value": 938
     },
     {
+      "name": "Evan Williams",
+      "position": "S",
+      "team": "GB",
+      "value": 937
+    },
+    {
       "name": "Demarcus Lawrence",
       "position": "ED",
       "team": "SEA",
-      "value": 937
+      "value": 936
     },
     {
       "name": "John Franklin-Myers",
       "position": "ED",
       "team": "DEN",
-      "value": 936
+      "value": 935
     },
     {
       "name": "Kyle Van Noy",
@@ -10644,37 +10656,37 @@
       "name": "Cooper McDonald",
       "position": "LB",
       "team": "KC",
-      "value": 935
+      "value": 934
     },
     {
       "name": "Joe Bachie",
       "position": "LB",
       "team": "CIN",
-      "value": 934
+      "value": 933
     },
     {
       "name": "Marist Liufau",
       "position": "LB",
       "team": "DAL",
-      "value": 933
+      "value": 932
     },
     {
       "name": "Darius Muasau",
       "position": "LB",
       "team": "NYG",
-      "value": 932
+      "value": 931
     },
     {
       "name": "Marlowe Wax",
       "position": "LB",
       "team": "LAC",
-      "value": 931
+      "value": 930
     },
     {
       "name": "EJ Speed",
       "position": "LB",
       "team": "HOU",
-      "value": 930
+      "value": 929
     },
     {
       "name": "Bralen Trice",
@@ -10686,18 +10698,12 @@
       "name": "Adisa Isaac",
       "position": "ED",
       "team": "BAL",
-      "value": 929
+      "value": 928
     },
     {
       "name": "Javon Hargrave",
       "position": "IDL",
       "team": "MIN",
-      "value": 928
-    },
-    {
-      "name": "Samuel Mondon Jr",
-      "position": "LB",
-      "team": "PHI",
       "value": 927
     },
     {
@@ -10707,15 +10713,15 @@
       "value": 927
     },
     {
-      "name": "Deone Walker",
-      "position": "IDL",
-      "team": "BUF",
+      "name": "Samuel Mondon Jr",
+      "position": "LB",
+      "team": "PHI",
       "value": 926
     },
     {
-      "name": "Alohi Gilman",
-      "position": "S",
-      "team": "LAC",
+      "name": "Deone Walker",
+      "position": "IDL",
+      "team": "BUF",
       "value": 925
     },
     {
@@ -11007,6 +11013,12 @@
       "value": 899
     },
     {
+      "name": "Bryce Huff",
+      "position": "ED",
+      "team": "SF",
+      "value": 899
+    },
+    {
       "name": "Noah Brown",
       "position": "WR",
       "team": "CHI",
@@ -11177,5 +11189,5 @@
   ],
   "Redraft_SF": [],
   "Redraft_1QB": [],
-  "updated": "2026-03-07T00:17:25.595Z"
+  "updated": "2026-03-21T19:00:50.707Z"
 }

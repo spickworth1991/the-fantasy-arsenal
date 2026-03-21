@@ -19,6 +19,7 @@ import { toSlug } from "../utils/slugify";
  */
 export default function AvatarImage({
   name,
+  playerId,
   src: srcProp,
   fallbackSrc = "/avatars/default.webp",
   alt,
@@ -29,17 +30,31 @@ export default function AvatarImage({
   decoding = "async",
   ...rest
 }) {
+  const numericPlayerId =
+    playerId != null && /^\d+$/.test(String(playerId).trim())
+      ? String(playerId).trim()
+      : "";
+
   const derived = useMemo(() => {
     if (srcProp) return { primary: srcProp, secondary: null };
+    if (numericPlayerId) {
+      const slug = name ? toSlug(name) : "";
+      return {
+        primary: `https://sleepercdn.com/content/nfl/players/thumb/${numericPlayerId}.jpg`,
+        secondary: slug ? `/avatars/${slug}.webp` : fallbackSrc,
+        tertiary: slug ? `/avatars/${slug}.jpg` : fallbackSrc,
+      };
+    }
     if (name) {
       const slug = toSlug(name);
       return {
         primary: `/avatars/${slug}.webp`,
         secondary: `/avatars/${slug}.jpg`, // <-- Sleeper download script writes these
+        tertiary: fallbackSrc,
       };
     }
-    return { primary: fallbackSrc, secondary: null };
-  }, [srcProp, name, fallbackSrc]);
+    return { primary: fallbackSrc, secondary: null, tertiary: null };
+  }, [srcProp, numericPlayerId, name, fallbackSrc]);
 
   const derivedAlt = alt ?? name ?? "Avatar";
   const [src, setSrc] = useState(derived.primary);
@@ -50,8 +65,8 @@ export default function AvatarImage({
 
   const handleError = () => {
     setSrc((prev) => {
-      // if name-based, try secondary before fallback
       if (derived.secondary && prev === derived.primary) return derived.secondary;
+      if (derived.tertiary && prev === derived.secondary) return derived.tertiary;
       if (prev !== fallbackSrc) return fallbackSrc;
       return prev;
     });

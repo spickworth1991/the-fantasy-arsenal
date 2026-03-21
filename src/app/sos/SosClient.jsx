@@ -5,9 +5,15 @@ import Navbar from "../../components/Navbar";
 import dynamic from "next/dynamic";
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
 import { useSleeper } from "../../context/SleeperContext";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
+import {
+  metricModeFromSourceKey,
+  projectionSourceFromKey,
+  valueSourceFromKey,
+} from "../../lib/sourceSelection";
 
 /** ===== Projections (JSON) ===== */
 const PROJ_JSON_URL = "/projections_2025.json";
@@ -202,6 +208,7 @@ function getSeasonPointsForPlayer(map, p) {
     const k = `${nn}|${pos}`;
     if (map.byNamePos[k] != null) return map.byNamePos[k];
   }
+  if (team || pos) return 0;
 
   // 4) Plain name (last resort)
   if (nn && map.byName[nn] != null) return map.byName[nn];
@@ -317,6 +324,7 @@ export default function SOSPage() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
+  const [sourceKey, setSourceKey] = useState("proj:ffa");
   const setFormatWrapped = (v) => { setUserTouchedFormat(true); setFormatLocal(v); };
   const setQbWrapped = (v) => { setUserTouchedQB(true); setQbLocal(v); };
   useEffect(() => {
@@ -330,6 +338,12 @@ export default function SOSPage() {
   const [metricMode, setMetricMode] = useState("projections"); 
   const [projectionSource, setProjectionSource] = useState("CSV"); // "CSV" | "ESPN"
   const [valueSource, setValueSource] = useState("FantasyCalc");
+
+  useEffect(() => {
+    setMetricMode(metricModeFromSourceKey(sourceKey));
+    setProjectionSource(projectionSourceFromKey(sourceKey));
+    setValueSource(valueSourceFromKey(sourceKey));
+  }, [sourceKey]);
 
   const getValueRaw = useMemo(
     () => makeGetPlayerValue(valueSource, formatLocal, qbLocal),
@@ -361,17 +375,17 @@ export default function SOSPage() {
                   setProjMaps(next);
         // fallback rules
         if (projectionSource === "CBS" && !next.CBS && (next.ESPN || next.CSV)) {
-          setProjectionSource(next.ESPN ? "ESPN" : "CSV");
+          setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
         }
         if (projectionSource === "CSV" && !next.CSV && (next.ESPN || next.CBS)) {
-          setProjectionSource(next.ESPN ? "ESPN" : "CBS");
+          setSourceKey(next.ESPN ? "proj:espn" : "proj:cbs");
         }
         if (projectionSource === "ESPN" && !next.ESPN && (next.CSV || next.CBS)) {
-          setProjectionSource(next.CSV ? "CSV" : "CBS");
+          setSourceKey(next.CSV ? "proj:ffa" : "proj:cbs");
         }
         if (!next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — falling back to Values.");
-          setMetricMode("values");
+          setSourceKey("val:fantasycalc");
         }
 
         }
@@ -379,7 +393,7 @@ export default function SOSPage() {
         if (mounted) {
           setProjMaps({ CSV: null, ESPN: null });
           setProjError("Projections unavailable — falling back to Values.");
-          setMetricMode("values");
+          setSourceKey("val:fantasycalc");
         }
       } finally {
         if (mounted) setProjLoading(false);
@@ -668,10 +682,45 @@ export default function SOSPage() {
       <Navbar pageTitle="SOS — Rest of Season" />
       <div className="max-w-7xl mx-auto px-4 pt-20 pb-10">
         <Card className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Schedule Lens</div>
+              <div className="mt-1 text-sm text-white/65">
+                Measure the road ahead with one scoring source, then compare weekly strength across the rest of the season.
+              </div>
+            </div>
+            <div className="text-xs text-white/45">
+              {metricMode === "projections"
+                ? "Projection-driven matchup strength with bye adjustments"
+                : "Value-driven matchup strength with bye adjustments"}
+            </div>
+          </div>
+
+          <div className="mb-4 rounded-2xl border border-amber-400/15 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950 p-3">
+            <SourceSelector
+              sources={DEFAULT_SOURCES}
+              value={sourceKey}
+              onChange={setSourceKey}
+              className="w-full"
+              mode={formatLocal}
+              qbType={qbLocal}
+              onModeChange={setFormatWrapped}
+              onQbTypeChange={setQbWrapped}
+              layout="inline"
+            />
+            <div className="mt-2 text-xs text-white/60">
+              {projError && metricMode === "projections"
+                ? "Projection feed missing, so SOS is using values."
+                : metricMode === "projections"
+                ? "Weekly cells are driven by projected lineup strength."
+                : "Weekly cells are driven by value-weighted lineup strength."}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-4">
             <span className="font-semibold">League:</span>
             <select
-              className="bg-gray-800 text-white p-2 rounded"
+              className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
               value={activeLeague || ""}
               onChange={(e) => {
                 const id = e.target.value;
@@ -687,6 +736,8 @@ export default function SOSPage() {
               ))}
             </select>
 
+            {false && (
+              <>
             {/* Metric switch */}
             <span className="font-semibold ml-4">Metric:</span>
             <div className="inline-flex rounded-lg overflow-hidden border border-white/10">
@@ -743,6 +794,8 @@ export default function SOSPage() {
                 </div>
               </>
             )}
+            </>
+          )}
 
             <span className="font-semibold ml-2">Weeks:</span>
             <input

@@ -63,16 +63,16 @@ export default function HomeClient() {
       badge: "UPDATED",
     },
     {
-      name: "Player Availability",
-      link: "/player-availability",
-      description: "Find which leagues have a player available",
-    },
-    {
       name: "Draft Monitor",
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
-      badge: "UPDATED",
+      badge: "DEVELOPING",
+    },
+    {
+      name: "Player Availability",
+      link: "/player-availability",
+      description: "Find which leagues have a player available",
     },
     {
       name: "League Hub",
@@ -89,12 +89,12 @@ export default function HomeClient() {
     {
       name: "Strength of Schedule",
       link: "/sos",
-      description: "Analyze team schedules based on various metrics. - NEEDS BYE WEEKS",
+      description: "- NEEDS BYE WEEKS FOR 2026 - Analyze team schedules based on various metrics.",
     },
     {
       name: "Lineup Optimizer",
       link: "/lineup",
-      description: "Optimize your weekly lineup for maximum points. - NEEDS BYE WEEKS",
+      description: "- NEEDS BYE WEEKS AND PROJECTIONS FOR 2026 - Optimize your weekly lineup for maximum points.",
     },
     
   ];

@@ -159,6 +159,7 @@ function InlineToggles({
   qbType,
   onModeChange,
   onQbTypeChange,
+  inline = false,
   className = "",
 }) {
   const supports = selected?.supports || {
@@ -187,7 +188,12 @@ function InlineToggles({
   const qb = String(qbType || "sf").toLowerCase();
 
   return (
-    <div className={["mt-2 rounded-2xl border border-white/10 bg-black/20 p-3", className].join(" ")}>
+    <div
+      className={[
+        inline ? "min-w-[240px] flex-1 rounded-2xl border border-white/10 bg-black/20 p-3" : "mt-2 rounded-2xl border border-white/10 bg-black/20 p-3",
+        className,
+      ].join(" ")}
+    >
       <div className="flex flex-wrap items-center gap-2">
         {showMode && (
           <div className="flex items-center gap-2">
@@ -322,6 +328,7 @@ export default function SourceSelector({
   onModeChange,
   onQbTypeChange,
   showToggles = true,
+  layout = "stacked",
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -449,50 +456,56 @@ export default function SourceSelector({
     </>
   ) : null;
 
+  const inline = layout === "inline";
+  const buttonWrapClass = inline ? "relative min-w-[220px] flex-1" : "relative";
+  const rootClass = inline ? "flex flex-wrap items-stretch gap-3" : "relative";
+
   return (
-    <div className={`relative ${className}`}>
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={() => {
-          if (!open) measure();
-          setOpen((v) => !v);
-        }}
-        className="group w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] backdrop-blur-xl transition hover:border-white/20 hover:bg-white/7"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            {/* logo stacked with type */}
-            <div className="flex flex-col items-center justify-center">
-              <LogoOnly source={selected} variant="button" />
-              <div className="mt-1 text-center text-[11px] text-white/45">
-                {selected.type === "projection" ? "Projections" : "Values"}
+    <div className={`${rootClass} ${className}`}>
+      <div className={buttonWrapClass}>
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={() => {
+            if (!open) measure();
+            setOpen((v) => !v);
+          }}
+          className="group w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] backdrop-blur-xl transition hover:border-white/20 hover:bg-white/7"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              {/* logo stacked with type */}
+              <div className="flex flex-col items-center justify-center">
+                <LogoOnly source={selected} variant="button" />
+                <div className="mt-1 text-center text-[11px] text-white/45">
+                  {selected.type === "projection" ? "Projections" : "Values"}
+                </div>
+              </div>
+
+              {/* keep label hidden but accessible */}
+              <div className="sr-only">
+                <div>{label}</div>
+                <div>{selected.label}</div>
               </div>
             </div>
 
-            {/* keep label hidden but accessible */}
-            <div className="sr-only">
-              <div>{label}</div>
-              <div>{selected.label}</div>
-            </div>
+            <svg
+              className={`h-5 w-5 text-white/60 transition ${open ? "rotate-180" : ""}`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                clipRule="evenodd"
+              />
+            </svg>
           </div>
-
-          <svg
-            className={`h-5 w-5 text-white/60 transition ${open ? "rotate-180" : ""}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      </button>
+        </button>
+      </div>
 
       {showToggles ? (
         <InlineToggles
@@ -501,6 +514,7 @@ export default function SourceSelector({
           qbType={qbType}
           onModeChange={onModeChange}
           onQbTypeChange={onQbTypeChange}
+          inline={inline}
         />
       ) : null}
 
