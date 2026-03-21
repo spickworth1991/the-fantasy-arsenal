@@ -3,6 +3,13 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
+import {
+  formatPickLabel,
+  getPickDisplayLastName,
+  getPickSyntheticPlayerId,
+  normalizeFantasyTeamAbbr,
+  parsePickLabel,
+} from "../lib/picks";
 
 const SleeperContext = createContext();
 export const useSleeper = () => useContext(SleeperContext);
@@ -42,7 +49,7 @@ const normalizeName = (name) =>
     .trim();
 
 const normPos = (pos) => String(pos || "").toUpperCase().trim();
-const normTeam = (team) => String(team || "").toUpperCase().trim();
+const normTeam = (team) => normalizeFantasyTeamAbbr(team);
 
 // IDP sources (IDynastyP / IDPShow) often use granular positions (CB, S, ED, EDGE, DE, DT)
 // while Sleeper players frequently use grouped positions (DB / DL / LB).
@@ -132,56 +139,64 @@ function createCandidateIndex4(seedByName) {
     seedByName && typeof seedByName === "object"
       ? seedByName
       : Object.create(null);
+  const byPickKey = Object.create(null);
 
-  function addCandidate({ name, pos, team, values }) {
-  const nn = keyName(name);
-  if (!nn) return;
+  function mergeIntoStore(store, storeKey, candPos, candTeam, incoming, pickKey) {
+    if (!storeKey) return;
+    if (!store[storeKey]) store[storeKey] = [];
 
-  const candPos = normPos(pos);
-  const candTeam = normTeam(team);
+    const existing = store[storeKey].find(
+      (c) => c?.pos === candPos && c?.team === candTeam
+    );
 
-  // Build the incoming values payload
-  const incoming = {};
-  VALUE_KEYS.forEach((k) => {
-    incoming[k] = safeNum(values?.[k]);
-  });
+    if (existing) {
+      VALUE_KEYS.forEach((k) => {
+        if (incoming[k] > 0) existing.values[k] = incoming[k];
+      });
+      if (pickKey && !existing.pickKey) existing.pickKey = pickKey;
+      return;
+    }
 
-  // If this row doesn't actually contribute anything, skip
-  const hasAny = VALUE_KEYS.some((k) => incoming[k] > 0);
-  if (!hasAny) return;
-
-  if (!byName[nn]) byName[nn] = [];
-
-  // ✅ MERGE: if we already have this exact player candidate (same pos/team), update it
-  const existing = byName[nn].find(
-    (c) => c?.pos === candPos && c?.team === candTeam
-  );
-
-  if (existing) {
-    VALUE_KEYS.forEach((k) => {
-      if (incoming[k] > 0) existing.values[k] = incoming[k];
+    store[storeKey].push({
+      pos: candPos,
+      team: candTeam,
+      pickKey: pickKey || "",
+      values: incoming,
     });
-    return;
   }
 
-  // Otherwise create a new candidate
-  byName[nn].push({
-    pos: candPos,
-    team: candTeam,
-    values: incoming,
-  });
-}
+  function addCandidate({ name, pos, team, values }) {
+    const nn = keyName(name);
+    if (!nn) return;
+
+    const candPos = normPos(pos);
+    const candTeam = normTeam(team);
+    const pickMeta = candPos === "PICK" ? parsePickLabel(name) : null;
+
+    const incoming = {};
+    VALUE_KEYS.forEach((k) => {
+      incoming[k] = safeNum(values?.[k]);
+    });
+
+    const hasAny = VALUE_KEYS.some((k) => incoming[k] > 0);
+    if (!hasAny) return;
+
+    mergeIntoStore(byName, nn, candPos, candTeam, incoming, pickMeta?.key);
+    if (pickMeta?.key) {
+      mergeIntoStore(byPickKey, pickMeta.key, candPos, candTeam, incoming, pickMeta.key);
+    }
+  }
 
 
   function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
 
-    const cands = byName[nn];
-    if (!Array.isArray(cands) || cands.length === 0) return null;
-
     const pos0 = normPos(pos);
     const team0 = normTeam(team);
+    const pickMeta = pos0 === "PICK" ? parsePickLabel(name) : null;
+    const cands = (pickMeta?.key && byPickKey[pickMeta.key]) || byName[nn];
+    if (!Array.isArray(cands) || cands.length === 0) return null;
 
     // ✅ IMPORTANT: if Sleeper record has no position, DO NOT name-match.
     if (!pos0) return null;
@@ -213,7 +228,7 @@ function createCandidateIndex4(seedByName) {
     return bestScore >= 0 ? best : null;
   }
 
-  return { addCandidate, pickBest, raw: byName };
+  return { addCandidate, pickBest, raw: byName, rawPicks: byPickKey };
 }
 
 function createCandidateIndex2(seedByName) {
@@ -222,46 +237,56 @@ function createCandidateIndex2(seedByName) {
     seedByName && typeof seedByName === "object"
       ? seedByName
       : Object.create(null);
+  const byPickKey = Object.create(null);
 
-  function addCandidate({ name, pos, team, one_qb, superflex }) {
-    const nn = keyName(name);
-    if (!nn) return;
+  function mergeIntoStore(store, storeKey, cand) {
+    if (!storeKey) return;
+    if (!store[storeKey]) store[storeKey] = [];
 
-    const cand = {
-      // ✅ normalize IDP positions to shared buckets (DB/DL/LB)
-      pos: normalizeIdpPosForMatch(pos),
-      team: normTeam(team),
-      one_qb: safeNum(one_qb),
-      superflex: safeNum(superflex),
-    };
-
-    if (!(cand.one_qb > 0 || cand.superflex > 0)) return;
-
-    if (!byName[nn]) byName[nn] = [];
-
-    // ✅ merge duplicates (same pos/team) instead of spamming entries
-    const existing = byName[nn].find(
+    const existing = store[storeKey].find(
       (c) => c.pos === cand.pos && c.team === cand.team
     );
     if (existing) {
       if (cand.one_qb > 0) existing.one_qb = cand.one_qb;
       if (cand.superflex > 0) existing.superflex = cand.superflex;
+      if (cand.pickKey && !existing.pickKey) existing.pickKey = cand.pickKey;
       return;
     }
 
-    byName[nn].push(cand);
+    store[storeKey].push(cand);
+  }
+
+  function addCandidate({ name, pos, team, one_qb, superflex }) {
+    const nn = keyName(name);
+    if (!nn) return;
+    const candPos = normalizeIdpPosForMatch(pos);
+    const pickMeta = candPos === "PICK" ? parsePickLabel(name) : null;
+
+    const cand = {
+      // ✅ normalize IDP positions to shared buckets (DB/DL/LB)
+      pos: candPos,
+      team: normTeam(team),
+      one_qb: safeNum(one_qb),
+      superflex: safeNum(superflex),
+      pickKey: pickMeta?.key || "",
+    };
+
+    if (!(cand.one_qb > 0 || cand.superflex > 0)) return;
+
+    mergeIntoStore(byName, nn, cand);
+    if (pickMeta?.key) {
+      mergeIntoStore(byPickKey, pickMeta.key, cand);
+    }
   }
 
   function pickBest(name, pos, team) {
     const nn = keyName(name);
     if (!nn) return null;
-
-    const cands = byName[nn];
-    if (!Array.isArray(cands) || cands.length === 0) return null;
-
-    // ✅ normalize lookup pos the same way as candidates
     const pos0 = normalizeIdpPosForMatch(pos);
     const team0 = normTeam(team);
+    const pickMeta = pos0 === "PICK" ? parsePickLabel(name) : null;
+    const cands = (pickMeta?.key && byPickKey[pickMeta.key]) || byName[nn];
+    if (!Array.isArray(cands) || cands.length === 0) return null;
 
     // keep your “no pos => no match”
     if (!pos0) return null;
@@ -297,7 +322,7 @@ function createCandidateIndex2(seedByName) {
     return bestScore >= 0 ? best : null;
   }
 
-  return { addCandidate, pickBest, raw: byName };
+  return { addCandidate, pickBest, raw: byName, rawPicks: byPickKey };
 }
 
 
@@ -859,7 +884,7 @@ export const SleeperProvider = ({ children }) => {
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
   // ✅ Bump cache version so your fn_values aliases actually get written.
-    const CACHE_KEY = "playerDB_v1.476";
+    const CACHE_KEY = "playerDB_v1.477";
 
   const preloadPlayers = async () => {
     try {
@@ -915,32 +940,51 @@ export const SleeperProvider = ({ children }) => {
       const redraftSFMap = mapBySleeperId(fcData?.Redraft_SF);
       const redraft1QBMap = mapBySleeperId(fcData?.Redraft_1QB);
 
-      const dpByName = {};
-      const dpByNamePos = {};
+      const knownPickMeta = new Map();
+      const rememberPickMeta = (name, pos) => {
+        if (normPos(pos) !== "PICK") return;
+        const meta = parsePickLabel(name);
+        if (meta?.key) knownPickMeta.set(meta.key, meta);
+      };
+
+      (Array.isArray(fcData?.Dynasty_SF) ? fcData.Dynasty_SF : []).forEach((row) =>
+        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
+      );
+      (Array.isArray(fcData?.Dynasty_1QB) ? fcData.Dynasty_1QB : []).forEach((row) =>
+        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
+      );
+      (Array.isArray(fcData?.Redraft_SF) ? fcData.Redraft_SF : []).forEach((row) =>
+        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
+      );
+      (Array.isArray(fcData?.Redraft_1QB) ? fcData.Redraft_1QB : []).forEach((row) =>
+        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
+      );
+
+      const dpIndex = createCandidateIndex2();
       if (dpData && typeof dpData === "object") {
-        Object.keys(dpData).forEach((name) => {
-          const v = dpData[name];
-          const nn = keyName(name);
-          dpByName[nn] = v;
-          const p = normPos(v?.pos);
-          if (p) dpByNamePos[`${nn}|${p}`] = v;
+        Object.entries(dpData).forEach(([name, v]) => {
+          rememberPickMeta(name, v?.pos || v?.position);
+          dpIndex.addCandidate({
+            name,
+            pos: v?.pos || v?.position,
+            team: v?.team,
+            one_qb: v?.one_qb,
+            superflex: v?.superflex,
+          });
         });
       }
 
-      const ktcByNamePos = {};
+      const ktcIndex = createCandidateIndex2();
       const ingestKTC = (arr, which) => {
-        (Array.isArray(arr) ? arr : []).forEach((p) => {
-          const n = keyName(p?.name);
-          if (!n) return;
-
-          const pos = normPos(p?.position || p?.pos);
-          const value = safeNum(p?.value);
-          if (!pos) return;
-
-          const k = `${n}|${pos}`;
-          if (!ktcByNamePos[k]) ktcByNamePos[k] = { one_qb: 0, superflex: 0 };
-          if (which === "one_qb") ktcByNamePos[k].one_qb = value;
-          if (which === "superflex") ktcByNamePos[k].superflex = value;
+        (Array.isArray(arr) ? arr : []).forEach((row) => {
+          rememberPickMeta(row?.name, row?.position || row?.pos);
+          ktcIndex.addCandidate({
+            name: row?.name,
+            pos: row?.position || row?.pos,
+            team: row?.team,
+            one_qb: which === "one_qb" ? row?.value : 0,
+            superflex: which === "superflex" ? row?.value : 0,
+          });
         });
       };
       ingestKTC(ktcData?.OneQB, "one_qb");
@@ -962,6 +1006,7 @@ export const SleeperProvider = ({ children }) => {
           (Array.isArray(data?.[k]) ? data[k] : []).forEach((row) => {
             const name = row?.name;
             if (!name) return;
+            rememberPickMeta(name, row?.position || row?.pos);
 
             index.addCandidate({
               name,
@@ -1056,80 +1101,28 @@ export const SleeperProvider = ({ children }) => {
         });
       });
 
-      const getDPValues = (normName0, pos0) => {
-        if (!pos0) return { one_qb: 0, superflex: 0 };
-        const best = dpByNamePos[`${normName0}|${pos0}`] || dpByName[normName0] || null;
-        const dpPos = normPos(best?.pos);
-        if (dpPos && dpPos !== pos0) return { one_qb: 0, superflex: 0 };
-        return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
+      const get2WayFromIndex = (index, fullName, pos0, team0) => {
+        const cand = index?.pickBest(fullName, pos0, team0);
+        return {
+          one_qb: safeNum(cand?.one_qb),
+          superflex: safeNum(cand?.superflex),
+        };
       };
 
-      const getKTCValues = (normName0, pos0) => {
-        if (!pos0) return { one_qb: 0, superflex: 0 };
-        const best = ktcByNamePos[`${normName0}|${pos0}`] || null;
-        return { one_qb: safeNum(best?.one_qb), superflex: safeNum(best?.superflex) };
+      const get4WayFromIndex = (index, fullName, pos0, team0) => {
+        const cand = index?.pickBest(fullName, pos0, team0);
+        const out = {
+          dynasty_sf: safeNum(cand?.values?.dynasty_sf),
+          dynasty_1qb: safeNum(cand?.values?.dynasty_1qb),
+          redraft_sf: safeNum(cand?.values?.redraft_sf),
+          redraft_1qb: safeNum(cand?.values?.redraft_1qb),
+        };
+        return {
+          ...out,
+          dynasty_1QB: out.dynasty_1qb,
+          redraft_1QB: out.redraft_1qb,
+        };
       };
-
-      const pickBest4WayValue = (index, fullName, pos0, team0, valueKey) => {
-  if (!index || !index.raw) return 0;
-
-  const nn = keyName(fullName);
-  if (!nn) return 0;
-
-  const cands = index.raw[nn];
-  if (!Array.isArray(cands) || cands.length === 0) return 0;
-
-  const pos = normPos(pos0);
-  const team = normTeam(team0);
-
-  // match your "no pos => no match" rule
-  if (!pos) return 0;
-
-  const anyCandHasPos = cands.some((c) => !!c?.pos);
-  const candidatesToScore = anyCandHasPos ? cands.filter((c) => c?.pos === pos) : cands;
-  if (anyCandHasPos && candidatesToScore.length === 0) return 0;
-
-  let best = null;
-  let bestScore = -1;
-
-  for (const c of candidatesToScore) {
-    const candPos = normPos(c?.pos);
-    const candTeam = normTeam(c?.team);
-
-    if (candPos && pos && candPos !== pos) continue;
-
-    let score = 0;
-    if (candPos && pos && candPos === pos) score += 80;
-    if (candTeam && team && candTeam === team) score += 20;
-    if (!candPos && candTeam && team && candTeam === team) score += 10;
-
-    const v = safeNum(c?.values?.[valueKey]);
-
-    // tie-break using the value for THIS key (this is the important part)
-    if (score > bestScore || (score === bestScore && v > safeNum(best?.values?.[valueKey]))) {
-      bestScore = score;
-      best = c;
-    }
-  }
-
-  return bestScore >= 0 ? safeNum(best?.values?.[valueKey]) : 0;
-};
-
-const get4WayFromIndex = (index, fullName, pos0, team0) => {
-  const dynasty_sf = pickBest4WayValue(index, fullName, pos0, team0, "dynasty_sf");
-  const dynasty_1qb = pickBest4WayValue(index, fullName, pos0, team0, "dynasty_1qb");
-  const redraft_sf = pickBest4WayValue(index, fullName, pos0, team0, "redraft_sf");
-  const redraft_1qb = pickBest4WayValue(index, fullName, pos0, team0, "redraft_1qb");
-
-  const out = { dynasty_sf, dynasty_1qb, redraft_sf, redraft_1qb };
-
-  // keep your casing aliases for any downstream code that expects 1QB
-  return {
-    ...out,
-    dynasty_1QB: out.dynasty_1qb,
-    redraft_1QB: out.redraft_1qb,
-  };
-};
 
 
       const getIDP2FromIndex = (index, fullName, pos0, team0) => {
@@ -1148,7 +1141,6 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
 
         const isActive = p?.active === true || p?.active === 1;
         const fullName = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
-        const nn = normalizeName(fullName);
         const pos = getPrimaryPos(p);
         const team = normTeam(p.team);
 
@@ -1161,12 +1153,9 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
 
         const fantasyRelevant = isFantasyRelevantSleeperPlayer(p);
 
-        const dp_values = fantasyRelevant ? getDPValues(nn, pos) : { one_qb: 0, superflex: 0 };
+        const dp_values = fantasyRelevant ? get2WayFromIndex(dpIndex, fullName, pos, team) : { one_qb: 0, superflex: 0 };
 
-        const ktc_values =
-          fantasyRelevant && ["QB", "RB", "WR", "TE"].includes(pos)
-            ? getKTCValues(nn, pos)
-            : { one_qb: 0, superflex: 0 };
+        const ktc_values = fantasyRelevant ? get2WayFromIndex(ktcIndex, fullName, pos, team) : { one_qb: 0, superflex: 0 };
 
         const fn_values = fantasyRelevant
           ? get4WayFromIndex(fnIndex, fullName, pos, team)
@@ -1201,6 +1190,7 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
           finalPlayers[id] = {
             ...p,
             position: pos,
+            team,
             fc_values,
             dp_values,
             ktc_values,
@@ -1210,6 +1200,59 @@ const get4WayFromIndex = (index, fullName, pos0, team0) => {
             idpshow_values,
           };
         }
+      });
+
+      knownPickMeta.forEach((meta) => {
+        const pickId = getPickSyntheticPlayerId(meta);
+        if (!pickId) return;
+
+        const fullName = formatPickLabel(meta);
+        const pos = "PICK";
+        const team = "";
+
+        const fc_values = {
+          dynasty_sf: safeNum(dynastySFMap[pickId]),
+          dynasty_1qb: safeNum(dynasty1QBMap[pickId]),
+          redraft_sf: safeNum(redraftSFMap[pickId]),
+          redraft_1qb: safeNum(redraft1QBMap[pickId]),
+        };
+
+        const dp_values = get2WayFromIndex(dpIndex, fullName, pos, team);
+        const ktc_values = get2WayFromIndex(ktcIndex, fullName, pos, team);
+        const fn_values = get4WayFromIndex(fnIndex, fullName, pos, team);
+        const sp_values = get4WayFromIndex(spIndex, fullName, pos, team);
+        const idp_values = { one_qb: 0, superflex: 0 };
+        const idpshow_values = { one_qb: 0, superflex: 0 };
+
+        const hasAnySignal =
+          Object.values(fc_values).some((v) => v > 0) ||
+          Object.values(dp_values).some((v) => v > 0) ||
+          Object.values(ktc_values).some((v) => v > 0) ||
+          Object.values(fn_values).some((v) => v > 0) ||
+          Object.values(sp_values).some((v) => v > 0);
+
+        if (!hasAnySignal) return;
+
+        finalPlayers[pickId] = {
+          player_id: pickId,
+          full_name: fullName,
+          first_name: String(meta.year),
+          last_name: getPickDisplayLastName(meta),
+          search_full_name: normalizeName(fullName).replace(/\s+/g, ""),
+          team,
+          position: pos,
+          fantasy_positions: ["PICK"],
+          active: true,
+          age: null,
+          years_exp: 0,
+          fc_values,
+          dp_values,
+          ktc_values,
+          fn_values,
+          sp_values,
+          idp_values,
+          idpshow_values,
+        };
       });
 
       updateProgress(95);

@@ -5,6 +5,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
+import { parsePickLabel } from "../../lib/picks";
 
 /** Value sources support */
 const VALUE_SOURCES = {
@@ -234,62 +235,18 @@ async function getOwnedPicksByRoster(leagueId) {
 
 function indexPickPlayers(playersMap) {
   const idx = new Map();
-  const picks = Object.values(playersMap || {}).filter(p => isPick(p.position));
-  const yearRegex  = /(20\d{2})/;
-  const ordToNum   = { first:1, 1:1, "1st":1, second:2, 2:2, "2nd":2, third:3, 3:3, "3rd":3, fourth:4, 4:4, "4th":4, fifth:5, 5:5, "5th":5, sixth:6, 6:6, "6th":6, seventh:7, 7:7, "7th":7 };
-  const roundRegexes = [
-    /\bround\s+(1|2|3|4|5|6|7|1st|2nd|3rd|4th|5th|6th|7th)\b/i,
-    /\br(1|2|3|4|5|6|7)\b/i,
-    /\b(1st|2nd|3rd|4th|5th|6th|7th|first|second|third|fourth|fifth|sixth|seventh)\b/i,
-    /\b(1|2|3|4|5|6|7)(?:st|nd|rd|th)\s*round\b/i,
-  ];
-
-  const norm = (s) => (s || "").toLowerCase();
-  const bucketOf = (nameLow) => {
-    if (/\bmid(dle)?\b/i.test(nameLow)) return "mid";
-    if (/\blate\b/i.test(nameLow)) return "late";
-    if (/\bearly\b/i.test(nameLow)) return "early";
-    return null;
-  };
-  const bucketPriority = (b) => (b === "mid" ? 3 : b === "late" ? 2 : b === "early" ? 1 : 0);
-
+  const picks = Object.values(playersMap || {}).filter((p) => isPick(p.position));
   const guess = (pl) =>
     (pl.sp_values?.dynasty_sf || pl.fc_values?.dynasty_sf || pl.fn_values?.dynasty_sf ||
      pl.dp_values?.superflex || pl.ktc_values?.superflex || 0);
 
   for (const p of picks) {
-    const name = `${p.full_name || ""} ${p.first_name || ""} ${p.last_name || ""}`.trim();
-    const low  = norm(name.replace(/\(via[^)]+\)/g, ""));
-    const y = low.match(yearRegex)?.[1];
-    if (!y) continue;
+    const meta = parsePickLabel(p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim());
+    if (!meta?.key) continue;
 
-    let rd = null;
-    for (const rr of roundRegexes) {
-      const m = low.match(rr);
-      if (m?.[1]) {
-        const raw = norm(m[1]);
-        rd = ordToNum[raw] ?? Number(raw);
-        break;
-      }
-    }
-    if (!rd || !Number.isFinite(rd)) continue;
-
-    const key = `${y}|${rd}`;
-    const candBucket = bucketOf(low);
-    const candPri = bucketPriority(candBucket);
-    const candVal = guess(p);
-
-    const prev = idx.get(key);
-    if (!prev) {
-      idx.set(key, p);
-    } else {
-      const prevLow = norm([prev.full_name, prev.first_name, prev.last_name].filter(Boolean).join(" "));
-      const prevBucket = bucketOf(prevLow);
-      const prevPri = bucketPriority(prevBucket);
-      const prevVal = guess(prev);
-      if (candPri > prevPri || (candPri === prevPri && candVal > prevVal)) {
-        idx.set(key, p);
-      }
+    const prev = idx.get(meta.key);
+    if (!prev || guess(p) > guess(prev)) {
+      idx.set(meta.key, p);
     }
   }
   return idx;
@@ -613,15 +570,16 @@ export default function PowerRankingsPage() {
           .map(pk => {
             const season = String(pk.season);
             const round  = Number(pk.round);
-            const key = `${season}|${round}`;
-            const pickPlayer = pickIndex.get(key);
+            const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
+            const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1);
+            const pickPlayer =
+              pickIndex.get(`bucket|${season}|${round}|${rawBucket}`) ||
+              pickIndex.get(`generic|${season}|${round}`) ||
+              null;
             if (!pickPlayer) return null;
 
             const v = getAnyPickValue(pickPlayer, valueSource, format, qbType);
             if (!v) return null;
-
-            const rawBucket = (strengthBucket.get(pk.original_roster_id) || "mid");
-            const labelBucket = rawBucket.charAt(0).toUpperCase() + rawBucket.slice(1);
 
             const base = `${labelBucket} ${season} ${toOrdinal(round)}`;
             const via =
