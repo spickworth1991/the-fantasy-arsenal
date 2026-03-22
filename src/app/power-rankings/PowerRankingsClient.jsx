@@ -364,7 +364,7 @@ export default function PowerRankingsPage() {
     players,
     activeLeague,
     setActiveLeague,
-    fetchLeagueRosters,
+    fetchLeagueRostersSilent,
   } = useSleeper();
 
   // Controls
@@ -455,7 +455,7 @@ export default function PowerRankingsPage() {
 
   useEffect(() => {
     if (league && !league.rosters) {
-      fetchLeagueRosters(league.league_id).catch(()=>{});
+      fetchLeagueRostersSilent(league.league_id).catch(()=>{});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league?.league_id]);

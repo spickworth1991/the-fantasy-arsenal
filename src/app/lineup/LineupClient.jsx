@@ -245,8 +245,7 @@ export default function LineupTool() {
     setActiveLeague,
     format,
     qbType,
-    fetchLeagueRosters,
-    loading,
+    fetchLeagueRostersSilent,
   } = useSleeper();
 
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -271,7 +270,8 @@ export default function LineupTool() {
 
   const [week, setWeek] = useState(1);
   const [season, setSeason] = useState(new Date().getFullYear());
-  const [byeMap, setByeMap] = useState(null);
+  const [byeMap, setByeMap] = useState({ by_team: {} });
+  const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
 
   const [ownerA, setOwnerA] = useState("");
@@ -388,7 +388,20 @@ export default function LineupTool() {
           if (data?.season) setSeason(Number(data.season));
         }
         const byeRes = await fetch(`/byes/${data?.season || new Date().getFullYear()}.json`);
-        if (mounted && byeRes.ok) setByeMap(await byeRes.json());
+        if (mounted) {
+          if (byeRes.ok) {
+            setByeMap(await byeRes.json());
+            setByeDataAvailable(true);
+          } else {
+            setByeMap({ by_team: {} });
+            setByeDataAvailable(false);
+          }
+        }
+      } catch {
+        if (mounted) {
+          setByeMap({ by_team: {} });
+          setByeDataAvailable(false);
+        }
       } finally {
         if (mounted) setStateLoading(false);
       }
@@ -399,7 +412,7 @@ export default function LineupTool() {
   // ensure league data
   useEffect(() => {
     if (activeLeague && (!league?.rosters || !league?.users)) {
-      fetchLeagueRosters(activeLeague).catch(() => {});
+      fetchLeagueRostersSilent(activeLeague).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLeague]);
@@ -499,7 +512,7 @@ export default function LineupTool() {
       <div aria-hidden className="h-[35px]" />
       <Navbar pageTitle="Lineup — Start/Sit + Matchup" />
       <BackgroundParticles />
-      {(loading || stateLoading) && <LoadingScreen text="Loading league & NFL week…" />}
+      {stateLoading && <LoadingScreen text="Loading league & NFL week…" />}
 
       <div aria-hidden className="h-[50px]" />
       <div className="max-w-7xl mx-auto px-4 pb-10">
@@ -519,8 +532,8 @@ export default function LineupTool() {
                 </div>
                 <div className="text-xs text-white/45">
                   {metricMode === "projections"
-                    ? "Projection-based lineup strength with bye adjustments"
-                    : "Value-based lineup strength using your selected market"}
+                    ? `Projection-based lineup strength ${byeDataAvailable ? "with bye adjustments" : "without bye adjustments yet"}`
+                    : `${byeDataAvailable ? "Value-based lineup strength using your selected market with bye adjustments" : "Value-based lineup strength using your selected market, without bye adjustments yet"}`}
                 </div>
               </div>
 
@@ -536,6 +549,11 @@ export default function LineupTool() {
                   onQbTypeChange={(v) => { setUserTouchedQB(true); setQbLocal(v); }}
                   layout="inline"
                 />
+                {!byeDataAvailable ? (
+                  <div className="mt-2 text-xs text-amber-200/80">
+                    Bye weeks are not available yet for this season, so the lineup tool is running without bye penalties for now.
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-end gap-4">
@@ -546,7 +564,7 @@ export default function LineupTool() {
                   onChange={(e) => {
                     const id = e.target.value;
                     setActiveLeague(id);
-                    if (id) fetchLeagueRosters(id).catch(() => {});
+                    if (id) fetchLeagueRostersSilent(id).catch(() => {});
                     setOwnerA("");
                     setOwnerB("");
                     setUserTouchedFormat(false);

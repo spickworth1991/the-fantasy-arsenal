@@ -36,6 +36,7 @@ const TOOL_ICONS = {
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
   "League Hub": "/icons/league-hub.png",
+  "Playoff Odds": "/icons/playoff-icon.png",
 };
 
 export default function HomeClient() {
@@ -67,7 +68,6 @@ export default function HomeClient() {
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
-      badge: "DEVELOPING",
     },
     {
       name: "Player Availability",
@@ -89,12 +89,18 @@ export default function HomeClient() {
     {
       name: "Strength of Schedule",
       link: "/sos",
-      description: "- NEEDS BYE WEEKS FOR 2026 - Analyze team schedules based on various metrics.",
+      description: "Analyze team schedules based on various metrics.",
     },
     {
       name: "Lineup Optimizer",
       link: "/lineup",
-      description: "- NEEDS BYE WEEKS AND PROJECTIONS FOR 2026 - Optimize your weekly lineup for maximum points.",
+      description: "Optimize your weekly lineup for maximum points.",
+    },
+    {
+      name: "Playoff Odds",
+      link: "/playoff-odds",
+      description: "Predict your team's chances of making the playoffs.",
+      badge: "NEW",
     },
     
   ];
