@@ -23,9 +23,9 @@ const ICONS = {
 
 // Set badges for sidebar links here (optional).
 const NAV_BADGES = {
-  "/draft-pick-tracker": "DEVELOPING",
   "/league-hub": "DEVELOPING",
   "/player-stock": "UPDATED",
+  "/playoff-odds": "NEW",
 };
 
 const BADGE_STYLES = {
@@ -215,6 +215,7 @@ export default function Navbar({ pageTitle }) {
               <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
               <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
               <SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} />
+              <SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} />
               
             </nav>
 

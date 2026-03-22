@@ -100,7 +100,7 @@ export default function TradeAnalyzer() {
     players,
     activeLeague,
     setActiveLeague,
-    fetchLeagueRosters,
+    fetchLeagueRostersSilent,
     format,
     qbType,
     setFormat,
@@ -172,7 +172,7 @@ export default function TradeAnalyzer() {
     setSideB([]);
     setSelectedOwnerA("");
     setSelectedOwnerB("");
-    if (leagueId) await fetchLeagueRosters(leagueId);
+    if (leagueId) await fetchLeagueRostersSilent(leagueId);
   };
 
   const league = leagues.find((lg) => lg.league_id === activeLeague);

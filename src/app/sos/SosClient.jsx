@@ -316,7 +316,7 @@ function computeWeeklyLineup({ roster, players, getMetricWeekly, slots, week, by
 }
 
 export default function SOSPage() {
-  const { leagues = [], activeLeague, setActiveLeague, fetchLeagueRosters, players, format, qbType } = useSleeper();
+  const { leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
   const league = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
 
   // Scoring auto-guess with sticky overrides
@@ -421,7 +421,8 @@ export default function SOSPage() {
   const [week, setWeek] = useState(1);
   const [toWeek, setToWeek] = useState(14);
   const [season, setSeason] = useState(new Date().getFullYear());
-  const [byeMap, setByeMap] = useState(null);
+  const [byeMap, setByeMap] = useState({ by_team: {} });
+  const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [heatmapMode, setHeatmapMode] = useState(true);
   const [isChopped, setIsChopped] = useState(false);
@@ -444,8 +445,17 @@ export default function SOSPage() {
         if (data?.week) { setWeek(data.week); setToWeek(Math.max(data.week, 14)); }
         if (data?.season) setSeason(Number(data.season));
         const byeRes = await fetch(`/byes/${data?.season || new Date().getFullYear()}.json`);
-        if (byeRes.ok) setByeMap(await byeRes.json());
-      } catch {}
+        if (byeRes.ok) {
+          setByeMap(await byeRes.json());
+          setByeDataAvailable(true);
+        } else {
+          setByeMap({ by_team: {} });
+          setByeDataAvailable(false);
+        }
+      } catch {
+        setByeMap({ by_team: {} });
+        setByeDataAvailable(false);
+      }
     })();
   }, []);
 
@@ -489,7 +499,7 @@ export default function SOSPage() {
   const [heatData, setHeatData] = useState(null);
 
   const recompute = async () => {
-  if (!activeLeague || !rosters.length || !byeMap) { setRows(null); setHeatData(null); return; }
+  if (!activeLeague || !rosters.length) { setRows(null); setHeatData(null); return; }
   if (metricMode === "projections") {
     const chosen =
       projectionSource === "ESPN" ? projMaps.ESPN :
@@ -691,8 +701,8 @@ export default function SOSPage() {
             </div>
             <div className="text-xs text-white/45">
               {metricMode === "projections"
-                ? "Projection-driven matchup strength with bye adjustments"
-                : "Value-driven matchup strength with bye adjustments"}
+                ? `Projection-driven matchup strength ${byeDataAvailable ? "with bye adjustments" : "without bye adjustments yet"}`
+                : `Value-driven matchup strength ${byeDataAvailable ? "with bye adjustments" : "without bye adjustments yet"}`}
             </div>
           </div>
 
@@ -715,6 +725,11 @@ export default function SOSPage() {
                 ? "Weekly cells are driven by projected lineup strength."
                 : "Weekly cells are driven by value-weighted lineup strength."}
             </div>
+            {!byeDataAvailable ? (
+              <div className="mt-2 text-xs text-amber-200/80">
+                Bye weeks are not available yet for this season, so SOS is running without bye penalties for now.
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-end gap-4">
@@ -725,7 +740,7 @@ export default function SOSPage() {
               onChange={(e) => {
                 const id = e.target.value;
                 setActiveLeague(id);
-                if (id) fetchLeagueRosters(id).catch(() => {});
+                if (id) fetchLeagueRostersSilent(id).catch(() => {});
                 setUserTouchedFormat(false);
                 setUserTouchedQB(false);
               }}
@@ -819,8 +834,12 @@ export default function SOSPage() {
 
         <SectionTitle subtitle={
           metricMode === "projections"
-          ? "Weekly strengths from season projections, normalized by bye count (0 on bye). Best starters chosen each week."
-          : "Opponent strength from player values (0 on bye). Best starters chosen each week."
+          ? byeDataAvailable
+            ? "Weekly strengths from season projections, normalized by bye count (0 on bye). Best starters chosen each week."
+            : "Weekly strengths from season projections, without bye penalties yet because bye data is not released."
+          : byeDataAvailable
+          ? "Opponent strength from player values (0 on bye). Best starters chosen each week."
+          : "Opponent strength from player values, without bye penalties yet because bye data is not released."
         }>
           Results
         </SectionTitle>
