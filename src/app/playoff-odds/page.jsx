@@ -316,7 +316,7 @@ function SectionTitle({ children, subtitle }) {
   );
 }
 
-function StatChip({ label, value, tone = "default" }) {
+function StatChip({ label, value, tone = "default", className = "" }) {
   const toneClass =
     tone === "cyan"
       ? "border-cyan-400/20 bg-cyan-500/10 text-cyan-100"
@@ -327,10 +327,29 @@ function StatChip({ label, value, tone = "default" }) {
       : "border-white/10 bg-white/5 text-white/80";
 
   return (
-    <div className={`rounded-2xl border px-3 py-2 ${toneClass}`}>
+    <div className={`rounded-2xl border px-3 py-2 ${toneClass} ${className}`}>
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">{label}</div>
       <div className="mt-1 text-sm font-semibold">{value}</div>
     </div>
+  );
+}
+
+function CompactSelect({ label, value, onChange, options = [], className = "" }) {
+  return (
+    <label className={`block rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white/80 ${className}`}>
+      <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">{label}</div>
+      <select
+        className="mt-1 w-full bg-transparent text-sm font-semibold text-white outline-none"
+        value={value}
+        onChange={onChange}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-slate-950 text-white">
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -400,7 +419,7 @@ export default function PlayoffOddsPage() {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [schedCache, setSchedCache] = useState({});
-  const [playoffLensOpen, setPlayoffLensOpen] = useState(true);
+  const [playoffLensOpen, setPlayoffLensOpen] = useState(false);
   const debTimer = useRef(null);
   const lastLeagueRef = useRef(null);
 
@@ -423,6 +442,13 @@ export default function PlayoffOddsPage() {
   const handleSetQbType = (value) => {
     setUserTouchedQB(true);
     setQbLocal(value);
+  };
+
+  const handleLeagueChange = (leagueId) => {
+    setActiveLeague(leagueId);
+    if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
+    setUserTouchedFormat(false);
+    setUserTouchedQB(false);
   };
 
   useEffect(() => {
@@ -855,6 +881,19 @@ export default function PlayoffOddsPage() {
     return found?.label || "Selected Source";
   }, [sourceKey]);
 
+  const sourceOptions = useMemo(
+    () => DEFAULT_SOURCES.map((item) => ({ value: item.key, label: item.label })),
+    []
+  );
+
+  const leagueOptions = useMemo(
+    () => [
+      { value: "", label: "Choose a League" },
+      ...leagues.map((item) => ({ value: item.league_id, label: item.name })),
+    ],
+    [leagues]
+  );
+
   const resultSummary = useMemo(() => {
     if (!results?.table?.length) return null;
     const favorite = [...results.table].sort((a, b) => b.champPct - a.champPct)[0];
@@ -896,157 +935,218 @@ export default function PlayoffOddsPage() {
       <Navbar pageTitle="Playoff Odds" />
 
       <div className="mx-auto max-w-7xl px-4 pb-12 pt-20">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
-          <div className="space-y-6">
-            <Card className="p-5 sm:p-6">
-              <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">Playoff Lens</div>
-                  <div className="mt-2 text-2xl font-black tracking-tight text-white sm:text-[2rem]">
-                    Shape the model before you trust the odds
-                  </div>
-                  <div className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                    Same cleaner source selector pattern as the rest of the preview, but with a sturdier playoff engine underneath it.
-                  </div>
-                </div>
+        <Card className="p-5 sm:p-6">
+          <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">Playoff Lens</div>
+              <div className="mt-2 text-2xl font-black tracking-tight text-white sm:text-[2rem]">
+                Shape the model before you trust the odds
+              </div>
+              <div className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
+                Same cleaner source selector pattern as the rest of the preview, but with a sturdier playoff engine underneath it.
+              </div>
+            </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <StatChip label="Active Lens" value={metricMode === "projections" ? "Projections" : "Values"} tone={metricMode === "projections" ? "cyan" : "amber"} />
-                  <StatChip label="Source" value={currentSourceLabel} tone="default" />
-                  <button
-                    type="button"
-                    onClick={() => setPlayoffLensOpen((open) => !open)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10"
-                    aria-expanded={playoffLensOpen}
-                    aria-controls="playoff-lens-panel"
-                  >
-                    {playoffLensOpen ? "Collapse" : "Expand"}
-                    <svg
-                      className={`h-4 w-4 transition-transform ${playoffLensOpen ? "rotate-180" : ""}`}
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:flex xl:flex-wrap">
+              <StatChip className="w-full sm:w-auto" label="Active Lens" value={metricMode === "projections" ? "Projections" : "Values"} tone={metricMode === "projections" ? "cyan" : "amber"} />
+              <CompactSelect
+                className="w-full md:min-w-[190px] xl:w-auto"
+                label="Source"
+                value={sourceKey}
+                onChange={(e) => setSourceKey(e.target.value)}
+                options={sourceOptions}
+              />
+              <CompactSelect
+                className="w-full md:min-w-[220px] xl:w-auto"
+                label="League"
+                value={activeLeague || ""}
+                onChange={(e) => handleLeagueChange(e.target.value)}
+                options={leagueOptions}
+              />
+              <button
+                type="button"
+                onClick={() => setPlayoffLensOpen((open) => !open)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 md:col-span-2 xl:w-auto xl:justify-start"
+                aria-expanded={playoffLensOpen}
+                aria-controls="playoff-lens-panel"
+              >
+                {playoffLensOpen ? "Collapse" : "Expand"}
+                <svg
+                  className={`h-4 w-4 transition-transform ${playoffLensOpen ? "rotate-180" : ""}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {playoffLensOpen ? (
+            <div id="playoff-lens-panel">
+              <SourceSelector
+                sources={DEFAULT_SOURCES}
+                value={sourceKey}
+                onChange={setSourceKey}
+                mode={formatLocal}
+                qbType={qbLocal}
+                onModeChange={handleSetFormat}
+                onQbTypeChange={handleSetQbType}
+                layout="inline"
+                className="w-full"
+              />
+
+              <div className="mt-3 flex flex-col gap-2 text-xs text-white/50 sm:flex-row sm:flex-wrap sm:items-center">
+                <span>{sourceHelperCopy}</span>
+                {projError ? (
+                  <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">
+                    {projError}
+                  </span>
+                ) : null}
               </div>
 
-              {playoffLensOpen ? (
-                <div id="playoff-lens-panel">
-                  <SourceSelector
-                    sources={DEFAULT_SOURCES}
-                    value={sourceKey}
-                    onChange={setSourceKey}
-                    mode={formatLocal}
-                    qbType={qbLocal}
-                    onModeChange={handleSetFormat}
-                    onQbTypeChange={handleSetQbType}
-                    layout="inline"
-                    className="w-full"
-                  />
+              <div className="mt-4 rounded-[26px] border border-white/10 bg-gradient-to-br from-cyan-500/10 via-slate-950/90 to-slate-950 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">Simulation Window</div>
+                    <div className="mt-1 text-sm text-white/60">
+                      Forecast the remaining stretch from the observed results window you choose.
+                    </div>
+                  </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/50">
-                    <span>{sourceHelperCopy}</span>
-                    {projError ? (
-                      <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">
-                        {projError}
+                  <div className="flex flex-col gap-2 text-xs text-white/55 sm:flex-row sm:flex-wrap sm:items-center">
+                    <span>
+                      {busy
+                        ? "Running the playoff sim..."
+                        : results
+                        ? `${results.totalRuns.toLocaleString()} runs across ${results.futureWeeks.length || 0} remaining weeks`
+                        : "Choose a league to start the simulation"}
+                    </span>
+                    {results ? (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+                        {simulationModeLabel}
                       </span>
                     ) : null}
                   </div>
+                </div>
 
-                  <div className="mt-4 rounded-[26px] border border-white/10 bg-gradient-to-br from-cyan-500/10 via-slate-950/90 to-slate-950 p-4">
-                    <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">Simulation Window</div>
-                        <div className="mt-1 text-sm text-white/60">
-                          Forecast the remaining stretch from the observed results window you choose.
-                        </div>
-                      </div>
+                <div className="mt-3 text-xs text-white/50">
+                  {latestObservedWeek <= 0
+                    ? "No completed NFL weeks are available yet, so the model uses a preseason baseline and simulates from Week 1."
+                    : latestObservedWeek < regularSeasonEnd
+                    ? `Observed results are available through Week ${latestObservedWeek}. Later weeks stay in the simulation bucket.`
+                    : `This league season is complete through Week ${regularSeasonEnd}, so any observed window in the regular season is fair game.`}
+                </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-white/55">
-                        <span>
-                          {busy
-                            ? "Running the playoff sim..."
-                            : results
-                            ? `${results.totalRuns.toLocaleString()} runs across ${results.futureWeeks.length || 0} remaining weeks`
-                            : "Choose a league to start the simulation"}
-                        </span>
-                        {results ? (
-                          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-                            {simulationModeLabel}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div>
+                    <label className="mb-2 block text-xs text-white/50">Observed From</label>
+                    <select
+                      className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
+                      value={week}
+                      onChange={(e) => {
+                        const next = clamp(Number(e.target.value) || 1, 1, selectableObservedWeek);
+                        setWeek(next);
+                        if (toWeek < next) setToWeek(next);
+                      }}
+                    >
+                      {weekOptions.map((current) => (
+                        <option key={`start-${current}`} value={current}>
+                          Week {current}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="mt-3 text-xs text-white/50">
-                      {latestObservedWeek <= 0
-                        ? "No completed NFL weeks are available yet, so the model uses a preseason baseline and simulates from Week 1."
-                        : latestObservedWeek < regularSeasonEnd
-                        ? `Observed results are available through Week ${latestObservedWeek}. Later weeks stay in the simulation bucket.`
-                        : `This league season is complete through Week ${regularSeasonEnd}, so any observed window in the regular season is fair game.`}
-                    </div>
+                  <div>
+                    <label className="mb-2 block text-xs text-white/50">Observed Through</label>
+                    <select
+                      className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
+                      value={toWeek}
+                      onChange={(e) => setToWeek(clamp(Number(e.target.value) || selectableObservedWeek, week, selectableObservedWeek))}
+                    >
+                      {weekOptions.filter((current) => current >= week).map((current) => (
+                        <option key={`end-${current}`} value={current}>
+                          Week {current}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      <div>
-                        <label className="mb-2 block text-xs text-white/50">Observed From</label>
-                        <select
-                          className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                          value={week}
-                          onChange={(e) => {
-                            const next = clamp(Number(e.target.value) || 1, 1, selectableObservedWeek);
-                            setWeek(next);
-                            if (toWeek < next) setToWeek(next);
-                          }}
-                        >
-                          {weekOptions.map((current) => (
-                            <option key={`start-${current}`} value={current}>
-                              Week {current}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                  <div>
+                    <label className="mb-2 block text-xs text-white/50">Simulation Runs</label>
+                    <select
+                      className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
+                      value={runs}
+                      onChange={(e) => setRuns(Number(e.target.value) || 2500)}
+                    >
+                      {[1000, 2500, 5000, 7500, 10000].map((count) => (
+                        <option key={count} value={count}>
+                          {count.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                      <div>
-                        <label className="mb-2 block text-xs text-white/50">Observed Through</label>
-                        <select
-                          className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                          value={toWeek}
-                          onChange={(e) => setToWeek(clamp(Number(e.target.value) || selectableObservedWeek, week, selectableObservedWeek))}
-                        >
-                          {weekOptions.filter((current) => current >= week).map((current) => (
-                            <option key={`end-${current}`} value={current}>
-                              Week {current}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-xs text-white/50">Simulation Runs</label>
-                        <select
-                          className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                          value={runs}
-                          onChange={(e) => setRuns(Number(e.target.value) || 2500)}
-                        >
-                          {[1000, 2500, 5000, 7500, 10000].map((count) => (
-                            <option key={count} value={count}>
-                              {count.toLocaleString()}
-                            </option>
-                          ))}
-                        </select>
+                <div className="mt-4 rounded-[26px] border border-white/10 bg-black/20 p-4">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">League Context</div>
+                      <div className="mt-1 text-sm text-white/60">
+                        Keep the active league and season framing attached to this playoff lens.
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]">
+                    <div>
+                      <label className="mb-2 block text-xs text-white/50">League</label>
+                      <select
+                        className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
+                        value={activeLeague || ""}
+                        onChange={(e) => handleLeagueChange(e.target.value)}
+                      >
+                      <option value="">Choose a League</option>
+                      {leagues.map((item) => (
+                          <option key={item.league_id} value={item.league_id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <StatChip label="Season" value={league ? String(leagueSeason) : "Waiting"} />
+                    <StatChip label="Playoff Teams" value={league ? String(Number(league?.settings?.playoff_teams || 6)) : "-"} />
+                    <StatChip
+                      label="Observed Window"
+                      value={
+                        !league
+                          ? "-"
+                          : latestObservedWeek <= 0
+                          ? "Preseason"
+                          : `W${week} to W${Math.min(toWeek, latestObservedWeek)}`
+                      }
+                    />
+                    <StatChip
+                      label="Schedule Mode"
+                      value={results ? simulationModeLabel : "Waiting"}
+                      tone={results?.scheduleMode === "synthetic" ? "amber" : results?.scheduleMode === "league" ? "cyan" : "default"}
+                    />
+                  </div>
                 </div>
-              ) : null}
-            </Card>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
+          <div className="space-y-6">
 
             <SectionTitle subtitle="A cleaner read on the race, with enough context to make the percentages feel trustworthy.">
               Outlook
@@ -1070,7 +1170,7 @@ export default function PlayoffOddsPage() {
               </Card>
             ) : (
               <>
-                <div className="grid gap-4 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <InsightCard
                     eyebrow="Title Favorite"
                     title={resultSummary?.favorite ? `${resultSummary.favorite.summaryLabel} | ${formatPct(resultSummary.favorite.champPct)}` : "Waiting for a favorite"}
@@ -1115,10 +1215,11 @@ export default function PlayoffOddsPage() {
                           Make odds, bye odds, championship equity, and expected finish in one table.
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <StatChip label="Mode" value={simulationModeLabel} />
-                        <StatChip label="Runs" value={results.totalRuns.toLocaleString()} />
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                        <StatChip className="min-w-0" label="Mode" value={simulationModeLabel} />
+                        <StatChip className="min-w-0" label="Runs" value={results.totalRuns.toLocaleString()} />
                         <StatChip
+                          className="min-w-0"
                           label="Observed"
                           value={
                             results.observedWeeks.length
@@ -1127,6 +1228,7 @@ export default function PlayoffOddsPage() {
                           }
                         />
                         <StatChip
+                          className="min-w-0"
                           label="Simulated"
                           value={
                             results.futureWeeks.length
@@ -1138,17 +1240,57 @@ export default function PlayoffOddsPage() {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto px-3 pb-3 pt-2 sm:px-4">
-                    <table className="w-full min-w-[860px] text-sm">
+                  <div className="space-y-3 px-3 pb-3 pt-3 md:hidden">
+                    {results.table.map((row, index) => {
+                      const barColor = row.champPct >= 30 ? "rose" : row.makePct >= 65 ? "cyan" : "amber";
+                      return (
+                        <div key={`mobile-${row.rid}`} className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/70">
+                                Rank {index + 1}
+                              </div>
+                              <div className="mt-1 truncate font-semibold text-white">{row.primaryLabel}</div>
+                              {row.secondaryLabel ? (
+                                <div className="mt-1 truncate text-xs text-white/45">{row.secondaryLabel}</div>
+                              ) : null}
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
+                              <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Champ</div>
+                              <div className="mt-1 text-lg font-black text-white">{formatPct(row.champPct)}</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <OddsBar value={clamp(row.makePct, 8, 100)} color={barColor} />
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <StatChip className="min-w-0" label="Playoffs" value={formatPct(row.makePct)} />
+                            <StatChip className="min-w-0" label="Bye" value={formatPct(row.byePct)} />
+                            <StatChip className="min-w-0" label="Observed Wins" value={row.currentWins.toFixed(1)} />
+                            <StatChip className="min-w-0" label="Expected Wins" value={row.avgWins.toFixed(1)} />
+                          </div>
+
+                          <div className="mt-3 flex items-center justify-between gap-3 text-xs text-white/50">
+                            <span>{formatSigned(row.winDelta)} from baseline</span>
+                            <span>Avg seed {row.avgSeed ? row.avgSeed.toFixed(1) : "-"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="hidden px-3 pb-3 pt-2 md:block sm:px-4">
+                    <table className="w-full table-fixed text-xs lg:text-sm">
                       <thead>
                         <tr className="text-left text-white/45">
-                          <th className="px-3 py-3 font-medium">Team</th>
-                          <th className="px-3 py-3 font-medium">Strength</th>
-                          <th className="px-3 py-3 font-medium">Wins</th>
-                          <th className="px-3 py-3 font-medium">Playoffs</th>
-                          <th className="px-3 py-3 font-medium">Bye</th>
-                          <th className="px-3 py-3 font-medium">Champ</th>
-                          <th className="px-3 py-3 font-medium">Avg Seed</th>
+                          <th className="w-[34%] px-2 py-3 font-medium lg:px-3">Team</th>
+                          <th className="w-[13%] px-2 py-3 font-medium lg:px-3">Wins</th>
+                          <th className="w-[13%] px-2 py-3 font-medium lg:px-3">Playoffs</th>
+                          <th className="w-[13%] px-2 py-3 font-medium lg:px-3">Bye</th>
+                          <th className="w-[13%] px-2 py-3 font-medium lg:px-3">Champ</th>
+                          <th className="w-[14%] px-2 py-3 font-medium lg:px-3">Avg Seed</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1156,7 +1298,7 @@ export default function PlayoffOddsPage() {
                           const barColor = row.champPct >= 30 ? "rose" : row.makePct >= 65 ? "cyan" : "amber";
                           return (
                             <tr key={row.rid} className="border-t border-white/8 align-top transition hover:bg-white/[0.03]">
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="flex items-start gap-3">
                                   <div className="mt-0.5 w-8 text-right text-lg font-black text-cyan-300/90">{index + 1}</div>
                                   <div className="min-w-0">
@@ -1173,34 +1315,34 @@ export default function PlayoffOddsPage() {
                                         ? "Needs a push"
                                         : "Long-shot lane"}
                                     </div>
+                                    <div className="mt-2 text-xs text-white/55">
+                                      Strength {Math.round(row.strength).toLocaleString()}
+                                    </div>
+                                    <div className="mt-2">
+                                      <OddsBar value={clamp(row.makePct, 8, 100)} color={barColor} />
+                                    </div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-3 py-4">
-                                <div className="font-semibold text-white">{Math.round(row.strength).toLocaleString()}</div>
-                                <div className="mt-2">
-                                  <OddsBar value={clamp(row.makePct, 8, 100)} color={barColor} />
-                                </div>
-                              </td>
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="font-semibold text-white">{row.currentWins.toFixed(1)} observed</div>
                                 <div className="mt-1 text-xs text-white/50">
                                   {row.avgWins.toFixed(1)} expected | {formatSigned(row.winDelta)}
                                 </div>
                               </td>
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="font-semibold text-white">{formatPct(row.makePct)}</div>
                                 <div className="mt-1 text-xs text-white/50">Make the bracket</div>
                               </td>
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="font-semibold text-white">{formatPct(row.byePct)}</div>
                                 <div className="mt-1 text-xs text-white/50">Skip round one</div>
                               </td>
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="font-semibold text-white">{formatPct(row.champPct)}</div>
                                 <div className="mt-1 text-xs text-white/50">Win it all</div>
                               </td>
-                              <td className="px-3 py-4">
+                              <td className="px-2 py-4 lg:px-3">
                                 <div className="font-semibold text-white">{row.avgSeed ? row.avgSeed.toFixed(1) : "-"}</div>
                                 <div className="mt-1 text-xs text-white/50">When they get in</div>
                               </td>
@@ -1216,54 +1358,6 @@ export default function PlayoffOddsPage() {
           </div>
 
           <div className="space-y-6">
-            <Card className="p-5">
-              <SectionTitle subtitle="Keep the active league and season framing pinned beside the race board.">
-                League Context
-              </SectionTitle>
-
-              <div className="space-y-3">
-                <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">League</div>
-                  <select
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                    value={activeLeague || ""}
-                    onChange={(e) => {
-                      const leagueId = e.target.value;
-                      setActiveLeague(leagueId);
-                      if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
-                      setUserTouchedFormat(false);
-                      setUserTouchedQB(false);
-                    }}
-                  >
-                    <option value="">Choose a League</option>
-                    {leagues.map((item) => (
-                      <option key={item.league_id} value={item.league_id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <StatChip label="Season" value={league ? String(leagueSeason) : "Waiting"} />
-                <StatChip label="Playoff Teams" value={league ? String(Number(league?.settings?.playoff_teams || 6)) : "-"} />
-                <StatChip
-                  label="Observed Window"
-                  value={
-                    !league
-                      ? "-"
-                      : latestObservedWeek <= 0
-                      ? "Preseason"
-                      : `W${week} to W${Math.min(toWeek, latestObservedWeek)}`
-                  }
-                />
-                <StatChip
-                  label="Schedule Mode"
-                  value={results ? simulationModeLabel : "Waiting"}
-                  tone={results?.scheduleMode === "synthetic" ? "amber" : results?.scheduleMode === "league" ? "cyan" : "default"}
-                />
-              </div>
-            </Card>
-
             <Card className="p-5">
               <SectionTitle subtitle="These teams have the cleanest championship paths right now.">
                 Contender Ladder
