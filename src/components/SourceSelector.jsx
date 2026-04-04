@@ -26,8 +26,8 @@ const ICONS = {
   KeepTradeCut: "/icons/ktc-logo.png",
   FantasyNavigator: "/icons/fantasynav-logo.png",
   IDynastyP: "/icons/idp-logo.png",
-  // The IDP Show (values) — reuse IDP icon so we don't require a new asset
   IDPShow: "/icons/idpshow-logo.png",
+  TheFantasyArsenal: "/icons/TFA.png",
 
   FFA: "/icons/ffa-logo.jpg",
   ESPN: "/icons/espn-logo.png",
@@ -41,6 +41,7 @@ const LABELS = {
   FantasyNavigator: "FantasyNavigator",
   IDynastyP: "IDynastyP",
   IDPShow: "IDPShow",
+  TheFantasyArsenal: "The Fantasy Arsenal",
 
   FFA: "FFA Projections",
   ESPN: "ESPN Projections",
@@ -56,6 +57,7 @@ const ICON_SIZES = {
     FantasyNavigator: { w: 48, h: 20 }, // square
     IDynastyP: { w: 60, h: 20 },
     IDPShow: { w: 60, h: 20 },
+    TheFantasyArsenal: { w: 60, h: 20 },
 
     ESPN: { w: 112, h: 28 },
     CBS: { w: 112, h: 28 },
@@ -68,6 +70,7 @@ const ICON_SIZES = {
     FantasyNavigator: { w: 48, h: 21 }, // square
     IDynastyP: { w: 140, h: 28 },
     IDPShow: { w: 140, h: 28 },
+    TheFantasyArsenal: { w: 140, h: 28 },
 
     ESPN: { w: 112, h: 24 },
     CBS: { w: 112, h: 28 },
@@ -123,6 +126,13 @@ export const DEFAULT_SOURCES = [
     label: "IDPShow",
     logoKey: "IDPShow",
     supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  {
+    key: "val:thefantasyarsenal",
+    type: "value",
+    label: "The Fantasy Arsenal",
+    logoKey: "TheFantasyArsenal",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
   },
 
   { key: "proj:espn", type: "projection", label: "ESPN Projections", logoKey: "ESPN" },

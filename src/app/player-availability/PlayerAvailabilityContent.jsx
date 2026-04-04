@@ -468,14 +468,14 @@ useEffect(() => {
   const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
 
   // Values + Projections sources (match Trade Analyzer)
-  const [sourceKey, setSourceKey] = useState("proj:sleeper");
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
   const activeSource = useMemo(
     () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
     [sourceKey]
   );
 
   // Keep existing downstream logic (valueSource + projSource) but drive them from ONE selector.
-  const [valueSource, setValueSource] = useState("FantasyCalc");
+  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
   const [projSource, setProjSource] = useState("CSV"); // CSV | ESPN | CBS
   const [projectionMaps, setProjectionMaps] = useState({ CSV: null, ESPN: null, CBS: null });
 

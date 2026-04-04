@@ -144,7 +144,7 @@ export default function TradeAnalyzer() {
         const fallbackKey = next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.CSV ? "proj:ffa" : null;
         if (metricMode === "projections" && !fallbackKey) {
           setProjError("No projections found. Using values instead.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
           return;
         }
         if (String(sourceKey || "").startsWith("proj:")) {
@@ -155,7 +155,7 @@ export default function TradeAnalyzer() {
       } catch {
         if (!mounted) return;
         setProjError("Projections unavailable. Using values.");
-        setSourceKey("val:fantasycalc");
+        setSourceKey("val:thefantasyarsenal");
       } finally {
         if (mounted) setProjLoading(false);
       }

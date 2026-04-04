@@ -20,6 +20,8 @@ const VALUE_SOURCES = {
   KeepTradeCut:     { label: "KeepTradeCut",     supports: { dynasty: true,  redraft: false, qbToggle: true  } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
   IDynastyP:        { label: "IDynastyP",        supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  IDPShow:          { label: "IDPShow",          supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
 };
 
 const OFF_POS = ["QB","RB","WR","TE"];
@@ -124,6 +126,9 @@ function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "IDynastyP") {
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
     }
+    if (valueSource === "IDPShow") {
+      return qbType === "sf" ? (p.idpshow_values?.superflex || 0) : (p.idpshow_values?.one_qb || 0);
+    }
     if (valueSource === "TheFantasyArsenal") {
       return format === "dynasty"
         ? (qbType === "sf" ? (p.sp_values?.dynasty_sf || 0) : (p.sp_values?.dynasty_1qb || 0))
@@ -144,6 +149,7 @@ function getAnyPickValue(p, valueSource, format, qbType) {
     "KeepTradeCut",
     "FantasyNavigator",
     "IDynastyP",
+    "IDPShow",
   ];
   for (const src of tryOrder) {
     const v = makeGetPlayerValue(src, format, qbType)(p);
@@ -376,11 +382,11 @@ export default function PowerRankingsPage() {
   const [projError, setProjError] = useState("");
 
   // Values controls (unchanged)
-  const [valueSource, setValueSource] = useState("FantasyCalc");
+  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
   const supports = VALUE_SOURCES[valueSource].supports;
   const [format, setFormat] = useState("dynasty");
   const [qbType, setQbType] = useState("sf");
-  const [sourceKey, setSourceKey] = useState("proj:ffa");
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
 
   useEffect(() => {
     setMetricMode(metricModeFromSourceKey(sourceKey));
@@ -433,13 +439,13 @@ export default function PowerRankingsPage() {
 
         if (!next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — falling back to Values.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
         }
       } catch (e) {
         if (!mounted) return;
         setProjMaps({ CSV: null, ESPN: null, CBS: null });
         setProjError("Projections unavailable — falling back to Values.");
-        setSourceKey("val:fantasycalc");
+        setSourceKey("val:thefantasyarsenal");
       } finally {
         if (mounted) setProjLoading(false);
       }

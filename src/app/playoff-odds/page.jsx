@@ -400,7 +400,7 @@ export default function PlayoffOddsPage() {
     [leagues, activeLeague]
   );
 
-  const [sourceKey, setSourceKey] = useState("proj:ffa");
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
@@ -456,7 +456,7 @@ export default function PlayoffOddsPage() {
     setProjectionSource(projectionSourceFromKey(sourceKey));
   }, [sourceKey]);
 
-  const [valueSource, setValueSource] = useState("FantasyCalc");
+  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
   useEffect(() => {
     setValueSource(valueSourceFromKey(sourceKey));
   }, [sourceKey]);
@@ -481,7 +481,7 @@ export default function PlayoffOddsPage() {
 
         if (!next.CSV && !next.ESPN && !next.CBS) {
           setProjError("Projection feeds are unavailable, so the model is using values.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
         } else if (projectionSource === "CBS" && !next.CBS) {
           setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
         } else if (projectionSource === "ESPN" && !next.ESPN) {
@@ -492,7 +492,7 @@ export default function PlayoffOddsPage() {
       } catch {
         if (!mounted) return;
         setProjError("Projection feeds are unavailable, so the model is using values.");
-        setSourceKey("val:fantasycalc");
+        setSourceKey("val:thefantasyarsenal");
       } finally {
         if (mounted) setProjLoading(false);
       }

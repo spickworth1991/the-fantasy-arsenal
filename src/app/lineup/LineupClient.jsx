@@ -252,7 +252,7 @@ export default function LineupTool() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
-  const [sourceKey, setSourceKey] = useState("proj:ffa");
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS
@@ -260,7 +260,7 @@ export default function LineupTool() {
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
-  const [valueSource, setValueSource] = useState("FantasyCalc");
+  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
 
   useEffect(() => {
     setMetricMode(metricModeFromSourceKey(sourceKey));
@@ -344,7 +344,7 @@ export default function LineupTool() {
 
         if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — using Values.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
         } else {
           if (projectionSource === "CBS"  && !next.CBS)  setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
           if (projectionSource === "ESPN" && !next.ESPN) setSourceKey(next.CSV ? "proj:ffa" : "proj:cbs");
@@ -353,7 +353,7 @@ export default function LineupTool() {
       } catch {
         if (!mounted) return;
         setProjError("Projections unavailable — using Values.");
-        setSourceKey("val:fantasycalc");
+        setSourceKey("val:thefantasyarsenal");
       } finally {
         if (mounted) setProjLoading(false);
       }

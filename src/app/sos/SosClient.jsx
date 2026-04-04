@@ -324,7 +324,7 @@ export default function SOSPage() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
-  const [sourceKey, setSourceKey] = useState("proj:ffa");
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
   const setFormatWrapped = (v) => { setUserTouchedFormat(true); setFormatLocal(v); };
   const setQbWrapped = (v) => { setUserTouchedQB(true); setQbLocal(v); };
   useEffect(() => {
@@ -337,7 +337,7 @@ export default function SOSPage() {
   /** Metric: projections (default) with values fallback */
   const [metricMode, setMetricMode] = useState("projections"); 
   const [projectionSource, setProjectionSource] = useState("CSV"); // "CSV" | "ESPN"
-  const [valueSource, setValueSource] = useState("FantasyCalc");
+  const [valueSource, setValueSource] = useState("TheFantasyArsenal");
 
   useEffect(() => {
     setMetricMode(metricModeFromSourceKey(sourceKey));
@@ -385,7 +385,7 @@ export default function SOSPage() {
         }
         if (!next.CSV && !next.ESPN && !next.CBS) {
           setProjError("No projections available — falling back to Values.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
         }
 
         }
@@ -393,7 +393,7 @@ export default function SOSPage() {
         if (mounted) {
           setProjMaps({ CSV: null, ESPN: null });
           setProjError("Projections unavailable — falling back to Values.");
-          setSourceKey("val:fantasycalc");
+          setSourceKey("val:thefantasyarsenal");
         }
       } finally {
         if (mounted) setProjLoading(false);

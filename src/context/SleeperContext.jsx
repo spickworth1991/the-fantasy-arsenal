@@ -559,7 +559,7 @@ export const SleeperProvider = ({ children }) => {
   const [qbType, setQbType] = useState(() => lsGet("qbType", "sf"));
 
   // Unified source key used by SourceSelector (can be either proj:* or val:*)
-  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "val:fantasycalc"));
+  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "val:thefantasyarsenal"));
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -612,7 +612,7 @@ export const SleeperProvider = ({ children }) => {
       "val:fantasynav": "FantasyNavigator",
       "val:idynastyp": "IDynastyP",
       "val:idpshow": "IDPShow",
-
+      "val:thefantasyarsenal": "TheFantasyArsenal",
     };
     return map[String(k || "")] || "FantasyCalc";
   };
