@@ -179,6 +179,92 @@ function onDeckTintStyles() {
   };
 }
 
+function getDraftStatusKey(status) {
+  return String(status || "").toLowerCase();
+}
+
+function getRowPriority(row) {
+  const status = getDraftStatusKey(row?.draftStatus);
+  if (row?.onClockIsMe && status === "drafting") return 0;
+  if (row?.onClockIsMe && status === "paused") return 1;
+  if (!row?.onClockIsMe && row?.onDeck && status !== "complete") return 2;
+  return 3;
+}
+
+function getSearchBottomPriority(row, q) {
+  return row?.myNextPickOverall == null ? 1 : 0;
+}
+
+function getRowAttentionState(row, liveClockLeft) {
+  const status = getDraftStatusKey(row?.draftStatus);
+  const isDrafting = status === "drafting";
+  const isPaused = status === "paused";
+  const isComplete = status === "complete";
+  const hasTimer = safeNum(row?.timerSec) > 0 && !isComplete;
+  const clockHeat =
+    row?.onClockIsMe && hasTimer
+      ? onClockHeatStyles(
+          getOnClockHeatMsForUI({
+            isPaused,
+            liveClockLeft,
+            timerSec: row?.timerSec,
+          }),
+          row?.timerSec
+        )
+      : null;
+  const deckTint = !row?.onClockIsMe && row?.onDeck && !isComplete ? onDeckTintStyles() : null;
+
+  const rowTone =
+    clockHeat?.tier === "red"
+      ? "bg-red-500/10"
+      : clockHeat?.tier === "orange"
+      ? "bg-orange-500/10"
+      : clockHeat?.tier === "yellow"
+      ? "bg-yellow-500/10"
+      : clockHeat?.tier === "green"
+      ? "bg-emerald-500/10"
+      : deckTint
+      ? "bg-amber-500/5"
+      : "";
+
+  const cardAccentClass = clockHeat
+    ? classNames("relative", clockHeat.ring, clockHeat.wash)
+    : deckTint
+    ? classNames("relative", deckTint.ring, deckTint.wash)
+    : "";
+
+  return {
+    isDrafting,
+    isPaused,
+    isComplete,
+    hasTimer,
+    clockHeat,
+    deckTint,
+    rowTone,
+    cardAccentClass,
+    showOnClockBadge: !!row?.onClockIsMe && (isDrafting || isPaused),
+    showOnDeckBadge: !row?.onClockIsMe && !!row?.onDeck && !isComplete,
+  };
+}
+
+function getDisplayClockText(attention, liveClockLeft) {
+  if (attention?.isPaused) return "PAUSED";
+  if (attention?.hasTimer && liveClockLeft > 0) return msToClock(liveClockLeft);
+  return null;
+}
+
+function getDisplayEtaText(row, attention, liveEtaMs) {
+  if (row?.myNextPickOverall == null) return null;
+  if (attention?.isPaused) return "PAUSED";
+  return msToHuman(Math.max(0, safeNum(liveEtaMs)));
+}
+
+function getEtaSortValue(row) {
+  if (row?.myNextPickOverall == null) return Number.MAX_SAFE_INTEGER;
+  if (getDraftStatusKey(row?.draftStatus) === "paused") return Number.MAX_SAFE_INTEGER - 1;
+  return safeNum(row?.etaMs);
+}
+
 function SortHeader({ label, col, sortKey, sortDir, setSortKey, setSortDir }) {
   const active = sortKey === col;
   return (
@@ -551,6 +637,7 @@ export default function DraftPickTrackerClient() {
       r = r.filter((x) => {
         const st = String(x.draftStatus || "").toLowerCase();
         if (st === "drafting") return true;
+        if (st === "paused" && x.onClockIsMe) return true;
         if (includePaused && st === "paused") return true;
         return false;
       });
@@ -580,12 +667,27 @@ export default function DraftPickTrackerClient() {
 
     const dir = sortDir === "asc" ? 1 : -1;
     r = [...r].sort((a, b) => {
+      const searchBottomDelta = getSearchBottomPriority(a, q) - getSearchBottomPriority(b, q);
+      if (searchBottomDelta !== 0) return searchBottomDelta;
+
+      const rowPriorityDelta = getRowPriority(a) - getRowPriority(b);
+      if (rowPriorityDelta !== 0) return rowPriorityDelta;
+
+      if (sortKey === "etaMs") {
+        const cmp = (getEtaSortValue(a) - getEtaSortValue(b)) * dir;
+        if (cmp !== 0) return cmp;
+      }
+
       const av = a?.[sortKey];
       const bv = b?.[sortKey];
       if (typeof av === "string" || typeof bv === "string") {
-        return String(av || "").localeCompare(String(bv || "")) * dir;
+        const cmp = String(av || "").localeCompare(String(bv || "")) * dir;
+        if (cmp !== 0) return cmp;
+      } else {
+        const cmp = (safeNum(av) - safeNum(bv)) * dir;
+        if (cmp !== 0) return cmp;
       }
-      return (safeNum(av) - safeNum(bv)) * dir;
+      return String(a?.leagueName || "").localeCompare(String(b?.leagueName || ""));
     });
 
     return r;
@@ -626,11 +728,10 @@ export default function DraftPickTrackerClient() {
 
     const r = mobileDetailRow;
     const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-    const isPaused = String(r?.draftStatus || "").toLowerCase() === "paused";
-    const hasTimer = safeNum(r.timerSec) > 0 && !isPaused;
-    const liveClockLeft = hasTimer ? Math.max(0, safeNum(r.clockLeftMs) - elapsed) : 0;
-    const clockText = hasTimer ? msToClock(liveClockLeft) : "—";
-    const etaHuman = r.myNextPickOverall != null ? msToHuman(Math.max(0, safeNum(r.etaMs) - elapsed)) : "—";
+    const rawClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+    const attention = getRowAttentionState(r, rawClockLeft);
+    const clockText = getDisplayClockText(attention, rawClockLeft) || "—";
+    const etaHuman = getDisplayEtaText(r, attention, Math.max(0, safeNum(r.etaMs) - elapsed)) || "—";
     const statusTone =
       r.draftStatus === "drafting"
         ? "green"
@@ -650,8 +751,8 @@ export default function DraftPickTrackerClient() {
                 <Pill tone={statusTone} size="xs">
                   {r.draftStatus || "—"}
                 </Pill>
-                {r.onClockIsMe ? <Pill tone="green" size="xs">ON CLOCK</Pill> : null}
-                {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck ? (
+                {attention.showOnClockBadge ? <Pill tone="green" size="xs">ON CLOCK</Pill> : null}
+                {attention.showOnDeckBadge ? (
                   <Pill tone="yellow" size="xs">ON DECK</Pill>
                 ) : null}
               </div>
@@ -855,11 +956,13 @@ export default function DraftPickTrackerClient() {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {filteredDraftRows.map((r) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-            const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-            const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+            const rawClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+            const attention = getRowAttentionState(r, rawClockLeft);
+            const clockText = getDisplayClockText(attention, rawClockLeft);
 
             const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-            const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
+            const etaLabel = getDisplayEtaText(r, attention, liveEta) || "â€”";
+            const etaHuman = etaLabel;
 
             const statusTone =
               r.draftStatus === "drafting"
@@ -880,9 +983,7 @@ export default function DraftPickTrackerClient() {
                 key={r.leagueId}
                 className={classNames(
                   "bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
-                  (r.onClockIsMe || r.onDeck) &&
-                    r.draftStatus === "drafting" &&
-                    "ring-1 ring-emerald-400/30"
+                  attention.cardAccentClass
                 )}
               >
                 <div className="p-4 border-b border-white/10 bg-black/20">
@@ -902,10 +1003,10 @@ export default function DraftPickTrackerClient() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
+                      {attention.showOnClockBadge && clockText && (
                         <Pill tone="green">ON CLOCK · {clockText}</Pill>
                       )}
-                      {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
+                      {attention.showOnDeckBadge && (
                         <Pill tone="yellow">ON DECK</Pill>
                       )}
                       {upIn != null && upIn >= 0 && (
@@ -924,12 +1025,12 @@ export default function DraftPickTrackerClient() {
                       <div className="text-white text-lg font-semibold">
                         {r.currentPick ? `#${nf0.format(r.currentPick)}` : "—"}
                       </div>
-                      {r.draftStatus === "drafting" && clockText && (
+                      {attention.showOnClockBadge && clockText && (
                         <div className="text-xs text-gray-400 mt-1">
-                          {clockText} left
+                          {attention.isPaused ? "Paused on your pick" : `${clockText} left`}
                         </div>
                       )}
-                      {r.draftStatus === "paused" && (
+                      {!attention.showOnClockBadge && attention.isPaused && (
                         <div className="text-xs text-yellow-200/80 mt-1">
                           Draft paused
                         </div>
@@ -954,7 +1055,9 @@ export default function DraftPickTrackerClient() {
                         {r.myNextPickOverall ? etaHuman : "—"}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">
-                        Uses {r.timerSec ? `${r.timerSec}s` : "timer"} per pick
+                        {attention.isPaused
+                          ? "ETA unavailable while paused"
+                          : `Uses ${r.timerSec ? `${r.timerSec}s` : "timer"} per pick`}
                       </div>
                     </div>
 
@@ -1061,37 +1164,16 @@ export default function DraftPickTrackerClient() {
                 <tbody>
                   {filteredDraftRows.map((r, idx) => {
                     const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
-                    const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-                    const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : "—";
-                    const isDrafting = String(r?.draftStatus || "").toLowerCase() === "drafting";
-                    const isPaused = String(r?.draftStatus || "").toLowerCase() === "paused";
-                    const isComplete = String(r?.draftStatus || "").toLowerCase() === "complete";
-                    const hasTimer = safeNum(r.timerSec) > 0 && !isComplete;
+                    const rawClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+                    const attention = getRowAttentionState(r, rawClockLeft);
+                    const clockText = getDisplayClockText(attention, rawClockLeft) || "—";
                     const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
                     const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
-
-                    const clockHeat =
-                      r.onClockIsMe && hasTimer
-                        ? onClockHeatStyles(getOnClockHeatMsForUI({ isPaused, liveClockLeft, timerSec: r.timerSec }), r.timerSec)
-                        : null;
-                    const deckTint = isDrafting && !r.onClockIsMe && r.onDeck ? onDeckTintStyles() : null;
-                    const mobileRowTone =
-                      clockHeat?.tier === "red"
-                        ? "bg-red-500/10"
-                        : clockHeat?.tier === "orange"
-                        ? "bg-orange-500/10"
-                        : clockHeat?.tier === "yellow"
-                        ? "bg-yellow-500/10"
-                        : clockHeat?.tier === "green"
-                        ? "bg-emerald-500/10"
-                        : deckTint
-                        ? "bg-amber-500/5"
-                        : "";
 
                     return (
                       <tr
                         key={r.leagueId || `mrow:${idx}`}
-                        className={classNames("border-t border-white/5 cursor-pointer", mobileRowTone)}
+                        className={classNames("border-t border-white/5 cursor-pointer", attention.rowTone)}
                         onClick={() => setMobileDetailRow(r)}
                       >
                         <td className="px-3 py-3 align-top">
@@ -1100,8 +1182,8 @@ export default function DraftPickTrackerClient() {
                             <Pill tone={r.draftStatus === "drafting" ? "green" : r.draftStatus === "paused" ? "yellow" : r.draftStatus === "complete" ? "gray" : "yellow"} size="xs">
                               {r.draftStatus || "—"}
                             </Pill>
-                            {r.onClockIsMe ? <Pill tone="green" size="xs">ON CLOCK</Pill> : null}
-                            {isDrafting && !r.onClockIsMe && r.onDeck ? <Pill tone="yellow" size="xs">ON DECK</Pill> : null}
+                            {attention.showOnClockBadge ? <Pill tone="green" size="xs">ON CLOCK</Pill> : null}
+                            {attention.showOnDeckBadge ? <Pill tone="yellow" size="xs">ON DECK</Pill> : null}
                           </div>
                           <div className="mt-1 text-[11px] text-cyan-200/80">Tap for details</div>
                         </td>
@@ -1158,7 +1240,7 @@ export default function DraftPickTrackerClient() {
                   </th>
                   <th className="px-5 py-3">
                     <SortHeader
-                      label="Next Up"
+                      label="Who's Up"
                       col="nextOwnerName"
                       {...{ sortKey, sortDir, setSortKey, setSortDir }}
                     />
@@ -1189,11 +1271,11 @@ export default function DraftPickTrackerClient() {
               <tbody>
                 {filteredDraftRows.map((r) => {
                   const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
+                  const rawClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
+                  const attention = getRowAttentionState(r, rawClockLeft);
+                  const clockText = getDisplayClockText(attention, rawClockLeft);
                   const liveEta = Math.max(0, safeNum(r.etaMs) - elapsed);
-                  const etaHuman = r.myNextPickOverall != null ? msToHuman(liveEta) : "—";
-
-                  const liveClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
-                  const clockText = liveClockLeft > 0 ? msToClock(liveClockLeft) : null;
+                  const etaHuman = getDisplayEtaText(r, attention, liveEta) || "—";
 
                   const statusTone =
                     r.draftStatus === "drafting"
@@ -1209,7 +1291,7 @@ export default function DraftPickTrackerClient() {
                       key={r.leagueId}
                       className={classNames(
                         "border-t border-white/5 hover:bg-white/5",
-                        (r.onClockIsMe || r.onDeck) && r.draftStatus === "drafting" && "bg-emerald-500/5"
+                        attention.rowTone
                       )}
                     >
                       <td className="px-5 py-4">
@@ -1229,10 +1311,12 @@ export default function DraftPickTrackerClient() {
                         {r.currentPick ? (
                           <div className="flex flex-col">
                             <span className="text-gray-100">{nf0.format(r.currentPick)}</span>
-                            {r.draftStatus === "drafting" && clockText && (
-                              <span className="text-xs text-gray-400">{clockText} left</span>
+                            {attention.showOnClockBadge && clockText && (
+                              <span className="text-xs text-gray-400">
+                                {attention.isPaused ? "Paused on your pick" : `${clockText} left`}
+                              </span>
                             )}
-                            {r.draftStatus === "paused" && (
+                            {!attention.showOnClockBadge && attention.isPaused && (
                               <span className="text-xs text-yellow-200/80">paused</span>
                             )}
                           </div>
@@ -1245,10 +1329,10 @@ export default function DraftPickTrackerClient() {
                         {r.myNextPickOverall ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <Pill tone="purple">#{nf0.format(r.myNextPickOverall)}</Pill>
-                            {r.draftStatus === "drafting" && r.onClockIsMe && clockText && (
+                            {attention.showOnClockBadge && clockText && (
                               <Pill tone="green">ON CLOCK · {clockText}</Pill>
                             )}
-                            {r.draftStatus === "drafting" && !r.onClockIsMe && r.onDeck && (
+                            {attention.showOnDeckBadge && (
                               <Pill tone="yellow">ON DECK</Pill>
                             )}
                           </div>
@@ -1270,7 +1354,9 @@ export default function DraftPickTrackerClient() {
                           <div className="flex flex-col">
                             <span className="text-white font-semibold">{etaHuman}</span>
                             <span className="text-xs text-gray-400">
-                              uses {r.timerSec ? `${r.timerSec}s` : "timer"} / pick
+                              {attention.isPaused
+                                ? "ETA unavailable while paused"
+                                : `uses ${r.timerSec ? `${r.timerSec}s` : "timer"} / pick`}
                             </span>
                           </div>
                         ) : (
