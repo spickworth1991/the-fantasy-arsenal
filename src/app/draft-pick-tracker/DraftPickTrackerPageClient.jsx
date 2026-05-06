@@ -11,12 +11,11 @@ export default function DraftPickTrackerPage() {
   const { username } = useSleeper();
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
-      <div aria-hidden className="h-[72px]" />
+    <div className="min-h-screen">
       <BackgroundParticles />
       <Navbar pageTitle="Draft Monitor" />
 
-      <main className="px-4 pb-16">
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-24">
         {!username ? (
           <div className="mt-10 bg-gray-900/80 border border-white/10 rounded-2xl p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-white mb-2">Login required</h2>
