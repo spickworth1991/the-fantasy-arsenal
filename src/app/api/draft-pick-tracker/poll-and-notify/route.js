@@ -32,10 +32,22 @@ async function getUserId(username) {
   return u?.user_id || null;
 }
 
-// Snake: round odd L->R, round even R->L
-function getCurrentSlotSnake(pickNo, teams) {
+// Draft slot calculation for snake and linear drafts
+function getCurrentSlot(draftType, pickNo, teams) {
+  const normalized = String(draftType || "snake").toLowerCase();
   const idx = (pickNo - 1) % teams;
   const round = Math.floor((pickNo - 1) / teams) + 1;
+
+  if (normalized === "linear") {
+    return { slot: idx + 1, round };
+  }
+
+  if (normalized === "snake") {
+    const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
+    return { slot, round };
+  }
+
+  // Fallback to snake ordering for unknown / missing draft type.
   const slot = round % 2 === 1 ? (idx + 1) : (teams - idx);
   return { slot, round };
 }
@@ -148,7 +160,7 @@ async function handler(req) {
 
         const userSlot = Number(draftOrder[userId]);
         const nextPickNo = pickCount + 1;
-        const { slot: currentSlot } = getCurrentSlotSnake(nextPickNo, teams);
+        const { slot: currentSlot } = getCurrentSlot(draft?.type, nextPickNo, teams);
 
         if (currentSlot !== userSlot) {
           skippedNotOnClock++;

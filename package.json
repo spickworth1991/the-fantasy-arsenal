@@ -11,14 +11,14 @@
     "start": "next start",
     "lint": "next lint",
     "build:cf": "next-on-pages",
-    "preview:cf": "next-on-pages --serve",
+    "preview:cf": "next-on-pages",
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
     "git": "git add . && git commit -m \"PlayerStockADP\" && git push origin main",
     "stick": "node ./sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
-    "gip": "git add . && git commit -m \"ValuesUpdate\" && git push origin main"
+    "gip": "git add . && git commit -m \"ValuesUpdateLinearSnakeUpdate\" && git push origin main"
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

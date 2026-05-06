@@ -185,13 +185,26 @@ export default function DraftPickTrackerClient() {
     rosterBySlot,
     tradedOwnerMap,
     seasonStr,
+    draftType,
   }) {
     if (!pickNo || !teams) return null;
     const idx0 = pickNo - 1;
     const round = Math.floor(idx0 / teams) + 1;
     const pickInRound0 = idx0 % teams;
-    const isReverse = round % 2 === 0;
-    const slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
+
+    const normalizedType = String(draftType || "snake").toLowerCase();
+    let slot;
+
+    if (normalizedType === "linear") {
+      slot = pickInRound0 + 1;
+    } else if (normalizedType === "snake") {
+      const isReverse = round % 2 === 0;
+      slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
+    } else {
+      // Fallback to snake for unknown types
+      const isReverse = round % 2 === 0;
+      slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
+    }
 
     const origRosterId = rosterBySlot.get(slot) || null;
     if (!origRosterId) return null;
@@ -243,6 +256,7 @@ export default function DraftPickTrackerClient() {
     const rounds = safeNum(draft?.settings?.rounds);
     const slots = safeNum(draft?.settings?.teams);
     const timerSec = safeNum(draft?.settings?.pick_timer);
+    const draftType = String(draft?.type || "snake").toLowerCase();
 
     const currentPick = (picks?.length || 0) + 1;
 
@@ -268,6 +282,7 @@ export default function DraftPickTrackerClient() {
           rosterBySlot,
           tradedOwnerMap,
           seasonStr,
+          draftType,
         })
       : null;
 
@@ -288,6 +303,7 @@ export default function DraftPickTrackerClient() {
           rosterBySlot,
           tradedOwnerMap,
           seasonStr,
+          draftType,
         });
         if (String(rosterIdAtPick || "") === String(myRosterId)) {
           myNextPickOverall = pk;
