@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
+import ExportButtons from "../../components/ExportButtons";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import { parsePickLabel } from "../../lib/picks";
@@ -747,6 +748,64 @@ export default function PowerRankingsPage() {
   const compA = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamAId)), [sortedTeams, teamAId]);
   const compB = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamBId)), [sortedTeams, teamBId]);
 
+  const powerExportRows = useMemo(
+    () =>
+      sortedTeams.map((team) => {
+        const positionRank = (position) => positionRanks[position].get(team.teamId) || sortedTeams.length;
+        const weakest = ["QB", "RB", "WR", "TE"]
+          .map((position) => [position, positionRank(position)])
+          .sort((a, b) => b[1] - a[1])[0];
+        return {
+          rank: team.rank,
+          rosterId: team.teamId,
+          team: team.name,
+          manager: team.displayName,
+          tier: leagueMeta?.tiers.find((item) => item.teamId === team.teamId)?.tier || "",
+          overall: team.rating,
+          total: team.total,
+          topPlayers: team.stars,
+          depth: team.depth,
+          picks: team.picksValue,
+          averageAge: team.valueWeightedAge,
+          qbValue: team.mix.QB,
+          qbRank: positionRank("QB"),
+          rbValue: team.mix.RB,
+          rbRank: positionRank("RB"),
+          wrValue: team.mix.WR,
+          wrRank: positionRank("WR"),
+          teValue: team.mix.TE,
+          teRank: positionRank("TE"),
+          biggestNeed: weakest ? `${weakest[0]} (rank ${weakest[1]})` : "",
+          pickAssets: (team.picksDetail || []).map((pick) => `${pick.label}: ${pick.value}`),
+        };
+      }),
+    [sortedTeams, positionRanks, leagueMeta]
+  );
+
+  const powerExportColumns = [
+    { key: "rank", label: "Rank" },
+    { key: "rosterId", label: "Roster ID" },
+    { key: "team", label: "Team" },
+    { key: "manager", label: "Manager" },
+    { key: "tier", label: "Tier" },
+    { key: "overall", label: "Overall Rating" },
+    { key: "total", label: "Total" },
+    { key: "topPlayers", label: `Top ${startersCount}` },
+    { key: "depth", label: "Depth" },
+    { key: "picks", label: "Draft Pick Value" },
+    { key: "averageAge", label: "Value-Weighted Age" },
+    { key: "qbValue", label: "QB Value" },
+    { key: "qbRank", label: "QB Rank" },
+    { key: "rbValue", label: "RB Value" },
+    { key: "rbRank", label: "RB Rank" },
+    { key: "wrValue", label: "WR Value" },
+    { key: "wrRank", label: "WR Rank" },
+    { key: "teValue", label: "TE Value" },
+    { key: "teRank", label: "TE Rank" },
+    { key: "biggestNeed", label: "Biggest Need" },
+    { key: "pickAssets", label: "Draft Picks" },
+  ];
+
   return (
     <>
       <BackgroundParticles />
@@ -1116,6 +1175,12 @@ export default function PowerRankingsPage() {
                           </button>
                         ))}
                       </div>
+                      <ExportButtons
+                        rows={powerExportRows}
+                        columns={powerExportColumns}
+                        filename={`${league?.name || "league"}-power-rankings`}
+                        className="ml-auto"
+                      />
                     </div>
 
                     <div className="space-y-3">

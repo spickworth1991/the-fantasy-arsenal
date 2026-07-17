@@ -8,6 +8,7 @@ const BackgroundParticles = dynamic(() => import("../../components/BackgroundPar
 
 import LoadingScreen from "../../components/LoadingScreen";
 import AvatarImage from "../../components/AvatarImage";
+import ExportButtons from "../../components/ExportButtons";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 
@@ -1168,6 +1169,36 @@ useEffect(() => {
     return scored.map((s) => s.lg);
   }, [anySelected, visibleLeaguesList, selectedPlayers, results]);
 
+  const availabilityExportRows = useMemo(
+    () =>
+      bestAvailablePlayers.map((row, index) => ({
+        rank: index + 1,
+        playerId: row.id,
+        player: row.name,
+        position: row.pos,
+        team: row.team || "FA",
+        metric: bestMetric === "projection" ? row.proj : row.value,
+        openLeagues: row.openCount,
+        leaguesScanned: includedLeaguesList.length,
+        openPercent: row.openPct,
+        availableIn: (row.availableLeagues || []).map((league) => league.name),
+      })),
+    [bestAvailablePlayers, bestMetric, includedLeaguesList.length]
+  );
+
+  const availabilityExportColumns = [
+    { key: "rank", label: "Rank" },
+    { key: "playerId", label: "Sleeper Player ID" },
+    { key: "player", label: "Player" },
+    { key: "position", label: "Position" },
+    { key: "team", label: "NFL Team" },
+    { key: "metric", label: bestMetric === "projection" ? "Projection" : "Value" },
+    { key: "openLeagues", label: "Open Leagues" },
+    { key: "leaguesScanned", label: "Leagues Scanned" },
+    { key: "openPercent", label: "Open Percent" },
+    { key: "availableIn", label: "Available In" },
+  ];
+
   // ---------- Render ----------
   const showLoadingScreen = initLoading || scanLoading;
 
@@ -1567,13 +1598,20 @@ useEffect(() => {
                       <div className="text-sm text-white/70 mt-1">Click a row to see open leagues.</div>
                       <div className="text-xs text-white/50 mt-1">Scanning {includedLeaguesList.length} league(s) in this list.</div>
                     </div>
-                    <button
-                      className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
-                      onClick={refreshScan}
-                      title="Rescan rosters (affects open%)"
-                    >
-                      Sync
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ExportButtons
+                        rows={availabilityExportRows}
+                        columns={availabilityExportColumns}
+                        filename="player-availability"
+                      />
+                      <button
+                        className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
+                        onClick={refreshScan}
+                        title="Rescan rosters (affects open%)"
+                      >
+                        Sync
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-4 overflow-x-auto">

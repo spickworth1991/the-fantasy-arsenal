@@ -13,6 +13,7 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import SourceSelector from "../../../components/SourceSelector";
 import { useSleeper } from "../../../context/SleeperContext";
 import AvatarImage from "../../../components/AvatarImage";
+import ExportButtons from "../../../components/ExportButtons";
 import LeagueFormatBadge from "../../../components/LeagueFormatBadge";
 import { classifyLeagueFormat } from "../../../lib/leagueFormat";
 
@@ -1423,6 +1424,50 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const pageStart = (currentPage - 1) * pageSize;
   const pageRows = sorted.slice(pageStart, pageStart + pageSize);
 
+  const stockExportRows = useMemo(
+    () =>
+      sorted.map((row, index) => ({
+        rank: index + 1,
+        playerId: row.player_id,
+        player: row._name,
+        position: row._pos || "",
+        team: row._team || "FA",
+        leagues: row.count || 0,
+        leaguesScanned: visibleLeagueCount,
+        exposurePercent: visibleLeagueCount ? Math.round(((row.count || 0) / visibleLeagueCount) * 1000) / 10 : 0,
+        averageDraftPick: row.avgDraftPickNo || "",
+        averageDraftSlot: formatAverageDraftPosition(row.avgDraftPickNo, row.avgDraftTeams),
+        ballsvilleRedraftAdp: row._ballsvilleRedraftAdp || "",
+        ballsvilleDynastyAdp: row._ballsvilleDynastyAdp || "",
+        metric: isProj ? row._projAvg || 0 : row._value || 0,
+        trendingAdds: trendingAddMap.get(row.player_id) || 0,
+        trendingDrops: trendingDropMap.get(row.player_id) || 0,
+        starterSomewhere: starterPidSet.has(row.player_id) ? "Yes" : "No",
+        leagueNames: (row.leagues || []).map((league) => league.name),
+      })),
+    [sorted, visibleLeagueCount, isProj, trendingAddMap, trendingDropMap, starterPidSet]
+  );
+
+  const stockExportColumns = [
+    { key: "rank", label: "Rank" },
+    { key: "playerId", label: "Sleeper Player ID" },
+    { key: "player", label: "Player" },
+    { key: "position", label: "Position" },
+    { key: "team", label: "NFL Team" },
+    { key: "leagues", label: "Rostered Leagues" },
+    { key: "leaguesScanned", label: "Leagues Scanned" },
+    { key: "exposurePercent", label: "Exposure Percent" },
+    { key: "averageDraftPick", label: "Average Draft Pick" },
+    { key: "averageDraftSlot", label: "Average Draft Slot" },
+    { key: "ballsvilleRedraftAdp", label: "Ballsville Redraft ADP" },
+    { key: "ballsvilleDynastyAdp", label: "Ballsville Dynasty ADP" },
+    { key: "metric", label: valueOrProjLabel },
+    { key: "trendingAdds", label: "Trending Adds" },
+    { key: "trendingDrops", label: "Trending Drops" },
+    { key: "starterSomewhere", label: "Starter Somewhere" },
+    { key: "leagueNames", label: "Leagues" },
+  ];
+
   const resetFilters = () => {
     setIncludeDrafting(true);
     setShowRedraft(true);
@@ -1653,6 +1698,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 </div>
               </div>
             </div>
+
+            <ExportButtons
+              rows={stockExportRows}
+              columns={stockExportColumns}
+              filename="player-stock"
+              className="mt-4 justify-end"
+            />
 
             {sorted.length === 0 ? (
               <div className="text-center text-gray-400 py-10">
