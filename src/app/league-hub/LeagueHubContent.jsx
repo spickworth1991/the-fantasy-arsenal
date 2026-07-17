@@ -357,7 +357,7 @@ export default function LeagueHubContent() {
   const leagueUsersRef = useRef(new Map());  // leagueId -> Map(user_id -> display_name)
 
   // cache per user+season
-  const cacheKey = username ? `lh:${username}:${yrStr}:SCAN` : null;
+  const cacheKey = username ? `lh:v2:${username}:${yrStr}:SCAN` : null;
 
   // Source selector is owned by SleeperContext.
   // League Hub only consumes `sourceKey` + `metricType` and uses the unified getters.
@@ -443,7 +443,12 @@ export default function LeagueHubContent() {
           ts,
         } = JSON.parse(raw) || {};
 
-        if (!Array.isArray(cachedLeagues) || !rosterSets || !myRosters) return false;
+        if (
+          !Array.isArray(cachedLeagues) ||
+          !rosterSets ||
+          !myRosters ||
+          cachedLeagues.some((lg) => !Array.isArray(lg?.roster_positions))
+        ) return false;
 
         const allMap = new Map();
         const mineMap = new Map();
@@ -1845,7 +1850,7 @@ export default function LeagueHubContent() {
         <div className="relative w-full max-w-2xl max-h-[82vh] overflow-hidden rounded-3xl border border-white/10 bg-gray-950/90 backdrop-blur p-5 shadow-2xl flex flex-col">
           <div className="flex items-start justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
-              <AvatarImage name={row.name} size={42} className="rounded-full" alt={row.name} />
+              <AvatarImage name={row.name} playerId={row.id} size={42} className="rounded-full" alt={row.name} />
               <div className="min-w-0">
                 <div className="text-lg font-semibold truncate">{row.name}</div>
                 <div className="text-xs text-white/55">
@@ -1918,7 +1923,7 @@ export default function LeagueHubContent() {
         <div className="relative w-full max-w-2xl max-h-[82vh] overflow-hidden rounded-3xl border border-white/10 bg-gray-950/90 backdrop-blur p-5 shadow-2xl flex flex-col">
           <div className="flex items-start justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
-              <AvatarImage name={row.name} size={42} className="rounded-full" alt={row.name} />
+              <AvatarImage name={row.name} playerId={row.id} size={42} className="rounded-full" alt={row.name} />
               <div className="min-w-0">
                 <div className="text-lg font-semibold truncate">{row.name}</div>
                 <div className="text-xs text-white/55">
@@ -2564,6 +2569,7 @@ export default function LeagueHubContent() {
                                 <div className="flex items-center gap-2">
                                   <AvatarImage
                                     name={row.name}
+                                    playerId={row.id}
                                     size={32}
                                     className="rounded-full"
                                     alt={row.name}
@@ -2664,7 +2670,7 @@ export default function LeagueHubContent() {
                             >
                               <td className="py-2 pr-2">
                                 <div className="flex items-center gap-2">
-                                  <AvatarImage name={r.name} size={30} className="rounded-full" alt={r.name} />
+                                  <AvatarImage name={r.name} playerId={r.id} size={30} className="rounded-full" alt={r.name} />
                                   <div className="min-w-0">
                                     <div className="text-white font-semibold truncate">{r.name}</div>
                                     <div className="mt-1 flex items-center gap-2">

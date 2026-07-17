@@ -1,5 +1,7 @@
 // /utils/nflByeWeeks.ts
 
+import byes2026 from "../../public/byes/2026.json";
+
 // 2025 NFL bye weeks by team (Weeks 5–14).
 // Source: Fantasy Football Calculator – 2025 NFL Bye Weeks. :contentReference[oaicite:0]{index=0}
 
@@ -44,6 +46,11 @@ export const BYE_WEEKS: Record<string, Record<string, number | null>> = {
 export function getTeamByeWeek(team?: string, season?: number | string): number | null {
   if (!team) return null;
   const yr = String(season ?? new Date().getFullYear());
+  if (yr === String(byes2026.season)) {
+    const weeks = byes2026.by_team?.[team.toUpperCase() as keyof typeof byes2026.by_team];
+    const bye = Array.isArray(weeks) ? weeks[0] : null;
+    return Number.isFinite(bye) ? bye : null;
+  }
   const map = BYE_WEEKS[yr];
   if (!map) return null;
   const bye = map[team.toUpperCase()];

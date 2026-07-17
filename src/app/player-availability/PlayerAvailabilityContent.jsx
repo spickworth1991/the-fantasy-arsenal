@@ -10,14 +10,13 @@ import LoadingScreen from "../../components/LoadingScreen";
 import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
-import { toSlug } from "../../utils/slugify";
 
 /** Helpers for league avatars (matches Player Stock) */
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const leagueAvatarUrl = (avatarId) => (avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : DEFAULT_LEAGUE_IMG);
 const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`;
 
-// Player avatar helpers (match Trade Analyzer: /public/avatars via slug)
+// Real player avatars come directly from Sleeper; local files are defaults only.
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
 const isPickPos = (pos) => String(pos || "").toUpperCase() === "PICK";
 
@@ -30,14 +29,7 @@ function localPlayerAvatarUrl(player) {
       : "";
   if (pid) return `https://sleepercdn.com/content/nfl/players/thumb/${pid}.jpg`;
 
-  const name =
-    player?.full_name ||
-    player?.name ||
-    player?.search_full_name ||
-    `${player?.first_name || ""} ${player?.last_name || ""}`.trim();
-
-  const slug = toSlug(name);
-  return slug ? `/avatars/${slug}.webp` : DEFAULT_PLAYER_IMG;
+  return DEFAULT_PLAYER_IMG;
 }
 
 

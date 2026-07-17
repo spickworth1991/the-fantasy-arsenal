@@ -1,21 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { toSlug } from "../utils/slugify";
+import { parsePickLabel } from "../lib/picks";
 
 /**
  * AvatarImage
- * Supports TWO usage styles:
- *
- * 1) Name-based (Player Stock style):
- *    <AvatarImage name="Josh Allen" />
- *    -> tries:
- *       /avatars/josh-allen.webp
- *       /avatars/josh-allen.jpg
- *       fallbackSrc
- *
- * 2) Explicit src (Trade Calc / API route style):
- *    <AvatarImage src="/api/avatar/josh-allen" fallbackSrc="/avatars/default.webp" alt="Josh Allen" />
+ * Real players load from Sleeper's CDN by numeric player ID. Synthetic exact
+ * draft picks use reusable, year-independent local artwork (pick-1-01.webp).
  */
 export default function AvatarImage({
   name,
@@ -23,6 +14,7 @@ export default function AvatarImage({
   src: srcProp,
   fallbackSrc = "/avatars/default.webp",
   alt,
+  size,
   width = 24,
   height = 24,
   className = "",
@@ -38,19 +30,19 @@ export default function AvatarImage({
   const derived = useMemo(() => {
     if (srcProp) return { primary: srcProp, secondary: null };
     if (numericPlayerId) {
-      const slug = name ? toSlug(name) : "";
       return {
         primary: `https://sleepercdn.com/content/nfl/players/thumb/${numericPlayerId}.jpg`,
-        secondary: slug ? `/avatars/${slug}.webp` : fallbackSrc,
-        tertiary: slug ? `/avatars/${slug}.jpg` : fallbackSrc,
+        secondary: fallbackSrc,
+        tertiary: null,
       };
     }
-    if (name) {
-      const slug = toSlug(name);
+    const pick = parsePickLabel(name);
+    if (pick?.kind === "exact") {
+      const slot = String(pick.slot).padStart(2, "0");
       return {
-        primary: `/avatars/${slug}.webp`,
-        secondary: `/avatars/${slug}.jpg`, // <-- Sleeper download script writes these
-        tertiary: fallbackSrc,
+        primary: `/avatars/pick-${pick.round}-${slot}.webp`,
+        secondary: fallbackSrc,
+        tertiary: null,
       };
     }
     return { primary: fallbackSrc, secondary: null, tertiary: null };
@@ -76,8 +68,8 @@ export default function AvatarImage({
     <img
       src={src}
       alt={derivedAlt}
-      width={width}
-      height={height}
+      width={size ?? width}
+      height={size ?? height}
       className={className}
       onError={handleError}
       loading={loading}

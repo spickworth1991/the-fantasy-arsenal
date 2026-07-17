@@ -943,7 +943,7 @@ export default function PlayoffOddsPage() {
                 Shape the model before you trust the odds
               </div>
               <div className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                Same cleaner source selector pattern as the rest of the preview, but with a sturdier playoff engine underneath it.
+                Same cleaner source selector pattern as the rest of the tools, but with a sturdier playoff engine underneath it.
               </div>
             </div>
 

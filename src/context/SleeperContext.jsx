@@ -897,6 +897,40 @@ export const SleeperProvider = ({ children }) => {
         console.log("✅ Loaded player DB from cache:", Object.keys(cachedPlayers).length);
         setPlayers(cachedPlayers);
         setProgress(100);
+
+        // Rankings can remain cached, but Sleeper's injury, practice, team, and
+        // active-status fields are live data. Refresh those on each app load so
+        // injury-aware tools do not stay frozen at the first cached snapshot.
+        try {
+          const liveRes = await fetch("https://api.sleeper.app/v1/players/nfl");
+          if (!liveRes.ok) throw new Error(`Sleeper players HTTP ${liveRes.status}`);
+          const livePlayers = await liveRes.json();
+          const refreshedPlayers = { ...cachedPlayers };
+
+          Object.entries(livePlayers || {}).forEach(([id, live]) => {
+            const cached = cachedPlayers[id];
+            if (!cached || !live) return;
+            refreshedPlayers[id] = {
+              ...cached,
+              ...live,
+              position: getPrimaryPos(live) || cached.position,
+              team: normTeam(live.team),
+              // These fields exist only in the locally enriched player records.
+              fc_values: cached.fc_values,
+              dp_values: cached.dp_values,
+              ktc_values: cached.ktc_values,
+              fn_values: cached.fn_values,
+              sp_values: cached.sp_values,
+              idp_values: cached.idp_values,
+              idpshow_values: cached.idpshow_values,
+            };
+          });
+
+          await set(CACHE_KEY, refreshedPlayers);
+          setPlayers(refreshedPlayers);
+        } catch (refreshError) {
+          console.warn("Sleeper player metadata refresh failed; using cache.", refreshError);
+        }
         return;
       }
 
