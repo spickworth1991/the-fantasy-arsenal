@@ -118,7 +118,9 @@ const leagueAvatarUrl = (avatarId) =>
 
 const TRENDING_LIMIT = 50;
 const DYNASTY_LINEAGE_LIMIT = 12;
-const SCAN_CONCURRENCY = 4;
+// Sleeper requests are mostly network-bound. Eight league workers keeps large
+// portfolios moving without unleashing every league request at once.
+const SCAN_CONCURRENCY = 8;
 
 const BALLSVILLE_FETCH_CONCURRENCY = 3;
 const BALLSVILLE_PROXY_PATH = "/api/ballsville-adp";
@@ -999,13 +1001,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
             drafts = sortDraftsChronologically(drafts);
           } else {
             const singleLeagueId = String(leagueObj?.league_id || "");
-            const singleDrafts = await getDraftsForLeague(singleLeagueId, fallbackDraftId);
+            const [singleDrafts, singleOwnerIdSet] = await Promise.all([
+              getDraftsForLeague(singleLeagueId, fallbackDraftId),
+              getOwnerIdsForLeague(singleLeagueId, currentUserId),
+            ]);
             drafts =
               Array.isArray(singleDrafts) && singleDrafts.length > 0
                 ? [{ ...singleDrafts[0], __leagueId: singleLeagueId }]
                 : [];
 
-            ownerIdSet = await getOwnerIdsForLeague(singleLeagueId, currentUserId);
+            ownerIdSet = singleOwnerIdSet;
             ownerIdSet.add(String(currentUserId));
           }
 
@@ -1049,10 +1054,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
           const draftId = recentDraft?.draft_id ? String(recentDraft.draft_id) : null;
           if (!draftId) return { playerIds: [], draftInfoByPid: {} };
 
-          const ownerIdSet = await getOwnerIdsForLeague(leagueObj?.league_id, currentUserId);
+          const [ownerIdSet, picks] = await Promise.all([
+            getOwnerIdsForLeague(leagueObj?.league_id, currentUserId),
+            getPicksForDraft(draftId),
+          ]);
           ownerIdSet.add(String(currentUserId));
 
-          const picks = await getPicksForDraft(draftId);
           if (!Array.isArray(picks) || picks.length === 0) {
             return { playerIds: [], draftInfoByPid: {} };
           }
@@ -1075,7 +1082,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
           if (cancel) return;
 
           const draftingNow = isActivelyDrafting(lg.status);
-          const leagueDrafts = await getDraftsForLeague(lg.league_id, lg.draft_id || null);
+          // Draft metadata and rosters are independent. Starting them together
+          // removes one full network round trip from normal league scans.
+          const [leagueDrafts, prefetchedRosters] = await Promise.all([
+            getDraftsForLeague(lg.league_id, lg.draft_id || null),
+            draftingNow ? Promise.resolve(null) : getRostersForLeague(lg.league_id),
+          ]);
           const leagueFormat = classifyLeagueFormat(lg, leagueDrafts);
           const leagueInfo = {
             id: lg.league_id,
@@ -1104,7 +1116,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
             if (draftPlayers.length === 0) return;
           } else {
-            const rosters = await getRostersForLeague(lg.league_id);
+            const rosters = prefetchedRosters;
 
             const mineRoster = Array.isArray(rosters)
               ? rosters.find(
@@ -1240,8 +1252,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
           leagues: includedLeagues,
           ts: Date.now(),
         };
-        sessionStorage.setItem(cacheKey, JSON.stringify(payload));
-
+        // A successful scan must still render when a large account exceeds the
+        // browser's per-origin sessionStorage quota. The cache is optional.
         setRows(built);
         setLeagueCount(includedLeagues.length);
         setScanLeagues(includedLeagues);
@@ -1254,6 +1266,12 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setLastUpdated(new Date());
         setProgressPct(100);
         setProgressText("Done!");
+
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+        } catch (cacheError) {
+          console.warn("Player Stock result was too large to cache in this session.", cacheError);
+        }
       } catch (e) {
         setError(e?.message || "Scan failed");
       } finally {
