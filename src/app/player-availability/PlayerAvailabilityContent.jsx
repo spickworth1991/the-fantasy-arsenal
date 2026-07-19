@@ -336,7 +336,7 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl bg-gray-950 rounded-3xl shadow-[0_30px_120px_rgba(0,0,0,0.65)] p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-[0_30px_120px_rgba(0,0,0,0.65)] p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
@@ -1234,7 +1234,7 @@ useEffect(() => {
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight">Player Availability</h1>
             <p className="text-white/70 mt-1">
-              Note - currently working on this, so could see some bugs. See which players are available in your Sleeper leagues based on your scan and filters. 
+              Find the best available players across all of your Sleeper leagues.
             </p>
           </div>
 
@@ -1268,7 +1268,9 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <details className="premium-disclosure mt-4">
+              <summary>League Scope <span className="ml-auto text-xs font-normal text-white/45">{onlyBestBall ? "Best Ball only" : excludeBestBall ? "No Best Ball" : "All leagues"}</span></summary>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
                 <input
                   type="checkbox"
@@ -1292,6 +1294,7 @@ useEffect(() => {
                 Include drafting
               </label>
             </div>
+            </details>
           </div>
 
           {!username ? (
@@ -1304,10 +1307,12 @@ useEffect(() => {
             <>
               {/* Premium Controls */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
-                <div className="mb-4 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+                <details className="premium-disclosure mb-4">
+                  <summary>Ranking Settings <span className="ml-auto text-xs font-normal text-white/45">{bestMetric === "projection" ? "Projections" : "Values"}</span></summary>
+                <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                   <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">Availability Lens</div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <div className="relative z-[80] min-w-[280px] flex-1">
+                    <div className="relative z-[80] min-w-0 sm:min-w-[280px] flex-1">
                       <SourceSelector
                         sources={DEFAULT_SOURCES}
                         value={sourceKey}
@@ -1344,10 +1349,11 @@ useEffect(() => {
                     Best Available uses <span className="text-white/70 font-semibold">{includedLeaguesList.length}</span> league(s). Click a player row to see open leagues.
                   </div>
                 </div>
+                </details>
 
-                <div className="grid lg:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-white/70 mb-2">Search & Add Player (manual)</div>
+                    <div className="text-sm font-semibold text-white/80 mb-2">Search & Add Player</div>
                     <NameSelect nameIndex={nameIndex} onPick={(p) => addResolved(p, { scrollToMatrix: true })} />
                     {selectedPlayers.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -1389,6 +1395,22 @@ useEffect(() => {
                         title="Rescan all leagues"
                       >
                         Refresh rosters
+                      </button>
+
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                        onClick={() => setFiltersOpen(true)}
+                      >
+                        Filters
+                      </button>
+
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                        onClick={() => setShowIncludedLeaguesModal(true)}
+                      >
+                        Included ({includedLeaguesList.length})
                       </button>
 
                       <div className="ml-auto text-xs text-white/60">
@@ -1519,7 +1541,7 @@ useEffect(() => {
               {/* Best Available + Trending (desktop: hot | best | cold) */}
               <div className="relative  grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
                 {/* HOT */}
-                <div className="relative z lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div className="relative order-2 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">🔥 Hot Adds</div>
@@ -1611,7 +1633,7 @@ useEffect(() => {
                 </div>
 
                 {/* BEST */}
-                <div className="relative lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
+                <div className="relative order-1 lg:col-span-12 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-bold text-white">Best Available Players</h2>
@@ -1695,7 +1717,7 @@ useEffect(() => {
                 </div>
 
                 {/* COLD */}
-                <div className="relative lg:col-span-3 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div className="relative order-3 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">❄️ Cold Drops</div>
@@ -1776,7 +1798,7 @@ useEffect(() => {
           onClick={() => setFiltersOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-gray-950 rounded-3xl shadow-xl p-5 border border-white/10"
+            className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
@@ -1897,7 +1919,7 @@ useEffect(() => {
       {/* Included leagues modal */}
       {showIncludedLeaguesModal && (
         <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowIncludedLeaguesModal(false)}>
-          <div className="w-full max-w-xl bg-gray-950 rounded-3xl shadow-xl p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="text-xl font-bold">Included Leagues</div>
@@ -1982,7 +2004,7 @@ useEffect(() => {
       {/* Scanned leagues modal */}
       {showLeaguesModal && (
         <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowLeaguesModal(false)}>
-          <div className="w-full max-w-xl bg-gray-950 rounded-3xl shadow-xl p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-2">
               <div className="text-xl font-bold">Leagues in this scan</div>
               <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10" onClick={() => setShowLeaguesModal(false)}>
@@ -2029,7 +2051,7 @@ useEffect(() => {
       {/* Visible leagues modal */}
       {showVisibleLeaguesModal && (
         <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowVisibleLeaguesModal(false)}>
-          <div className="w-full max-w-xl bg-gray-950 rounded-3xl shadow-xl p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-2">
               <div className="text-xl font-bold">Leagues being shown</div>
               <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10" onClick={() => setShowVisibleLeaguesModal(false)}>

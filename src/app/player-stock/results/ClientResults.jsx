@@ -1596,7 +1596,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
+                        <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-5 gap-2.5">
                           <ToggleRow
                             label="Include drafting"
                             checked={includeDrafting}
@@ -1645,7 +1645,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] md:text-xs">
+                      <div className="hidden sm:flex flex-wrap items-center gap-2 text-[11px] md:text-xs">
                         <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-violet-200">Local ADP</span>
                         {showBallsvilleRedraftColumn ? (
                           <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-200">Ballsville Redraft</span>
@@ -1659,7 +1659,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-start xl:self-center">
+                    <div className="grid w-full grid-cols-2 gap-2 self-start sm:flex sm:w-auto xl:self-center">
                       <button
                         type="button"
                         className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15"

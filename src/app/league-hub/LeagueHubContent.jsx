@@ -14,6 +14,7 @@ import AvatarImage from "../../components/AvatarImage";
 import SourceSelector from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 import { getTeamByeWeek } from "../../utils/nflByeWeeks";
+import { classifyLeagueFormat } from "../../lib/leagueFormat";
 
 // League avatars (Sleeper)
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
@@ -22,6 +23,18 @@ const leagueAvatarUrl = (avatarId) =>
     ? `https://sleepercdn.com/avatars/thumbs/${avatarId}`
     : DEFAULT_LEAGUE_IMG;
 const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`;
+const getScoringType = (league) => {
+  const receptions = Number(league?.scoring_settings?.rec ?? 0);
+  if (receptions >= 0.75) return "PPR";
+  if (receptions >= 0.25) return "HALF";
+  return "STANDARD";
+};
+const getLeagueFormat = (league) => {
+  const explicitType = Number(league?.settings?.type);
+  if (explicitType === 2) return { ...classifyLeagueFormat(league, []), key: "dynasty", label: "Dynasty", shortLabel: "DYN", confidence: "high" };
+  if (explicitType === 1) return { ...classifyLeagueFormat(league, []), key: "keeper", label: "Keeper", shortLabel: "KPR", confidence: "high" };
+  return classifyLeagueFormat(league, []);
+};
 
 // ===== UI class helpers (pure styling, no logic changes) =====
 const SECTION_SHELL =
@@ -344,6 +357,12 @@ export default function LeagueHubContent() {
   const [onlyBestBall, setOnlyBestBall] = useState(false);
   const [excludeBestBall, setExcludeBestBall] = useState(false);
   const [includeDrafting, setIncludeDrafting] = useState(true);
+  const [leagueQuery, setLeagueQuery] = useState("");
+  const [leagueFormatFilter, setLeagueFormatFilter] = useState("ALL");
+  const [leagueSizeFilter, setLeagueSizeFilter] = useState("ALL");
+  const [scoringFilter, setScoringFilter] = useState("ALL");
+  const [leagueStatusFilter, setLeagueStatusFilter] = useState("ALL");
+  const [hubControlsOpen, setHubControlsOpen] = useState(false);
 
   const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,isBestBall,status,roster_positions}]
   const [leagueCount, setLeagueCount] = useState(0);
@@ -357,7 +376,7 @@ export default function LeagueHubContent() {
   const leagueUsersRef = useRef(new Map());  // leagueId -> Map(user_id -> display_name)
 
   // cache per user+season
-  const cacheKey = username ? `lh:v2:${username}:${yrStr}:SCAN` : null;
+  const cacheKey = username ? `lh:v3:${username}:${yrStr}:SCAN` : null;
 
   // Source selector is owned by SleeperContext.
   // League Hub only consumes `sourceKey` + `metricType` and uses the unified getters.
@@ -367,12 +386,49 @@ export default function LeagueHubContent() {
   const [bestPos, setBestPos] = useState("ALL");
   const [bestLimit, setBestLimit] = useState(20);
   const [minOpenSlots, setMinOpenSlots] = useState(1);
+  const [bestSort, setBestSort] = useState("metric");
+  const [trendingAdds, setTrendingAdds] = useState(() => new Map());
+  const [trendingDrops, setTrendingDrops] = useState(() => new Map());
+  const [watchlistIds, setWatchlistIds] = useState(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const saved = JSON.parse(localStorage.getItem("leagueHubWatchlist") || "[]");
+      return new Set(Array.isArray(saved) ? saved.map(String) : []);
+    } catch { return new Set(); }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem("leagueHubWatchlist", JSON.stringify(Array.from(watchlistIds))); } catch {}
+  }, [watchlistIds]);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      fetch("https://api.sleeper.app/v1/players/nfl/trending/add?lookback_hours=24&limit=200").then((r) => r.ok ? r.json() : []),
+      fetch("https://api.sleeper.app/v1/players/nfl/trending/drop?lookback_hours=24&limit=200").then((r) => r.ok ? r.json() : []),
+    ]).then(([adds, drops]) => {
+      if (!alive) return;
+      setTrendingAdds(new Map((Array.isArray(adds) ? adds : []).map((x) => [String(x.player_id), Number(x.count || 0)])));
+      setTrendingDrops(new Map((Array.isArray(drops) ? drops : []).map((x) => [String(x.player_id), Number(x.count || 0)])));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const toggleWatchlist = (playerId) => {
+    const pid = String(playerId);
+    setWatchlistIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pid)) next.delete(pid); else next.add(pid);
+      return next;
+    });
+  };
 
   // Waiver tracker
   const [txType, setTxType] = useState("both");
   const [txLimit, setTxLimit] = useState(10);
   const [txLoading, setTxLoading] = useState(false);
   const [transactions, setTransactions] = useState([]); // merged
+  const [waiverAnalytics, setWaiverAnalytics] = useState({ wins: [], avgBid: 0, failed: 0, topAdds: [] });
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [selectedFA, setSelectedFA] = useState(null);
     // League selection (exclude leagues you don't want to consider)
@@ -570,68 +626,74 @@ export default function LeagueHubContent() {
         const allMap = new Map();
         const mineMap = new Map();
 
-        for (let i = 0; i < leagues.length; i++) {
-          const lg = leagues[i];
-          try {
-            setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-            setScanProgressPct(12 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
-
-            const [rRes, u2Res] = await Promise.all([
-              fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`),
-              fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/users`),
-            ]);
-            const rosters = rRes.ok ? await rRes.json() : [];
-            if (!Array.isArray(rosters) || rosters.length === 0) continue;
-
-            // roster_id -> owner_id
-            const ridToUid = new Map();
-            for (const r of rosters) {
-              if (r?.roster_id != null && r?.owner_id != null) {
-                ridToUid.set(String(r.roster_id), String(r.owner_id));
-              }
-            }
-
-            // user_id -> display_name
-            let uidToName = new Map();
+        const results = new Array(leagues.length);
+        let cursor = 0;
+        let completed = 0;
+        const publishIncremental = () => {
+          const partial = results.filter(Boolean);
+          rosterSetsRef.current = allMap;
+          myRosterRef.current = mineMap;
+          setScanLeagues(partial);
+          setLeagueCount(partial.length);
+        };
+        const workers = Array.from({ length: Math.min(6, leagues.length) }, async () => {
+          while (!cancelled) {
+            const index = cursor++;
+            if (index >= leagues.length) break;
+            const lg = leagues[index];
             try {
+              const [rRes, u2Res] = await Promise.all([
+                fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`),
+                fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/users`),
+              ]);
+              const rosters = rRes.ok ? await rRes.json() : [];
               const users = u2Res.ok ? await u2Res.json() : [];
-              if (Array.isArray(users)) {
-                uidToName = new Map(
-                  users
+              const mine = Array.isArray(rosters)
+                ? rosters.find((r) => r && String(r.owner_id) === String(user.user_id))
+                : null;
+              const all = mine?.players?.length ? extractRosterIds(rosters) : new Set();
+              if (all.size) {
+                const lid = String(lg.league_id);
+                const ridToUid = new Map(
+                  rosters
+                    .filter((r) => r?.roster_id != null && r?.owner_id != null)
+                    .map((r) => [String(r.roster_id), String(r.owner_id)])
+                );
+                const uidToName = new Map(
+                  (Array.isArray(users) ? users : [])
                     .filter((u) => u?.user_id)
                     .map((u) => [
                       String(u.user_id),
                       String(u.display_name || u.metadata?.team_name || u.username || "Manager"),
                     ])
                 );
+                allMap.set(lid, all);
+                mineMap.set(lid, new Set(mine.players.map(String)));
+                rosterOwnersRef.current.set(lid, ridToUid);
+                leagueUsersRef.current.set(lid, uidToName);
+                results[index] = {
+                  id: lid,
+                  name: lg.name || "Unnamed League",
+                  avatar: lg.avatar || null,
+                  isBestBall: lg?.settings?.best_ball === 1,
+                  status: lg?.status || "",
+                  roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
+                  format: getLeagueFormat(lg),
+                  teamCount: Number(lg?.total_rosters || lg?.settings?.num_teams || 0),
+                  scoringType: getScoringType(lg),
+                };
               }
             } catch {}
-
-            const mine = rosters.find(
-              (r) => r && String(r.owner_id) === String(user.user_id)
-            );
-            if (!mine || !Array.isArray(mine.players) || mine.players.length === 0) continue;
-
-            const all = extractRosterIds(rosters);
-            if (all.size === 0) continue;
-
-            const lid = String(lg.league_id);
-            allMap.set(lid, all);
-            mineMap.set(lid, new Set(mine.players.map(String)));
-            rosterOwnersRef.current.set(lid, ridToUid);
-            leagueUsersRef.current.set(lid, uidToName);
-
-            kept.push({
-              id: lid,
-              name: lg.name || "Unnamed League",
-              avatar: lg.avatar || null,
-              isBestBall: lg?.settings?.best_ball === 1,
-              status: lg?.status || "",
-              roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
-            });
-          } catch {}
-          if (cancelled) return;
-        }
+            completed += 1;
+            if (!cancelled) {
+              setScanProgressText(`Scanning leagues… (${completed}/${leagues.length})`);
+              setScanProgressPct(12 + Math.round((completed / Math.max(leagues.length, 1)) * 88));
+              if (completed % 6 === 0 || completed === leagues.length) publishIncremental();
+            }
+          }
+        });
+        await Promise.all(workers);
+        kept.push(...results.filter(Boolean));
 
         if (!cancelled) {
           rosterSetsRef.current = allMap;
@@ -661,18 +723,23 @@ export default function LeagueHubContent() {
     };
   }, [username, yrStr, cacheKey]);
 
-    const visibleLeaguesList = useMemo(() => {
+  const visibleLeaguesList = useMemo(() => {
     return (scanLeagues || []).filter((lg) => {
       const id = String(lg?.id || "");
       if (excludedLeagueIds.has(id)) return false;
+      if (leagueQuery && !`${lg?.name || ""} ${id}`.toLowerCase().includes(leagueQuery.toLowerCase().trim())) return false;
 
       if (onlyBestBall && !lg.isBestBall) return false;
       if (excludeBestBall && lg.isBestBall) return false;
       if (!includeDrafting && lg.status === "drafting") return false;
+      if (leagueFormatFilter !== "ALL" && String(lg?.format?.key || "").toUpperCase() !== leagueFormatFilter) return false;
+      if (leagueSizeFilter !== "ALL" && String(lg?.teamCount || "") !== leagueSizeFilter) return false;
+      if (scoringFilter !== "ALL" && lg?.scoringType !== scoringFilter) return false;
+      if (leagueStatusFilter !== "ALL" && String(lg?.status || "").toUpperCase() !== leagueStatusFilter) return false;
 
       return true;
     });
-  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting, excludedLeagueIds]);
+  }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting, excludedLeagueIds, leagueQuery, leagueFormatFilter, leagueSizeFilter, scoringFilter, leagueStatusFilter]);
 
   // ---------- Compute: Best Free Agents ----------
   // Values + projections are resolved by SleeperContext based on `sourceKey`.
@@ -697,6 +764,7 @@ export default function LeagueHubContent() {
       .filter((p) => {
         if (!p || p.player_id == null) return false;
         const pos = String(p.position || "").toUpperCase();
+        if (pos === "PICK") return false;
         if (posFilter && pos !== posFilter) return false;
         return true;
       })
@@ -737,6 +805,21 @@ export default function LeagueHubContent() {
 
       const proj = getProjection(p, projectionSource);
       const val = getValueForPlayer(p);
+      let needTotal = 0;
+      for (const lg of openLeagues) {
+        const mine = myRosterRef.current.get(lg.id) || new Set();
+        const ownedAtPos = Array.from(mine).filter((id) => getPrimaryPos(playersMap?.[id]) === playerPos).length;
+        const starterDemand = (lg.roster_positions || []).filter((slot) => eligibleForSlot(slot, playerPos)).length;
+        needTotal += starterDemand > 0
+          ? Math.max(0, Math.min(1, (starterDemand + 1 - ownedAtPos) / (starterDemand + 1)))
+          : 0;
+      }
+      const needScore = openLeagues.length ? needTotal / openLeagues.length : 0;
+      const availabilityPct = openLeagues.length / Math.max(leagues.length, 1);
+      const adds = trendingAdds.get(pid) || 0;
+      const drops = trendingDrops.get(pid) || 0;
+      const momentum = Math.max(-1, Math.min(1, Math.log1p(adds) - Math.log1p(drops)) / 6);
+      const opportunityScore = score * (1 + needScore * 0.5 + availabilityPct * 0.25 + momentum * 0.15);
       out.push({
         id: pid,
         name,
@@ -747,12 +830,20 @@ export default function LeagueHubContent() {
         value: val,
         openCount: openLeagues.length,
         openLeagues,
+        needScore,
+        availabilityPct,
+        adds,
+        drops,
+        opportunityScore,
       });
-
-      if (out.length >= bestLimit) break;
     }
 
-    return out;
+    out.sort((a, b) =>
+      bestSort === "opportunity"
+        ? b.opportunityScore - a.opportunityScore || b.score - a.score
+        : b.score - a.score || b.opportunityScore - a.opportunityScore
+    );
+    return out.slice(0, bestLimit);
   }, [
     visibleLeaguesList,
     playerList,
@@ -763,7 +854,32 @@ export default function LeagueHubContent() {
     getValueForPlayer,
     getProjection,
     projectionSource,
+    bestSort,
+    playersMap,
+    trendingAdds,
+    trendingDrops,
   ]);
+
+  const watchlistRows = useMemo(() => Array.from(watchlistIds).map((pid) => {
+    const p = playersMap?.[pid];
+    if (!p || String(p.position || "").toUpperCase() === "PICK") return null;
+    const pos = getPrimaryPos(p);
+    const openLeagues = visibleLeaguesList.filter((lg) => {
+      if (!leagueAllowsPosition(lg, pos)) return false;
+      const rostered = rosterSetsRef.current.get(lg.id);
+      return rostered?.size && !rostered.has(pid);
+    });
+    return {
+      id: pid,
+      name: p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim(),
+      pos,
+      team: String(p.team || "").toUpperCase(),
+      openLeagues,
+      openCount: openLeagues.length,
+      value: getValueForPlayer(p),
+      proj: getProjection(p, projectionSource),
+    };
+  }).filter(Boolean), [watchlistIds, playersMap, visibleLeaguesList, getValueForPlayer, getProjection, projectionSource]);
 
   // ---------- Injury report (clickable -> leagues modal) ----------
   const injuryRows = useMemo(() => {
@@ -1102,7 +1218,8 @@ export default function LeagueHubContent() {
               const status = String(tx.status || "").toLowerCase();
 
               // ✅ Waivers/FA: only completed
-              if ((t === "waiver" || t === "free_agent") && status !== "complete") continue;
+              if (t === "waiver" && !["complete", "failed"].includes(status)) continue;
+              if (t === "free_agent" && status !== "complete") continue;
 
               // ✅ Trades: pending + complete
               if (t === "trade" && !["pending", "complete"].includes(status)) continue;
@@ -1130,8 +1247,32 @@ export default function LeagueHubContent() {
         return tb - ta;
       });
 
+      const waiverRows = all.filter((tx) => String(tx?.type) === "waiver");
+      const completedWaivers = waiverRows.filter((tx) => String(tx?.status).toLowerCase() === "complete");
+      const bids = completedWaivers.map((tx) => Number(tx?.settings?.waiver_bid || 0)).filter((n) => n > 0);
+      const winCounts = new Map();
+      const addCounts = new Map();
+      for (const tx of completedWaivers) {
+        const rosterId = Object.values(tx?.adds || {})[0];
+        if (rosterId != null) {
+          const lid = String(tx?._league?.id || "");
+          const uid = rosterOwnersRef.current.get(lid)?.get(String(rosterId));
+          const name = uid ? leagueUsersRef.current.get(lid)?.get(String(uid)) : null;
+          const key = name || `Roster ${rosterId}`;
+          winCounts.set(key, (winCounts.get(key) || 0) + 1);
+        }
+        Object.keys(tx?.adds || {}).forEach((pid) => addCounts.set(String(pid), (addCounts.get(String(pid)) || 0) + 1));
+      }
+      setWaiverAnalytics({
+        wins: Array.from(winCounts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5),
+        avgBid: bids.length ? bids.reduce((a, b) => a + b, 0) / bids.length : 0,
+        failed: waiverRows.filter((tx) => String(tx?.status).toLowerCase() === "failed").length,
+        topAdds: Array.from(addCounts, ([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count).slice(0, 5),
+      });
+
       const filtered = all.filter((tx) => {
         const t = String(tx?.type || "");
+        if (t === "waiver" && String(tx?.status || "").toLowerCase() !== "complete") return false;
         if (txType === "trade") return t === "trade";
         if (txType === "waiver") return t === "waiver" || t === "free_agent";
         return t === "trade" || t === "waiver" || t === "free_agent";
@@ -1161,8 +1302,14 @@ export default function LeagueHubContent() {
   };
 }, [username, visibleLeaguesList, scanLoading, txLimit, txType, yrStr]);
 
+  const actionSummary = [
+    { label: "Free-agent opportunities", value: bestFreeAgents.filter((r) => r.needScore >= 0.25).length, target: "free-agents" },
+    { label: "Injured roster players", value: injuryRows.length, target: "injuries" },
+    { label: "Lineup-risk leagues", value: managerIssues.length, target: "lineup-risk" },
+    { label: "Watched players", value: watchlistRows.length, target: "watchlist" },
+  ];
 
-  const showLoadingScreen = initLoading || scanLoading || txLoading;
+  const showLoadingScreen = initLoading || (scanLoading && scanLeagues.length === 0);
 
   // ---------- Formatting helpers ----------
   const labelForId = (id) => {
@@ -1843,6 +1990,17 @@ export default function LeagueHubContent() {
     if (!row) return null;
 
     const list = showAll ? row.openLeagues : row.openLeagues.slice(0, 24);
+    const suggestedFaab = Math.max(1, Math.min(25, Math.round(3 + (row.needScore || 0) * 10 + (row.availabilityPct || 0) * 5 + Math.max(0, (row.adds || 0) - (row.drops || 0)) / 100)));
+    const dropCandidateFor = (lg) => {
+      const mine = Array.from(myRosterRef.current.get(lg.id) || []);
+      const candidates = mine.map((pid) => playersMap?.[pid]).filter((p) => p && String(p.position || "").toUpperCase() !== "PICK");
+      candidates.sort((a, b) => {
+        const aSame = getPrimaryPos(a) === row.pos ? 0 : 1;
+        const bSame = getPrimaryPos(b) === row.pos ? 0 : 1;
+        return aSame - bSame || getValueForPlayer(a) - getValueForPlayer(b);
+      });
+      return candidates[0] || null;
+    };
 
     return (
       <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
@@ -1881,8 +2039,9 @@ export default function LeagueHubContent() {
 
           <div className="mt-3 overflow-y-auto pr-2 -mr-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {list.map((lg) => (
-                <a
+              {list.map((lg) => {
+                const drop = dropCandidateFor(lg);
+                return <a
                   key={lg.id}
                   href={sleeperLeagueUrl(lg.id)}
                   target="_blank"
@@ -1900,10 +2059,10 @@ export default function LeagueHubContent() {
                   />
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">{lg.name}</div>
-                    <div className="text-[11px] text-white/55 truncate">{lg.id}</div>
+                    <div className="text-[11px] text-white/55 truncate">FAAB guide: {suggestedFaab}%{drop ? ` • Drop look: ${drop.full_name || drop.search_full_name || drop.player_id}` : ""}</div>
                   </div>
                 </a>
-              ))}
+              })}
             </div>
           </div>
         </div>
@@ -1916,6 +2075,20 @@ export default function LeagueHubContent() {
     const leagues = playerLeaguesMap.get(String(row.id)) || [];
     const p = playersMap?.[String(row.id)];
     const bye = p ? getByeWeekForPlayer(p, Number(yrStr) || new Date().getFullYear()) : 0;
+    const replacementsFor = (leagueId) => {
+      const rostered = rosterSetsRef.current.get(String(leagueId)) || new Set();
+      return playerList
+        .filter((candidate) =>
+          candidate?.player_id != null &&
+          getPrimaryPos(candidate) === row.pos &&
+          !isInjuredOrLimited(candidate) &&
+          !rostered.has(String(candidate.player_id))
+        )
+        .map((candidate) => ({ candidate, score: bestMetric === "projection" ? getProjection(candidate, projectionSource) : getValueForPlayer(candidate) }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+    };
 
     return (
       <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
@@ -1945,8 +2118,9 @@ export default function LeagueHubContent() {
 
           <div className="mt-4 overflow-y-auto pr-2 -mr-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {leagues.map((lg) => (
-                <a
+              {leagues.map((lg) => {
+                const replacements = replacementsFor(lg.id);
+                return <a
                   key={lg.id}
                   href={sleeperLeagueUrl(lg.id)}
                   target="_blank"
@@ -1963,10 +2137,12 @@ export default function LeagueHubContent() {
                   />
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">{lg.name}</div>
-                    <div className="text-[11px] text-white/55 truncate">{lg.id}</div>
+                    <div className="text-[11px] text-white/55 truncate">
+                      Replacements: {replacements.length ? replacements.map(({ candidate }) => candidate.full_name || candidate.search_full_name || candidate.player_id).join(", ") : "none found"}
+                    </div>
                   </div>
                 </a>
-              ))}
+              })}
             </div>
           </div>
         </div>
@@ -2279,12 +2455,35 @@ export default function LeagueHubContent() {
         />
       ) : (
         <div className="max-w-6xl mx-auto px-4 pb-12 pt-20">
+          {(scanLoading || txLoading) && (
+            <div className="fixed right-4 top-20 z-40 flex items-center gap-2 rounded-full border border-cyan-300/20 bg-gray-950/90 px-3 py-2 text-xs text-cyan-100 shadow-xl backdrop-blur">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-cyan-200/30 border-t-cyan-200" />
+              {scanLoading ? `${scanProgressText} (${scanProgressPct}%)` : "Updating waiver activity…"}
+            </div>
+          )}
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight">League Hub</h1>
             <p className="text-white/70 mt-1">
               One page to manage multiple leagues: waivers, free agents, injuries, and lineup-risk weeks.
             </p>
           </div>
+
+          <nav className="sticky top-16 z-30 -mx-4 mb-4 overflow-x-auto border-y border-white/10 bg-gray-950/90 px-4 py-2 backdrop-blur md:hidden">
+            <div className="flex w-max gap-2">
+              {[["summary","Summary"],["free-agents","Free Agents"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Waivers"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
+                <a key={id} href={`#${id}`} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">{label}</a>
+              ))}
+            </div>
+          </nav>
+
+          <section id="summary" className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4 scroll-mt-28">
+            {actionSummary.map((item) => (
+              <a key={item.label} href={`#${item.target}`} className="rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10">
+                <div className="text-2xl font-bold text-white tabular-nums">{item.value}</div>
+                <div className="mt-1 text-xs text-white/55">{item.label}</div>
+              </a>
+            ))}
+          </section>
 
           {/* Scan summary */}
           <div className={`${SECTION_SHELL} mb-6`}>
@@ -2301,6 +2500,9 @@ export default function LeagueHubContent() {
                 <div className="text-xs text-white/45" suppressHydrationWarning>
                   Last scan: {lastUpdated.toLocaleTimeString()}
                 </div>
+              ) : null}
+              {scanLoading ? (
+                <div className="text-xs text-cyan-200 tabular-nums">{scanProgressText} • {scanProgressPct}%</div>
               ) : null}
               {scanningError ? (
                 <div className="text-sm text-red-400">{scanningError}</div>
@@ -2337,7 +2539,14 @@ export default function LeagueHubContent() {
 
             </div>
 
-            <div className="mt-4 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="text-xs text-white/50">Search, scope, and valuation</div>
+              <button type="button" onClick={() => setHubControlsOpen((v) => !v)} className={SOFT_BTN} aria-expanded={hubControlsOpen}>
+                {hubControlsOpen ? "Close Settings" : "Hub Settings"}
+              </button>
+            </div>
+
+            {hubControlsOpen && <div className="mt-3 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
               <SourceSelector
                 value={sourceKey}
                 onChange={setSourceKey}
@@ -2348,9 +2557,9 @@ export default function LeagueHubContent() {
                 onQbTypeChange={setQb}
                 layout="inline"
               />
-            </div>
+            </div>}
 
-            <div className="mt-4 flex flex-wrap items-center gap-4">
+            {hubControlsOpen && <div className="mt-4 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
                   <input
                     type="checkbox"
@@ -2396,7 +2605,28 @@ export default function LeagueHubContent() {
               </label> */}
 
               
-            </div>
+            </div>}
+
+            {hubControlsOpen && <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+              <input
+                value={leagueQuery}
+                onChange={(e) => setLeagueQuery(e.target.value)}
+                placeholder="Search leagues"
+                className="col-span-2 md:col-span-1 bg-gray-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white"
+              />
+              <select value={leagueFormatFilter} onChange={(e) => setLeagueFormatFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+                <option value="ALL">All formats</option><option value="DYNASTY">Dynasty</option><option value="KEEPER">Keeper</option><option value="REDRAFT">Redraft</option><option value="BESTBALL">Best Ball</option>
+              </select>
+              <select value={leagueSizeFilter} onChange={(e) => setLeagueSizeFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+                <option value="ALL">All sizes</option>{[8,10,12,14,16].map((n) => <option key={n} value={String(n)}>{n} teams</option>)}
+              </select>
+              <select value={scoringFilter} onChange={(e) => setScoringFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+                <option value="ALL">All scoring</option><option value="PPR">PPR</option><option value="HALF">Half PPR</option><option value="STANDARD">Standard</option>
+              </select>
+              <select value={leagueStatusFilter} onChange={(e) => setLeagueStatusFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+                <option value="ALL">All statuses</option><option value="IN_SEASON">In season</option><option value="DRAFTING">Drafting</option><option value="PRE_DRAFT">Pre-draft</option><option value="COMPLETE">Complete</option>
+              </select>
+            </div>}
 
             {!projectionsReady && bestMetric === "projection" ? (
               <div className="mt-3 text-[11px] text-white/45">
@@ -2414,7 +2644,7 @@ export default function LeagueHubContent() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* Waiver / Trade Tracker */}
-              <section className={`lg:col-span-5 ${SECTION_SHELL}`}>
+              <section id="waivers" className={`lg:col-span-5 ${SECTION_SHELL} scroll-mt-28`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -2483,7 +2713,7 @@ export default function LeagueHubContent() {
               </section>
 
               {/* Top Free Agents */}
-              <section className={`lg:col-span-7 ${SECTION_SHELL}`}>
+              <section id="free-agents" className={`lg:col-span-7 ${SECTION_SHELL} scroll-mt-28`}>
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -2496,6 +2726,15 @@ export default function LeagueHubContent() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      className="bg-gray-950 border border-white/10 rounded-2xl px-2 py-2 text-xs text-white/80"
+                      value={bestSort}
+                      onChange={(e) => setBestSort(e.target.value)}
+                      title="Rank by"
+                    >
+                      <option value="metric">Source metric</option>
+                      <option value="opportunity">Opportunity score</option>
+                    </select>
                     <select
                       className="bg-gray-950 border border-white/10 rounded-2xl px-2 py-2 text-xs text-white/80"
                       value={bestPos}
@@ -2575,7 +2814,15 @@ export default function LeagueHubContent() {
                                     alt={row.name}
                                   />
                                   <div className="min-w-0">
-                                    <div className="text-white font-semibold truncate">{row.name}</div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-white font-semibold truncate">{row.name}</div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); toggleWatchlist(row.id); }}
+                                        className={`text-base ${watchlistIds.has(row.id) ? "text-yellow-300" : "text-white/30 hover:text-yellow-200"}`}
+                                        title={watchlistIds.has(row.id) ? "Remove from watchlist" : "Add to watchlist"}
+                                      >★</button>
+                                    </div>
                                     <div className="mt-1 flex items-center gap-2">
                                       <span className={PILL}>
                                         {row.pos}
@@ -2597,7 +2844,7 @@ export default function LeagueHubContent() {
                                     {metricVal > 0 ? Number(metricVal).toFixed(1) : "–"}
                                   </span>
                                   <span className="text-[11px] text-white/45">
-                                    {bestMetric === "projection" ? "proj" : "val"}
+                                    {bestSort === "opportunity" ? `opp ${row.opportunityScore.toFixed(1)}` : bestMetric === "projection" ? "proj" : "val"}
                                   </span>
                                 </span>
                               </td>
@@ -2630,8 +2877,39 @@ export default function LeagueHubContent() {
                 </div>
               </section>
 
+              <section id="watchlist" className={`lg:col-span-12 ${SECTION_SHELL} scroll-mt-28`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div><div className="text-lg font-semibold">Cross-League Watchlist</div><div className="text-xs text-white/50 mt-1">Persistent players and where they are currently available.</div></div>
+                  <span className={PILL}>{watchlistRows.length} watched</span>
+                </div>
+                {watchlistRows.length === 0 ? (
+                  <div className={`${SUBCARD} mt-4 p-4 text-sm text-white/60`}>Use the ★ beside a free agent to start a watchlist.</div>
+                ) : (
+                  <div className="mt-4 grid gap-2 md:grid-cols-2">
+                    {watchlistRows.map((row) => (
+                      <div key={`watch-${row.id}`} className={`${SUBCARD} flex items-center gap-3 p-3`}>
+                        <AvatarImage name={row.name} playerId={row.id} size={34} className="rounded-full" alt={row.name} />
+                        <div className="min-w-0 flex-1"><div className="font-semibold truncate">{row.name}</div><div className="text-xs text-white/50">{row.pos} {row.team ? `• ${row.team}` : ""} • open in {row.openCount}/{visibleLeaguesList.length}</div></div>
+                        <button type="button" onClick={() => toggleWatchlist(row.id)} className="text-yellow-300" title="Remove from watchlist">★</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className={`lg:col-span-12 ${SECTION_SHELL}`}>
+                <div className="text-lg font-semibold">Waiver Analytics</div>
+                <div className="text-xs text-white/50 mt-1">Recent claims across visible leagues; failed claims are counted when Sleeper returns them.</div>
+                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Average winning bid</div><div className="text-xl font-bold">{waiverAnalytics.avgBid ? waiverAnalytics.avgBid.toFixed(1) : "—"}</div></div>
+                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Failed claims seen</div><div className="text-xl font-bold">{waiverAnalytics.failed}</div></div>
+                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Most wins</div><div className="text-sm font-semibold truncate">{waiverAnalytics.wins[0] ? `${waiverAnalytics.wins[0].name} (${waiverAnalytics.wins[0].count})` : "—"}</div></div>
+                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Most added</div><div className="text-sm font-semibold truncate">{waiverAnalytics.topAdds[0] ? `${labelForId(waiverAnalytics.topAdds[0].id)} (${waiverAnalytics.topAdds[0].count})` : "—"}</div></div>
+                </div>
+              </section>
+
               {/* Injury Report (click player => leagues) */}
-              <section className={`lg:col-span-6 ${SECTION_SHELL}`}>
+              <section id="injuries" className={`lg:col-span-6 ${SECTION_SHELL} scroll-mt-28`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex w-2 h-2 rounded-full bg-amber-300/80 shadow-[0_0_0_6px_rgba(251,191,36,0.12)]" />
@@ -2714,7 +2992,7 @@ export default function LeagueHubContent() {
               </section>
 
               {/* Injury/Bye Week Manager */}
-              <section className={`lg:col-span-6 ${SECTION_SHELL}`}>
+              <section id="lineup-risk" className={`lg:col-span-6 ${SECTION_SHELL} scroll-mt-28`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">

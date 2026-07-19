@@ -324,7 +324,9 @@ export default function TradeAnalyzer() {
         ) : (
           <>
             <div className="mb-6 space-y-4">
-              <div className="rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-4">
+              <details className="premium-disclosure">
+                <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
+              <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">Trade Lens</div>
                 <div className="mt-3">
                   <SourceSelector
@@ -349,6 +351,7 @@ export default function TradeAnalyzer() {
                     : "Comparing sides with the selected trade market."}
                 </div>
               </div>
+              </details>
 
               <div className="rounded-2xl border border-white/10 bg-gray-900 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">League Context</div>

@@ -838,7 +838,9 @@ export default function PowerRankingsPage() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <div className="rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+                <details className="premium-disclosure">
+                  <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
+                <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                   <SourceSelector
                     sources={DEFAULT_SOURCES}
                     value={sourceKey}
@@ -858,6 +860,7 @@ export default function PowerRankingsPage() {
                       : "Use values when you want roster strength through a trade-market lens."}
                   </div>
                 </div>
+                </details>
 
                 <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
                   <div className="flex items-center gap-2">

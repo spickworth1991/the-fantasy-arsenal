@@ -37,9 +37,9 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
   const runnerPosition = `${progress}%`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 backdrop-blur-lg sm:px-4">
       {/* Popup Card */}
-      <div className="relative bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl p-6 overflow-hidden border border-gray-700">
+      <div className="relative max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-700 bg-gray-900 p-4 shadow-2xl sm:p-6">
         {/* NFL Image as background inside popup */}
         <div
           className="absolute inset-0"
@@ -53,10 +53,10 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
 
         {/* Overlay for text clarity */}
         <div className="relative z-10 text-center">
-          <h1 className="text-3xl font-bold text-blue-400 mb-6">{text}</h1>
+          <h1 className="mb-5 text-2xl font-bold text-blue-400 sm:mb-6 sm:text-3xl">{text}</h1>
 
           {/* Progress Bar */}
-          <div className="relative bg-green-900 rounded-full h-12 w-full border-4 border-white overflow-hidden shadow-lg mb-6">
+          <div className="relative mb-5 h-10 w-full overflow-hidden rounded-full border-4 border-white bg-green-900 shadow-lg sm:mb-6 sm:h-12">
             {/* Yard markers */}
             {[...Array(11)].map((_, i) => (
               <div
@@ -76,7 +76,7 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
             <img
               src="/runner.webp"
               alt="Football Runner"
-              className="absolute top-1/2 -translate-y-1/2 w-14 transition-all duration-300 ease-out"
+              className="absolute top-1/2 w-11 -translate-y-1/2 transition-all duration-300 ease-out sm:w-14"
               style={{ left: `calc(${runnerPosition} - 28px)` }}
             />
           </div>

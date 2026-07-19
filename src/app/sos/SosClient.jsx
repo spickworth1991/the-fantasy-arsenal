@@ -706,7 +706,9 @@ export default function SOSPage() {
             </div>
           </div>
 
-          <div className="mb-4 rounded-2xl border border-amber-400/15 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950 p-3">
+          <details className="premium-disclosure mb-4">
+            <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
+          <div className="mt-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950 p-3">
             <SourceSelector
               sources={DEFAULT_SOURCES}
               value={sourceKey}
@@ -731,6 +733,7 @@ export default function SOSPage() {
               </div>
             ) : null}
           </div>
+          </details>
 
           <div className="flex flex-wrap items-end gap-4">
             <span className="font-semibold">League:</span>

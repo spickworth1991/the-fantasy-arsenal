@@ -21,7 +21,7 @@ export default function BackgroundParticles() {
           fill="none"
           stroke="white"
           strokeWidth="12"
-          className="absolute opacity-10 animate-float"
+          className={`absolute opacity-10 animate-float ${i >= 6 ? "hidden sm:block" : ""}`}
           style={{
             width: `${p.size}px`,
             height: `${p.size}px`,

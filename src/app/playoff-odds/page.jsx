@@ -20,6 +20,7 @@ const BackgroundParticles = dynamic(
 const PROJ_JSON_URL = "/projections_2025.json";
 const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
 const PROJ_CBS_JSON_URL = "/projections_cbs_2025.json";
+const PROJECTION_DATA_SEASON = 2025;
 const REG_SEASON_WEEKS = 17;
 
 function clamp(n, min, max) {
@@ -261,6 +262,39 @@ function runPlayoffBracket(ranked, playoffSlots, byeSlots, strengthMap) {
   return survivors[0] || null;
 }
 
+function getPlayoffByeCount(playoffSlots) {
+  const teams = Math.max(2, Number(playoffSlots) || 2);
+  let bracketSize = 1;
+  while (bracketSize < teams) bracketSize *= 2;
+  return Math.max(0, bracketSize - teams);
+}
+
+function buildSyntheticMatchups(rosterIds, weekIndex) {
+  const ids = [...rosterIds];
+  if (ids.length < 2) return ids.map((rid) => [rid]);
+  if (ids.length % 2) ids.push(null);
+  const fixed = ids[0];
+  const rotating = ids.slice(1);
+  const shift = weekIndex % rotating.length;
+  const rotated = [fixed, ...rotating.slice(shift), ...rotating.slice(0, shift)];
+  const groups = [];
+  for (let i = 0; i < rotated.length / 2; i += 1) {
+    groups.push([rotated[i], rotated[rotated.length - 1 - i]].filter((rid) => rid != null));
+  }
+  return groups;
+}
+
+function addMedianWins(wins, weeklyScores) {
+  const scores = Object.values(weeklyScores).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!scores.length) return;
+  const middle = Math.floor(scores.length / 2);
+  const median = scores.length % 2 ? scores[middle] : (scores[middle - 1] + scores[middle]) / 2;
+  Object.entries(weeklyScores).forEach(([rid, score]) => {
+    if (score > median) wins[rid] += 1;
+    else if (score === median) wins[rid] += 0.5;
+  });
+}
+
 function getObservedScore(row) {
   if (!row) return null;
   if (row.points == null) return null;
@@ -413,15 +447,12 @@ export default function PlayoffOddsPage() {
   const [stateWeek, setStateWeek] = useState(1);
   const [stateSeason, setStateSeason] = useState(new Date().getFullYear());
   const [byeMap, setByeMap] = useState({ by_team: {} });
-  const [week, setWeek] = useState(1);
-  const [toWeek, setToWeek] = useState(14);
   const [runs, setRuns] = useState(2500);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [schedCache, setSchedCache] = useState({});
   const [playoffLensOpen, setPlayoffLensOpen] = useState(false);
   const debTimer = useRef(null);
-  const lastLeagueRef = useRef(null);
 
   const leagueSeason = Number(league?.season || 0) || stateSeason || new Date().getFullYear();
   const regularSeasonEnd = useMemo(() => {
@@ -432,7 +463,6 @@ export default function PlayoffOddsPage() {
     if (Number(league?.season || 0) !== Number(stateSeason || 0)) return regularSeasonEnd;
     return clamp((stateWeek || 1) - 1, 0, regularSeasonEnd);
   }, [league?.season, regularSeasonEnd, stateSeason, stateWeek]);
-  const selectableObservedWeek = Math.max(1, latestObservedWeek);
 
   const handleSetFormat = (value) => {
     setUserTouchedFormat(true);
@@ -460,6 +490,12 @@ export default function PlayoffOddsPage() {
   useEffect(() => {
     setValueSource(valueSourceFromKey(sourceKey));
   }, [sourceKey]);
+
+  useEffect(() => {
+    if (!league || metricMode !== "projections" || leagueSeason === PROJECTION_DATA_SEASON) return;
+    setProjError(`Projection feeds cover ${PROJECTION_DATA_SEASON}; using current roster values for this ${leagueSeason} league.`);
+    setSourceKey("val:thefantasyarsenal");
+  }, [league, leagueSeason, metricMode]);
 
   useEffect(() => {
     let mounted = true;
@@ -547,23 +583,8 @@ export default function PlayoffOddsPage() {
   }, [league, userTouchedFormat, userTouchedQB]);
 
   useEffect(() => {
-    if (!league?.league_id) return;
-    const leagueChanged = lastLeagueRef.current !== league.league_id;
-    lastLeagueRef.current = league.league_id;
-    const observedThroughDefault = clamp(
-      latestObservedWeek > 0 ? latestObservedWeek : 1,
-      1,
-      regularSeasonEnd
-    );
-    const start = leagueChanged ? 1 : clamp(week, 1, selectableObservedWeek);
-    const end = leagueChanged
-      ? Math.max(start, observedThroughDefault)
-      : clamp(toWeek, start, selectableObservedWeek);
-
-    setWeek(start);
-    setToWeek(end);
     setSchedCache({});
-  }, [league?.league_id, league?.settings?.leg, latestObservedWeek, regularSeasonEnd, selectableObservedWeek, toWeek, week]);
+  }, [league?.league_id]);
 
   const allRosters = league?.rosters || [];
   const rosters = useMemo(
@@ -658,45 +679,27 @@ export default function PlayoffOddsPage() {
 
     setBusy(true);
     try {
-      const observedEndWeek = clamp(toWeek, 0, latestObservedWeek);
-      const observedStartWeek =
-        observedEndWeek > 0 ? clamp(week, 1, Math.max(1, observedEndWeek)) : 1;
+      const observedEndWeek = latestObservedWeek;
+      const observedStartWeek = observedEndWeek > 0 ? 1 : 0;
       const observedWeeks = [];
-      for (let current = observedStartWeek; current <= observedEndWeek; current += 1) observedWeeks.push(current);
+      for (let current = 1; current <= observedEndWeek; current += 1) observedWeeks.push(current);
 
       const futureWeeks = [];
       for (let current = observedEndWeek + 1; current <= regularSeasonEnd; current += 1) futureWeeks.push(current);
 
-      const allScheduleRows = await Promise.all([...observedWeeks, ...futureWeeks].map(loadWeek));
-      const observedScheduleRows = allScheduleRows.slice(0, observedWeeks.length);
-      const futureScheduleRows = allScheduleRows.slice(observedWeeks.length);
-      const playoffSlots = Math.max(2, Number(league?.settings?.playoff_teams || 6));
-      const byeSlots = playoffSlots >= 6 ? 2 : playoffSlots >= 4 ? 1 : 0;
-      const baseWins = Object.fromEntries(rosters.map((roster) => [roster.roster_id, 0]));
-      const basePointsFor = Object.fromEntries(rosters.map((roster) => [roster.roster_id, 0]));
-
-      observedScheduleRows.forEach((schedule) => {
-        schedule.groups.forEach((group) => {
-          if (group.length === 2) {
-            const [teamA, teamB] = group;
-            if (!isObservedMatchupUsable(teamA, teamB)) return;
-            const scoreA = getObservedScore(teamA);
-            const scoreB = getObservedScore(teamB);
-            basePointsFor[teamA.roster_id] += scoreA;
-            basePointsFor[teamB.roster_id] += scoreB;
-            if (scoreA > scoreB) baseWins[teamA.roster_id] += 1;
-            else if (scoreB > scoreA) baseWins[teamB.roster_id] += 1;
-            else {
-              baseWins[teamA.roster_id] += 0.5;
-              baseWins[teamB.roster_id] += 0.5;
-            }
-          } else if (group.length === 1) {
-            const soloRid = group[0].roster_id;
-            const score = getObservedScore(group[0]);
-            if (score != null) basePointsFor[soloRid] += score;
-          }
-        });
-      });
+      const futureScheduleRows = await Promise.all(futureWeeks.map(loadWeek));
+      const playoffSlots = Math.min(ridList.length, Math.max(2, Number(league?.settings?.playoff_teams || 6)));
+      const byeSlots = getPlayoffByeCount(playoffSlots);
+      const baseWins = Object.fromEntries(rosters.map((roster) => {
+        const wins = Number(roster?.settings?.wins || 0);
+        const ties = Number(roster?.settings?.ties || 0);
+        return [roster.roster_id, wins + ties * 0.5];
+      }));
+      const basePointsFor = Object.fromEntries(rosters.map((roster) => {
+        const whole = Number(roster?.settings?.fpts || 0);
+        const decimal = Number(roster?.settings?.fpts_decimal || 0) / 100;
+        return [roster.roster_id, whole + decimal];
+      }));
 
       const strengthsByWeek = {};
       const strengthWeeks = futureWeeks.length
@@ -716,7 +719,7 @@ export default function PlayoffOddsPage() {
           rid,
           strengthWeeks.length
             ? strengthWeeks.reduce((sum, currentWeek) => sum + (strengthsByWeek[currentWeek][rid] || 0), 0) / strengthWeeks.length
-            : teamStrength({ roster: rosterById[rid], players, getMetricWeekly, slots, week, byeMap }),
+            : teamStrength({ roster: rosterById[rid], players, getMetricWeekly, slots, week: Math.max(1, observedEndWeek), byeMap }),
         ])
       );
 
@@ -743,31 +746,31 @@ export default function PlayoffOddsPage() {
         futureWeeks.forEach((currentWeek, index) => {
           const schedule = futureScheduleRows[index] || { groups: [], hasRealMatchups: false };
           const strengthMap = strengthsByWeek[currentWeek] || {};
+          const groups = schedule.hasRealMatchups
+            ? schedule.groups.map((group) => group.map((team) => team.roster_id))
+            : buildSyntheticMatchups(ridList, index);
+          const weeklyScores = {};
 
-          if (schedule.hasRealMatchups) {
-            schedule.groups.forEach((group) => {
-              if (group.length === 2) {
-                const [teamA, teamB] = group;
-                const sim = simulateMatchup(teamA.roster_id, teamB.roster_id, strengthMap);
-                wins[sim.winner] += 1;
-                pointsFor[teamA.roster_id] += sim.scoreA;
-                pointsFor[teamB.roster_id] += sim.scoreB;
-              } else if (group.length === 1) {
-                const soloRid = group[0].roster_id;
-                pointsFor[soloRid] += samplePerformanceScore(strengthMap[soloRid] || 0);
-              }
-            });
-            return;
-          }
-
-          const leagueAverage =
-            ridList.reduce((sum, rid) => sum + (strengthMap[rid] || 0), 0) / Math.max(1, ridList.length);
-          ridList.forEach((rid) => {
-            const score = samplePerformanceScore(strengthMap[rid] || 0);
-            const oppScore = samplePerformanceScore(leagueAverage);
-            pointsFor[rid] += score;
-            if (score >= oppScore) wins[rid] += 1;
+          groups.forEach((group) => {
+            if (group.length === 2) {
+              const [ridA, ridB] = group;
+              const sim = simulateMatchup(ridA, ridB, strengthMap);
+              wins[sim.winner] += 1;
+              pointsFor[ridA] += sim.scoreA;
+              pointsFor[ridB] += sim.scoreB;
+              weeklyScores[ridA] = sim.scoreA;
+              weeklyScores[ridB] = sim.scoreB;
+            } else if (group.length === 1) {
+              const rid = group[0];
+              const score = samplePerformanceScore(strengthMap[rid] || 0);
+              pointsFor[rid] += score;
+              weeklyScores[rid] = score;
+            }
           });
+
+          if (Number(league?.settings?.league_average_match || 0) === 1) {
+            addMedianWins(wins, weeklyScores);
+          }
         });
 
         const ranked = [...ridList].sort((a, b) => {
@@ -856,8 +859,6 @@ export default function PlayoffOddsPage() {
     };
   }, [
     activeLeague,
-    week,
-    toWeek,
     runs,
     metricMode,
     projectionSource,
@@ -870,12 +871,6 @@ export default function PlayoffOddsPage() {
     rosters.length,
     byeMap,
   ]);
-
-  const weekOptions = useMemo(() => {
-    const arr = [];
-    for (let current = 1; current <= selectableObservedWeek; current += 1) arr.push(current);
-    return arr;
-  }, [selectableObservedWeek]);
 
   const currentSourceLabel = useMemo(() => {
     const found = DEFAULT_SOURCES.find((item) => item.key === sourceKey);
@@ -941,10 +936,10 @@ export default function PlayoffOddsPage() {
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">Playoff Lens</div>
               <div className="mt-2 text-2xl font-black tracking-tight text-white sm:text-[2rem]">
-                Shape the model before you trust the odds
+                See where every team stands
               </div>
               <div className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                Same cleaner source selector pattern as the rest of the tools, but with a sturdier playoff engine underneath it.
+                Current Sleeper standings, remaining matchups, and roster strength combined into one playoff forecast.
               </div>
             </div>
 
@@ -971,7 +966,7 @@ export default function PlayoffOddsPage() {
                 aria-expanded={playoffLensOpen}
                 aria-controls="playoff-lens-panel"
               >
-                {playoffLensOpen ? "Collapse" : "Expand"}
+                {playoffLensOpen ? "Close Settings" : "Model Settings"}
                 <svg
                   className={`h-4 w-4 transition-transform ${playoffLensOpen ? "rotate-180" : ""}`}
                   viewBox="0 0 20 20"
@@ -1016,7 +1011,7 @@ export default function PlayoffOddsPage() {
                   <div>
                     <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">Simulation Window</div>
                     <div className="mt-1 text-sm text-white/60">
-                      Forecast the remaining stretch from the observed results window you choose.
+                      Completed results are locked in automatically; the model simulates every remaining regular-season week.
                     </div>
                   </div>
 
@@ -1040,45 +1035,13 @@ export default function PlayoffOddsPage() {
                   {latestObservedWeek <= 0
                     ? "No completed NFL weeks are available yet, so the model uses a preseason baseline and simulates from Week 1."
                     : latestObservedWeek < regularSeasonEnd
-                    ? `Observed results are available through Week ${latestObservedWeek}. Later weeks stay in the simulation bucket.`
-                    : `This league season is complete through Week ${regularSeasonEnd}, so any observed window in the regular season is fair game.`}
+                    ? `Official standings are the baseline through Week ${latestObservedWeek}. Weeks ${latestObservedWeek + 1}-${regularSeasonEnd} are simulated.`
+                    : `The regular season is complete through Week ${regularSeasonEnd}; the odds now reflect the final standings.`}
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <div>
-                    <label className="mb-2 block text-xs text-white/50">Observed From</label>
-                    <select
-                      className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                      value={week}
-                      onChange={(e) => {
-                        const next = clamp(Number(e.target.value) || 1, 1, selectableObservedWeek);
-                        setWeek(next);
-                        if (toWeek < next) setToWeek(next);
-                      }}
-                    >
-                      {weekOptions.map((current) => (
-                        <option key={`start-${current}`} value={current}>
-                          Week {current}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs text-white/50">Observed Through</label>
-                    <select
-                      className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
-                      value={toWeek}
-                      onChange={(e) => setToWeek(clamp(Number(e.target.value) || selectableObservedWeek, week, selectableObservedWeek))}
-                    >
-                      {weekOptions.filter((current) => current >= week).map((current) => (
-                        <option key={`end-${current}`} value={current}>
-                          Week {current}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <StatChip label="Baseline" value={latestObservedWeek > 0 ? `Through Week ${latestObservedWeek}` : "Preseason"} />
+                  <StatChip label="Remaining" value={latestObservedWeek < regularSeasonEnd ? `W${latestObservedWeek + 1}-W${regularSeasonEnd}` : "Final"} />
                   <div>
                     <label className="mb-2 block text-xs text-white/50">Simulation Runs</label>
                     <select
@@ -1131,7 +1094,7 @@ export default function PlayoffOddsPage() {
                           ? "-"
                           : latestObservedWeek <= 0
                           ? "Preseason"
-                          : `W${week} to W${Math.min(toWeek, latestObservedWeek)}`
+                          : `Through W${latestObservedWeek}`
                       }
                     />
                     <StatChip
@@ -1171,18 +1134,21 @@ export default function PlayoffOddsPage() {
               </Card>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-3">
+                  <div className="min-w-[86%] snap-start md:min-w-0">
                   <InsightCard
                     eyebrow="Title Favorite"
                     title={resultSummary?.favorite ? `${resultSummary.favorite.summaryLabel} | ${formatPct(resultSummary.favorite.champPct)}` : "Waiting for a favorite"}
                     body={
                       resultSummary?.favorite
-                        ? `The strongest path to a championship right now, with ${formatPct(resultSummary.favorite.makePct)} playoff odds and ${formatPct(resultSummary.favorite.byePct)} bye odds.`
+                        ? `The strongest path to a championship right now, with ${formatPct(resultSummary.favorite.makePct)} playoff odds${results.byeSlots ? ` and ${formatPct(resultSummary.favorite.byePct)} bye odds` : "; this playoff format has no first-round byes"}.`
                         : "Once the sim finishes, the cleanest championship path lands here."
                     }
                     tone="cyan"
                   />
+                  </div>
 
+                  <div className="min-w-[86%] snap-start md:min-w-0">
                   <InsightCard
                     eyebrow="Bubble Watch"
                     title={resultSummary?.bubble ? `${resultSummary.bubble.summaryLabel} | ${formatPct(resultSummary.bubble.makePct)}` : "No bubble pressure"}
@@ -1193,7 +1159,9 @@ export default function PlayoffOddsPage() {
                     }
                     tone="amber"
                   />
+                  </div>
 
+                  <div className="min-w-[86%] snap-start md:min-w-0">
                   <InsightCard
                     eyebrow="Best Surge"
                     title={resultSummary?.surge ? `${resultSummary.surge.summaryLabel} | ${formatSigned(resultSummary.surge.winDelta)} wins` : "No surge found"}
@@ -1204,6 +1172,7 @@ export default function PlayoffOddsPage() {
                     }
                     tone="rose"
                   />
+                  </div>
                 </div>
 
                 <Card className="overflow-hidden">
@@ -1219,6 +1188,7 @@ export default function PlayoffOddsPage() {
                       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                         <StatChip className="min-w-0" label="Mode" value={simulationModeLabel} />
                         <StatChip className="min-w-0" label="Runs" value={results.totalRuns.toLocaleString()} />
+                        <StatChip className="min-w-0" label="Bye Seeds" value={results.byeSlots ? String(results.byeSlots) : "None"} />
                         <StatChip
                           className="min-w-0"
                           label="Observed"
@@ -1241,6 +1211,12 @@ export default function PlayoffOddsPage() {
                     </div>
                   </div>
 
+                  {!results.byeSlots ? (
+                    <div className="mx-3 mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-5 text-white/55 sm:mx-4">
+                      This league sends {results.playoffSlots} teams to a complete bracket, so no seed receives a first-round bye.
+                    </div>
+                  ) : null}
+
                   <div className="space-y-3 px-3 pb-3 pt-3 md:hidden">
                     {results.table.map((row, index) => {
                       const barColor = row.champPct >= 30 ? "rose" : row.makePct >= 65 ? "cyan" : "amber";
@@ -1256,9 +1232,9 @@ export default function PlayoffOddsPage() {
                                 <div className="mt-1 truncate text-xs text-white/45">{row.secondaryLabel}</div>
                               ) : null}
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
-                              <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Champ</div>
-                              <div className="mt-1 text-lg font-black text-white">{formatPct(row.champPct)}</div>
+                            <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.07] px-3 py-2 text-right">
+                              <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Playoffs</div>
+                              <div className="mt-1 text-lg font-black text-white">{formatPct(row.makePct)}</div>
                             </div>
                           </div>
 
@@ -1266,11 +1242,10 @@ export default function PlayoffOddsPage() {
                             <OddsBar value={clamp(row.makePct, 8, 100)} color={barColor} />
                           </div>
 
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <StatChip className="min-w-0" label="Playoffs" value={formatPct(row.makePct)} />
-                            <StatChip className="min-w-0" label="Bye" value={formatPct(row.byePct)} />
-                            <StatChip className="min-w-0" label="Observed Wins" value={row.currentWins.toFixed(1)} />
-                            <StatChip className="min-w-0" label="Expected Wins" value={row.avgWins.toFixed(1)} />
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                            <StatChip className="min-w-0" label="Champ" value={formatPct(row.champPct)} />
+                            <StatChip className="min-w-0" label="Bye" value={results.byeSlots ? formatPct(row.byePct) : "No byes"} />
+                            <StatChip className="min-w-0" label="Proj. Wins" value={row.avgWins.toFixed(1)} />
                           </div>
 
                           <div className="mt-3 flex items-center justify-between gap-3 text-xs text-white/50">
@@ -1336,7 +1311,7 @@ export default function PlayoffOddsPage() {
                                 <div className="mt-1 text-xs text-white/50">Make the bracket</div>
                               </td>
                               <td className="px-2 py-4 lg:px-3">
-                                <div className="font-semibold text-white">{formatPct(row.byePct)}</div>
+                                <div className="font-semibold text-white">{results.byeSlots ? formatPct(row.byePct) : "—"}</div>
                                 <div className="mt-1 text-xs text-white/50">Skip round one</div>
                               </td>
                               <td className="px-2 py-4 lg:px-3">
