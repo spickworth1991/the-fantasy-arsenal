@@ -221,18 +221,21 @@ async function findOpponentForWeek(leagueId, week, myRosterId) {
   return opp?.roster_id ?? null;
 }
 async function findWeekForHeadToHead(leagueId, myRosterId, oppRosterId, weekMin = 1, weekMax = 18) {
-  for (let w = weekMin; w <= weekMax; w++) {
+  const weeks = Array.from({ length: Math.max(0, weekMax - weekMin + 1) }, (_, i) => weekMin + i);
+  const matches = await Promise.all(weeks.map(async (w) => {
     try {
       const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${w}`);
-      if (!res.ok) continue;
+      if (!res.ok) return null;
       const data = await res.json();
       const mine = data.find((r) => r.roster_id === myRosterId);
-      if (!mine?.matchup_id) continue;
+      if (!mine?.matchup_id) return null;
       const hit = data.find((r) => r.matchup_id === mine.matchup_id && r.roster_id === oppRosterId);
-      if (hit) return w;
-    } catch {}
-  }
-  return null;
+      return hit ? w : null;
+    } catch {
+      return null;
+    }
+  }));
+  return matches.find((w) => w != null) ?? null;
 }
 
 /* ===================== PAGE ===================== */

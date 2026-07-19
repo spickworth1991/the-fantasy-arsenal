@@ -576,9 +576,10 @@ export default function LeagueHubContent() {
             setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
             setScanProgressPct(12 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
 
-            const rRes = await fetch(
-              `https://api.sleeper.app/v1/league/${lg.league_id}/rosters`
-            );
+            const [rRes, u2Res] = await Promise.all([
+              fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`),
+              fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/users`),
+            ]);
             const rosters = rRes.ok ? await rRes.json() : [];
             if (!Array.isArray(rosters) || rosters.length === 0) continue;
 
@@ -593,7 +594,6 @@ export default function LeagueHubContent() {
             // user_id -> display_name
             let uidToName = new Map();
             try {
-              const u2Res = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/users`);
               const users = u2Res.ok ? await u2Res.json() : [];
               if (Array.isArray(users)) {
                 uidToName = new Map(

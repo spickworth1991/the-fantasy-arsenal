@@ -667,8 +667,9 @@ export default function PlayoffOddsPage() {
       const futureWeeks = [];
       for (let current = observedEndWeek + 1; current <= regularSeasonEnd; current += 1) futureWeeks.push(current);
 
-      const observedScheduleRows = await Promise.all(observedWeeks.map(loadWeek));
-      const futureScheduleRows = await Promise.all(futureWeeks.map(loadWeek));
+      const allScheduleRows = await Promise.all([...observedWeeks, ...futureWeeks].map(loadWeek));
+      const observedScheduleRows = allScheduleRows.slice(0, observedWeeks.length);
+      const futureScheduleRows = allScheduleRows.slice(observedWeeks.length);
       const playoffSlots = Math.max(2, Number(league?.settings?.playoff_teams || 6));
       const byeSlots = playoffSlots >= 6 ? 2 : playoffSlots >= 4 ? 1 : 0;
       const baseWins = Object.fromEntries(rosters.map((roster) => [roster.roster_id, 0]));

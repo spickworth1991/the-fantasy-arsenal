@@ -183,24 +183,26 @@ function getPlayerAge(p) {
    Picks: Build current ownership
 =========================== */
 async function getOwnedPicksByRoster(leagueId) {
-  const league   = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r => r.json());
-  const rosters  = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r => r.json());
+  const [league, rosters, traded, drafts] = await Promise.all([
+    fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r => r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r => r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).then(r => r.json()).catch(() => []),
+    fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).then(r => r.json()).catch(() => []),
+  ]);
   const rounds   = league?.settings?.rounds || 4;
 
   const byRoster = {};
   for (const r of rosters) byRoster[r.roster_id] = [];
 
-  const traded = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).then(r => r.json()).catch(() => []);
   const tradedSeasons = new Set(traded.map(t => String(t.season)));
 
-  const drafts = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).then(r => r.json()).catch(() => []);
-  const inDraftAll = [];
-  for (const d of drafts) {
-    try {
-      const inDraft = await fetch(`https://api.sleeper.app/v1/draft/${d.draft_id}/traded_picks`).then(r => r.json());
-      inDraftAll.push(...inDraft);
-    } catch {}
-  }
+  const inDraftAll = (await Promise.all(
+    drafts.map((d) =>
+      fetch(`https://api.sleeper.app/v1/draft/${d.draft_id}/traded_picks`)
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => [])
+    )
+  )).flat();
   const inDraftSeasons = new Set(inDraftAll.map(t => String(t.season)));
 
   const seasonsSet = new Set([...tradedSeasons, ...inDraftSeasons]);

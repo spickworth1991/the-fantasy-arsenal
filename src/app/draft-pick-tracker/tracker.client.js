@@ -2,8 +2,10 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
+import LoadingScreen from "../../components/LoadingScreen";
 
 const nf0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const DRAFT_FETCH_CONCURRENCY = 4;
 
 function safeNum(v) {
   const x = typeof v === "number" ? v : Number(v);
@@ -298,6 +300,7 @@ export default function DraftPickTrackerClient() {
   const { username, leagues, year, players } = useSleeper();
 
   const [loading, setLoading] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
   const [err, setErr] = useState("");
 
   const [search, setSearch] = useState("");
@@ -316,6 +319,11 @@ export default function DraftPickTrackerClient() {
 
   const [rows, setRows] = useState([]); // computed draft rows
   const [bundles, setBundles] = useState([]); // cached bundles
+  const refreshInFlightRef = useRef(false);
+  const eligibleDraftKey = useMemo(
+    () => (leagues || []).filter((lg) => lg?.draft_id).map((lg) => String(lg.draft_id)).join(","),
+    [leagues]
+  );
 
   // per-league expand/collapse for recent picks
   const [expandedRecent, setExpandedRecent] = useState({}); // { [leagueId]: boolean }
@@ -589,20 +597,36 @@ export default function DraftPickTrackerClient() {
   // ---------------- Refresh ----------------
 
   async function refresh() {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
     setErr("");
     setLoading(true);
+    setScanProgress(0);
     try {
       const eligible = (leagues || []).filter((lg) => !!lg?.draft_id);
-      const nextBundles = [];
-
-      for (const lg of eligible) {
-        try {
-          const b = await fetchDraftBundle(lg);
-          if (b) nextBundles.push(b);
-        } catch (e) {
-          console.warn("Draft bundle failed:", lg?.name, e);
+      const bundleResults = new Array(eligible.length);
+      let cursor = 0;
+      let completed = 0;
+      const workers = Array.from(
+        { length: Math.min(DRAFT_FETCH_CONCURRENCY, eligible.length) },
+        async () => {
+          while (true) {
+            const index = cursor++;
+            if (index >= eligible.length) break;
+            const lg = eligible[index];
+            try {
+              bundleResults[index] = await fetchDraftBundle(lg);
+            } catch (e) {
+              console.warn("Draft bundle failed:", lg?.name, e);
+            } finally {
+              completed += 1;
+              setScanProgress(Math.round((completed / Math.max(eligible.length, 1)) * 100));
+            }
+          }
         }
-      }
+      );
+      await Promise.all(workers);
+      const nextBundles = bundleResults.filter(Boolean);
 
       const nowMs = Date.now(); // critical: prevents stale-now auto-refresh drift
 
@@ -613,19 +637,21 @@ export default function DraftPickTrackerClient() {
 
       setBundles(nextBundles);
       setRows(draftRows);
+      setScanProgress(100);
     } catch (e) {
       console.error(e);
       setErr("Failed to load drafts. Try refresh.");
     } finally {
+      refreshInFlightRef.current = false;
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (!username) return;
+    if (!username || !eligibleDraftKey) return;
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username]);
+  }, [username, eligibleDraftKey]);
 
   // ---------------- Filters + sorting ----------------
 
@@ -800,6 +826,12 @@ export default function DraftPickTrackerClient() {
   // ---------------- UI bits ----------------
 
   const totalLeagues = filteredDraftRows.length;
+
+  // During the first scan there are no rows yet, so rendering the normal empty
+  // state incorrectly suggests that the scan has already found no leagues.
+  if (loading && rows.length === 0) {
+    return <LoadingScreen progress={scanProgress} text="Loading your draft leagues..." />;
+  }
 
   return (
     <div className="mt-6">

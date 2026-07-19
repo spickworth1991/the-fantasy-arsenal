@@ -653,35 +653,46 @@ useEffect(() => {
         const kept = [];
         const setsMap = new Map();
 
-        for (let i = 0; i < leagues.length; i++) {
-          const lg = leagues[i];
-          try {
-            setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-            setScanProgressPct(12 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
-
-            const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-            const rosters = rRes.ok ? await rRes.json() : [];
-            if (!Array.isArray(rosters) || rosters.length === 0) continue;
-
-            const mine = rosters.find((r) => r && String(r.owner_id) === String(user.user_id));
-            if (!mine || !Array.isArray(mine.players) || mine.players.length === 0) continue;
-
-            const set = extractRosterIds(rosters);
-            if (set.size === 0) continue;
-
-            const lid = String(lg.league_id);
-            setsMap.set(lid, set);
-
-            kept.push({
-              id: lid,
-              name: lg.name || "Unnamed League",
-              avatar: lg.avatar || null,
-              isBestBall: lg?.settings?.best_ball === 1,
-              status: lg?.status || "",
-              roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
-            });
-          } catch {}
-          if (cancelled) return;
+        let completed = 0;
+        const results = new Array(leagues.length);
+        let cursor = 0;
+        const workers = Array.from({ length: Math.min(8, leagues.length) }, async () => {
+          while (!cancelled) {
+            const index = cursor++;
+            if (index >= leagues.length) break;
+            const lg = leagues[index];
+            try {
+              const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+              const rosters = rRes.ok ? await rRes.json() : [];
+              const mine = Array.isArray(rosters)
+                ? rosters.find((r) => r && String(r.owner_id) === String(user.user_id))
+                : null;
+              const set = mine?.players?.length ? extractRosterIds(rosters) : new Set();
+              if (set.size) {
+                const lid = String(lg.league_id);
+                results[index] = { lid, set, league: {
+                  id: lid,
+                  name: lg.name || "Unnamed League",
+                  avatar: lg.avatar || null,
+                  isBestBall: lg?.settings?.best_ball === 1,
+                  status: lg?.status || "",
+                  roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
+                }};
+              }
+            } catch {}
+            completed += 1;
+            if (!cancelled) {
+              setScanProgressText(`Scanning leagues… (${completed}/${leagues.length})`);
+              setScanProgressPct(12 + Math.round((completed / Math.max(leagues.length, 1)) * 88));
+            }
+          }
+        });
+        await Promise.all(workers);
+        if (cancelled) return;
+        for (const result of results) {
+          if (!result) continue;
+          setsMap.set(result.lid, result.set);
+          kept.push(result.league);
         }
 
         if (!cancelled) {
@@ -840,34 +851,43 @@ useEffect(() => {
 
         const kept = [];
         const setsMap = new Map();
-        for (let i = 0; i < leagues.length; i++) {
-          const lg = leagues[i];
-          setScanProgressText(`Scanning leagues… (${i + 1}/${leagues.length})`);
-          setScanProgressPct(10 + Math.round(((i + 1) / Math.max(leagues.length, 1)) * 88));
-
-          try {
-            const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-            const rosters = rRes.ok ? await rRes.json() : [];
-            if (!Array.isArray(rosters) || rosters.length === 0) continue;
-
-            const mine = rosters.find((r) => r && String(r.owner_id) === String(user.user_id));
-            if (!mine || !Array.isArray(mine.players) || mine.players.length === 0) continue;
-
-            const set = extractRosterIds(rosters);
-            if (set.size === 0) continue;
-
-            const lid = String(lg.league_id);
-            setsMap.set(lid, set);
-
-            kept.push({
-              id: lid,
-              name: lg.name || "Unnamed League",
-              avatar: lg.avatar || null,
-              isBestBall: lg?.settings?.best_ball === 1,
-              status: lg?.status || "",
-              roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
-            });
-          } catch {}
+        let completed = 0;
+        const results = new Array(leagues.length);
+        let cursor = 0;
+        const workers = Array.from({ length: Math.min(8, leagues.length) }, async () => {
+          while (true) {
+            const index = cursor++;
+            if (index >= leagues.length) break;
+            const lg = leagues[index];
+            try {
+              const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
+              const rosters = rRes.ok ? await rRes.json() : [];
+              const mine = Array.isArray(rosters)
+                ? rosters.find((r) => r && String(r.owner_id) === String(user.user_id))
+                : null;
+              const set = mine?.players?.length ? extractRosterIds(rosters) : new Set();
+              if (set.size) {
+                const lid = String(lg.league_id);
+                results[index] = { lid, set, league: {
+                  id: lid,
+                  name: lg.name || "Unnamed League",
+                  avatar: lg.avatar || null,
+                  isBestBall: lg?.settings?.best_ball === 1,
+                  status: lg?.status || "",
+                  roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
+                }};
+              }
+            } catch {}
+            completed += 1;
+            setScanProgressText(`Scanning leagues… (${completed}/${leagues.length})`);
+            setScanProgressPct(10 + Math.round((completed / Math.max(leagues.length, 1)) * 88));
+          }
+        });
+        await Promise.all(workers);
+        for (const result of results) {
+          if (!result) continue;
+          setsMap.set(result.lid, result.set);
+          kept.push(result.league);
         }
 
         rosterSetsRef.current = setsMap;
