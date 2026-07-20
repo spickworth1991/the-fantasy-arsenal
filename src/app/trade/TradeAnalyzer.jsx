@@ -5,6 +5,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import TradeSide from "../../components/TradeSide";
 import SearchBox from "../../components/SearchBox";
 import PlayerCard from "../../components/PlayerCard";
+import TradePartnerFinder from "./TradePartnerFinder";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
@@ -388,6 +389,16 @@ export default function TradeAnalyzer() {
                 </div>
               </div>
             </div>
+
+            {league?.rosters?.length ? (
+              <TradePartnerFinder
+                league={league}
+                players={players}
+                getMetric={getMetric}
+                metricMode={metricMode}
+                username={username}
+              />
+            ) : null}
 
             <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">

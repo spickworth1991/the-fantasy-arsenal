@@ -19,13 +19,19 @@ const ICONS = {
   draft: "/icons/draft-icon.png",
   ballsville: "/brand/ballsville.png",
   leaguehub: "/icons/league-hub.png",
+  history: "/icons/league-hub.png",
+  commissioner: "/icons/league-hub.png",
 };
 
 // Set badges for sidebar links here (optional).
 const NAV_BADGES = {
-  "/league-hub": "DEVELOPING",
+  "/trade": "UPDATED",
+  "/lineup": "UPDATED",
+  "/league-hub": "UPDATED",
   "/player-stock": "UPDATED",
   "/playoff-odds": "NEW",
+  "/league-history": "NEW",
+  "/commissioner-dashboard": "NEW",
 };
 
 const BADGE_STYLES = {
@@ -212,6 +218,8 @@ export default function Navbar({ pageTitle }) {
               <SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} />
               <SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} />
               <SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} />
+              <SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} />
+              <SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} />
               <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
               <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
               <SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} />

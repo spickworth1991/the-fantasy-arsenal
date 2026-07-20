@@ -16,6 +16,10 @@ export default function sitemap() {
     "/sos",
     "/lineup",
     "/draft-pick-tracker",
+    "/league-hub",
+    "/league-history",
+    "/commissioner-dashboard",
+    "/playoff-odds",
   ];
 
   return routes.map((path) => ({

@@ -363,6 +363,10 @@ export default function LeagueHubContent() {
   const [scoringFilter, setScoringFilter] = useState("ALL");
   const [leagueStatusFilter, setLeagueStatusFilter] = useState("ALL");
   const [hubControlsOpen, setHubControlsOpen] = useState(false);
+  const [actionFilter, setActionFilter] = useState("all");
+  const [actionCenterOpen, setActionCenterOpen] = useState(true);
+  const [dismissedActions, setDismissedActions] = useState(() => new Set());
+  const [nflState, setNflState] = useState({ season: "", week: 1 });
 
   const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,isBestBall,status,roster_positions}]
   const [leagueCount, setLeagueCount] = useState(0);
@@ -411,6 +415,18 @@ export default function LeagueHubContent() {
       setTrendingAdds(new Map((Array.isArray(adds) ? adds : []).map((x) => [String(x.player_id), Number(x.count || 0)])));
       setTrendingDrops(new Map((Array.isArray(drops) ? drops : []).map((x) => [String(x.player_id), Number(x.count || 0)])));
     }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("https://api.sleeper.app/v1/state/nfl", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((state) => {
+        if (!alive || !state) return;
+        setNflState({ season: String(state.season || ""), week: Math.max(1, Number(state.week ?? state.leg ?? 1) || 1) });
+      })
+      .catch(() => {});
     return () => { alive = false; };
   }, []);
 
@@ -1308,6 +1324,80 @@ export default function LeagueHubContent() {
     { label: "Lineup-risk leagues", value: managerIssues.length, target: "lineup-risk" },
     { label: "Watched players", value: watchlistRows.length, target: "watchlist" },
   ];
+
+  const actionItems = useMemo(() => {
+    const items = [];
+
+    managerIssues.slice(0, 12).forEach((entry) => {
+      const relevantIssues = String(nflState.season) === String(yrStr)
+        ? entry.issues.filter((issue) => issue.week >= nflState.week)
+        : entry.issues;
+      const worst = [...relevantIssues].sort((a, b) => b.totalMissing - a.totalMissing || a.week - b.week)[0];
+      if (!worst) return;
+      items.push({
+        id: `lineup-${entry.league.id}-${worst.week}`,
+        category: "lineup",
+        priority: worst.totalMissing >= 3 ? 3 : 2,
+        eyebrow: `Week ${worst.week} lineup risk`,
+        title: entry.league.name,
+        body: `Your roster projects to be short ${worst.totalMissing} starter slot${worst.totalMissing === 1 ? "" : "s"}. ${worst.conflicts?.[0]?.text || worst.shortfallText || "Review the roster before lineups lock."}`,
+        href: "#lineup-risk",
+        cta: "Review risk",
+        leagueId: entry.league.id,
+      });
+    });
+
+    injuryRows.slice(0, 8).forEach((row) => {
+      items.push({
+        id: `injury-${row.id}`,
+        category: "injury",
+        priority: row.leagues.length >= 5 ? 3 : 2,
+        eyebrow: `${row.leagues.length} affected league${row.leagues.length === 1 ? "" : "s"}`,
+        title: `${row.name} · ${row.injury || "Injury flag"}`,
+        body: `This player is on ${row.leagues.length} of your visible rosters. Check replacements and lineup exposure.`,
+        href: "#injuries",
+        cta: "See exposure",
+      });
+    });
+
+    bestFreeAgents.filter((row) => row.needScore >= 0.25).slice(0, 8).forEach((row) => {
+      items.push({
+        id: `waiver-${row.id}`,
+        category: "waiver",
+        priority: row.openCount >= 5 || row.needScore >= 0.65 ? 2 : 1,
+        eyebrow: `Available in ${row.openCount} league${row.openCount === 1 ? "" : "s"}`,
+        title: `${row.name} is available`,
+        body: `${row.pos}${row.team ? ` · ${row.team}` : ""} carries an opportunity score of ${Number(row.opportunityScore || 0).toFixed(1)} across your current league scope.`,
+        href: "#free-agents",
+        cta: "Find leagues",
+      });
+    });
+
+    transactions.filter((tx) => tx?.type === "trade" && String(tx?.status).toLowerCase() === "pending").slice(0, 5).forEach((tx) => {
+      items.push({
+        id: `trade-${tx.transaction_id || tx.created}`,
+        category: "trade",
+        priority: 3,
+        eyebrow: "Pending trade",
+        title: tx?._league?.name || "League trade",
+        body: "A pending trade is waiting in this league. Review the assets and current roster impact.",
+        href: "#waivers",
+        cta: "Review activity",
+        leagueId: tx?._league?.id,
+      });
+    });
+
+    return items.sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title));
+  }, [bestFreeAgents, injuryRows, managerIssues, nflState, transactions, yrStr]);
+
+  const visibleActionItems = actionItems.filter((item) => {
+    if (dismissedActions.has(item.id)) return false;
+    return actionFilter === "all" || item.category === actionFilter;
+  });
+
+  const dismissAction = (id) => {
+    setDismissedActions((previous) => new Set([...previous, id]));
+  };
 
   const showLoadingScreen = initLoading || (scanLoading && scanLeagues.length === 0);
 
@@ -2462,15 +2552,72 @@ export default function LeagueHubContent() {
             </div>
           )}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">League Hub</h1>
-            <p className="text-white/70 mt-1">
-              One page to manage multiple leagues: waivers, free agents, injuries, and lineup-risk weeks.
-            </p>
+            <div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200/55">Your command center</div>
+                <h1 className="mt-1 text-3xl font-black tracking-tight">League Hub</h1>
+                <p className="mt-1 text-white/70">Act on what matters now, then explore the full portfolio underneath.</p>
+              </div>
+            </div>
           </div>
+
+          <section id="for-you" className="relative mb-6 overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.96),rgba(2,6,23,0.92))] p-4 shadow-[0_35px_100px_-65px_rgba(34,211,238,0.65)] sm:p-6 scroll-mt-28">
+            <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-cyan-300/10 blur-3xl" aria-hidden="true" />
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200/65"><span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_16px_rgba(103,232,249,.9)]" />Action Center</div>
+                <h2 className="mt-2 text-2xl font-black tracking-tight">{actionCenterOpen ? "Your next best moves" : `${visibleActionItems.length} item${visibleActionItems.length === 1 ? "" : "s"} need attention`}</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-white/58">A prioritized inbox built from lineup pressure, injuries, free-agent opportunities, and pending league activity.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {actionCenterOpen ? <div className="flex gap-2 overflow-x-auto pb-1">
+                {[["all","All"],["lineup","Lineups"],["injury","Injuries"],["waiver","Waivers"],["trade","Trades"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setActionFilter(key)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${actionFilter === key ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-50" : "border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white"}`}>{label}</button>
+                ))}
+                </div> : null}
+                <button type="button" onClick={() => setActionCenterOpen((open) => !open)} aria-expanded={actionCenterOpen} aria-controls="action-center-items" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white">
+                  {actionCenterOpen ? "Collapse" : "Expand"}<span className={`text-sm transition-transform ${actionCenterOpen ? "rotate-180" : ""}`}>⌄</span>
+                </button>
+              </div>
+            </div>
+
+            {actionCenterOpen ? <div id="action-center-items" className="relative mt-5 grid gap-3 lg:grid-cols-2">
+              {visibleActionItems.length ? visibleActionItems.slice(0, 8).map((item) => {
+                const priority = item.priority === 3
+                  ? { label: "High", dot: "bg-rose-300", border: "border-rose-300/15", glow: "from-rose-400/10" }
+                  : item.priority === 2
+                  ? { label: "Worth a look", dot: "bg-amber-300", border: "border-amber-300/15", glow: "from-amber-400/10" }
+                  : { label: "Opportunity", dot: "bg-emerald-300", border: "border-emerald-300/15", glow: "from-emerald-400/10" };
+                return (
+                  <article key={item.id} className={`group rounded-3xl border ${priority.border} bg-gradient-to-br ${priority.glow} to-white/[0.025] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.055]`}>
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${priority.dot} shadow-[0_0_18px_currentColor]`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42"><span>{priority.label}</span><span className="text-white/20">•</span><span>{item.eyebrow}</span></div>
+                        <h3 className="mt-1.5 truncate text-base font-bold text-white">{item.title}</h3>
+                        <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-white/55">{item.body}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <a href={item.href} className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/10">{item.cta}</a>
+                          {item.leagueId ? <a href={sleeperLeagueUrl(item.leagueId)} target="_blank" rel="noreferrer" className="px-2 py-1.5 text-xs text-cyan-200/65 hover:text-cyan-100">Open Sleeper ↗</a> : null}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => dismissAction(item.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/30 transition hover:bg-white/10 hover:text-white" aria-label={`Dismiss ${item.title}`}>×</button>
+                    </div>
+                  </article>
+                );
+              }) : (
+                <div className="lg:col-span-2 rounded-3xl border border-emerald-300/15 bg-emerald-400/[0.06] p-6 text-center">
+                  <div className="text-lg font-bold text-emerald-100">You’re caught up</div>
+                  <div className="mt-1 text-sm text-white/55">No active items match this view. The full portfolio tools are still available below.</div>
+                  {dismissedActions.size ? <button type="button" onClick={() => setDismissedActions(new Set())} className="mt-3 text-xs font-semibold text-cyan-200 hover:text-cyan-100">Restore dismissed items</button> : null}
+                </div>
+              )}
+            </div> : null}
+          </section>
 
           <nav className="sticky top-16 z-30 -mx-4 mb-4 overflow-x-auto border-y border-white/10 bg-gray-950/90 px-4 py-2 backdrop-blur md:hidden">
             <div className="flex w-max gap-2">
-              {[["summary","Summary"],["free-agents","Free Agents"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Waivers"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
+              {[["for-you","Action Center"],["summary","Summary"],["free-agents","Free Agents"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Waivers"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
                 <a key={id} href={`#${id}`} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">{label}</a>
               ))}
             </div>

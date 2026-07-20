@@ -142,9 +142,11 @@ function inferFormatFromLeague(league) {
 }
 
 /* ---------- Optimal lineup (bye-aware) ---------- */
-function solveOptimalLineup({ roster, players, getWeeklyMetric, slots, week, byeMap }) {
-  if (!roster) return { starters: [], bench: [], score: 0 };
+function solveOptimalLineup({ roster, players, getWeeklyMetric, getMarketValue, slots, week, byeMap, weatherMap = {}, strategy = "median" }) {
+  if (!roster) return { starters: [], bench: [], score: 0, floorScore: 0, ceilingScore: 0 };
   const ids = [...new Set([...(roster.starters || []), ...(roster.players || [])].filter(Boolean))];
+  const qbTeams = new Set(ids.map((pid) => players?.[pid]).filter((p) => normalizePos(p?.position) === "QB" && p?.team).map((p) => normalizeTeamAbbr(p.team)));
+  const volatilityByPos = { QB: 0.17, RB: 0.27, WR: 0.31, TE: 0.3, K: 0.34, DEF: 0.34 };
 
   const candidates = ids
     .map((pid) => {
@@ -154,16 +156,35 @@ function solveOptimalLineup({ roster, players, getWeeklyMetric, slots, week, bye
       const team = (p?.team || "").toUpperCase();
       const byeWeeks = byeMap?.by_team?.[team] || [];
       const isOnBye = Array.isArray(byeWeeks) && byeWeeks.includes(week);
+      const median = isOnBye ? 0 : (getWeeklyMetric(p) || 0);
+      const injury = String(p?.injury_status || "").toUpperCase();
+      const injuryPenalty = injury === "OUT" || injury === "IR" ? 0.55 : injury === "DOUBTFUL" ? 0.3 : injury === "QUESTIONABLE" ? 0.14 : 0;
+      const weather = weatherMap?.[team] || null;
+      const weatherText = String(weather?.summary || "").toLowerCase();
+      const weatherPenalty = /snow|rain|storm|wind/.test(weatherText) ? 0.08 : 0;
+      const volatility = Math.min(0.65, (volatilityByPos[pos === "DST" ? "DEF" : pos] || 0.25) + injuryPenalty + weatherPenalty);
+      const floor = Math.max(0, median * (1 - volatility));
+      const ceiling = median * (1 + volatility);
+      const stackBonus = strategy === "aggressive" && ["WR", "TE", "RB"].includes(pos) && qbTeams.has(team) ? median * 0.05 : 0;
+      const selectionScore = strategy === "safe" ? floor : strategy === "aggressive" ? ceiling + stackBonus : median;
       return {
         pid,
         name: p?.full_name || p?.search_full_name || pid,
         pos: pos === "DST" ? "DEF" : pos,
         team,
-        proj: isOnBye ? 0 : (getWeeklyMetric(p) || 0),
+        proj: median,
+        floor,
+        ceiling,
+        selectionScore,
+        marketValue: getMarketValue?.(p) || 0,
+        injury,
+        isOnBye,
+        stackBonus,
+        weather,
       };
     })
     .filter(Boolean)
-    .sort((a, b) => (b.proj || 0) - (a.proj || 0));
+    .sort((a, b) => (b.selectionScore || 0) - (a.selectionScore || 0));
 
   const starters = [];
   const used = new Set();
@@ -190,7 +211,38 @@ function solveOptimalLineup({ roster, players, getWeeklyMetric, slots, week, bye
 
   const bench = candidates.filter((c) => !used.has(c.pid));
   const score = starters.reduce((s, x) => s + (x.proj || 0), 0);
-  return { starters, bench, score };
+  const floorScore = starters.reduce((s, x) => s + (x.floor || 0), 0);
+  const ceilingScore = starters.reduce((s, x) => s + (x.ceiling || 0) + (strategy === "aggressive" ? x.stackBonus || 0 : 0), 0);
+  return { starters, bench, score, floorScore, ceilingScore, strategy };
+}
+
+function winProbability(scoreA, scoreB) {
+  return 100 / (1 + Math.exp(-(Number(scoreA || 0) - Number(scoreB || 0)) / 12));
+}
+
+function buildDecisionRows(result, opponentScore, metricMode) {
+  if (!result) return [];
+  return result.starters.map((starter) => {
+    const alternative = result.bench.filter((player) => player.pos === starter.pos && player.proj > 0).sort((a, b) => b.selectionScore - a.selectionScore)[0];
+    if (!alternative) return null;
+    const projectionGap = starter.proj - alternative.proj;
+    const currentWin = winProbability(result.score, opponentScore);
+    const swappedWin = winProbability(result.score - starter.proj + alternative.proj, opponentScore);
+    const winImpact = metricMode === "projections" ? currentWin - swappedWin : null;
+    const reasons = [];
+    if (result.strategy === "safe") reasons.push(`${starter.name} has the stronger modeled floor (${starter.floor.toFixed(1)} vs ${alternative.floor.toFixed(1)}).`);
+    else if (result.strategy === "aggressive") reasons.push(`${starter.name} offers the higher modeled ceiling (${starter.ceiling.toFixed(1)} vs ${alternative.ceiling.toFixed(1)}).`);
+    else reasons.push(`${starter.name} leads the median projection by ${Math.abs(projectionGap).toFixed(1)}.`);
+    if (starter.stackBonus > 0) reasons.push(`The ${starter.team} pairing adds quarterback/pass-catcher correlation for an aggressive build.`);
+    if (starter.injury) reasons.push(`${starter.name} carries a ${starter.injury} tag, widening the uncertainty range.`);
+    else if (alternative.injury) reasons.push(`${alternative.name} is discounted by a ${alternative.injury} tag.`);
+    if (starter.weather?.summary) reasons.push(`${starter.team} weather: ${starter.weather.summary}${starter.weather.temperature != null ? `, ${starter.weather.temperature}°` : ""}.`);
+    const marketGap = starter.marketValue - alternative.marketValue;
+    if (Math.abs(marketGap) > Math.max(100, Math.abs(starter.marketValue + alternative.marketValue) * 0.05)) {
+      reasons.push(marketGap >= 0 ? `Market value also prefers ${starter.name}.` : `Market value prefers ${alternative.name}, but this week’s lineup model prefers ${starter.name}.`);
+    }
+    return { starter, alternative, projectionGap, winImpact, reasons: reasons.slice(0, 3) };
+  }).filter(Boolean).sort((a, b) => Math.abs(a.projectionGap) - Math.abs(b.projectionGap)).slice(0, 8);
 }
 
 /* ---------- Close-alternative suggestions (projections only) ---------- */
@@ -276,6 +328,8 @@ export default function LineupTool() {
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
+  const [lineupStrategy, setLineupStrategy] = useState("median");
+  const [weatherMap, setWeatherMap] = useState({});
 
   const [ownerA, setOwnerA] = useState("");
   const [ownerB, setOwnerB] = useState("");
@@ -365,6 +419,29 @@ export default function LineupTool() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${week}&year=${season}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!mounted || !data) return;
+        const next = {};
+        (data.events || []).forEach((event) => {
+          const competition = event?.competitions?.[0];
+          const weather = competition?.weather;
+          if (!weather) return;
+          const payload = { summary: weather.displayValue || weather.conditionId || "Weather watch", temperature: weather.temperature ?? null };
+          (competition.competitors || []).forEach((competitor) => {
+            const team = normalizeTeamAbbr(competitor?.team?.abbreviation);
+            if (team) next[team] = payload;
+          });
+        });
+        setWeatherMap(next);
+      })
+      .catch(() => { if (mounted) setWeatherMap({}); });
+    return () => { mounted = false; };
+  }, [season, week]);
+
   // auto-infer scoring on league change
   useEffect(() => {
     if (!league) return;
@@ -453,9 +530,12 @@ export default function LineupTool() {
       roster: rosterByOwnerId[uid],
       players,
       getWeeklyMetric,
+      getMarketValue: getValueMetric,
       slots,
       week,
       byeMap,
+      weatherMap,
+      strategy: lineupStrategy,
     });
 
   /* ----- Auto-select opponent when week changes (and on init) ----- */
@@ -506,7 +586,12 @@ export default function LineupTool() {
     const b = compute(ownerB);
     return { a, b, delta: a.score - b.score };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerA, ownerB, players, valueSource, formatLocal, qbLocal, rosters, slots, week, byeMap, metricMode, projectionSource, projLoading]);
+  }, [ownerA, ownerB, players, valueSource, formatLocal, qbLocal, rosters, slots, week, byeMap, weatherMap, metricMode, projectionSource, projLoading, lineupStrategy]);
+
+  const decisionRows = useMemo(
+    () => buildDecisionRows(matchup?.a, matchup?.b?.score || 0, metricMode),
+    [matchup, metricMode]
+  );
 
   const metricLabel = metricMode === "projections" ? "Proj" : "Value";
 
@@ -707,16 +792,36 @@ export default function LineupTool() {
                   </div>
                 </div>
 
+                <div className="mb-4 rounded-3xl border border-emerald-300/15 bg-gradient-to-br from-emerald-400/[0.08] via-slate-950/40 to-slate-950/70 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200/60">Lineup strategy</div>
+                      <div className="mt-1 text-sm text-white/55">Choose whether the solver protects your floor or embraces volatility and correlation.</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1">
+                      {[
+                        ["safe", "Safe", "Higher floor"],
+                        ["median", "Median", "Best projection"],
+                        ["aggressive", "Aggressive", "Ceiling + stacks"],
+                      ].map(([key, label, hint]) => (
+                        <button key={key} type="button" onClick={() => setLineupStrategy(key)} title={hint} className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${lineupStrategy === key ? "bg-emerald-300/15 text-emerald-50 shadow-inner" : "text-white/45 hover:bg-white/5 hover:text-white/75"}`}>
+                          <span className="block">{label}</span><span className="mt-0.5 hidden text-[9px] font-normal opacity-60 sm:block">{hint}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <TeamBox
-                    title={ownerA ? `${ownerLabel(ownerA)} — Optimal Starters` : "Owner A"}
+                    title={ownerA ? `${ownerLabel(ownerA)} — ${lineupStrategy === "safe" ? "Safe" : lineupStrategy === "aggressive" ? "Aggressive" : "Median"} Lineup` : "Owner A"}
                     res={ownerA ? compute(ownerA) : null}
                     metricLabel={metricLabel}
                     // show suggestions ONLY in projections mode
                     enableSuggestions={metricMode === "projections"}
                   />
                   <TeamBox
-                    title={ownerB ? `${ownerLabel(ownerB)} — Optimal Starters` : "Owner B"}
+                    title={ownerB ? `${ownerLabel(ownerB)} — ${lineupStrategy === "safe" ? "Safe" : lineupStrategy === "aggressive" ? "Aggressive" : "Median"} Lineup` : "Owner B"}
                     res={ownerB ? compute(ownerB) : null}
                     metricLabel={metricLabel}
                     enableSuggestions={false}
@@ -724,16 +829,32 @@ export default function LineupTool() {
                 </div>
 
                 {ownerA && ownerB && (
-                  <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                    <div className="text-lg font-semibold">
-                      Edge: {matchup?.delta >= 0 ? ownerLabel(ownerA) : ownerLabel(ownerB)}
-                    </div>
-                    <div className="opacity-70">
-                      {ownerLabel(ownerA)} {Math.round(matchup?.a.score || 0)} vs {ownerLabel(ownerB)} {Math.round(matchup?.b.score || 0)} (
-                      {Math.round(Math.abs(matchup?.delta || 0))})
+                  <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Projected edge</div><div className="mt-1 font-bold">{matchup?.delta >= 0 ? ownerLabel(ownerA) : ownerLabel(ownerB)}</div><div className="text-xs text-white/45">by {Math.abs(matchup?.delta || 0).toFixed(1)}</div></div>
+                      <div><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Your win chance</div><div className="mt-1 text-2xl font-black text-emerald-200">{metricMode === "projections" ? `${Math.round(winProbability(matchup?.a.score, matchup?.b.score))}%` : "—"}</div><div className="text-xs text-white/45">{metricMode === "projections" ? "Modeled from lineup totals" : "Requires projection mode"}</div></div>
+                      <div><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Your range</div><div className="mt-1 font-bold">{matchup?.a.floorScore.toFixed(1)}–{matchup?.a.ceilingScore.toFixed(1)}</div><div className="text-xs text-white/45">Floor to ceiling</div></div>
+                      <div><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Opponent range</div><div className="mt-1 font-bold">{matchup?.b.floorScore.toFixed(1)}–{matchup?.b.ceilingScore.toFixed(1)}</div><div className="text-xs text-white/45">Floor to ceiling</div></div>
                     </div>
                   </div>
                 )}
+
+                {ownerA && ownerB ? (
+                  <div className="mt-5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                      <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/55">Decision Explainer</div><h3 className="mt-1 text-xl font-black">Why these players start</h3><p className="mt-1 text-xs text-white/45">The closest start/sit decisions, ordered from hardest call to easiest.</p></div>
+                      <div className="text-xs text-white/40">Weather loaded for {Object.keys(weatherMap).length} NFL teams · injury status from Sleeper</div>
+                    </div>
+                    {decisionRows.length ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{decisionRows.map((decision) => (
+                      <article key={decision.starter.pid} className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-400/[0.06] to-white/[0.02] p-4">
+                        <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Start {decision.starter.name}</div><div className="mt-1 text-sm font-semibold text-white/60">over {decision.alternative.name}</div></div><div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-right"><div className="text-[9px] uppercase tracking-wider text-white/35">Win impact</div><div className="mt-0.5 font-black text-cyan-100">{decision.winImpact == null ? "—" : `${decision.winImpact >= 0 ? "+" : ""}${decision.winImpact.toFixed(1)}%`}</div></div></div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-black/15 p-2"><div className="text-[9px] uppercase text-white/30">Floor</div><div className="text-xs font-bold">{decision.starter.floor.toFixed(1)}</div></div><div className="rounded-xl bg-black/15 p-2"><div className="text-[9px] uppercase text-white/30">Median</div><div className="text-xs font-bold">{decision.starter.proj.toFixed(1)}</div></div><div className="rounded-xl bg-black/15 p-2"><div className="text-[9px] uppercase text-white/30">Ceiling</div><div className="text-xs font-bold">{decision.starter.ceiling.toFixed(1)}</div></div></div>
+                        <ul className="mt-3 space-y-1.5 text-xs leading-5 text-white/55">{decision.reasons.map((reason) => <li key={reason} className="flex gap-2"><span className="text-cyan-200/60">◆</span><span>{reason}</span></li>)}</ul>
+                      </article>
+                    ))}</div> : <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">There are no close same-position start/sit decisions on this roster for Week {week}.</div>}
+                    <div className="mt-3 text-[11px] leading-5 text-white/35">Floor and ceiling are modeled ranges derived from projection volatility, position, injury status, and available weather—not guarantees. Win probability is an estimate from the two optimized projection totals.</div>
+                  </div>
+                ) : null}
               </Card>
             )}
           </>

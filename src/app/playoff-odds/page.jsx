@@ -421,6 +421,7 @@ function OddsBar({ value, color = "cyan" }) {
 
 export default function PlayoffOddsPage() {
   const {
+    username,
     leagues = [],
     activeLeague,
     setActiveLeague,
@@ -452,6 +453,11 @@ export default function PlayoffOddsPage() {
   const [results, setResults] = useState(null);
   const [schedCache, setSchedCache] = useState({});
   const [playoffLensOpen, setPlayoffLensOpen] = useState(false);
+  const [scenarioOpen, setScenarioOpen] = useState(true);
+  const [focusRosterId, setFocusRosterId] = useState("");
+  const [rivalRosterId, setRivalRosterId] = useState("");
+  const [tradeGiveId, setTradeGiveId] = useState("");
+  const [tradeReceiveId, setTradeReceiveId] = useState("");
   const debTimer = useRef(null);
 
   const leagueSeason = Number(league?.season || 0) || stateSeason || new Date().getFullYear();
@@ -599,6 +605,22 @@ export default function PlayoffOddsPage() {
   );
   const slots = useMemo(() => parseLeagueSlots(league), [league]);
 
+  useEffect(() => {
+    if (!ridList.length) { setFocusRosterId(""); return; }
+    if (!ridList.some((rid) => String(rid) === String(focusRosterId))) {
+      const me = (league?.users || []).find((user) => String(user?.username || user?.display_name || "").toLowerCase() === String(username || "").toLowerCase());
+      const myRoster = me ? rosters.find((roster) => String(roster.owner_id) === String(me.user_id)) : null;
+      setFocusRosterId(String(myRoster?.roster_id || ridList[0]));
+    }
+  }, [focusRosterId, league?.users, ridList, rosters, username]);
+
+  useEffect(() => {
+    setTradeGiveId("");
+    setTradeReceiveId("");
+    const nextRival = ridList.find((rid) => String(rid) !== String(focusRosterId));
+    setRivalRosterId(nextRival != null ? String(nextRival) : "");
+  }, [focusRosterId]);
+
   const getRosterIdentity = (rid) => {
     const roster = rosterById[rid];
     const user = roster ? users.find((item) => item.user_id === roster.owner_id) : null;
@@ -738,10 +760,19 @@ export default function PlayoffOddsPage() {
       const champs = Object.fromEntries(ridList.map((rid) => [rid, 0]));
       const totalWins = Object.fromEntries(ridList.map((rid) => [rid, 0]));
       const totalSeeds = Object.fromEntries(ridList.map((rid) => [rid, 0]));
+      const conditions = Object.fromEntries(ridList.map((rid) => [rid, { winRuns: 0, winMakes: 0, lossRuns: 0, lossMakes: 0, minSeed: ridList.length, maxSeed: 1 }]));
+      const firstWeekGroups = futureWeeks.length
+        ? ((futureScheduleRows[0]?.hasRealMatchups
+          ? futureScheduleRows[0].groups.map((group) => group.map((team) => team.roster_id))
+          : buildSyntheticMatchups(ridList, 0)).filter((group) => group.length === 2))
+        : [];
+      const matchupConditions = Object.fromEntries(firstWeekGroups.map(([a, b]) => [`${a}-${b}`, { a, b, aWinRuns: 0, aWinFocusMakes: 0, bWinRuns: 0, bWinFocusMakes: 0 }]));
 
       for (let run = 0; run < runs; run += 1) {
         const wins = { ...baseWins };
         const pointsFor = { ...basePointsFor };
+        const firstWeekWinners = new Set();
+        const firstWeekLosers = new Set();
 
         futureWeeks.forEach((currentWeek, index) => {
           const schedule = futureScheduleRows[index] || { groups: [], hasRealMatchups: false };
@@ -756,6 +787,10 @@ export default function PlayoffOddsPage() {
               const [ridA, ridB] = group;
               const sim = simulateMatchup(ridA, ridB, strengthMap);
               wins[sim.winner] += 1;
+              if (index === 0) {
+                firstWeekWinners.add(sim.winner);
+                firstWeekLosers.add(sim.winner === ridA ? ridB : ridA);
+              }
               pointsFor[ridA] += sim.scoreA;
               pointsFor[ridB] += sim.scoreB;
               weeklyScores[ridA] = sim.scoreA;
@@ -782,6 +817,7 @@ export default function PlayoffOddsPage() {
         });
 
         const playoffTeams = ranked.slice(0, playoffSlots);
+        const playoffSet = new Set(playoffTeams);
         playoffTeams.forEach((rid, index) => {
           makes[rid] += 1;
           totalSeeds[rid] += index + 1;
@@ -791,7 +827,30 @@ export default function PlayoffOddsPage() {
         });
         ridList.forEach((rid) => {
           totalWins[rid] += wins[rid] || 0;
+          const seed = ranked.indexOf(rid) + 1;
+          conditions[rid].minSeed = Math.min(conditions[rid].minSeed, seed);
+          conditions[rid].maxSeed = Math.max(conditions[rid].maxSeed, seed);
+          if (firstWeekWinners.has(rid)) {
+            conditions[rid].winRuns += 1;
+            if (playoffSet.has(rid)) conditions[rid].winMakes += 1;
+          }
+          if (firstWeekLosers.has(rid)) {
+            conditions[rid].lossRuns += 1;
+            if (playoffSet.has(rid)) conditions[rid].lossMakes += 1;
+          }
         });
+
+        if (focusRosterId) {
+          Object.values(matchupConditions).forEach((condition) => {
+            if (firstWeekWinners.has(condition.a)) {
+              condition.aWinRuns += 1;
+              if (playoffSet.has(Number(focusRosterId)) || playoffSet.has(String(focusRosterId))) condition.aWinFocusMakes += 1;
+            } else if (firstWeekWinners.has(condition.b)) {
+              condition.bWinRuns += 1;
+              if (playoffSet.has(Number(focusRosterId)) || playoffSet.has(String(focusRosterId))) condition.bWinFocusMakes += 1;
+            }
+          });
+        }
 
         const champion = runPlayoffBracket(ranked, playoffSlots, byeSlots, averageStrengthByRoster);
         if (champion) champs[champion] += 1;
@@ -807,6 +866,9 @@ export default function PlayoffOddsPage() {
           const champPct = (100 * champs[rid]) / runs;
           const avgWins = totalWins[rid] / runs;
           const avgSeed = makes[rid] ? totalSeeds[rid] / makes[rid] : null;
+          const condition = conditions[rid];
+          const winMakePct = condition.winRuns ? (100 * condition.winMakes) / condition.winRuns : null;
+          const lossMakePct = condition.lossRuns ? (100 * condition.lossMakes) / condition.lossRuns : null;
 
           return {
             rid,
@@ -819,6 +881,10 @@ export default function PlayoffOddsPage() {
             makePct,
             byePct,
             champPct,
+            winMakePct,
+            lossMakePct,
+            minSeed: condition.minSeed,
+            maxSeed: condition.maxSeed,
           };
         })
         .sort((a, b) => {
@@ -839,6 +905,11 @@ export default function PlayoffOddsPage() {
         observedEndWeek,
         latestObservedWeek,
         table,
+        matchupConditions: Object.values(matchupConditions).map((condition) => ({
+          ...condition,
+          aWinFocusPct: condition.aWinRuns ? (100 * condition.aWinFocusMakes) / condition.aWinRuns : null,
+          bWinFocusPct: condition.bWinRuns ? (100 * condition.bWinFocusMakes) / condition.bWinRuns : null,
+        })),
       });
     } finally {
       setBusy(false);
@@ -870,6 +941,7 @@ export default function PlayoffOddsPage() {
     players,
     rosters.length,
     byeMap,
+    focusRosterId,
   ]);
 
   const currentSourceLabel = useMemo(() => {
@@ -899,6 +971,46 @@ export default function PlayoffOddsPage() {
       .sort((a, b) => Math.abs(a.makePct - 50) - Math.abs(b.makePct - 50))[0];
     return { favorite, surge, bubble };
   }, [results]);
+
+  const scenarioData = useMemo(() => {
+    if (!results?.table?.length || !focusRosterId) return null;
+    const focus = results.table.find((team) => String(team.rid) === String(focusRosterId));
+    if (!focus) return null;
+    const rooting = (results.matchupConditions || []).map((condition) => {
+      const a = results.table.find((team) => String(team.rid) === String(condition.a));
+      const b = results.table.find((team) => String(team.rid) === String(condition.b));
+      const aPct = condition.aWinFocusPct;
+      const bPct = condition.bWinFocusPct;
+      const preferred = aPct == null || bPct == null ? null : aPct >= bPct ? a : b;
+      return { ...condition, aTeam: a, bTeam: b, preferred, leverage: aPct == null || bPct == null ? 0 : Math.abs(aPct - bPct) };
+    }).sort((a, b) => b.leverage - a.leverage);
+    const rivalMatchup = rooting.find((row) => String(row.a) === String(rivalRosterId) || String(row.b) === String(rivalRosterId));
+    const rivalLossPct = !rivalMatchup ? null : String(rivalMatchup.a) === String(rivalRosterId) ? rivalMatchup.bWinFocusPct : rivalMatchup.aWinFocusPct;
+    const clinchTeams = results.table.filter((team) => team.makePct >= 99.5 || (team.winMakePct != null && team.winMakePct >= 99 && (team.lossMakePct == null || team.lossMakePct < 99)));
+    const eliminationTeams = results.table.filter((team) => team.makePct <= 0.5 || (team.lossMakePct != null && team.lossMakePct <= 1 && (team.winMakePct == null || team.winMakePct > 1)));
+    return { focus, rooting, rivalMatchup, rivalLossPct, clinchTeams, eliminationTeams, highestLeverage: rooting[0] || null };
+  }, [focusRosterId, results, rivalRosterId]);
+
+  const focusRoster = rosterById[Number(focusRosterId)] || rosterById[focusRosterId];
+  const focusTradeAssets = useMemo(() => (focusRoster?.players || []).map((id) => players?.[id]).filter((player) => player && String(player.position || "").toUpperCase() !== "PICK").sort((a, b) => (getMetricWeekly(b, Math.max(1, latestObservedWeek + 1), byeMap) || 0) - (getMetricWeekly(a, Math.max(1, latestObservedWeek + 1), byeMap) || 0)), [byeMap, focusRoster, getMetricWeekly, latestObservedWeek, players]);
+  const receiveTradeAssets = useMemo(() => rosters.filter((roster) => String(roster.roster_id) !== String(focusRosterId)).flatMap((roster) => (roster.players || []).map((id) => players?.[id] ? { player: players[id], rosterId: roster.roster_id } : null).filter(Boolean)).filter((row) => String(row.player.position || "").toUpperCase() !== "PICK").sort((a, b) => (getMetricWeekly(b.player, Math.max(1, latestObservedWeek + 1), byeMap) || 0) - (getMetricWeekly(a.player, Math.max(1, latestObservedWeek + 1), byeMap) || 0)), [byeMap, focusRosterId, getMetricWeekly, latestObservedWeek, players, rosters]);
+
+  const tradeImpact = useMemo(() => {
+    if (!scenarioData?.focus || !focusRoster || !tradeGiveId || !tradeReceiveId) return null;
+    const incomingRow = receiveTradeAssets.find((row) => String(row.player.player_id) === String(tradeReceiveId));
+    if (!incomingRow) return null;
+    const nextWeek = Math.max(1, Math.min(regularSeasonEnd, latestObservedWeek + 1));
+    const swappedPlayers = (focusRoster.players || []).filter((id) => String(id) !== String(tradeGiveId)).concat(String(tradeReceiveId));
+    const swappedRoster = { ...focusRoster, players: swappedPlayers };
+    const before = teamStrength({ roster: focusRoster, players, getMetricWeekly, slots, week: nextWeek, byeMap });
+    const after = teamStrength({ roster: swappedRoster, players, getMetricWeekly, slots, week: nextWeek, byeMap });
+    const strengthDeltaPct = before ? (after - before) / before : 0;
+    const remainingWeeks = Math.max(1, regularSeasonEnd - latestObservedWeek);
+    const bubbleSensitivity = 0.45 + (1 - Math.abs(scenarioData.focus.makePct - 50) / 50) * 0.75;
+    const oddsDelta = clamp(strengthDeltaPct * remainingWeeks * 18 * bubbleSensitivity, -30, 30);
+    const partner = results.table.find((team) => String(team.rid) === String(incomingRow.rosterId));
+    return { before, after, strengthDeltaPct, oddsDelta, estimatedOdds: clamp(scenarioData.focus.makePct + oddsDelta, 0, 100), partner };
+  }, [byeMap, focusRoster, getMetricWeekly, latestObservedWeek, players, receiveTradeAssets, regularSeasonEnd, results, scenarioData, slots, tradeGiveId, tradeReceiveId]);
 
   const sidebarLeaders = useMemo(() => {
     if (!results?.table?.length) return { contenders: [], bubble: [] };
@@ -1174,6 +1286,55 @@ export default function PlayoffOddsPage() {
                   />
                   </div>
                 </div>
+
+                <Card className="overflow-hidden border-violet-300/15">
+                  <div className="bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,.18),transparent_36%),linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.92))] p-5 sm:p-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200/60">Playoff Scenario Explorer</div>
+                        <h2 className="mt-2 text-2xl font-black tracking-tight">What needs to happen next?</h2>
+                        <p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Condition the simulation on this week’s results, see the seed paths still alive, and build a rooting guide around the games with real leverage.</p>
+                      </div>
+                      <button type="button" onClick={() => setScenarioOpen((open) => !open)} aria-expanded={scenarioOpen} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/10">{scenarioOpen ? "Collapse Explorer" : "Open Scenario Explorer"}</button>
+                    </div>
+
+                    {scenarioOpen ? <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <label><span className="mb-1.5 block text-xs text-white/45">Team to explore</span><select value={focusRosterId} onChange={(event) => setFocusRosterId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-3 text-sm">{results.table.map((team) => <option key={team.rid} value={team.rid}>{team.summaryLabel}</option>)}</select></label>
+                      <label><span className="mb-1.5 block text-xs text-white/45">Rival to monitor</span><select value={rivalRosterId} onChange={(event) => setRivalRosterId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-3 text-sm">{results.table.filter((team) => String(team.rid) !== String(focusRosterId)).map((team) => <option key={team.rid} value={team.rid}>{team.summaryLabel}</option>)}</select></label>
+                    </div> : null}
+                  </div>
+
+                  {scenarioOpen && scenarioData ? <div className="border-t border-white/10 p-4 sm:p-6">
+                    {results.futureWeeks.length ? <>
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-3xl border border-emerald-300/15 bg-emerald-400/[0.06] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-emerald-100/50">If you win this week</div><div className="mt-2 text-3xl font-black text-emerald-100">{scenarioData.focus.winMakePct == null ? "—" : formatPct(scenarioData.focus.winMakePct)}</div><div className="mt-1 text-xs text-white/45">playoff probability</div></div>
+                        <div className="rounded-3xl border border-rose-300/15 bg-rose-400/[0.06] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-rose-100/50">If you lose this week</div><div className="mt-2 text-3xl font-black text-rose-100">{scenarioData.focus.lossMakePct == null ? "—" : formatPct(scenarioData.focus.lossMakePct)}</div><div className="mt-1 text-xs text-white/45">playoff probability</div></div>
+                        <div className="rounded-3xl border border-violet-300/15 bg-violet-400/[0.06] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-violet-100/50">If your rival loses</div><div className="mt-2 text-3xl font-black text-violet-100">{scenarioData.rivalLossPct == null ? "—" : formatPct(scenarioData.rivalLossPct)}</div><div className="mt-1 truncate text-xs text-white/45">{results.table.find((team) => String(team.rid) === String(rivalRosterId))?.primaryLabel || "Selected rival"} loses</div></div>
+                        <div className="rounded-3xl border border-cyan-300/15 bg-cyan-400/[0.06] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-100/50">Possible finish</div><div className="mt-2 text-3xl font-black text-cyan-100">#{scenarioData.focus.minSeed}–#{scenarioData.focus.maxSeed}</div><div className="mt-1 text-xs text-white/45">seed range seen in simulations</div></div>
+                      </div>
+
+                      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,.8fr)]">
+                        <div>
+                          <div className="flex items-end justify-between gap-3"><div><div className="text-lg font-bold">Weekly rooting guide</div><div className="mt-1 text-xs text-white/45">Root for the outcome that most improves {scenarioData.focus.primaryLabel}’s odds.</div></div><span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-wider text-white/45">Week {results.futureWeeks[0]}</span></div>
+                          <div className="mt-3 space-y-2">{scenarioData.rooting.length ? scenarioData.rooting.map((row) => <div key={`${row.a}-${row.b}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3"><div className="flex items-center gap-3"><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{row.aTeam?.primaryLabel || `Roster ${row.a}`} <span className="text-white/25">vs</span> {row.bTeam?.primaryLabel || `Roster ${row.b}`}</div><div className="mt-1 text-xs text-white/42">{row.preferred ? <>Root for <span className="font-semibold text-cyan-100">{row.preferred.primaryLabel}</span></> : "No meaningful preference yet"}</div></div><div className="text-right"><div className="font-black text-violet-100">{row.leverage.toFixed(1)} pts</div><div className="text-[9px] uppercase tracking-wider text-white/30">leverage</div></div></div></div>) : <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">The next week’s matchups are not available yet.</div>}</div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="rounded-3xl border border-amber-300/15 bg-amber-400/[0.05] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-amber-100/50">Highest-leverage matchup</div>{scenarioData.highestLeverage ? <><div className="mt-2 font-bold">{scenarioData.highestLeverage.aTeam?.primaryLabel} vs {scenarioData.highestLeverage.bTeam?.primaryLabel}</div><div className="mt-1 text-xs leading-5 text-white/50">This result swings {scenarioData.focus.primaryLabel}’s playoff odds by approximately {scenarioData.highestLeverage.leverage.toFixed(1)} percentage points.</div></> : <div className="mt-2 text-sm text-white/50">No matchup leverage is available.</div>}</div>
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/40">Clinching watch</div><div className="mt-2 text-sm text-white/65">{scenarioData.clinchTeams.length ? scenarioData.clinchTeams.map((team) => team.primaryLabel).join(", ") : "No team can fully clinch in the modeled next-week branches."}</div></div>
+                          <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/40">Elimination watch</div><div className="mt-2 text-sm text-white/65">{scenarioData.eliminationTeams.length ? scenarioData.eliminationTeams.map((team) => team.primaryLabel).join(", ") : "No team faces modeled elimination this week."}</div></div>
+                        </div>
+                      </div>
+                    </> : <div className="rounded-3xl border border-emerald-300/15 bg-emerald-400/[0.06] p-5 text-center"><div className="text-lg font-bold text-emerald-100">Regular season complete</div><div className="mt-1 text-sm text-white/50">Conditional weekly scenarios are closed; final seeds and bracket odds are shown below.</div></div>}
+
+                    <div className="mt-5 rounded-3xl border border-white/10 bg-black/20 p-4 sm:p-5">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-cyan-200/50">Proposed Trade Impact</div><div className="mt-1 text-lg font-bold">Test one player swap</div><div className="mt-1 text-xs text-white/45">Measures the lineup-strength change against the selected team’s current playoff sensitivity.</div></div>{tradeImpact ? <div className="text-right"><div className="text-2xl font-black text-cyan-100">{formatSigned(tradeImpact.oddsDelta)}%</div><div className="text-xs text-white/40">estimated playoff change</div></div> : null}</div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2"><label><span className="mb-1.5 block text-xs text-white/45">You send</span><select value={tradeGiveId} onChange={(event) => setTradeGiveId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-3 text-sm"><option value="">Choose your player</option>{focusTradeAssets.map((player) => <option key={player.player_id} value={player.player_id}>{player.full_name || player.search_full_name || player.player_id}</option>)}</select></label><label><span className="mb-1.5 block text-xs text-white/45">You receive</span><select value={tradeReceiveId} onChange={(event) => setTradeReceiveId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-3 text-sm"><option value="">Choose another roster’s player</option>{receiveTradeAssets.map((row) => <option key={`${row.rosterId}-${row.player.player_id}`} value={row.player.player_id}>{row.player.full_name || row.player.search_full_name || row.player.player_id} · {getRosterIdentity(row.rosterId).primaryLabel}</option>)}</select></label></div>
+                      {tradeImpact ? <div className="mt-4 grid gap-2 sm:grid-cols-3"><StatChip label="Current odds" value={formatPct(scenarioData.focus.makePct)} /><StatChip label="Estimated after trade" value={formatPct(tradeImpact.estimatedOdds)} tone={tradeImpact.oddsDelta >= 0 ? "cyan" : "rose"} /><StatChip label="Lineup strength" value={`${tradeImpact.strengthDeltaPct >= 0 ? "+" : ""}${(tradeImpact.strengthDeltaPct * 100).toFixed(1)}%`} /></div> : null}
+                      <div className="mt-3 text-[11px] leading-5 text-white/35">Trade impact is a sensitivity estimate, not a second full Monte Carlo simulation. It accounts for the selected team’s optimized lineup change and remaining weeks; it does not model multi-player packages or the trade partner’s changed schedule.</div>
+                    </div>
+                  </div> : null}
+                </Card>
 
                 <Card className="overflow-hidden">
                   <div className="border-b border-white/10 px-5 py-4 sm:px-6">

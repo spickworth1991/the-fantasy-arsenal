@@ -36,6 +36,8 @@ const TOOL_ICONS = {
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
   "League Hub": "/icons/league-hub.png",
+  "League History": "/icons/league-hub.png",
+  "Commissioner Dashboard": "/icons/league-hub.png",
   "Playoff Odds": "/icons/playoff-icon.png",
 };
 
@@ -55,7 +57,8 @@ export default function HomeClient() {
     {
       name: "Trade Analyzer",
       link: "/trade",
-      description: "Analyze trades using multiple value sources. Select a league for personalized trades.",
+      description: "Analyze trades and generate mutually useful, roster-aware packages with Trade Partner Finder 2.0.",
+      badge: "UPDATED",
     },
     {
       name: "Player Stock",
@@ -78,8 +81,20 @@ export default function HomeClient() {
       name: "League Hub",
       link: "/league-hub",
       description:
-        "Multi-league dashboard: recent transactions, top free agents, injury report, and bye conflicts.",
-      badge: "DEVELOPING",
+        "Your multi-league action center for lineups, waivers, injuries, trades, and opportunities.",
+      badge: "UPDATED",
+    },
+    {
+      name: "League History",
+      link: "/league-history",
+      description: "Relive champions, rivalries, records, season awards, and your league yearbook.",
+      badge: "NEW",
+    },
+    {
+      name: "Commissioner Dashboard",
+      link: "/commissioner-dashboard",
+      description: "Audit league participation, balance, roster quality, settings, and evidence-based review signals.",
+      badge: "NEW",
     },
     {
       name: "Power Rankings",
@@ -94,7 +109,8 @@ export default function HomeClient() {
     {
       name: "Lineup Optimizer",
       link: "/lineup",
-      description: "Optimize your weekly lineup for maximum points.",
+      description: "Explain start/sit choices with safe, median, and aggressive lineups plus win-impact analysis.",
+      badge: "UPDATED",
     },
     {
       name: "Playoff Odds",

@@ -170,3 +170,16 @@ body {
   outline: 2px solid rgba(34, 211, 238, 0.65);
   outline-offset: -2px;
 }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .yearbook-print, .yearbook-print * { visibility: visible !important; }
+  .yearbook-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
