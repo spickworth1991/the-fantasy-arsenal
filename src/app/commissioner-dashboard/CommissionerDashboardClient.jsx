@@ -97,7 +97,7 @@ function buildAudit({ league, matchups, transactions, tradedPicks, players, valu
     const rosterValue = playerRows.reduce((sum, player) => sum + number(valueFor(player)), 0);
     const ages = playerRows.map((player) => number(player.age)).filter((age) => age > 0);
     return {
-      rosterId: String(roster.roster_id), ownerId: roster.owner_id ? String(roster.owner_id) : "", name: teamName(user, roster), avatar: user?.avatar || null,
+      rosterId: String(roster.roster_id), ownerId: roster.owner_id ? String(roster.owner_id) : "", ownerName: user?.display_name || user?.username || "Open roster", name: teamName(user, roster), avatar: user?.avatar || null,
       orphan: !roster.owner_id, wins: number(roster?.settings?.wins), losses: number(roster?.settings?.losses), points: rosterPoints(roster), rosterValue,
       averageAge: ages.length ? ages.reduce((sum, age) => sum + age, 0) / ages.length : 0, transactions: 0, trades: 0, waivers: 0,
       emptyLineups: 0, emptyWeeks: [], measuredWeeks: 0, efficiencies: [], unchangedLineups: 0, previousStarterKey: "", reviewSignals: [], playerRows, activityWeeks: [],
@@ -507,7 +507,7 @@ export default function CommissionerDashboardClient() {
   useEffect(() => {
     let active = true;
     if (!league?.league_id || !league?.rosters?.length) { setData(null); return; }
-    const cacheKey = `commissioner-health:v7:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
+    const cacheKey = `commissioner-health:v8:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
     try {
       const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
       if (cached && Date.now() - number(cached.ts) < 10 * 60 * 1000) { setData(cached.payload); return; }
@@ -634,7 +634,7 @@ export default function CommissionerDashboardClient() {
       {tab === "network" ? <LeagueNetwork leagues={leagues} username={username} currentManagers={data.managers} /> : null}
       {tab === "operations" ? <CommissionerOperations league={league} data={data} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}
-      {tab === "office" ? <CommissionerLeagueOffice league={league} data={data} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /> : null}
+      {tab === "office" ? <CommissionerLeagueOffice league={league} data={data} players={players} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /> : null}
       {tab === "command" ? <CommissionerCommandCenter league={league} data={data} players={players} /> : null}
 
       {tab === "overview" ? <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]"><Shell className="overflow-hidden"><div className="border-b border-white/10 p-5"><div className="text-[11px] font-semibold uppercase tracking-[.22em] text-cyan-200/55">League pulse</div><h2 className="mt-1 text-xl font-black">Competitive balance</h2><p className="mt-1 text-xs text-white/45">Standings and roster-market value reveal different kinds of parity.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-sm"><thead className="text-left text-xs text-white/38"><tr><th className="p-3">Team</th><th className="p-3">Record</th><th className="p-3">Points</th><th className="p-3">Value rank</th><th className="p-3">Activity</th><th className="p-3">Signals</th></tr></thead><tbody>{[...data.managers].sort((a,b) => b.wins-a.wins || b.points-a.points).map((manager) => <tr key={manager.rosterId} className="border-t border-white/5"><td className="p-3 font-semibold">{manager.name}{manager.orphan ? <span className="ml-2 rounded-full bg-rose-400/10 px-2 py-0.5 text-[10px] text-rose-100">OPEN</span> : null}</td><td className="p-3">{manager.wins}-{manager.losses}</td><td className="p-3">{manager.points.toFixed(1)}</td><td className="p-3">#{manager.valueRank}</td><td className="p-3">{manager.transactions} moves</td><td className="p-3">{manager.reviewSignals.length || "—"}</td></tr>)}</tbody></table></div></Shell><div className="space-y-5"><Shell className="p-5"><div className="text-lg font-bold">What the score means</div><div className="mt-3 space-y-3 text-xs leading-5 text-white/52"><p><span className="font-semibold text-emerald-100">Observed facts</span> include empty slots, ownership, and transaction counts.</p><p><span className="font-semibold text-amber-100">Review signals</span> use thresholds for lineup efficiency or trade-value difference and require commissioner context.</p><p>No signal is labeled collusion, tanking, or misconduct automatically.</p></div></Shell><Shell className="p-5"><div className="text-lg font-bold">Quick recommendations</div><div className="mt-3 space-y-3">{data.recommendations.slice(0,3).map((item) => <div key={item.title} className="rounded-2xl border border-white/8 bg-white/[0.025] p-3"><div className="text-sm font-semibold">{item.title}</div><div className="mt-1 text-xs leading-5 text-white/45">{item.reason}</div></div>)}</div></Shell></div></div> : null}
