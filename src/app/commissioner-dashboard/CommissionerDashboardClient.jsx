@@ -16,6 +16,7 @@ const CommissionerAdminHub = dynamic(() => import("./CommissionerAdminHub"), { s
 const CommissionerReportsHub = dynamic(() => import("./CommissionerReportsHub"), { ssr: false });
 const CommissionerActionQueue = dynamic(() => import("./CommissionerActionQueue"), { ssr: false });
 const CommissionerTradeRelationships = dynamic(() => import("./CommissionerTradeRelationships"), { ssr: false });
+const CommissionerLeagueNetwork = dynamic(() => import("./CommissionerLeagueNetwork"), { ssr: false });
 
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const VALUE_SOURCES = DEFAULT_SOURCES.filter((source) => source.type === "value");
@@ -658,7 +659,7 @@ export default function CommissionerDashboardClient() {
       <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["overview","Overview"],["command","Command Center"],["reviews","Review"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["orphan","Orphan"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
 
       {tab === "orphan" ? <OrphanEvaluator report={report} evaluator={evaluator} managers={data.managers} recruiting={recruiting} updateRecruiting={updateRecruiting} copied={copied} copyReport={copyReport} printReport={printReport} setReportRosterId={setReportRosterId} /> : null}
-      {tab === "network" ? <LeagueNetwork leagues={leagues} username={username} currentManagers={data.managers} /> : null}
+      {tab === "network" ? <CommissionerLeagueNetwork league={league} data={data} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}
       {tab === "command" ? <><CommissionerCommandCenter league={league} data={data} players={players} /><CommissionerActionQueue league={league} data={data} /></> : null}
       {tab === "reviews" ? <><CommissionerReviewCenter league={league} data={data} players={players} valueFor={valueFor} pickValueFor={pickValueFor} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /><CommissionerTradeRelationships data={data} /></> : null}
