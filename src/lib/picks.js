@@ -143,7 +143,7 @@ export function formatPickLabel(meta) {
 export function getPickSyntheticPlayerId(meta) {
   if (!meta?.year || !meta?.round || !meta?.kind) return "";
   if (meta.kind === "exact") {
-    return `DP_${meta.round - 1}_${meta.slot - 1}`;
+    return `PK_${meta.year}_${meta.round}_${meta.slot}`;
   }
   if (meta.kind === "bucket") {
     return `PK_${meta.year}_${meta.round}_${String(meta.bucket || "").toLowerCase()}`;

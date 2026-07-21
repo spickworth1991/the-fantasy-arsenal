@@ -10,6 +10,7 @@ import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
+import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -17,9 +18,6 @@ import {
 } from "../../lib/sourceSelection";
 
 /* ---------- Projections setup ---------- */
-const PROJ_JSON_URL      = "/projections_2025.json";
-const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
-const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";
 const REG_SEASON_WEEKS   = 17;
 
 function normNameForMap(name) {

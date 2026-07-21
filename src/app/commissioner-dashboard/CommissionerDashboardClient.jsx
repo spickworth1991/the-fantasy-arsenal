@@ -537,7 +537,7 @@ export default function CommissionerDashboardClient() {
   useEffect(() => {
     let active = true;
     if (!league?.league_id || !league?.rosters?.length) { setData(null); return; }
-    const cacheKey = `commissioner-health:v10:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
+    const cacheKey = `commissioner-health:v11:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
     try {
       const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
       if (cached && Date.now() - number(cached.ts) < 10 * 60 * 1000) { setData(cached.payload); return; }

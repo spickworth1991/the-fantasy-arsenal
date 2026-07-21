@@ -3,6 +3,7 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
+import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
   getPickDisplayLastName,
@@ -415,9 +416,6 @@ function coerceIdpShowRows(idpShowData) {
 // =====================
 // Projections (candidate-based, matches value-style rules)
 // =====================
-const PROJ_JSON_URL = "/projections_2025.json";
-const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
-const PROJ_CBS_JSON_URL = "/projections_cbs_2025.json";
 
 function normalizeTeamAbbr(x) {
   const s = String(x || "").toUpperCase().trim();
@@ -620,7 +618,7 @@ export const SleeperProvider = ({ children }) => {
   // SourceSelector key -> legacy projection code your getProjection() expects
   const projectionSourceFromKey = (k) => {
     const map = {
-      // ✅ your /projections_2025.json is FFA
+      // The season-aware projections file is the FFA feed.
       "proj:ffa": "FFA",
       "proj:espn": "ESPN",
       "proj:cbs": "CBS",
@@ -703,7 +701,7 @@ export const SleeperProvider = ({ children }) => {
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = "projIndex_v1.104";
+  const PROJ_CACHE_KEY = `projIndex_v1.105:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
@@ -884,7 +882,7 @@ export const SleeperProvider = ({ children }) => {
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
   // ✅ Bump cache version so your fn_values aliases actually get written.
-    const CACHE_KEY = "playerDB_v1.477";
+    const CACHE_KEY = "playerDB_v1.479";
 
   const preloadPlayers = async () => {
     try {
@@ -975,24 +973,22 @@ export const SleeperProvider = ({ children }) => {
       const redraft1QBMap = mapBySleeperId(fcData?.Redraft_1QB);
 
       const knownPickMeta = new Map();
+      const fcPickIndex = createCandidateIndex4();
       const rememberPickMeta = (name, pos) => {
         if (normPos(pos) !== "PICK") return;
         const meta = parsePickLabel(name);
         if (meta?.key) knownPickMeta.set(meta.key, meta);
       };
 
-      (Array.isArray(fcData?.Dynasty_SF) ? fcData.Dynasty_SF : []).forEach((row) =>
-        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
-      );
-      (Array.isArray(fcData?.Dynasty_1QB) ? fcData.Dynasty_1QB : []).forEach((row) =>
-        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
-      );
-      (Array.isArray(fcData?.Redraft_SF) ? fcData.Redraft_SF : []).forEach((row) =>
-        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
-      );
-      (Array.isArray(fcData?.Redraft_1QB) ? fcData.Redraft_1QB : []).forEach((row) =>
-        rememberPickMeta(row?.player?.name || row?.name, row?.player?.position || row?.position)
-      );
+      const ingestFantasyCalcPicks = (rows, valueKey) => (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const name=row?.player?.name || row?.name; const pos=row?.player?.position || row?.position;
+        rememberPickMeta(name,pos);
+        if (normPos(pos) === "PICK") fcPickIndex.addCandidate({name,pos,team:"",values:{[valueKey]:row?.value}});
+      });
+      ingestFantasyCalcPicks(fcData?.Dynasty_SF,"dynasty_sf");
+      ingestFantasyCalcPicks(fcData?.Dynasty_1QB,"dynasty_1qb");
+      ingestFantasyCalcPicks(fcData?.Redraft_SF,"redraft_sf");
+      ingestFantasyCalcPicks(fcData?.Redraft_1QB,"redraft_1qb");
 
       const dpIndex = createCandidateIndex2();
       if (dpData && typeof dpData === "object") {
@@ -1244,19 +1240,14 @@ export const SleeperProvider = ({ children }) => {
         const pos = "PICK";
         const team = "";
 
-        const fc_values = {
-          dynasty_sf: safeNum(dynastySFMap[pickId]),
-          dynasty_1qb: safeNum(dynasty1QBMap[pickId]),
-          redraft_sf: safeNum(redraftSFMap[pickId]),
-          redraft_1qb: safeNum(redraft1QBMap[pickId]),
-        };
+        const fc_values = get4WayFromIndex(fcPickIndex, fullName, pos, team);
 
         const dp_values = get2WayFromIndex(dpIndex, fullName, pos, team);
         const ktc_values = get2WayFromIndex(ktcIndex, fullName, pos, team);
         const fn_values = get4WayFromIndex(fnIndex, fullName, pos, team);
         const sp_values = get4WayFromIndex(spIndex, fullName, pos, team);
-        const idp_values = { one_qb: 0, superflex: 0 };
-        const idpshow_values = { one_qb: 0, superflex: 0 };
+        const idp_values = getIDP2FromIndex(idpIndex, fullName, pos, team);
+        const idpshow_values = getIDP2FromIndex(idpShowIndex, fullName, pos, team);
 
         const hasAnySignal =
           Object.values(fc_values).some((v) => v > 0) ||

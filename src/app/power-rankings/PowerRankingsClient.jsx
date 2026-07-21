@@ -271,9 +271,7 @@ function indexPickPlayers(playersMap) {
    PROJECTIONS (like SOS)
 =========================== */
 // Files in /public
-const PROJ_JSON_URL      = "/projections_2025.json";
-const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
-const PROJ_CBS_JSON_URL  = "/projections_cbs_2025.json";
+import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")

@@ -5297,6 +5297,134 @@
       "position": "RB",
       "team": "FA",
       "value": 1
+    },
+    {
+      "name": "2026 Pick 1.13",
+      "team": "",
+      "position": "PICK",
+      "value": 3591,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.14",
+      "team": "",
+      "position": "PICK",
+      "value": 3475,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.15",
+      "team": "",
+      "position": "PICK",
+      "value": 3363,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.16",
+      "team": "",
+      "position": "PICK",
+      "value": 3254,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.13",
+      "team": "",
+      "position": "PICK",
+      "value": 2447,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.14",
+      "team": "",
+      "position": "PICK",
+      "value": 2309,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.15",
+      "team": "",
+      "position": "PICK",
+      "value": 2180,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.16",
+      "team": "",
+      "position": "PICK",
+      "value": 2058,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.13",
+      "team": "",
+      "position": "PICK",
+      "value": 1880,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.14",
+      "team": "",
+      "position": "PICK",
+      "value": 1786,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.15",
+      "team": "",
+      "position": "PICK",
+      "value": 1696,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.16",
+      "team": "",
+      "position": "PICK",
+      "value": 1610,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.13",
+      "team": "",
+      "position": "PICK",
+      "value": 1467,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.14",
+      "team": "",
+      "position": "PICK",
+      "value": 1439,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.15",
+      "team": "",
+      "position": "PICK",
+      "value": 1411,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.16",
+      "team": "",
+      "position": "PICK",
+      "value": 1384,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
     }
   ],
   "Dynasty_1QB": [
@@ -10615,6 +10743,174 @@
       "position": "WR",
       "team": "LV",
       "value": 1
+    },
+    {
+      "name": "2026 Pick 1.01",
+      "team": "",
+      "position": "PICK",
+      "value": 7191,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.13",
+      "team": "",
+      "position": "PICK",
+      "value": 4200,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.14",
+      "team": "",
+      "position": "PICK",
+      "value": 3945,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.15",
+      "team": "",
+      "position": "PICK",
+      "value": 3705,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 1.16",
+      "team": "",
+      "position": "PICK",
+      "value": 3480,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.13",
+      "team": "",
+      "position": "PICK",
+      "value": 2941,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.14",
+      "team": "",
+      "position": "PICK",
+      "value": 2702,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.15",
+      "team": "",
+      "position": "PICK",
+      "value": 2483,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 2.16",
+      "team": "",
+      "position": "PICK",
+      "value": 2281,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.13",
+      "team": "",
+      "position": "PICK",
+      "value": 2230,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.14",
+      "team": "",
+      "position": "PICK",
+      "value": 2133,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.15",
+      "team": "",
+      "position": "PICK",
+      "value": 2040,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 3.16",
+      "team": "",
+      "position": "PICK",
+      "value": 1951,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.09",
+      "team": "",
+      "position": "PICK",
+      "value": 1849,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.10",
+      "team": "",
+      "position": "PICK",
+      "value": 1834,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.11",
+      "team": "",
+      "position": "PICK",
+      "value": 1819,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.12",
+      "team": "",
+      "position": "PICK",
+      "value": 1804,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.13",
+      "team": "",
+      "position": "PICK",
+      "value": 1790,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.14",
+      "team": "",
+      "position": "PICK",
+      "value": 1775,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.15",
+      "team": "",
+      "position": "PICK",
+      "value": 1761,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
+    },
+    {
+      "name": "2026 Pick 4.16",
+      "team": "",
+      "position": "PICK",
+      "value": 1746,
+      "generatedPickValue": true,
+      "pickValueMethod": "source-curve interpolation"
     }
   ],
   "Redraft_SF": [
@@ -12531,6 +12827,518 @@
       "position": "RB",
       "team": "NO",
       "value": 1
+    },
+    {
+      "name": "2026 Pick 1.01",
+      "team": "",
+      "position": "PICK",
+      "value": 8387,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.02",
+      "team": "",
+      "position": "PICK",
+      "value": 7174,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.03",
+      "team": "",
+      "position": "PICK",
+      "value": 6449,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.04",
+      "team": "",
+      "position": "PICK",
+      "value": 6041,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.05",
+      "team": "",
+      "position": "PICK",
+      "value": 5764,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.06",
+      "team": "",
+      "position": "PICK",
+      "value": 5321,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.07",
+      "team": "",
+      "position": "PICK",
+      "value": 4775,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.08",
+      "team": "",
+      "position": "PICK",
+      "value": 4551,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.09",
+      "team": "",
+      "position": "PICK",
+      "value": 4255,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.10",
+      "team": "",
+      "position": "PICK",
+      "value": 3924,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.11",
+      "team": "",
+      "position": "PICK",
+      "value": 3687,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.12",
+      "team": "",
+      "position": "PICK",
+      "value": 3311,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.13",
+      "team": "",
+      "position": "PICK",
+      "value": 3003,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.14",
+      "team": "",
+      "position": "PICK",
+      "value": 2908,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.15",
+      "team": "",
+      "position": "PICK",
+      "value": 2653,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.16",
+      "team": "",
+      "position": "PICK",
+      "value": 2501,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.01",
+      "team": "",
+      "position": "PICK",
+      "value": 2272,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.02",
+      "team": "",
+      "position": "PICK",
+      "value": 1845,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.03",
+      "team": "",
+      "position": "PICK",
+      "value": 1665,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.04",
+      "team": "",
+      "position": "PICK",
+      "value": 1481,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.05",
+      "team": "",
+      "position": "PICK",
+      "value": 1443,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.06",
+      "team": "",
+      "position": "PICK",
+      "value": 1315,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.07",
+      "team": "",
+      "position": "PICK",
+      "value": 1263,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.08",
+      "team": "",
+      "position": "PICK",
+      "value": 1171,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.09",
+      "team": "",
+      "position": "PICK",
+      "value": 1077,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.10",
+      "team": "",
+      "position": "PICK",
+      "value": 979,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.11",
+      "team": "",
+      "position": "PICK",
+      "value": 863,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.12",
+      "team": "",
+      "position": "PICK",
+      "value": 761,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.13",
+      "team": "",
+      "position": "PICK",
+      "value": 679,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.14",
+      "team": "",
+      "position": "PICK",
+      "value": 619,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.15",
+      "team": "",
+      "position": "PICK",
+      "value": 558,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.16",
+      "team": "",
+      "position": "PICK",
+      "value": 475,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.01",
+      "team": "",
+      "position": "PICK",
+      "value": 455,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.02",
+      "team": "",
+      "position": "PICK",
+      "value": 403,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.03",
+      "team": "",
+      "position": "PICK",
+      "value": 391,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.04",
+      "team": "",
+      "position": "PICK",
+      "value": 376,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.05",
+      "team": "",
+      "position": "PICK",
+      "value": 316,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.06",
+      "team": "",
+      "position": "PICK",
+      "value": 260,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.07",
+      "team": "",
+      "position": "PICK",
+      "value": 231,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.08",
+      "team": "",
+      "position": "PICK",
+      "value": 215,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.09",
+      "team": "",
+      "position": "PICK",
+      "value": 190,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.10",
+      "team": "",
+      "position": "PICK",
+      "value": 174,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.11",
+      "team": "",
+      "position": "PICK",
+      "value": 155,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.12",
+      "team": "",
+      "position": "PICK",
+      "value": 150,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.13",
+      "team": "",
+      "position": "PICK",
+      "value": 138,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.14",
+      "team": "",
+      "position": "PICK",
+      "value": 128,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.15",
+      "team": "",
+      "position": "PICK",
+      "value": 108,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.16",
+      "team": "",
+      "position": "PICK",
+      "value": 96,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.01",
+      "team": "",
+      "position": "PICK",
+      "value": 79,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.02",
+      "team": "",
+      "position": "PICK",
+      "value": 73,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.03",
+      "team": "",
+      "position": "PICK",
+      "value": 64,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.04",
+      "team": "",
+      "position": "PICK",
+      "value": 61,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.05",
+      "team": "",
+      "position": "PICK",
+      "value": 60,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.06",
+      "team": "",
+      "position": "PICK",
+      "value": 55,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.07",
+      "team": "",
+      "position": "PICK",
+      "value": 51,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.08",
+      "team": "",
+      "position": "PICK",
+      "value": 48,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.09",
+      "team": "",
+      "position": "PICK",
+      "value": 46,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.10",
+      "team": "",
+      "position": "PICK",
+      "value": 44,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.11",
+      "team": "",
+      "position": "PICK",
+      "value": 43,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.12",
+      "team": "",
+      "position": "PICK",
+      "value": 40,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.13",
+      "team": "",
+      "position": "PICK",
+      "value": 33,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.14",
+      "team": "",
+      "position": "PICK",
+      "value": 32,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.15",
+      "team": "",
+      "position": "PICK",
+      "value": 29,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.16",
+      "team": "",
+      "position": "PICK",
+      "value": 29,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
     }
   ],
   "Redraft_1QB": [
@@ -14429,6 +15237,518 @@
       "position": "RB",
       "team": "SEA",
       "value": 36
+    },
+    {
+      "name": "2026 Pick 1.01",
+      "team": "",
+      "position": "PICK",
+      "value": 8204,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.02",
+      "team": "",
+      "position": "PICK",
+      "value": 7543,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.03",
+      "team": "",
+      "position": "PICK",
+      "value": 6969,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.04",
+      "team": "",
+      "position": "PICK",
+      "value": 6542,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.05",
+      "team": "",
+      "position": "PICK",
+      "value": 6352,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.06",
+      "team": "",
+      "position": "PICK",
+      "value": 5827,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.07",
+      "team": "",
+      "position": "PICK",
+      "value": 5412,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.08",
+      "team": "",
+      "position": "PICK",
+      "value": 5095,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.09",
+      "team": "",
+      "position": "PICK",
+      "value": 4646,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.10",
+      "team": "",
+      "position": "PICK",
+      "value": 4170,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.11",
+      "team": "",
+      "position": "PICK",
+      "value": 3969,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.12",
+      "team": "",
+      "position": "PICK",
+      "value": 3814,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.13",
+      "team": "",
+      "position": "PICK",
+      "value": 3536,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.14",
+      "team": "",
+      "position": "PICK",
+      "value": 2915,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.15",
+      "team": "",
+      "position": "PICK",
+      "value": 2824,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 1.16",
+      "team": "",
+      "position": "PICK",
+      "value": 2563,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.01",
+      "team": "",
+      "position": "PICK",
+      "value": 2318,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.02",
+      "team": "",
+      "position": "PICK",
+      "value": 2088,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.03",
+      "team": "",
+      "position": "PICK",
+      "value": 2037,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.04",
+      "team": "",
+      "position": "PICK",
+      "value": 1875,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.05",
+      "team": "",
+      "position": "PICK",
+      "value": 1583,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.06",
+      "team": "",
+      "position": "PICK",
+      "value": 1512,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.07",
+      "team": "",
+      "position": "PICK",
+      "value": 1406,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.08",
+      "team": "",
+      "position": "PICK",
+      "value": 1310,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.09",
+      "team": "",
+      "position": "PICK",
+      "value": 1150,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.10",
+      "team": "",
+      "position": "PICK",
+      "value": 1116,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.11",
+      "team": "",
+      "position": "PICK",
+      "value": 974,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.12",
+      "team": "",
+      "position": "PICK",
+      "value": 916,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.13",
+      "team": "",
+      "position": "PICK",
+      "value": 766,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.14",
+      "team": "",
+      "position": "PICK",
+      "value": 654,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.15",
+      "team": "",
+      "position": "PICK",
+      "value": 609,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 2.16",
+      "team": "",
+      "position": "PICK",
+      "value": 529,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.01",
+      "team": "",
+      "position": "PICK",
+      "value": 462,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.02",
+      "team": "",
+      "position": "PICK",
+      "value": 409,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.03",
+      "team": "",
+      "position": "PICK",
+      "value": 387,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.04",
+      "team": "",
+      "position": "PICK",
+      "value": 378,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.05",
+      "team": "",
+      "position": "PICK",
+      "value": 346,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.06",
+      "team": "",
+      "position": "PICK",
+      "value": 313,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.07",
+      "team": "",
+      "position": "PICK",
+      "value": 297,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.08",
+      "team": "",
+      "position": "PICK",
+      "value": 260,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.09",
+      "team": "",
+      "position": "PICK",
+      "value": 250,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.10",
+      "team": "",
+      "position": "PICK",
+      "value": 233,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.11",
+      "team": "",
+      "position": "PICK",
+      "value": 203,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.12",
+      "team": "",
+      "position": "PICK",
+      "value": 178,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.13",
+      "team": "",
+      "position": "PICK",
+      "value": 161,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.14",
+      "team": "",
+      "position": "PICK",
+      "value": 147,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.15",
+      "team": "",
+      "position": "PICK",
+      "value": 137,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 3.16",
+      "team": "",
+      "position": "PICK",
+      "value": 119,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.01",
+      "team": "",
+      "position": "PICK",
+      "value": 93,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.02",
+      "team": "",
+      "position": "PICK",
+      "value": 84,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.03",
+      "team": "",
+      "position": "PICK",
+      "value": 77,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.04",
+      "team": "",
+      "position": "PICK",
+      "value": 72,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.05",
+      "team": "",
+      "position": "PICK",
+      "value": 70,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.06",
+      "team": "",
+      "position": "PICK",
+      "value": 64,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.07",
+      "team": "",
+      "position": "PICK",
+      "value": 62,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.08",
+      "team": "",
+      "position": "PICK",
+      "value": 55,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.09",
+      "team": "",
+      "position": "PICK",
+      "value": 46,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.10",
+      "team": "",
+      "position": "PICK",
+      "value": 45,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.11",
+      "team": "",
+      "position": "PICK",
+      "value": 43,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.12",
+      "team": "",
+      "position": "PICK",
+      "value": 40,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.13",
+      "team": "",
+      "position": "PICK",
+      "value": 36,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.14",
+      "team": "",
+      "position": "PICK",
+      "value": 34,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.15",
+      "team": "",
+      "position": "PICK",
+      "value": 32,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
+    },
+    {
+      "name": "2026 Pick 4.16",
+      "team": "",
+      "position": "PICK",
+      "value": 32,
+      "generatedPickValue": true,
+      "pickValueMethod": "player-scale percentile model"
     }
   ]
 }

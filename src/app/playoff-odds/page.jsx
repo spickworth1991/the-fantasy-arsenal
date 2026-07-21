@@ -17,10 +17,7 @@ const BackgroundParticles = dynamic(
   { ssr: false }
 );
 
-const PROJ_JSON_URL = "/projections_2025.json";
-const PROJ_ESPN_JSON_URL = "/projections_espn_2025.json";
-const PROJ_CBS_JSON_URL = "/projections_cbs_2025.json";
-const PROJECTION_DATA_SEASON = 2025;
+import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
 const REG_SEASON_WEEKS = 17;
 
 function clamp(n, min, max) {
