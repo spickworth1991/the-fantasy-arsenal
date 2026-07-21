@@ -15,6 +15,7 @@ const CommissionerReviewCenter = dynamic(() => import("./CommissionerReviewCente
 const CommissionerAdminHub = dynamic(() => import("./CommissionerAdminHub"), { ssr: false });
 const CommissionerReportsHub = dynamic(() => import("./CommissionerReportsHub"), { ssr: false });
 const CommissionerActionQueue = dynamic(() => import("./CommissionerActionQueue"), { ssr: false });
+const CommissionerTradeRelationships = dynamic(() => import("./CommissionerTradeRelationships"), { ssr: false });
 
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const VALUE_SOURCES = DEFAULT_SOURCES.filter((source) => source.type === "value");
@@ -660,7 +661,7 @@ export default function CommissionerDashboardClient() {
       {tab === "network" ? <LeagueNetwork leagues={leagues} username={username} currentManagers={data.managers} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}
       {tab === "command" ? <><CommissionerCommandCenter league={league} data={data} players={players} /><CommissionerActionQueue league={league} data={data} /></> : null}
-      {tab === "reviews" ? <CommissionerReviewCenter league={league} data={data} players={players} valueFor={valueFor} pickValueFor={pickValueFor} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /> : null}
+      {tab === "reviews" ? <><CommissionerReviewCenter league={league} data={data} players={players} valueFor={valueFor} pickValueFor={pickValueFor} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /><CommissionerTradeRelationships data={data} /></> : null}
       {tab === "analysis" ? <><SettingsAuditor league={league} managerCount={data.managers.length} recommendations={data.recommendations} /><CommissionerLeagueOffice league={league} data={data} players={players} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /></> : null}
       {tab === "admin" ? <CommissionerAdminHub league={league} data={data} /> : null}
       {tab === "reports" ? <CommissionerReportsHub league={league} data={data} sourceLabel={selectedValueSource?.label || commissionerSourceKey} printSeasonReport={printSeasonReport} /> : null}
