@@ -5,11 +5,16 @@ import dynamic from "next/dynamic";
 import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
+import { getMarketPickValue } from "../../lib/pickValues";
 
 const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
 const CommissionerLeagueOffice = dynamic(() => import("./CommissionerLeagueOffice"), { ssr: false });
 const CommissionerCommandCenter = dynamic(() => import("./CommissionerCommandCenter"), { ssr: false });
+const CommissionerReviewCenter = dynamic(() => import("./CommissionerReviewCenter"), { ssr: false });
+const CommissionerAdminHub = dynamic(() => import("./CommissionerAdminHub"), { ssr: false });
+const CommissionerReportsHub = dynamic(() => import("./CommissionerReportsHub"), { ssr: false });
+const CommissionerActionQueue = dynamic(() => import("./CommissionerActionQueue"), { ssr: false });
 
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
 const VALUE_SOURCES = DEFAULT_SOURCES.filter((source) => source.type === "value");
@@ -62,7 +67,7 @@ function assetName(player, id) {
   return player?.full_name || player?.search_full_name || `${player?.first_name || ""} ${player?.last_name || ""}`.trim() || String(id);
 }
 
-function calculateTradeReview(transaction, players, valueFor) {
+function calculateTradeReview(transaction, players, valueFor, pickValueFor) {
   const rosterIds = [...new Set((transaction.roster_ids || []).map(String))];
   if (rosterIds.length !== 2) return null;
   const received = Object.fromEntries(rosterIds.map((id) => [id, 0]));
@@ -73,8 +78,7 @@ function calculateTradeReview(transaction, players, valueFor) {
   (transaction.draft_picks || []).forEach((pick) => {
     const key = String(pick.owner_id);
     if (received[key] == null) return;
-    const round = Math.max(1, number(pick.round));
-    received[key] += Math.max(150, 5000 * Math.pow(0.43, round - 1) * Math.pow(0.88, Math.max(0, number(pick.season) - new Date().getFullYear())));
+    received[key] += number(pickValueFor(pick).value);
   });
   const values = rosterIds.map((id) => received[id]);
   const total = values[0] + values[1];
@@ -83,7 +87,7 @@ function calculateTradeReview(transaction, players, valueFor) {
   return { rosterIds, received, gapPct, review: gapPct >= 0.75 };
 }
 
-function buildAudit({ league, matchups, transactions, tradedPicks, players, valueFor, throughWeek }) {
+function buildAudit({ league, matchups, transactions, tradedPicks, players, valueFor, pickValueFor, throughWeek }) {
   const rosters = league?.rosters || [];
   const users = league?.users || [];
   const userById = new Map(users.map((user) => [String(user.user_id), user]));
@@ -93,7 +97,7 @@ function buildAudit({ league, matchups, transactions, tradedPicks, players, valu
   }).length;
   const managerRows = rosters.map((roster) => {
     const user = userById.get(String(roster.owner_id));
-    const playerRows = (roster.players || []).map((id) => players?.[id]).filter(Boolean);
+    const playerRows = (roster.players || []).map((id) => players?.[id] ? { ...players[id], _playerId: String(id) } : null).filter(Boolean);
     const rosterValue = playerRows.reduce((sum, player) => sum + number(valueFor(player)), 0);
     const ages = playerRows.map((player) => number(player.age)).filter((age) => age > 0);
     return {
@@ -147,7 +151,7 @@ function buildAudit({ league, matchups, transactions, tradedPicks, players, valu
     if (manager.unchangedLineups >= Math.max(3, Math.floor(manager.measuredWeeks * 0.65))) manager.reviewSignals.push({ type: "heuristic", label: "Frequently unchanged lineup", detail: `The same starter combination appeared in ${manager.unchangedLineups} consecutive-week comparisons.` });
   });
 
-  const tradeReviews = completedTransactions.filter((transaction) => transaction.type === "trade").map((transaction) => ({ transaction, analysis: calculateTradeReview(transaction, players, valueFor) })).filter((row) => row.analysis);
+  const tradeReviews = completedTransactions.filter((transaction) => transaction.type === "trade").map((transaction) => ({ transaction, analysis: calculateTradeReview(transaction, players, valueFor, pickValueFor) })).filter((row) => row.analysis);
   const pairCounts = new Map();
   tradeReviews.forEach((row) => {
     const key = [...row.analysis.rosterIds].sort().join("|");
@@ -198,7 +202,7 @@ function buildAudit({ league, matchups, transactions, tradedPicks, players, valu
     }
     manager.picks = picks;
     manager.pickCount = picks.length;
-    manager.assets = (manager.playerRows || []).map((player) => ({ id: player.player_id, name: assetName(player, player.player_id), pos: player.position, age: number(player.age) || null, team: player.team || "FA", value: number(valueFor(player)) })).sort((a, b) => b.value - a.value);
+    manager.assets = (manager.playerRows || []).map((player) => ({ id: player._playerId || player.player_id, name: assetName(player, player._playerId || player.player_id), pos: player.position, age: number(player.age) || null, team: player.team || "FA", value: number(valueFor(player)) })).sort((a, b) => b.value - a.value);
     manager.topAssets = manager.assets.slice(0, 5);
   });
 
@@ -227,6 +231,31 @@ function recruitingInputClass() {
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character]));
+}
+
+function finishPrintableReport(printFrame, printWindow) {
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia?.("(pointer: coarse)").matches;
+  if (mobile) {
+    printWindow.document.querySelectorAll("script").forEach((script) => script.remove());
+    const toolbar = printWindow.document.createElement("div");
+    toolbar.setAttribute("style", "position:sticky;top:0;z-index:9999;display:flex;gap:10px;align-items:center;justify-content:center;padding:12px;background:#0f172a;color:white;font-family:Arial,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25)");
+    toolbar.innerHTML = '<button onclick="window.print()" style="border:0;border-radius:10px;padding:11px 16px;background:#22d3ee;color:#082f49;font-weight:700;font-size:14px">Print / Save as PDF</button><span style="font-size:11px;opacity:.72">Use your browser share menu after saving.</span>';
+    printWindow.document.body.prepend(toolbar);
+    const html = `<!doctype html>${printWindow.document.documentElement.outerHTML}`;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    printFrame.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    return;
+  }
+  printWindow.addEventListener("afterprint", () => printFrame.remove(), { once: true });
+  window.setTimeout(() => printFrame.remove(), 60000);
 }
 
 function buildSettingsAudit(league, managerCount) {
@@ -495,6 +524,7 @@ export default function CommissionerDashboardClient() {
   const commissionerSourceKey = String(sourceKey || "").startsWith("val:") ? sourceKey : "val:thefantasyarsenal";
   const selectedValueSource = VALUE_SOURCES.find((source) => source.key === commissionerSourceKey) || VALUE_SOURCES[0];
   const valueFor = useMemo(() => (player) => getPlayerValue(player, { format, qbType, sourceKey: commissionerSourceKey }) || 0, [commissionerSourceKey, format, getPlayerValue, qbType]);
+  const pickValueFor = useMemo(() => (pick, slot = 0, teams = number(league?.total_rosters) || 12) => getMarketPickValue({ players, valueFor, season:pick?.season, round:pick?.round, slot, teams }), [league?.total_rosters, players, valueFor]);
 
   useEffect(() => {
     if (sourceKey !== commissionerSourceKey) setSourceKey(commissionerSourceKey);
@@ -507,7 +537,7 @@ export default function CommissionerDashboardClient() {
   useEffect(() => {
     let active = true;
     if (!league?.league_id || !league?.rosters?.length) { setData(null); return; }
-    const cacheKey = `commissioner-health:v8:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
+    const cacheKey = `commissioner-health:v10:${league.league_id}:${commissionerSourceKey}:${format}:${qbType}`;
     try {
       const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
       if (cached && Date.now() - number(cached.ts) < 10 * 60 * 1000) { setData(cached.payload); return; }
@@ -527,7 +557,7 @@ export default function CommissionerDashboardClient() {
         const tradedPicks = await getJson(`https://api.sleeper.app/v1/league/${league.league_id}/traded_picks`).catch(() => []);
         const txMap = new Map();
         transactionRows.flat().forEach((transaction) => txMap.set(String(transaction.transaction_id || `${transaction.created}-${transaction.type}`), transaction));
-        const payload = buildAudit({ league, matchups: matchupRows, transactions: [...txMap.values()], tradedPicks, players, valueFor, throughWeek });
+        const payload = buildAudit({ league, matchups: matchupRows, transactions: [...txMap.values()], tradedPicks, players, valueFor, pickValueFor, throughWeek });
         if (!active) return;
         setData(payload);
         const orphan = payload.managers.find((manager) => manager.orphan);
@@ -537,7 +567,7 @@ export default function CommissionerDashboardClient() {
       finally { if (active) { setLoading(false); setProgress(""); } }
     })();
     return () => { active = false; };
-  }, [league, players, valueFor]);
+  }, [league, pickValueFor, players, valueFor]);
 
   const report = data?.managers?.find((manager) => manager.rosterId === String(reportRosterId));
   const evaluator = useMemo(() => {
@@ -595,8 +625,7 @@ export default function CommissionerDashboardClient() {
     const picksHtml = Object.entries((report.picks || []).reduce((groups, pick) => ({ ...groups, [pick.season]: [...(groups[pick.season] || []), pick] }), {})).map(([season, picks]) => `<div class="pickyear"><b>${escapeHtml(season)}</b><span>${picks.sort((a,b) => a.round-b.round).map((pick) => `R${pick.round}${pick.own ? " own" : ` via roster ${pick.originalRosterId}`}`).join(" · ")}</span></div>`).join("");
     printWindow.document.write(`<!doctype html><html><head><title>${escapeHtml(report.name)} · Orphan Team Report</title><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;color:#172033;margin:0;font-size:12px;line-height:1.45}header{border-bottom:4px solid #17a8bd;padding-bottom:18px;margin-bottom:20px}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:#168ca0;font-size:10px;font-weight:700}h1{font-size:30px;margin:4px 0}h2{font-size:17px;margin:22px 0 10px}h3{font-size:13px;margin:0 0 7px;color:#31415f}small{font-size:10px;color:#718096;font-weight:400}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.metric,.panel{border:1px solid #dce4ed;border-radius:10px;padding:10px}.metric b{display:block;font-size:17px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.path{background:#edfafd;border:1px solid #bfe9ef;border-radius:10px;padding:12px;margin-top:12px}.position{break-inside:avoid;border:1px solid #dce4ed;border-radius:10px;padding:10px;margin-bottom:9px}.player{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid #edf1f5}.player:first-of-type{border-top:0}.player span small{display:block}.pickyear{display:flex;gap:12px;padding:7px 0;border-top:1px solid #edf1f5}.pickyear b{min-width:42px}.details{display:grid;grid-template-columns:1fr 1fr;gap:7px}.detail{border-bottom:1px solid #e8edf3;padding:5px 0}.notes{white-space:pre-wrap}.footer{margin-top:24px;border-top:1px solid #dce4ed;padding-top:10px;color:#718096;font-size:9px}@media print{.position,.panel{break-inside:avoid}}</style></head><body><header><div class="eyebrow">The Fantasy Arsenal · Orphan Team Evaluator</div><h1>${escapeHtml(report.name)}</h1><div>${escapeHtml(league.name)} · ${report.orphan ? "Open roster" : "Roster evaluation"} · ${report.wins}-${report.losses}</div></header><div class="metrics"><div class="metric"><small>Timeline</small><b>${escapeHtml(evaluator.timeline)}</b></div><div class="metric"><small>Difficulty</small><b>${escapeHtml(evaluator.difficulty)}</b>${evaluator.difficultyScore}/100</div><div class="metric"><small>Roster value rank</small><b>#${report.valueRank} of ${data.managers.length}</b>${Math.round(report.rosterValue).toLocaleString()}</div><div class="metric"><small>Future picks</small><b>${report.pickCount}</b>3-year model</div></div><div class="path"><b>Recommended path</b><br>${escapeHtml(evaluator.path)}</div><div class="grid"><div><h2>Complete roster</h2>${rosterHtml || "No players found."}</div><div><h2>Position profile</h2><div class="panel">${evaluator.positionProfile.map((row) => `<div class="pickyear"><b>${row.position}</b><span>#${row.rank} of ${data.managers.length} · ${row.count} rostered</span></div>`).join("")}</div><h2>Draft capital</h2><div class="panel">${picksHtml || "No modeled picks found."}</div><h2>League opportunity</h2><div class="panel details">${detailRows.map(([label, value]) => `<div class="detail"><small>${escapeHtml(label)}</small><br><b>${escapeHtml(value)}</b></div>`).join("") || "No commissioner details entered."}</div>${recruiting.notes ? `<h2>Commissioner notes</h2><div class="panel notes">${escapeHtml(recruiting.notes)}</div>` : ""}</div></div><div class="footer">Sleeper data is read-only. Market values and difficulty are estimates, not guarantees. Recruiting details were supplied locally by the commissioner. Generated by The Fantasy Arsenal.</div><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script></body></html>`);
     printWindow.document.close();
-    printWindow.addEventListener("afterprint", () => printFrame.remove(), { once: true });
-    window.setTimeout(() => printFrame.remove(), 60000);
+    finishPrintableReport(printFrame, printWindow);
   };
   const printSeasonReport = () => {
     if (!league || !data) return;
@@ -611,8 +640,7 @@ export default function CommissionerDashboardClient() {
     const settingsAudit = buildSettingsAudit(league, data.managers.length);
     printWindow.document.write(`<!doctype html><html><head><title>${escapeHtml(league.name)} · Commissioner Report</title><style>@page{margin:14mm}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;color:#172033;margin:0;font-size:11px;line-height:1.45}header{border-bottom:4px solid #17a8bd;padding-bottom:16px;margin-bottom:18px}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:#168ca0;font-size:9px;font-weight:700}h1{font-size:29px;margin:4px 0}h2{font-size:17px;margin:22px 0 9px}.metrics,.awards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.card,.panel{border:1px solid #dce4ed;border-radius:9px;padding:9px;break-inside:avoid}.card b{display:block;font-size:17px}.card small{color:#718096}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:7px;border-bottom:1px solid #e7edf3}th{font-size:9px;text-transform:uppercase;color:#718096}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signal{border-left:3px solid #e4a11b;padding:7px 10px;margin:6px 0;background:#fff9ed}.recommend{padding:7px 0;border-bottom:1px solid #e7edf3}.footer{margin-top:22px;padding-top:9px;border-top:1px solid #dce4ed;color:#718096;font-size:9px}</style></head><body><header><div class="eyebrow">The Fantasy Arsenal · Full Season Commissioner Report</div><h1>${escapeHtml(league.name)}</h1><div>${escapeHtml(league.season)} season · ${data.managers.length} teams · generated ${escapeHtml(new Date().toLocaleDateString())}</div></header><div class="metrics"><div class="card"><small>Health score</small><b>${Math.round(data.healthScore)}/100</b></div><div class="card"><small>Competitive balance</small><b>${Math.round(data.balanceScore)}/100</b></div><div class="card"><small>Participation</small><b>${percent(data.participation*100)}</b></div><div class="card"><small>Review signals</small><b>${data.attentionCount}</b></div></div><h2>Season recognitions</h2><div class="awards"><div class="card"><small>Points leader</small><b>${escapeHtml(leaders.points?.name)}</b>${leaders.points?.points.toFixed(1)} points</div><div class="card"><small>Roster-value leader</small><b>${escapeHtml(leaders.value?.name)}</b>${Math.round(leaders.value?.rosterValue || 0).toLocaleString()}</div><div class="card"><small>Most active</small><b>${escapeHtml(leaders.activity?.name)}</b>${leaders.activity?.transactions || 0} moves</div><div class="card"><small>Waiver leader</small><b>${escapeHtml(leaders.waivers?.name)}</b>${leaders.waivers?.waivers || 0} moves</div></div><h2>League standings and participation</h2><table><thead><tr><th>Team</th><th>Record</th><th>Points</th><th>Value rank</th><th>Moves</th><th>Trades</th><th>Waivers</th><th>Unset</th></tr></thead><tbody>${standings.map((manager) => `<tr><td><b>${escapeHtml(manager.name)}</b>${manager.orphan ? " · OPEN" : ""}</td><td>${manager.wins}-${manager.losses}</td><td>${manager.points.toFixed(1)}</td><td>#${manager.valueRank}</td><td>${manager.transactions}</td><td>${manager.trades}</td><td>${manager.waivers}</td><td>${manager.measuredWeeks ? percent((manager.emptyLineups/manager.measuredWeeks)*100) : "—"}</td></tr>`).join("")}</tbody></table><div class="grid"><div><h2>Items requiring context</h2>${data.managers.flatMap((manager) => manager.reviewSignals.map((signal) => `<div class="signal"><b>${escapeHtml(manager.name)} · ${escapeHtml(signal.label)}</b><br>${escapeHtml(signal.detail)}</div>`)).join("") || '<div class="panel">No manager-level signals.</div>'}${data.tradeSignals.map((signal) => `<div class="signal"><b>Week ${escapeHtml(signal.week || "—")} trade review</b><br>${escapeHtml(signal.detail)}</div>`).join("")}</div><div><h2>Settings identity</h2><div class="panel"><b>${escapeHtml(settingsAudit.identity)}</b>${settingsAudit.rows.map((row) => `<div class="recommend"><b>${escapeHtml(row.label)}:</b> ${escapeHtml(row.grade)}<br>${escapeHtml(row.value)}</div>`).join("")}</div><h2>Commissioner recommendations</h2><div class="panel">${data.recommendations.map((item) => `<div class="recommend"><b>${escapeHtml(item.title)}</b><br>${escapeHtml(item.reason)}</div>`).join("")}</div></div></div><div class="footer">Signals are review prompts, not findings of misconduct. Values and efficiency estimates depend on available data and selected markets. Sleeper data is read-only. Generated by The Fantasy Arsenal.</div><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script></body></html>`);
     printWindow.document.close();
-    printWindow.addEventListener("afterprint", () => printFrame.remove(), { once: true });
-    window.setTimeout(() => printFrame.remove(), 60000);
+    finishPrintableReport(printFrame, printWindow);
   };
 
   return <main className="min-h-screen text-white"><BackgroundParticles /><Navbar pageTitle="Commissioner Dashboard" /><div className="mx-auto max-w-7xl px-4 pb-16 pt-20">
@@ -626,16 +654,16 @@ export default function CommissionerDashboardClient() {
 
     {data ? <><section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Health score" value={`${Math.round(data.healthScore)}/100`} detail="Composite participation and balance signal" tone={data.healthScore >= 75 ? "good" : data.healthScore >= 55 ? "warn" : "risk"} /><Metric label="Balance" value={`${Math.round(data.balanceScore)}/100`} detail={`${data.valueSpread.toFixed(1)}× top-to-bottom value`} /><Metric label="Balance trend" value={data.parityTrend} detail="Early weeks compared with recent weeks" /><Metric label="Participation" value={percent(data.participation * 100)} detail="Managers with recorded activity" /><Metric label="Needs review" value={data.attentionCount} detail="Manager and trade signals" tone={data.attentionCount ? "warn" : "good"} /><Metric label="Open rosters" value={data.managers.filter((manager) => manager.orphan).length} detail="No Sleeper owner assigned" tone={data.managers.some((manager) => manager.orphan) ? "risk" : "good"} /></section>
 
-      <div className="mt-4 flex justify-end"><button onClick={printSeasonReport} className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-xs font-semibold text-cyan-100">Print full season report</button></div>
-      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["overview","Overview"],["command","Command Center"],["office","League Office"],["operations","Operations"],["managers","Managers"],["review","Review"],["auditor","Settings"],["network","Network"],["history","History"],["orphan","Orphan"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
+      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["overview","Overview"],["command","Command Center"],["reviews","Review"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["orphan","Orphan"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
 
       {tab === "orphan" ? <OrphanEvaluator report={report} evaluator={evaluator} managers={data.managers} recruiting={recruiting} updateRecruiting={updateRecruiting} copied={copied} copyReport={copyReport} printReport={printReport} setReportRosterId={setReportRosterId} /> : null}
-      {tab === "auditor" ? <SettingsAuditor league={league} managerCount={data.managers.length} recommendations={data.recommendations} /> : null}
       {tab === "network" ? <LeagueNetwork leagues={leagues} username={username} currentManagers={data.managers} /> : null}
-      {tab === "operations" ? <CommissionerOperations league={league} data={data} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}
-      {tab === "office" ? <CommissionerLeagueOffice league={league} data={data} players={players} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /> : null}
-      {tab === "command" ? <CommissionerCommandCenter league={league} data={data} players={players} /> : null}
+      {tab === "command" ? <><CommissionerCommandCenter league={league} data={data} players={players} /><CommissionerActionQueue league={league} data={data} /></> : null}
+      {tab === "reviews" ? <CommissionerReviewCenter league={league} data={data} players={players} valueFor={valueFor} pickValueFor={pickValueFor} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /> : null}
+      {tab === "analysis" ? <><SettingsAuditor league={league} managerCount={data.managers.length} recommendations={data.recommendations} /><CommissionerLeagueOffice league={league} data={data} players={players} sourceLabel={selectedValueSource?.label || commissionerSourceKey} /></> : null}
+      {tab === "admin" ? <CommissionerAdminHub league={league} data={data} /> : null}
+      {tab === "reports" ? <CommissionerReportsHub league={league} data={data} sourceLabel={selectedValueSource?.label || commissionerSourceKey} printSeasonReport={printSeasonReport} /> : null}
 
       {tab === "overview" ? <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]"><Shell className="overflow-hidden"><div className="border-b border-white/10 p-5"><div className="text-[11px] font-semibold uppercase tracking-[.22em] text-cyan-200/55">League pulse</div><h2 className="mt-1 text-xl font-black">Competitive balance</h2><p className="mt-1 text-xs text-white/45">Standings and roster-market value reveal different kinds of parity.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-sm"><thead className="text-left text-xs text-white/38"><tr><th className="p-3">Team</th><th className="p-3">Record</th><th className="p-3">Points</th><th className="p-3">Value rank</th><th className="p-3">Activity</th><th className="p-3">Signals</th></tr></thead><tbody>{[...data.managers].sort((a,b) => b.wins-a.wins || b.points-a.points).map((manager) => <tr key={manager.rosterId} className="border-t border-white/5"><td className="p-3 font-semibold">{manager.name}{manager.orphan ? <span className="ml-2 rounded-full bg-rose-400/10 px-2 py-0.5 text-[10px] text-rose-100">OPEN</span> : null}</td><td className="p-3">{manager.wins}-{manager.losses}</td><td className="p-3">{manager.points.toFixed(1)}</td><td className="p-3">#{manager.valueRank}</td><td className="p-3">{manager.transactions} moves</td><td className="p-3">{manager.reviewSignals.length || "—"}</td></tr>)}</tbody></table></div></Shell><div className="space-y-5"><Shell className="p-5"><div className="text-lg font-bold">What the score means</div><div className="mt-3 space-y-3 text-xs leading-5 text-white/52"><p><span className="font-semibold text-emerald-100">Observed facts</span> include empty slots, ownership, and transaction counts.</p><p><span className="font-semibold text-amber-100">Review signals</span> use thresholds for lineup efficiency or trade-value difference and require commissioner context.</p><p>No signal is labeled collusion, tanking, or misconduct automatically.</p></div></Shell><Shell className="p-5"><div className="text-lg font-bold">Quick recommendations</div><div className="mt-3 space-y-3">{data.recommendations.slice(0,3).map((item) => <div key={item.title} className="rounded-2xl border border-white/8 bg-white/[0.025] p-3"><div className="text-sm font-semibold">{item.title}</div><div className="mt-1 text-xs leading-5 text-white/45">{item.reason}</div></div>)}</div></Shell></div></div> : null}
 
