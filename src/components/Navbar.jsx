@@ -194,12 +194,12 @@ export default function Navbar({ pageTitle }) {
       {/* Sidebar Overlay */}
       {(sidebarOpen || sidebarClosing) && (
         <div
-          className={`fixed inset-0 z-50 flex ${sidebarClosing ? "overlay-fadeOut" : "overlay-fadeIn"} backdrop-blur-xl`}
+          className={`fixed inset-0 z-50 flex h-[100dvh] max-h-[100dvh] ${sidebarClosing ? "overlay-fadeOut" : "overlay-fadeIn"} backdrop-blur-xl`}
           onClick={handleCloseSidebar}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`flex h-full w-[340px] max-w-[92vw] flex-col overflow-y-auto border-r border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-2xl ${
+            className={`flex h-[100dvh] max-h-[100dvh] w-[340px] max-w-[92vw] flex-col overflow-hidden border-r border-white/10 bg-slate-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-2xl backdrop-blur-2xl ${
               sidebarClosing ? "animate-slideOut" : "animate-slideIn"
             }`}
           >
@@ -221,7 +221,7 @@ export default function Navbar({ pageTitle }) {
             </div>
 
             {/* Navigation Links */}
-            <nav className="clear-both space-y-2 pt-1">
+            <nav className="clear-both min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-3 pr-1 pt-1 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
               <NavGroup label="Weekly Command" detail="Act across your leagues" defaultOpen><SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} /><SidebarLink href="/game-center" icon={ICONS.gamecenter} label="Fantasy Game Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/game-center"]} /><SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} /><SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} /></NavGroup>
               <NavGroup label="Draft Room" detail="Prepare and monitor"><SidebarLink href="/draft-helper" icon={ICONS.draft} label="Draft Helper" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /></NavGroup>
@@ -230,11 +230,11 @@ export default function Navbar({ pageTitle }) {
               <NavGroup label="Commissioner Office" detail="Operate and review"><SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} /></NavGroup>
             </nav>
 
-            <div className="my-4 border-t border-white/10" />
+            <div className="border-t border-white/10 pt-3" />
 
             {/* User Info + Logout */}
             {username ? (
-              <div className="mt-auto">
+              <div className="shrink-0 rounded-2xl bg-slate-950/95 pt-1">
                 <p className="text-sm text-gray-400 mb-1">
                   Logged in as <span className="font-bold">{username}</span> ({year})
                 </p>
