@@ -35,6 +35,9 @@ const TOOL_ICONS = {
   "Strength of Schedule": "/icons/sos-icon.png",
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
+  "Draft Helper": "/icons/draft-icon.png",
+  "Manager Intelligence": "/icons/league-hub.png",
+  "Fantasy Game Center": "/icons/lineup-icon.png",
   "League Hub": "/icons/league-hub.png",
   "League History": "/icons/league-hub.png",
   "Commissioner Dashboard": "/icons/league-hub.png",
@@ -67,10 +70,28 @@ export default function HomeClient() {
       badge: "UPDATED",
     },
     {
+      name: "Draft Helper",
+      link: "/draft-helper",
+      description: "Draft from a live league-aware board with traded-pick ownership, team needs, and contextual recommendations.",
+      badge: "NEW",
+    },
+    {
       name: "Draft Monitor",
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
+    },
+    {
+      name: "Manager Intelligence",
+      link: "/manager-intelligence",
+      description: "Research public Sleeper manager networks, league history, player exposure, trades, and draft tendencies.",
+      badge: "NEW",
+    },
+    {
+      name: "Fantasy Game Center",
+      link: "/game-center",
+      description: "Follow roots, boos, lineup conflicts, kickoff order, fantasy points, and scores across every league.",
+      badge: "DEVELOPING",
     },
     {
       name: "Player Availability",
@@ -94,7 +115,7 @@ export default function HomeClient() {
       name: "Commissioner Dashboard",
       link: "/commissioner-dashboard",
       description: "Audit league participation, balance, roster quality, settings, and evidence-based review signals.",
-      badge: "NEW",
+      badge: "DEVELOPING",
     },
     {
       name: "Power Rankings",
@@ -120,6 +141,13 @@ export default function HomeClient() {
     },
     
   ];
+  const toolGroups = [
+    { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
+    { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and stay ahead across simultaneous drafts.", names:["Draft Helper","Draft Monitor"] },
+    { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
+    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
+    { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
+  ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -258,12 +286,13 @@ export default function HomeClient() {
             </section>
           </>
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2 w-full max-w-5xl">
-              {tools.map((tool, i) => (
-                <ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={i * 150} />
-              ))}
-            </div>
+          <div className="w-full max-w-6xl space-y-8">
+            <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
+              <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">Your fantasy operating system</div>
+              <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">{[["/league-hub","League Hub","See every league needing attention"],["/draft-helper","Draft Helper","Make the next pick with context"],["/manager-intelligence","Manager Intelligence","Research a manager or league"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
+            </section>
+            {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
 
             {/* Extra space below cards so they never feel cramped */}
             <div aria-hidden className="h-10" />
@@ -272,24 +301,28 @@ export default function HomeClient() {
             <p className="mt-6 text-xs text-gray-500 text-center">
               Created by <span className="text-gray-300 font-semibold">StickyPicky</span>
             </p>
-          </>
+          </div>
         )}
       </main>
     </div>
   );
 }
 
-function ToolCard({ name, link, description, comingSoon, badge, delay, disabled, icon }) {
+function ToolSection({group,offset=0}) {
+  return <section><div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-cyan-200/45">{group.eyebrow}</div><h2 className="mt-1 text-2xl font-black text-white">{group.title}</h2></div><p className="max-w-xl text-xs leading-5 text-white/38 sm:text-right">{group.description}</p></div><div className={`grid gap-4 ${group.tools.length===1?"grid-cols-1":"sm:grid-cols-2 lg:grid-cols-3"}`}>{group.tools.map((tool,index)=><ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={(offset+index)*70} featured={group.tools.length===1}/>)}</div></section>;
+}
+
+function ToolCard({ name, link, description, comingSoon, badge, delay, disabled, icon, featured=false }) {
   const pill = comingSoon ? "COMING SOON" : badge;
 
   return comingSoon || disabled ? (
     <div
-      className="bg-gray-900 p-6 text-white rounded-xl shadow-lg text-center relative transform transition hover:scale-105 animate-stagger opacity-50 cursor-not-allowed"
+      className="relative rounded-2xl border border-white/10 bg-slate-900/80 p-5 text-white opacity-50"
       style={{ animationDelay: `${delay}ms` }}
     >
       {icon && (
-        <div className="flex justify-center mb-4">
-          <img src={icon} alt={`${name} icon`} className="w-14 h-14 drop-shadow-lg" />
+        <div className="mb-4">
+          <img src={icon} alt={`${name} icon`} className="h-11 w-11 drop-shadow-lg" />
         </div>
       )}
 
@@ -300,18 +333,17 @@ function ToolCard({ name, link, description, comingSoon, badge, delay, disabled,
   ) : (
     <Link
       href={link}
-      className="bg-gray-900 p-6 rounded-xl shadow-lg text-center relative transform transition hover:scale-105 hover:neon-hover hover:bg-gray-800 animate-stagger"
+      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/95 to-slate-950/85 p-5 text-left shadow-[0_24px_70px_-55px_rgba(34,211,238,.65)] transition hover:-translate-y-1 hover:border-cyan-300/20 hover:bg-white/[0.04] animate-stagger ${featured?"sm:flex sm:items-center sm:gap-5":""}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {icon && (
-        <div className="flex justify-center mb-4">
-          <img src={icon} alt={`${name} icon`} className="w-14 h-14 drop-shadow-lg" />
+        <div className="mb-4 sm:mb-0">
+          <img src={icon} alt={`${name} icon`} className="h-11 w-11 drop-shadow-lg transition group-hover:scale-105" />
         </div>
       )}
 
       {pill && <Badge text={pill} />}
-      <h2 className="text-2xl text-white font-bold mb-2">{name}</h2>
-      <p className="text-gray-400">{description}</p>
+      <div className="min-w-0 flex-1"><h3 className="text-lg font-black text-white">{name}</h3><p className="mt-2 text-sm leading-5 text-white/40">{description}</p><div className="mt-4 text-[10px] font-semibold uppercase tracking-wider text-cyan-100/55">Open workspace →</div></div>
     </Link>
   );
 }

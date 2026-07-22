@@ -21,6 +21,8 @@ const ICONS = {
   leaguehub: "/icons/league-hub.png",
   history: "/icons/league-hub.png",
   commissioner: "/icons/league-hub.png",
+  manager: "/icons/league-hub.png",
+  gamecenter: "/icons/lineup-icon.png",
 };
 
 // Set badges for sidebar links here (optional).
@@ -31,7 +33,10 @@ const NAV_BADGES = {
   "/player-stock": "UPDATED",
   "/playoff-odds": "NEW",
   "/league-history": "NEW",
-  "/commissioner-dashboard": "NEW",
+  "/commissioner-dashboard": "DEVELOPING",
+  "/draft-helper": "NEW",
+  "/manager-intelligence": "NEW",
+  "/game-center": "DEVELOPING",
 };
 
 const BADGE_STYLES = {
@@ -54,14 +59,19 @@ function SidebarLink({ href, icon, label, onClick, badge }) {
   return (
     <Link
       href={href}
-      className="sidebar-link text-cyan-400 hover:text-blue-200 flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+      className="group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-white/62 transition hover:bg-white/[0.055] hover:text-cyan-100"
       onClick={onClick}
     >
-      <img src={icon} alt={label} className="w-8 h-8" />
-      <span>{label}</span>
+      <img src={icon} alt="" className="h-6 w-6 opacity-80 transition group-hover:opacity-100" />
+      <span className="font-medium">{label}</span>
       {badge ? <NavBadge text={badge} /> : null}
     </Link>
   );
+}
+
+function NavGroup({ label, detail, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="group rounded-2xl border border-white/[0.07] bg-black/10"><summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5"><div className="min-w-0 flex-1"><div className="text-[10px] font-bold uppercase tracking-[.16em] text-white/58">{label}</div>{detail ? <div className="mt-0.5 text-[9px] text-white/25">{detail}</div> : null}</div><span className="text-xs text-white/25 transition group-open:rotate-180">⌄</span></summary><div className="space-y-0.5 border-t border-white/[0.06] p-1.5">{children}</div></details>;
 }
 
 function BallsvilleLink({ className = "" }) {
@@ -189,21 +199,21 @@ export default function Navbar({ pageTitle }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`bg-gray-900/90 w-72 h-full p-6 flex flex-col gap-6 shadow-xl neon-glow ${
+            className={`flex h-full w-[340px] max-w-[92vw] flex-col overflow-y-auto border-r border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-2xl ${
               sidebarClosing ? "animate-slideOut" : "animate-slideIn"
             }`}
           >
             {/* Close Button */}
             <button
               onClick={handleCloseSidebar}
-              className="text-white text-3xl self-end mb-6 hover:scale-110 transition-transform duration-200"
+              className="float-right grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-xl text-white/60 transition hover:bg-white/5 hover:text-white"
               aria-label="Close menu"
             >
               ✕
             </button>
 
             {/* Sidebar Title */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="mt-1 flex flex-col items-center gap-2 pb-3">
               <img src={ICONS.football} alt="Logo" className="w-[120px] h-12" />
 
               {/* ✅ Ballsville promo inside sidebar (hide when in Ballsville context) */}
@@ -211,23 +221,16 @@ export default function Navbar({ pageTitle }) {
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex flex-col gap-2">
+            <nav className="clear-both space-y-2 pt-1">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
-              <SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} />
-              <SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} />
-              <SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} />
-              <SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} />
-              <SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} />
-              <SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} />
-              <SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} />
-              <SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} />
-              <SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} />
-              <SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} />
-              <SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} />
-              
+              <NavGroup label="Weekly Command" detail="Act across your leagues" defaultOpen><SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} /><SidebarLink href="/game-center" icon={ICONS.gamecenter} label="Fantasy Game Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/game-center"]} /><SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} /><SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} /></NavGroup>
+              <NavGroup label="Draft Room" detail="Prepare and monitor"><SidebarLink href="/draft-helper" icon={ICONS.draft} label="Draft Helper" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /></NavGroup>
+              <NavGroup label="Market & Trades" detail="Values, exposure, deals"><SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} /><SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} /></NavGroup>
+              <NavGroup label="League Intelligence" detail="Research and forecasting"><SidebarLink href="/manager-intelligence" icon={ICONS.manager} label="Manager Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/manager-intelligence"]} /><SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} /><SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} /><SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} /><SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} /></NavGroup>
+              <NavGroup label="Commissioner Office" detail="Operate and review"><SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} /></NavGroup>
             </nav>
 
-            <div className="border-t border-gray-700" />
+            <div className="my-4 border-t border-white/10" />
 
             {/* User Info + Logout */}
             {username ? (
