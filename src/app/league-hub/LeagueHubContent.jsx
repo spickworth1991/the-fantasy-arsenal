@@ -126,6 +126,17 @@ function isInjuredOrLimited(p) {
   return false;
 }
 
+function getInjuryCategory(p) {
+  const combined = `${p?.injury_status || ""} ${p?.status || ""} ${p?.practice_participation || ""}`.toLowerCase();
+  if (combined.includes("doubtful")) return "DOUBTFUL";
+  if (combined.includes("questionable")) return "QUESTIONABLE";
+  if (combined.includes("injured_reserve") || /\bir\b/.test(combined)) return "IR";
+  if (combined.includes("pup") || combined.includes("physically_unable")) return "PUP";
+  if (combined.includes("out") || combined.includes("inactive")) return "OUT";
+  if (combined.includes("limited") || combined.includes("did_not_participate") || combined.includes("dnp")) return "LIMITED";
+  return "OTHER";
+}
+
 function timeAgo(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(s / 60);
@@ -362,6 +373,7 @@ export default function LeagueHubContent() {
   const [leagueSizeFilter, setLeagueSizeFilter] = useState("ALL");
   const [scoringFilter, setScoringFilter] = useState("ALL");
   const [leagueStatusFilter, setLeagueStatusFilter] = useState("ALL");
+  const [injuryStatusFilter, setInjuryStatusFilter] = useState("ALL");
   const [hubControlsOpen, setHubControlsOpen] = useState(false);
   const [actionFilter, setActionFilter] = useState("all");
   const [actionCenterOpen, setActionCenterOpen] = useState(true);
@@ -939,6 +951,7 @@ export default function LeagueHubContent() {
             value,
             proj,
             injury,
+            injuryCategory: getInjuryCategory(p),
             detail,
             leagues: new Set([lg.id]),
           });
@@ -958,6 +971,10 @@ export default function LeagueHubContent() {
 
     return out.slice(0, 40);
   }, [visibleLeaguesList, playersMap, getValueForPlayer, getProjection, projectionSource, bestMetric]);
+
+  const filteredInjuryRows = useMemo(() => injuryStatusFilter === "ALL"
+    ? injuryRows
+    : injuryRows.filter((row) => row.injuryCategory === injuryStatusFilter), [injuryRows, injuryStatusFilter]);
 
   // Build: player -> leagues map (for injury modal)
   const playerLeaguesMap = useMemo(() => {
@@ -2706,7 +2723,7 @@ export default function LeagueHubContent() {
               />
             </div>}
 
-            {hubControlsOpen && <div className="mt-4 flex flex-wrap items-center gap-4">
+            <div className="mt-4 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
                   <input
                     type="checkbox"
@@ -2752,9 +2769,9 @@ export default function LeagueHubContent() {
               </label> */}
 
               
-            </div>}
+            </div>
 
-            {hubControlsOpen && <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+            <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
               <input
                 value={leagueQuery}
                 onChange={(e) => setLeagueQuery(e.target.value)}
@@ -2773,7 +2790,7 @@ export default function LeagueHubContent() {
               <select value={leagueStatusFilter} onChange={(e) => setLeagueStatusFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
                 <option value="ALL">All statuses</option><option value="IN_SEASON">In season</option><option value="DRAFTING">Drafting</option><option value="PRE_DRAFT">Pre-draft</option><option value="COMPLETE">Complete</option>
               </select>
-            </div>}
+            </div>
 
             {!projectionsReady && bestMetric === "projection" ? (
               <div className="mt-3 text-[11px] text-white/45">
@@ -3067,10 +3084,17 @@ export default function LeagueHubContent() {
                   </div>
                 </div>
 
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["ALL", "OUT", "DOUBTFUL", "QUESTIONABLE", "IR", "PUP", "LIMITED", "OTHER"].map((status) => {
+                    const count = status === "ALL" ? injuryRows.length : injuryRows.filter((row) => row.injuryCategory === status).length;
+                    return <button key={status} type="button" onClick={() => setInjuryStatusFilter(status)} className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${injuryStatusFilter === status ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-white/10 bg-white/[0.03] text-white/45 hover:text-white/75"}`}>{status === "ALL" ? "All" : status} <span className="ml-1 opacity-55">{count}</span></button>;
+                  })}
+                </div>
+
                 <div className="mt-4 overflow-x-auto">
-                  {injuryRows.length === 0 ? (
+                  {filteredInjuryRows.length === 0 ? (
                     <div className={`${SUBCARD} p-4 text-sm text-white/60`}>
-                      No injured players found on your teams.
+                      {injuryRows.length ? "No players match this injury-status filter." : "No injured players found on your teams."}
                     </div>
                   ) : (
                     <table className="w-full text-sm">
@@ -3085,7 +3109,7 @@ export default function LeagueHubContent() {
                         </tr>
                       </thead>
                       <tbody>
-                        {injuryRows.map((r) => {
+                        {filteredInjuryRows.map((r) => {
                           const metricVal = bestMetric === "projection" ? r.proj : r.value;
                           return (
                             <tr
