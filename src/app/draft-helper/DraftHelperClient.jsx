@@ -124,6 +124,7 @@ export default function DraftHelperClient() {
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState("ALL");
   const [poolOverride, setPoolOverride] = useState("auto");
+  const [valueFormatOverride, setValueFormatOverride] = useState("auto");
   const [watchlist, setWatchlist] = useState([]);
   const league = useMemo(() => (leagues || []).find((item) => String(item.league_id) === String(activeLeague)), [activeLeague, leagues]);
 
@@ -178,7 +179,7 @@ export default function DraftHelperClient() {
   }, [draftId]);
 
   useEffect(() => { refreshDraft(); }, [refreshDraft]);
-  useEffect(() => { setPoolOverride("auto"); }, [draftId]);
+  useEffect(() => { setPoolOverride("auto"); setValueFormatOverride("auto"); }, [draftId]);
   useEffect(() => {
     if (draft?.status !== "drafting") return undefined;
     const timer = setInterval(() => refreshDraft(true), 10000);
@@ -208,12 +209,19 @@ export default function DraftHelperClient() {
     if (tab === "myteam" && signedInRosterId) setFocusRosterId(signedInRosterId);
   }, [signedInRosterId, tab]);
 
-  const formatInfo = useMemo(() => classifyLeagueFormat(league || {}, drafts), [drafts, league]);
+  const formatInfo = useMemo(() => {
+    const detected = classifyLeagueFormat(league || {}, drafts);
+    const explicitType = Number(league?.settings?.type);
+    if (explicitType === 2) return { ...detected, key:"dynasty", label:"Dynasty", shortLabel:"DYN", confidence:"high" };
+    if (explicitType === 1) return { ...detected, key:"keeper", label:"Keeper", shortLabel:"KPR", confidence:"high" };
+    return detected;
+  }, [drafts, league]);
   const qbType = useMemo(() => {
     const slots = (league?.roster_positions || []).map(upper);
     return slots.filter((slot) => slot === "QB").length >= 2 || slots.some((slot) => ["SUPER_FLEX", "SUPERFLEX", "OP"].includes(slot)) ? "sf" : "1qb";
   }, [league?.roster_positions]);
-  const valueFormat = formatInfo.key === "dynasty" || upper(draft?.type) === "ROOKIE" ? "dynasty" : "redraft";
+  const detectedValueFormat = formatInfo.key === "dynasty" || upper(draft?.type) === "ROOKIE" ? "dynasty" : "redraft";
+  const valueFormat = valueFormatOverride === "auto" ? detectedValueFormat : valueFormatOverride;
   const pickedIds = useMemo(() => new Set(picks.map((pick) => String(pick.player_id))), [picks]);
   const rosteredIds = useMemo(() => new Set(rosters.flatMap((roster) => roster.players || []).map(String)), [rosters]);
   const inferredPool = useMemo(() => {
@@ -295,7 +303,7 @@ export default function DraftHelperClient() {
 
     {draft ? <>
       <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8"><Stat label="Draft state" value={draft.status || "—"} detail={draft.status === "drafting" ? "Auto-refreshing every 10s" : "Manual refresh available"} /><Stat label="Format" value={formatInfo.label} detail={formatInfo.confidence + " confidence"} /><Stat label="QB format" value={qbType === "sf" ? "Superflex" : "1QB"} /><Stat label="Draft pool" value={rookieOnly ? "Rookies" : "Full player pool"} /><Stat label="Progress" value={`${picks.length}/${totalPicks}`} /><Stat label="On the clock" value={managerName(nextRosterId, rosterMap, userMap)} detail={`Pick ${nextPickNo}`} /><Stat label="Teams" value={teams} /><Stat label="Rounds" value={rounds} /></section>
-      <Panel className="mt-5 p-4"><div className="grid gap-4 xl:grid-cols-[minmax(0,.8fr)_minmax(420px,1.2fr)] xl:items-center"><div><div className="text-sm font-bold">Draft controls</div><p className="mt-1 text-xs text-white/35">Player eligibility and valuation are always available here before recommendations.</p><label className="mt-3 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Eligible pool<select value={poolOverride} onChange={(event) => setPoolOverride(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm normal-case tracking-normal text-white"><option value="auto">Auto: {inferredPool === "veterans" ? "Veterans only" : inferredPool === "rookies" ? "Rookies only" : "All unrostered players"}</option><option value="all">All unrostered players</option><option value="veterans">Veterans only</option><option value="rookies">Rookies only</option></select></label></div><SourceSelector value={String(sourceKey).startsWith("val:") ? sourceKey : "val:fantasycalc"} onChange={setSourceKey} sources={VALUE_SOURCES} mode={valueFormat} qbType={qbType} label="Draft value source" layout="inline" /></div></Panel>
+      <Panel className="mt-5 p-4"><div className="grid gap-4 xl:grid-cols-[minmax(0,.8fr)_minmax(420px,1.2fr)] xl:items-center"><div><div className="text-sm font-bold">Draft controls</div><p className="mt-1 text-xs text-white/35">Player eligibility and valuation are always available here before recommendations.</p><label className="mt-3 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Eligible pool<select value={poolOverride} onChange={(event) => setPoolOverride(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm normal-case tracking-normal text-white"><option value="auto">Auto: {inferredPool === "veterans" ? "Veterans only" : inferredPool === "rookies" ? "Rookies only" : "All unrostered players"}</option><option value="all">All unrostered players</option><option value="veterans">Veterans only</option><option value="rookies">Rookies only</option></select></label><label className="mt-3 block text-[10px] font-semibold uppercase tracking-wider text-white/35">Market format<select value={valueFormatOverride} onChange={(event) => setValueFormatOverride(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm normal-case tracking-normal text-white"><option value="auto">Auto: {detectedValueFormat === "dynasty" ? "Dynasty" : "Redraft"}</option><option value="dynasty">Dynasty values</option><option value="redraft">Redraft values</option></select></label></div><SourceSelector value={String(sourceKey).startsWith("val:") ? sourceKey : "val:fantasycalc"} onChange={setSourceKey} sources={VALUE_SOURCES} mode={valueFormat} onModeChange={setValueFormatOverride} qbType={qbType} label="Draft value source" layout="inline" /></div></Panel>
       <Panel className="sticky top-14 z-30 mt-5 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur"><div className="flex w-max gap-1">{[["room","Draft Room"],["myteam","My Team"],["board","Full Board"],["players","Player Queue"],["needs","Team Needs"]].map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold ${tab === key ? "bg-white/10 text-white" : "text-white/42"}`}>{label}</button>)}</div></Panel>
       {tab === "room" ? <DraftIntelligence nextMyPick={nextMyPick} picksAway={picksAway} recentRun={recentRun} tierSize={tierSize} valueCliff={valueCliff} draftedCounts={draftedCounts} /> : null}
 
