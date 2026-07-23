@@ -313,9 +313,27 @@ function computeWeeklyLineup({ roster, players, getMetricWeekly, slots, week, by
   return { total, starters, bench };
 }
 
+function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferredRosterId }) {
+  const teams=heatData?.teams||[];const weeks=heatData?.weeks||[];const playoffStart=Number(league?.settings?.playoff_week_start||15);
+  const [teamA,setTeamA]=useState("");const [teamB,setTeamB]=useState("");
+  useEffect(()=>{if(teams.length){const preferred=teams.find(t=>String(t.rid)===String(preferredRosterId))||teams[0];setTeamA(String(preferred.rid));setTeamB(current=>teams.some(t=>String(t.rid)===String(current))&&String(current)!==String(preferred.rid)?current:String(teams.find(t=>String(t.rid)!==String(preferred.rid))?.rid||preferred.rid));}},[preferredRosterId,teams]);
+  if(!heatData||!rows?.length)return null;
+  const summary=(rid,range)=>{const values=range.map(w=>Number(heatData.cells?.get(`${rid}|${w}`))).filter(Number.isFinite);const avg=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;const variance=values.length?values.reduce((sum,v)=>sum+(v-avg)**2,0)/values.length:0;return{avg,volatility:Math.sqrt(variance),best:range[values.indexOf(Math.min(...values))],worst:range[values.indexOf(Math.max(...values))]};};
+  const regWeeks=weeks.filter(w=>w<playoffStart),playoffWeeks=weeks.filter(w=>w>=playoffStart);const a=summary(teamA,weeks),b=summary(teamB,weeks);
+  const positionRows=["QB","RB","WR","TE"].map(pos=>{const samples=weeks.map(w=>{const opp=matchupMeta?.[w]?.[teamA]?.oppRid;const starters=lineups?.[w]?.[opp]?.starters||[];return starters.filter(player=>String(player.pos)===pos).reduce((sum,player)=>sum+Number(player.val||player.proj||0),0);});const avg=samples.length?samples.reduce((x,y)=>x+y,0)/samples.length:0;return{pos,avg};});
+  const hardest=[...weeks].sort((x,y)=>Number(heatData.cells?.get(`${teamA}|${y}`)||0)-Number(heatData.cells?.get(`${teamA}|${x}`)||0)).slice(0,3);
+  const standings=(league?.rosters||[]).map(roster=>({rid:String(roster.roster_id),wins:Number(roster.settings?.wins||0),points:Number(roster.settings?.fpts||0)}));const winRanks=[...standings].sort((x,y)=>y.wins-x.wins);const pointRanks=[...standings].sort((x,y)=>y.points-x.points);const mine=standings.find(row=>row.rid===String(teamA));const luck=mine?(pointRanks.findIndex(row=>row.rid===mine.rid)+1)-(winRanks.findIndex(row=>row.rid===mine.rid)+1):0;
+  return <Card className="mt-5 overflow-hidden"><div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.12),transparent_40%)] p-5"><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-cyan-200/55">Schedule intelligence lab</div><h2 className="mt-1 text-2xl font-black">Regular season, playoff path, and leverage</h2><div className="mt-4 grid gap-2 sm:grid-cols-2">{[teamA,teamB].map((value,index)=><select key={index} value={value} onChange={event=>index?setTeamB(event.target.value):setTeamA(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm">{teams.map(team=><option key={team.rid} value={team.rid}>{team.name}</option>)}</select>)}</div></div><div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,.8fr)]"><div className="space-y-4"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Regular-season SOS",summary(teamA,regWeeks).avg],["Playoff SOS",summary(teamA,playoffWeeks).avg],["Opponent volatility",a.volatility],["Schedule luck",luck]].map(([label,value])=><div key={label} className="rounded-2xl bg-white/[0.025] p-3"><div className="text-[9px] uppercase text-white/30">{label}</div><div className="mt-1 text-xl font-black">{label==="Schedule luck"?(value>0?`+${value} rank`:value<0?`${value} rank`:"Neutral"):Number.isFinite(value)?Number(value).toFixed(1):"—"}</div></div>)}</div><div className="rounded-2xl bg-white/[0.025] p-4"><h3 className="font-black">Position-specific opponent strength</h3><div className="mt-3 grid grid-cols-4 gap-2">{positionRows.map(row=><div key={row.pos} className="rounded-xl bg-black/15 p-3 text-center"><b>{row.pos}</b><div className="mt-1 text-lg font-black text-cyan-100">{Math.round(row.avg)}</div><small className="text-[9px] text-white/30">avg opponent</small></div>)}</div></div><div className="rounded-2xl bg-white/[0.025] p-4"><h3 className="font-black">Path comparison</h3><div className="mt-3 grid grid-cols-[1fr_auto_1fr] gap-3 text-center"><div><b>{teams.find(t=>String(t.rid)===String(teamA))?.name}</b><div className="mt-2 text-2xl font-black text-cyan-100">{a.avg.toFixed(1)}</div><small className="text-white/30">avg difficulty margin</small></div><span className="self-center text-white/20">VS</span><div><b>{teams.find(t=>String(t.rid)===String(teamB))?.name}</b><div className="mt-2 text-2xl font-black text-violet-100">{b.avg.toFixed(1)}</div><small className="text-white/30">avg difficulty margin</small></div></div></div></div><div className="space-y-4"><div className="rounded-2xl bg-amber-300/[0.045] p-4"><h3 className="font-black text-amber-100">Best and worst playoff weeks</h3><div className="mt-2 text-xs leading-5 text-white/45">Best: {playoffWeeks.length?`Week ${summary(teamA,playoffWeeks).best}`:"Playoff window not selected"}<br/>Worst: {playoffWeeks.length?`Week ${summary(teamA,playoffWeeks).worst}`:"—"}</div></div><div className="rounded-2xl bg-white/[0.025] p-4"><h3 className="font-black">Actionable hard-week plan</h3><div className="mt-3 space-y-2">{hardest.map(w=><a key={w} href={`/player-availability?week=${w}&league=${encodeURIComponent(league?.league_id||"")}`} className="flex justify-between rounded-xl bg-black/15 p-3 text-xs"><span>Week {w} · difficult matchup</span><b className="text-cyan-100">Find waiver help →</b></a>)}</div></div><div className="rounded-2xl bg-violet-300/[0.04] p-4"><h3 className="font-black">Playoff leverage</h3><p className="mt-2 text-xs leading-5 text-white/45">Weeks {playoffWeeks.join(", ")||"—"} are isolated from the regular-season score. A difficult playoff path should carry more weight for contenders than an equally difficult early week.</p></div></div></div></Card>;
+}
+
 export default function SOSPage() {
-  const { leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
+  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
   const league = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
+
+  useEffect(() => {
+    if (!activeLeague || (league?.rosters?.length && league?.users?.length)) return;
+    fetchLeagueRostersSilent(activeLeague).catch(() => {});
+  }, [activeLeague, fetchLeagueRostersSilent, league?.rosters?.length, league?.users?.length]);
 
   // Scoring auto-guess with sticky overrides
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -422,6 +440,7 @@ export default function SOSPage() {
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sosError, setSosError] = useState("");
   const [heatmapMode, setHeatmapMode] = useState(true);
   const [isChopped, setIsChopped] = useState(false);
 
@@ -463,6 +482,8 @@ export default function SOSPage() {
   const ridList = useMemo(() => rosters.map((r) => r.roster_id), [rosters]);
 
   const rosterById = useMemo(() => Object.fromEntries(rosters.map((r) => [r.roster_id, r])), [rosters]);
+  const signedInUser = useMemo(() => allUsers.find((user) => [user.username,user.display_name].some((value)=>String(value||"").toLowerCase()===String(username||"").toLowerCase())), [allUsers,username]);
+  const myRosterId = useMemo(() => String(rosters.find((roster)=>String(roster.owner_id)===String(signedInUser?.user_id))?.roster_id||""), [rosters,signedInUser?.user_id]);
   const userOfRoster = (rid) => allUsers.find((u) => u.user_id === rosterById[rid]?.owner_id);
   const teamName = (rid) => {
     const u = userOfRoster(rid);
@@ -478,7 +499,8 @@ export default function SOSPage() {
   const loadWeek = async (w) => {
     if (!activeLeague) return [];
     if (schedCache[w]) return schedCache[w];
-    const res = await fetch(`https://api.sleeper.app/v1/league/${activeLeague}/matchups/${w}`);
+    const res = await fetch(`https://api.sleeper.app/v1/league/${activeLeague}/matchups/${w}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Week ${w} schedule returned HTTP ${res.status}`);
     const data = res.ok ? await res.json() : [];
     const byMid = new Map();
     for (const row of data) {
@@ -507,6 +529,7 @@ export default function SOSPage() {
   }
 
   setBusy(true);
+  setSosError("");
   try {
     const weeks = []; for (let w = week; w <= toWeek; w++) weeks.push(w);
     const byWeek = await Promise.all(weeks.map(loadWeek));
@@ -673,6 +696,11 @@ export default function SOSPage() {
 
     setLineups(nextLineups);
     setMatchupMeta(nextMatchups);
+  } catch (error) {
+    console.error("SOS calculation failed", error);
+    setRows(null);
+    setHeatData(null);
+    setSosError("The schedule could not be loaded. Check the selected league and try again.");
   } finally {
     setBusy(false);
   }
@@ -833,6 +861,15 @@ export default function SOSPage() {
 
         </Card>
 
+        {sosError ? (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-rose-300/20 bg-rose-400/[0.08] p-4 text-sm text-rose-100 sm:flex-row sm:items-center sm:justify-between">
+            <span>{sosError}</span>
+            <button type="button" onClick={recompute} disabled={busy} className="rounded-xl border border-rose-200/20 bg-white/[0.06] px-4 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-50">
+              {busy ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        ) : null}
+
         <SectionTitle subtitle={
           metricMode === "projections"
           ? byeDataAvailable
@@ -844,6 +881,8 @@ export default function SOSPage() {
         }>
           Results
         </SectionTitle>
+
+        <SOSIntelligence heatData={heatData} rows={rows} league={league} lineups={lineups} matchupMeta={matchupMeta} preferredRosterId={myRosterId}/>
 
         <div className="flex items-center gap-3 mt-4">
           <button
@@ -925,7 +964,7 @@ export default function SOSPage() {
                               margin={typeof margin === "number" ? margin : null}
                               globalMaxAbs={heatData?.globalMaxAbs || 0}
                               isChopped={isChopped}
-                              onOpen={({ rid, week }) => { setModalWeek(week); setModalRid(rid); setModalOpen(true); }}
+                              onOpen={({ rid, week }) => { setModalWeek(week); setModalRid(myRosterId || rid); setModalOpen(true); }}
                             />
                           );
                         })}

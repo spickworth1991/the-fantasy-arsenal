@@ -520,10 +520,32 @@ export default function CommissionerDashboardClient() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("overview");
+  const [leagueQuery, setLeagueQuery] = useState("");
   const [reportRosterId, setReportRosterId] = useState("");
   const [copied, setCopied] = useState(false);
   const [recruiting, setRecruiting] = useState(RECRUITING_DEFAULTS);
   const league = useMemo(() => leagues.find((row) => row.league_id === activeLeague) || null, [activeLeague, leagues]);
+  const matchingLeagues = useMemo(() => {
+    const query = leagueQuery.trim().toLowerCase();
+    if (!query) return [];
+    return leagues
+      .filter((row) => [row.name, row.season, row.league_id].some((value) => String(value || "").toLowerCase().includes(query)))
+      .sort((a, b) => {
+        const aName = String(a.name || "").toLowerCase();
+        const bName = String(b.name || "").toLowerCase();
+        const aStarts = aName.startsWith(query);
+        const bStarts = bName.startsWith(query);
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+        return number(b.season) - number(a.season) || aName.localeCompare(bName);
+      })
+      .slice(0, 12);
+  }, [leagueQuery, leagues]);
+  const chooseLeague = (leagueId) => {
+    setActiveLeague(leagueId);
+    setData(null);
+    setLeagueQuery("");
+    if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
+  };
   const commissionerSourceKey = String(sourceKey || "").startsWith("val:") ? sourceKey : "val:thefantasyarsenal";
   const selectedValueSource = VALUE_SOURCES.find((source) => source.key === commissionerSourceKey) || VALUE_SOURCES[0];
   const valueFor = useMemo(() => (player) => getPlayerValue(player, { format, qbType, sourceKey: commissionerSourceKey }) || 0, [commissionerSourceKey, format, getPlayerValue, qbType]);
@@ -650,6 +672,8 @@ export default function CommissionerDashboardClient() {
     <header className="relative overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_85%_0%,rgba(34,211,238,.2),transparent_34%),radial-gradient(circle_at_10%_100%,rgba(139,92,246,.14),transparent_32%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 shadow-[0_42px_125px_-75px_rgba(34,211,238,.75)] sm:p-7"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/60">Commissioner intelligence</div><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">League Health Dashboard</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/58 sm:text-base">Participation, competitive balance, lineup habits, roster quality, settings, and review signals—with evidence and neutral language built in.</p><div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"><label><span className="mb-1.5 block text-xs text-white/45">League to audit</span><select value={activeLeague || ""} onChange={(event) => { setActiveLeague(event.target.value); setData(null); if (event.target.value) fetchLeagueRostersSilent(event.target.value).catch(() => {}); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-3 text-sm"><option value="">Choose a league</option>{leagues.map((row) => <option key={row.league_id} value={row.league_id}>{row.name}</option>)}</select></label><div className="grid grid-cols-2 gap-2"><Metric label="Your access" value={isCommissioner ? "Commissioner" : "Read-only"} detail={isCommissioner ? "You are listed as a league owner." : "Audit data remains publicly viewable."} /><Metric label="Commissioners" value={commissioners.length || "—"} detail={commissioners.slice(0,2).join(", ")} /></div></div></header>
 
     {username ? <Shell className="mt-4 p-4"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,440px)] lg:items-center"><div><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-cyan-200/50">Valuation model</div><div className="mt-1 text-lg font-black">Choose how roster strength is measured</div><p className="mt-1 text-xs leading-5 text-white/42">This controls roster values, value ranks, positional profiles, trade-review estimates, orphan evaluations, and printed reports. Activity and lineup-compliance metrics are unaffected.</p><div className="mt-2 text-[11px] text-white/35">Currently using <span className="font-semibold text-white/65">{selectedValueSource?.label}</span> · {format === "redraft" ? "Redraft" : "Dynasty"} · {qbType === "1qb" ? "1QB" : "Superflex"}</div></div><SourceSelector value={commissionerSourceKey} onChange={setSourceKey} sources={VALUE_SOURCES} mode={format} qbType={qbType} onModeChange={setFormat} onQbTypeChange={setQbType} label="Commissioner value source" layout="inline" /></div></Shell> : null}
+
+    {username ? <Shell className="relative z-40 mt-4 overflow-visible p-4"><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-cyan-200/50">Instant league search</div><div className="relative mt-2"><div className="flex rounded-2xl border border-white/10 bg-slate-950/85 transition focus-within:border-cyan-300/35 focus-within:ring-2 focus-within:ring-cyan-300/10"><span className="grid w-11 shrink-0 place-items-center text-white/30" aria-hidden="true">⌕</span><input value={leagueQuery} onChange={(event) => setLeagueQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setLeagueQuery(""); if (event.key === "Enter" && matchingLeagues[0]) chooseLeague(matchingLeagues[0].league_id); }} placeholder={league ? `Search leagues · Current: ${league.name}` : "Search league name, season, or ID…"} aria-label="Search leagues" className="min-w-0 flex-1 bg-transparent py-3 pr-3 text-sm outline-none placeholder:text-white/28" />{leagueQuery ? <button type="button" onClick={() => setLeagueQuery("")} className="px-3 text-xs font-semibold text-white/35 hover:text-white" aria-label="Clear league search">Clear</button> : null}</div>{leagueQuery ? <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-2xl border border-white/12 bg-slate-950 p-2 shadow-2xl shadow-black/60">{matchingLeagues.length ? matchingLeagues.map((row) => <button type="button" key={row.league_id} onClick={() => chooseLeague(row.league_id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/[0.07] ${String(row.league_id) === String(activeLeague) ? "bg-cyan-300/[0.08]" : ""}`}><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{row.name}</div><div className="mt-0.5 text-[11px] text-white/35">{row.season || "Season unavailable"} · {row.total_rosters || "—"} teams</div></div>{String(row.league_id) === String(activeLeague) ? <span className="rounded-full bg-cyan-300/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-cyan-100">Current</span> : <span className="text-white/25">→</span>}</button>) : <div className="px-3 py-6 text-center text-sm text-white/40">No leagues match “{leagueQuery.trim()}”.</div>}</div> : null}</div><p className="mt-2 text-[11px] text-white/32">Searches all {leagues.length} leagues. Press Enter to open the first result.</p></Shell> : null}
 
     {loading ? <div className="mt-5 flex items-center gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-400/[0.07] p-4 text-sm text-cyan-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200/25 border-t-cyan-200" />{progress}</div> : null}
     {error ? <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</div> : null}
