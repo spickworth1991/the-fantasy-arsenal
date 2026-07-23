@@ -1,0 +1,24 @@
+{
+  "zeroValues": [
+    {
+      "name": "Jerrion Ealy",
+      "position": "RB",
+      "reason": "Do not assign a market value to this exact player/position match."
+    },
+    {
+      "name": "Tony Jones",
+      "position": "WR",
+      "reason": "Do not assign a market value to this exact player/position match."
+    }
+  ],
+  "positionCorrections": [
+    {
+      "name": "Kenneth Walker",
+      "position": "RB"
+    },
+    {
+      "name": "Kenneth Walker III",
+      "position": "RB"
+    }
+  ]
+}

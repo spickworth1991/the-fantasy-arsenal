@@ -890,7 +890,17 @@ export const SleeperProvider = ({ children }) => {
       setProgress(60);
       setError("");
 
-      const cachedPlayers = await get(CACHE_KEY);
+      let playerCacheKey = CACHE_KEY;
+      try {
+        const versionResponse = await fetch("/value-cache-version.json", { cache: "no-store" });
+        if (versionResponse.ok) {
+          const manifest = await versionResponse.json();
+          if (manifest?.version) playerCacheKey = `${CACHE_KEY}:${manifest.version}`;
+        }
+      } catch {}
+      // Development should always reflect edits to the public JSON files without
+      // requiring the user to manually clear IndexedDB.
+      const cachedPlayers = process.env.NODE_ENV === "development" ? null : await get(playerCacheKey);
       if (cachedPlayers && typeof cachedPlayers === "object") {
         console.log("✅ Loaded player DB from cache:", Object.keys(cachedPlayers).length);
         setPlayers(cachedPlayers);
@@ -924,7 +934,7 @@ export const SleeperProvider = ({ children }) => {
             };
           });
 
-          await set(CACHE_KEY, refreshedPlayers);
+          await set(playerCacheKey, refreshedPlayers);
           setPlayers(refreshedPlayers);
         } catch (refreshError) {
           console.warn("Sleeper player metadata refresh failed; using cache.", refreshError);
@@ -937,13 +947,13 @@ export const SleeperProvider = ({ children }) => {
       updateProgress(68);
 
       const [fcRes, dpRes, ktcRes, fnRes, idpRes, idpShowRes, spRes] = await Promise.all([
-        fetch("/fantasycalc_cache.json"),
-        fetch("/dynastyprocess_cache.json"),
-        fetch("/ktc_cache.json"),
-        fetch("/fantasynav_cache.json"),
-        fetch("/idynastyp_cache.json"),
-        fetch("/idpshow_cache.json"),
-        fetch("/stickypicky_cache.json"),
+        fetch("/fantasycalc_cache.json", { cache: "no-store" }),
+        fetch("/dynastyprocess_cache.json", { cache: "no-store" }),
+        fetch("/ktc_cache.json", { cache: "no-store" }),
+        fetch("/fantasynav_cache.json", { cache: "no-store" }),
+        fetch("/idynastyp_cache.json", { cache: "no-store" }),
+        fetch("/idpshow_cache.json", { cache: "no-store" }),
+        fetch("/stickypicky_cache.json", { cache: "no-store" }),
       ]);
 
       const [fcData, dpData, ktcData, fnData, idpData, idpShowData, spData] = await Promise.all([
@@ -1282,7 +1292,7 @@ export const SleeperProvider = ({ children }) => {
 
       updateProgress(95);
 
-      await set(CACHE_KEY, finalPlayers);
+      await set(playerCacheKey, finalPlayers);
       setPlayers(finalPlayers);
       setProgress(100);
     } catch (err) {

@@ -328,12 +328,41 @@ function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferr
 
 export default function SOSPage() {
   const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
-  const league = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
+  const contextLeague = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
+  const [hydratedLeague, setHydratedLeague] = useState(null);
+  const [leagueLoading, setLeagueLoading] = useState(false);
+  const league = useMemo(() => {
+    if (!contextLeague) return null;
+    if (hydratedLeague?.league_id === contextLeague.league_id) return { ...contextLeague, ...hydratedLeague };
+    return contextLeague;
+  }, [contextLeague, hydratedLeague]);
 
   useEffect(() => {
-    if (!activeLeague || (league?.rosters?.length && league?.users?.length)) return;
-    fetchLeagueRostersSilent(activeLeague).catch(() => {});
-  }, [activeLeague, fetchLeagueRostersSilent, league?.rosters?.length, league?.users?.length]);
+    let active = true;
+    setHydratedLeague(null);
+    if (!activeLeague) { setLeagueLoading(false); return () => { active = false; }; }
+    if (contextLeague?.rosters?.length && contextLeague?.users?.length) {
+      setHydratedLeague({ league_id: activeLeague, rosters: contextLeague.rosters, users: contextLeague.users });
+      setLeagueLoading(false);
+      return () => { active = false; };
+    }
+    setLeagueLoading(true);
+    fetchLeagueRostersSilent(activeLeague)
+      .then(({ rosters, users }) => {
+        if (active) setHydratedLeague({ league_id: activeLeague, rosters: rosters || [], users: users || [] });
+      })
+      .catch(() => {
+        if (active) {
+          setHydratedLeague({ league_id: activeLeague, rosters: [], users: [] });
+          setSosError("The selected league's rosters could not be loaded. Try selecting the league again.");
+        }
+      })
+      .finally(() => { if (active) setLeagueLoading(false); });
+    return () => { active = false; };
+    // The context fetcher is intentionally excluded: its identity changes when the
+    // provider rerenders, which must not restart an in-flight league hydration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLeague, contextLeague?.rosters?.length, contextLeague?.users?.length]);
 
   // Scoring auto-guess with sticky overrides
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -519,7 +548,13 @@ export default function SOSPage() {
   const [heatData, setHeatData] = useState(null);
 
   const recompute = async () => {
-  if (!activeLeague || !rosters.length) { setRows(null); setHeatData(null); return; }
+  if (!activeLeague || leagueLoading) { setRows(null); setHeatData(null); return; }
+  if (!rosters.length) {
+    setRows(null);
+    setHeatData(null);
+    setSosError("No active rosters were found for this league.");
+    return;
+  }
   if (metricMode === "projections") {
     const chosen =
       projectionSource === "ESPN" ? projMaps.ESPN :
@@ -710,7 +745,7 @@ export default function SOSPage() {
   useEffect(() => {
     recompute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLeague, week, toWeek, metricMode, projectionSource, projMaps, valueSource, formatLocal, qbLocal, players, rosters.length, byeMap, projLoading]);
+  }, [activeLeague, week, toWeek, metricMode, projectionSource, projMaps, valueSource, formatLocal, qbLocal, players, rosters.length, byeMap, projLoading, leagueLoading]);
 
   return (
     <>
@@ -902,6 +937,8 @@ export default function SOSPage() {
         <Card className="p-4 mt-4">
           {!activeLeague ? (
             <div className="text-sm opacity-70">Choose a league above.</div>
+          ) : leagueLoading ? (
+            <div className="flex items-center gap-3 text-sm text-cyan-100/75"><span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />Loading league rosters…</div>
           ) : projLoading && metricMode === "projections" ? (
             <div className="text-sm opacity-70">Loading projections…</div>
           ) : !rows ? (

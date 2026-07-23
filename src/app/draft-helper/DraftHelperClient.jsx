@@ -9,7 +9,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 
 const VALUE_SOURCES = DEFAULT_SOURCES.filter((source) => source.type === "value");
-const OFFENSE = new Set(["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB", "IDP", "DE", "DT", "CB", "S"]);
+const OFFENSE = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
 const FLEX = new Set(["RB", "WR", "TE"]);
 const IDP = new Set(["DL", "LB", "DB", "IDP", "DE", "DT", "CB", "S", "EDGE"]);
 const n = (value) => Number(value || 0);
@@ -142,6 +142,9 @@ export default function DraftHelperClient() {
   const [draftQueue, setDraftQueue] = useState([]);
   const [compareIds, setCompareIds] = useState(["", ""]);
   const league = useMemo(() => (leagues || []).find((item) => String(item.league_id) === String(activeLeague)), [activeLeague, leagues]);
+  const draftingLeagues = useMemo(() => (leagues || [])
+    .filter((item) => String(item.status || "").toLowerCase() === "drafting")
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))), [leagues]);
 
   useEffect(() => {
     try { setWatchlist(JSON.parse(localStorage.getItem("draft-helper-watchlist") || "[]")); } catch { setWatchlist([]); }
@@ -260,14 +263,19 @@ export default function DraftHelperClient() {
   }, [draft?.metadata?.description, draft?.metadata?.name, draft?.season, picks, players]);
   const playerPool = poolOverride === "auto" ? inferredPool : poolOverride;
   const rookieOnly = playerPool === "rookies";
+  const rosterSlots = useMemo(() => (league?.roster_positions || []).map(upper), [league?.roster_positions]);
+  const allowsTeamDefense = rosterSlots.some((slot) => ["DEF", "DST", "D/ST"].includes(slot));
+  const allowsIdp = rosterSlots.some((slot) => IDP.has(slot) || ["IDP_FLEX", "IDP FLEX"].includes(slot));
   const eligible = useMemo(() => Object.entries(players || {}).map(([id, player]) => ({ id, player, pos:effectivePosition(player) })).filter(({ id, player, pos }) => {
     if (!OFFENSE.has(pos) && !IDP.has(pos)) return false;
+    if (pos === "DEF" && !allowsTeamDefense) return false;
+    if (IDP.has(pos) && !allowsIdp) return false;
     if (pickedIds.has(id) || rosteredIds.has(id)) return false;
     if (["Inactive", "Retired"].includes(player?.status)) return false;
     if (rookieOnly && !(n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     if (playerPool === "veterans" && (n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     return true;
-  }).map(({ id, player, pos }) => ({ id, player, pos, name:playerName(player, id), team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })) })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
+  }).map(({ id, player, pos }) => ({ id, player, pos, name:playerName(player, id), team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })) })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [allowsIdp, allowsTeamDefense, draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
 
   const draftedByRoster = useMemo(() => {
     const map = new Map();
@@ -317,9 +325,10 @@ export default function DraftHelperClient() {
   const positionOptions = ["ALL", ...new Set(eligible.map((item) => item.pos))];
   const visiblePlayers = ranked.filter((item) => (position === "ALL" || item.pos === position) && (!query.trim() || `${item.name} ${item.team} ${item.pos}`.toLowerCase().includes(query.trim().toLowerCase()))).slice(0, 80);
 
-  return <main className="min-h-screen text-white"><BackgroundParticles /><Navbar pageTitle="Draft Helper" /><div className="mx-auto max-w-[1500px] px-4 pb-20 pt-20">
-    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.22),transparent_35%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.17),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-7"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/60">League-aware draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Room</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/55 sm:text-base">Live Sleeper draftboard, traded-pick ownership, roster needs, and recommendations built for this league's actual settings.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.55fr)_auto]"><select value={activeLeague || ""} onChange={(event) => { setActiveLeague(event.target.value); setDraftId(""); setDraft(null); setPicks([]); }} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a league</option>{(leagues || []).map((item) => <option key={item.league_id} value={item.league_id}>{item.name}</option>)}</select><select value={draftId} onChange={(event) => setDraftId(event.target.value)} disabled={!drafts.length} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((item) => <option key={item.draft_id} value={item.draft_id}>{item.season} · {item.status} · {item.settings?.rounds || "—"} rounds</option>)}</select><button onClick={() => refreshDraft()} disabled={!draftId || loading} className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100">{loading ? "Loading..." : "Refresh live draft"}</button></div></header>
+  return <main className="min-h-screen text-white"><BackgroundParticles /><Navbar pageTitle="Draft Command Center" /><div className="mx-auto max-w-[1500px] px-4 pb-20 pt-20">
+    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.22),transparent_35%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.17),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-7"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/60">League-aware draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Command Center</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/55 sm:text-base">Live Sleeper draftboard, traded-pick ownership, roster needs, and recommendations built for this league's actual settings.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.55fr)_auto]"><select value={activeLeague || ""} onChange={(event) => { setActiveLeague(event.target.value); setDraftId(""); setDraft(null); setPicks([]); }} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a league</option>{(leagues || []).map((item) => <option key={item.league_id} value={item.league_id}>{item.name}</option>)}</select><select value={draftId} onChange={(event) => setDraftId(event.target.value)} disabled={!drafts.length} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((item) => <option key={item.draft_id} value={item.draft_id}>{item.season} · {item.status} · {item.settings?.rounds || "—"} rounds</option>)}</select><button onClick={() => refreshDraft()} disabled={!draftId || loading} className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100">{loading ? "Loading..." : "Refresh live draft"}</button></div></header>
 
+    {username && draftingLeagues.length ? <Panel className="mt-5 overflow-hidden"><div className="flex flex-col gap-1 border-b border-white/10 p-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-emerald-200/55">Drafting now</div><h2 className="mt-1 text-xl font-black">Jump into a live league</h2></div><div className="text-xs text-white/35">{draftingLeagues.length} active draft{draftingLeagues.length === 1 ? "" : "s"}</div></div><div className="flex gap-2 overflow-x-auto p-3">{draftingLeagues.map((item) => <button type="button" key={item.league_id} onClick={() => { setActiveLeague(item.league_id); setDraftId(""); setDraft(null); setPicks([]); }} className={`min-w-[220px] rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${String(item.league_id) === String(activeLeague) ? "border-emerald-300/30 bg-emerald-300/[0.09]" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}><div className="truncate text-sm font-bold">{item.name}</div><div className="mt-1 flex items-center justify-between text-[10px] text-white/35"><span>{item.season || "Current season"}</span><span className="font-semibold text-emerald-100/70">Open →</span></div></button>)}</div></Panel> : null}
     {!username ? <Panel className="mt-5 p-8 text-center text-white/55">Log in with your Sleeper username on the homepage to load your leagues.</Panel> : null}
     {error ? <div className="mt-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.07] p-4 text-sm text-rose-100">{error}</div> : null}
     {username && activeLeague && !loading && !drafts.length ? <Panel className="mt-5 p-8 text-center"><div className="text-lg font-black">No Sleeper drafts found</div><p className="mt-2 text-sm text-white/42">This league does not currently expose a draft to build a board from.</p></Panel> : null}
