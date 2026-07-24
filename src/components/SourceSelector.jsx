@@ -32,6 +32,7 @@ const ICONS = {
   FFA: "/icons/ffa-logo.jpg",
   ESPN: "/icons/espn-logo.png",
   CBS: "/icons/cbs-logo.png",
+  Sleeper: "/icons/sleeper.webp",
 };
 
 const LABELS = {
@@ -82,7 +83,7 @@ const ICON_SIZES = {
 };
 
 // Only some logos need visible text; render it like part of the logo/wordmark
-const SHOW_TEXT = (key) => key === "FantasyNavigator" || key === "Sleeper";
+const SHOW_TEXT = (key) => key === "FantasyNavigator";
 
 /** ========== Defaults ========== */
 export const DEFAULT_SOURCES = [

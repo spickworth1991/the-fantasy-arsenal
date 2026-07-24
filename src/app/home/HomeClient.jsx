@@ -35,12 +35,12 @@ const TOOL_ICONS = {
   "Strength of Schedule": "/icons/sos-icon.png",
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
-  "Draft Command Center": "/icons/draft-icon.png",
-  "Manager Intelligence": "/icons/league-hub.png",
-  "Fantasy Game Center": "/icons/lineup-icon.png",
+  "Draft Command Center": "/icons/draft-command-center-icon.png",
+  "Manager Intelligence": "/icons/manager-intelligence-icon.png",
+  "Fantasy Game Center": "/icons/fantasy-game-center-icon.png",
   "League Hub": "/icons/league-hub.png",
-  "League History": "/icons/league-hub.png",
-  "Commissioner Dashboard": "/icons/league-hub.png",
+  "League History": "/icons/league-history-icon.png",
+  "Commissioner Dashboard": "/icons/commissioner-dashboard-icon.png",
   "Playoff Odds": "/icons/playoff-icon.png",
 };
 
