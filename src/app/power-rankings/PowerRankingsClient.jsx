@@ -271,7 +271,7 @@ function indexPickPlayers(playersMap) {
    PROJECTIONS (like SOS)
 =========================== */
 // Files in /public
-import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -377,8 +377,8 @@ export default function PowerRankingsPage() {
   // Controls
   // NEW: metric & projection source (default to projections like SOS)
   const [metricMode, setMetricMode] = useState("projections"); // "projections" | "values"
-  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -415,15 +415,17 @@ export default function PowerRankingsPage() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csvMap, espnMap, cbsMap] = await Promise.allSettled([
+        const [csvMap, espnMap, cbsMap, sleeperMap] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
+          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
         ]);
-        const next = { CSV: null, ESPN: null, CBS: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null };
         if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
         if (espnMap.status === "fulfilled") next.ESPN = espnMap.value;
         if (cbsMap.status === "fulfilled") next.CBS = cbsMap.value;
+        if (sleeperMap.status === "fulfilled") next.SLEEPER = sleeperMap.value;
         if (!mounted) return;
         setProjMaps(next);
 
@@ -437,14 +439,17 @@ export default function PowerRankingsPage() {
         if (projectionSource === "ESPN" && !next.ESPN) {
           setSourceKey(next.CSV ? "proj:ffa" : (next.CBS ? "proj:cbs" : "proj:espn"));
         }
+        if (projectionSource === "SLEEPER" && !next.SLEEPER) {
+          setSourceKey(next.ESPN ? "proj:espn" : (next.CSV ? "proj:ffa" : "proj:cbs"));
+        }
 
-        if (!next.CSV && !next.ESPN && !next.CBS) {
+        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER) {
           setProjError("No projections available — falling back to Values.");
           setSourceKey("val:thefantasyarsenal");
         }
       } catch (e) {
         if (!mounted) return;
-        setProjMaps({ CSV: null, ESPN: null, CBS: null });
+        setProjMaps({ CSV: null, ESPN: null, CBS: null, SLEEPER: null });
         setProjError("Projections unavailable — falling back to Values.");
         setSourceKey("val:thefantasyarsenal");
       } finally {
@@ -478,6 +483,7 @@ export default function PowerRankingsPage() {
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
         projectionSource === "CBS"  ? projMaps.CBS  :
+        projectionSource === "SLEEPER" ? projMaps.SLEEPER :
         projMaps.CSV;
       if (chosen) {
         return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
@@ -913,6 +919,7 @@ export default function PowerRankingsPage() {
                         {projMaps.CSV && <option value="CSV">Fantasy Football Analytics</option>}
                         {projMaps.ESPN && <option value="ESPN">ESPN</option>}
                         {projMaps.CBS && <option value="CBS">CBS Sports</option>}
+                        {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                       </select>
                     </div>
                   )}
@@ -1156,7 +1163,7 @@ export default function PowerRankingsPage() {
                   <div className="text-center text-gray-400 py-20">Choose a league to see power rankings.</div>
                 ) : !league?.rosters ? (
                   <div className="text-center text-gray-400 py-20">Loading league rosters…</div>
-                ) : metricMode === "projections" && (projLoading || !projMaps.CSV && !projMaps.ESPN && !projMaps.CBS) ? (
+                ) : metricMode === "projections" && (projLoading || !projMaps.CSV && !projMaps.ESPN && !projMaps.CBS && !projMaps.SLEEPER) ? (
                   <div className="text-center text-gray-400 py-20">Loading projections…</div>
                 ) : (
                   <Card className="p-4">

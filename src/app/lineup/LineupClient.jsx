@@ -10,7 +10,7 @@ import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
-import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -323,8 +323,8 @@ export default function LineupTool() {
   const [sourceKey, setSourceKey] = useState("proj:ffa");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
-  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -407,25 +407,28 @@ export default function LineupTool() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csv, espn, cbs] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
+          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
         ]);
         if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null };
         if (csv.status === "fulfilled")  next.CSV  = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled")  next.CBS  = cbs.value;
+        if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
         setProjMaps(next);
 
-        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS) {
+        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER) {
           setProjError("No projections available — using Values.");
           setSourceKey("val:thefantasyarsenal");
         } else {
           if (projectionSource === "CBS"  && !next.CBS)  setSourceKey(next.ESPN ? "proj:espn" : "proj:ffa");
           if (projectionSource === "ESPN" && !next.ESPN) setSourceKey(next.CSV ? "proj:ffa" : "proj:cbs");
           if (projectionSource === "CSV"  && !next.CSV)  setSourceKey(next.ESPN ? "proj:espn" : "proj:cbs");
+          if (projectionSource === "SLEEPER" && !next.SLEEPER) setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
         }
       } catch {
         if (!mounted) return;
@@ -528,6 +531,7 @@ export default function LineupTool() {
     const chosen =
       projectionSource === "ESPN" ? projMaps.ESPN :
       projectionSource === "CBS"  ? projMaps.CBS  :
+      projectionSource === "SLEEPER" ? projMaps.SLEEPER :
       projMaps.CSV;
     if (!chosen) return null;
 
@@ -679,7 +683,7 @@ export default function LineupTool() {
               </div>
               </details>
 
-              {metricMode === "values" ? <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-bold text-cyan-100">Values are best for roster quality—not weekly start/sit certainty.</div><p className="mt-1 text-xs leading-5 text-white/45">Locks, exclusions, and value-based lineup ordering still work. Weekly win probability, floor/ceiling confidence, weather context, and close start/sit explanations require projections.</p></div><button type="button" onClick={() => setSourceKey(projMaps.CSV ? "proj:ffa" : projMaps.ESPN ? "proj:espn" : "proj:cbs")} disabled={!projMaps.CSV&&!projMaps.ESPN&&!projMaps.CBS} className="shrink-0 rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-bold text-cyan-100 disabled:opacity-40">Use projections</button></div> : null}
+              {metricMode === "values" ? <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-bold text-cyan-100">Values are best for roster quality—not weekly start/sit certainty.</div><p className="mt-1 text-xs leading-5 text-white/45">Locks, exclusions, and value-based lineup ordering still work. Weekly win probability, floor/ceiling confidence, weather context, and close start/sit explanations require projections.</p></div><button type="button" onClick={() => setSourceKey(projMaps.CSV ? "proj:ffa" : projMaps.ESPN ? "proj:espn" : projMaps.CBS ? "proj:cbs" : "proj:sleeper")} disabled={!projMaps.CSV&&!projMaps.ESPN&&!projMaps.CBS&&!projMaps.SLEEPER} className="shrink-0 rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-bold text-cyan-100 disabled:opacity-40">Use projections</button></div> : null}
 
               <div className="flex flex-wrap items-end gap-4">
                 <span className="font-semibold">League:</span>
@@ -712,7 +716,7 @@ export default function LineupTool() {
                     <button
                       className={`px-3 py-1 ${metricMode === "projections" ? "bg-white/10" : "hover:bg-white/5"}`}
                       onClick={() => setMetricMode("projections")}
-                      disabled={!!projError || projLoading || (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS)}
+                      disabled={!!projError || projLoading || (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS && !projMaps.SLEEPER)}
                       title={projError || ""}
                     >
                       Projections{projLoading ? "…" : ""}
@@ -738,6 +742,7 @@ export default function LineupTool() {
                         {projMaps.CSV  && <option value="CSV">Fantasy Football Analytics</option>}
                         {projMaps.ESPN && <option value="ESPN">ESPN</option>}
                         {projMaps.CBS  && <option value="CBS">CBS Sports</option>}
+                        {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                       </select>
                     </>
                   )}

@@ -16,7 +16,7 @@ import {
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
 
-import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -112,7 +112,7 @@ export default function TradeAnalyzer() {
   const projectionSource = projectionSourceFromKey(sourceKey);
   const valueSource = valueSourceFromKey(sourceKey);
 
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
   const [sideA, setSideA] = useState([]);
@@ -127,17 +127,19 @@ export default function TradeAnalyzer() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csv, espn, cbs] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
+          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
         ]);
         if (!mounted) return;
 
-        const next = { CSV: null, ESPN: null, CBS: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null };
         if (csv.status === "fulfilled") next.CSV = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled") next.CBS = cbs.value;
+        if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
         setProjMaps(next);
 
         const fallbackKey = next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.CSV ? "proj:ffa" : null;
@@ -150,6 +152,7 @@ export default function TradeAnalyzer() {
           if (projectionSource === "CBS" && !next.CBS && fallbackKey) setSourceKey(fallbackKey);
           if (projectionSource === "ESPN" && !next.ESPN && fallbackKey) setSourceKey(fallbackKey);
           if (projectionSource === "CSV" && !next.CSV && fallbackKey) setSourceKey(fallbackKey);
+          if (projectionSource === "SLEEPER" && !next.SLEEPER && fallbackKey) setSourceKey(fallbackKey);
         }
       } catch {
         if (!mounted) return;
@@ -201,7 +204,7 @@ export default function TradeAnalyzer() {
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
       const chosen =
-        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projMaps.CSV;
+        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projMaps.CSV;
       if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
       return () => 0;
     }

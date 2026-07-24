@@ -6,6 +6,7 @@ export function projectionSourceFromKey(sourceKey) {
   const key = String(sourceKey || "").toLowerCase();
   if (key === "proj:espn") return "ESPN";
   if (key === "proj:cbs") return "CBS";
+  if (key === "proj:sleeper") return "SLEEPER";
   return "CSV";
 }
 

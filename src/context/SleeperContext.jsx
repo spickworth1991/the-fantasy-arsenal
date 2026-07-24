@@ -3,7 +3,7 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
-import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL } from "../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
   getPickDisplayLastName,
@@ -574,6 +574,7 @@ export const SleeperProvider = ({ children }) => {
     FFA: null,
     ESPN: null,
     CBS: null,
+    SLEEPER: null,
   });
 
   useEffect(() => {
@@ -624,7 +625,7 @@ export const SleeperProvider = ({ children }) => {
       "proj:cbs": "CBS",
 
       // ✅ backward-compat: if anything still sends proj:sleeper, treat it as FFA
-      "proj:sleeper": "FFA",
+      "proj:sleeper": "SLEEPER",
     };
     return map[String(k || "")] || "FFA";
   };
@@ -653,6 +654,7 @@ export const SleeperProvider = ({ children }) => {
     const srcKey = opts?.sourceKey ?? sourceKey;
 
     const mt = String(srcKey || "").startsWith("proj:") ? "projection" : "value";
+    if (mt === "projection") return getProjection(p, srcKey);
     if (
       mt === "value" &&
       srcKey === sourceKey &&
@@ -661,7 +663,7 @@ export const SleeperProvider = ({ children }) => {
     ) {
       return getPlayerValueFn(p);
     }
-    const src = mt === "value" ? valueSourceFromKey(srcKey) : "FantasyCalc";
+    const src = valueSourceFromKey(srcKey);
     return makeGetPlayerValue(src, fmt, qb)(p);
   };
 
@@ -694,14 +696,14 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
-    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null });
+    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null });
     setActiveLeague(null);
     preloadCalled.current = false;
   };
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = `projIndex_v1.105:${PROJECTION_DATA_SEASON}`;
+  const PROJ_CACHE_KEY = `projIndex_v1.106:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
@@ -717,28 +719,32 @@ export const SleeperProvider = ({ children }) => {
         const hasFFA = cached?.FFA && typeof cached.FFA === "object" && Object.keys(cached.FFA).length > 0;
         const hasESPN = cached?.ESPN && typeof cached.ESPN === "object" && Object.keys(cached.ESPN).length > 0;
         const hasCBS = cached?.CBS && typeof cached.CBS === "object" && Object.keys(cached.CBS).length > 0;
+        const hasSleeper = cached?.SLEEPER && typeof cached.SLEEPER === "object" && Object.keys(cached.SLEEPER).length > 0;
 
         // ✅ Only early-return if we actually have at least one non-empty index cached
-        if (hasFFA || hasESPN || hasCBS) {
+        if (hasFFA || hasESPN || hasCBS || hasSleeper) {
           setProjectionIndexes({
             FFA: hydrate(cached?.FFA) || null,
             ESPN: hydrate(cached?.ESPN) || null,
             CBS: hydrate(cached?.CBS) || null,
+            SLEEPER: hydrate(cached?.SLEEPER) || null,
           });
           return;
         }
       }
 
-      const [ffa, espn, cbs] = await Promise.all([
+      const [ffa, espn, cbs, sleeper] = await Promise.all([
         fetchProjectionIndex(PROJ_JSON_URL),        // ✅ FFA
         fetchProjectionIndex(PROJ_ESPN_JSON_URL),
         fetchProjectionIndex(PROJ_CBS_JSON_URL),
+        fetchProjectionIndex(PROJ_SLEEPER_JSON_URL),
       ]);
 
       const payloadRaw = {
         FFA: ffa?.raw || null,
         ESPN: espn?.raw || null,
         CBS: cbs?.raw || null,
+        SLEEPER: sleeper?.raw || null,
       };
 
       await set(PROJ_CACHE_KEY, payloadRaw);
@@ -747,10 +753,11 @@ export const SleeperProvider = ({ children }) => {
         FFA: hydrate(payloadRaw.FFA),
         ESPN: hydrate(payloadRaw.ESPN),
         CBS: hydrate(payloadRaw.CBS),
+        SLEEPER: hydrate(payloadRaw.SLEEPER),
       });
     } catch (e) {
       console.error("❌ Projection preload error:", e);
-      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null });
     }
   };
 
@@ -760,7 +767,7 @@ export const SleeperProvider = ({ children }) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
 
-    if (src !== "FFA" && src !== "ESPN" && src !== "CBS") src = "FFA";
+    if (!["FFA", "ESPN", "CBS", "SLEEPER"].includes(src)) src = "FFA";
     if (!p) return 0;
 
     const idx =
@@ -768,6 +775,8 @@ export const SleeperProvider = ({ children }) => {
         ? projectionIndexes.ESPN
         : src === "CBS"
         ? projectionIndexes.CBS
+        : src === "SLEEPER"
+        ? projectionIndexes.SLEEPER
         : projectionIndexes.FFA;
 
     if (!idx) return 0;
@@ -790,7 +799,7 @@ export const SleeperProvider = ({ children }) => {
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
     const missingProjs =
-      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS;
+      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER;
 
     if (!hasUsername) return;
     if (loading) return;

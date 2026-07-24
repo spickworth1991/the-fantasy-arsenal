@@ -46,6 +46,7 @@ const LABELS = {
   FFA: "FFA Projections",
   ESPN: "ESPN Projections",
   CBS: "CBS Projections",
+  Sleeper: "Sleeper Projections",
 };
 
 // Per-brand sizes: "button" = closed control; "menu" = options in dropdown
@@ -62,6 +63,7 @@ const ICON_SIZES = {
     ESPN: { w: 112, h: 28 },
     CBS: { w: 112, h: 28 },
     FFA: { w: 48, h: 24 },
+    Sleeper: { w: 48, h: 24 },
   },
   menu: {
     FantasyCalc: { w: 112, h: 21 },
@@ -75,11 +77,12 @@ const ICON_SIZES = {
     ESPN: { w: 112, h: 24 },
     CBS: { w: 112, h: 28 },
     FFA: { w: 112, h: 24 },
+    Sleeper: { w: 112, h: 24 },
   },
 };
 
 // Only some logos need visible text; render it like part of the logo/wordmark
-const SHOW_TEXT = (key) => key === "FantasyNavigator";
+const SHOW_TEXT = (key) => key === "FantasyNavigator" || key === "Sleeper";
 
 /** ========== Defaults ========== */
 export const DEFAULT_SOURCES = [
@@ -138,6 +141,7 @@ export const DEFAULT_SOURCES = [
   { key: "proj:espn", type: "projection", label: "ESPN Projections", logoKey: "ESPN" },
   { key: "proj:cbs", type: "projection", label: "CBS Projections", logoKey: "CBS" },
   { key: "proj:ffa", type: "projection", label: "FFA Projections", logoKey: "FFA" },
+  { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper" },
 ];
 
 function clamp(n, min, max) {
