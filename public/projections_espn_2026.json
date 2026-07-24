@@ -1,8 +1,8 @@
 {
-  "updated": "2026-07-23T23:29:19.072Z",
+  "updated": "2026-07-24T17:46:53.879Z",
   "season": 2026,
   "source": "ESPN",
-  "count": 1025,
+  "count": 1026,
   "rows": [
     {
       "player_id": "",
@@ -2164,7 +2164,7 @@
       "player_id": "",
       "name": "Riley Nowakowski",
       "team": "PIT",
-      "position": "TE",
+      "position": "RB",
       "points": 8.08682246
     },
     {
@@ -5209,7 +5209,7 @@
       "player_id": "",
       "name": "Jackson Meeks",
       "team": "DET",
-      "position": "WR",
+      "position": "TE",
       "points": 0
     },
     {
@@ -7177,6 +7177,13 @@
       "name": "Michael Trigg",
       "team": "DAL",
       "position": "TE",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Dominic Zvada",
+      "team": "NYG",
+      "position": "K",
       "points": 0
     }
   ],
@@ -9229,6 +9236,8 @@
     "philiprivers": 0,
     "philip rivers": 0,
     "michaeltrigg": 0,
-    "michael trigg": 0
+    "michael trigg": 0,
+    "dominiczvada": 0,
+    "dominic zvada": 0
   }
 }

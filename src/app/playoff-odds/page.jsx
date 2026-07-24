@@ -17,7 +17,7 @@ const BackgroundParticles = dynamic(
   { ssr: false }
 );
 
-import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 const REG_SEASON_WEEKS = 17;
 
 function clamp(n, min, max) {
@@ -456,7 +456,7 @@ export default function PlayoffOddsPage() {
   const [userTouchedQB, setUserTouchedQB] = useState(false);
   const [metricMode, setMetricMode] = useState("projections");
   const [projectionSource, setProjectionSource] = useState("CSV");
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
   const [stateWeek, setStateWeek] = useState(1);
@@ -523,21 +523,25 @@ export default function PlayoffOddsPage() {
       setProjLoading(true);
       setProjError("");
       try {
-        const [csv, espn, cbs, sleeper] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
           fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
+          fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
+          fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
         ]);
         if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null };
         if (csv.status === "fulfilled") next.CSV = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled") next.CBS = cbs.value;
         if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
+        if (fantasySharks.status === "fulfilled") next.FANTASYSHARKS = fantasySharks.value;
+        if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
         setProjMaps(next);
 
-        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER) {
+        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS) {
           setProjError("Projection feeds are unavailable, so the model is using values.");
           setSourceKey("val:thefantasyarsenal");
         } else if (projectionSource === "CBS" && !next.CBS) {
@@ -547,6 +551,10 @@ export default function PlayoffOddsPage() {
         } else if (projectionSource === "CSV" && !next.CSV) {
           setSourceKey(next.ESPN ? "proj:espn" : "proj:cbs");
         } else if (projectionSource === "SLEEPER" && !next.SLEEPER) {
+          setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
+        } else if (projectionSource === "FANTASYSHARKS" && !next.FANTASYSHARKS) {
+          setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
+        } else if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS) {
           setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
         }
       } catch {
@@ -662,7 +670,7 @@ export default function PlayoffOddsPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
-      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projMaps.CSV;
+      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projMaps.CSV;
       if (!chosen) return () => 0;
       return (player, currentWeek, currentByeMap) => {
         if (!player) return 0;

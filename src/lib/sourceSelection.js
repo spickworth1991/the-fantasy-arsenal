@@ -7,6 +7,8 @@ export function projectionSourceFromKey(sourceKey) {
   if (key === "proj:espn") return "ESPN";
   if (key === "proj:cbs") return "CBS";
   if (key === "proj:sleeper") return "SLEEPER";
+  if (key === "proj:fantasysharks") return "FANTASYSHARKS";
+  if (key === "proj:draftsharks") return "DRAFTSHARKS";
   return "CSV";
 }
 
