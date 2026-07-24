@@ -48,6 +48,57 @@ function ManagerCompare({ owners, league, players }) {
 }
 
 function OpenManagerCompare({ season, players, initialLeft = "" }) {
+  const [names,setNames]=useState([initialLeft,""]);
+  const [results,setResults]=useState([null,null]);
+  const [errors,setErrors]=useState(["",""]);
+  const [loading,setLoading]=useState(false);
+  useEffect(()=>{if(initialLeft)setNames(current=>[current[0]||initialLeft,current[1]]);},[initialLeft]);
+  const load=async(username)=>{
+    const clean=String(username||"").trim();
+    const response=await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(clean)}`,{cache:"no-store"});
+    if(!response.ok)throw new Error(`No Sleeper manager was found for “${clean}”.`);
+    const user=await response.json();
+    if(!user?.user_id)throw new Error(`No Sleeper manager was found for “${clean}”.`);
+    const leagues=await getJson(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${season}`).catch(()=>[]);
+    const rows=await concurrentMap(leagues,10,async league=>{
+      const [rosters,users]=await Promise.all([
+        getJson(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),
+        getJson(`https://api.sleeper.app/v1/league/${league.league_id}/users`).catch(()=>[]),
+      ]);
+      return{league,users,roster:rosters.find(roster=>String(roster.owner_id)===String(user.user_id))};
+    });
+    const owned=rows.filter(row=>row.roster);
+    const ids=owned.flatMap(row=>row.roster.players||[]).map(String);
+    const wins=owned.reduce((sum,row)=>sum+num(row.roster.settings?.wins),0);
+    const losses=owned.reduce((sum,row)=>sum+num(row.roster.settings?.losses),0);
+    const points=owned.reduce((sum,row)=>sum+num(row.roster.settings?.fpts)+num(row.roster.settings?.fpts_decimal)/100,0);
+    const ages=ids.map(id=>num(players?.[id]?.age)).filter(Boolean);
+    const positions=ids.reduce((map,id)=>{const pos=String(players?.[id]?.position||"Other").toUpperCase();map[pos]=(map[pos]||0)+1;return map;},{});
+    const network=new Map();
+    rows.forEach(row=>(row.users||[]).forEach(member=>{if(String(member.user_id)===String(user.user_id))return;const entry=network.get(String(member.user_id))||{user:member,leagues:[]};entry.leagues.push(row.league);network.set(String(member.user_id),entry);}));
+    const games=wins+losses;
+    return{user,leagues,ids,wins,losses,points,positions,network,unique:new Set(ids).size,winPct:games?wins/games:null,averageAge:ages.length?ages.reduce((a,b)=>a+b,0)/ages.length:null,dynasty:leagues.filter(league=>num(league?.settings?.type)===2).length,bestBall:leagues.filter(league=>num(league?.settings?.best_ball)===1).length};
+  };
+  const submit=async(event)=>{
+    event.preventDefault();
+    const nextErrors=names.map((name,index)=>name.trim()?"":`Enter manager ${index===0?"one":"two"}'s Sleeper username.`);
+    if(nextErrors.some(Boolean)){setErrors(nextErrors);return;}
+    setLoading(true);setErrors(["",""]);
+    const settled=await Promise.allSettled(names.map(load));
+    const next=[...results];const failures=["",""];
+    settled.forEach((result,index)=>{if(result.status==="fulfilled")next[index]=result.value;else failures[index]=result.reason?.message||"This manager could not be loaded.";});
+    setResults(next);setErrors(failures);setLoading(false);
+  };
+  const [left,right]=results;
+  const sharedLeagues=left&&right?left.leagues.filter(league=>right.leagues.some(other=>String(other.league_id)===String(league.league_id))):[];
+  const sharedPlayers=left&&right?[...new Set(left.ids)].filter(id=>right.ids.includes(id)):[];
+  const sharedPeople=left&&right?[...left.network.entries()].filter(([id])=>right.network.has(id)).map(([id,row])=>({id,user:row.user,left:row.leagues,right:right.network.get(id).leagues})).sort((a,b)=>(b.left.length+b.right.length)-(a.left.length+a.right.length)):[];
+  const managerCard=(data,tone)=>{const cyan=tone==="cyan";return <div className={`rounded-3xl border p-4 ${cyan?"border-cyan-300/15 bg-cyan-300/[0.045]":"border-violet-300/15 bg-violet-300/[0.045]"}`}><div className="flex items-center gap-3">{data.user.avatar?<img src={`https://sleepercdn.com/avatars/thumbs/${data.user.avatar}`} alt="" className="h-12 w-12 rounded-2xl"/>:<div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.06] text-lg font-black">{String(data.user.display_name||data.user.username||"?")[0]}</div>}<div className="min-w-0"><div className={`truncate text-lg font-black ${cyan?"text-cyan-100":"text-violet-100"}`}>{data.user.display_name||data.user.username}</div><div className="truncate text-xs text-white/35">@{data.user.username}</div></div></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><Stat label="Leagues" value={data.leagues.length}/><Stat label="Record" value={`${data.wins}-${data.losses}`}/><Stat label="Win rate" value={data.winPct==null?"—":`${Math.round(data.winPct*100)}%`}/><Stat label="Points" value={Math.round(data.points).toLocaleString()}/></div></div>;};
+  const detail=(title,summary,children,open=false)=><details open={open} className="group rounded-2xl border border-white/[0.08] bg-white/[0.022]"><summary className="flex cursor-pointer list-none items-center gap-3 p-4"><div className="min-w-0 flex-1"><div className="font-bold">{title}</div><div className="mt-1 text-xs text-white/35">{summary}</div></div><span className="text-white/30 transition group-open:rotate-180">⌄</span></summary><div className="border-t border-white/[0.06] p-4">{children}</div></details>;
+  return <Panel className="mt-5 overflow-hidden"><div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,.14),transparent_40%)] p-5 sm:p-6"><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-violet-200/55">Manager comparison studio</div><h2 className="mt-1 text-2xl font-black sm:text-3xl">Compare any two Sleeper managers</h2><p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Portfolio performance, roster construction, shared leagues, and network overlap—without requiring the managers to share a league.</p></div><form onSubmit={submit} className="grid gap-3 p-4 sm:p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-start">{[0,1].map(index=><label key={index} className="text-xs font-semibold text-white/45">Manager {index===0?"one":"two"}<input value={names[index]} onChange={event=>setNames(current=>current.map((value,i)=>i===index?event.target.value:value))} placeholder="Sleeper username" className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-normal text-white outline-none focus:border-violet-300/35"/>{errors[index]?<span className="mt-1.5 block text-xs font-normal text-rose-200">{errors[index]}</span>:null}</label>)}<button disabled={loading} className="rounded-xl bg-violet-300/12 px-6 py-3 text-sm font-bold text-violet-100 disabled:opacity-50 lg:mt-5">{loading?"Building comparison…":"Compare managers"}</button></form>{left&&right&&!errors.some(Boolean)?<div className="space-y-4 border-t border-white/[0.06] p-4 sm:p-5"><div className="grid gap-3 xl:grid-cols-2">{managerCard(left,"cyan")}{managerCard(right,"violet")}</div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label="Shared leagues" value={sharedLeagues.length} detail="Exact league IDs"/><Stat label="Shared people" value={sharedPeople.length} detail="League-mate overlap"/><Stat label="Shared players" value={sharedPlayers.length} detail="Portfolio exposure"/><Stat label="Combined network" value={new Set([...left.network.keys(),...right.network.keys()]).size} detail="Unique managers"/></div><div className="grid gap-3 xl:grid-cols-2">{detail("Portfolio construction",`${left.dynasty} vs ${right.dynasty} dynasty leagues`,<div className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-cyan-300/[0.04] p-3 text-xs"><b className="text-cyan-100">{left.user.display_name||left.user.username}</b><div className="mt-2 text-white/45">{left.dynasty} dynasty · {left.bestBall} Best Ball<br/>{left.unique} unique players · age {left.averageAge?.toFixed(1)||"—"}</div></div><div className="rounded-xl bg-violet-300/[0.04] p-3 text-xs"><b className="text-violet-100">{right.user.display_name||right.user.username}</b><div className="mt-2 text-white/45">{right.dynasty} dynasty · {right.bestBall} Best Ball<br/>{right.unique} unique players · age {right.averageAge?.toFixed(1)||"—"}</div></div></div><div className="grid gap-3 sm:grid-cols-2">{[left,right].map(data=><div key={data.user.user_id} className="flex flex-wrap gap-2">{Object.entries(data.positions).sort((a,b)=>b[1]-a[1]).map(([pos,count])=><span key={pos} className="rounded-lg bg-white/[0.05] px-2.5 py-1.5 text-xs"><b>{pos}</b> {count}</span>)}</div>)}</div></div>,true)}{detail("Shared leagues",sharedLeagues.length?`${sharedLeagues.length} exact matches`:"No shared leagues",sharedLeagues.length?<ul className="space-y-2">{sharedLeagues.map(league=><li key={league.league_id} className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-3 py-2.5 text-xs"><span className="truncate font-semibold">{league.name}</span><span className="shrink-0 text-white/30">{league.total_rosters||"—"} teams</span></li>)}</ul>:<div className="text-sm text-white/38">These managers do not share an exact league in {season}.</div>)}{detail("Shared manager network",sharedPeople.length?`${sharedPeople.length} mutual league-mates`:"No mutual league-mates",sharedPeople.length?<ul className="grid gap-2 sm:grid-cols-2">{sharedPeople.map(row=><li key={row.id} className="rounded-xl bg-white/[0.035] p-3"><div className="truncate text-sm font-semibold">{row.user.display_name||row.user.username}</div><div className="mt-1 text-[10px] text-white/30">@{row.user.username||"unknown"} · {row.left.length} / {row.right.length} league connections</div></li>)}</ul>:<div className="text-sm text-white/38">No overlapping league-mates were found in their {season} portfolios.</div>)}{detail("Shared player exposure",sharedPlayers.length?`${sharedPlayers.length} players rostered by both`:"No shared players",sharedPlayers.length?<div className="grid gap-2 sm:grid-cols-2">{sharedPlayers.map(id=><div key={id} className="flex items-center gap-3 rounded-xl bg-white/[0.035] p-2.5"><AvatarImage name={players?.[id]?.full_name} playerId={id} size={34} className="rounded-xl" alt=""/><div className="min-w-0"><div className="truncate text-sm font-semibold">{players?.[id]?.full_name||id}</div><div className="text-[10px] text-white/30">{players?.[id]?.position||"—"} · {players?.[id]?.team||"FA"}</div></div></div>)}</div>:<div className="text-sm text-white/38">Their current player portfolios do not overlap.</div>)}</div></div>:null}</Panel>;
+}
+
+function OpenManagerCompareLegacy({ season, players, initialLeft = "" }) {
   const [leftName,setLeftName]=useState(initialLeft);
   const [rightName,setRightName]=useState("");
   const [left,setLeft]=useState(null);
@@ -63,8 +114,11 @@ function OpenManagerCompare({ season, players, initialLeft = "" }) {
     if(!user?.user_id)throw new Error(`No Sleeper manager was found for “${clean}”.`);
     const leagues=await getJson(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${season}`).catch(()=>[]);
     const rows=await concurrentMap(leagues,10,async league=>{
-      const rosters=await getJson(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]);
-      return{league,roster:rosters.find(row=>String(row.owner_id)===String(user.user_id))};
+      const [rosters,users]=await Promise.all([
+        getJson(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),
+        getJson(`https://api.sleeper.app/v1/league/${league.league_id}/users`).catch(()=>[]),
+      ]);
+      return{league,users,roster:rosters.find(row=>String(row.owner_id)===String(user.user_id))};
     });
     const owned=rows.filter(row=>row.roster);
     const ids=owned.flatMap(row=>row.roster.players||[]).map(String);
@@ -73,7 +127,12 @@ function OpenManagerCompare({ season, players, initialLeft = "" }) {
     const points=owned.reduce((sum,row)=>sum+num(row.roster.settings?.fpts)+num(row.roster.settings?.fpts_decimal)/100,0);
     const ages=ids.map(id=>num(players?.[id]?.age)).filter(Boolean);
     const positions=ids.reduce((map,id)=>{const pos=String(players?.[id]?.position||"Other").toUpperCase();map[pos]=(map[pos]||0)+1;return map;},{});
-    return{user,leagues,ids,wins,losses,points,positions,unique:new Set(ids).size,averageAge:ages.length?ages.reduce((a,b)=>a+b,0)/ages.length:null};
+    const network=new Map();
+    rows.forEach(row=>(row.users||[]).forEach(member=>{if(String(member.user_id)===String(user.user_id))return;const current=network.get(String(member.user_id))||{user:member,leagues:[]};current.leagues.push(row.league);network.set(String(member.user_id),current);}));
+    const dynasty=leagues.filter(league=>num(league?.settings?.type)===2).length;
+    const bestBall=leagues.filter(league=>num(league?.settings?.best_ball)===1).length;
+    const games=wins+losses;
+    return{user,leagues,rows,network,ids,wins,losses,points,positions,dynasty,bestBall,winPct:games?wins/games:null,unique:new Set(ids).size,averageAge:ages.length?ages.reduce((a,b)=>a+b,0)/ages.length:null};
   };
   const compare=async(event)=>{
     event?.preventDefault();setErrors({});
@@ -88,9 +147,17 @@ function OpenManagerCompare({ season, players, initialLeft = "" }) {
     setErrors(next);setLoading(false);
   };
   const shared=left&&right?left.ids.filter((id,index)=>left.ids.indexOf(id)===index&&right.ids.includes(id)):[];
+  const sharedLeagues=left&&right?left.leagues.filter(league=>right.leagues.some(other=>String(other.league_id)===String(league.league_id))):[];
+  const sharedNetwork=left&&right?[...left.network.entries()].filter(([id])=>right.network.has(id)).map(([id,row])=>({id,user:row.user,leftLeagues:row.leagues,rightLeagues:right.network.get(id).leagues})).sort((a,b)=>(b.leftLeagues.length+b.rightLeagues.length)-(a.leftLeagues.length+a.rightLeagues.length)):[];
   const metrics=left&&right?[
     ["League count",left.leagues.length,right.leagues.length],
+    ["Shared leagues",sharedLeagues.length?`${sharedLeagues.length} · ${sharedLeagues.map(league=>league.name).join(", ")}`:"None",sharedLeagues.length?`${sharedLeagues.length} · ${sharedLeagues.map(league=>league.name).join(", ")}`:"None"],
+    ["Network reach",left.network.size,right.network.size],
+    ["Shared league-mates",sharedNetwork.length?`${sharedNetwork.length} · ${sharedNetwork.slice(0,8).map(row=>row.user.display_name||row.user.username).join(", ")}`:"None",sharedNetwork.length?`${sharedNetwork.length} · ${sharedNetwork.slice(0,8).map(row=>row.user.display_name||row.user.username).join(", ")}`:"None"],
+    ["Dynasty leagues",left.dynasty,right.dynasty],
+    ["Best Ball leagues",left.bestBall,right.bestBall],
     ["Combined record",`${left.wins}-${left.losses}`,`${right.wins}-${right.losses}`],
+    ["Portfolio win rate",left.winPct==null?"—":`${Math.round(left.winPct*100)}%`,right.winPct==null?"—":`${Math.round(right.winPct*100)}%`],
     ["Fantasy points",Math.round(left.points).toLocaleString(),Math.round(right.points).toLocaleString()],
     ["Unique players",left.unique,right.unique],
     ["Average age",left.averageAge?.toFixed(1)||"—",right.averageAge?.toFixed(1)||"—"],

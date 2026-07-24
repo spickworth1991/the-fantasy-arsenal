@@ -287,10 +287,12 @@ export default function DraftHelperClient() {
   const playerPool = poolOverride === "auto" ? inferredPool : poolOverride;
   const rookieOnly = playerPool === "rookies";
   const rosterSlots = useMemo(() => (league?.roster_positions || []).map(upper), [league?.roster_positions]);
+  const allowsKicker = rosterSlots.includes("K");
   const allowsTeamDefense = rosterSlots.some((slot) => ["DEF", "DST", "D/ST"].includes(slot));
   const allowsIdp = rosterSlots.some((slot) => IDP.has(slot) || ["IDP_FLEX", "IDP FLEX"].includes(slot));
   const eligible = useMemo(() => Object.entries(players || {}).map(([id, player]) => ({ id, player, pos:effectivePosition(player) })).filter(({ id, player, pos }) => {
     if (!OFFENSE.has(pos) && !IDP.has(pos)) return false;
+    if (pos === "K" && !allowsKicker) return false;
     if (pos === "DEF" && !allowsTeamDefense) return false;
     if (IDP.has(pos) && !allowsIdp) return false;
     if (pickedIds.has(id) || rosteredIds.has(id)) return false;
@@ -298,7 +300,7 @@ export default function DraftHelperClient() {
     if (rookieOnly && !(n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     if (playerPool === "veterans" && (n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     return true;
-  }).map(({ id, player, pos }) => ({ id, player, pos, name:playerName(player, id), team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })) })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [allowsIdp, allowsTeamDefense, draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
+  }).map(({ id, player, pos }) => ({ id, player, pos, name:playerName(player, id), team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })) })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [allowsIdp, allowsKicker, allowsTeamDefense, draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
 
   const draftedByRoster = useMemo(() => {
     const map = new Map();
