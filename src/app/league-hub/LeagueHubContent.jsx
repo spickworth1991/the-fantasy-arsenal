@@ -488,7 +488,7 @@ export default function LeagueHubContent() {
   const [selectedInjuryPlayer, setSelectedInjuryPlayer] = useState(null);
 
   const projectionsReady =
-    !!projectionIndexes?.FFA || !!projectionIndexes?.ESPN || !!projectionIndexes?.CBS || !!projectionIndexes?.SLEEPER || !!projectionIndexes?.FANTASYSHARKS || !!projectionIndexes?.DRAFTSHARKS;
+    !!projectionIndexes?.FFA || !!projectionIndexes?.ESPN || !!projectionIndexes?.CBS || !!projectionIndexes?.SLEEPER || !!projectionIndexes?.FANTASYSHARKS || !!projectionIndexes?.DRAFTSHARKS || !!projectionIndexes?.ARSENAL;
 
 
   // ---------- Guards ----------

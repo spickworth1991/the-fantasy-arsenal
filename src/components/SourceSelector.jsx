@@ -151,6 +151,7 @@ export const DEFAULT_SOURCES = [
   { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper" },
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
   { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks" },
+  { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal" },
 ];
 
 function clamp(n, min, max) {

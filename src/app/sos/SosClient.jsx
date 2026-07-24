@@ -16,7 +16,7 @@ import {
 } from "../../lib/sourceSelection";
 
 /** ===== Projections (JSON) ===== */
-import { PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 const REG_SEASON_WEEKS = 17;
 
 /** ===== Visual ===== */
@@ -395,7 +395,7 @@ export default function SOSPage() {
     [valueSource, formatLocal, qbLocal]
   );
 
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -405,22 +405,24 @@ export default function SOSPage() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap] = await Promise.allSettled([
+        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
           fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
         ]);
 
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
         if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
         if (espnMap.status === "fulfilled") next.ESPN = espnMap.value;
         if (cbsMap.status === "fulfilled") next.CBS = cbsMap.value;
         if (sleeperMap.status === "fulfilled") next.SLEEPER = sleeperMap.value;
         if (fantasySharksMap.status === "fulfilled") next.FANTASYSHARKS = fantasySharksMap.value;
         if (draftSharksMap.status === "fulfilled") next.DRAFTSHARKS = draftSharksMap.value;
+        if (arsenalMap.status === "fulfilled") next.ARSENAL = arsenalMap.value;
         setProjMaps(next);
         if (mounted) {
                   setProjMaps(next);
@@ -443,7 +445,10 @@ export default function SOSPage() {
         if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS) {
           setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
         }
-        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS) {
+        if (projectionSource === "ARSENAL" && !next.ARSENAL) {
+          setSourceKey(next.CSV ? "proj:ffa" : next.ESPN ? "proj:espn" : "proj:cbs");
+        }
+        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL) {
           setProjError("No projections available — falling back to Values.");
           setSourceKey("val:thefantasyarsenal");
         }
@@ -451,7 +456,7 @@ export default function SOSPage() {
         }
       } catch (e) {
         if (mounted) {
-          setProjMaps({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
+          setProjMaps({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
           setProjError("Projections unavailable — falling back to Values.");
           setSourceKey("val:thefantasyarsenal");
         }
@@ -472,6 +477,7 @@ export default function SOSPage() {
         projectionSource === "SLEEPER" ? projMaps.SLEEPER :
         projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
         projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+        projectionSource === "ARSENAL" ? projMaps.ARSENAL :
         projMaps.CSV;
       if (chosen) return makeWeeklyProjectionGetter(chosen);
     }
@@ -580,6 +586,7 @@ export default function SOSPage() {
       projectionSource === "SLEEPER" ? projMaps.SLEEPER :
       projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
       projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+      projectionSource === "ARSENAL" ? projMaps.ARSENAL :
       projMaps.CSV;
     if (projLoading || !chosen) { setRows(null); setHeatData(null); return; }
   }
@@ -847,7 +854,7 @@ export default function SOSPage() {
                 disabled={
                   !!projError ||
                   projLoading ||
-                  (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS && !projMaps.SLEEPER && !projMaps.FANTASYSHARKS && !projMaps.DRAFTSHARKS) // only enable if any projections loaded
+                  (!projMaps.CSV && !projMaps.ESPN && !projMaps.CBS && !projMaps.SLEEPER && !projMaps.FANTASYSHARKS && !projMaps.DRAFTSHARKS && !projMaps.ARSENAL) // only enable if any projections loaded
                 }
                 title={projError || ""}
               >
@@ -877,6 +884,7 @@ export default function SOSPage() {
                   {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                   {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                   {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
+                  {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
                 </select>
               </>
             )}

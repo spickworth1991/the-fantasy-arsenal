@@ -16,7 +16,7 @@ import {
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
 
-import { PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -112,7 +112,7 @@ export default function TradeAnalyzer() {
   const projectionSource = projectionSourceFromKey(sourceKey);
   const valueSource = valueSourceFromKey(sourceKey);
 
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
   const [sideA, setSideA] = useState([]);
@@ -127,26 +127,28 @@ export default function TradeAnalyzer() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
           fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
         ]);
         if (!mounted) return;
 
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
         if (csv.status === "fulfilled") next.CSV = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled") next.CBS = cbs.value;
         if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
         if (fantasySharks.status === "fulfilled") next.FANTASYSHARKS = fantasySharks.value;
         if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
+        if (arsenal.status === "fulfilled") next.ARSENAL = arsenal.value;
         setProjMaps(next);
 
-        const fallbackKey = next.FANTASYSHARKS ? "proj:fantasysharks" : next.DRAFTSHARKS ? "proj:draftsharks" : next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : null;
+        const fallbackKey = next.ARSENAL ? "proj:thefantasyarsenal" : next.FANTASYSHARKS ? "proj:fantasysharks" : next.DRAFTSHARKS ? "proj:draftsharks" : next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : null;
         if (metricMode === "projections" && !fallbackKey) {
           setProjError("No projections found. Using values instead.");
           setSourceKey("val:thefantasyarsenal");
@@ -159,6 +161,7 @@ export default function TradeAnalyzer() {
           if (projectionSource === "SLEEPER" && !next.SLEEPER && fallbackKey) setSourceKey(fallbackKey);
           if (projectionSource === "FANTASYSHARKS" && !next.FANTASYSHARKS && fallbackKey) setSourceKey(fallbackKey);
           if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS && fallbackKey) setSourceKey(fallbackKey);
+          if (projectionSource === "ARSENAL" && !next.ARSENAL && fallbackKey) setSourceKey(fallbackKey);
         }
       } catch {
         if (!mounted) return;
@@ -210,7 +213,7 @@ export default function TradeAnalyzer() {
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
       const chosen =
-        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projMaps.CSV;
+        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
       if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
       return () => 0;
     }

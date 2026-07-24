@@ -3,7 +3,7 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
-import { PROJECTION_DATA_SEASON, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
   getPickDisplayLastName,
@@ -577,6 +577,7 @@ export const SleeperProvider = ({ children }) => {
     SLEEPER: null,
     FANTASYSHARKS: null,
     DRAFTSHARKS: null,
+    ARSENAL: null,
   });
 
   useEffect(() => {
@@ -630,6 +631,7 @@ export const SleeperProvider = ({ children }) => {
       "proj:sleeper": "SLEEPER",
       "proj:fantasysharks": "FANTASYSHARKS",
       "proj:draftsharks": "DRAFTSHARKS",
+      "proj:thefantasyarsenal": "ARSENAL",
     };
     return map[String(k || "")] || "FFA";
   };
@@ -700,14 +702,14 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
-    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
+    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
     setActiveLeague(null);
     preloadCalled.current = false;
   };
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = `projIndex_v1.107:${PROJECTION_DATA_SEASON}`;
+  const PROJ_CACHE_KEY = `projIndex_v1.108:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
@@ -726,9 +728,10 @@ export const SleeperProvider = ({ children }) => {
         const hasSleeper = cached?.SLEEPER && typeof cached.SLEEPER === "object" && Object.keys(cached.SLEEPER).length > 0;
         const hasFantasySharks = cached?.FANTASYSHARKS && typeof cached.FANTASYSHARKS === "object" && Object.keys(cached.FANTASYSHARKS).length > 0;
         const hasDraftSharks = cached?.DRAFTSHARKS && typeof cached.DRAFTSHARKS === "object" && Object.keys(cached.DRAFTSHARKS).length > 0;
+        const hasArsenal = cached?.ARSENAL && typeof cached.ARSENAL === "object" && Object.keys(cached.ARSENAL).length > 0;
 
         // ✅ Only early-return if we actually have at least one non-empty index cached
-        if (hasFFA || hasESPN || hasCBS || hasSleeper || hasFantasySharks || hasDraftSharks) {
+        if (hasFFA || hasESPN || hasCBS || hasSleeper || hasFantasySharks || hasDraftSharks || hasArsenal) {
           setProjectionIndexes({
             FFA: hydrate(cached?.FFA) || null,
             ESPN: hydrate(cached?.ESPN) || null,
@@ -736,18 +739,20 @@ export const SleeperProvider = ({ children }) => {
             SLEEPER: hydrate(cached?.SLEEPER) || null,
             FANTASYSHARKS: hydrate(cached?.FANTASYSHARKS) || null,
             DRAFTSHARKS: hydrate(cached?.DRAFTSHARKS) || null,
+            ARSENAL: hydrate(cached?.ARSENAL) || null,
           });
           return;
         }
       }
 
-      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks] = await Promise.all([
+      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.all([
         fetchProjectionIndex(PROJ_JSON_URL),        // ✅ FFA
         fetchProjectionIndex(PROJ_ESPN_JSON_URL),
         fetchProjectionIndex(PROJ_CBS_JSON_URL),
         fetchProjectionIndex(PROJ_SLEEPER_JSON_URL),
         fetchProjectionIndex(PROJ_FANTASYSHARKS_JSON_URL),
         fetchProjectionIndex(PROJ_DRAFTSHARKS_JSON_URL),
+        fetchProjectionIndex(PROJ_ARSENAL_JSON_URL),
       ]);
 
       const payloadRaw = {
@@ -757,6 +762,7 @@ export const SleeperProvider = ({ children }) => {
         SLEEPER: sleeper?.raw || null,
         FANTASYSHARKS: fantasySharks?.raw || null,
         DRAFTSHARKS: draftSharks?.raw || null,
+        ARSENAL: arsenal?.raw || null,
       };
 
       await set(PROJ_CACHE_KEY, payloadRaw);
@@ -768,10 +774,11 @@ export const SleeperProvider = ({ children }) => {
         SLEEPER: hydrate(payloadRaw.SLEEPER),
         FANTASYSHARKS: hydrate(payloadRaw.FANTASYSHARKS),
         DRAFTSHARKS: hydrate(payloadRaw.DRAFTSHARKS),
+        ARSENAL: hydrate(payloadRaw.ARSENAL),
       });
     } catch (e) {
       console.error("❌ Projection preload error:", e);
-      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
     }
   };
 
@@ -781,7 +788,7 @@ export const SleeperProvider = ({ children }) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
 
-    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS"].includes(src)) src = "FFA";
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "ARSENAL"].includes(src)) src = "FFA";
     if (!p) return 0;
 
     const idx =
@@ -795,6 +802,8 @@ export const SleeperProvider = ({ children }) => {
         ? projectionIndexes.FANTASYSHARKS
         : src === "DRAFTSHARKS"
         ? projectionIndexes.DRAFTSHARKS
+        : src === "ARSENAL"
+        ? projectionIndexes.ARSENAL
         : projectionIndexes.FFA;
 
     if (!idx) return 0;
@@ -817,7 +826,7 @@ export const SleeperProvider = ({ children }) => {
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
     const missingProjs =
-      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS;
+      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.ARSENAL;
 
     if (!hasUsername) return;
     if (loading) return;
