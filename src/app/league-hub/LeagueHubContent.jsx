@@ -2148,6 +2148,15 @@ export default function LeagueHubContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {list.map((lg) => {
                 const drop = dropCandidateFor(lg);
+                const addPlayer = playersMap?.[String(row.id)];
+                const addMetric = addPlayer ? Number(getValueForPlayer(addPlayer) || 0) : 0;
+                const dropMetric = drop ? Number(getValueForPlayer(drop) || 0) : 0;
+                const improvement = addMetric - dropMetric;
+                const rosterPlayers = Array.from(myRosterRef.current.get(lg.id) || []).map((pid) => playersMap?.[pid]).filter(Boolean);
+                const agedPlayers = rosterPlayers.filter((player) => Number(player.age || 0) > 0);
+                const averageAge = agedPlayers.length ? agedPlayers.reduce((sum, player) => sum + Number(player.age), 0) / agedPlayers.length : 0;
+                const timeline = Number(addPlayer?.age || 0) && averageAge ? Number(addPlayer.age) <= averageAge - 1 ? "Adds youth and long-term fit" : Number(addPlayer.age) >= averageAge + 2 ? "Win-now production profile" : "Balanced roster timeline" : "Timeline depends on league context";
+                const claimPriority = Math.max(1, Math.min(100, Math.round(45 + (row.needScore || 0) * 25 + Math.min(20, Math.max(-20, improvement / Math.max(1, addMetric) * 50)) + Math.min(10, row.openCount))));
                 return <a
                   key={lg.id}
                   href={sleeperLeagueUrl(lg.id)}
@@ -2164,9 +2173,11 @@ export default function LeagueHubContent() {
                       e.currentTarget.src = DEFAULT_LEAGUE_IMG;
                     }}
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold truncate">{lg.name}</div>
-                    <div className="text-[11px] text-white/55 truncate">FAAB guide: {suggestedFaab}%{drop ? ` • Drop look: ${drop.full_name || drop.search_full_name || drop.player_id}` : ""}</div>
+                    <div className="mt-1 text-[11px] text-white/55">Add <b className="text-cyan-100">{row.name}</b>{drop ? <> · Drop <b className="text-rose-100">{drop.full_name || drop.search_full_name || drop.player_id}</b></> : " · No expendable roster player identified"}</div>
+                    <div className="mt-1 text-[10px] leading-4 text-white/38">{drop ? improvement >= 0 ? `+${Math.round(improvement).toLocaleString()} selected-source improvement. ${drop.full_name || drop.search_full_name} is expendable because they are the lowest-valued comparable roster option.` : `This claim costs ${Math.abs(Math.round(improvement)).toLocaleString()} in current value; prioritize only for lineup need.` : "Roster-limit impact must be resolved in Sleeper."} {timeline}.</div>
+                    <div className="mt-1 text-[10px] text-white/28">FAAB {suggestedFaab}% · Claim priority {claimPriority}/100 · Review playoff matchups in SOS</div>
                   </div>
                 </a>
               })}
@@ -2634,7 +2645,7 @@ export default function LeagueHubContent() {
 
           <nav className="sticky top-16 z-30 -mx-4 mb-4 overflow-x-auto border-y border-white/10 bg-gray-950/90 px-4 py-2 backdrop-blur md:hidden">
             <div className="flex w-max gap-2">
-              {[["for-you","Action Center"],["summary","Summary"],["free-agents","Free Agents"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Waivers"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
+              {[["for-you","Action Center"],["summary","Summary"],["free-agents","Waiver Builder"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Activity"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
                 <a key={id} href={`#${id}`} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">{label}</a>
               ))}
             </div>

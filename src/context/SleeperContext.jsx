@@ -543,26 +543,24 @@ async function fetchProjectionIndex(url) {
 }
 
 export const SleeperProvider = ({ children }) => {
-  const [username, setUsername] = useState(() => lsGet("username", null));
-  const [year, setYear] = useState(() => {
-    const y = lsGet("year");
-    return y != null && y !== "" ? Number(y) : new Date().getFullYear();
-  });
+  const [username, setUsername] = useState(null);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [storageReady, setStorageReady] = useState(false);
 
   const [players, setPlayers] = useState({});
   const [leagues, setLeagues] = useState([]);
 
   // Global knobs used across tools (driven by SourceSelector)
-  const [format, setFormat] = useState(() => lsGet("format", "dynasty"));
-  const [qbType, setQbType] = useState(() => lsGet("qbType", "sf"));
+  const [format, setFormat] = useState("dynasty");
+  const [qbType, setQbType] = useState("sf");
 
   // Unified source key used by SourceSelector (can be either proj:* or val:*)
-  const [sourceKey, setSourceKey] = useState(() => lsGet("sourceKey", "val:thefantasyarsenal"));
+  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
-  const [activeLeague, setActiveLeague] = useState(() => lsGet("activeLeague", null));
+  const [activeLeague, setActiveLeague] = useState(null);
 
   const preloadCalled = useRef(false);
 
@@ -580,25 +578,44 @@ export const SleeperProvider = ({ children }) => {
     ARSENAL: null,
   });
 
+  // Hydrate browser-only preferences after the first render. Keeping the
+  // server and initial client state identical prevents a full hydration reset.
   useEffect(() => {
+    const savedYear = Number(lsGet("year", new Date().getFullYear()));
+    setUsername(lsGet("username", null));
+    setYear(Number.isFinite(savedYear) ? savedYear : new Date().getFullYear());
+    setFormat(lsGet("format", "dynasty"));
+    setQbType(lsGet("qbType", "sf"));
+    setSourceKey(lsGet("sourceKey", "val:thefantasyarsenal"));
+    setActiveLeague(lsGet("activeLeague", null));
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
     lsSet("username", username);
-  }, [username]);
+  }, [storageReady, username]);
   useEffect(() => {
+    if (!storageReady) return;
     lsSet("year", year);
-  }, [year]);
+  }, [storageReady, year]);
   useEffect(() => {
+    if (!storageReady) return;
     lsSet("format", format);
-  }, [format]);
+  }, [storageReady, format]);
   useEffect(() => {
+    if (!storageReady) return;
     lsSet("qbType", qbType);
-  }, [qbType]);
+  }, [storageReady, qbType]);
   useEffect(() => {
+    if (!storageReady) return;
     lsSet("sourceKey", sourceKey);
-  }, [sourceKey]);
+  }, [storageReady, sourceKey]);
   useEffect(() => {
+    if (!storageReady) return;
     if (activeLeague) lsSet("activeLeague", activeLeague);
     else lsSet("activeLeague", null);
-  }, [activeLeague]);
+  }, [activeLeague, storageReady]);
 
   // ===== Unified source helpers (values + projections) =====
   const metricType = String(sourceKey || "").startsWith("proj:")
@@ -674,13 +691,13 @@ export const SleeperProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (username && !preloadCalled.current) {
+    if (storageReady && username && !preloadCalled.current) {
       preloadCalled.current = true;
       preloadPlayers();
       preloadProjections();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username]);
+  }, [storageReady, username]);
 
   const updateProgress = (value) => setProgress((prev) => Math.min(value, 100));
 
@@ -822,6 +839,7 @@ export const SleeperProvider = ({ children }) => {
 
   // Auto-recover if storage/IDB gets cleared while UI still has a username.
   useEffect(() => {
+    if (!storageReady) return;
     const hasUsername = !!username;
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
@@ -866,7 +884,7 @@ export const SleeperProvider = ({ children }) => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, year, players, leagues, loading, projectionIndexes]);
+  }, [storageReady, username, year, players, leagues, loading, projectionIndexes]);
 
   const login = async (uname, yr) => {
     try {

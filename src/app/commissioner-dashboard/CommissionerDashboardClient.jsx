@@ -239,21 +239,21 @@ function finishPrintableReport(printFrame, printWindow) {
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia?.("(pointer: coarse)").matches;
   if (mobile) {
     printWindow.document.querySelectorAll("script").forEach((script) => script.remove());
+    Object.assign(printFrame.style, {
+      position: "fixed",
+      inset: "0",
+      zIndex: "99999",
+      width: "100vw",
+      height: "100dvh",
+      border: "0",
+      opacity: "1",
+      pointerEvents: "auto",
+      background: "white",
+    });
     const toolbar = printWindow.document.createElement("div");
-    toolbar.setAttribute("style", "position:sticky;top:0;z-index:9999;display:flex;gap:10px;align-items:center;justify-content:center;padding:12px;background:#0f172a;color:white;font-family:Arial,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25)");
-    toolbar.innerHTML = '<button onclick="window.print()" style="border:0;border-radius:10px;padding:11px 16px;background:#22d3ee;color:#082f49;font-weight:700;font-size:14px">Print / Save as PDF</button><span style="font-size:11px;opacity:.72">Use your browser share menu after saving.</span>';
+    toolbar.setAttribute("style", "position:sticky;top:0;z-index:9999;display:flex;gap:8px;align-items:center;justify-content:center;padding:12px;background:#0f172a;color:white;font-family:Arial,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25)");
+    toolbar.innerHTML = '<button onclick="window.print()" style="border:0;border-radius:10px;padding:11px 16px;background:#22d3ee;color:#082f49;font-weight:700;font-size:14px">Print / Save as PDF</button><button onclick="window.frameElement.remove()" style="border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:10px 14px;background:transparent;color:white;font-weight:700;font-size:14px">Close</button>';
     printWindow.document.body.prepend(toolbar);
-    const html = `<!doctype html>${printWindow.document.documentElement.outerHTML}`;
-    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    printFrame.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 120000);
     return;
   }
   printWindow.addEventListener("afterprint", () => printFrame.remove(), { once: true });

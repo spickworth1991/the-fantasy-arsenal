@@ -19,6 +19,7 @@ export default function sitemap() {
     "/draft-helper",
     "/manager-intelligence",
     "/game-center",
+    "/depth-charts",
     "/league-hub",
     "/league-history",
     "/commissioner-dashboard",

@@ -5,6 +5,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import Link from "next/link";
+import DecisionInbox from "../../components/DecisionInbox";
 
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), {
   ssr: false,
@@ -42,6 +43,7 @@ const TOOL_ICONS = {
   "League History": "/icons/league-history-icon.png",
   "Commissioner Dashboard": "/icons/commissioner-dashboard-icon.png",
   "Playoff Odds": "/icons/playoff-icon.png",
+  "NFL Depth Charts": "/icons/lineup-icon.png",
 };
 
 export default function HomeClient() {
@@ -118,6 +120,12 @@ export default function HomeClient() {
       badge: "DEVELOPING",
     },
     {
+      name: "NFL Depth Charts",
+      link: "/depth-charts",
+      description: "Explore NFL position trees with values, projections, injuries, handcuffs, contracts, rookies, and portfolio exposure.",
+      badge: "NEW",
+    },
+    {
       name: "Power Rankings",
       link: "/power-rankings",
       description: "See where you rank amongst your league.",
@@ -145,7 +153,7 @@ export default function HomeClient() {
     { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and stay ahead across simultaneous drafts.", names:["Draft Command Center","Draft Monitor"] },
     { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
-    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
+    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, NFL opportunity, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
     { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
@@ -292,6 +300,7 @@ export default function HomeClient() {
               <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["/league-hub","League Hub","See every league needing attention"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/draft-helper","Draft Command Center","Make the next pick with context"],["/manager-intelligence","Manager Intelligence","Research a manager or league"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
             </section>
+            <DecisionInbox />
             {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
 
             {/* Extra space below cards so they never feel cramped */}

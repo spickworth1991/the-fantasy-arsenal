@@ -5,7 +5,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import TradeSide from "../../components/TradeSide";
 import SearchBox from "../../components/SearchBox";
 import PlayerCard from "../../components/PlayerCard";
-import TradePartnerFinder from "./TradePartnerFinder";
+import TradeWorkspaceSuite from "./TradeWorkspaceSuite";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
@@ -230,6 +230,25 @@ export default function TradeAnalyzer() {
     else setRecommendation("Side B Wins");
   }, [tradeValueA, tradeValueB]);
 
+  // Keep the current package available to league-aware tools. This is a local
+  // handoff only; it never writes anything to Sleeper.
+  useEffect(() => {
+    if (!activeLeague || (!sideA.length && !sideB.length)) return;
+    const payload = {
+      leagueId: String(activeLeague),
+      ownerA: String(selectedOwnerA || ""),
+      ownerB: String(selectedOwnerB || ""),
+      sideA: sideA.map((player) => String(player.player_id)),
+      sideB: sideB.map((player) => String(player.player_id)),
+      sourceKey,
+      updatedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(`tfa:trade-handoff:${activeLeague}`, JSON.stringify(payload));
+      localStorage.setItem("tfa:trade-handoff:latest", JSON.stringify(payload));
+    } catch {}
+  }, [activeLeague, selectedOwnerA, selectedOwnerB, sideA, sideB, sourceKey]);
+
   const addPlayer = (side, player) => {
     if (!player) return;
     if ((side === "A" && sideA.includes(player)) || (side === "B" && sideB.includes(player))) return;
@@ -400,15 +419,23 @@ export default function TradeAnalyzer() {
               </div>
             </div>
 
-            {league?.rosters?.length ? (
-              <TradePartnerFinder
-                league={league}
-                players={players}
-                getMetric={getMetric}
-                metricMode={metricMode}
-                username={username}
-              />
-            ) : null}
+            <TradeWorkspaceSuite
+              league={league}
+              players={players}
+              getMetric={getMetric}
+              metricMode={metricMode}
+              username={username}
+              sideA={sideA}
+              sideB={sideB}
+              selectedOwnerA={selectedOwnerA}
+              selectedOwnerB={selectedOwnerB}
+              onLoadPackage={(nextA, nextB, ownerA, ownerB) => {
+                setSideA(nextA || []);
+                setSideB(nextB || []);
+                setSelectedOwnerA(ownerA || "");
+                setSelectedOwnerB(ownerB || "");
+              }}
+            />
 
             <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">

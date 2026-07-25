@@ -191,7 +191,9 @@ body {
   }
 
   .yearbook-print-only,
-  .yearbook-print-only * {
+  .yearbook-print-only *,
+  .draft-report-print,
+  .draft-report-print * {
     visibility: visible !important;
   }
 
@@ -322,5 +324,37 @@ body {
     color: #64748b !important;
     font-size: 8pt;
     text-align: center;
+  }
+
+  .draft-report-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .draft-report-print > div {
+    break-inside: avoid;
+    margin-bottom: 0.16in;
+  }
+
+  .draft-report-print div,
+  .draft-report-print button {
+    background: #fff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  .draft-report-print button {
+    cursor: default;
+  }
+
+  .draft-report-print > div:last-child > div:last-child > button:last-child {
+    display: none !important;
   }
 }

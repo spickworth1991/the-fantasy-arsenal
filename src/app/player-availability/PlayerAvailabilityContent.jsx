@@ -327,10 +327,10 @@ function StatPill({ label, value, onClick, title }) {
   );
 }
 
-function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
+function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisitionRows = [], acquisitionLoading = false, acquisitionProgress = "" }) {
   if (!open) return null;
   const title = player?.name ? player.name : "Player";
-  const sub = leagues.length ? `${leagues.length} league(s) open` : "No open leagues";
+  const sub = acquisitionRows.length ? `${acquisitionRows.length} acquisition paths` : leagues.length ? `${leagues.length} league(s) open` : "No open leagues";
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
@@ -362,14 +362,17 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
           </button>
         </div>
 
-        <div className="mt-4 max-h-[65vh] overflow-auto pr-1 space-y-2">
-          {leagues.length === 0 ? (
+        <div className="mt-4 rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-3">
+          <div className="flex items-center justify-between gap-3"><div><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-violet-200/55">Player Acquisition Finder</div><div className="mt-1 text-xs text-white/40">Waiver, trade, and draft paths across every included league.</div></div>{acquisitionLoading ? <span className="text-[10px] text-violet-100">{acquisitionProgress || "Scanning…"}</span> : <span className="text-[10px] text-white/30">{acquisitionRows.length} paths</span>}</div>
+        </div>
+
+        <div className="mt-3 max-h-[65vh] overflow-auto pr-1 space-y-2">
+          {!acquisitionLoading && acquisitionRows.length === 0 && leagues.length === 0 ? (
             <div className="text-white/70 text-sm py-6">No leagues available for this player with your current filters.</div>
           ) : (
-            leagues
-              .slice()
-              .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-              .map((lg) => (
+            acquisitionRows.length ? acquisitionRows.map((path) => {
+              const lg = path.league;
+              return (
                 <a
                   key={lg.id}
                   href={sleeperLeagueUrl(lg.id)}
@@ -386,21 +389,28 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [] }) {
                       e.currentTarget.src = DEFAULT_LEAGUE_IMG;
                     }}
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-white font-semibold truncate">{lg.name}</div>
                     <div className="text-xs text-white/60 truncate">
                       {lg.isBestBall ? "Best Ball" : "Standard"}
-                      {lg.status ? ` • ${lg.status}` : ""}
+                      {lg.status ? ` • ${lg.status}` : ""} • <span className={path.path === "Waiver" ? "text-emerald-100" : path.path === "Draft / trade" ? "text-amber-100" : "text-violet-100"}>{path.path}</span>
                     </div>
+                    <div className="mt-1 text-[10px] leading-4 text-white/38">{path.owner ? `Current owner: ${path.owner}. ` : ""}{path.ownerNeeds?.length ? `Owner needs ${path.ownerNeeds.join(" / ")}. ` : ""}{path.package ? `Reasonable opening concept: ${path.package}. ` : ""}{path.concentration}</div>
                   </div>
                   <div className="ml-auto text-xs text-cyan-300">Open →</div>
                 </a>
+              );
+            }) : leagues
+              .slice()
+              .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+              .map((lg) => (
+                <a key={lg.id} href={sleeperLeagueUrl(lg.id)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition"><img src={leagueAvatarUrl(lg.avatar || undefined)} alt="" className="w-9 h-9 rounded-xl object-cover bg-gray-700" /><div className="min-w-0 flex-1"><div className="text-white font-semibold truncate">{lg.name}</div><div className="text-xs text-emerald-100">Available · waiver path</div></div><span className="text-xs text-cyan-300">Open →</span></a>
               ))
           )}
         </div>
 
         <div className="mt-4 text-[11px] text-white/45">
-          Trending data is provided by Sleeper. Availability is based on your scanned leagues + current filters.
+          Availability and ownership come from Sleeper’s read-only league data. Package concepts are selected-source estimates and should be negotiated in Sleeper.
         </div>
       </div>
     </div>
@@ -520,6 +530,9 @@ useEffect(() => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalPlayer, setModalPlayer] = useState(null);
   const [modalLeagues, setModalLeagues] = useState([]);
+  const [acquisitionRows, setAcquisitionRows] = useState([]);
+  const [acquisitionLoading, setAcquisitionLoading] = useState(false);
+  const [acquisitionProgress, setAcquisitionProgress] = useState("");
 
   // ---------- Name index ----------
   const playersMap = useMemo(() => players || {}, [players]);
@@ -1077,10 +1090,82 @@ useEffect(() => {
 
 
   // ---------- Row click → open leagues modal ----------
-  const openPlayerModal = (player, openLeagues) => {
+  const openPlayerModal = async (player, openLeagues) => {
     setModalPlayer(player);
     setModalLeagues(openLeagues || []);
     setModalOpen(true);
+    setAcquisitionRows([]);
+    const acquisitionKey = `tfa:acquisition:${cacheKey}:${player?.id}`;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(acquisitionKey) || "null");
+      if (cached?.at && Date.now() - cached.at < 5 * 60 * 1000 && Array.isArray(cached.rows)) {
+        setAcquisitionRows(cached.rows);
+        return;
+      }
+    } catch {}
+    setAcquisitionLoading(true);
+    const leagueRows = includedLeaguesList.slice();
+    const output = new Array(leagueRows.length);
+    let cursor = 0;
+    let completed = 0;
+    let exposure = 0;
+    const targetPlayer = playersMap?.[String(player?.id)];
+    const targetMetric = targetPlayer ? Number(bestMetric === "projection" ? getSeasonPointsForPlayer(activeProjMap, targetPlayer) : getPlayerValue(targetPlayer)) || 0 : 0;
+    const workers = Array.from({ length:Math.min(12, leagueRows.length) }, async () => {
+      while (cursor < leagueRows.length) {
+        const index = cursor++;
+        const league = leagueRows[index];
+        const rostered = rosterSetsRef.current.get(league.id)?.has(String(player?.id));
+        if (!rostered) {
+          output[index] = { league, path:"Waiver", owner:"", ownerNeeds:[], package:"", ownedByUser:false };
+        } else {
+          try {
+            const [rostersResponse, usersResponse] = await Promise.all([
+              fetch(`https://api.sleeper.app/v1/league/${league.id}/rosters`),
+              fetch(`https://api.sleeper.app/v1/league/${league.id}/users`),
+            ]);
+            const rosters = rostersResponse.ok ? await rostersResponse.json() : [];
+            const users = usersResponse.ok ? await usersResponse.json() : [];
+            const ownerRoster = rosters.find((roster) => (roster.players || []).map(String).includes(String(player?.id)));
+            const ownerUser = users.find((user) => String(user.user_id) === String(ownerRoster?.owner_id));
+            const me = users.find((user) => [user.username, user.display_name].some((value) => String(value || "").toLowerCase() === String(username || "").toLowerCase()));
+            const myRoster = rosters.find((roster) => String(roster.owner_id) === String(me?.user_id));
+            const ownedByUser = String(ownerRoster?.owner_id) === String(me?.user_id);
+            if (ownedByUser) exposure += 1;
+            const counts = (ownerRoster?.players || []).reduce((map, id) => {
+              const pos = String(playersMap?.[id]?.position || "").toUpperCase();
+              if (pos) map[pos] = (map[pos] || 0) + 1;
+              return map;
+            }, {});
+            const targets = { QB:2, RB:5, WR:7, TE:3 };
+            const ownerNeeds = Object.entries(targets).map(([pos, target]) => ({ pos, gap:target - Number(counts[pos] || 0) })).filter((row) => row.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 2).map((row) => row.pos);
+            const giveCandidates = (myRoster?.players || []).map((id) => playersMap?.[id]).filter(Boolean).filter((candidate) => ownerNeeds.includes(String(candidate.position || "").toUpperCase()) && String(candidate.player_id) !== String(player?.id)).map((candidate) => ({ candidate, metric:Number(bestMetric === "projection" ? getSeasonPointsForPlayer(activeProjMap, candidate) : getPlayerValue(candidate)) || 0 })).filter((row) => row.metric > 0).sort((a, b) => Math.abs(a.metric - targetMetric) - Math.abs(b.metric - targetMetric));
+            output[index] = {
+              league,
+              path:String(league.status || "").toLowerCase() === "drafting" ? "Draft / trade" : ownedByUser ? "Already rostered" : "Trade",
+              owner:ownerUser?.metadata?.team_name || ownerUser?.display_name || ownerUser?.username || `Roster ${ownerRoster?.roster_id || "—"}`,
+              ownerNeeds,
+              package:ownedByUser ? "" : giveCandidates[0] ? `${giveCandidates[0].candidate.full_name || giveCandidates[0].candidate.search_full_name}${Math.abs(giveCandidates[0].metric - targetMetric) / Math.max(1, targetMetric) > .25 ? " plus a secondary asset" : ""}` : "Use Trade Partner Finder for a roster-aware package",
+              ownedByUser,
+            };
+          } catch {
+            output[index] = { league, path:"Trade", owner:"Owner unavailable", ownerNeeds:[], package:"Open league for roster context", ownedByUser:false };
+          }
+        }
+        completed += 1;
+        setAcquisitionProgress(`${completed}/${leagueRows.length}`);
+      }
+    });
+    await Promise.all(workers);
+    const concentrationPct = leagueRows.length ? Math.round((exposure / leagueRows.length) * 100) : 0;
+    const rows = output.filter(Boolean).map((row) => ({ ...row, concentration:row.ownedByUser ? `Already part of your ${concentrationPct}% portfolio exposure.` : concentrationPct >= 40 ? `Acquiring here increases already-high ${concentrationPct}% exposure.` : `Acquiring here moves exposure from ${concentrationPct}% to about ${Math.round(((exposure + 1) / Math.max(1, leagueRows.length)) * 100)}%.` })).sort((a, b) => {
+      const priority = { Waiver:0, "Draft / trade":1, Trade:2, "Already rostered":3 };
+      return Number(priority[a.path] ?? 9) - Number(priority[b.path] ?? 9) || String(a.league.name).localeCompare(String(b.league.name));
+    });
+    setAcquisitionRows(rows);
+    try { sessionStorage.setItem(acquisitionKey, JSON.stringify({ at:Date.now(), rows })); } catch {}
+    setAcquisitionLoading(false);
+    setAcquisitionProgress("");
   };
 
   // ---------- Trending (Sleeper Hot/Cold) ----------
@@ -1920,6 +2005,9 @@ useEffect(() => {
         onClose={() => setModalOpen(false)}
         player={modalPlayer}
         leagues={modalLeagues}
+        acquisitionRows={acquisitionRows}
+        acquisitionLoading={acquisitionLoading}
+        acquisitionProgress={acquisitionProgress}
       />
 
       {/* Included leagues modal */}
