@@ -1,15 +1,17 @@
 {
   "date": "2026-07-25",
-  "created_at": "2026-07-25T02:59:54.930Z",
+  "created_at": "2026-07-25T03:18:44.401Z",
   "season": 2026,
   "compression": "gzip",
-  "partial_update": false,
-  "stale_sources": [],
+  "partial_update": true,
+  "stale_sources": [
+    "FantasySharks Projections"
+  ],
   "files": [
     {
       "source": "fantasycalc_cache.json",
       "file": "fantasycalc_cache_2026-07-25.json.gz",
-      "bytes": 125023
+      "bytes": 125036
     },
     {
       "source": "dynastyprocess_cache.json",
@@ -19,7 +21,7 @@
     {
       "source": "ktc_cache.json",
       "file": "ktc_cache_2026-07-25.json.gz",
-      "bytes": 18525
+      "bytes": 18508
     },
     {
       "source": "fantasynav_cache.json",
@@ -39,7 +41,7 @@
     {
       "source": "stickypicky_cache.json",
       "file": "stickypicky_cache_2026-07-25.json.gz",
-      "bytes": 54502
+      "bytes": 54479
     },
     {
       "source": "projections_2026.json",
@@ -54,7 +56,7 @@
     {
       "source": "projections_cbs_2026.json",
       "file": "projections_cbs_2026_2026-07-25.json.gz",
-      "bytes": 12269
+      "bytes": 12275
     },
     {
       "source": "projections_sleeper_2026.json",
