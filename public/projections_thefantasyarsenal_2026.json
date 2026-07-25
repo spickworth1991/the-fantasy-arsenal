@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-24T21:55:04.645Z",
+  "updated": "2026-07-25T02:56:44.702Z",
   "season": 2026,
   "source": "The Fantasy Arsenal",
   "scoring": "PPR",
@@ -1580,22 +1580,6 @@
     },
     {
       "player_id": "",
-      "name": "RJ Harvey",
-      "team": "DEN",
-      "position": "RB",
-      "points": 167.22,
-      "source_count": 6,
-      "sources": {
-        "FFA": 138,
-        "ESPN": 166.85,
-        "CBS": 202.8,
-        "Sleeper": 164.22,
-        "FantasySharks": 184.5,
-        "DraftSharks": 145
-      }
-    },
-    {
-      "player_id": "",
       "name": "Brian Thomas Jr.",
       "team": "JAC",
       "position": "WR",
@@ -1608,6 +1592,22 @@
         "Sleeper": 169.43,
         "FantasySharks": 202.1,
         "DraftSharks": 145
+      }
+    },
+    {
+      "player_id": "",
+      "name": "RJ Harvey",
+      "team": "DEN",
+      "position": "RB",
+      "points": 166.472,
+      "source_count": 6,
+      "sources": {
+        "FFA": 138,
+        "ESPN": 166.85,
+        "CBS": 202.8,
+        "Sleeper": 164.22,
+        "FantasySharks": 184.5,
+        "DraftSharks": 141
       }
     },
     {
@@ -1964,13 +1964,13 @@
       "name": "Kenneth Gainwell",
       "team": "TB",
       "position": "RB",
-      "points": 153.35,
+      "points": 153.6,
       "source_count": 4,
       "sources": {
         "FFA": 109,
         "CBS": 189.2,
         "FantasySharks": 178.2,
-        "DraftSharks": 137
+        "DraftSharks": 138
       }
     },
     {
@@ -3265,7 +3265,7 @@
       "name": "Jonathon Brooks",
       "team": "CAR",
       "position": "RB",
-      "points": 116.311,
+      "points": 116.498,
       "source_count": 6,
       "sources": {
         "FFA": 89.1,
@@ -3273,7 +3273,7 @@
         "CBS": 143.8,
         "Sleeper": 104.27,
         "FantasySharks": 53.5,
-        "DraftSharks": 154
+        "DraftSharks": 155
       }
     },
     {
@@ -6291,6 +6291,20 @@
     },
     {
       "player_id": "",
+      "name": "Noah Fant",
+      "team": "NO",
+      "position": "TE",
+      "points": 62.897,
+      "source_count": 4,
+      "sources": {
+        "ESPN": 44.922,
+        "CBS": 89.8,
+        "Sleeper": 57.1,
+        "FantasySharks": 56
+      }
+    },
+    {
+      "player_id": "",
       "name": "Quan Martin",
       "team": "WAS",
       "position": "DB",
@@ -6775,20 +6789,6 @@
         "FFA": 66.5,
         "Sleeper": 3.57,
         "FantasySharks": 62.8
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Noah Fant",
-      "team": "NO",
-      "position": "TE",
-      "points": 55.256,
-      "source_count": 4,
-      "sources": {
-        "ESPN": 44.922,
-        "CBS": 89.8,
-        "Sleeper": 57.1,
-        "FantasySharks": 30.4
       }
     },
     {
@@ -9601,6 +9601,20 @@
     },
     {
       "player_id": "",
+      "name": "Demond Claiborne",
+      "team": "MIN",
+      "position": "RB",
+      "points": 23.491,
+      "source_count": 4,
+      "sources": {
+        "ESPN": 23.982,
+        "CBS": 24.4,
+        "Sleeper": 33.47,
+        "FantasySharks": 18.6
+      }
+    },
+    {
+      "player_id": "",
       "name": "David Sills",
       "team": "TB",
       "position": "WR",
@@ -9635,19 +9649,6 @@
       "sources": {
         "Sleeper": 6.83,
         "FantasySharks": 29
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Demond Claiborne",
-      "team": "MIN",
-      "position": "RB",
-      "points": 23.105,
-      "source_count": 3,
-      "sources": {
-        "ESPN": 23.982,
-        "Sleeper": 33.47,
-        "FantasySharks": 18.6
       }
     },
     {
@@ -9748,19 +9749,6 @@
         "ESPN": 18.068,
         "Sleeper": 9.38,
         "FantasySharks": 30.7
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Oscar Delp",
-      "team": "NO",
-      "position": "TE",
-      "points": 22.07,
-      "source_count": 3,
-      "sources": {
-        "ESPN": 8.952,
-        "CBS": 27.6,
-        "Sleeper": 43.75
       }
     },
     {
@@ -10189,6 +10177,20 @@
       "sources": {
         "Sleeper": 2.38,
         "FantasySharks": 23
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Oscar Delp",
+      "team": "NO",
+      "position": "TE",
+      "points": 17.631,
+      "source_count": 4,
+      "sources": {
+        "ESPN": 8.952,
+        "CBS": 27.6,
+        "Sleeper": 43.75,
+        "FantasySharks": 7.2
       }
     },
     {
@@ -11869,10 +11871,10 @@
     "parkerwashington": 168.501,
     "kenny gainwell": 168.012,
     "kennygainwell": 168.012,
-    "rj harvey": 167.22,
-    "rjharvey": 167.22,
     "brian thomas": 167.178,
     "brianthomasjr.": 167.178,
+    "rj harvey": 166.472,
+    "rjharvey": 166.472,
     "kyle pitts": 164.859,
     "kylepitts": 164.859,
     "carnell tate": 163.115,
@@ -11917,8 +11919,8 @@
     "wan'dalerobinson": 153.673,
     "dallas goedert": 153.661,
     "dallasgoedert": 153.661,
-    "kenneth gainwell": 153.35,
-    "kennethgainwell": 153.35,
+    "kenneth gainwell": 153.6,
+    "kennethgainwell": 153.6,
     "michael pittman": 152.669,
     "michaelpittman": 152.669,
     "cameron dicker": 152.643,
@@ -12091,8 +12093,8 @@
     "jakemoody": 117.096,
     "malik washington": 116.852,
     "malikwashington": 116.852,
-    "jonathon brooks": 116.311,
-    "jonathonbrooks": 116.311,
+    "jonathon brooks": 116.498,
+    "jonathonbrooks": 116.498,
     "kansas city chiefs": 115.773,
     "kansascitychiefs": 115.773,
     "calvin ridley": 115.51,
@@ -12537,6 +12539,8 @@
     "mackhollins": 63.33,
     "ty okada": 63.298,
     "tyokada": 63.298,
+    "noah fant": 62.897,
+    "noahfant": 62.897,
     "quan martin": 62.823,
     "quanmartin": 62.823,
     "kyle juszczyk": 49.359,
@@ -12611,8 +12615,6 @@
     "trentmcduffie": 55.645,
     "frankie luvu": 55.553,
     "frankieluvu": 55.553,
-    "noah fant": 55.256,
-    "noahfant": 55.256,
     "deforest buckner": 55.25,
     "deforestbuckner": 55.25,
     "jermaine johnson": 55.2,
@@ -13053,14 +13055,14 @@
     "kyledugger": 23.641,
     "brevyn spannford": 23.516,
     "brevynspann-ford": 23.516,
+    "demond claiborne": 23.491,
+    "demondclaiborne": 23.491,
     "david sills": 23.396,
     "davidsills": 23.396,
     "justin fields": 23.281,
     "justinfields": 23.281,
     "stone smartt": 23.252,
     "stonesmartt": 23.252,
-    "demond claiborne": 23.105,
-    "demondclaiborne": 23.105,
     "kenneth grant": 22.904,
     "kennethgrant": 22.904,
     "konata mumpfield": 22.854,
@@ -13077,8 +13079,6 @@
     "kayvonthibodeaux": 22.181,
     "payne durham": 22.149,
     "paynedurham": 22.149,
-    "oscar delp": 22.07,
-    "oscardelp": 22.07,
     "riley nowakowski": 22.003,
     "rileynowakowski": 22.003,
     "max klare": 21.731,
@@ -13147,6 +13147,8 @@
     "jaishawnbarham": 17.681,
     "micheal clemons": 17.654,
     "michealclemons": 17.654,
+    "oscar delp": 17.631,
+    "oscardelp": 17.631,
     "jake browning": 17.622,
     "jakebrowning": 17.622,
     "tyler conklin": 17.622,

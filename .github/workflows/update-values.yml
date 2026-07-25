@@ -2,6 +2,12 @@ name: Daily values and projections
 
 on:
   workflow_dispatch:
+    inputs:
+      verbose_logs:
+        description: Show detailed browser and per-request diagnostics
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: daily-values-and-projections
@@ -29,6 +35,8 @@ jobs:
 
       - name: Update values and projections
         run: npm run update:daily
+        env:
+          UPDATE_VERBOSE: ${{ inputs.verbose_logs && '1' || '0' }}
 
       - name: Commit updated data and archive
         shell: bash

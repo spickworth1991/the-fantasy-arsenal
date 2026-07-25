@@ -80,6 +80,30 @@ function logProgress(message, current, total) {
 }
 const __dirname = path.dirname(__filename);
 const CURRENT_SEASON = Number(process.env.NFL_SEASON) || new Date().getUTCFullYear();
+const VERBOSE_LOGS =
+  process.env.UPDATE_VERBOSE === "1" ||
+  process.env.PPTR_DEBUG === "1" ||
+  process.argv.includes("--verbose") ||
+  process.argv.includes("--debug");
+const QUIET_LOGS =
+  !VERBOSE_LOGS &&
+  (process.env.UPDATE_QUIET === "1" ||
+    process.argv.includes("--quiet") ||
+    process.argv.includes("--daily"));
+
+if (QUIET_LOGS) {
+  const writeLog = console.log.bind(console);
+  console.log = (...args) => {
+    const message = args.map((value) => String(value)).join(" ");
+    if (
+      /Starting update|^\s*\[\d+\/\d+\] Updating|completed \(|Archived \d+|Update process completed|Successful:|Failed:|All selected sources|Some sources failed|Using the existing/i.test(
+        message,
+      )
+    ) {
+      writeLog(...args);
+    }
+  };
+}
 
 // ---------- Output paths ----------
 const FC_OUT_PATH = path.join(__dirname, "../public/fantasycalc_cache.json");
@@ -101,7 +125,7 @@ const DRAFTSHARKS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_dr
 const ARSENAL_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_thefantasyarsenal_${CURRENT_SEASON}.json`);
 const ARCHIVE_DIR = path.join(__dirname, "../public/archive");
 
-function archiveUpdatedValues() {
+function archiveUpdatedValues(failures = []) {
   const date = new Date().toISOString().slice(0, 10);
   const files = [
     FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
@@ -118,7 +142,15 @@ function archiveUpdatedValues() {
   });
   const createdAt = new Date().toISOString();
   const manifestFile = `manifest_${date}.json`;
-  const manifest = { date, created_at:createdAt, season:CURRENT_SEASON, compression:"gzip", files:archived };
+  const manifest = {
+    date,
+    created_at:createdAt,
+    season:CURRENT_SEASON,
+    compression:"gzip",
+    partial_update:failures.length > 0,
+    stale_sources:failures,
+    files:archived,
+  };
   fs.writeFileSync(path.join(ARCHIVE_DIR, manifestFile), JSON.stringify(manifest, null, 2));
   const indexPath = path.join(ARCHIVE_DIR, "index.json");
   let priorEntries = [];
@@ -129,7 +161,15 @@ function archiveUpdatedValues() {
     // The first archive creates the index.
   }
   const archives = [
-    { date, created_at:createdAt, season:CURRENT_SEASON, manifest:manifestFile, files:archived.length },
+    {
+      date,
+      created_at:createdAt,
+      season:CURRENT_SEASON,
+      manifest:manifestFile,
+      files:archived.length,
+      partial_update:failures.length > 0,
+      stale_sources:failures,
+    },
     ...priorEntries.filter((entry) => entry?.date !== date),
   ].sort((a, b) => String(b.date).localeCompare(String(a.date)));
   fs.writeFileSync(indexPath, JSON.stringify({ updated_at:createdAt, archives }, null, 2));
@@ -363,7 +403,7 @@ async function enableAdBlockLite(page, opts = {}) {
 
       // Otherwise block 3rd-party noise
       // (Keep the log, but avoid logging gigantic data URLs)
-      console.log("[adblock] aborting", host, type);
+      if (VERBOSE_LOGS) console.log("[adblock] aborting", host, type);
       return req.abort();
     } catch {
       return req.continue();
@@ -450,6 +490,7 @@ function makePptrLaunchOpts() {
 
 
 function wirePageDebug(page, filterHost = "") {
+  if (!VERBOSE_LOGS) return;
   page.on("console", (msg) => {
     const type = msg.type().toUpperCase();
     console.log(`[pptr:${type}] ${msg.text()}`);
@@ -2048,12 +2089,27 @@ function updateArsenalProjections() {
 }
 
 async function updateFantasySharksProjections() {
-  const landing = await fetch("https://www.fantasysharks.com/apps/bert/forecasts/projections.php?Position=", { headers: { "user-agent": "Mozilla/5.0" } }).then((response) => {
-    if (!response.ok) throw new Error(`FantasySharks landing page returned HTTP ${response.status}`);
-    return response.text();
-  });
-  const segmentMatch = landing.match(new RegExp(`<option value="(\\d+)"[^>]*selected[^>]*>${CURRENT_SEASON} NFL Season`, "i"));
-  const segment = segmentMatch?.[1];
+  let segment = "";
+  try {
+    const landing = await fetch("https://www.fantasysharks.com/apps/bert/forecasts/projections.php?Position=", { headers: { "user-agent": "Mozilla/5.0" } }).then((response) => {
+      if (!response.ok) throw new Error(`FantasySharks landing page returned HTTP ${response.status}`);
+      return response.text();
+    });
+    const segmentMatch = landing.match(new RegExp(`<option value="(\\d+)"[^>]*selected[^>]*>${CURRENT_SEASON} NFL Season`, "i"));
+    segment = segmentMatch?.[1] || "";
+  } catch (error) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(FANTASYSHARKS_PROJ_OUT_PATH, "utf8"));
+      if (Number(cached?.season) === CURRENT_SEASON && cached?.segment) {
+        segment = String(cached.segment);
+        console.warn(`⚠️ ${error.message}; retrying the last verified FantasySharks season segment (${segment}).`);
+      } else {
+        throw error;
+      }
+    } catch {
+      throw error;
+    }
+  }
   if (!segment) throw new Error(`FantasySharks did not expose a ${CURRENT_SEASON} season segment.`);
   const url = `https://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=${segment}&Position=99&scoring=2&League=&uid=4&uid2=&printable=`;
   const csv = await fetch(url, { headers: { "user-agent": "Mozilla/5.0", accept: "text/csv,*/*" } }).then((response) => {
@@ -2470,16 +2526,19 @@ async function updateCBSProjections() {
     ];
 
     let completed = 0;
+    let attempted = 0;
     const failed = [];
 
     for (const task of updateTasks) {
       if (sources.includes(task.key)) {
+        attempted++;
         try {
-          console.log(`\n[${completed + 1}/${sources.length}] Updating ${task.name}...`);
+          console.log(`\n[${attempted}/${sources.length}] Updating ${task.name}...`);
           await task.fn();
           completed++;
           logProgress(`✅ ${task.name} completed`, completed, sources.length);
         } catch (error) {
+          if (!error?.message) error = new Error(String(error || "Unknown error"));
           console.error(`❌ ${task.name} failed:`, error.message);
           failed.push(task.name);
           // Continue with other tasks rather than stopping completely
@@ -2491,8 +2550,11 @@ async function updateCBSProjections() {
     writeValueCacheVersion();
     normalizeCalculatedPickSlots(sources);
     if (process.argv.includes("--archive") || process.argv.includes("--daily")) {
-      if (failed.length) throw new Error(`Archive skipped because these updates failed: ${failed.join(", ")}`);
-      archiveUpdatedValues();
+      if (failed.length && !process.argv.includes("--daily")) {
+        throw new Error(`Archive skipped because these updates failed: ${failed.join(", ")}`);
+      }
+      if (completed === 0) throw new Error("Archive skipped because no sources updated successfully.");
+      archiveUpdatedValues(failed);
     }
 
     console.log(`\n🎉 Update process completed!`);
