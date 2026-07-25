@@ -6,29 +6,202 @@ import AvatarImage from "./AvatarImage";
 import { DEFAULT_SOURCES } from "./SourceSelector";
 import PlayerResearchPanel from "./PlayerResearchPanel";
 
+const TABS = [
+  ["overview", "Overview"],
+  ["sources", "All sources"],
+  ["league", "League fit"],
+  ["production", "Production"],
+  ["market", "Market"],
+  ["research", "Research"],
+];
+const n = (value) => Number(value) || 0;
+const pct = (value) => `${Math.round(value * 100)}%`;
+const norm = (value) => String(value || "").toLowerCase().trim();
+const playerIds = (roster) => new Set([...(roster?.players || []), ...(roster?.reserve || []), ...(roster?.taxi || [])].map(String));
+const displayUser = (user) => user?.display_name || user?.metadata?.team_name || user?.username || "Unknown manager";
+const positionFamily = (position) => {
+  const pos = String(position || "").toUpperCase();
+  if (["CB", "S", "FS", "SS"].includes(pos)) return "DB";
+  if (["DE", "DT", "EDGE"].includes(pos)) return "DL";
+  return pos;
+};
+const normalizedName = (value) => norm(value).replace(/[^a-z0-9 ]/g, "").replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/\s+/g, " ").trim();
+async function readArchivedJson(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Archive HTTP ${response.status}`);
+  if (typeof DecompressionStream === "undefined") throw new Error("This browser cannot decompress archive history.");
+  const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).json();
+}
+
+function Metric({ label, value, detail, tone = "cyan" }) {
+  const colors = tone === "emerald" ? "text-emerald-100" : tone === "amber" ? "text-amber-100" : tone === "violet" ? "text-violet-100" : "text-cyan-100";
+  return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"><div className="text-[9px] font-semibold uppercase tracking-[.16em] text-white/30">{label}</div><div className={`mt-1 text-xl font-black ${colors}`}>{value}</div>{detail ? <div className="mt-1 text-[10px] leading-4 text-white/35">{detail}</div> : null}</div>;
+}
+
+function SourceTable({ title, rows, currentSource, suffix = "" }) {
+  const usable = rows.filter((row) => row.supported && row.amount > 0);
+  const values = usable.map((row) => row.amount);
+  const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+  const floor = values.length ? Math.min(...values) : 0;
+  const ceiling = values.length ? Math.max(...values) : 0;
+  const spread = average ? (ceiling - floor) / average : 0;
+  return <section><div className="mb-2 flex flex-wrap items-end justify-between gap-2"><div><h3 className="text-sm font-black">{title}</h3><p className="text-[10px] text-white/30">{usable.length} reporting sources · {spread > .25 ? "high disagreement" : spread > .12 ? "moderate disagreement" : "tight consensus"}</p></div><div className="text-right text-[10px] text-white/35">Consensus <b className="text-white/70">{average ? suffix ? average.toFixed(1) : Math.round(average).toLocaleString() : "—"}{average ? suffix : ""}</b></div></div><div className="mb-2 grid grid-cols-3 gap-2"><Metric label="Floor" value={floor ? `${suffix ? floor.toFixed(1) : Math.round(floor).toLocaleString()}${suffix}` : "—"} /><Metric label="Consensus" value={average ? `${suffix ? average.toFixed(1) : Math.round(average).toLocaleString()}${suffix}` : "—"} tone="emerald" /><Metric label="Ceiling" value={ceiling ? `${suffix ? ceiling.toFixed(1) : Math.round(ceiling).toLocaleString()}${suffix}` : "—"} tone="violet" /></div><div className="overflow-hidden rounded-2xl border border-white/10"><table className="w-full text-left text-xs"><thead className="bg-white/[0.04] text-[9px] uppercase tracking-wider text-white/30"><tr><th className="px-3 py-2.5">Source</th><th className="px-3 py-2.5 text-right">Result</th><th className="hidden px-3 py-2.5 text-right sm:table-cell">vs consensus</th></tr></thead><tbody className="divide-y divide-white/[0.06]">{rows.map((row) => { const delta = average && row.amount ? (row.amount - average) / average : 0; const outlier = Math.abs(delta) >= .2; return <tr key={row.key} className={row.key === currentSource ? "bg-cyan-300/[0.055]" : ""}><td className="px-3 py-2.5"><div className="font-semibold text-white/75">{row.label}</div><div className="text-[8px] font-semibold uppercase tracking-wider text-white/25">{row.key === currentSource ? "Current source" : outlier ? "Source outlier" : ""}</div></td><td className="px-3 py-2.5 text-right font-black">{!row.supported ? <span className="font-normal text-white/25">Not offered</span> : row.amount > 0 ? `${suffix ? row.amount.toFixed(1) : Math.round(row.amount).toLocaleString()}${suffix}` : <span className="font-normal text-white/25">Unavailable</span>}</td><td className={`hidden px-3 py-2.5 text-right text-[10px] sm:table-cell ${outlier ? "text-amber-200" : "text-white/30"}`}>{row.amount && average ? `${delta >= 0 ? "+" : ""}${Math.round(delta * 100)}%` : "—"}</td></tr>; })}</tbody></table></div></section>;
+}
+
 export default function GlobalPlayerSourceDrawer() {
-  const { players, getPlayerValue, sourceKey, format, qbType } = useSleeper();
-  const [playerId,setPlayerId]=useState("");
-  useEffect(()=>{
-    const open=(event)=>setPlayerId(String(event.detail?.playerId||""));
-    window.addEventListener("tfa:inspect-player",open);
-    return()=>window.removeEventListener("tfa:inspect-player",open);
-  },[]);
-  useEffect(()=>{
-    if(!playerId)return undefined;
-    const close=(event)=>{if(event.key==="Escape")setPlayerId("");};
-    window.addEventListener("keydown",close);
-    return()=>window.removeEventListener("keydown",close);
-  },[playerId]);
-  const player=players?.[playerId];
-  const rows=useMemo(()=>player?DEFAULT_SOURCES.map(source=>{
-    const supported=source.type==="projection"||source.supports?.[format]!==false;
-    const amount=supported?Number(getPlayerValue(player,{sourceKey:source.key,format,qbType})||0):0;
-    return{...source,supported,amount};
-  }):[],[format,getPlayerValue,player,qbType]);
-  if(!playerId||!player)return null;
-  const name=player.full_name||player.search_full_name||[player.first_name,player.last_name].filter(Boolean).join(" ")||playerId;
-  const average=(group)=>{const usable=group.map(row=>row.amount).filter(value=>value>0);return usable.length?usable.reduce((sum,value)=>sum+value,0)/usable.length:0;};
-  const section=(title,group,suffix)=><section><div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-sm font-black">{title}</h3><span className="text-right text-[10px] text-white/35">Consensus {average(group)>0?(suffix?average(group).toFixed(1):Math.round(average(group)).toLocaleString()):"—"}{suffix}</span></div><div className="overflow-hidden rounded-2xl border border-white/10"><table className="w-full text-left text-xs"><thead className="bg-white/[0.04] text-[9px] uppercase tracking-wider text-white/30"><tr><th className="px-3 py-2.5">Source</th><th className="px-3 py-2.5 text-right">{title}</th></tr></thead><tbody className="divide-y divide-white/[0.06]">{group.map(row=><tr key={row.key} className={row.key===sourceKey?"bg-cyan-300/[0.055]":""}><td className="px-3 py-2.5"><div className="font-semibold text-white/75">{row.label}</div>{row.key===sourceKey?<div className="text-[8px] font-semibold uppercase tracking-wider text-cyan-100/55">Current source</div>:null}</td><td className="px-3 py-2.5 text-right font-black">{!row.supported?<span className="font-normal text-white/25">Not offered for {format}</span>:row.amount>0?suffix?row.amount.toFixed(1):Math.round(row.amount).toLocaleString():<span className="font-normal text-white/25">Unavailable</span>}</td></tr>)}</tbody></table></div></section>;
-  return <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/80 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={event=>{if(event.target===event.currentTarget)setPlayerId("");}}><div role="dialog" aria-modal="true" aria-label={`All sources for ${name}`} className="max-h-[92vh] w-full overflow-y-auto rounded-t-[30px] border border-white/12 bg-slate-950 shadow-2xl sm:max-w-2xl sm:rounded-[30px]"><div className="sticky top-0 z-10 flex items-center gap-3 border-b border-white/10 bg-slate-950/95 p-4 backdrop-blur"><AvatarImage inspectable={false} name={name} playerId={playerId} size={46} className="rounded-2xl" alt="" /><div className="min-w-0 flex-1"><div className="truncate text-xl font-black">{name}</div><div className="text-xs text-white/38">{player.position||"—"} · {player.team||"FA"} · {format} · {qbType==="sf"?"Superflex":"1QB"}</div></div><button type="button" onClick={()=>setPlayerId("")} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-lg text-white/60" aria-label="Close source comparison">×</button></div><div className="space-y-5 p-4 sm:p-5"><div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] p-3 text-xs leading-5 text-white/45">Values and season projections use separate scales and separate consensus figures.</div><PlayerResearchPanel player={player} name={name}/>{section("Player values",rows.filter(row=>row.type==="value"),"")}{section("Season projections",rows.filter(row=>row.type==="projection")," pts")}</div></div></div>;
+  const { username, players, leagues = [], activeLeague, fetchLeagueRostersSilent, getPlayerValue, sourceKey, format, qbType } = useSleeper();
+  const [playerId, setPlayerId] = useState("");
+  const [tab, setTab] = useState("overview");
+  const [leagueData, setLeagueData] = useState(null);
+  const [leagueLoading, setLeagueLoading] = useState(false);
+  const [trend, setTrend] = useState({ adds:0, drops:0 });
+  const [production, setProduction] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [archive, setArchive] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  useEffect(() => {
+    const open = (event) => { setPlayerId(String(event.detail?.playerId || "")); setTab("overview"); };
+    window.addEventListener("tfa:inspect-player", open);
+    return () => window.removeEventListener("tfa:inspect-player", open);
+  }, []);
+  useEffect(() => {
+    if (!playerId) return undefined;
+    const close = (event) => { if (event.key === "Escape") setPlayerId(""); };
+    window.addEventListener("keydown", close);
+    const prior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", close); document.body.style.overflow = prior; };
+  }, [playerId]);
+
+  const player = players?.[playerId];
+  const name = player?.full_name || player?.search_full_name || [player?.first_name, player?.last_name].filter(Boolean).join(" ") || playerId;
+  const rows = useMemo(() => player ? DEFAULT_SOURCES.map((source) => {
+    const supported = source.type === "projection" || source.supports?.[format] !== false;
+    const amount = supported ? n(getPlayerValue(player, { sourceKey:source.key, format, qbType })) : 0;
+    return { ...source, supported, amount };
+  }) : [], [format, getPlayerValue, player, qbType]);
+  const valueRows = rows.filter((row) => row.type === "value");
+  const projectionRows = rows.filter((row) => row.type === "projection");
+  const consensus = (group) => {
+    const values = group.map((row) => row.amount).filter((value) => value > 0);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+  };
+
+  const league = leagues.find((row) => String(row.league_id) === String(activeLeague)) || null;
+  useEffect(() => {
+    let active = true;
+    if (!playerId || !activeLeague) { setLeagueData(null); return undefined; }
+    if (league?.rosters && league?.users) { setLeagueData({ rosters:league.rosters, users:league.users }); return undefined; }
+    setLeagueLoading(true);
+    fetchLeagueRostersSilent(activeLeague).then((payload) => { if (active) setLeagueData(payload); }).catch(() => { if (active) setLeagueData(null); }).finally(() => { if (active) setLeagueLoading(false); });
+    return () => { active = false; };
+  }, [activeLeague, playerId, league?.rosters, league?.users]);
+
+  useEffect(() => {
+    let active = true;
+    if (!playerId || !player?.team) return undefined;
+    Promise.all([
+      fetch("https://api.sleeper.app/v1/players/nfl/trending/add?lookback_hours=24&limit=500").then((response) => response.ok ? response.json() : []),
+      fetch("https://api.sleeper.app/v1/players/nfl/trending/drop?lookback_hours=24&limit=500").then((response) => response.ok ? response.json() : []),
+      fetch("https://api.sleeper.app/v1/state/nfl").then((response) => response.ok ? response.json() : {}),
+      fetch("/archive/index.json").then((response) => response.ok ? response.json() : null),
+    ]).then(async ([adds, drops, state, archiveIndex]) => {
+      if (!active) return;
+      setTrend({
+        adds:n(adds.find((row) => String(row.player_id) === playerId)?.count),
+        drops:n(drops.find((row) => String(row.player_id) === playerId)?.count),
+      });
+      setArchive(archiveIndex);
+      const inSeason = String(state?.season_type || "").toLowerCase() === "regular" && n(state?.week) > 1;
+      const statSeason = inSeason ? n(state.season) : Math.max(2020, n(state.season || new Date().getFullYear()) - 1);
+      const lastWeek = inSeason ? Math.min(18, n(state.week) - 1) : 18;
+      const weeks = Array.from({ length:Math.min(5, lastWeek) }, (_, index) => lastWeek - index).filter((week) => week > 0);
+      Promise.all(weeks.map((week) => fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${statSeason}/${week}`).then((response) => response.ok ? response.json() : {}).catch(() => ({})))).then((weekRows) => {
+        if (!active) return;
+        setProduction(weekRows.map((stats, index) => {
+          const row = stats?.[playerId] || {};
+          return { week:weeks[index], season:statSeason, points:n(row.pts_ppr ?? row.pts_half_ppr ?? row.pts_std), stats:row };
+        }).filter((row) => row.points > 0));
+      });
+      const scheduleSeason = n(state?.season) || new Date().getFullYear();
+      const startWeek = Math.max(1, Math.min(18, n(state?.week) || 1));
+      Promise.all([startWeek, Math.min(18, startWeek + 1)].map((week) => fetch(`/api/nfl-scoreboard?season=${scheduleSeason}&week=${week}`).then((response) => response.ok ? response.json() : { games:[] }).then((payload) => (payload.games || []).map((game) => ({ ...game, week }))))).then((games) => {
+        if (active) setSchedule(games.flat().filter((game) => game.teams?.includes(player.team)));
+      });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [playerId, player?.team]);
+
+  useEffect(() => {
+    let active = true;
+    if (tab !== "market" || !activeLeague || !playerId) return undefined;
+    setMarketLoading(true);
+    Promise.all(Array.from({ length:18 }, (_, index) => index + 1).map((week) => fetch(`https://api.sleeper.app/v1/league/${activeLeague}/transactions/${week}`).then((response) => response.ok ? response.json() : []).catch(() => [])))
+      .then((weeks) => {
+        if (!active) return;
+        setTransactions(weeks.flat().filter((tx) => tx.type === "trade" && Object.values(tx.adds || {}).some((id) => String(id) === playerId)));
+      })
+      .finally(() => { if (active) setMarketLoading(false); });
+    return () => { active = false; };
+  }, [tab, activeLeague, playerId]);
+
+  useEffect(() => {
+    let active = true;
+    if (tab !== "research" || !playerId || !archive?.archives?.length) return undefined;
+    setHistoryLoading(true);
+    const bucket = `${format === "redraft" ? "Redraft" : "Dynasty"}_${qbType === "sf" ? "SF" : "1QB"}`;
+    Promise.all(archive.archives.slice(0, 14).map(async (entry) => {
+      const date = entry.date;
+      const season = n(entry.season) || new Date().getFullYear();
+      const [values, projections] = await Promise.all([
+        readArchivedJson(`/archive/stickypicky_cache_${date}.json.gz`).catch(() => null),
+        readArchivedJson(`/archive/projections_thefantasyarsenal_${season}_${date}.json.gz`).catch(() => null),
+      ]);
+      const targetName = normalizedName(name);
+      const targetPos = positionFamily(player.position);
+      const valueRow = (values?.[bucket] || []).find((row) => normalizedName(row.name) === targetName && positionFamily(row.position) === targetPos);
+      const projectionRow = (projections?.rows || []).find((row) => normalizedName(row.name) === targetName && positionFamily(row.position) === targetPos);
+      return { date, value:n(valueRow?.value), projection:n(projectionRow?.points), partial:!!entry.partial_update };
+    })).then((rows) => {
+      if (active) setHistory(rows.filter((row) => row.value || row.projection).sort((a, b) => a.date.localeCompare(b.date)));
+    }).finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, [tab, playerId, archive, format, qbType, name, player?.position]);
+
+  const users = leagueData?.users || league?.users || [];
+  const rosters = leagueData?.rosters || league?.rosters || [];
+  const ownerRoster = rosters.find((roster) => playerIds(roster).has(playerId));
+  const owner = users.find((user) => String(user.user_id) === String(ownerRoster?.owner_id));
+  const myUser = users.find((user) => norm(user.display_name) === norm(username) || norm(user.username) === norm(username));
+  const myRoster = rosters.find((roster) => String(roster.owner_id) === String(myUser?.user_id));
+  const myPositionCount = myRoster ? [...playerIds(myRoster)].filter((id) => positionFamily(players?.[id]?.position) === positionFamily(player?.position)).length : 0;
+  const requiredAtPosition = (league?.roster_positions || []).filter((position) => positionFamily(position) === positionFamily(player?.position)).length;
+  const need = Math.max(0, requiredAtPosition - myPositionCount);
+  const hydratedLeagues = leagues.filter((row) => Array.isArray(row.rosters));
+  const exposureCount = hydratedLeagues.filter((row) => row.rosters.some((roster) => playerIds(roster).has(playerId))).length;
+  const age = n(player?.age);
+  const timeline = age && age <= 25 ? "Rebuilder-friendly asset" : age >= 29 ? "Contender-window asset" : "Flexible competitive timeline";
+  const guidance = ownerRoster ? String(ownerRoster.owner_id) === String(myRoster?.owner_id) ? "Hold / lineup decision" : "Trade target" : need > 0 ? "Priority add" : "Watch / depth add";
+  const productionAverage = production.length ? production.reduce((sum, row) => sum + row.points, 0) / production.length : 0;
+  const projectionConsensus = consensus(projectionRows);
+  const pace = projectionConsensus ? projectionConsensus / 17 : 0;
+  const archiveDates = archive?.archives || [];
+  const historyDelta = (key) => history.length > 1 ? n(history.at(-1)?.[key]) - n(history[0]?.[key]) : 0;
+  const maxHistoryValue = Math.max(1, ...history.map((row) => row.value));
+  const maxHistoryProjection = Math.max(1, ...history.map((row) => row.projection));
+
+  if (!playerId || !player) return null;
+  return <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/85 backdrop-blur-md sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setPlayerId(""); }}><div role="dialog" aria-modal="true" aria-label={`Player intelligence for ${name}`} className="max-h-[94vh] w-full overflow-y-auto rounded-t-[30px] border border-white/12 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.1),transparent_26%),linear-gradient(160deg,#07101f,#020617_58%)] shadow-2xl sm:max-w-4xl sm:rounded-[30px]"><div className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95 backdrop-blur-xl"><div className="flex items-center gap-3 p-4"><AvatarImage inspectable={false} name={name} playerId={playerId} size={52} className="rounded-2xl ring-1 ring-white/10" alt="" /><div className="min-w-0 flex-1"><div className="truncate text-xl font-black sm:text-2xl">{name}</div><div className="text-xs text-white/38">{player.position || "—"} · {player.team || "FA"} · {age ? `Age ${age}` : "Age unavailable"} · {format} · {qbType === "sf" ? "Superflex" : "1QB"}</div></div><button type="button" onClick={() => setPlayerId("")} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60" aria-label="Close player intelligence">×</button></div><div className="flex gap-1 overflow-x-auto px-3 pb-3">{TABS.map(([key, label]) => <button key={key} type="button" onClick={() => setTab(key)} className={`shrink-0 rounded-xl px-3 py-2 text-[11px] font-semibold transition ${tab === key ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/20" : "text-white/38 hover:bg-white/[0.05] hover:text-white/70"}`}>{label}</button>)}</div></div><div className="space-y-5 p-4 sm:p-5">
+    {tab === "overview" ? <><div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Value consensus" value={consensus(valueRows) ? Math.round(consensus(valueRows)).toLocaleString() : "—"} detail={`${valueRows.filter((row) => row.amount > 0).length} reporting sources`} /><Metric label="Season projection" value={projectionConsensus ? `${projectionConsensus.toFixed(1)} pts` : "—"} detail="Generic PPR consensus" tone="emerald" /><Metric label="24h movement" value={trend.adds || trend.drops ? `+${trend.adds} / -${trend.drops}` : "Quiet"} detail="Sleeper adds and drops" tone="violet" /><Metric label="Action lens" value={guidance} detail={timeline} tone="amber" /></div><div className="grid gap-3 lg:grid-cols-2"><div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-cyan-100/45">Selected league</div><div className="mt-2 text-lg font-black">{league?.name || "Choose a league for context"}</div><p className="mt-2 text-xs leading-5 text-white/42">{leagueLoading ? "Loading roster ownership…" : !league ? "League-aware ownership, fit, trades, and availability appear after a league is selected." : ownerRoster ? `Rostered by ${displayUser(owner)}. ${myRoster ? `${myPositionCount} ${positionFamily(player.position)}s are currently on your roster.` : "Your roster could not be matched to the signed-in username."}` : `Available in this league. ${need > 0 ? `Your roster is below the league's starting requirement at ${positionFamily(player.position)}.` : "This profiles as depth or upside rather than an immediate starting-slot need."}`}</p></div><div className="rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4"><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-violet-100/45">Portfolio exposure</div><div className="mt-2 text-lg font-black">{hydratedLeagues.length ? `${exposureCount} of ${hydratedLeagues.length} loaded leagues` : "No portfolio rosters loaded"}</div><p className="mt-2 text-xs leading-5 text-white/42">Exposure is calculated only from rosters already loaded by your current session, avoiding an expensive scan across hundreds of leagues. Manager Intelligence remains the full portfolio scanner.</p></div></div><PlayerResearchPanel player={player} name={name} /></> : null}
+    {tab === "sources" ? <><div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] p-3 text-xs leading-5 text-white/45">Values and season projections use different scales. Outliers are flagged at 20% above or below their group consensus; disagreement is information, not an automatic error.</div><SourceTable title="Player values" rows={valueRows} currentSource={sourceKey} /><SourceTable title="Season projections" rows={projectionRows} currentSource={sourceKey} suffix=" pts" /></> : null}
+    {tab === "league" ? <><div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Availability" value={!league ? "Select league" : ownerRoster ? "Rostered" : "Available"} detail={ownerRoster ? displayUser(owner) : league?.name} /><Metric label="Your position room" value={myRoster ? myPositionCount : "—"} detail={`${positionFamily(player.position)} players`} /><Metric label="Required starters" value={league ? requiredAtPosition : "—"} detail="Exact-position league slots" /><Metric label="Roster fit" value={need > 0 ? "Direct need" : "Depth / upgrade"} detail={timeline} tone="emerald" /></div><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><h3 className="font-black">Decision explanation</h3><p className="mt-2 text-sm leading-6 text-white/48">{!league ? "Select a league in one of the league-aware tools to activate this analysis." : !myRoster ? "The signed-in Sleeper username was not matched to an owner in this league, so personal roster-need claims are withheld." : ownerRoster && String(ownerRoster.owner_id) === String(myRoster.owner_id) ? `${name} is already on your roster. Compare the projection pace and recent production before treating the source value as a lineup recommendation.` : ownerRoster ? `${displayUser(owner)} currently controls ${name}. ${need > 0 ? `Your roster has a direct ${positionFamily(player.position)} need, making this a contextual trade target.` : "This would be an upgrade or depth pursuit rather than filling an empty positional requirement."}` : `${name} is currently unrostered. ${need > 0 ? "The player fills a direct positional need and should receive priority waiver consideration." : "The player is an upside/depth decision; roster limits and the weakest player you would drop matter more than raw availability."}`}</p><div className="mt-3 flex flex-wrap gap-2"><a href={`/trade?league=${encodeURIComponent(activeLeague || "")}`} className="rounded-xl bg-violet-300/10 px-3 py-2 text-xs font-semibold text-violet-100">Open Trade Analyzer →</a><a href={`/player-availability?league=${encodeURIComponent(activeLeague || "")}`} className="rounded-xl bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100">Open Availability →</a><a href={`/draft-helper?league=${encodeURIComponent(activeLeague || "")}`} className="rounded-xl bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100">Draft Command Center →</a></div></div></> : null}
+    {tab === "production" ? <><div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Recent PPR average" value={production.length ? productionAverage.toFixed(1) : "—"} detail={`${production.length} scored games`} /><Metric label="Season pace" value={pace ? `${pace.toFixed(1)}/wk` : "—"} detail="Season projection ÷ 17, not weekly accuracy" /><Metric label="Pace difference" value={production.length && pace ? `${productionAverage - pace >= 0 ? "+" : ""}${(productionAverage - pace).toFixed(1)}` : "—"} detail="Recent production vs projection pace" tone="amber" /><Metric label="Volatility" value={production.length > 1 ? (Math.max(...production.map((row) => row.points)) - Math.min(...production.map((row) => row.points))).toFixed(1) : "—"} detail="Recent high-to-low spread" tone="violet" /></div><div className="grid gap-3 lg:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><h3 className="font-black">Recent game log</h3><div className="mt-3 space-y-2">{production.length ? production.map((row) => <div key={`${row.season}-${row.week}`} className="flex items-center justify-between rounded-xl bg-black/15 px-3 py-2 text-xs"><span>{row.season} · Week {row.week}</span><b className="text-cyan-100">{row.points.toFixed(1)} PPR</b></div>) : <p className="text-xs leading-5 text-white/35">No recent Sleeper fantasy-point games were available. Offseason and inactive-player gaps are expected.</p>}</div></div><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><h3 className="font-black">NFL schedule</h3><div className="mt-3 space-y-2">{schedule.length ? schedule.map((game) => <div key={game.id} className="rounded-xl bg-black/15 p-3 text-xs"><div className="font-semibold">Week {game.week} · {game.name}</div><div className="mt-1 text-white/35">{new Date(game.date).toLocaleString()} · {game.status}</div></div>) : <p className="text-xs leading-5 text-white/35">No upcoming game was found in the current two-week window.</p>}</div><p className="mt-3 text-[10px] leading-4 text-white/25">Weather is not estimated without a kickoff-time forecast provider and stadium roof data.</p></div></div></> : null}
+    {tab === "market" ? <><div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="24h adds" value={trend.adds.toLocaleString()} detail="Sleeper platform trend" tone="emerald" /><Metric label="24h drops" value={trend.drops.toLocaleString()} detail="Sleeper platform trend" tone="amber" /><Metric label="Selected-league trades" value={marketLoading ? "…" : transactions.length} detail="Observable current league history" /><Metric label="Timeline" value={timeline.replace(" asset", "")} detail="Age-based roster-direction fit" tone="violet" /></div><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><h3 className="font-black">Trade occurrences</h3><div className="mt-3 space-y-2">{marketLoading ? <p className="text-xs text-white/35">Reviewing selected-league transactions…</p> : transactions.length ? transactions.map((tx) => <div key={tx.transaction_id} className="rounded-xl bg-black/15 p-3 text-xs"><div className="font-semibold">Trade · Week {tx.leg || "—"}</div><div className="mt-1 text-white/35">{new Date(n(tx.created)).toLocaleDateString()} · {Object.keys(tx.roster_ids || {}).length || tx.roster_ids?.length || "Multiple"} managers involved</div></div>) : <p className="text-xs leading-5 text-white/35">{league ? "No selected-league trade containing this player was found." : "Select a league to review its player-specific trades."}</p>}</div><p className="mt-3 text-[10px] leading-4 text-white/25">This is selected-league evidence, not a platform-wide trade database.</p></div></> : null}
+    {tab === "research" ? <><PlayerResearchPanel player={player} name={name} expanded /><div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><div className="flex items-center justify-between gap-3"><div><h3 className="font-black">Value and projection history</h3><p className="text-[10px] text-white/30">The Fantasy Arsenal consensus · latest 14 archive days</p></div><span className="text-[10px] text-white/30">{archiveDates.length} snapshot day{archiveDates.length === 1 ? "" : "s"}</span></div>{historyLoading ? <p className="mt-3 text-xs text-white/35">Opening compressed history…</p> : history.length < 2 ? <p className="mt-3 text-xs leading-5 text-white/42">Tracking started July 2026. A trend requires at least two daily snapshots, so movement will appear automatically after another successful update.</p> : <><div className="mt-4 grid grid-cols-2 gap-2"><Metric label={`${format} value change`} value={`${historyDelta("value") >= 0 ? "+" : ""}${Math.round(historyDelta("value")).toLocaleString()}`} detail={`${history[0].date} to ${history.at(-1).date}`} tone={historyDelta("value") >= 0 ? "emerald" : "amber"} /><Metric label="Projection change" value={`${historyDelta("projection") >= 0 ? "+" : ""}${historyDelta("projection").toFixed(1)} pts`} detail="Season PPR consensus" tone={historyDelta("projection") >= 0 ? "emerald" : "amber"} /></div><div className="mt-4 overflow-x-auto"><div className="flex min-w-[420px] items-end gap-2 border-b border-white/10 pb-2" style={{ height:150 }}>{history.map((row) => <div key={row.date} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${row.date}: value ${Math.round(row.value)}, projection ${row.projection.toFixed(1)}`}><div className="w-full rounded-t bg-violet-300/55" style={{ height:`${Math.max(3, row.projection / maxHistoryProjection * 62)}px` }} /><div className="w-full rounded-t bg-cyan-300/60" style={{ height:`${Math.max(3, row.value / maxHistoryValue * 62)}px` }} /><span className="rotate-[-35deg] whitespace-nowrap text-[8px] text-white/25">{row.date.slice(5)}</span></div>)}</div><div className="mt-3 flex gap-4 text-[9px] text-white/35"><span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-cyan-300/60" />Value</span><span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-violet-300/55" />Projection</span></div></div></>}</div><div className="rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-4"><h3 className="font-black text-amber-100">Data boundaries</h3><p className="mt-2 text-xs leading-5 text-white/40">Projection totals are generic PPR unless a source supplies a full projected stat line. Exact custom-scoring claims are intentionally withheld when the inputs cannot support them. Recent production uses Sleeper fantasy points.</p></div></> : null}
+  </div></div></div>;
 }
