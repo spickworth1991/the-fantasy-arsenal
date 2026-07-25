@@ -1,6 +1,6 @@
 {
   "date": "2026-07-25",
-  "created_at": "2026-07-25T03:18:44.401Z",
+  "created_at": "2026-07-25T03:28:15.502Z",
   "season": 2026,
   "compression": "gzip",
   "partial_update": true,
@@ -11,7 +11,7 @@
     {
       "source": "fantasycalc_cache.json",
       "file": "fantasycalc_cache_2026-07-25.json.gz",
-      "bytes": 125036
+      "bytes": 125022
     },
     {
       "source": "dynastyprocess_cache.json",
@@ -21,7 +21,7 @@
     {
       "source": "ktc_cache.json",
       "file": "ktc_cache_2026-07-25.json.gz",
-      "bytes": 18508
+      "bytes": 18511
     },
     {
       "source": "fantasynav_cache.json",
@@ -36,12 +36,12 @@
     {
       "source": "idpshow_cache.json",
       "file": "idpshow_cache_2026-07-25.json.gz",
-      "bytes": 29996
+      "bytes": 29997
     },
     {
       "source": "stickypicky_cache.json",
       "file": "stickypicky_cache_2026-07-25.json.gz",
-      "bytes": 54479
+      "bytes": 54471
     },
     {
       "source": "projections_2026.json",
@@ -56,7 +56,7 @@
     {
       "source": "projections_cbs_2026.json",
       "file": "projections_cbs_2026_2026-07-25.json.gz",
-      "bytes": 12275
+      "bytes": 12280
     },
     {
       "source": "projections_sleeper_2026.json",
