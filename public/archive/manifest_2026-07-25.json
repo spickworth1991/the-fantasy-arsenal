@@ -1,0 +1,78 @@
+{
+  "date": "2026-07-25",
+  "created_at": "2026-07-25T02:20:18.502Z",
+  "season": 2026,
+  "compression": "gzip",
+  "files": [
+    {
+      "source": "fantasycalc_cache.json",
+      "file": "fantasycalc_cache_2026-07-25.json.gz",
+      "bytes": 125198
+    },
+    {
+      "source": "dynastyprocess_cache.json",
+      "file": "dynastyprocess_cache_2026-07-25.json.gz",
+      "bytes": 10966
+    },
+    {
+      "source": "ktc_cache.json",
+      "file": "ktc_cache_2026-07-25.json.gz",
+      "bytes": 18519
+    },
+    {
+      "source": "fantasynav_cache.json",
+      "file": "fantasynav_cache_2026-07-25.json.gz",
+      "bytes": 39996
+    },
+    {
+      "source": "idynastyp_cache.json",
+      "file": "idynastyp_cache_2026-07-25.json.gz",
+      "bytes": 16055
+    },
+    {
+      "source": "idpshow_cache.json",
+      "file": "idpshow_cache_2026-07-25.json.gz",
+      "bytes": 29996
+    },
+    {
+      "source": "stickypicky_cache.json",
+      "file": "stickypicky_cache_2026-07-25.json.gz",
+      "bytes": 54419
+    },
+    {
+      "source": "projections_2026.json",
+      "file": "projections_2026_2026-07-25.json.gz",
+      "bytes": 11889
+    },
+    {
+      "source": "projections_espn_2026.json",
+      "file": "projections_espn_2026_2026-07-25.json.gz",
+      "bytes": 32561
+    },
+    {
+      "source": "projections_cbs_2026.json",
+      "file": "projections_cbs_2026_2026-07-25.json.gz",
+      "bytes": 12282
+    },
+    {
+      "source": "projections_sleeper_2026.json",
+      "file": "projections_sleeper_2026_2026-07-25.json.gz",
+      "bytes": 111874
+    },
+    {
+      "source": "projections_fantasysharks_2026.json",
+      "file": "projections_fantasysharks_2026_2026-07-25.json.gz",
+      "bytes": 54377
+    },
+    {
+      "source": "projections_draftsharks_2026.json",
+      "file": "projections_draftsharks_2026_2026-07-25.json.gz",
+      "bytes": 56948
+    },
+    {
+      "source": "projections_thefantasyarsenal_2026.json",
+      "file": "projections_thefantasyarsenal_2026_2026-07-25.json.gz",
+      "bytes": 40244
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SleeperProvider, useSleeper } from "../context/SleeperContext";
 import LoadingScreen from "../components/LoadingScreen";
+import GlobalPlayerSourceDrawer from "../components/GlobalPlayerSourceDrawer";
 
 function GlobalOverlay() {
   const { loading, progress } = useSleeper();
@@ -29,6 +30,7 @@ export default function Providers({ children }) {
   return (
     <SleeperProvider>
       <GlobalOverlay />
+      <GlobalPlayerSourceDrawer />
       {children}
     </SleeperProvider>
   );

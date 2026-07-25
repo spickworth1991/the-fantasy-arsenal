@@ -20,6 +20,9 @@ export default function AvatarImage({
   className = "",
   loading = "lazy",
   decoding = "async",
+  inspectable = true,
+  onClick,
+  title,
   ...rest
 }) {
   const numericPlayerId =
@@ -63,6 +66,19 @@ export default function AvatarImage({
       return prev;
     });
   };
+  const openSourceInspector = (event) => {
+    onClick?.(event);
+    if (event.defaultPrevented || !inspectable || !numericPlayerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.dispatchEvent(new CustomEvent("tfa:inspect-player", { detail:{ playerId:numericPlayerId } }));
+  };
+  const handleKeyDown = (event) => {
+    if (!inspectable || !numericPlayerId || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.dispatchEvent(new CustomEvent("tfa:inspect-player", { detail:{ playerId:numericPlayerId } }));
+  };
 
   return (
     <img
@@ -70,10 +86,15 @@ export default function AvatarImage({
       alt={derivedAlt}
       width={size ?? width}
       height={size ?? height}
-      className={className}
+      className={`${className}${inspectable && numericPlayerId ? " cursor-pointer transition hover:ring-2 hover:ring-cyan-300/40" : ""}`}
       onError={handleError}
       loading={loading}
       decoding={decoding}
+      onClick={openSourceInspector}
+      onKeyDown={handleKeyDown}
+      role={inspectable && numericPlayerId ? "button" : undefined}
+      tabIndex={inspectable && numericPlayerId ? 0 : undefined}
+      title={inspectable && numericPlayerId ? `View all sources for ${derivedAlt}` : title}
       {...rest}
     />
   );
