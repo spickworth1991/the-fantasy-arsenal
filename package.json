@@ -20,7 +20,8 @@
     "git": "git add . && git commit -m \"PlayerStockADP\" && git push origin main",
     "stick": "node ./sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
-    "gip": "git add . && git commit -m \"PlayerPopUp\" && git push origin main"
+    "gip": "git add . && git commit -m \"PlayerPopUp\" && git push origin main",
+    "gil": "node ./git-sync.mjs"
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",
