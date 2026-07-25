@@ -7,7 +7,42 @@ import AvatarImage from "../../components/AvatarImage";
 import { useSleeper } from "../../context/SleeperContext";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 
-const num=value=>Number(value||0);const getJson=async url=>{const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw new Error();return response.json();};
+const num=value=>Number(value||0);
+function gameWeatherStatus(game) {
+  const status = game?.status || "Scheduled";
+  if (String(status).toLowerCase().startsWith("final")) return status;
+  const roofType = game?.venue?.roofType;
+  const weather = game?.weather;
+  const temperature = weather?.temperature ?? weather?.highTemperature;
+  const wind = num(weather?.windSpeed);
+  const gusts = num(weather?.windGusts);
+  const precipitation = num(weather?.precipitationProbability);
+  const conditions = game?.venue?.indoor
+    ? "Indoor"
+    : weather
+      ? [
+          weather.summary,
+          temperature != null ? `${Math.round(temperature)}°F` : "",
+          wind ? `${Math.round(wind)} mph wind${gusts > wind + 3 ? `, gusts ${Math.round(gusts)}` : ""}` : "",
+          precipitation ? `${Math.round(precipitation)}% precip.` : "",
+        ].filter(Boolean).join(" · ")
+      : "Forecast pending";
+  const roof = roofType === "retractable"
+    ? "Retractable roof TBD"
+    : roofType === "canopy"
+      ? "Covered, open sides"
+      : "";
+  return [status, roof, conditions].filter(Boolean).join(" · ");
+}
+const getJson=async url=>{
+  const response=await fetch(url,{cache:"no-store"});
+  if(!response.ok)throw new Error();
+  const payload=await response.json();
+  if(String(url).startsWith("/api/nfl-scoreboard")&&Array.isArray(payload?.games)){
+    return{...payload,games:payload.games.map(game=>({...game,status:gameWeatherStatus(game)}))};
+  }
+  return payload;
+};
 async function concurrentMap(rows,limit,worker,onProgress){const results=new Array(rows.length);let cursor=0,done=0;await Promise.all(Array.from({length:Math.min(limit,rows.length)},async()=>{while(cursor<rows.length){const index=cursor++;results[index]=await worker(rows[index],index);done++;onProgress?.(done,rows.length);}}));return results;}
 function Panel({children,className=""}){return <div className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/90 to-slate-950/85 ${className}`}>{children}</div>;}
 function Stat({label,value,detail}){return <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><div className="text-[9px] font-semibold uppercase tracking-[.16em] text-white/35">{label}</div><div className="mt-1 text-xl font-black">{value}</div>{detail?<div className="mt-1 text-[10px] text-white/32">{detail}</div>:null}</div>;}

@@ -25,12 +25,12 @@ export default function PlayerResearchPanel({ player, name, expanded = false }) 
 
   return (
     <section>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <h3 className="text-sm font-black">News and player context</h3>
         <span className="text-[10px] text-white/30">{articles.length ? `${articles.length} recent stories` : "External research"}</span>
       </div>
       <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:p-4">
-        <div className="grid grid-cols-2 gap-2 text-center text-[10px] sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 text-center text-[10px] min-[350px]:grid-cols-2 sm:grid-cols-4">
           <div className="rounded-xl bg-black/20 p-2"><b className="block text-sm text-white/80">{player?.injury_status || "Clear"}</b>Injury</div>
           <div className="rounded-xl bg-black/20 p-2"><b className="block text-sm text-white/80">{player?.depth_chart_order || player?.depth_chart_position || "—"}</b>Depth order</div>
           <div className="rounded-xl bg-black/20 p-2"><b className="block text-sm text-white/80">{player?.years_exp ?? "—"}</b>Years exp.</div>
