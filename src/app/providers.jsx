@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SleeperProvider, useSleeper } from "../context/SleeperContext";
 import LoadingScreen from "../components/LoadingScreen";
 import GlobalPlayerSourceDrawer from "../components/GlobalPlayerSourceDrawer";
+import { ArsenalAccountProvider } from "../context/ArsenalAccountContext";
 
 function GlobalOverlay() {
   const { loading, progress } = useSleeper();
@@ -29,9 +30,11 @@ function GlobalOverlay() {
 export default function Providers({ children }) {
   return (
     <SleeperProvider>
-      <GlobalOverlay />
-      <GlobalPlayerSourceDrawer />
-      {children}
+      <ArsenalAccountProvider>
+        <GlobalOverlay />
+        <GlobalPlayerSourceDrawer />
+        {children}
+      </ArsenalAccountProvider>
     </SleeperProvider>
   );
 }

@@ -592,6 +592,18 @@ export const SleeperProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    const applyCloudPreferences = () => {
+      const savedYear = Number(lsGet("year", new Date().getFullYear()));
+      setYear(Number.isFinite(savedYear) ? savedYear : new Date().getFullYear());
+      setFormat(lsGet("format", "dynasty"));
+      setQbType(lsGet("qbType", "sf"));
+      setSourceKey(lsGet("sourceKey", "val:thefantasyarsenal"));
+    };
+    window.addEventListener("tfa:cloud-sync-applied", applyCloudPreferences);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", applyCloudPreferences);
+  }, []);
+
+  useEffect(() => {
     if (!storageReady) return;
     lsSet("username", username);
   }, [storageReady, username]);

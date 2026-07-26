@@ -1,0 +1,186 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Navbar from "../../components/Navbar";
+import BackgroundParticles from "../../components/BackgroundParticles";
+import { useSleeper } from "../../context/SleeperContext";
+
+const season = new Date().getFullYear();
+const SOURCES = [
+  {key:"ffa",freshnessKey:"proj",label:"Fantasy Football Analytics",kind:"Projection",file:`/projections_${season}.json`},
+  {key:"espn",freshnessKey:"espn_proj",label:"ESPN",kind:"Projection",file:`/projections_espn_${season}.json`},
+  {key:"cbs",freshnessKey:"cbs_proj",label:"CBS",kind:"Projection",file:`/projections_cbs_${season}.json`},
+  {key:"sleeper",freshnessKey:"sleeper_proj",label:"Sleeper",kind:"Projection",file:`/projections_sleeper_${season}.json`},
+  {key:"fantasysharks",freshnessKey:"fantasysharks_proj",label:"FantasySharks",kind:"Projection",file:`/projections_fantasysharks_${season}.json`},
+  {key:"draftsharks",freshnessKey:"draftsharks_proj",label:"DraftSharks",kind:"Projection",file:`/projections_draftsharks_${season}.json`},
+  {key:"arsenal",freshnessKey:"arsenal_proj",label:"The Fantasy Arsenal",kind:"Projection",file:`/projections_thefantasyarsenal_${season}.json`},
+  {key:"fantasycalc",freshnessKey:"fc",label:"FantasyCalc",kind:"Value",file:"/fantasycalc_cache.json"},
+  {key:"dynastyprocess",freshnessKey:"dp",label:"DynastyProcess",kind:"Value",file:"/dynastyprocess_cache.json"},
+  {key:"ktc",freshnessKey:"ktc",label:"KeepTradeCut",kind:"Value",file:"/ktc_cache.json"},
+  {key:"fantasynav",freshnessKey:"fn",label:"Fantasy Navigator",kind:"Value",file:"/fantasynav_cache.json"},
+  {key:"idynastyp",freshnessKey:"idp",label:"IDynastyP",kind:"Value",file:"/idynastyp_cache.json"},
+  {key:"idpshow",freshnessKey:"idpshow",label:"IDP Show",kind:"Value",file:"/idpshow_cache.json"},
+  {key:"stickypicky",freshnessKey:"sp",label:"The Fantasy Arsenal Values",kind:"Value",file:"/stickypicky_cache.json"},
+];
+const num=(value)=>Number(value||0);
+const rowsOf=(data)=>Array.isArray(data)?data:Array.isArray(data?.rows)?data.rows:Object.values(data?.by_id||{});
+const dateOf=(data)=>data?.updated||data?.updated_at||data?.generated_at||data?.source_date||null;
+const playerName=(row)=>String(row?.name||row?.player?.name||row?.player_name||row?.full_name||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+const pointsOf=(row)=>num(row?.points||row?.projection||row?.pts||row?.value);
+async function fetchJsonWithTimeout(url, options={}, timeout=15000){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal});
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  }finally{clearTimeout(timer);}
+}
+const FORMAT_KEYS={dynasty_sf:"Dynasty_SF",dynasty_1qb:"Dynasty_1QB",redraft_sf:"Redraft_SF",redraft_1qb:"Redraft_1QB"};
+function normalizeValueRows(source,data,format){
+  const sf=format.endsWith("_sf");
+  const dynasty=format.startsWith("dynasty");
+  const list=(rows,value=(row)=>row?.value)=>(Array.isArray(rows)?rows:[]).map((row)=>({
+    name:row?.name||row?.player?.name||"",
+    position:row?.position||row?.pos||row?.player?.position||"",
+    team:row?.team||row?.player?.maybeTeam||"",
+    value:num(value(row)),
+    trend:num(row?.trend30Day),
+    sourceDate:row?.source_date||null,
+  })).filter((row)=>row.name&&row.value>0);
+  if(source.key==="fantasycalc")return list(data?.[FORMAT_KEYS[format]]);
+  if(source.key==="dynastyprocess"){
+    if(!dynasty)return [];
+    return Object.entries(data||{}).filter(([,row])=>row&&typeof row==="object").map(([name,row])=>({name,position:row.pos||"",team:row.team||"",value:num(sf?row.superflex:row.one_qb)})).filter((row)=>row.value>0);
+  }
+  if(source.key==="ktc")return dynasty?list(data?.[sf?"Superflex":"OneQB"]):[];
+  if(source.key==="fantasynav")return list(data?.[FORMAT_KEYS[format]]);
+  if(source.key==="idynastyp"){
+    if(!dynasty)return [];
+    return list(Array.isArray(data)?data:[],(row)=>sf?row.superflex:row.one_qb);
+  }
+  if(source.key==="idpshow"||source.key==="stickypicky")return list(data?.[FORMAT_KEYS[format]]);
+  return [];
+}
+function latestSourceDate(rows){
+  const dates=rows.map((row)=>row.sourceDate).filter(Boolean).sort();
+  return dates.at(-1)||null;
+}
+const age=(date)=>{const ms=Date.now()-new Date(date).getTime();if(!date||!Number.isFinite(ms))return "Unknown";const hours=Math.max(0,ms/36e5);return hours<1?"Under 1 hour":hours<48?`${Math.round(hours)} hours`:`${Math.round(hours/24)} days`;};
+const freshness=(date)=>{const days=(Date.now()-new Date(date).getTime())/864e5;return !date?"unknown":days<=2?"fresh":days<=8?"watch":"stale";};
+const tone={fresh:"text-emerald-100 bg-emerald-300/[0.07] border-emerald-300/15",watch:"text-amber-100 bg-amber-300/[0.07] border-amber-300/15",stale:"text-rose-100 bg-rose-300/[0.07] border-rose-300/15",unknown:"text-white/50 bg-white/[0.04] border-white/10"};
+const rankMap=(rows,key)=>(new Map([...rows].sort((a,b)=>num(key(b))-num(key(a))).map((row,index)=>[row.name,index+1])));
+function rankCorrelation(pairs){
+  if(pairs.length<3)return null;
+  const projected=rankMap(pairs,(row)=>row.projected);
+  const actual=rankMap(pairs,(row)=>row.actual);
+  const n=pairs.length;
+  const sum=pairs.reduce((total,row)=>total+Math.pow(num(projected.get(row.name))-num(actual.get(row.name)),2),0);
+  return 1-(6*sum)/(n*(n*n-1));
+}
+function scoreWithLeagueSettings(stats,scoring){
+  return Object.entries(scoring||{}).reduce((total,[key,multiplier])=>total+num(stats?.[key])*num(multiplier),0);
+}
+function isPprComparable(scoring){
+  const rec=num(scoring?.rec);
+  const unusual=Object.entries(scoring||{}).some(([key,value])=>num(value)!==0&&(/bonus|fd|fum_ret|kr_|pr_|idp|tackle|sack|def_|fgm_/i.test(key)));
+  return Math.abs(rec-1)<.01&&!unusual;
+}
+
+function Panel({children,className=""}){return <section className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}>{children}</section>;}
+function Metric({label,value,detail}){return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><div className="text-[9px] font-bold uppercase tracking-[.16em] text-white/30">{label}</div><div className="mt-1 text-2xl font-black">{value}</div><div className="mt-1 text-[10px] leading-4 text-white/35">{detail}</div></div>;}
+function Type({children,type}){const styles=type==="Fact"?"bg-emerald-300/10 text-emerald-100":type==="Estimate"?"bg-cyan-300/10 text-cyan-100":"bg-violet-300/10 text-violet-100";return <span className={`inline-flex rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider ${styles}`}>{children||type}</span>;}
+function ValueIntelligence({metrics,records,valueFormat}){
+  const valueSources=records.filter((source)=>source.kind==="Value");
+  return <div className="mt-4 space-y-4"><Panel className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><h2 className="text-xl font-black">Value-market audit</h2><Type type="Fact"/></div><p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Values are trade-market estimates, not fantasy-point predictions. They are audited through freshness, coverage, source agreement, movement, and independent-source support—not by pretending weekly points determine dynasty value.</p></div><div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100">{valueFormat.replace("_"," · ").toUpperCase()}</div></div><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{valueSources.map((source)=><div key={source.key} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"><div className="flex items-start justify-between gap-2"><div><div className="font-black">{source.label}</div><div className="mt-1 text-[9px] text-white/28">{source.supported?"Format supported":"No values for this format"}</div></div><span className={`rounded-full border px-2 py-1 text-[8px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span></div><div className="mt-4 text-2xl font-black">{source.coverage.toLocaleString()}</div><div className="text-[9px] uppercase tracking-wider text-white/28">usable players and picks</div>{source.sourceDataDate?<div className="mt-3 text-[9px] text-amber-100/55">Publisher date {source.sourceDataDate}</div>:null}</div>)}</div></Panel><div className="grid gap-4 xl:grid-cols-[1.15fr_.85fr]"><Panel className="overflow-hidden"><div className="border-b border-white/10 p-5"><h2 className="text-xl font-black">Where markets disagree most</h2><p className="mt-1 text-xs leading-5 text-white/38">Range compares the highest and lowest normalized values to their average. It identifies players worth investigating; it does not automatically identify a wrong source.</p></div><div className="divide-y divide-white/[0.06]">{metrics.valueDisagreements.slice(0,20).map((row,index)=><div key={row.name} className="grid grid-cols-[34px_minmax(0,1fr)_75px] items-center gap-3 px-5 py-3"><div className="text-xs font-black text-white/25">#{index+1}</div><div className="min-w-0"><div className="truncate text-sm font-bold">{row.displayName}</div><div className="mt-1 text-[9px] text-white/28">{row.sources} sources · {Math.round(row.low).toLocaleString()}–{Math.round(row.high).toLocaleString()}</div></div><div className="text-right"><div className="text-lg font-black text-amber-100">{row.spread.toFixed(0)}%</div><div className="text-[8px] text-white/25">range</div></div></div>)}{!metrics.valueDisagreements.length?<div className="p-6 text-sm text-white/38">At least three populated value sources are required for disagreement analysis in this format.</div>:null}</div></Panel><div className="space-y-4"><Panel className="p-5"><h2 className="text-lg font-black">Retrieval date versus publisher date</h2><p className="mt-2 text-xs leading-5 text-white/42"><b className="text-white/70">Last successful retrieval</b> means the update script downloaded and validated the file. <b className="text-white/70">Publisher date</b> is embedded by the source. A fresh retrieval can still contain older rankings, so both dates matter.</p></Panel><Panel className="p-5"><h2 className="text-lg font-black">Movement tracking</h2><p className="mt-2 text-xs leading-5 text-white/42">{metrics.archives>=2?"Multiple frozen archives are available, enabling honest day-over-day source and consensus movement.":"The first archive establishes the baseline. The second dated archive unlocks daily movers, consensus changes, and source-by-source “what changed?” explanations."}</p></Panel><Panel className="p-5"><h2 className="text-lg font-black">Confidence levels</h2><div className="mt-3 space-y-2">{[["High","Four or more usable sources with reasonable agreement"],["Medium","Two or three sources, or wider disagreement"],["Low","One source, stale data, or unsupported format"]].map(([level,detail])=><div key={level} className="rounded-xl border border-white/[0.06] p-3"><b className="text-xs">{level}</b><p className="mt-1 text-[10px] leading-4 text-white/35">{detail}</p></div>)}</div></Panel></div></div></div>;
+}
+function LeagueAccuracySummary({accuracy,leagues,leagueId,onLeagueChange,onRetry}){
+  return <div className="mt-4 space-y-4"><Panel className="p-5 sm:p-6"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end"><div><div className="flex items-center gap-2"><h2 className="text-2xl font-black">League scoring accuracy</h2><Type type="Fact"/></div><p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Choose one of your leagues. The center follows its Sleeper history back to 2025, rebuilds actual player scoring from that season’s scoring settings, and then measures how useful each projection ranking was for that specific league.</p></div><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-white/35">League</span><select value={leagueId} onChange={(event)=>onLeagueChange(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="">Generic PPR</option>{leagues.map((league)=><option key={league.league_id} value={league.league_id}>{league.name}</option>)}</select></label></div>{accuracy.status==="loading"?<div className="mt-5 rounded-2xl bg-cyan-300/[0.05] p-4 text-sm text-cyan-100">Following league history and rebuilding 2025 scoring…</div>:accuracy.status==="unavailable"?<div className="mt-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.05] p-4"><div className="text-sm font-bold text-rose-100">Accuracy data could not be completed</div><p className="mt-1 text-xs text-rose-100/55">{accuracy.message||"Sleeper scoring or the historical projection files were unavailable."}</p><button type="button" onClick={onRetry} className="mt-3 rounded-xl bg-rose-300/10 px-4 py-2 text-xs font-black text-rose-100">Try again</button></div>:accuracy.status==="ready"?<><div className="mt-5 grid gap-3 sm:grid-cols-3"><Metric label="Scoring profile" value={accuracy.leagueName} detail={`${accuracy.leagueSeason} league settings`}/><Metric label="Completed weeks" value={accuracy.completedWeeks||18} detail={accuracy.partial?"Partial Sleeper response":"Final scoring loaded"}/><Metric label="Cumulative scope" value="2025" detail="Additional seasons join automatically"/></div><div className="mt-4 rounded-2xl border border-amber-300/12 bg-amber-300/[0.04] p-4 text-xs leading-5 text-amber-100/65"><b>Historical-data warning:</b> the local 2025 projection files were generated or refreshed in July 2026, after the 2025 season. Their comparison is useful for validating matching and ranking behavior, but it is not certified preseason accuracy because the repository does not contain a timestamped pre-kickoff 2025 snapshot. Certified accuracy starts with the dated archive.</div></>:null}</Panel>{accuracy.status==="ready"?<Panel className="overflow-hidden"><div className="border-b border-white/10 p-5"><h3 className="text-xl font-black">Source performance in {accuracy.leagueName}</h3><p className="mt-1 text-xs leading-5 text-white/38">Rank correlation ranges from −1 to 1; higher means projected ordering better matched final ordering. Top-50 hit rate is the percentage of projected top-50 players who actually finished top 50 under this league’s scoring.</p></div><div className="grid gap-px bg-white/[0.06] md:grid-cols-3">{accuracy.rows.map((row)=><div key={row.source} className="bg-slate-950/90 p-5"><div className="font-black">{row.source}</div><div className="mt-4 grid grid-cols-2 gap-2"><Metric label="Rank correlation" value={row.correlation==null?"—":row.correlation.toFixed(3)} detail={`${row.sample} matched players`}/><Metric label="Top-50 hit" value={row.top50==null?"—":`${row.top50.toFixed(0)}%`} detail="League scoring finishers"/></div><div className="mt-3 rounded-xl bg-white/[0.025] p-3 text-[10px] leading-4 text-white/35">{accuracy.comparable?`Point MAE is also comparable because this league is close to standard PPR: ${row.mae?.toFixed(1)||"—"} points.`:"Exact point MAE is withheld because the stored projections are generic PPR totals without full projected stat lines. Ranking metrics remain valid for this custom scoring profile."}</div></div>)}</div></Panel>:null}</div>;
+}
+
+export default function TrustCenterClient(){
+  const { players, leagues=[] } = useSleeper();
+  const [records,setRecords]=useState([]);
+  const [archive,setArchive]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [tab,setTab]=useState("overview");
+  const [valueFormat,setValueFormat]=useState("dynasty_sf");
+  const [accuracy,setAccuracy]=useState({status:"idle",rows:[]});
+  const [accuracyLeagueId,setAccuracyLeagueId]=useState("");
+  const [accuracyRun,setAccuracyRun]=useState(0);
+  useEffect(()=>{if(!accuracyLeagueId&&leagues[0])setAccuracyLeagueId(String(leagues[0].league_id));},[accuracyLeagueId,leagues]);
+  useEffect(()=>{let live=true;(async()=>{
+    const [sourceRows,index,freshnessLedger]=await Promise.all([
+      Promise.all(SOURCES.map(async(source)=>{try{const response=await fetch(source.file,{cache:"no-store"});if(!response.ok)throw new Error();const data=await response.json();const rows=source.kind==="Value"?normalizeValueRows(source,data,valueFormat):rowsOf(data);return {...source,data,rows,updated:dateOf(data),coverage:rows.filter((row)=>pointsOf(row)>0).length,status:"available",supported:source.kind!=="Value"||rows.length>0,sourceDataDate:latestSourceDate(rows)};}catch{return {...source,rows:[],updated:null,coverage:0,status:"unavailable",supported:false};}})),
+      fetch("/archive/index.json",{cache:"no-store"}).then((r)=>r.ok?r.json():null).catch(()=>null),
+      fetch("/source-freshness.json",{cache:"no-store"}).then((r)=>r.ok?r.json():null).catch(()=>null),
+    ]);
+    if(live){setRecords(sourceRows.map((source)=>{const ledger=freshnessLedger?.sources?.[source.freshnessKey];return {...source,updated:source.updated||ledger?.last_success_at||index?.updated_at||null,updateStatus:ledger?.status||"unknown",lastAttempt:ledger?.last_attempt_at||null,lastError:ledger?.last_error||""};}));setArchive(index);setLoading(false);}
+  })();return()=>{live=false;};},[valueFormat]);
+
+  const metrics=useMemo(()=>{
+    const projections=records.filter((row)=>row.kind==="Projection"&&row.coverage);
+    const values=records.filter((row)=>row.kind==="Value"&&row.coverage);
+    const fresh=records.filter((row)=>freshness(row.updated)==="fresh").length;
+    const disagreement=(sources)=>{
+      const maps=sources.map((source)=>new Map(source.rows.filter((row)=>pointsOf(row)>0).map((row)=>[playerName(row),pointsOf(row)])));
+      const displayNames=new Map(sources.flatMap((source)=>source.rows.map((row)=>[playerName(row),row.name||row.player?.name||"Unknown player"])));
+      const common=[...new Set(maps.flatMap((map)=>[...map.keys()]))].map((name)=>({name,values:maps.map((map)=>map.get(name)).filter(Boolean)})).filter((row)=>row.values.length>=3);
+      return common.map((row)=>{const high=Math.max(...row.values),low=Math.min(...row.values),mean=row.values.reduce((a,b)=>a+b,0)/row.values.length;return {...row,displayName:displayNames.get(row.name)||row.name,spread:mean?(high-low)/mean*100:0,high,low,sources:row.values.length};}).sort((a,b)=>b.spread-a.spread);
+    };
+    const disagreements=disagreement(projections);
+    const valueDisagreements=disagreement(values);
+    return {projections,values,fresh,disagreements,valueDisagreements,medianSpread:disagreements.length?disagreements[Math.floor(disagreements.length/2)].spread:0,valueMedianSpread:valueDisagreements.length?valueDisagreements[Math.floor(valueDisagreements.length/2)].spread:0,archives:archive?.archives?.length||0};
+  },[archive,records]);
+  useEffect(()=>{if(tab!=="accuracy"||!Object.keys(players||{}).length)return;let live=true;setAccuracy({status:"loading",rows:[]});(async()=>{
+    try{
+      const accuracySeason=season-1;
+      let league=leagues.find((row)=>String(row.league_id)===String(accuracyLeagueId))||null;
+      while(league&&num(league.season)>accuracySeason&&league.previous_league_id){
+        league=await fetchJsonWithTimeout(`https://api.sleeper.app/v1/league/${league.previous_league_id}`,{cache:"force-cache"},10000).catch(()=>null);
+      }
+      if(accuracyLeagueId&&(!league||num(league.season)!==accuracySeason)){
+        if(live)setAccuracy({status:"unavailable",rows:[],message:"This league does not have a 2025 Sleeper season in its league-history chain, so no 2025 accuracy report can be calculated for it."});
+        return;
+      }
+      const [statsResult,...sources]=await Promise.all([
+        fetchJsonWithTimeout(`/api/trust-center/stats?season=${accuracySeason}`,{cache:"force-cache"},20000),
+        fetchJsonWithTimeout(`/projections_${accuracySeason}.json`,{},10000).catch(()=>null),
+        fetchJsonWithTimeout(`/projections_espn_${accuracySeason}.json`,{},10000).catch(()=>null),
+        fetchJsonWithTimeout(`/projections_cbs_${accuracySeason}.json`,{},10000).catch(()=>null),
+      ]);
+      const totals=new Map(Object.entries(statsResult?.totals||{}).map(([id,stats])=>[String(id),stats]));
+      const scoring=league?.scoring_settings||{pass_yd:.04,pass_td:4,pass_int:-2,rush_yd:.1,rush_td:6,rec:1,rec_yd:.1,rec_td:6,fum_lost:-2};
+      const pprScoring={pass_yd:.04,pass_td:4,pass_int:-2,rush_yd:.1,rush_td:6,rec:1,rec_yd:.1,rec_td:6,fum_lost:-2};
+      const comparable=isPprComparable(scoring);
+      const actualByName=new Map(Object.entries(players||{}).map(([id,player])=>[playerName(player),scoreWithLeagueSettings(totals.get(String(id)),scoring)]).filter(([,points])=>points>0));
+      const pprByName=new Map(Object.entries(players||{}).map(([id,player])=>[playerName(player),scoreWithLeagueSettings(totals.get(String(id)),pprScoring)]).filter(([,points])=>points>0));
+      const labels=["Fantasy Football Analytics","ESPN","CBS"];
+      const rows=sources.map((data,index)=>{
+        const pairs=rowsOf(data).map((row)=>({name:playerName(row),projected:pointsOf(row),actual:num(actualByName.get(playerName(row)))})).filter((row)=>row.name&&row.actual>0&&row.projected>0);
+        const actualTop=new Set([...pairs].sort((a,b)=>b.actual-a.actual).slice(0,50).map((row)=>row.name));
+        const projectedTop=[...pairs].sort((a,b)=>b.projected-a.projected).slice(0,50);
+        const top50=projectedTop.length?projectedTop.filter((row)=>actualTop.has(row.name)).length/projectedTop.length*100:null;
+        const errors=pairs.map((row)=>Math.abs(row.projected-num(pprByName.get(row.name)))).filter((value)=>Number.isFinite(value));
+        return {source:labels[index],sample:pairs.length,mae:errors.length?errors.reduce((a,b)=>a+b,0)/errors.length:null,correlation:rankCorrelation(pairs),top50,updated:dateOf(data)};
+      }).filter((row)=>row.sample);
+      if(live)setAccuracy({status:rows.length?"ready":"unavailable",rows,season:accuracySeason,leagueName:league?.name||"Generic PPR",leagueSeason:league?.season||accuracySeason,comparable,retrospective:true,completedWeeks:statsResult?.completedWeeks||0,partial:!!statsResult?.partial});
+    }catch(error){if(live)setAccuracy({status:"unavailable",rows:[],message:error?.name==="AbortError"?"Scoring requests timed out. Try again.":error?.message||"Accuracy data could not be loaded."});}
+  })();return()=>{live=false;};},[accuracyLeagueId,accuracyRun,leagues,players,tab]);
+  const tabs=[["overview","Trust overview"],["values","Value intelligence"],["accuracy","Projection accuracy"],["sources","Source ledger"],["models","Model transparency"]];
+
+  return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="Trust & Accuracy Center"/><div className="mx-auto max-w-7xl px-4 pb-20 pt-20">
+    <header className="overflow-hidden rounded-[34px] border border-emerald-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(16,185,129,.2),transparent_38%),radial-gradient(circle_at_5%_100%,rgba(34,211,238,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="text-[10px] font-bold uppercase tracking-[.28em] text-emerald-200/60">Evidence before confidence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Trust & Accuracy Center</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">See exactly when data changed, how much sources cover and disagree, which claims are observed facts, and where the Arsenal is estimating or simulating. Missing evidence is shown as missing—never converted into a made-up score.</p></header>
+    {loading?<div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4 text-sm text-cyan-100">Auditing sources and archive coverage…</div>:<>
+      <Panel className="mt-5 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-[9px] font-bold uppercase tracking-wider text-cyan-200/45">Value audit format</div><p className="mt-1 text-xs text-white/38">Value coverage and disagreement change by league format. Projection reporting remains PPR.</p></div><select value={valueFormat} onChange={(event)=>{setLoading(true);setValueFormat(event.target.value);}} className="rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="dynasty_sf">Dynasty · Superflex</option><option value="dynasty_1qb">Dynasty · 1QB</option><option value="redraft_sf">Redraft · Superflex</option><option value="redraft_1qb">Redraft · 1QB</option></select></div></Panel>
+      <section className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-7"><Metric label="Sources online" value={`${records.filter((r)=>r.status==="available").length}/${records.length}`} detail="Readable source files"/><Metric label="Fresh sources" value={metrics.fresh} detail="Updated in 48 hours"/><Metric label="Projection coverage" value={metrics.projections.reduce((sum,r)=>sum+r.coverage,0).toLocaleString()} detail="Total source-player rows"/><Metric label="Value coverage" value={metrics.values.reduce((sum,r)=>sum+r.coverage,0).toLocaleString()} detail="Selected format rows"/><Metric label="Projection disagreement" value={`${metrics.medianSpread.toFixed(1)}%`} detail="Median source range"/><Metric label="Value disagreement" value={`${metrics.valueMedianSpread.toFixed(1)}%`} detail="Median source range"/><Metric label="Audit snapshots" value={metrics.archives} detail="Daily immutable archives"/></section>
+      <Panel className="sticky top-14 z-30 mt-4 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur"><div className="flex w-max gap-1">{tabs.map(([key,label])=><button key={key} onClick={()=>setTab(key)} className={`min-h-11 rounded-xl px-4 text-sm font-bold ${tab===key?"bg-emerald-300/10 text-emerald-100":"text-white/40"}`}>{label}</button>)}</div></Panel>
+      {tab==="values"?<ValueIntelligence metrics={metrics} records={records} valueFormat={valueFormat} />:null}
+      {tab==="accuracy"?<LeagueAccuracySummary accuracy={accuracy} leagues={leagues} leagueId={accuracyLeagueId} onLeagueChange={(value)=>setAccuracyLeagueId(value)} onRetry={()=>setAccuracyRun((value)=>value+1)} />:null}
+      {tab==="overview"?<div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_.85fr]"><Panel className="p-5"><div className="flex items-center justify-between"><div><h2 className="text-xl font-black">Freshness monitor</h2><p className="mt-1 text-[10px] text-white/32">Last success is when Arsenal retrieved the file. Source date is when the publisher says its underlying ranking changed.</p></div><Type type="Fact"/></div><div className="mt-4 space-y-2">{records.map((source)=><div key={source.key} className="rounded-xl border border-white/[0.06] bg-black/15 p-3"><div className="grid grid-cols-[minmax(0,1fr)_80px_90px] items-center gap-2"><div className="min-w-0"><div className="truncate text-sm font-bold">{source.label}</div><div className="mt-0.5 text-[9px] text-white/28">{source.kind} · {source.coverage.toLocaleString()} covered</div></div><span className={`rounded-full border px-2 py-1 text-center text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span><time className="text-right text-[9px] text-white/35">{source.updated?new Date(source.updated).toLocaleDateString():"Unavailable"}</time></div>{source.sourceDataDate?<div className="mt-2 text-[9px] text-amber-100/55">Publisher data date: {source.sourceDataDate}</div>:null}{source.lastError?<div className="mt-2 text-[9px] text-rose-100/60">Last attempt failed: {source.lastError}</div>:null}</div>)}</div></Panel><div className="space-y-4"><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">What changed?</h2><Type type="Fact"/></div><p className="mt-3 text-sm leading-6 text-white/42">{archive?.archives?.[0]?.partial_update?`The latest daily update was partial. Stale inputs: ${(archive.archives[0].stale_sources||[]).join(", ")||"not specified"}. Existing files were preserved rather than replaced with incomplete data.`:"The latest archived run completed without a source being marked stale."}</p><div className="mt-4 rounded-2xl bg-white/[0.03] p-4 text-xs text-white/45">Latest archive: <b className="text-white/75">{archive?.archives?.[0]?.date||"Not available"}</b> · {archive?.archives?.[0]?.files||0} compressed snapshots</div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">How to read disagreement</h2><Type type="Estimate"/></div><p className="mt-3 text-xs leading-5 text-white/42">A 30% value range means the highest and lowest normalized source values differ by 30% of their average. It signals market uncertainty, format differences, or a fast-moving player—not automatically a bad source.</p><div className="mt-4 grid grid-cols-2 gap-2">{["Coverage","Agreement","Freshness","Context"].map((item)=><div key={item} className="rounded-xl bg-cyan-300/[0.04] p-3 text-xs font-bold text-cyan-100">{item}</div>)}</div></Panel></div></div>:null}
+      {tab==="accuracy"?<div className="mt-4 grid gap-4 lg:grid-cols-2"><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Weekly projection accuracy</h2><Type type="Fact"/></div><p className="mt-3 text-sm leading-6 text-white/45">Daily dated projection archives began on <b className="text-white/75">{archive?.archives?.at(-1)?.date||"the first successful archive run"}</b>. Weekly accuracy becomes eligible only when a forecast was frozen before kickoff and actual fantasy scoring is final.</p><div className="mt-4 rounded-2xl border border-amber-300/12 bg-amber-300/[0.05] p-4"><div className="font-bold text-amber-100">Awaiting comparable {season} completed weeks</div><div className="mt-1 text-xs leading-5 text-amber-100/55">Season-long projections are not mislabeled as weekly forecasts. Sleeper weekly rows can be scored after games; other sources require matching weekly snapshots before they receive weekly rankings.</div></div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Prior-season scoring check</h2><Type type="Fact"/></div><p className="mt-2 text-xs leading-5 text-white/42">Where a dated season projection file exists, it is compared with final PPR scoring from Sleeper. MAE is season points missed per matched player; lower is better.</p><div className="mt-4 space-y-2">{accuracy.status==="loading"?<div className="text-sm text-cyan-100">Matching projections to final scoring…</div>:accuracy.rows.map((row)=><div key={row.source} className="grid grid-cols-[minmax(0,1fr)_70px_70px] items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><div><b className="text-sm">{row.source}</b><div className="text-[9px] text-white/28">{row.sample} matched players · {accuracy.season}</div></div><div className="text-right"><div className="text-lg font-black">{row.mae.toFixed(1)}</div><div className="text-[8px] text-white/28">MAE</div></div><div className="text-right text-[9px] text-white/35">{row.updated?new Date(row.updated).toLocaleDateString():"Snapshot"}</div></div>)}{accuracy.status==="unavailable"?<div className="rounded-xl bg-white/[0.03] p-3 text-xs text-white/40">No comparable prior-season files and finalized scoring could be matched.</div>:null}</div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Metrics reported as evidence grows</h2><Type type="Estimate"/></div><div className="mt-4 space-y-2">{[["MAE","Average absolute points missed"],["RMSE","Extra penalty for large misses"],["Rank correlation","How well a source ordered players"],["Hit rate","Players correctly placed within tolerance"],["Coverage","Eligible players actually projected"]].map(([name,detail])=><div key={name} className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><b className="text-sm">{name}</b><p className="mt-1 text-[10px] text-white/35">{detail}</p></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Recommendation performance ledger</h2><p className="mt-2 text-xs leading-5 text-white/42">Saved and completed Arsenal Intelligence decisions will form the recommendation ledger. Lineup recommendations can be judged by points gained versus the alternative; waiver and trade decisions require longer outcome windows and stay open until that window closes.</p><div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1"><Metric label="Resolved recommendations" value="0" detail="Tracking begins with opted-in outcomes"/><Metric label="Observed benefit" value="—" detail="Not enough resolved decisions"/><Metric label="Selection bias" value="Disclosed" detail="Dismissed advice is tracked separately"/></div></Panel></div>:null}
+      {tab==="sources"?<div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{records.map((source)=><Panel key={source.key} className="p-5"><div className="flex items-start justify-between gap-3"><div><div className="text-[9px] font-bold uppercase tracking-wider text-white/28">{source.kind} source</div><h3 className="mt-1 text-lg font-black">{source.label}</h3></div><span className={`rounded-full border px-2 py-1 text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span></div><div className="mt-4 grid grid-cols-2 gap-2"><Metric label="Coverage" value={source.coverage.toLocaleString()} detail="Positive rows"/><Metric label="Age" value={age(source.updated)} detail={source.updated?new Date(source.updated).toLocaleString():"No timestamp"}/></div><p className="mt-4 text-[10px] leading-4 text-white/32">Freshness reports the source file’s own update timestamp. Coverage counts usable rows; it does not imply correctness. Accuracy is displayed only after a comparable frozen forecast and final result exist.</p></Panel>)}</div>:null}
+      {tab==="models"?<div className="mt-4 space-y-4"><Panel className="p-5"><h2 className="text-xl font-black">Fact, estimate, and simulation</h2><div className="mt-4 grid gap-3 md:grid-cols-3">{[[<Type key="f" type="Fact"/>,"Observed data","Sleeper rosters, completed scores, transactions, source timestamps, and published source values."],[<Type key="e" type="Estimate"/>,"Calculated expectation","Projections, roster fit, player value, confidence, team need, and expected-point impact."],[<Type key="s" type="Simulation"/>,"Modeled futures","Playoff odds, win probabilities, scenario trees, draft outcomes, and what-if settings."]].map(([badge,title,detail])=><div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">{badge}<h3 className="mt-3 font-black">{title}</h3><p className="mt-2 text-xs leading-5 text-white/38">{detail}</p></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Probability calibration</h2><p className="mt-2 text-xs leading-5 text-white/42">A calibrated 70% forecast should occur approximately 70% of the time over a sufficiently large sample. The center will group closed matchup and playoff forecasts into probability buckets, show predicted versus observed outcomes, sample sizes, and calibration error. Until those forecasts are persistently snapshotted, the site displays no invented calibration grade.</p></Panel><div className="grid gap-4 xl:grid-cols-2"><Panel className="p-5"><h2 className="text-xl font-black">Projection disagreement</h2><p className="mt-2 text-xs text-white/38">Largest ranges among players covered by at least three projection sources.</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{metrics.disagreements.slice(0,10).map((row)=><div key={row.name} className="rounded-xl bg-violet-300/[0.04] p-3"><div className="truncate text-xs font-bold">{row.name||"Unknown player"}</div><div className="mt-1 text-lg font-black text-violet-100">{row.spread.toFixed(0)}%</div><div className="text-[9px] text-white/28">source range / mean</div></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Value disagreement</h2><p className="mt-2 text-xs text-white/38">Largest normalized market ranges for the selected value format. Source scales are comparable because these files use a common Arsenal-facing scale.</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{metrics.valueDisagreements.slice(0,10).map((row)=><div key={row.name} className="rounded-xl bg-amber-300/[0.04] p-3"><div className="truncate text-xs font-bold">{row.name||"Unknown player"}</div><div className="mt-1 text-lg font-black text-amber-100">{row.spread.toFixed(0)}%</div><div className="text-[9px] text-white/28">source range / mean</div></div>)}{!metrics.valueDisagreements.length?<p className="text-xs text-white/35">Fewer than three sources cover this selected format.</p>:null}</div></Panel></div></div>:null}
+    </>}
+  </div></main>;
+}

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react"; // <-- add useEffect
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSleeper } from "../context/SleeperContext";
+import { accountAvatar, useArsenalAccount } from "../context/ArsenalAccountContext";
 
 // Put these PNGs in /public/icons/
 const ICONS = {
@@ -25,6 +26,9 @@ const ICONS = {
   gamecenter: "/icons/fantasy-game-center-icon.png",
   draftcommand: "/icons/draft-command-center-icon.png",
   depthcharts: "/icons/lineup-icon.png",
+  intelligence: "/icons/football-icon.png",
+  trust: "/icons/power-icon.png",
+  profile: "/icons/manager-intelligence-icon.png",
 };
 
 // Set badges for sidebar links here (optional).
@@ -37,9 +41,12 @@ const NAV_BADGES = {
   "/league-history": "NEW",
   "/commissioner-dashboard": "DEVELOPING",
   "/draft-helper": "NEW",
+  "/draft-grades": "NEW",
   "/manager-intelligence": "NEW",
   "/game-center": "DEVELOPING",
   "/depth-charts": "NEW",
+  "/intelligence": "NEW",
+  "/trust-center": "NEW",
 };
 
 const BADGE_STYLES = {
@@ -104,6 +111,7 @@ function BallsvilleLink({ className = "" }) {
 
 export default function Navbar({ pageTitle }) {
   const { username, year, logout } = useSleeper();
+  const { account, isConnected } = useArsenalAccount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const router = useRouter();
@@ -176,12 +184,7 @@ export default function Navbar({ pageTitle }) {
             </div>
           )}
 
-          {username && (
-            <span className="hidden text-white sm:inline text-sm opacity-80">
-              {username}
-              {year ? ` · ${year}` : ""}
-            </span>
-          )}
+          {username ? <Link href="/profile" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span><span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "Synced profile" : `${year || ""} · Guest`}</small></span></Link> : null}
 
           {username && (
             <button
@@ -226,10 +229,11 @@ export default function Navbar({ pageTitle }) {
             {/* Navigation Links */}
             <nav className="clear-both min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-3 pr-1 pt-1 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
+              <SidebarLink href="/intelligence" icon={ICONS.intelligence} label="Arsenal Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/intelligence"]} />
               <NavGroup label="Weekly Command" detail="Act across your leagues" defaultOpen><SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} /><SidebarLink href="/game-center" icon={ICONS.gamecenter} label="Fantasy Game Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/game-center"]} /><SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} /><SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} /></NavGroup>
-              <NavGroup label="Draft Room" detail="Prepare and monitor"><SidebarLink href="/draft-helper" icon={ICONS.draftcommand} label="Draft Command Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /></NavGroup>
+              <NavGroup label="Draft Room" detail="Prepare, monitor, and review"><SidebarLink href="/draft-helper" icon={ICONS.draftcommand} label="Draft Command Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /><SidebarLink href="/draft-grades" icon={ICONS.draftcommand} label="Draft Grade Studio" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-grades"]} /></NavGroup>
               <NavGroup label="Market & Trades" detail="Values, exposure, deals"><SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} /><SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} /></NavGroup>
-              <NavGroup label="League Intelligence" detail="Research and forecasting"><SidebarLink href="/manager-intelligence" icon={ICONS.manager} label="Manager Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/manager-intelligence"]} /><SidebarLink href="/depth-charts" icon={ICONS.depthcharts} label="NFL Depth Charts" onClick={handleCloseSidebar} badge={NAV_BADGES["/depth-charts"]} /><SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} /><SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} /><SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} /><SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} /></NavGroup>
+              <NavGroup label="League Intelligence" detail="Research and forecasting"><SidebarLink href="/manager-intelligence" icon={ICONS.manager} label="Manager Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/manager-intelligence"]} /><SidebarLink href="/depth-charts" icon={ICONS.depthcharts} label="NFL Depth Charts" onClick={handleCloseSidebar} badge={NAV_BADGES["/depth-charts"]} /><SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} /><SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} /><SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} /><SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} /><SidebarLink href="/trust-center" icon={ICONS.trust} label="Trust & Accuracy Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/trust-center"]} /></NavGroup>
               <NavGroup label="Commissioner Office" detail="Operate and review"><SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} /></NavGroup>
             </nav>
 
@@ -238,6 +242,7 @@ export default function Navbar({ pageTitle }) {
             {/* User Info + Logout */}
             {username ? (
               <div className="shrink-0 rounded-2xl bg-slate-950/95 pt-1">
+                <Link href="/profile" onClick={handleCloseSidebar} className="mb-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5"><span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-black/20"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-8 w-8 object-contain" /></span><span className="min-w-0"><b className="block truncate text-sm">{account?.displayName || username}</b><small className={isConnected ? "text-emerald-200/50" : "text-white/30"}>{isConnected ? "Arsenal account synced" : "Optional account available"}</small></span></Link>
                 <p className="text-sm text-gray-400 mb-1">
                   Logged in as <span className="font-bold">{username}</span> ({year})
                 </p>

@@ -175,6 +175,16 @@ body {
   display: none;
 }
 
+.draft-grade-print-only {
+  display: none;
+}
+
+.draft-grade-print-all,
+.draft-grade-print-header,
+.draft-grade-print-footer {
+  display: none;
+}
+
 @media print {
   @page {
     size: letter portrait;
@@ -193,7 +203,11 @@ body {
   .yearbook-print-only,
   .yearbook-print-only *,
   .draft-report-print,
-  .draft-report-print * {
+  .draft-report-print *,
+  .draft-grade-report,
+  .draft-grade-report *,
+  .draft-grade-print-only,
+  .draft-grade-print-only * {
     visibility: visible !important;
   }
 
@@ -356,5 +370,197 @@ body {
 
   .draft-report-print > div:last-child > div:last-child > button:last-child {
     display: none !important;
+  }
+
+  .draft-grade-report {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .draft-grade-report .draft-grade-print-all,
+  .draft-grade-report .draft-grade-print-header,
+  .draft-grade-report .draft-grade-print-footer {
+    display: block !important;
+  }
+
+  .draft-grade-no-print {
+    display: none !important;
+  }
+
+  .draft-grade-report div,
+  .draft-grade-report details,
+  .draft-grade-report summary,
+  .draft-grade-report button {
+    background: #fff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  .draft-grade-print-header {
+    margin-bottom: 0.22in;
+    border-bottom: 3px solid #6d28d9;
+    padding-bottom: 0.16in;
+  }
+
+  .draft-grade-print-header > div {
+    color: #6d28d9 !important;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .draft-grade-print-header h1 {
+    margin: 4px 0;
+    font-size: 25pt;
+  }
+
+  .draft-grade-report details,
+  .draft-grade-report [class*="rounded"] {
+    break-inside: avoid;
+  }
+
+  .draft-grade-report details > div {
+    display: block !important;
+  }
+
+  .draft-grade-print-all {
+    margin-top: 0.28in !important;
+  }
+
+  .draft-grade-print-all > div > div:first-child {
+    border-bottom: 2px solid #111827 !important;
+  }
+
+  .draft-grade-print-footer {
+    margin-top: 0.3in;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 0.1in;
+    color: #64748b !important;
+    text-align: center;
+    font-size: 8pt;
+  }
+
+  .draft-grade-print-only {
+    display: block !important;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    line-height: 1.35;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .draft-grade-print-only .dg-cover {
+    min-height: 8.45in;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    break-after: page;
+  }
+
+  .draft-grade-print-only .dg-kicker {
+    color: #6d28d9 !important;
+    font-size: 8pt;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+  }
+
+  .draft-grade-print-only h1 {
+    margin: 0.12in 0 0;
+    font-size: 38pt;
+    line-height: 1;
+  }
+
+  .draft-grade-print-only h2 {
+    margin: 0.1in 0 0.2in;
+    border-bottom: 2px solid #6d28d9;
+    padding-bottom: 0.08in;
+    font-size: 18pt;
+  }
+
+  .draft-grade-print-only .dg-cover h2 {
+    border: 0;
+    font-size: 22pt;
+  }
+
+  .draft-grade-print-only section {
+    margin-bottom: 0.28in;
+  }
+
+  .draft-grade-print-only .dg-page {
+    break-before: page;
+  }
+
+  .draft-grade-print-only .dg-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.1in;
+    margin: 0.18in 0;
+  }
+
+  .draft-grade-print-only .dg-metrics > div {
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    padding: 0.12in;
+    break-inside: avoid;
+  }
+
+  .draft-grade-print-only small {
+    display: block;
+    color: #64748b !important;
+    font-size: 7pt;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .draft-grade-print-only b {
+    display: block;
+    margin-top: 3px;
+  }
+
+  .draft-grade-print-only table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .draft-grade-print-only th,
+  .draft-grade-print-only td {
+    border-bottom: 1px solid #cbd5e1;
+    padding: 6px;
+    text-align: left;
+  }
+
+  .draft-grade-print-only th {
+    background: #ede9fe !important;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+  }
+
+  .draft-grade-print-only tr {
+    break-inside: avoid;
+  }
+
+  .draft-grade-print-only footer {
+    margin-top: 0.3in;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 0.1in;
+    color: #64748b !important;
+    font-size: 7.5pt;
+    text-align: center;
   }
 }

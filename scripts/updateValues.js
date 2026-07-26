@@ -124,6 +124,27 @@ const FANTASYSHARKS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_
 const DRAFTSHARKS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_draftsharks_${CURRENT_SEASON}.json`);
 const ARSENAL_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_thefantasyarsenal_${CURRENT_SEASON}.json`);
 const ARCHIVE_DIR = path.join(__dirname, "../public/archive");
+const SOURCE_FRESHNESS_PATH = path.join(__dirname, "../public/source-freshness.json");
+
+function recordSourceFreshness(task, status = "success", error = "") {
+  let ledger = { updated_at:null, sources:{} };
+  try { ledger = JSON.parse(fs.readFileSync(SOURCE_FRESHNESS_PATH, "utf8")); } catch {}
+  const now = new Date().toISOString();
+  const previous = ledger.sources?.[task.key] || {};
+  ledger.updated_at = now;
+  ledger.sources = {
+    ...(ledger.sources || {}),
+    [task.key]: {
+      key:task.key,
+      name:task.name,
+      status,
+      last_attempt_at:now,
+      last_success_at:status === "success" ? now : previous.last_success_at || null,
+      last_error:status === "success" ? "" : String(error || "Update failed").slice(0, 300),
+    },
+  };
+  fs.writeFileSync(SOURCE_FRESHNESS_PATH, JSON.stringify(ledger, null, 2));
+}
 
 function archiveUpdatedValues(failures = []) {
   const date = new Date().toISOString().slice(0, 10);
@@ -2535,11 +2556,13 @@ async function updateCBSProjections() {
         try {
           console.log(`\n[${attempted}/${sources.length}] Updating ${task.name}...`);
           await task.fn();
+          recordSourceFreshness(task, "success");
           completed++;
           logProgress(`✅ ${task.name} completed`, completed, sources.length);
         } catch (error) {
           if (!error?.message) error = new Error(String(error || "Unknown error"));
           console.error(`❌ ${task.name} failed:`, error.message);
+          recordSourceFreshness(task, "failed", error.message);
           failed.push(task.name);
           // Continue with other tasks rather than stopping completely
         }

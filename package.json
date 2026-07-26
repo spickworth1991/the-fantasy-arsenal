@@ -17,11 +17,10 @@
     "update:daily": "node --no-warnings ./scripts/updateValues.js --daily --archive",
     "archive:values": "node ./scripts/updateValues.js --archive-only",
     "update2": "node scripts/updateValues --show-browser --devtools --slowmo=200 --shots --keep-open",
-    "git": "git add . && git commit -m \"PlayerStockADP\" && git push origin main",
-    "stick": "node ./sp-editor.js",
+    "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
-    "gip": "git add . && git commit -m \"PlayerPopUp\" && git push origin main",
-    "gil": "node ./scripts/git-sync.mjs"
+    "git": "git add . && git commit -m \"PlayerPopUp\" && git push origin main",
+    "sync": "node ./scripts/git-sync.mjs \"AccountsTest\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

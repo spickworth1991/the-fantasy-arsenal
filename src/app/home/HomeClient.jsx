@@ -37,6 +37,7 @@ const TOOL_ICONS = {
   "Lineup Optimizer": "/icons/lineup-icon.png",
   "Draft Monitor": "/icons/draft-icon.png",
   "Draft Command Center": "/icons/draft-command-center-icon.png",
+  "Draft Grade Studio": "/icons/draft-command-center-icon.png",
   "Manager Intelligence": "/icons/manager-intelligence-icon.png",
   "Fantasy Game Center": "/icons/fantasy-game-center-icon.png",
   "League Hub": "/icons/league-hub.png",
@@ -44,6 +45,7 @@ const TOOL_ICONS = {
   "Commissioner Dashboard": "/icons/commissioner-dashboard-icon.png",
   "Playoff Odds": "/icons/playoff-icon.png",
   "NFL Depth Charts": "/icons/lineup-icon.png",
+  "Trust & Accuracy Center": "/icons/power-icon.png",
 };
 
 export default function HomeClient() {
@@ -82,6 +84,18 @@ export default function HomeClient() {
       link: "/draft-pick-tracker",
       description:
         "Track drafting leagues: next pick countdowns, your upcoming picks, and recent draft momentum.",
+    },
+    {
+      name: "Draft Grade Studio",
+      link: "/draft-grades",
+      description: "Grade every team and selection with source-aware value, roster fit, construction, awards, and a printable league report.",
+      badge: "NEW",
+    },
+    {
+      name: "Trust & Accuracy Center",
+      link: "/trust-center",
+      description: "Audit source freshness, coverage, disagreement, projection accuracy, confidence, and the evidence behind every calculation.",
+      badge: "NEW",
     },
     {
       name: "Manager Intelligence",
@@ -151,9 +165,9 @@ export default function HomeClient() {
   ];
   const toolGroups = [
     { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
-    { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and stay ahead across simultaneous drafts.", names:["Draft Command Center","Draft Monitor"] },
+    { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and review the complete league draft.", names:["Draft Command Center","Draft Monitor","Draft Grade Studio"] },
     { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
-    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, NFL opportunity, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
+    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, NFL opportunity, league strength, schedules, playoff paths, history, and model evidence.", names:["Manager Intelligence","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History","Trust & Accuracy Center"] },
     { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
@@ -298,7 +312,7 @@ export default function HomeClient() {
             <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
               <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">Your fantasy operating system</div>
               <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["/league-hub","League Hub","See every league needing attention"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/draft-helper","Draft Command Center","Make the next pick with context"],["/manager-intelligence","Manager Intelligence","Research a manager or league"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["/intelligence","Arsenal Intelligence","See today’s decisions across every league"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/profile","Optional Arsenal Profile","Sync saved work between your devices"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
             </section>
             <DecisionInbox />
             {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
