@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 const TOKEN_KEY = "tfa:account-token";
 const META_KEY = "tfa:sync-meta";
 const PREFER_REMOTE_KEY = "tfa:sync-prefer-remote";
+const RECORD_REFRESH_KEY = "tfa:leaderboard-record-refresh";
 const SYNC_EXACT = new Set([
   "format", "qbType", "sourceKey", "year",
   "tfa:account-preferences", "tfa:intelligence-actions",
@@ -173,11 +174,22 @@ export function ArsenalAccountProvider({ children }) {
     const result = await authorized("/api/arsenal/avatar", { method:"POST", body:form });
     return updateProfile({ avatarType:"upload", avatarValue:result.avatarValue });
   };
-  const refreshRecord = async () => {
+  const refreshRecord = useCallback(async () => {
     const result = await authorized("/api/arsenal/leaderboard", { method:"POST" });
     setAccount(result.account);
     return result.account;
-  };
+  }, [authorized]);
+  useEffect(() => {
+    if (!token || !account?.accountId) return;
+    const key = `${RECORD_REFRESH_KEY}:${account.accountId}`;
+    const lastAttempt = Number(localStorage.getItem(key) || 0);
+    const currentSeason = new Date().getFullYear();
+    const recordIsCurrent = Number(account.record?.season) === currentSeason;
+    const recordIsFresh = Date.now() - Number(account.record?.updatedAt || 0) < 12 * 60 * 60 * 1000;
+    if (recordIsCurrent && recordIsFresh && Date.now() - lastAttempt < 12 * 60 * 60 * 1000) return;
+    localStorage.setItem(key, String(Date.now()));
+    refreshRecord().catch(() => {});
+  }, [account?.accountId, account?.record?.season, account?.record?.updatedAt, refreshRecord, token]);
   const disconnect = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken("");

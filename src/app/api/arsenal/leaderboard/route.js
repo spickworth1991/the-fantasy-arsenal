@@ -22,13 +22,21 @@ export async function GET() {
     await ensureArsenalSchema(db);
     const season = new Date().getUTCFullYear();
     const rows = await db.prepare(`SELECT * FROM arsenal_accounts
-      WHERE leaderboard_visible=1 AND profile_public=1 AND record_leagues>0 AND record_season=?
-      ORDER BY ((record_wins + record_ties * 0.5) * 1.0 / MAX(1, record_wins + record_losses + record_ties)) DESC,
+      WHERE leaderboard_visible=1 AND profile_public=1
+      ORDER BY CASE WHEN record_season=? THEN 0 ELSE 1 END,
+      ((record_wins + record_ties * 0.5) * 1.0 / MAX(1, record_wins + record_losses + record_ties)) DESC,
       record_wins DESC, record_points_for DESC LIMIT 250`).bind(season).all();
     return NextResponse.json({
       ok:true,
       season,
-      accounts:(rows?.results || []).map(publicProfile),
+      accounts:(rows?.results || []).map((row) => {
+        const profile = publicProfile(row);
+        if (Number(row.record_season) === season) return profile;
+        return {
+          ...profile,
+          record:{ season, wins:0, losses:0, ties:0, pointsFor:0, leagues:0, updatedAt:0 },
+        };
+      }),
     });
   } catch (error) {
     return new NextResponse(error?.message || "Leaderboard unavailable.", { status:503 });
