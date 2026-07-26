@@ -54,6 +54,9 @@ export async function ensureArsenalSchema(db) {
       `ALTER TABLE arsenal_accounts ADD COLUMN record_points_for REAL NOT NULL DEFAULT 0`,
       `ALTER TABLE arsenal_accounts ADD COLUMN record_leagues INTEGER NOT NULL DEFAULT 0`,
       `ALTER TABLE arsenal_accounts ADD COLUMN record_updated_at INTEGER`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN career_json TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN badges_json TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN public_sections_json TEXT`,
     ]) {
       try { await db.prepare(statement).run(); } catch {}
     }
@@ -129,9 +132,16 @@ export function publicAccount(account) {
       leagues:Number(account.record_leagues || 0),
       updatedAt:Number(account.record_updated_at || 0),
     },
+    career:safeJson(account.career_json, null),
+    badges:safeJson(account.badges_json, []),
+    publicSections:safeJson(account.public_sections_json, { career:true, badges:true, trophies:true }),
     createdAt: Number(account.created_at || 0),
     updatedAt: Number(account.updated_at || 0),
   };
+}
+
+function safeJson(value, fallback) {
+  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
 }
 
 export function publicProfile(account) {

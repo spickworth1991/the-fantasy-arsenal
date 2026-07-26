@@ -641,6 +641,7 @@ export const SleeperProvider = ({ children }) => {
       "val:keeptradecut": "KeepTradeCut",
       "val:dynastyprocess": "DynastyProcess",
       "val:fantasynav": "FantasyNavigator",
+      "val:fantasypros": "FantasyPros",
       "val:idynastyp": "IDynastyP",
       "val:idpshow": "IDPShow",
       "val:thefantasyarsenal": "TheFantasyArsenal",
@@ -994,6 +995,7 @@ export const SleeperProvider = ({ children }) => {
               dp_values: cached.dp_values,
               ktc_values: cached.ktc_values,
               fn_values: cached.fn_values,
+              fp_values: cached.fp_values,
               sp_values: cached.sp_values,
               idp_values: cached.idp_values,
               idpshow_values: cached.idpshow_values,
@@ -1012,21 +1014,23 @@ export const SleeperProvider = ({ children }) => {
       const playersData = await playersRes.json();
       updateProgress(68);
 
-      const [fcRes, dpRes, ktcRes, fnRes, idpRes, idpShowRes, spRes] = await Promise.all([
+      const [fcRes, dpRes, ktcRes, fnRes, fpRes, idpRes, idpShowRes, spRes] = await Promise.all([
         fetch("/fantasycalc_cache.json", { cache: "no-store" }),
         fetch("/dynastyprocess_cache.json", { cache: "no-store" }),
         fetch("/ktc_cache.json", { cache: "no-store" }),
         fetch("/fantasynav_cache.json", { cache: "no-store" }),
+        fetch("/fantasypros_cache.json", { cache: "no-store" }),
         fetch("/idynastyp_cache.json", { cache: "no-store" }),
         fetch("/idpshow_cache.json", { cache: "no-store" }),
         fetch("/stickypicky_cache.json", { cache: "no-store" }),
       ]);
 
-      const [fcData, dpData, ktcData, fnData, idpData, idpShowData, spData] = await Promise.all([
+      const [fcData, dpData, ktcData, fnData, fpData, idpData, idpShowData, spData] = await Promise.all([
         fcRes.json(),
         dpRes.json(),
         ktcRes.json(),
         fnRes.json(),
+        fpRes.json(),
         idpRes.json(),
         idpShowRes.json(),
         spRes.json(),
@@ -1097,6 +1101,7 @@ export const SleeperProvider = ({ children }) => {
       ingestKTC(ktcData?.Superflex, "superflex");
 
       const fnIndex = createCandidateIndex4();
+      const fpIndex = createCandidateIndex4();
       const spIndex = createCandidateIndex4();
 
       const ingest4WayList = (data, index) => {
@@ -1125,6 +1130,7 @@ export const SleeperProvider = ({ children }) => {
       };
 
       ingest4WayList(fnData, fnIndex);
+      ingest4WayList(fpData, fpIndex);
       ingest4WayList(spData, spIndex);
 
       const idpIndex = createCandidateIndex2();
@@ -1266,6 +1272,9 @@ export const SleeperProvider = ({ children }) => {
         const fn_values = fantasyRelevant
           ? get4WayFromIndex(fnIndex, fullName, pos, team)
           : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0, dynasty_1QB: 0, redraft_1QB: 0 };
+        const fp_values = fantasyRelevant
+          ? get4WayFromIndex(fpIndex, fullName, pos, team)
+          : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0, dynasty_1QB: 0, redraft_1QB: 0 };
 
         const sp_values = fantasyRelevant
           ? get4WayFromIndex(spIndex, fullName, pos, team)
@@ -1286,6 +1295,7 @@ export const SleeperProvider = ({ children }) => {
           Object.values(dp_values).some((v) => v > 0) ||
           Object.values(ktc_values).some((v) => v > 0) ||
           Object.values(fn_values).some((v) => v > 0) ||
+          Object.values(fp_values).some((v) => v > 0) ||
           Object.values(sp_values).some((v) => v > 0) ||
           Object.values(idp_values).some((v) => v > 0) ||
           Object.values(idpshow_values).some((v) => v > 0);
@@ -1301,6 +1311,7 @@ export const SleeperProvider = ({ children }) => {
             dp_values,
             ktc_values,
             fn_values,
+            fp_values,
             sp_values,
             idp_values,
             idpshow_values,

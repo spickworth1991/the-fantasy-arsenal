@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS arsenal_accounts (
   record_ties INTEGER NOT NULL DEFAULT 0,
   record_points_for REAL NOT NULL DEFAULT 0,
   record_leagues INTEGER NOT NULL DEFAULT 0,
-  record_updated_at INTEGER
+  record_updated_at INTEGER,
+  career_json TEXT,
+  badges_json TEXT,
+  public_sections_json TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS arsenal_accounts_login

@@ -254,6 +254,7 @@ const VALUE_SOURCES = {
   DynastyProcess: { label: "DynastyProcess", supports: { dynasty: true, redraft: false, qbToggle: true } },
   KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
+  FantasyPros: { label: "FantasyPros", supports: { dynasty: true, redraft: false, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
   TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
 };
@@ -273,6 +274,10 @@ function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "FantasyNavigator") {
       if (fmt === "dynasty") return qb === "sf" ? Number(p.fn_values?.dynasty_sf || 0) : Number(p.fn_values?.dynasty_1qb || 0);
       return qb === "sf" ? Number(p.fn_values?.redraft_sf || 0) : Number(p.fn_values?.redraft_1qb || 0);
+    }
+    if (valueSource === "FantasyPros") {
+      if (fmt !== "dynasty") return 0;
+      return qb === "sf" ? Number(p.fp_values?.dynasty_sf || 0) : Number(p.fp_values?.dynasty_1qb || 0);
     }
     if (valueSource === "IDynastyP") return qb === "sf" ? Number(p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb || 0);
     if (valueSource === "TheFantasyArsenal") {
@@ -500,6 +505,7 @@ useEffect(() => {
         "val:keeptradecut": "KeepTradeCut",
         "val:dynastyprocess": "DynastyProcess",
         "val:fantasynav": "FantasyNavigator",
+        "val:fantasypros": "FantasyPros",
         "val:idynastyp": "IDynastyP",
         "val:thefantasyarsenal": "TheFantasyArsenal",
       };

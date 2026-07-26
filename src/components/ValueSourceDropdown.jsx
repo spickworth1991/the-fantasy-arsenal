@@ -9,6 +9,7 @@ const ICONS = {
   DynastyProcess: "/icons/dp-logo.png",
   KeepTradeCut: "/icons/ktc-logo.png",
   FantasyNavigator: "/icons/fantasynav-logo.png", // square
+  FantasyPros: "/icons/fantasypro-logo.png",
   IDynastyP: "/icons/idp-logo.png",
 };
 
@@ -18,6 +19,7 @@ const LABELS = {
   DynastyProcess: "DynastyProcess",
   KeepTradeCut: "KeepTradeCut",
   FantasyNavigator: "FantasyNavigator",
+  FantasyPros: "FantasyPros",
   IDynastyP: "IDynastyP",
 };
 
@@ -29,6 +31,7 @@ const ICON_SIZES = {
     DynastyProcess:   { w: 84, h: 28 },
     KeepTradeCut:     { w: 95, h: 28 },
     FantasyNavigator: { w: 20,  h: 20 }, // square
+    FantasyPros:      { w: 84,  h: 28 },
     IDynastyP:        { w: 60, h: 20 },
   },
   menu: {
@@ -37,6 +40,7 @@ const ICON_SIZES = {
     DynastyProcess:   { w: 120,  h: 21 },
     KeepTradeCut:     { w: 120,  h: 21 },
     FantasyNavigator: { w: 21,  h: 21 }, // square
+    FantasyPros:      { w: 96,  h: 30 },
     IDynastyP:        { w: 82,  h: 21 },
   },
 };
@@ -81,7 +85,7 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
             alt={`${LABELS[valueSource]} logo`}
             width={btnSize.w}
             height={btnSize.h}
-            className="object-contain"
+            className={`${valueSource === "FantasyPros" ? "object-cover object-center" : "object-contain"}`}
             loading="lazy"
           />
         )}
@@ -116,14 +120,16 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
                   opt === valueSource ? "bg-white/10" : ""
                 }`}
               >
-                <img
-                  src={ICONS[opt]}
-                  alt={`${LABELS[opt]} logo`}
-                  width={size.w}
-                  height={size.h}
-                  className="object-contain shrink-0"
-                  loading="lazy"
-                />
+                {ICONS[opt] ? (
+                  <img
+                    src={ICONS[opt]}
+                    alt={`${LABELS[opt]} logo`}
+                    width={size.w}
+                    height={size.h}
+                    className={`${opt === "FantasyPros" ? "object-cover object-center" : "object-contain"} shrink-0`}
+                    loading="lazy"
+                  />
+                ) : null}
                 {/* Only FantasyNavigator shows visible text in the menu */}
                 {SHOW_TEXT(opt) ? (
                   <span className="ml-3 text-sm">{LABELS[opt]}</span>

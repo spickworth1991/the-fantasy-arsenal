@@ -25,6 +25,7 @@ const ICONS = {
   DynastyProcess: "/icons/dp-logo.png",
   KeepTradeCut: "/icons/ktc-logo.png",
   FantasyNavigator: "/icons/fantasynav-logo.png",
+  FantasyPros: "/icons/fantasypro-logo.png",
   IDynastyP: "/icons/idp-logo.png",
   IDPShow: "/icons/idpshow-logo.png",
   TheFantasyArsenal: "/icons/TFA.png",
@@ -40,6 +41,7 @@ const LABELS = {
   DynastyProcess: "DynastyProcess",
   KeepTradeCut: "KeepTradeCut",
   FantasyNavigator: "FantasyNavigator",
+  FantasyPros: "FantasyPros",
   IDynastyP: "IDynastyP",
   IDPShow: "IDPShow",
   TheFantasyArsenal: "The Fantasy Arsenal",
@@ -59,6 +61,7 @@ const ICON_SIZES = {
     DynastyProcess: { w: 164, h: 28 },
     KeepTradeCut: { w: 136, h: 28 },
     FantasyNavigator: { w: 48, h: 20 }, // square
+    FantasyPros: { w: 112, h: 28 },
     IDynastyP: { w: 60, h: 20 },
     IDPShow: { w: 60, h: 20 },
     TheFantasyArsenal: { w: 60, h: 20 },
@@ -75,6 +78,7 @@ const ICON_SIZES = {
     DynastyProcess: { w: 128, h: 21 },
     KeepTradeCut: { w: 136, h: 21 },
     FantasyNavigator: { w: 48, h: 21 }, // square
+    FantasyPros: { w: 120, h: 30 },
     IDynastyP: { w: 140, h: 28 },
     IDPShow: { w: 140, h: 28 },
     TheFantasyArsenal: { w: 140, h: 28 },
@@ -122,6 +126,13 @@ export const DEFAULT_SOURCES = [
     label: "FantasyNav",
     logoKey: "FantasyNavigator",
     supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
+  {
+    key: "val:fantasypros",
+    type: "value",
+    label: "FantasyPros",
+    logoKey: "FantasyPros",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
   },
   {
     key: "val:idynastyp",
@@ -294,7 +305,7 @@ function LogoOnly({ source, variant }) {
           alt={`${LABELS[logoKey] || source?.label || "Source"} logo`}
           width={size.w}
           height={size.h}
-          className="object-contain shrink-0"
+          className={`${logoKey === "FantasyPros" ? "object-cover object-center" : "object-contain"} shrink-0`}
           loading="lazy"
         />
       ) : null}

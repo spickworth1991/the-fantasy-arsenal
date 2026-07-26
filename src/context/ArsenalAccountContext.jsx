@@ -8,6 +8,7 @@ const PREFER_REMOTE_KEY = "tfa:sync-prefer-remote";
 const SYNC_EXACT = new Set([
   "format", "qbType", "sourceKey", "year",
   "tfa:account-preferences", "tfa:intelligence-actions",
+  "tfa:account-platform",
   "draft-helper-watchlist", "leagueHubWatchlist",
 ]);
 const SYNC_PREFIXES = [
@@ -38,7 +39,10 @@ const request = async (url, options = {}, token = "") => {
     ...options,
     headers: { ...(options.headers || {}), ...(token ? { Authorization:`Bearer ${token}` } : {}) },
   });
-  if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${options.method || "GET"} ${url} returned HTTP ${response.status}`);
+  }
   return response.json();
 };
 const digest = async (value) => {
@@ -100,7 +104,7 @@ export function ArsenalAccountProvider({ children }) {
         const key = localStorage.key(index);
         if (isSyncKey(key)) refreshed.push({ key, value:localStorage.getItem(key) || "", updatedAt:Number(meta[key]?.updatedAt || Date.now()) });
       }
-      await authorized("/api/arsenal/sync", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ items:refreshed }) });
+      await authorized("/api/arsenal/sync", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ items:refreshed }) });
       localStorage.setItem(metaKey, JSON.stringify(meta));
       if (remoteApplied) window.dispatchEvent(new CustomEvent("tfa:cloud-sync-applied"));
       const at = new Date();
@@ -126,7 +130,7 @@ export function ArsenalAccountProvider({ children }) {
   }, [account, syncNow, token]);
 
   const createAccount = async (sleeperUsername, loginName, password, confirmPassword) => {
-    const result = await request("/api/arsenal/account", {
+    const result = await request("/api/arsenal/register", {
       method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ sleeperUsername, loginName, password, confirmPassword }),
     });
     localStorage.setItem(TOKEN_KEY, result.token);
@@ -136,8 +140,8 @@ export function ArsenalAccountProvider({ children }) {
     return result;
   };
   const loginAccount = async (loginName, password) => {
-    const result = await request("/api/arsenal/account", {
-      method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ loginName, password }),
+    const result = await request("/api/arsenal/login", {
+      method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ loginName, password }),
     });
     localStorage.setItem(PREFER_REMOTE_KEY, "1");
     localStorage.setItem(TOKEN_KEY, result.token);
@@ -183,7 +187,7 @@ export function ArsenalAccountProvider({ children }) {
 
   const value = useMemo(() => ({
     ready, token, account, isConnected:!!account, syncing, syncState,
-    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow,
+    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow, accountRequest:authorized,
   }), [account, ready, syncState, syncing, token, syncNow]);
   return <ArsenalAccountContext.Provider value={value}>{children}</ArsenalAccountContext.Provider>;
 }

@@ -18,6 +18,7 @@ const SOURCES = [
   {key:"dynastyprocess",freshnessKey:"dp",label:"DynastyProcess",kind:"Value",file:"/dynastyprocess_cache.json"},
   {key:"ktc",freshnessKey:"ktc",label:"KeepTradeCut",kind:"Value",file:"/ktc_cache.json"},
   {key:"fantasynav",freshnessKey:"fn",label:"Fantasy Navigator",kind:"Value",file:"/fantasynav_cache.json"},
+  {key:"fantasypros",freshnessKey:"fp",label:"FantasyPros",kind:"Value",file:"/fantasypros_cache.json"},
   {key:"idynastyp",freshnessKey:"idp",label:"IDynastyP",kind:"Value",file:"/idynastyp_cache.json"},
   {key:"idpshow",freshnessKey:"idpshow",label:"IDP Show",kind:"Value",file:"/idpshow_cache.json"},
   {key:"stickypicky",freshnessKey:"sp",label:"The Fantasy Arsenal Values",kind:"Value",file:"/stickypicky_cache.json"},
@@ -55,6 +56,7 @@ function normalizeValueRows(source,data,format){
   }
   if(source.key==="ktc")return dynasty?list(data?.[sf?"Superflex":"OneQB"]):[];
   if(source.key==="fantasynav")return list(data?.[FORMAT_KEYS[format]]);
+  if(source.key==="fantasypros")return dynasty?list(data?.[FORMAT_KEYS[format]]):[];
   if(source.key==="idynastyp"){
     if(!dynasty)return [];
     return list(Array.isArray(data)?data:[],(row)=>sf?row.superflex:row.one_qb);

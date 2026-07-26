@@ -25,6 +25,8 @@ If you are reusing the older database that already contains `arsenal_accounts`, 
 
 If the account/login migration was already installed before premium profiles and the manager leaderboard were added, run only `cloudflare/arsenal-profile-migration.sql` once. It adds favorite-team, public-profile/privacy, and verified-record fields without recreating any account tables.
 
+If premium profiles were already installed before career résumés and achievements were added, run only `cloudflare/arsenal-career-migration.sql` once. Do not rerun the larger profile migration.
+
 ### B. Create private avatar storage
 
 1. In Cloudflare, open **Storage & Databases → R2 Object Storage**.

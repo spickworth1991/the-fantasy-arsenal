@@ -5,7 +5,7 @@ import { arsenalDb, authenticateArsenal, ensureArsenalSchema } from "../../../..
 
 const allowedKey = (key) => {
   const value = String(key || "");
-  const exact = new Set(["format","qbType","sourceKey","year","tfa:account-preferences","tfa:intelligence-actions","draft-helper-watchlist","leagueHubWatchlist"]);
+  const exact = new Set(["format","qbType","sourceKey","year","tfa:account-preferences","tfa:intelligence-actions","tfa:account-platform","draft-helper-watchlist","leagueHubWatchlist"]);
   return exact.has(value) || [
     "commissioner-", "orphan-recruiting:", "lineup-saves:", "draft-helper-queue:",
     "playoff-scenarios:", "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:", "ps:guard:",
@@ -59,3 +59,5 @@ export async function PUT(request) {
     return new NextResponse(error?.message || "Sync failed.", { status: 500 });
   }
 }
+
+export const POST = PUT;

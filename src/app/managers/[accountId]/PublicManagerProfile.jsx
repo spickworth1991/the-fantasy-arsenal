@@ -46,6 +46,8 @@ export default function PublicManagerProfile({ accountId }) {
           <Stat label="Verified leagues" value={account.record?.leagues || 0} />
           <Stat label="Portfolio points" value={Number(account.record?.pointsFor || 0).toLocaleString(undefined, { maximumFractionDigits:1 })} />
         </div>
+        {account.publicSections?.career !== false && account.career ? <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label="All-time win rate" value={`${winRate(account.career).toFixed(1)}%`} accent/><Stat label="Championships" value={account.career.championships || 0}/><Stat label="Playoff finishes" value={account.career.playoffs || 0}/><Stat label="Seasons" value={account.career.seasons || 0}/></div> : null}
+        {account.publicSections?.badges !== false && account.badges?.length ? <div className="mt-6 flex flex-wrap gap-2">{account.badges.filter((badge)=>badge.visible!==false).map((badge)=><span key={badge.key} title={badge.reason} className="rounded-full border border-amber-300/15 bg-amber-300/[0.05] px-3 py-2 text-xs font-bold text-amber-100">{badge.label}</span>)}</div> : null}
         <div className="mt-7 flex flex-wrap gap-2"><Link href={`/manager-intelligence?username=${encodeURIComponent(account.sleeperUsername)}`} className="rounded-xl bg-cyan-300 px-4 py-2.5 text-sm font-black text-slate-950">Open manager intelligence</Link><Link href="/leaderboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold">View leaderboard</Link></div>
       </section> : null}
     </div>

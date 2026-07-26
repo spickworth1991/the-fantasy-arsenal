@@ -110,6 +110,7 @@ const FC_OUT_PATH = path.join(__dirname, "../public/fantasycalc_cache.json");
 const DP_OUT_PATH = path.join(__dirname, "../public/dynastyprocess_cache.json");
 const KTC_OUT_PATH = path.join(__dirname, "../public/ktc_cache.json");
 const FN_OUT_PATH = path.join(__dirname, "../public/fantasynav_cache.json");
+const FP_OUT_PATH = path.join(__dirname, "../public/fantasypros_cache.json");
 const IDP_OUT_PATH = path.join(__dirname, "../public/idynastyp_cache.json");
 const IDPSHOW_OUT_PATH = path.join(__dirname, "../public/idpshow_cache.json");
 const SP_OUT_PATH  = path.join(__dirname, "../public/stickypicky_cache.json");
@@ -149,7 +150,7 @@ function recordSourceFreshness(task, status = "success", error = "") {
 function archiveUpdatedValues(failures = []) {
   const date = new Date().toISOString().slice(0, 10);
   const files = [
-    FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
+    FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, FP_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
     PROJ_OUT_PATH, ESPN_PROJ_OUT_PATH, CBS_PROJ_OUT_PATH, SLEEPER_PROJ_OUT_PATH,
     FANTASYSHARKS_PROJ_OUT_PATH, DRAFTSHARKS_PROJ_OUT_PATH, ARSENAL_PROJ_OUT_PATH,
   ].filter((file) => fs.existsSync(file));
@@ -299,6 +300,7 @@ function applyValueOverridesToAllCaches() {
     [DP_OUT_PATH, "DynastyProcess"],
     [KTC_OUT_PATH, "KTC"],
     [FN_OUT_PATH, "Fantasy Navigator"],
+    [FP_OUT_PATH, "FantasyPros"],
     [IDP_OUT_PATH, "IDynastyP"],
     [IDPSHOW_OUT_PATH, "The IDP Show"],
     [SP_OUT_PATH, "StickyPicky"],
@@ -843,6 +845,61 @@ async function updateFantasyNavigator() {
   console.log("✅ fantasynav_cache.json updated.");
 }
 
+async function updateFantasyPros() {
+  const categoryUrl = "https://www.fantasypros.com/content/nfl/dynasty-nfl/nfl-trade-value-chart/";
+  const category = await axios.get(categoryUrl, {
+    timeout: CONFIG.REQUEST_TIMEOUT,
+    headers: { "user-agent":"Mozilla/5.0", accept:"text/html" },
+  });
+  const articleMatches = [...String(category.data || "").matchAll(/href=["']([^"']*fantasy-football-rankings-dynasty-trade-value-chart-[^"']*update\/?)["']/gi)]
+    .map((match) => new URL(match[1], categoryUrl).href);
+  const articleUrl = articleMatches[0];
+  if (!articleUrl) throw new Error("FantasyPros latest dynasty trade-value article was not found.");
+
+  const article = await axios.get(articleUrl, {
+    timeout: CONFIG.REQUEST_TIMEOUT,
+    headers: { "user-agent":"Mozilla/5.0", accept:"text/html" },
+  });
+  const html = String(article.data || "");
+  const chartIds = [...html.matchAll(/datawrapper\.dwcdn\.net\/([A-Za-z0-9]+)\/\d+/g)].map((match) => match[1]);
+  const uniqueIds = [...new Set(chartIds)].slice(0, 4);
+  if (uniqueIds.length < 4) throw new Error(`FantasyPros article exposed ${uniqueIds.length}/4 expected value charts.`);
+
+  const title = html.match(/<title[^>]*>([^<]+)/i)?.[1] || "";
+  const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+  const monthIndex = monthNames.findIndex((month) => title.toLowerCase().includes(month));
+  const sourceYear = Number(title.match(/\b(20\d{2})\b/)?.[1]) || CURRENT_SEASON;
+  const sourceDate = `${sourceYear}-${String(Math.max(0, monthIndex) + 1).padStart(2, "0")}-01`;
+  const positions = ["QB","RB","WR","TE"];
+  const output = {
+    Dynasty_SF: [], Dynasty_1QB: [],
+    updated:new Date().toISOString(), source_date:sourceDate, source:"FantasyPros",
+    article_url:articleUrl, chart_ids:uniqueIds,
+    scale_note:"FantasyPros published values multiplied by 100 for Arsenal tool-scale compatibility; source_value preserves the exact published number.",
+  };
+
+  for (let index=0; index<uniqueIds.length; index+=1) {
+    const chartId=uniqueIds[index];
+    const url=`https://datawrapper.dwcdn.net/${chartId}/1/dataset.csv`;
+    const response=await axios.get(url,{timeout:CONFIG.REQUEST_TIMEOUT,responseType:"text"});
+    const parsed=Papa.parse(String(response.data||""),{header:true,delimiter:"\t",skipEmptyLines:true}).data;
+    parsed.forEach((row)=>{
+      const name=String(row.Name||"").trim();
+      const raw=Number(row["Trade Value"])||0;
+      if(!name||raw<=0)return;
+      const common={name,position:positions[index],team:normalizeTeamAbbr(row.Team||""),age:Number(row.Age)||null,source_value:raw,value:Math.round(raw*100),source_date:sourceDate,chart_id:chartId};
+      if(positions[index]==="TE"&&Number(row["TEP Value"]))common.tep_source_value=Number(row["TEP Value"]);
+      output.Dynasty_1QB.push(common);
+      const sfRaw=positions[index]==="QB"?(Number(row["SF Value"])||raw):raw;
+      output.Dynasty_SF.push({...common,source_value:sfRaw,value:Math.round(sfRaw*100)});
+    });
+  }
+  output.Dynasty_SF.sort((a,b)=>b.value-a.value);
+  output.Dynasty_1QB.sort((a,b)=>b.value-a.value);
+  fs.writeFileSync(FP_OUT_PATH,JSON.stringify(output,null,2));
+  console.log(`✅ fantasypros_cache.json updated (${output.Dynasty_SF.length} players, publisher date ${sourceDate}).`);
+}
+
 // ---------- IDynastyP (Google Sheets GViz) helpers ----------
 function parseGvizResponseText(text) {
   // GViz returns JS like:
@@ -1190,6 +1247,7 @@ async function updateStickyPicky() {
     { name: 'DynastyProcess', path: DP_OUT_PATH, required: true },
     { name: 'KTC', path: KTC_OUT_PATH, required: true },
     { name: 'FantasyNavigator', path: FN_OUT_PATH, required: true },
+    { name: 'FantasyPros', path: FP_OUT_PATH, required: false },
     { name: 'IDynastyP', path: IDP_OUT_PATH, required: true },
     { name: 'IDPShow', path: IDPSHOW_OUT_PATH, required: true },
   ];
@@ -1210,11 +1268,11 @@ async function updateStickyPicky() {
     }
   }
 
-  const { fantasycalc: fcData, dynastyprocess: dpData, ktc: ktcData, fantasynavigator: fnData, idynastyp: idpData, idpshow: idpshowData } = loadedData;
+  const { fantasycalc: fcData, dynastyprocess: dpData, ktc: ktcData, fantasynavigator: fnData, fantasypros: fpData, idynastyp: idpData, idpshow: idpshowData } = loadedData;
 
   const tables = {
-    Dynasty_SF:    { FC: {}, FN: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
-    Dynasty_1QB:   { FC: {}, FN: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
+    Dynasty_SF:    { FC: {}, FN: {}, FP: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
+    Dynasty_1QB:   { FC: {}, FN: {}, FP: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
     Redraft_SF:    { FC: {}, FN: {}, IDPSHOW: {} },
     Redraft_1QB:   { FC: {}, FN: {}, IDPSHOW: {} },
   };
@@ -1225,6 +1283,12 @@ async function updateStickyPicky() {
       const team = row.player?.maybeTeam || row.team || "";
       const position = (row.player?.position || row.position || "").replace(/\d+$/, "").trim();
       tables[key].FC[normName(name)] = { name, value: row.value || 0, team, position };
+    });
+  }
+
+  for (const key of ["Dynasty_SF","Dynasty_1QB"]) {
+    (fpData?.[key] || []).forEach((row) => {
+      tables[key].FP[normName(row.name)] = { name:row.name,value:row.value||0,team:row.team||"",position:row.position||"" };
     });
   }
 
@@ -1308,7 +1372,7 @@ async function updateStickyPicky() {
       const corroboratingMedian = corroboratingSorted.length % 2
         ? corroboratingSorted[middle]
         : (corroboratingSorted[middle - 1] + corroboratingSorted[middle]) / 2;
-      const sourceWeights = { FC: 1.35, KTC: 1.25, DP: 1, FN: 0.55, IDP: 0.65, IDPSHOW: 0.55 };
+      const sourceWeights = { FC: 1.35, KTC: 1.25, FP: 1.15, DP: 1, FN: 0.55, IDP: 0.65, IDPSHOW: 0.55 };
       const allSorted = sourcePcts.map((entry) => entry.percentile).sort((a, b) => a - b);
       const allMiddle = Math.floor(allSorted.length / 2);
       const marketMedian = allSorted.length % 2
@@ -1336,11 +1400,11 @@ async function updateStickyPicky() {
       // elite assets remain near 10k and replaceable depth falls much faster.
       const stickyValue = Math.round(Math.pow(consensusPct, 2.1) * 10000 * coverageMultiplier);
       const meta = pickMeta(
-        [sources.FC?.[nn], sources.FN?.[nn], sources.DP?.[nn], sources.KTC?.[nn], sources.IDP?.[nn], sources.IDPSHOW?.[nn]]
+        [sources.FC?.[nn], sources.FN?.[nn], sources.FP?.[nn], sources.DP?.[nn], sources.KTC?.[nn], sources.IDP?.[nn], sources.IDPSHOW?.[nn]]
           .map((x) => (x ? { team: x.team, position: x.position } : null))
       );
       const displayName =
-        (sources.FC?.[nn]?.name) || (sources.FN?.[nn]?.name) ||
+        (sources.FC?.[nn]?.name) || (sources.FP?.[nn]?.name) || (sources.FN?.[nn]?.name) ||
         (sources.DP?.[nn]?.name) || (sources.KTC?.[nn]?.name) ||
         (sources.IDP?.[nn]?.name) || (sources.IDPSHOW?.[nn]?.name) || nn;
 
@@ -2497,7 +2561,7 @@ async function updateCBSProjections() {
       return;
     }
     const onlyArg = process.argv.find((arg)=>arg.startsWith("--only="));
-    const dailySources = ["fc","dp","ktc","fn","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","espn_proj","cbs_proj","arsenal_proj"];
+    const dailySources = ["fc","dp","ktc","fn","fp","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","espn_proj","cbs_proj","arsenal_proj"];
     const requestedSources = process.argv.includes("--daily") ? dailySources : onlyArg ? onlyArg.slice("--only=".length).split(",").map((value)=>value.trim()).filter(Boolean) : null;
     const { sources } = requestedSources ? { sources:requestedSources } : await inquirer.prompt([
       {
@@ -2509,6 +2573,7 @@ async function updateCBSProjections() {
           { name: "DynastyProcess", value: "dp" },
           { name: "KeepTradeCut (KTC)", value: "ktc" },
           { name: "FantasyNavigator", value: "fn" },
+          { name: "FantasyPros (official public dynasty charts)", value: "fp" },
           { name: "IDynastyP", value: "idp" },
           { name: "The IDP Show", value: "idpshow" },
           { name: "StickyPicky (averaged)", value: "sp" },
@@ -2533,6 +2598,7 @@ async function updateCBSProjections() {
       { key: "dp", name: "DynastyProcess", fn: updateDynastyProcess },
       { key: "ktc", name: "KeepTradeCut", fn: updateKTC },
       { key: "fn", name: "FantasyNavigator", fn: updateFantasyNavigator },
+      { key: "fp", name: "FantasyPros", fn: updateFantasyPros },
       { key: "idp", name: "IDynastyP", fn: updateIDynastyP },
       { key: "idpshow", name: "The IDP Show", fn: updateIDPShow },
       { key: "sp", name: "StickyPicky", fn: updateStickyPicky },

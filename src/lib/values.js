@@ -24,6 +24,10 @@ export function makeGetPlayerValue(valueSource, format, qbType) {
         ? (qbType === "sf" ? p.fn_values?.dynasty_sf : p.fn_values?.dynasty_1qb)
         : (qbType === "sf" ? p.fn_values?.redraft_sf : p.fn_values?.redraft_1qb);
     }
+    if (valueSource === "FantasyPros") {
+      if (format !== "dynasty") return 0;
+      return qbType === "sf" ? (p.fp_values?.dynasty_sf || 0) : (p.fp_values?.dynasty_1qb || 0);
+    }
     if (valueSource === "IDynastyP") {
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
     }
@@ -49,6 +53,7 @@ export function getAnyPickValue(p, valueSource, format, qbType) {
     "DynastyProcess",
     "KeepTradeCut",
     "FantasyNavigator",
+    "FantasyPros",
     "IDynastyP",
     "IDPShow",
   ];
@@ -77,5 +82,4 @@ export function getPlayerAge(p) {
   const years = (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
   return Math.max(0, Math.round(years * 10) / 10);
 }
-
 

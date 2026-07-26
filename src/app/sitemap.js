@@ -23,6 +23,7 @@ export default function sitemap() {
     "/depth-charts",
     "/intelligence",
     "/profile",
+    "/account",
     "/leaderboard",
     "/trust-center",
     "/league-hub",

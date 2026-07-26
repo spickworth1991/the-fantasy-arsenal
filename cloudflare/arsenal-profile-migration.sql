@@ -10,3 +10,6 @@ ALTER TABLE arsenal_accounts ADD COLUMN record_ties REAL NOT NULL DEFAULT 0;
 ALTER TABLE arsenal_accounts ADD COLUMN record_points_for REAL NOT NULL DEFAULT 0;
 ALTER TABLE arsenal_accounts ADD COLUMN record_leagues INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE arsenal_accounts ADD COLUMN record_updated_at INTEGER;
+ALTER TABLE arsenal_accounts ADD COLUMN career_json TEXT;
+ALTER TABLE arsenal_accounts ADD COLUMN badges_json TEXT;
+ALTER TABLE arsenal_accounts ADD COLUMN public_sections_json TEXT;
