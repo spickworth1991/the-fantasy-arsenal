@@ -42,6 +42,18 @@ export async function ensureArsenalSchema(db) {
       `ALTER TABLE arsenal_accounts ADD COLUMN login_name TEXT`,
       `ALTER TABLE arsenal_accounts ADD COLUMN password_hash TEXT`,
       `ALTER TABLE arsenal_accounts ADD COLUMN password_salt TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN favorite_team TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN fantasy_style TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN experience_level TEXT`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN profile_public INTEGER NOT NULL DEFAULT 1`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN leaderboard_visible INTEGER NOT NULL DEFAULT 1`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_season INTEGER`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_wins INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_losses INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_ties INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_points_for REAL NOT NULL DEFAULT 0`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_leagues INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE arsenal_accounts ADD COLUMN record_updated_at INTEGER`,
     ]) {
       try { await db.prepare(statement).run(); } catch {}
     }
@@ -103,9 +115,30 @@ export function publicAccount(account) {
     bio: account.bio || "",
     avatarType: account.avatar_type || "stock",
     avatarValue: account.avatar_value || "blitz",
+    favoriteTeam: account.favorite_team || "",
+    fantasyStyle: account.fantasy_style || "balanced",
+    experienceLevel: account.experience_level || "veteran",
+    profilePublic: Number(account.profile_public ?? 1) === 1,
+    leaderboardVisible: Number(account.leaderboard_visible ?? 1) === 1,
+    record: {
+      season:Number(account.record_season || 0),
+      wins:Number(account.record_wins || 0),
+      losses:Number(account.record_losses || 0),
+      ties:Number(account.record_ties || 0),
+      pointsFor:Number(account.record_points_for || 0),
+      leagues:Number(account.record_leagues || 0),
+      updatedAt:Number(account.record_updated_at || 0),
+    },
     createdAt: Number(account.created_at || 0),
     updatedAt: Number(account.updated_at || 0),
   };
+}
+
+export function publicProfile(account) {
+  const profile = publicAccount(account);
+  if (!profile) return null;
+  const { loginName, hasPassword, ...safeProfile } = profile;
+  return safeProfile;
 }
 
 export function randomSecret(bytes = 32) {
@@ -123,7 +156,7 @@ export async function passwordHash(password, salt) {
     ["deriveBits"]
   );
   const bits = await crypto.subtle.deriveBits(
-    { name:"PBKDF2", hash:"SHA-256", salt:new TextEncoder().encode(String(salt)), iterations:120000 },
+    { name:"PBKDF2", hash:"SHA-256", salt:new TextEncoder().encode(String(salt)), iterations:100000 },
     material,
     256
   );

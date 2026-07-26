@@ -8,7 +8,7 @@ const allowedKey = (key) => {
   const exact = new Set(["format","qbType","sourceKey","year","tfa:account-preferences","tfa:intelligence-actions","draft-helper-watchlist","leagueHubWatchlist"]);
   return exact.has(value) || [
     "commissioner-", "orphan-recruiting:", "lineup-saves:", "draft-helper-queue:",
-    "playoff-scenarios:", "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",
+    "playoff-scenarios:", "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:", "ps:guard:",
   ].some((prefix) => value.startsWith(prefix));
 };
 

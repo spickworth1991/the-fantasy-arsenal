@@ -34,9 +34,11 @@ export async function POST(request) {
     const sleeperUsername = clean(body?.sleeperUsername, 40);
     const loginName = clean(body?.loginName || sleeperUsername, 40);
     const password = String(body?.password || "");
+    const confirmPassword = String(body?.confirmPassword || "");
     if (!sleeperUsername) return new NextResponse("A Sleeper username is required.", { status: 400 });
     if (!/^[a-zA-Z0-9_.-]{3,40}$/.test(loginName)) return new NextResponse("Account name must be 3–40 letters, numbers, dots, dashes, or underscores.", { status: 400 });
     if (password.length < 10) return new NextResponse("Password must be at least 10 characters.", { status: 400 });
+    if (password !== confirmPassword) return new NextResponse("Passwords do not match.", { status: 400 });
     const sleeperResponse = await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(sleeperUsername)}`);
     if (!sleeperResponse.ok) return new NextResponse("Sleeper username was not found.", { status: 404 });
     const sleeper = await sleeperResponse.json();
@@ -91,6 +93,11 @@ export async function PATCH(request) {
     const bio = clean(body?.bio ?? account.bio, 280);
     const avatarType = body?.avatarType === "upload" ? "upload" : "stock";
     const avatarValue = clean(body?.avatarValue ?? account.avatar_value, 180) || "blitz";
+    const favoriteTeam = clean(body?.favoriteTeam ?? account.favorite_team, 4).toUpperCase();
+    const fantasyStyle = ["balanced","contender","rebuilder","trader","drafter","bestball"].includes(body?.fantasyStyle) ? body.fantasyStyle : (account.fantasy_style || "balanced");
+    const experienceLevel = ["rookie","developing","veteran","commissioner","analyst"].includes(body?.experienceLevel) ? body.experienceLevel : (account.experience_level || "veteran");
+    const profilePublic = body?.profilePublic == null ? Number(account.profile_public ?? 1) : (body.profilePublic ? 1 : 0);
+    const leaderboardVisible = body?.leaderboardVisible == null ? Number(account.leaderboard_visible ?? 1) : (body.leaderboardVisible ? 1 : 0);
     let loginName = clean(body?.loginName ?? account.login_name, 40);
     let nextHash = account.password_hash;
     let nextSalt = account.password_salt;
@@ -102,8 +109,8 @@ export async function PATCH(request) {
     if (!nextHash) return new NextResponse("Set a password to enable account sign-in.", { status:400 });
     if (loginName && !/^[a-zA-Z0-9_.-]{3,40}$/.test(loginName)) return new NextResponse("Invalid account name.", { status:400 });
     const now = Date.now();
-    await db.prepare(`UPDATE arsenal_accounts SET display_name=?, bio=?, avatar_type=?, avatar_value=?, login_name=?, password_hash=?, password_salt=?, updated_at=? WHERE account_id=?`)
-      .bind(displayName, bio, avatarType, avatarValue, loginName || null, nextHash || null, nextSalt || null, now, account.account_id).run();
+    await db.prepare(`UPDATE arsenal_accounts SET display_name=?, bio=?, avatar_type=?, avatar_value=?, favorite_team=?, fantasy_style=?, experience_level=?, profile_public=?, leaderboard_visible=?, login_name=?, password_hash=?, password_salt=?, updated_at=? WHERE account_id=?`)
+      .bind(displayName, bio, avatarType, avatarValue, favoriteTeam, fantasyStyle, experienceLevel, profilePublic, leaderboardVisible, loginName || null, nextHash || null, nextSalt || null, now, account.account_id).run();
     const updated = await db.prepare(`SELECT * FROM arsenal_accounts WHERE account_id=?`).bind(account.account_id).first();
     return NextResponse.json({ ok: true, account: publicAccount(updated) });
   } catch (error) {

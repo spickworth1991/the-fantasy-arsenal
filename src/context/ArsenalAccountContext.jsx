@@ -14,6 +14,7 @@ const SYNC_PREFIXES = [
   "commissioner-", "orphan-recruiting:", "lineup-saves:",
   "draft-helper-queue:", "playoff-scenarios:",
   "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",
+  "ps:guard:",
 ];
 const ArsenalAccountContext = createContext(null);
 
@@ -124,9 +125,9 @@ export function ArsenalAccountProvider({ children }) {
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", visibility); };
   }, [account, syncNow, token]);
 
-  const createAccount = async (sleeperUsername, loginName, password) => {
+  const createAccount = async (sleeperUsername, loginName, password, confirmPassword) => {
     const result = await request("/api/arsenal/account", {
-      method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ sleeperUsername, loginName, password }),
+      method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ sleeperUsername, loginName, password, confirmPassword }),
     });
     localStorage.setItem(TOKEN_KEY, result.token);
     setToken(result.token);
@@ -168,6 +169,11 @@ export function ArsenalAccountProvider({ children }) {
     const result = await authorized("/api/arsenal/avatar", { method:"POST", body:form });
     return updateProfile({ avatarType:"upload", avatarValue:result.avatarValue });
   };
+  const refreshRecord = async () => {
+    const result = await authorized("/api/arsenal/leaderboard", { method:"POST" });
+    setAccount(result.account);
+    return result.account;
+  };
   const disconnect = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken("");
@@ -177,7 +183,7 @@ export function ArsenalAccountProvider({ children }) {
 
   const value = useMemo(() => ({
     ready, token, account, isConnected:!!account, syncing, syncState,
-    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, disconnect, syncNow,
+    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow,
   }), [account, ready, syncState, syncing, token, syncNow]);
   return <ArsenalAccountContext.Provider value={value}>{children}</ArsenalAccountContext.Provider>;
 }

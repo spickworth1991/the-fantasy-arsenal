@@ -23,6 +23,8 @@ Use this path if you want to configure everything in the Cloudflare website.
 
 If you are reusing the older database that already contains `arsenal_accounts`, paste and execute `cloudflare/arsenal-existing-db-migration.sql` instead. Run that migration only once. A duplicate-column error means those columns were already added and should not be added again.
 
+If the account/login migration was already installed before premium profiles and the manager leaderboard were added, run only `cloudflare/arsenal-profile-migration.sql` once. It adds favorite-team, public-profile/privacy, and verified-record fields without recreating any account tables.
+
 ### B. Create private avatar storage
 
 1. In Cloudflare, open **Storage & Databases → R2 Object Storage**.

@@ -1,0 +1,12 @@
+ALTER TABLE arsenal_accounts ADD COLUMN favorite_team TEXT;
+ALTER TABLE arsenal_accounts ADD COLUMN fantasy_style TEXT NOT NULL DEFAULT 'balanced';
+ALTER TABLE arsenal_accounts ADD COLUMN experience_level TEXT NOT NULL DEFAULT 'veteran';
+ALTER TABLE arsenal_accounts ADD COLUMN profile_public INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE arsenal_accounts ADD COLUMN leaderboard_visible INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE arsenal_accounts ADD COLUMN record_season INTEGER;
+ALTER TABLE arsenal_accounts ADD COLUMN record_wins REAL NOT NULL DEFAULT 0;
+ALTER TABLE arsenal_accounts ADD COLUMN record_losses REAL NOT NULL DEFAULT 0;
+ALTER TABLE arsenal_accounts ADD COLUMN record_ties REAL NOT NULL DEFAULT 0;
+ALTER TABLE arsenal_accounts ADD COLUMN record_points_for REAL NOT NULL DEFAULT 0;
+ALTER TABLE arsenal_accounts ADD COLUMN record_leagues INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE arsenal_accounts ADD COLUMN record_updated_at INTEGER;

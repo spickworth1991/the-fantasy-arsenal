@@ -11,7 +11,19 @@ CREATE TABLE IF NOT EXISTS arsenal_accounts (
   last_seen_at INTEGER NOT NULL,
   login_name TEXT,
   password_hash TEXT,
-  password_salt TEXT
+  password_salt TEXT,
+  favorite_team TEXT,
+  fantasy_style TEXT,
+  experience_level TEXT,
+  profile_public INTEGER NOT NULL DEFAULT 1,
+  leaderboard_visible INTEGER NOT NULL DEFAULT 1,
+  record_season INTEGER,
+  record_wins INTEGER NOT NULL DEFAULT 0,
+  record_losses INTEGER NOT NULL DEFAULT 0,
+  record_ties INTEGER NOT NULL DEFAULT 0,
+  record_points_for REAL NOT NULL DEFAULT 0,
+  record_leagues INTEGER NOT NULL DEFAULT 0,
+  record_updated_at INTEGER
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS arsenal_accounts_login
