@@ -1,6 +1,17 @@
 {
-  "updated_at": "2026-07-25T04:06:27.821Z",
+  "updated_at": "2026-07-26T04:06:53.293Z",
   "archives": [
+    {
+      "date": "2026-07-26",
+      "created_at": "2026-07-26T04:06:53.293Z",
+      "season": 2026,
+      "manifest": "manifest_2026-07-26.json",
+      "files": 14,
+      "partial_update": true,
+      "stale_sources": [
+        "FantasySharks Projections"
+      ]
+    },
     {
       "date": "2026-07-25",
       "created_at": "2026-07-25T04:06:27.821Z",
