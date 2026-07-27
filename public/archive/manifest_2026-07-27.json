@@ -1,0 +1,88 @@
+{
+  "date": "2026-07-27",
+  "created_at": "2026-07-27T04:06:56.119Z",
+  "season": 2026,
+  "compression": "gzip",
+  "partial_update": true,
+  "stale_sources": [
+    "The IDP Show",
+    "FantasySharks Projections"
+  ],
+  "files": [
+    {
+      "source": "fantasycalc_cache.json",
+      "file": "fantasycalc_cache_2026-07-27.json.gz",
+      "bytes": 125245
+    },
+    {
+      "source": "dynastyprocess_cache.json",
+      "file": "dynastyprocess_cache_2026-07-27.json.gz",
+      "bytes": 10966
+    },
+    {
+      "source": "ktc_cache.json",
+      "file": "ktc_cache_2026-07-27.json.gz",
+      "bytes": 18498
+    },
+    {
+      "source": "fantasynav_cache.json",
+      "file": "fantasynav_cache_2026-07-27.json.gz",
+      "bytes": 39996
+    },
+    {
+      "source": "fantasypros_cache.json",
+      "file": "fantasypros_cache_2026-07-27.json.gz",
+      "bytes": 11180
+    },
+    {
+      "source": "idynastyp_cache.json",
+      "file": "idynastyp_cache_2026-07-27.json.gz",
+      "bytes": 16055
+    },
+    {
+      "source": "idpshow_cache.json",
+      "file": "idpshow_cache_2026-07-27.json.gz",
+      "bytes": 29996
+    },
+    {
+      "source": "stickypicky_cache.json",
+      "file": "stickypicky_cache_2026-07-27.json.gz",
+      "bytes": 54985
+    },
+    {
+      "source": "projections_2026.json",
+      "file": "projections_2026_2026-07-27.json.gz",
+      "bytes": 11889
+    },
+    {
+      "source": "projections_espn_2026.json",
+      "file": "projections_espn_2026_2026-07-27.json.gz",
+      "bytes": 32565
+    },
+    {
+      "source": "projections_cbs_2026.json",
+      "file": "projections_cbs_2026_2026-07-27.json.gz",
+      "bytes": 12289
+    },
+    {
+      "source": "projections_sleeper_2026.json",
+      "file": "projections_sleeper_2026_2026-07-27.json.gz",
+      "bytes": 111757
+    },
+    {
+      "source": "projections_fantasysharks_2026.json",
+      "file": "projections_fantasysharks_2026_2026-07-27.json.gz",
+      "bytes": 54508
+    },
+    {
+      "source": "projections_draftsharks_2026.json",
+      "file": "projections_draftsharks_2026_2026-07-27.json.gz",
+      "bytes": 58289
+    },
+    {
+      "source": "projections_thefantasyarsenal_2026.json",
+      "file": "projections_thefantasyarsenal_2026_2026-07-27.json.gz",
+      "bytes": 40239
+    }
+  ]
+}
