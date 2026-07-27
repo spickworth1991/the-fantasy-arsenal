@@ -309,7 +309,7 @@ export default function GameCenterClient() {
       </header>
 
       {error ? <div className="mt-4 rounded-2xl border border-rose-300/15 bg-rose-300/[0.07] p-4 text-sm text-rose-100">{error}</div> : null}
-      {!username ? <Panel className="mt-5 p-8 text-center text-white/50">Log in on the homepage to build your portfolio command center.</Panel> : null}
+      {!username ? <Panel className="mt-5 p-8 text-center text-white/50">Load a Sleeper portfolio to build its weekly command center.</Panel> : null}
 
       {username ? <>
         <section className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">

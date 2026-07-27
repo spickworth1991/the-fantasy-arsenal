@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useSleeper } from "./SleeperContext";
 
 const TOKEN_KEY = "tfa:account-token";
 const META_KEY = "tfa:sync-meta";
@@ -53,12 +54,14 @@ const digest = async (value) => {
 };
 
 export function ArsenalAccountProvider({ children }) {
+  const { username:activeSleeperUsername, year:activeSleeperYear, loadPortfolio, storageReady:sleeperStorageReady } = useSleeper();
   const [token, setToken] = useState("");
   const [account, setAccount] = useState(null);
   const [ready, setReady] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncState, setSyncState] = useState({ status:"guest", message:"Guest mode · data stays on this device", at:null });
   const syncLock = useRef(false);
+  const accountPortfolioLoad = useRef("");
 
   const authorized = useCallback((url, options) => request(url, options, token), [token]);
 
@@ -71,6 +74,16 @@ export function ArsenalAccountProvider({ children }) {
       .catch(() => { localStorage.removeItem(TOKEN_KEY); setToken(""); setAccount(null); setSyncState({ status:"error", message:"Saved Arsenal key is no longer valid", at:null }); })
       .finally(() => setReady(true));
   }, []);
+
+  useEffect(() => {
+    if (!sleeperStorageReady || !account?.sleeperUsername || activeSleeperUsername) return;
+    const target = String(account.sleeperUsername);
+    if (accountPortfolioLoad.current === target.toLowerCase()) return;
+    accountPortfolioLoad.current = target.toLowerCase();
+    loadPortfolio(target, activeSleeperYear || new Date().getFullYear()).catch(() => {
+      accountPortfolioLoad.current = "";
+    });
+  }, [account?.sleeperUsername, activeSleeperUsername, activeSleeperYear, loadPortfolio, sleeperStorageReady]);
 
   const syncNow = useCallback(async ({ quiet = false } = {}) => {
     if (!token || syncLock.current) return null;
@@ -130,6 +143,12 @@ export function ArsenalAccountProvider({ children }) {
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", visibility); };
   }, [account, syncNow, token]);
 
+  const activateAccountPortfolio = async (nextAccount) => {
+    const target = String(nextAccount?.sleeperUsername || "").trim();
+    if (!target || target.toLowerCase() === String(activeSleeperUsername || "").toLowerCase()) return;
+    await loadPortfolio(target, activeSleeperYear || new Date().getFullYear());
+  };
+
   const createAccount = async (sleeperUsername, loginName, password, confirmPassword) => {
     const result = await request("/api/arsenal/register", {
       method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ sleeperUsername, loginName, password, confirmPassword }),
@@ -137,6 +156,7 @@ export function ArsenalAccountProvider({ children }) {
     localStorage.setItem(TOKEN_KEY, result.token);
     setToken(result.token);
     setAccount(result.account);
+    await activateAccountPortfolio(result.account).catch(() => {});
     setSyncState({ status:"ready", message:"Account created · save your recovery key", at:null });
     return result;
   };
@@ -148,6 +168,7 @@ export function ArsenalAccountProvider({ children }) {
     localStorage.setItem(TOKEN_KEY, result.token);
     setToken(result.token);
     setAccount(result.account);
+    await activateAccountPortfolio(result.account).catch(() => {});
     setSyncState({ status:"ready", message:"Signed in · restoring your Arsenal workspace", at:null });
     return result;
   };
@@ -158,6 +179,7 @@ export function ArsenalAccountProvider({ children }) {
     localStorage.setItem(TOKEN_KEY, clean);
     setToken(clean);
     setAccount(result.account);
+    await activateAccountPortfolio(result.account).catch(() => {});
     setSyncState({ status:"ready", message:"Account connected", at:null });
     return result;
   };

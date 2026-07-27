@@ -110,10 +110,12 @@ function BallsvilleLink({ className = "" }) {
 }
 
 export default function Navbar({ pageTitle }) {
-  const { username, year, logout } = useSleeper();
-  const { account, isConnected } = useArsenalAccount();
+  const { username, year, loadPortfolio, clearPortfolio } = useSleeper();
+  const { account, isConnected, disconnect } = useArsenalAccount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
+  const [portfolioInput, setPortfolioInput] = useState("");
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
   const router = useRouter();
 
   // ✅ NEW: hide Ballsville promo when tools are being used via Ballsville
@@ -147,11 +149,38 @@ export default function Navbar({ pageTitle }) {
     }, 300);
   };
 
-  const handleLogout = () => {
+  const viewingAccountPortfolio = !!isConnected && String(username || "").toLowerCase() === String(account?.sleeperUsername || "").toLowerCase();
+  const viewingAnotherPortfolio = !!isConnected && !!username && !viewingAccountPortfolio;
+
+  const handleClearPortfolio = () => {
     clearPlayerStockSessionCache();
-    logout();
+    clearPortfolio();
     handleCloseSidebar();
     router.replace("/"); // redirect to homepage
+  };
+  const handleReturnToAccount = async () => {
+    if (!account?.sleeperUsername) return;
+    setPortfolioLoading(true);
+    clearPlayerStockSessionCache();
+    try {
+      await loadPortfolio(account.sleeperUsername, year || new Date().getFullYear());
+      setPortfolioInput("");
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
+  const handlePortfolioLookup = async (event) => {
+    event.preventDefault();
+    const target = portfolioInput.trim();
+    if (!target) return;
+    setPortfolioLoading(true);
+    clearPlayerStockSessionCache();
+    try {
+      await loadPortfolio(target, year || new Date().getFullYear());
+      setPortfolioInput("");
+    } finally {
+      setPortfolioLoading(false);
+    }
   };
 
   return (
@@ -186,12 +215,14 @@ export default function Navbar({ pageTitle }) {
 
           {username ? <Link href="/profile" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span><span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "Synced profile" : `${year || ""} · Guest`}</small></span></Link> : null}
 
-          {username && (
+          {viewingAnotherPortfolio ? <span className="hidden max-w-32 truncate rounded-full border border-amber-300/15 bg-amber-300/[0.06] px-2.5 py-1 text-[10px] font-bold text-amber-100 min-[520px]:inline">Viewing @{username}</span> : null}
+
+          {username && (!isConnected || viewingAnotherPortfolio) && (
             <button
-              onClick={handleLogout}
+              onClick={viewingAnotherPortfolio ? handleReturnToAccount : handleClearPortfolio}
               className="rounded-lg text-white border border-white/20 px-3 py-1 text-sm hover:bg-white/10"
             >
-              Logout
+              {viewingAnotherPortfolio ? "My portfolio" : "Clear view"}
             </button>
           )}
         </div>
@@ -240,23 +271,33 @@ export default function Navbar({ pageTitle }) {
 
             <div className="border-t border-white/10 pt-3" />
 
-            {/* User Info + Logout */}
+            <form onSubmit={handlePortfolioLookup} className="mb-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+              <label className="block text-[9px] font-bold uppercase tracking-[.16em] text-white/35">View a Sleeper portfolio</label>
+              <div className="mt-2 flex gap-2">
+                <input value={portfolioInput} onChange={(event)=>setPortfolioInput(event.target.value)} placeholder="Sleeper username" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-cyan-300/30" />
+                <button disabled={!portfolioInput.trim()||portfolioLoading} className="rounded-xl bg-cyan-300/10 px-3 text-xs font-bold text-cyan-100 disabled:opacity-35">{portfolioLoading ? "…" : "View"}</button>
+              </div>
+              {viewingAnotherPortfolio ? <button type="button" onClick={handleReturnToAccount} disabled={portfolioLoading} className="mt-2 w-full rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-xs font-bold text-amber-100">Return to @{account?.sleeperUsername}</button> : null}
+            </form>
+
+            {/* Account identity + viewed portfolio */}
             {username ? (
               <div className="shrink-0 rounded-2xl bg-slate-950/95 pt-1">
                 <Link href="/profile" onClick={handleCloseSidebar} className="mb-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5"><span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-black/20"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-8 w-8 object-contain" /></span><span className="min-w-0"><b className="block truncate text-sm">{account?.displayName || username}</b><small className={isConnected ? "text-emerald-200/50" : "text-white/30"}>{isConnected ? "Arsenal account synced" : "Optional account available"}</small></span></Link>
-                <p className="text-sm text-gray-400 mb-1">
-                  Logged in as <span className="font-bold">{username}</span> ({year})
+                <p className="mb-1 text-sm text-gray-400">
+                  Viewing <span className="font-bold">@{username}</span> ({year})
                 </p>
                 <button
-                  onClick={handleLogout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded transition neon-button"
+                  onClick={handleClearPortfolio}
+                  className={`w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded transition neon-button ${viewingAccountPortfolio ? "hidden" : ""}`}
                 >
-                  Logout
+                  Clear viewed portfolio
                 </button>
               </div>
             ) : (
-              <p className="text-gray-400">Login from the homepage</p>
+              <p className="text-gray-400">Load a Sleeper portfolio above</p>
             )}
+            {isConnected ? <button type="button" onClick={disconnect} className="mt-2 w-full rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/45">Sign out of Arsenal</button> : <Link href="/profile" onClick={handleCloseSidebar} className="mt-2 block w-full rounded-xl border border-violet-300/15 bg-violet-300/[0.06] px-3 py-2 text-center text-xs font-semibold text-violet-100">Sign in to Arsenal</Link>}
           </div>
         </div>
       )}

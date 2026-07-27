@@ -34,6 +34,8 @@ const ICONS = {
   ESPN: "/icons/espn-logo.png",
   CBS: "/icons/cbs-logo.png",
   Sleeper: "/icons/sleeper.webp",
+  FantasySharks: "/icons/fantasy-sharks-logo.jpg",
+  DraftSharks: "/icons/draft-sharks-logo.jpg",
 };
 
 const LABELS = {
@@ -93,7 +95,7 @@ const ICON_SIZES = {
 };
 
 // Only some logos need visible text; render it like part of the logo/wordmark
-const SHOW_TEXT = (key) => key === "FantasyNavigator" || key === "FantasySharks" || key === "DraftSharks";
+const SHOW_TEXT = (key) => key === "FantasyNavigator";
 
 /** ========== Defaults ========== */
 export const DEFAULT_SOURCES = [

@@ -49,14 +49,14 @@ const TOOL_ICONS = {
 };
 
 export default function HomeClient() {
-  const { username, login, loading, error } = useSleeper();
+  const { username, loadPortfolio, loading, error } = useSleeper();
   const [unameInput, setUnameInput] = useState("");
   const [yearInput, setYearInput] = useState(new Date().getFullYear());
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    await login(unameInput, yearInput);
+    await loadPortfolio(unameInput, yearInput);
   };
 
   const isLoggedIn = !!username;
@@ -216,7 +216,7 @@ export default function HomeClient() {
                 disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
               >
-                {loading ? "Logging in..." : "Login"}
+                {loading ? "Loading portfolio..." : "Load Sleeper Portfolio"}
               </button>
 
               {error && <p className="text-red-500 mt-4">{String(error)}</p>}
@@ -236,8 +236,8 @@ export default function HomeClient() {
                   </h2>
                   <p className="text-gray-300 mt-2">
                     The Fantasy Arsenal is a fast, modern toolkit built specifically for{" "}
-                    <span className="text-white font-semibold">Sleeper fantasy football</span>. Log in with your Sleeper
-                    username to load your leagues and unlock personalized tools for drafting, trading, and weekly
+                    <span className="text-white font-semibold">Sleeper fantasy football</span>. Load any public Sleeper
+                    portfolio by username to open its leagues and unlock contextual tools for drafting, trading, and weekly
                     decisions.
                   </p>
 
@@ -293,9 +293,9 @@ export default function HomeClient() {
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold">Does logging in share my password?</h3>
+                    <h3 className="text-white font-semibold">Does loading a portfolio require a Sleeper password?</h3>
                     <p className="text-gray-300 mt-1">
-                      No. You log in with your Sleeper username only (no password).
+                      No. Sleeper portfolios use public, read-only data. An optional Arsenal account is the separate secure sign-in for cloud saves and your profile.
                     </p>
                   </div>
                   <div>

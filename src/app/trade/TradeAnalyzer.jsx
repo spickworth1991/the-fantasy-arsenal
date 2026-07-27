@@ -120,6 +120,7 @@ export default function TradeAnalyzer() {
   const [recommendation, setRecommendation] = useState("");
   const [selectedOwnerA, setSelectedOwnerA] = useState("");
   const [selectedOwnerB, setSelectedOwnerB] = useState("");
+  const [tradeTab, setTradeTab] = useState("analyzer");
 
   useEffect(() => {
     let mounted = true;
@@ -419,7 +420,9 @@ export default function TradeAnalyzer() {
               </div>
             </div>
 
-            <TradeWorkspaceSuite
+            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["suite","Additional Trade Tools"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
+
+            <div className={tradeTab === "suite" ? "block" : "hidden"}><TradeWorkspaceSuite
               league={league}
               players={players}
               getMetric={getMetric}
@@ -435,9 +438,9 @@ export default function TradeAnalyzer() {
                 setSelectedOwnerA(ownerA || "");
                 setSelectedOwnerB(ownerB || "");
               }}
-            />
+            /></div>
 
-            <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
+            <div className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">
                 <div className="text-xs uppercase tracking-wide text-blue-200/60">Side A</div>
                 <div className="mt-1 text-2xl font-semibold text-white">{Math.round(tradeValueA).toLocaleString()}</div>
@@ -549,7 +552,7 @@ export default function TradeAnalyzer() {
                   ))}
                 </div>
               </div>
-            ) : null}
+            ) : null}</div>
           </>
         )}
       </div>

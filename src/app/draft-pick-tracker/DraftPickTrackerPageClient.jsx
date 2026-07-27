@@ -18,9 +18,9 @@ export default function DraftPickTrackerPage() {
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-24">
         {!username ? (
           <div className="mt-10 bg-gray-900/80 border border-white/10 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-white mb-2">Login required</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Sleeper portfolio required</h2>
             <p className="text-gray-300">
-              Log in with your Sleeper username on the homepage to load your drafting leagues.
+              Load a Sleeper portfolio from the homepage or navigation menu to open its drafting leagues.
             </p>
           </div>
         ) : (

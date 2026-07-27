@@ -674,7 +674,7 @@ export default function CommissionerDashboardClient() {
 
     {loading ? <div className="mt-5 flex items-center gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-400/[0.07] p-4 text-sm text-cyan-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200/25 border-t-cyan-200" />{progress}</div> : null}
     {error ? <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</div> : null}
-    {!username ? <Shell className="mt-6 p-8 text-center text-white/55">Log in with your Sleeper username to select and audit a league.</Shell> : null}
+    {!username ? <Shell className="mt-6 p-8 text-center text-white/55">Load a Sleeper portfolio to select and audit one of its leagues.</Shell> : null}
 
     {data ? <><section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Health score" value={`${Math.round(data.healthScore)}/100`} detail="Composite participation and balance signal" tone={data.healthScore >= 75 ? "good" : data.healthScore >= 55 ? "warn" : "risk"} /><Metric label="Balance" value={`${Math.round(data.balanceScore)}/100`} detail={`${data.valueSpread.toFixed(1)}× top-to-bottom value`} /><Metric label="Balance trend" value={data.parityTrend} detail="Early weeks compared with recent weeks" /><Metric label="Participation" value={percent(data.participation * 100)} detail="Managers with recorded activity" /><Metric label="Needs review" value={data.attentionCount} detail="Manager and trade signals" tone={data.attentionCount ? "warn" : "good"} /><Metric label="Open rosters" value={data.managers.filter((manager) => manager.orphan).length} detail="No Sleeper owner assigned" tone={data.managers.some((manager) => manager.orphan) ? "risk" : "good"} /></section>
 

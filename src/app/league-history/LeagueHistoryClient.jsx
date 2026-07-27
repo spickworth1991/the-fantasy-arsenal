@@ -321,7 +321,7 @@ export default function LeagueHistoryClient() {
           </div>
         </header>
 
-        {!username ? <Shell className="mt-6 p-8 text-center text-white/60">Log in with your Sleeper username on the home page to open a league archive.</Shell> : null}
+        {!username ? <Shell className="mt-6 p-8 text-center text-white/60">Load a Sleeper portfolio to open one of its league archives.</Shell> : null}
         {error ? <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</div> : null}
         {loadingHistory ? <div className="mt-5 flex items-center gap-3 rounded-2xl border border-violet-300/15 bg-violet-400/[0.07] p-4 text-sm text-violet-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200/25 border-t-violet-200" />{progress || "Building league history…"}</div> : null}
 

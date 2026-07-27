@@ -33,10 +33,10 @@ const lsSet = (key, value) => {
     else window.localStorage.setItem(key, String(value));
   } catch {}
 };
-const lsClear = () => {
+const clearPortfolioStorage = () => {
   if (!isBrowser) return;
   try {
-    window.localStorage.clear();
+    ["username", "year", "activeLeague"].forEach((key) => window.localStorage.removeItem(key));
   } catch {}
 };
 
@@ -728,7 +728,7 @@ export const SleeperProvider = ({ children }) => {
   };
 
   const logout = () => {
-    lsClear();
+    clearPortfolioStorage();
     setUsername(null);
     setLeagues([]);
     setPlayers({});
@@ -899,7 +899,7 @@ export const SleeperProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageReady, username, year, players, leagues, loading, projectionIndexes]);
 
-  const login = async (uname, yr) => {
+  const loadPortfolio = async (uname, yr) => {
     try {
       setLoading(true);
       setProgress(5);
@@ -928,8 +928,8 @@ export const SleeperProvider = ({ children }) => {
 
       await preloadProjections();
     } catch (err) {
-      console.error("❌ Login error:", err);
-      setError(err?.message || "Login failed");
+      console.error("❌ Portfolio load error:", err);
+      setError(err?.message || "Portfolio could not be loaded");
 
       if (String(err?.message || "").toLowerCase().includes("user not found")) {
         lsSet("username", null);
@@ -1477,8 +1477,11 @@ export const SleeperProvider = ({ children }) => {
         return getPlayerValue(p, { ...(opts || {}), sourceKey: sk });
       },
 
-      login,
+      login: loadPortfolio,
+      loadPortfolio,
       logout,
+      clearPortfolio: logout,
+      storageReady,
       fetchLeagueRosters,
       fetchLeagueRostersSilent,
 

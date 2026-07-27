@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import DecisionInbox from "../../components/DecisionInbox";
+import WeeklyPortfolioDigest from "../../components/WeeklyPortfolioDigest";
 import { useArsenalAccount, accountAvatar } from "../../context/ArsenalAccountContext";
 import { useSleeper } from "../../context/SleeperContext";
 
@@ -62,7 +63,7 @@ export default function AccountClient(){
     <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_0%_100%,rgba(139,92,246,.16),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><img src={accountAvatar(account)} alt="" className="h-20 w-20 rounded-3xl object-contain"/><div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase tracking-[.25em] text-cyan-200/55">Personal fantasy operating system</div><h1 className="mt-1 truncate text-3xl font-black sm:text-5xl">{account.displayName}’s Arsenal</h1><p className="mt-2 text-sm text-white/42">@{account.sleeperUsername} · {completion}% profile ready · cloud synchronized</p></div><Link href="/profile" className="rounded-2xl bg-white/[0.06] px-4 py-3 text-center text-sm font-bold">Edit profile</Link></div></header>
     <div className="mt-5 flex snap-x gap-2 overflow-x-auto pb-2">{[["home","Command Home"],["career","Career & Badges"],["collection","Collections"],["community","Community"],["privacy","Account Control"]].map(([key,label])=><button key={key} onClick={()=>setTab(key)} className={`min-h-11 shrink-0 rounded-xl px-4 text-xs font-black ${tab===key?"bg-cyan-300 text-slate-950":"bg-white/[0.05] text-white/50"}`}>{label}</button>)}</div>
     {message?<div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-3 text-xs text-cyan-100">{message}</div>:null}
-    {tab==="home"?<Home account={account} data={data} counts={counts} leagues={leagues} toggleLeague={toggleLeague}/>:null}
+    {tab==="home"?<><Home account={account} data={data} counts={counts} leagues={leagues} toggleLeague={toggleLeague}/><div className="mt-5"><WeeklyPortfolioDigest/></div></>:null}
     {tab==="career"?<Career account={account} busy={careerBusy} scan={scanCareer}/>:null}
     {tab==="collection"?<Collections data={data} save={save} log={log} leagues={leagues} toggleLeague={toggleLeague}/>:null}
     {tab==="community"?<Community data={data} save={save} log={log}/>:null}
