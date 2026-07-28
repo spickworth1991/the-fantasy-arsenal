@@ -11,7 +11,7 @@ export async function GET(request){
       db.prepare("SELECT item_key,item_value,updated_at FROM arsenal_sync_items WHERE account_id=?").bind(account.account_id).all(),
       db.prepare("SELECT created_at,last_seen_at FROM arsenal_sessions WHERE account_id=?").bind(account.account_id).all(),
     ]);
-    let digest=null;try{digest=await db.prepare("SELECT email,enabled,timezone,delivery_day,include_news,news_enabled,news_delivery_day,updated_at,last_sent_at,news_last_sent_at FROM arsenal_digest_subscriptions WHERE account_id=?").bind(account.account_id).first();}catch{}
+    let digest=null;try{digest=await db.prepare("SELECT email,enabled,timezone,delivery_day,include_news,news_enabled,news_delivery_day,news_delivery_days,updated_at,last_sent_at,news_last_sent_at FROM arsenal_digest_subscriptions WHERE account_id=?").bind(account.account_id).first();}catch{}
     return NextResponse.json({exportedAt:new Date().toISOString(),profile:publicAccount(account),syncItems:sync.results||[],sessions:sessions.results||[],digest});
   }catch(error){return new NextResponse(error?.message||"Export unavailable.",{status:500});}
 }
