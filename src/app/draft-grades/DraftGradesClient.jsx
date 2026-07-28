@@ -7,6 +7,12 @@ import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
+import {
+  aggregateBallsvilleAdp,
+  ballsvilleAdpProxyUrl,
+  normalizeBallsvilleModes,
+  resolveBallsvilleAdp,
+} from "../../lib/ballsvilleAdp";
 
 const n = (value) => Number(value || 0);
 const clamp = (value, min=0, max=100) => Math.max(min, Math.min(max, value));
@@ -60,7 +66,7 @@ function teamForPick(pick, draft, rosters, users) {
   return { roster, user, rosterId:String(roster?.roster_id || pick.roster_id || pick.draft_slot || "unknown"), name:ownerName(user) };
 }
 
-function buildGrades({ draft, picks, players, league, rosters, users, getMetric }) {
+function buildGrades({ draft, picks, players, league, rosters, users, getMetric, getMarketRank, gradingKind="market" }) {
   if (!draft || !picks.length) return null;
   const ordered = [...picks].sort((a,b) => n(a.pick_no)-n(b.pick_no));
   const rookieOnly = draftIsRookie(draft, ordered, players);
@@ -74,7 +80,7 @@ function buildGrades({ draft, picks, players, league, rosters, users, getMetric 
       || (draftSeason >= currentSeason && n(row.player.years_exp) <= 0)
     ))
     .sort((a,b) => b.value-a.value);
-  const marketRank = new Map(eligible.map((row,index) => [row.id,index+1]));
+  const marketRank = new Map(eligible.map((row,index) => [row.id, n(getMarketRank?.(row.player, row.id)) || index+1]));
   const requirements = starterRequirements(league);
   const draftPoolIds = new Set(ordered.map((pick) => String(pick.player_id)));
   const baseRosterIds = new Map(rosters.map((roster) => [String(roster.roster_id), (roster.players || []).map(String).filter((id) => !draftPoolIds.has(id))]));
@@ -95,17 +101,33 @@ function buildGrades({ draft, picks, players, league, rosters, users, getMetric 
     const bestAvailable = available[0];
     const alternatives = available.filter((row) => row.id !== String(pick.player_id)).slice(0,3);
     const value = n(getMetric(player));
-    const rank = marketRank.get(String(pick.player_id)) || eligible.length + 1;
+    const rawRank = n(getMarketRank?.(player, pick.player_id)) || marketRank.get(String(pick.player_id)) || eligible.length + 1;
+    const rank = Math.round(rawRank * 10) / 10;
     const delta = n(pick.pick_no)-rank;
-    const valueScore = clamp(95 + delta*.45,45,100);
-    const opportunityScore = bestAvailable?.value ? clamp(value/bestAvailable.value*100,25,100) : 75;
+    const adpScale = rank <= 24 ? 1.15 : rank <= 72 ? .72 : rank <= 144 ? .5 : .36;
+    const valueScore = gradingKind === "adp"
+      ? clamp(95 + delta * adpScale, 45, 100)
+      : clamp(95 + delta*.45,45,100);
+    const bestAvailableRank = bestAvailable
+      ? n(getMarketRank?.(bestAvailable.player, bestAvailable.id)) || marketRank.get(bestAvailable.id)
+      : 0;
+    const adpOpportunityGap = bestAvailableRank ? Math.max(0, rank-bestAvailableRank) : 0;
+    const opportunityScore = gradingKind === "adp"
+      ? clamp(99-adpOpportunityGap*(rank <= 36 ? 1.25 : rank <= 100 ? .8 : .5),45,100)
+      : bestAvailable?.value ? clamp(value/bestAvailable.value*100,25,100) : 75;
     const needScore = 65 + needPct*35;
-    const score = Math.round(clamp(valueScore*.72 + opportunityScore*.23 + needScore*.05,35,100));
+    const score = Math.round(clamp(
+      gradingKind === "adp"
+        ? valueScore*.8 + opportunityScore*.15 + needScore*.05
+        : valueScore*.72 + opportunityScore*.23 + needScore*.05,
+      35,
+      100
+    ));
     counts[pos] = n(counts[pos])+1;
     teamCounts.set(team.rosterId,counts);
     selected.add(String(pick.player_id));
     const verdict = delta >= 18 ? "Major steal" : delta >= 8 ? "Strong value" : delta <= -18 ? "Major reach" : delta <= -8 ? "Reach" : "On market";
-    return { pick, player, team, pos, value, rank, delta, valueScore, opportunityScore, needScore, needPct, score, grade:grade(score), verdict, alternatives, bestAvailable };
+    return { pick, player, team, pos, value, rank, delta, valueScore, opportunityScore, needScore, needPct, score, grade:grade(score), verdict, alternatives, bestAvailable, gradingKind };
   });
   const teamMap = new Map();
   pickRows.forEach((row) => {
@@ -158,8 +180,13 @@ export default function DraftGradesClient() {
   const [tab,setTab]=useState("leaderboard");
   const [teamId,setTeamId]=useState("");
   const [query,setQuery]=useState("");
+  const [gradingLens,setGradingLens]=useState("source");
+  const [adpModes,setAdpModes]=useState([]);
+  const [adpMap,setAdpMap]=useState(new Map());
+  const [adpLoading,setAdpLoading]=useState(false);
+  const [adpError,setAdpError]=useState("");
   const league=leagues.find((row)=>String(row.league_id)===String(activeLeague));
-  const loading=loadingDrafts||loadingPicks;
+  const loading=loadingDrafts||loadingPicks||adpLoading;
   const detectedFormat=useMemo(()=>{
     const detected=classifyLeagueFormat(league||{},drafts);
     const explicitType=n(league?.settings?.type);
@@ -171,7 +198,8 @@ export default function DraftGradesClient() {
     const slots=(league?.roster_positions||[]).map((slot)=>String(slot||"").toUpperCase());
     return slots.filter((slot)=>slot==="QB").length>=2||slots.some((slot)=>["SUPER_FLEX","SUPERFLEX","SF","OP","Q/W/R/T"].includes(slot))?"sf":"1qb";
   },[league?.roster_positions]);
-  const sourceLabel=DEFAULT_SOURCES.find((source)=>source.key===sourceKey)?.label || sourceKey;
+  const selectedAdpMode=adpModes.find((mode)=>mode.modeSlug===gradingLens);
+  const sourceLabel=selectedAdpMode ? `Ballsville ${selectedAdpMode.title} ADP` : DEFAULT_SOURCES.find((source)=>source.key===sourceKey)?.label || sourceKey;
 
   useEffect(()=>{if(!activeLeague&&leagues[0])setActiveLeague(leagues[0].league_id);},[activeLeague,leagues,setActiveLeague]);
   useEffect(()=>{
@@ -195,14 +223,37 @@ export default function DraftGradesClient() {
     setFormat(detectedFormat.key==="dynasty"?"dynasty":"redraft");
     setQbType(detectedQbType);
   },[activeLeague,detectedFormat.key,detectedQbType,league,setFormat,setQbType]);
-  const analysis=useMemo(()=>buildGrades({ draft,picks,players,league,rosters:league?.rosters||[],users:league?.users||[],getMetric:getPlayerValue }),[draft,getPlayerValue,league,picks,players]);
+  useEffect(()=>{
+    let active=true;
+    getJson(ballsvilleAdpProxyUrl("data/draft-compare/modes_2026.json"))
+      .then((payload)=>{if(active)setAdpModes(normalizeBallsvilleModes(payload,2026));})
+      .catch(()=>{if(active)setAdpModes([]);});
+    return()=>{active=false;};
+  },[]);
+  useEffect(()=>{
+    if(gradingLens==="source"){setAdpMap(new Map());setAdpError("");return;}
+    let active=true;setAdpLoading(true);setAdpError("");
+    getJson(ballsvilleAdpProxyUrl(`data/draft-compare/drafts_2026_${gradingLens}.json`))
+      .then((payload)=>{if(active)setAdpMap(aggregateBallsvilleAdp(payload));})
+      .catch(()=>{if(active){setAdpMap(new Map());setAdpError("That Ballsville ADP board could not be loaded.");}})
+      .finally(()=>{if(active)setAdpLoading(false);});
+    return()=>{active=false;};
+  },[gradingLens]);
+  const adpForPlayer=useMemo(()=>gradingLens==="source"?null:(player)=>resolveBallsvilleAdp(adpMap,playerName(player),position(player))?.avgOverallPick||0,[adpMap,gradingLens]);
+  const gradingMetric=useMemo(()=>adpForPlayer?(player)=>{const adp=n(adpForPlayer(player));return adp>0?10000/adp:0;}:getPlayerValue,[adpForPlayer,getPlayerValue]);
+  const analysis=useMemo(()=>gradingLens!=="source"&&!adpMap.size?null:buildGrades({
+    draft,picks,players,league,rosters:league?.rosters||[],users:league?.users||[],
+    getMetric:gradingMetric,
+    getMarketRank:adpForPlayer,
+    gradingKind: gradingLens==="source" ? "market" : "adp",
+  }),[adpForPlayer,adpMap.size,draft,gradingLens,gradingMetric,league,picks,players]);
   useEffect(()=>{if(analysis?.teams?.length&&!analysis.teams.some((team)=>team.rosterId===teamId))setTeamId(analysis.teams[0].rosterId);},[analysis,teamId]);
   const selectedTeam=analysis?.teams.find((team)=>team.rosterId===teamId)||analysis?.teams[0];
   const boardRows=(analysis?.pickRows||[]).filter((row)=>!query.trim()||`${playerName(row.player)} ${row.team.name} ${row.pos} ${row.verdict}`.toLowerCase().includes(query.toLowerCase()));
 
   return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="Draft Grade Studio"/><div className="mx-auto max-w-7xl px-4 pb-20 pt-20">
     <header className="overflow-hidden rounded-[34px] border border-violet-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(139,92,246,.22),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.15),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="text-[10px] font-bold uppercase tracking-[.28em] text-violet-200/60">League-wide draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Grade Studio</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">Grade every pick and every team using the league’s format, positional need at the moment of selection, current market rank, opportunity cost, and finished roster construction.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,.65fr)_auto]"><select value={activeLeague||""} onChange={(event)=>{setActiveLeague(event.target.value);setDraftId("");}} className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="">Choose a league</option>{leagues.map((row)=><option key={row.league_id} value={row.league_id}>{row.name}</option>)}</select><select value={draftId} onChange={(event)=>setDraftId(event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((row)=><option key={row.draft_id} value={row.draft_id}>{row.season} · {row.status} · {row.settings?.rounds||"—"} rounds</option>)}</select><button onClick={()=>window.print()} disabled={!analysis} className="rounded-2xl bg-violet-300/10 px-5 py-3 text-sm font-black text-violet-100 disabled:opacity-35">Print / save PDF</button></div></header>
-    {username?<Panel className="mt-4 overflow-visible p-4"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,480px)] lg:items-center"><div><div className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/50">Grading lens</div><h2 className="mt-1 text-xl font-black">Change the market and the grades recalculate</h2><p className="mt-1 text-xs leading-5 text-white/38">Value sources produce a current-market retrospective. Projection sources grade immediate seasonal utility. Historical reports never pretend today’s values were known on draft day.</p><div className="mt-2 text-[10px] font-semibold text-cyan-100/55">Detected: {detectedFormat.label} · {detectedQbType==="sf"?"Superflex":"1QB"} · {detectedFormat.confidence} confidence</div></div><SourceSelector sources={DEFAULT_SOURCES} value={sourceKey} onChange={setSourceKey} mode={format} qbType={qbType} onModeChange={setFormat} onQbTypeChange={setQbType} layout="inline"/></div></Panel>:null}
+    {username?<Panel className="mt-4 overflow-visible p-4"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,.85fr)] lg:items-center"><div><div className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/50">Grading lens</div><h2 className="mt-1 text-xl font-black">Grade by market value, projection, or actual draft behavior</h2><p className="mt-1 text-xs leading-5 text-white/38">Ballsville ADP compares every selection with where players are actually being drafted across its 2026 boards. Switch back to Arsenal sources for a current-value retrospective.</p><div className="mt-2 text-[10px] font-semibold text-cyan-100/55">Detected: {detectedFormat.label} · {detectedQbType==="sf"?"Superflex":"1QB"} · {detectedFormat.confidence} confidence</div></div><div className="space-y-3"><label className="block"><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-white/35">Grade against</span><select value={gradingLens} onChange={(event)=>setGradingLens(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold"><option value="source">Arsenal value / projection source</option>{adpModes.map((mode)=><option key={mode.modeSlug} value={mode.modeSlug}>Ballsville ADP · {mode.title}</option>)}</select></label>{gradingLens==="source"?<SourceSelector sources={DEFAULT_SOURCES} value={sourceKey} onChange={setSourceKey} mode={format} qbType={qbType} onModeChange={setFormat} onQbTypeChange={setQbType} layout="inline"/>:<div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100/65">{adpLoading?"Loading the selected ADP board…":adpError||`${selectedAdpMode?.title||"Selected"} ADP · ${adpMap.size.toLocaleString()} ranked players · updated from Ballsville R2`}</div>}</div></div></Panel>:null}
     {loading?<div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4 text-sm text-cyan-100">Building grades from the selected draft…</div>:null}{error?<div className="mt-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.06] p-4 text-sm text-rose-100">{error}</div>:null}
     {analysis?<><section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Draft champion" value={analysis.teams[0]?.name||"—"} detail={`${analysis.teams[0]?.grade} · ${analysis.teams[0]?.score}/100`} tone="green"/><Metric label="Best selection" value={playerName(analysis.steals[0]?.player)||"—"} detail={analysis.steals[0]?`Pick #${analysis.steals[0].pick.pick_no}`:""} tone="cyan"/><Metric label="Largest reach" value={playerName(analysis.reaches[0]?.player)||"—"} detail={analysis.reaches[0]?`Pick #${analysis.reaches[0].pick.pick_no}`:""} tone="rose"/><Metric label="Draft pool" value={analysis.rookieOnly?"Rookies":"Full pool"} detail={`${analysis.eligibleCount} graded candidates`}/><Metric label="Selections" value={analysis.pickRows.length} detail={`${analysis.teams.length} teams`}/><Metric label="Position runs" value={analysis.runs.length} detail="Four of six picks" tone="amber"/></section>
       <Panel className="sticky top-14 z-30 mt-4 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur"><div className="flex w-max gap-1">{[["leaderboard","Team Grades"],["board","Every Pick"],["teams","Team Report"],["awards","Awards & Runs"],["method","Methodology"]].map(([key,label])=><button key={key} onClick={()=>setTab(key)} className={`min-h-11 rounded-xl px-4 text-sm font-bold ${tab===key?"bg-violet-300/10 text-violet-100":"text-white/40"}`}>{label}</button>)}</div></Panel>
@@ -210,7 +261,7 @@ export default function DraftGradesClient() {
       {tab==="board"?<div className="mt-4 space-y-4"><Panel className="p-4"><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="Search player, team, position, or verdict…" className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"/></Panel><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{boardRows.map((row)=><details key={row.pick.pick_no} className="rounded-[24px] border border-white/10 bg-slate-900/80 p-4"><summary className="flex cursor-pointer list-none items-center gap-3"><b className="text-xs text-violet-100">#{row.pick.pick_no}</b><AvatarImage name={playerName(row.player)} playerId={row.pick.player_id} size={38} className="rounded-xl" alt=""/><div className="min-w-0 flex-1"><div className="truncate font-bold">{playerName(row.player,row.pick.player_id)}</div><div className="truncate text-[10px] text-white/32">{row.team.name} · {row.pos}</div></div><div className="text-right"><b className={`text-xl ${gradeTone(row.score)}`}>{row.grade}</b><small className="block text-[8px] text-white/25">{row.score}</small></div></summary><div className="mt-4 grid grid-cols-3 gap-2"><Metric label="Market" value={row.valueScore.toFixed(0)} detail={`Rank #${row.rank}`}/><Metric label="Need" value={row.needScore.toFixed(0)}/><Metric label="Opportunity" value={row.opportunityScore.toFixed(0)}/></div><p className="mt-3 text-xs leading-5 text-white/45"><b className="text-white/70">{row.verdict}.</b> Selected {row.delta>=0?`${row.delta} picks after`:`${Math.abs(row.delta)} picks before`} current market rank. {row.alternatives.length?`Top alternatives still available: ${row.alternatives.map((alt)=>playerName(alt.player)).join(", ")}.`:""}</p></details>)}</div></div>:null}
       {tab==="teams"&&selectedTeam?<div className="mt-4 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]"><Panel className="p-4"><label><span className="mb-1 block text-xs text-white/38">Team report</span><select value={selectedTeam.rosterId} onChange={(event)=>setTeamId(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3">{analysis.teams.map((team)=><option key={team.rosterId} value={team.rosterId}>#{team.rank} · {team.name}</option>)}</select></label><div className="mt-5 text-center"><div className={`text-7xl font-black ${gradeTone(selectedTeam.score)}`}>{selectedTeam.grade}</div><div className="mt-1 text-sm text-white/35">{selectedTeam.score}/100 overall</div></div><div className="mt-5 grid grid-cols-2 gap-2"><Metric label="Pick quality" value={selectedTeam.pickAverage.toFixed(0)}/><Metric label="Construction" value={selectedTeam.construction.toFixed(0)}/><Metric label="Value" value={Math.round(selectedTeam.totalValue).toLocaleString()}/><Metric label="Identity" value={selectedTeam.identity?.[0]||"Balanced"} detail={selectedTeam.identity?`${selectedTeam.identity[1]} selected`:""}/></div><p className="mt-4 text-xs leading-5 text-white/42">{selectedTeam.score>=90?"An elite blend of value discipline and roster construction.":selectedTeam.score>=80?"A strong draft with more wins than reaches and a credible starting structure.":selectedTeam.score>=70?"A mixed class with useful selections but identifiable opportunity cost.":"Current-market results expose several reaches or construction gaps; review context before treating hindsight as process."}</p></Panel><Panel className="overflow-hidden"><div className="border-b border-white/10 p-4"><h3 className="text-xl font-black">Pick-by-pick report card</h3></div><div className="divide-y divide-white/[0.06]">{selectedTeam.picks.map((row)=><div key={row.pick.pick_no} className="grid grid-cols-[46px_minmax(0,1fr)_70px] items-center gap-3 p-3 sm:p-4"><b className="text-xs text-violet-100">#{row.pick.pick_no}</b><div className="min-w-0"><div className="truncate font-bold">{playerName(row.player,row.pick.player_id)}</div><div className="mt-1 text-[10px] text-white/32">{row.pos} · {row.verdict} · market rank #{row.rank}</div></div><div className="text-right"><b className={`text-xl ${gradeTone(row.score)}`}>{row.grade}</b><small className="block text-[8px] text-white/25">{row.score}/100</small></div></div>)}</div></Panel></div>:null}
       {tab==="awards"?<div className="mt-4 grid gap-4 xl:grid-cols-2"><Panel className="p-5"><h3 className="text-xl font-black text-emerald-100">Best values</h3><div className="mt-4 space-y-2">{analysis.steals.map((row,index)=><div key={row.pick.pick_no} className="flex items-center gap-3 rounded-xl bg-emerald-300/[0.035] p-3"><b className="text-xs">#{index+1}</b><span className="min-w-0 flex-1 truncate font-semibold">{playerName(row.player)} · pick #{row.pick.pick_no}</span><span className="text-xs text-emerald-100">{row.delta>=0?"+":""}{row.delta} slots</span></div>)}</div></Panel><Panel className="p-5"><h3 className="text-xl font-black text-rose-100">Largest reaches</h3><div className="mt-4 space-y-2">{analysis.reaches.map((row,index)=><div key={row.pick.pick_no} className="flex items-center gap-3 rounded-xl bg-rose-300/[0.035] p-3"><b className="text-xs">#{index+1}</b><span className="min-w-0 flex-1 truncate font-semibold">{playerName(row.player)} · pick #{row.pick.pick_no}</span><span className="text-xs text-rose-100">{row.delta} slots</span></div>)}</div></Panel><Panel className="p-5 xl:col-span-2"><h3 className="text-xl font-black">Position-run detector</h3><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{analysis.runs.map((run)=><div key={`${run.pos}-${run.start}`} className="rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-4"><b className="text-2xl text-amber-100">{run.pos}</b><div className="mt-1 text-xs text-white/42">{run.count} of picks #{run.start}–#{run.end}</div></div>)}{!analysis.runs.length?<p className="text-sm text-white/35">No four-of-six positional runs detected.</p>:null}</div></Panel></div>:null}
-      {tab==="method"?<Panel className="mt-4 p-5 sm:p-7"><h3 className="text-2xl font-black">How the grades work</h3><div className="mt-5 grid gap-4 md:grid-cols-2"><div className="rounded-2xl bg-white/[0.025] p-4"><b>72% current market result</b><p className="mt-2 text-xs leading-5 text-white/42">Compares the selection’s current rank in the chosen value or projection source with its actual draft slot. An on-market elite pick begins in A territory.</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>23% opportunity cost</b><p className="mt-2 text-xs leading-5 text-white/42">Compares the selected player with the strongest eligible player still available at that moment.</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>5% team need</b><p className="mt-2 text-xs leading-5 text-white/42">Need provides context without punishing an elite best-player-available selection simply because the roster was already strong there.</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>Team construction adjustment</b><p className="mt-2 text-xs leading-5 text-white/42">Team grades are 90% pick quality with smaller construction and balance adjustments, preventing sound drafts from being capped in the B range.</p></div></div><div className="mt-5 rounded-2xl border border-amber-300/12 bg-amber-300/[0.04] p-4 text-xs leading-5 text-amber-100/65"><b>Important:</b> these are current-market retrospective grades. They judge outcomes through today’s selected source and do not claim a manager had access to today’s information on draft day. Switch sources to see where expert markets disagree.</div></Panel>:null}
+      {tab==="method"?<Panel className="mt-4 p-5 sm:p-7"><h3 className="text-2xl font-black">How the grades work</h3><div className="mt-5 grid gap-4 md:grid-cols-2"><div className="rounded-2xl bg-white/[0.025] p-4"><b>{gradingLens==="source"?"72% current market result":"80% pick versus ADP"}</b><p className="mt-2 text-xs leading-5 text-white/42">{gradingLens==="source"?"Compares the selection’s current rank in the chosen value or projection source with its actual draft slot. An on-market elite pick begins in A territory.":"Compares the actual pick directly with Ballsville average draft position. Early picks receive tighter but reasonable slot tolerance, so selecting ADP 2 at pick 1 remains an excellent selection."}</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>{gradingLens==="source"?"23% opportunity cost":"15% ADP opportunity cost"}</b><p className="mt-2 text-xs leading-5 text-white/42">{gradingLens==="source"?"Compares the selected player with the strongest eligible player still available at that moment.":"Measures the ADP distance to the best undrafted alternative. It uses slot distance—not a value ratio—so adjacent elite players are not treated as dramatically different assets."}</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>5% team need</b><p className="mt-2 text-xs leading-5 text-white/42">Need provides context without punishing an elite best-player-available selection simply because the roster was already strong there.</p></div><div className="rounded-2xl bg-white/[0.025] p-4"><b>Team construction adjustment</b><p className="mt-2 text-xs leading-5 text-white/42">Team grades are 90% pick quality with smaller construction and balance adjustments, preventing sound drafts from being capped in the B range.</p></div></div><div className="mt-5 rounded-2xl border border-amber-300/12 bg-amber-300/[0.04] p-4 text-xs leading-5 text-amber-100/65"><b>Important:</b> these are current-market retrospective grades. They judge outcomes through today’s selected source and do not claim a manager had access to today’s information on draft day. Switch sources to see where expert markets disagree.</div></Panel>:null}
       <PrintReport analysis={analysis} league={league} draft={draft} sourceLabel={sourceLabel}/></>:!loading&&username?<Panel className="mt-5 p-8 text-center text-white/40">Choose a league and draft to create the full report.</Panel>:null}
   </div></main>;
 }

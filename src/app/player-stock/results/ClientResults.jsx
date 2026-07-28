@@ -568,20 +568,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
     setSelectedBallsvilleRedraftModes((prev) => {
       if (prev.size > 0) return prev;
       const defaults = ballsvilleModes
-        .filter((row) => row.key === "redraft")
+        .filter((row) => row.modeSlug === "redraft")
         .map((row) => row.modeSlug);
       return new Set(defaults);
     });
 
     setSelectedBallsvilleDynastyModes((prev) => {
       if (prev.size > 0) return prev;
-      const startupDefaults = ballsvilleModes
-        .filter((row) => row.key === "dynasty" && row.startupLike)
+      const bigGame = ballsvilleModes
+        .filter((row) => row.modeSlug === "big-game")
         .map((row) => row.modeSlug);
-      const fallback = ballsvilleModes
-        .filter((row) => row.key === "dynasty")
-        .map((row) => row.modeSlug);
-      return new Set(startupDefaults.length ? startupDefaults : fallback);
+      return new Set(bigGame);
     });
   }, [ballsvilleModes]);
 
@@ -1478,7 +1475,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     { key: "averageDraftPick", label: "Average Draft Pick" },
     { key: "averageDraftSlot", label: "Average Draft Slot" },
     { key: "ballsvilleRedraftAdp", label: "Ballsville Redraft ADP" },
-    { key: "ballsvilleDynastyAdp", label: "Ballsville Dynasty ADP" },
+    { key: "ballsvilleDynastyAdp", label: "Ballsville Big Game ADP" },
     { key: "metric", label: valueOrProjLabel },
     { key: "trendingAdds", label: "Trending Adds" },
     { key: "trendingDrops", label: "Trending Drops" },
@@ -1537,11 +1534,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
   };
 
   const ballsvilleRedraftModes = useMemo(
-    () => ballsvilleModes.filter((row) => row.key === "redraft"),
+    () => ballsvilleModes.filter((row) => row.modeSlug === "redraft"),
     [ballsvilleModes]
   );
   const ballsvilleDynastyModes = useMemo(
-    () => ballsvilleModes.filter((row) => row.key === "dynasty"),
+    () => ballsvilleModes.filter((row) => row.modeSlug === "big-game"),
     [ballsvilleModes]
   );
 
@@ -1651,7 +1648,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-200">Ballsville Redraft</span>
                         ) : null}
                         {showBallsvilleDynastyColumn ? (
-                          <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200">Ballsville Dynasty</span>
+                          <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200">Ballsville Big Game</span>
                         ) : null}
                         <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-gray-300">
                           Exposure cap {maxExposurePct}%
@@ -1749,7 +1746,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       ) : null}
                       {showBallsvilleDynastyColumn ? (
                         <th className="text-right px-4 py-2 cursor-pointer select-none hidden md:table-cell" onClick={() => toggleSort("ballsvilleDynastyAdp")}>
-                          BS Dynasty <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
+                          BS Big Game <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
                         </th>
                       ) : null}
                       <th
@@ -2061,7 +2058,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     {ballsvilleModesLoading ? <span className="text-[11px] text-gray-500">Loading…</span> : null}
                   </div>
                   <div className="mt-2 text-[11px] text-gray-500">
-                    Redraft combines all selected Ballsville redraft / keeper / best ball mode JSONs. Dynasty uses selected startup JSONs.
+                    Compare the dedicated 2026 Redraft and Big Game draft pools without blending in other contest formats.
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 gap-3">
@@ -2088,7 +2085,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
                     <div>
                       <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500">
-                        <span>Ballsville Dynasty Startup Pool</span>
+                        <span>Ballsville Big Game Pool</span>
                         <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", true)}>All</button>
                         <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", false)}>None</button>
                       </div>
@@ -2104,7 +2101,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             {mode.startupLike ? <span className="ml-auto text-[10px] text-gray-500">startup</span> : null}
                           </label>
                         ))}
-                        {!ballsvilleDynastyModes.length ? <div className="text-xs text-gray-500">No dynasty Ballsville modes found.</div> : null}
+                        {!ballsvilleDynastyModes.length ? <div className="text-xs text-gray-500">No Big Game Ballsville mode found.</div> : null}
                       </div>
                     </div>
                   </div>
@@ -2390,7 +2387,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         ) : null}
                         {showBallsvilleDynastyColumn ? (
                           <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200">
-                            Dynasty {formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}
+                            Big Game {formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}
                           </span>
                         ) : null}
                       </div>
@@ -2424,7 +2421,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   ) : null}
                   {showBallsvilleDynastyColumn ? (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-inner shadow-black/20">
-                      <div className="text-xs text-gray-400">Ballsville Dynasty</div>
+                      <div className="text-xs text-gray-400">Ballsville Big Game</div>
                       <div className="text-2xl font-bold">{formatAverageDraftPosition(openRow._ballsvilleDynastyAdp, 12)}</div>
                     </div>
                   ) : null}
