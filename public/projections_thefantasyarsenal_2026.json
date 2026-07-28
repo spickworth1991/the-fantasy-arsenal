@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-28T01:50:18.901Z",
+  "updated": "2026-07-28T04:06:58.268Z",
   "season": 2026,
   "source": "The Fantasy Arsenal",
   "scoring": "PPR",
@@ -2039,6 +2039,20 @@
     },
     {
       "player_id": "",
+      "name": "Jordyn Brooks",
+      "team": "MIA",
+      "position": "LB",
+      "points": 149.116,
+      "source_count": 4,
+      "sources": {
+        "FFA": 133,
+        "Sleeper": 4.4,
+        "FantasySharks": 139,
+        "DraftSharks": 226
+      }
+    },
+    {
+      "player_id": "",
       "name": "Mark Andrews",
       "team": "BAL",
       "position": "TE",
@@ -2051,20 +2065,6 @@
         "Sleeper": 153.37,
         "FantasySharks": 160,
         "DraftSharks": 117
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Jordyn Brooks",
-      "team": "MIA",
-      "position": "LB",
-      "points": 146.43,
-      "source_count": 4,
-      "sources": {
-        "FFA": 133,
-        "Sleeper": 4.4,
-        "FantasySharks": 139,
-        "DraftSharks": 217
       }
     },
     {
@@ -2149,6 +2149,20 @@
     },
     {
       "player_id": "",
+      "name": "Jack Campbell",
+      "team": "DET",
+      "position": "LB",
+      "points": 143.908,
+      "source_count": 4,
+      "sources": {
+        "FFA": 119,
+        "Sleeper": 7.69,
+        "FantasySharks": 129.4,
+        "DraftSharks": 231
+      }
+    },
+    {
+      "player_id": "",
       "name": "Cam Little",
       "team": "JAC",
       "position": "K",
@@ -2213,6 +2227,20 @@
     },
     {
       "player_id": "",
+      "name": "Blake Cashman",
+      "team": "MIN",
+      "position": "LB",
+      "points": 141.423,
+      "source_count": 4,
+      "sources": {
+        "FFA": 126,
+        "Sleeper": 3.91,
+        "FantasySharks": 128.4,
+        "DraftSharks": 218
+      }
+    },
+    {
+      "player_id": "",
       "name": "Rachaad White",
       "team": "WAS",
       "position": "RB",
@@ -2241,20 +2269,6 @@
         "Sleeper": 153.13,
         "FantasySharks": 118.6,
         "DraftSharks": 139
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Jack Campbell",
-      "team": "DET",
-      "position": "LB",
-      "points": 140.923,
-      "source_count": 4,
-      "sources": {
-        "FFA": 119,
-        "Sleeper": 7.69,
-        "FantasySharks": 129.4,
-        "DraftSharks": 221
       }
     },
     {
@@ -2333,20 +2347,6 @@
         "Sleeper": 190.79,
         "FantasySharks": 132.2,
         "DraftSharks": 139
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Blake Cashman",
-      "team": "MIN",
-      "position": "LB",
-      "points": 139.632,
-      "source_count": 4,
-      "sources": {
-        "FFA": 126,
-        "Sleeper": 3.91,
-        "FantasySharks": 128.4,
-        "DraftSharks": 212
       }
     },
     {
@@ -2521,6 +2521,20 @@
     },
     {
       "player_id": "",
+      "name": "Jamien Sherwood",
+      "team": "NYJ",
+      "position": "LB",
+      "points": 134.254,
+      "source_count": 4,
+      "sources": {
+        "FFA": 111,
+        "Sleeper": 1.86,
+        "FantasySharks": 122.1,
+        "DraftSharks": 216
+      }
+    },
+    {
+      "player_id": "",
       "name": "Wil Lutz",
       "team": "DEN",
       "position": "K",
@@ -2637,16 +2651,16 @@
     },
     {
       "player_id": "",
-      "name": "Jamien Sherwood",
-      "team": "NYJ",
+      "name": "Ernest Jones",
+      "team": "SEA",
       "position": "LB",
-      "points": 131.269,
+      "points": 130.863,
       "source_count": 4,
       "sources": {
-        "FFA": 111,
-        "Sleeper": 1.86,
-        "FantasySharks": 122.1,
-        "DraftSharks": 206
+        "FFA": 116,
+        "Sleeper": 3.4,
+        "FantasySharks": 120.2,
+        "DraftSharks": 201
       }
     },
     {
@@ -2663,6 +2677,20 @@
         "Sleeper": 168.82,
         "FantasySharks": 149.8,
         "DraftSharks": 127
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Roquan Smith",
+      "team": "BAL",
+      "position": "LB",
+      "points": 130.732,
+      "source_count": 4,
+      "sources": {
+        "FFA": 114,
+        "Sleeper": 5.29,
+        "FantasySharks": 118.1,
+        "DraftSharks": 204
       }
     },
     {
@@ -2714,16 +2742,30 @@
     },
     {
       "player_id": "",
-      "name": "Ernest Jones",
-      "team": "SEA",
+      "name": "Foyesade Oluokun",
+      "team": "JAC",
       "position": "LB",
-      "points": 128.176,
+      "points": 128.449,
       "source_count": 4,
       "sources": {
-        "FFA": 116,
-        "Sleeper": 3.4,
-        "FantasySharks": 120.2,
-        "DraftSharks": 192
+        "FFA": 113,
+        "Sleeper": 5.44,
+        "FantasySharks": 119.4,
+        "DraftSharks": 196
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Nick Bolton",
+      "team": "KC",
+      "position": "LB",
+      "points": 128.288,
+      "source_count": 4,
+      "sources": {
+        "FFA": 117,
+        "Sleeper": 4.76,
+        "FantasySharks": 117.1,
+        "DraftSharks": 194
       }
     },
     {
@@ -2756,6 +2798,20 @@
     },
     {
       "player_id": "",
+      "name": "Zack Baun",
+      "team": "PHI",
+      "position": "LB",
+      "points": 127.332,
+      "source_count": 4,
+      "sources": {
+        "FFA": 98,
+        "Sleeper": 8.18,
+        "FantasySharks": 93.7,
+        "DraftSharks": 232
+      }
+    },
+    {
+      "player_id": "",
       "name": "Zach Charbonnet",
       "team": "SEA",
       "position": "RB",
@@ -2772,20 +2828,6 @@
     },
     {
       "player_id": "",
-      "name": "Roquan Smith",
-      "team": "BAL",
-      "position": "LB",
-      "points": 127.15,
-      "source_count": 4,
-      "sources": {
-        "FFA": 114,
-        "Sleeper": 5.29,
-        "FantasySharks": 118.1,
-        "DraftSharks": 192
-      }
-    },
-    {
-      "player_id": "",
       "name": "Trey Smack",
       "team": "GB",
       "position": "K",
@@ -2798,20 +2840,6 @@
         "Sleeper": 118.91,
         "FantasySharks": 80.3,
         "DraftSharks": 156
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Nick Bolton",
-      "team": "KC",
-      "position": "LB",
-      "points": 127.094,
-      "source_count": 4,
-      "sources": {
-        "FFA": 117,
-        "Sleeper": 4.76,
-        "FantasySharks": 117.1,
-        "DraftSharks": 190
       }
     },
     {
@@ -2839,20 +2867,6 @@
         "CBS": 134,
         "Sleeper": 129.22,
         "FantasySharks": 92.8
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Foyesade Oluokun",
-      "team": "JAC",
-      "position": "LB",
-      "points": 125.464,
-      "source_count": 4,
-      "sources": {
-        "FFA": 113,
-        "Sleeper": 5.44,
-        "FantasySharks": 119.4,
-        "DraftSharks": 186
       }
     },
     {
@@ -2927,16 +2941,30 @@
     },
     {
       "player_id": "",
-      "name": "Zack Baun",
-      "team": "PHI",
+      "name": "Fred Warner",
+      "team": "SF",
       "position": "LB",
-      "points": 123.153,
+      "points": 123.754,
       "source_count": 4,
       "sources": {
-        "FFA": 98,
-        "Sleeper": 8.18,
-        "FantasySharks": 93.7,
-        "DraftSharks": 218
+        "FFA": 109,
+        "Sleeper": 7.65,
+        "FantasySharks": 95.9,
+        "DraftSharks": 207
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Quay Walker",
+      "team": "LV",
+      "position": "LB",
+      "points": 123.586,
+      "source_count": 4,
+      "sources": {
+        "FFA": 107,
+        "Sleeper": 2.89,
+        "FantasySharks": 95,
+        "DraftSharks": 211
       }
     },
     {
@@ -3072,6 +3100,20 @@
     },
     {
       "player_id": "",
+      "name": "Alex Singleton",
+      "team": "DEN",
+      "position": "LB",
+      "points": 119.973,
+      "source_count": 4,
+      "sources": {
+        "FFA": 105,
+        "Sleeper": 2.88,
+        "FantasySharks": 106.9,
+        "DraftSharks": 189
+      }
+    },
+    {
+      "player_id": "",
       "name": "AJ Barner",
       "team": "SEA",
       "position": "TE",
@@ -3116,48 +3158,6 @@
     },
     {
       "player_id": "",
-      "name": "Alex Singleton",
-      "team": "DEN",
-      "position": "LB",
-      "points": 119.077,
-      "source_count": 4,
-      "sources": {
-        "FFA": 105,
-        "Sleeper": 2.88,
-        "FantasySharks": 106.9,
-        "DraftSharks": 186
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Fred Warner",
-      "team": "SF",
-      "position": "LB",
-      "points": 118.978,
-      "source_count": 4,
-      "sources": {
-        "FFA": 109,
-        "Sleeper": 7.65,
-        "FantasySharks": 95.9,
-        "DraftSharks": 191
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Quay Walker",
-      "team": "LV",
-      "position": "LB",
-      "points": 118.809,
-      "source_count": 4,
-      "sources": {
-        "FFA": 107,
-        "Sleeper": 2.89,
-        "FantasySharks": 95,
-        "DraftSharks": 195
-      }
-    },
-    {
-      "player_id": "",
       "name": "KC Concepcion",
       "team": "CLE",
       "position": "WR",
@@ -3182,6 +3182,20 @@
       "sources": {
         "Sleeper": 127.42,
         "DraftSharks": 115
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Devin Lloyd",
+      "team": "CAR",
+      "position": "LB",
+      "points": 117.68,
+      "source_count": 4,
+      "sources": {
+        "FFA": 92.8,
+        "Sleeper": 9.51,
+        "FantasySharks": 90.1,
+        "DraftSharks": 208
       }
     },
     {
@@ -3278,6 +3292,20 @@
     },
     {
       "player_id": "",
+      "name": "Sonny Styles",
+      "team": "WAS",
+      "position": "LB",
+      "points": 116.337,
+      "source_count": 4,
+      "sources": {
+        "FFA": 93.4,
+        "Sleeper": 9.51,
+        "FantasySharks": 97,
+        "DraftSharks": 196
+      }
+    },
+    {
+      "player_id": "",
       "name": "Kansas City Chiefs",
       "team": "KC",
       "position": "DEF",
@@ -3306,16 +3334,16 @@
     },
     {
       "player_id": "",
-      "name": "Devin Lloyd",
-      "team": "CAR",
+      "name": "Edgerrin Cooper",
+      "team": "GB",
       "position": "LB",
-      "points": 114.994,
+      "points": 114.424,
       "source_count": 4,
       "sources": {
-        "FFA": 92.8,
-        "Sleeper": 9.51,
-        "FantasySharks": 90.1,
-        "DraftSharks": 199
+        "FFA": 94.9,
+        "Sleeper": 5.77,
+        "FantasySharks": 77.4,
+        "DraftSharks": 209
       }
     },
     {
@@ -3360,6 +3388,20 @@
     },
     {
       "player_id": "",
+      "name": "Kyle Hamilton",
+      "team": "BAL",
+      "position": "DB",
+      "points": 113.041,
+      "source_count": 4,
+      "sources": {
+        "FFA": 99.2,
+        "Sleeper": 7.68,
+        "FantasySharks": 100.8,
+        "DraftSharks": 176
+      }
+    },
+    {
+      "player_id": "",
       "name": "Oronde Gadsden",
       "team": "LAC",
       "position": "TE",
@@ -3379,13 +3421,40 @@
       "name": "Devin Bush",
       "team": "CHI",
       "position": "LB",
-      "points": 112.634,
+      "points": 112.932,
       "source_count": 4,
       "sources": {
         "FFA": 98.2,
         "Sleeper": 5.78,
         "FantasySharks": 82.1,
-        "DraftSharks": 195
+        "DraftSharks": 196
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Paulson Adebo",
+      "team": "NYG",
+      "position": "DB",
+      "points": 112.867,
+      "source_count": 3,
+      "sources": {
+        "FFA": 87.7,
+        "FantasySharks": 79.9,
+        "DraftSharks": 171
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Nick Cross",
+      "team": "WAS",
+      "position": "DB",
+      "points": 112.76,
+      "source_count": 4,
+      "sources": {
+        "FFA": 96.7,
+        "Sleeper": 4.42,
+        "FantasySharks": 103.5,
+        "DraftSharks": 176
       }
     },
     {
@@ -3403,30 +3472,16 @@
     },
     {
       "player_id": "",
-      "name": "Edgerrin Cooper",
-      "team": "GB",
+      "name": "Daiyan Henley",
+      "team": "LAC",
       "position": "LB",
-      "points": 112.036,
+      "points": 111.754,
       "source_count": 4,
       "sources": {
-        "FFA": 94.9,
-        "Sleeper": 5.77,
-        "FantasySharks": 77.4,
-        "DraftSharks": 201
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Chamarri Conner",
-      "team": "KC",
-      "position": "DB",
-      "points": 111.499,
-      "source_count": 4,
-      "sources": {
-        "FFA": 89.9,
-        "Sleeper": 5.78,
-        "FantasySharks": 93.6,
-        "DraftSharks": 188
+        "FFA": 97.4,
+        "Sleeper": 3.93,
+        "FantasySharks": 83.6,
+        "DraftSharks": 192
       }
     },
     {
@@ -3447,16 +3502,30 @@
     },
     {
       "player_id": "",
-      "name": "Kyle Hamilton",
-      "team": "BAL",
+      "name": "Talanoa Hufanga",
+      "team": "DEN",
       "position": "DB",
-      "points": 110.653,
+      "points": 110.721,
       "source_count": 4,
       "sources": {
-        "FFA": 99.2,
-        "Sleeper": 7.68,
-        "FantasySharks": 100.8,
-        "DraftSharks": 168
+        "FFA": 97,
+        "Sleeper": 5.76,
+        "FantasySharks": 105.9,
+        "DraftSharks": 166
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Chamarri Conner",
+      "team": "KC",
+      "position": "DB",
+      "points": 110.604,
+      "source_count": 4,
+      "sources": {
+        "FFA": 89.9,
+        "Sleeper": 5.78,
+        "FantasySharks": 93.6,
+        "DraftSharks": 185
       }
     },
     {
@@ -3519,20 +3588,6 @@
     },
     {
       "player_id": "",
-      "name": "Nick Cross",
-      "team": "WAS",
-      "position": "DB",
-      "points": 110.074,
-      "source_count": 4,
-      "sources": {
-        "FFA": 96.7,
-        "Sleeper": 4.42,
-        "FantasySharks": 103.5,
-        "DraftSharks": 167
-      }
-    },
-    {
-      "player_id": "",
       "name": "Zane Gonzalez",
       "team": "MIA",
       "position": "K",
@@ -3564,6 +3619,20 @@
     },
     {
       "player_id": "",
+      "name": "Robert Spillane",
+      "team": "NE",
+      "position": "LB",
+      "points": 109.617,
+      "source_count": 4,
+      "sources": {
+        "FFA": 92.8,
+        "Sleeper": 5.76,
+        "FantasySharks": 79.4,
+        "DraftSharks": 193
+      }
+    },
+    {
+      "player_id": "",
       "name": "Chigoziem Okonkwo",
       "team": "WAS",
       "position": "TE",
@@ -3578,16 +3647,15 @@
     },
     {
       "player_id": "",
-      "name": "Talanoa Hufanga",
-      "team": "DEN",
+      "name": "Dillon Thieneman",
+      "team": "CHI",
       "position": "DB",
-      "points": 108.93,
-      "source_count": 4,
+      "points": 108.639,
+      "source_count": 3,
       "sources": {
-        "FFA": 97,
-        "Sleeper": 5.76,
-        "FantasySharks": 105.9,
-        "DraftSharks": 160
+        "Sleeper": 7.15,
+        "FantasySharks": 88.8,
+        "DraftSharks": 164
       }
     },
     {
@@ -3617,19 +3685,6 @@
         "CBS": 121,
         "Sleeper": 117.4,
         "FantasySharks": 73.2
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Paulson Adebo",
-      "team": "NYG",
-      "position": "DB",
-      "points": 108.533,
-      "source_count": 3,
-      "sources": {
-        "FFA": 87.7,
-        "FantasySharks": 79.9,
-        "DraftSharks": 158
       }
     },
     {
@@ -3678,13 +3733,13 @@
       "name": "Antoine Winfield",
       "team": "TB",
       "position": "DB",
-      "points": 106.996,
+      "points": 107.593,
       "source_count": 4,
       "sources": {
         "FFA": 93.3,
         "Sleeper": 8.68,
         "FantasySharks": 84.1,
-        "DraftSharks": 178
+        "DraftSharks": 180
       }
     },
     {
@@ -3703,43 +3758,29 @@
     },
     {
       "player_id": "",
-      "name": "Dillon Thieneman",
-      "team": "CHI",
-      "position": "DB",
-      "points": 106.512,
-      "source_count": 3,
-      "sources": {
-        "Sleeper": 7.15,
-        "FantasySharks": 88.8,
-        "DraftSharks": 159
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Robert Spillane",
-      "team": "NE",
-      "position": "LB",
-      "points": 106.333,
-      "source_count": 4,
-      "sources": {
-        "FFA": 92.8,
-        "Sleeper": 5.76,
-        "FantasySharks": 79.4,
-        "DraftSharks": 182
-      }
-    },
-    {
-      "player_id": "",
       "name": "Tykee Smith",
       "team": "TB",
       "position": "DB",
-      "points": 106.167,
+      "points": 106.466,
       "source_count": 4,
       "sources": {
         "FFA": 95.4,
         "Sleeper": 8.17,
         "FantasySharks": 84.4,
-        "DraftSharks": 173
+        "DraftSharks": 174
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Josh Metellus",
+      "team": "MIN",
+      "position": "DB",
+      "points": 106.3,
+      "source_count": 3,
+      "sources": {
+        "FFA": 83,
+        "FantasySharks": 67.9,
+        "DraftSharks": 168
       }
     },
     {
@@ -3759,6 +3800,20 @@
     },
     {
       "player_id": "",
+      "name": "T.J. Edwards",
+      "team": "CHI",
+      "position": "LB",
+      "points": 105.917,
+      "source_count": 4,
+      "sources": {
+        "FFA": 86.9,
+        "Sleeper": 5.78,
+        "FantasySharks": 65.9,
+        "DraftSharks": 200
+      }
+    },
+    {
+      "player_id": "",
       "name": "Myles Garrett",
       "team": "LAR",
       "position": "DL",
@@ -3767,6 +3822,20 @@
       "sources": {
         "FFA": 73.6,
         "FantasySharks": 77.8,
+        "DraftSharks": 166
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Jessie Bates",
+      "team": "ATL",
+      "position": "DB",
+      "points": 105.76,
+      "source_count": 4,
+      "sources": {
+        "FFA": 94.1,
+        "Sleeper": 6.27,
+        "FantasySharks": 92,
         "DraftSharks": 166
       }
     },
@@ -3812,20 +3881,6 @@
     },
     {
       "player_id": "",
-      "name": "DeMarvion Overshown",
-      "team": "DAL",
-      "position": "LB",
-      "points": 105.453,
-      "source_count": 4,
-      "sources": {
-        "FFA": 94.6,
-        "Sleeper": 3.91,
-        "FantasySharks": 73.3,
-        "DraftSharks": 184
-      }
-    },
-    {
-      "player_id": "",
       "name": "Kayshon Boutte",
       "team": "NE",
       "position": "WR",
@@ -3837,6 +3892,20 @@
         "CBS": 132.5,
         "Sleeper": 109.84,
         "FantasySharks": 140.3
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Nakobe Dean",
+      "team": "LV",
+      "position": "LB",
+      "points": 105.349,
+      "source_count": 4,
+      "sources": {
+        "FFA": 92.6,
+        "Sleeper": 6.63,
+        "FantasySharks": 58,
+        "DraftSharks": 200
       }
     },
     {
@@ -3871,34 +3940,6 @@
     },
     {
       "player_id": "",
-      "name": "Jessie Bates",
-      "team": "ATL",
-      "position": "DB",
-      "points": 104.864,
-      "source_count": 4,
-      "sources": {
-        "FFA": 94.1,
-        "Sleeper": 6.27,
-        "FantasySharks": 92,
-        "DraftSharks": 163
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Budda Baker",
-      "team": "ARI",
-      "position": "DB",
-      "points": 104.794,
-      "source_count": 4,
-      "sources": {
-        "FFA": 94,
-        "Sleeper": 4.74,
-        "FantasySharks": 96.4,
-        "DraftSharks": 159
-      }
-    },
-    {
-      "player_id": "",
       "name": "Mike Gesicki",
       "team": "CIN",
       "position": "TE",
@@ -3914,44 +3955,16 @@
     },
     {
       "player_id": "",
-      "name": "T.J. Edwards",
-      "team": "CHI",
-      "position": "LB",
-      "points": 104.425,
+      "name": "Trevon Moehrig",
+      "team": "CAR",
+      "position": "DB",
+      "points": 104.761,
       "source_count": 4,
       "sources": {
-        "FFA": 86.9,
-        "Sleeper": 5.78,
-        "FantasySharks": 65.9,
-        "DraftSharks": 195
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Nakobe Dean",
-      "team": "LV",
-      "position": "LB",
-      "points": 104.155,
-      "source_count": 4,
-      "sources": {
-        "FFA": 92.6,
-        "Sleeper": 6.63,
-        "FantasySharks": 58,
-        "DraftSharks": 196
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Eric Wilson",
-      "team": "MIN",
-      "position": "LB",
-      "points": 104.045,
-      "source_count": 4,
-      "sources": {
-        "FFA": 77.6,
-        "Sleeper": 2.72,
-        "FantasySharks": 84,
-        "DraftSharks": 186
+        "FFA": 89.5,
+        "Sleeper": 3.57,
+        "FantasySharks": 91.2,
+        "DraftSharks": 169
       }
     },
     {
@@ -3959,13 +3972,13 @@
       "name": "Jeremy Chinn",
       "team": "LV",
       "position": "DB",
-      "points": 103.811,
+      "points": 104.408,
       "source_count": 4,
       "sources": {
         "FFA": 88.4,
         "Sleeper": 4.76,
         "FantasySharks": 84.7,
-        "DraftSharks": 173
+        "DraftSharks": 175
       }
     },
     {
@@ -4000,6 +4013,20 @@
     },
     {
       "player_id": "",
+      "name": "Devon Witherspoon",
+      "team": "SEA",
+      "position": "DB",
+      "points": 103.543,
+      "source_count": 4,
+      "sources": {
+        "FFA": 88.3,
+        "Sleeper": 3.91,
+        "FantasySharks": 92.2,
+        "DraftSharks": 165
+      }
+    },
+    {
+      "player_id": "",
       "name": "Andre Szmyt",
       "team": "CLE",
       "position": "K",
@@ -4030,43 +4057,30 @@
     },
     {
       "player_id": "",
-      "name": "Trevon Moehrig",
-      "team": "CAR",
+      "name": "Riley Moss",
+      "team": "DEN",
       "position": "DB",
-      "points": 102.074,
+      "points": 102.821,
       "source_count": 4,
       "sources": {
-        "FFA": 89.5,
-        "Sleeper": 3.57,
-        "FantasySharks": 91.2,
-        "DraftSharks": 160
+        "FFA": 80.3,
+        "Sleeper": 1.86,
+        "FantasySharks": 95.5,
+        "DraftSharks": 168
       }
     },
     {
       "player_id": "",
-      "name": "Josh Metellus",
-      "team": "MIN",
+      "name": "Derwin James",
+      "team": "LAC",
       "position": "DB",
-      "points": 101.967,
-      "source_count": 3,
-      "sources": {
-        "FFA": 83,
-        "FantasySharks": 67.9,
-        "DraftSharks": 155
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Devon Witherspoon",
-      "team": "SEA",
-      "position": "DB",
-      "points": 101.453,
+      "points": 101.747,
       "source_count": 4,
       "sources": {
-        "FFA": 88.3,
-        "Sleeper": 3.91,
-        "FantasySharks": 92.2,
-        "DraftSharks": 158
+        "FFA": 88.9,
+        "Sleeper": 9.58,
+        "FantasySharks": 81.6,
+        "DraftSharks": 167
       }
     },
     {
@@ -4074,13 +4088,26 @@
       "name": "Minkah Fitzpatrick",
       "team": "NYJ",
       "position": "DB",
-      "points": 101.315,
+      "points": 101.016,
       "source_count": 4,
       "sources": {
         "FFA": 85.2,
         "Sleeper": 2.87,
         "FantasySharks": 86.2,
-        "DraftSharks": 167
+        "DraftSharks": 166
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Kevin Winston",
+      "team": "TEN",
+      "position": "DB",
+      "points": 100.94,
+      "source_count": 3,
+      "sources": {
+        "Sleeper": 2.88,
+        "FantasySharks": 75.2,
+        "DraftSharks": 161
       }
     },
     {
@@ -4095,19 +4122,6 @@
         "CBS": 143.4,
         "Sleeper": 96.33,
         "FantasySharks": 109.7
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Kevin Winston",
-      "team": "TEN",
-      "position": "DB",
-      "points": 100.514,
-      "source_count": 3,
-      "sources": {
-        "Sleeper": 2.88,
-        "FantasySharks": 75.2,
-        "DraftSharks": 160
       }
     },
     {
@@ -4128,16 +4142,30 @@
     },
     {
       "player_id": "",
-      "name": "Derwin James",
-      "team": "LAC",
+      "name": "Quentin Lake",
+      "team": "LAR",
       "position": "DB",
-      "points": 99.956,
+      "points": 100.063,
       "source_count": 4,
       "sources": {
-        "FFA": 88.9,
-        "Sleeper": 9.58,
-        "FantasySharks": 81.6,
-        "DraftSharks": 161
+        "FFA": 84.5,
+        "Sleeper": 2.89,
+        "FantasySharks": 75.7,
+        "DraftSharks": 174
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Cooper DeJean",
+      "team": "PHI",
+      "position": "DB",
+      "points": 99.919,
+      "source_count": 4,
+      "sources": {
+        "FFA": 86.4,
+        "Sleeper": 6.65,
+        "FantasySharks": 74,
+        "DraftSharks": 172
       }
     },
     {
@@ -4157,20 +4185,6 @@
     },
     {
       "player_id": "",
-      "name": "Quentin Lake",
-      "team": "LAR",
-      "position": "DB",
-      "points": 99.466,
-      "source_count": 4,
-      "sources": {
-        "FFA": 84.5,
-        "Sleeper": 2.89,
-        "FantasySharks": 75.7,
-        "DraftSharks": 172
-      }
-    },
-    {
-      "player_id": "",
       "name": "Nick Emmanwori",
       "team": "SEA",
       "position": "DB",
@@ -4181,34 +4195,6 @@
         "Sleeper": 3.91,
         "FantasySharks": 63.6,
         "DraftSharks": 171
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Cooper DeJean",
-      "team": "PHI",
-      "position": "DB",
-      "points": 99.023,
-      "source_count": 4,
-      "sources": {
-        "FFA": 86.4,
-        "Sleeper": 6.65,
-        "FantasySharks": 74,
-        "DraftSharks": 169
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Riley Moss",
-      "team": "DEN",
-      "position": "DB",
-      "points": 98.941,
-      "source_count": 4,
-      "sources": {
-        "FFA": 80.3,
-        "Sleeper": 1.86,
-        "FantasySharks": 95.5,
-        "DraftSharks": 155
       }
     },
     {
@@ -4225,6 +4211,20 @@
         "Sleeper": 94.59,
         "FantasySharks": 112.1,
         "DraftSharks": 114
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Grant Delpit",
+      "team": "CLE",
+      "position": "DB",
+      "points": 98.547,
+      "source_count": 4,
+      "sources": {
+        "FFA": 74.8,
+        "Sleeper": 5.24,
+        "FantasySharks": 74.5,
+        "DraftSharks": 179
       }
     },
     {
@@ -4271,6 +4271,20 @@
     },
     {
       "player_id": "",
+      "name": "Brandon Jones",
+      "team": "DEN",
+      "position": "DB",
+      "points": 97.245,
+      "source_count": 4,
+      "sources": {
+        "FFA": 82.1,
+        "Sleeper": 7.63,
+        "FantasySharks": 77,
+        "DraftSharks": 164
+      }
+    },
+    {
+      "player_id": "",
       "name": "Adonai Mitchell",
       "team": "NYJ",
       "position": "WR",
@@ -4282,20 +4296,6 @@
         "Sleeper": 76.65,
         "FantasySharks": 90.5,
         "DraftSharks": 115
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Brandon Jones",
-      "team": "DEN",
-      "position": "DB",
-      "points": 96.946,
-      "source_count": 4,
-      "sources": {
-        "FFA": 82.1,
-        "Sleeper": 7.63,
-        "FantasySharks": 77,
-        "DraftSharks": 163
       }
     },
     {
@@ -4340,16 +4340,16 @@
     },
     {
       "player_id": "",
-      "name": "Grant Delpit",
-      "team": "CLE",
+      "name": "Evan Williams",
+      "team": "GB",
       "position": "DB",
-      "points": 95.264,
+      "points": 95.423,
       "source_count": 4,
       "sources": {
-        "FFA": 74.8,
-        "Sleeper": 5.24,
-        "FantasySharks": 74.5,
-        "DraftSharks": 168
+        "FFA": 78.5,
+        "Sleeper": 4.76,
+        "FantasySharks": 82.5,
+        "DraftSharks": 157
       }
     },
     {
@@ -4876,19 +4876,6 @@
     },
     {
       "player_id": "",
-      "name": "Sonny Styles",
-      "team": "WAS",
-      "position": "LB",
-      "points": 82.438,
-      "source_count": 3,
-      "sources": {
-        "FFA": 93.4,
-        "Sleeper": 9.51,
-        "FantasySharks": 97
-      }
-    },
-    {
-      "player_id": "",
       "name": "Travis Hunter",
       "team": "JAC",
       "position": "WR",
@@ -4993,6 +4980,19 @@
         "FFA": 90.3,
         "Sleeper": 7.66,
         "FantasySharks": 99.2
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Budda Baker",
+      "team": "ARI",
+      "position": "DB",
+      "points": 81.727,
+      "source_count": 3,
+      "sources": {
+        "FFA": 94,
+        "Sleeper": 4.74,
+        "FantasySharks": 96.4
       }
     },
     {
@@ -5203,19 +5203,6 @@
       "sources": {
         "FFA": 79.5,
         "FantasySharks": 76.4
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Daiyan Henley",
-      "team": "LAC",
-      "position": "LB",
-      "points": 77.607,
-      "source_count": 3,
-      "sources": {
-        "FFA": 97.4,
-        "Sleeper": 3.93,
-        "FantasySharks": 83.6
       }
     },
     {
@@ -5552,6 +5539,19 @@
     },
     {
       "player_id": "",
+      "name": "DeMarvion Overshown",
+      "team": "DAL",
+      "position": "LB",
+      "points": 72.029,
+      "source_count": 3,
+      "sources": {
+        "FFA": 94.6,
+        "Sleeper": 3.91,
+        "FantasySharks": 73.3
+      }
+    },
+    {
+      "player_id": "",
       "name": "Andrew Mukuba",
       "team": "PHI",
       "position": "DB",
@@ -5793,15 +5793,15 @@
     },
     {
       "player_id": "",
-      "name": "Evan Williams",
-      "team": "GB",
-      "position": "DB",
-      "points": 69.22,
+      "name": "Eric Wilson",
+      "team": "MIN",
+      "position": "LB",
+      "points": 69.171,
       "source_count": 3,
       "sources": {
-        "FFA": 78.5,
-        "Sleeper": 4.76,
-        "FantasySharks": 82.5
+        "FFA": 77.6,
+        "Sleeper": 2.72,
+        "FantasySharks": 84
       }
     },
     {
@@ -5853,6 +5853,19 @@
       "sources": {
         "FFA": 53.7,
         "FantasySharks": 51.3,
+        "DraftSharks": 116
+      }
+    },
+    {
+      "player_id": "",
+      "name": "Leonard Williams",
+      "team": "SEA",
+      "position": "DL",
+      "points": 68.6,
+      "source_count": 3,
+      "sources": {
+        "FFA": 50.7,
+        "FantasySharks": 39.1,
         "DraftSharks": 116
       }
     },
@@ -6956,6 +6969,19 @@
     },
     {
       "player_id": "",
+      "name": "Emmett Johnson",
+      "team": "KC",
+      "position": "RB",
+      "points": 52.743,
+      "source_count": 3,
+      "sources": {
+        "ESPN": 46.321,
+        "Sleeper": 50.93,
+        "FantasySharks": 59.8
+      }
+    },
+    {
+      "player_id": "",
       "name": "Ventrell Miller",
       "team": "JAC",
       "position": "LB",
@@ -7743,18 +7769,6 @@
     },
     {
       "player_id": "",
-      "name": "Leonard Williams",
-      "team": "SEA",
-      "position": "DL",
-      "points": 44.9,
-      "source_count": 2,
-      "sources": {
-        "FFA": 50.7,
-        "FantasySharks": 39.1
-      }
-    },
-    {
-      "player_id": "",
       "name": "Kobie Turner",
       "team": "LAR",
       "position": "DL",
@@ -7803,20 +7817,6 @@
         "FFA": 49.6,
         "Sleeper": 9.57,
         "FantasySharks": 46.8
-      }
-    },
-    {
-      "player_id": "",
-      "name": "Emmett Johnson",
-      "team": "KC",
-      "position": "RB",
-      "points": 44.283,
-      "source_count": 4,
-      "sources": {
-        "ESPN": 46.321,
-        "CBS": 24.4,
-        "Sleeper": 50.93,
-        "FantasySharks": 59.8
       }
     },
     {
@@ -11930,10 +11930,10 @@
     "quentinjohnston": 152.377,
     "jordan addison": 150.289,
     "jordanaddison": 150.289,
+    "jordyn brooks": 149.116,
+    "jordynbrooks": 149.116,
     "mark andrews": 147.278,
     "markandrews": 147.278,
-    "jordyn brooks": 146.43,
-    "jordynbrooks": 146.43,
     "harrison mevis": 145.802,
     "harrisonmevis": 145.802,
     "jacory croskeymerritt": 145.706,
@@ -11944,6 +11944,8 @@
     "jakebates": 144.771,
     "khalil shakir": 143.953,
     "khalilshakir": 143.953,
+    "jack campbell": 143.908,
+    "jackcampbell": 143.908,
     "cam little": 142.497,
     "camlittle": 142.497,
     "jake ferguson": 141.598,
@@ -11952,12 +11954,12 @@
     "romeodoubs": 141.556,
     "jordyn tyson": 141.475,
     "jordyntyson": 141.475,
+    "blake cashman": 141.423,
+    "blakecashman": 141.423,
     "rachaad white": 141.203,
     "rachaadwhite": 141.203,
     "ricky pearsall": 141.092,
     "rickypearsall": 141.092,
-    "jack campbell": 140.923,
-    "jackcampbell": 140.923,
     "tyler loop": 140.797,
     "tylerloop": 140.797,
     "chase mclaughlin": 140.449,
@@ -11968,8 +11970,6 @@
     "makailemon": 140.18,
     "xavier worthy": 139.863,
     "xavierworthy": 139.863,
-    "blake cashman": 139.632,
-    "blakecashman": 139.632,
     "blake corum": 139.228,
     "blakecorum": 139.228,
     "cedric gray": 139.064,
@@ -11992,6 +11992,8 @@
     "harrisonbutker": 135.304,
     "jerry jeudy": 134.715,
     "jerryjeudy": 134.715,
+    "jamien sherwood": 134.254,
+    "jamiensherwood": 134.254,
     "wil lutz": 134.032,
     "willutz": 134.032,
     "juwan johnson": 133.904,
@@ -12008,36 +12010,36 @@
     "michaelpenixjr.": 131.611,
     "seattle seahawks": 131.497,
     "seattleseahawks": 131.497,
-    "jamien sherwood": 131.269,
-    "jamiensherwood": 131.269,
+    "ernest jones": 130.863,
+    "ernestjones": 130.863,
     "jayden higgins": 130.841,
     "jaydenhiggins": 130.841,
+    "roquan smith": 130.732,
+    "roquansmith": 130.732,
     "tj hockenson": 130.732,
     "t.j.hockenson": 130.732,
     "tyjae spears": 129.968,
     "tyjaespears": 129.968,
     "jalen coker": 128.636,
     "jalencoker": 128.636,
-    "ernest jones": 128.176,
-    "ernestjones": 128.176,
+    "foyesade oluokun": 128.449,
+    "foyesadeoluokun": 128.449,
+    "nick bolton": 128.288,
+    "nickbolton": 128.288,
     "matthew golden": 127.863,
     "matthewgolden": 127.863,
     "andy borregales": 127.436,
     "andyborregales": 127.436,
+    "zack baun": 127.332,
+    "zackbaun": 127.332,
     "zach charbonnet": 127.287,
     "zachcharbonnet": 127.287,
-    "roquan smith": 127.15,
-    "roquansmith": 127.15,
     "trey smack": 127.106,
     "treysmack": 127.106,
-    "nick bolton": 127.094,
-    "nickbolton": 127.094,
     "denver broncos": 126.738,
     "denverbroncos": 126.738,
     "evan mcpherson": 126.223,
     "evanmcpherson": 126.223,
-    "foyesade oluokun": 125.464,
-    "foyesadeoluokun": 125.464,
     "chris boswell": 125.307,
     "chrisboswell": 125.307,
     "kenyon sadiq": 124.902,
@@ -12048,8 +12050,10 @@
     "chigokonkwo": 124.2,
     "jake elliott": 123.883,
     "jakeelliott": 123.883,
-    "zack baun": 123.153,
-    "zackbaun": 123.153,
+    "fred warner": 123.754,
+    "fredwarner": 123.754,
+    "quay walker": 123.586,
+    "quaywalker": 123.586,
     "rashid shaheed": 122.978,
     "rashidshaheed": 122.978,
     "tre tucker": 122.854,
@@ -12068,22 +12072,20 @@
     "patfreiermuth": 120.21,
     "new england patriots": 120.187,
     "newenglandpatriots": 120.187,
+    "alex singleton": 119.973,
+    "alexsingleton": 119.973,
     "aj barner": 119.788,
     "ajbarner": 119.788,
     "chad ryland": 119.721,
     "chadryland": 119.721,
     "blake grupe": 119.455,
     "blakegrupe": 119.455,
-    "alex singleton": 119.077,
-    "alexsingleton": 119.077,
-    "fred warner": 118.978,
-    "fredwarner": 118.978,
-    "quay walker": 118.809,
-    "quaywalker": 118.809,
     "kc concepcion": 118.269,
     "kcconcepcion": 118.269,
     "baltimore ravens": 118.22,
     "baltimoreravens": 118.22,
+    "devin lloyd": 117.68,
+    "devinlloyd": 117.68,
     "jalen mcmillan": 117.601,
     "jalenmcmillan": 117.601,
     "joey slye": 117.477,
@@ -12096,32 +12098,40 @@
     "malikwashington": 116.852,
     "jonathon brooks": 116.498,
     "jonathonbrooks": 116.498,
+    "sonny styles": 116.337,
+    "sonnystyles": 116.337,
     "kansas city chiefs": 115.773,
     "kansascitychiefs": 115.773,
     "calvin ridley": 115.51,
     "calvinridley": 115.51,
-    "devin lloyd": 114.994,
-    "devinlloyd": 114.994,
+    "edgerrin cooper": 114.424,
+    "edgerrincooper": 114.424,
     "pittsburgh steelers": 114.214,
     "pittsburghsteelers": 114.214,
     "deebo samuel": 114,
     "deebosamuel": 114,
     "tyrone tracy": 113.93,
     "tyronetracy": 113.93,
+    "kyle hamilton": 113.041,
+    "kylehamilton": 113.041,
     "oronde gadsden": 113.012,
     "orondegadsden": 113.012,
-    "devin bush": 112.634,
-    "devinbush": 112.634,
+    "devin bush": 112.932,
+    "devinbush": 112.932,
+    "paulson adebo": 112.867,
+    "paulsonadebo": 112.867,
+    "nick cross": 112.76,
+    "nickcross": 112.76,
     "theo wease": 112.363,
     "theowease": 112.363,
-    "edgerrin cooper": 112.036,
-    "edgerrincooper": 112.036,
-    "chamarri conner": 111.499,
-    "chamarriconner": 111.499,
+    "daiyan henley": 111.754,
+    "daiyanhenley": 111.754,
     "isiah pacheco": 110.892,
     "isiahpacheco": 110.892,
-    "kyle hamilton": 110.653,
-    "kylehamilton": 110.653,
+    "talanoa hufanga": 110.721,
+    "talanoahufanga": 110.721,
+    "chamarri conner": 110.604,
+    "chamarriconner": 110.604,
     "greg dulcich": 110.601,
     "gregdulcich": 110.601,
     "tank dell": 110.577,
@@ -12130,124 +12140,114 @@
     "cooperkupp": 110.509,
     "deshon elliott": 110.484,
     "deshonelliott": 110.484,
-    "nick cross": 110.074,
-    "nickcross": 110.074,
     "zane gonzalez": 109.966,
     "zanegonzalez": 109.966,
     "jauan jennings": 109.741,
     "jauanjennings": 109.741,
+    "robert spillane": 109.617,
+    "robertspillane": 109.617,
     "chigoziem okonkwo": 109.425,
     "chigoziemokonkwo": 109.425,
-    "talanoa hufanga": 108.93,
-    "talanoahufanga": 108.93,
+    "dillon thieneman": 108.639,
+    "dillonthieneman": 108.639,
     "ryan fitzgerald": 108.558,
     "ryanfitzgerald": 108.558,
     "jason sanders": 108.546,
     "jasonsanders": 108.546,
-    "paulson adebo": 108.533,
-    "paulsonadebo": 108.533,
     "riley patterson": 108.279,
     "rileypatterson": 108.279,
     "darius slayton": 108.185,
     "dariusslayton": 108.185,
     "maxx crosby": 107.7,
     "maxxcrosby": 107.7,
-    "antoine winfield": 106.996,
-    "antoinewinfield": 106.996,
+    "antoine winfield": 107.593,
+    "antoinewinfield": 107.593,
     "antonio williams": 106.82,
     "antoniowilliams": 106.82,
-    "dillon thieneman": 106.512,
-    "dillonthieneman": 106.512,
-    "robert spillane": 106.333,
-    "robertspillane": 106.333,
-    "tykee smith": 106.167,
-    "tykeesmith": 106.167,
+    "tykee smith": 106.466,
+    "tykeesmith": 106.466,
+    "josh metellus": 106.3,
+    "joshmetellus": 106.3,
     "rashod bateman": 105.96,
     "rashodbateman": 105.96,
+    "tj edwards": 105.917,
+    "t.j.edwards": 105.917,
     "myles garrett": 105.8,
     "mylesgarrett": 105.8,
+    "jessie bates": 105.76,
+    "jessiebates": 105.76,
     "ryan flournoy": 105.639,
     "ryanflournoy": 105.639,
     "jalen nailor": 105.604,
     "jalennailor": 105.604,
     "stefon diggs": 105.55,
     "stefondiggs": 105.55,
-    "demarvion overshown": 105.453,
-    "demarvionovershown": 105.453,
     "kayshon boutte": 105.45,
     "kayshonboutte": 105.45,
+    "nakobe dean": 105.349,
+    "nakobedean": 105.349,
     "matt gay": 105.219,
     "mattgay": 105.219,
     "denzel boston": 105.181,
     "denzelboston": 105.181,
-    "jessie bates": 104.864,
-    "jessiebates": 104.864,
-    "budda baker": 104.794,
-    "buddabaker": 104.794,
     "mike gesicki": 104.767,
     "mikegesicki": 104.767,
-    "tj edwards": 104.425,
-    "t.j.edwards": 104.425,
-    "nakobe dean": 104.155,
-    "nakobedean": 104.155,
-    "eric wilson": 104.045,
-    "ericwilson": 104.045,
-    "jeremy chinn": 103.811,
-    "jeremychinn": 103.811,
+    "trevon moehrig": 104.761,
+    "trevonmoehrig": 104.761,
+    "jeremy chinn": 104.408,
+    "jeremychinn": 104.408,
     "shedeur sanders": 103.607,
     "shedeursanders": 103.607,
     "omar cooper": 103.562,
     "omarcooperjr.": 103.562,
+    "devon witherspoon": 103.543,
+    "devonwitherspoon": 103.543,
     "andre szmyt": 103.195,
     "andreszmyt": 103.195,
     "gunnar helm": 103.082,
     "gunnarhelm": 103.082,
-    "trevon moehrig": 102.074,
-    "trevonmoehrig": 102.074,
-    "josh metellus": 101.967,
-    "joshmetellus": 101.967,
-    "devon witherspoon": 101.453,
-    "devonwitherspoon": 101.453,
-    "minkah fitzpatrick": 101.315,
-    "minkahfitzpatrick": 101.315,
+    "riley moss": 102.821,
+    "rileymoss": 102.821,
+    "derwin james": 101.747,
+    "derwinjames": 101.747,
+    "minkah fitzpatrick": 101.016,
+    "minkahfitzpatrick": 101.016,
+    "kevin winston": 100.94,
+    "kevinwinston": 100.94,
     "troy franklin": 100.739,
     "troyfranklin": 100.739,
-    "kevin winston": 100.514,
-    "kevinwinston": 100.514,
     "chris rodriguez": 100.138,
     "chrisrodriguez": 100.138,
-    "derwin james": 99.956,
-    "derwinjames": 99.956,
+    "quentin lake": 100.063,
+    "quentinlake": 100.063,
+    "cooper dejean": 99.919,
+    "cooperdejean": 99.919,
     "colby parkinson": 99.844,
     "colbyparkinson": 99.844,
-    "quentin lake": 99.466,
-    "quentinlake": 99.466,
     "nick emmanwori": 99.274,
     "nickemmanwori": 99.274,
-    "cooper dejean": 99.023,
-    "cooperdejean": 99.023,
-    "riley moss": 98.941,
-    "rileymoss": 98.941,
     "tyler allgeier": 98.786,
     "tylerallgeier": 98.786,
+    "grant delpit": 98.547,
+    "grantdelpit": 98.547,
     "tre harris": 98.504,
     "tre'harris": 98.504,
     "evan engram": 97.926,
     "evanengram": 97.926,
     "david njoku": 97.644,
     "davidnjoku": 97.644,
+    "brandon jones": 97.245,
+    "brandonjones": 97.245,
     "adonai mitchell": 97.039,
     "adonaimitchell": 97.039,
-    "brandon jones": 96.946,
-    "brandonjones": 96.946,
     "tremaine edmunds": 95.73,
     "tremaineedmunds": 95.73,
     "germie bernard": 95.489,
     "germiebernard": 95.489,
     "andrew van ginkel": 95.475,
     "andrewvanginkel": 95.475,
-    "grant delpit": 95.264,
-    "grantdelpit": 95.264,
+    "evan williams": 95.423,
+    "evanwilliams": 95.423,
     "kamren curl": 95.25,
     "kamrencurl": 95.25,
     "dylan sampson": 94.61,
@@ -12326,8 +12326,6 @@
     "christianrozeboom": 82.823,
     "kaden elliss": 82.8,
     "kadenelliss": 82.8,
-    "sonny styles": 82.438,
-    "sonnystyles": 82.438,
     "travis hunter": 82.27,
     "travishunter": 82.27,
     "samaje perine": 82.183,
@@ -12344,6 +12342,8 @@
     "elicayomanor": 81.862,
     "julian love": 81.779,
     "julianlove": 81.779,
+    "budda baker": 81.727,
+    "buddabaker": 81.727,
     "marvin mims": 81.457,
     "marvinmimsjr.": 81.457,
     "tory horton": 81.158,
@@ -12376,8 +12376,6 @@
     "dawsonknox": 78.064,
     "keisean nixon": 77.95,
     "keiseannixon": 77.95,
-    "daiyan henley": 77.607,
-    "daiyanhenley": 77.607,
     "xavier watts": 77.253,
     "xavierwatts": 77.253,
     "justin reid": 77.05,
@@ -12428,6 +12426,8 @@
     "terrelbernard": 72.398,
     "sirvocea dennis": 72.2,
     "sirvoceadennis": 72.2,
+    "demarvion overshown": 72.029,
+    "demarvionovershown": 72.029,
     "andrew mukuba": 71.831,
     "andrewmukuba": 71.831,
     "mike washington": 71.828,
@@ -12464,8 +12464,8 @@
     "xavierhutchinson": 69.619,
     "malaki starks": 69.488,
     "malakistarks": 69.488,
-    "evan williams": 69.22,
-    "evanwilliams": 69.22,
+    "eric wilson": 69.171,
+    "ericwilson": 69.171,
     "omar speights": 69.1,
     "omarspeights": 69.1,
     "jakobi lane": 68.872,
@@ -12474,6 +12474,8 @@
     "colebishop": 68.723,
     "gregory rousseau": 68.675,
     "gregoryrousseau": 68.675,
+    "leonard williams": 68.6,
+    "leonardwilliams": 68.6,
     "quincy williams": 68.534,
     "quincywilliams": 68.534,
     "divine deablo": 68.177,
@@ -12642,6 +12644,8 @@
     "josholiver": 53.337,
     "derrick barnes": 52.867,
     "derrickbarnes": 52.867,
+    "emmett johnson": 52.743,
+    "emmettjohnson": 52.743,
     "ventrell miller": 52.667,
     "ventrellmiller": 52.667,
     "will kacmarek": 52.631,
@@ -12764,8 +12768,6 @@
     "renardogreen": 45.003,
     "christian benford": 44.987,
     "christianbenford": 44.987,
-    "leonard williams": 44.9,
-    "leonardwilliams": 44.9,
     "kobie turner": 44.8,
     "kobieturner": 44.8,
     "jaylin lane": 44.726,
@@ -12774,8 +12776,6 @@
     "elijahhiggins": 44.588,
     "boye mafe": 44.582,
     "boyemafe": 44.582,
-    "emmett johnson": 44.283,
-    "emmettjohnson": 44.283,
     "elijah arroyo": 44.017,
     "elijaharroyo": 44.017,
     "jaydon blue": 43.753,
