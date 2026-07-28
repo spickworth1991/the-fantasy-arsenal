@@ -5,6 +5,7 @@ import { arsenalDb, arsenalEnv, authenticateArsenal, ensureArsenalSchema } from 
 
 const json=async url=>{const r=await fetch(url);if(!r.ok)throw new Error(`Sleeper HTTP ${r.status}`);return r.json();};
 const num=v=>Number(v||0);
+const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 async function gmail(env,to,subject,html){
   if(!env.GMAIL_CLIENT_ID||!env.GMAIL_CLIENT_SECRET||!env.GMAIL_REFRESH_TOKEN)throw new Error("Gmail delivery secrets are not configured.");
   const tokenResponse=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:env.GMAIL_CLIENT_ID,client_secret:env.GMAIL_CLIENT_SECRET,refresh_token:env.GMAIL_REFRESH_TOKEN,grant_type:"refresh_token"})});
@@ -32,6 +33,24 @@ async function buildDigest(username,season,week){
   }))).filter(Boolean);
   const wins=rows.filter(r=>r.points>r.opp).length,losses=rows.filter(r=>r.points<r.opp).length,points=rows.reduce((s,r)=>s+r.points,0),empty=rows.reduce((s,r)=>s+r.empty,0),close=rows.filter(r=>Math.abs(r.points-r.opp)<=10).length;
   return{rows,wins,losses,points,empty,close};
+}
+
+function digestEmail({d,manager,season,week}){
+  const mood=d.wins>d.losses?["WINNING WEEK","Your portfolio brought the fire.","#34d399"]:d.wins<d.losses?["BOUNCE-BACK BOARD","A few pressure points need your attention.","#fb7185"]:["PHOTO FINISH","Your portfolio is balanced on a knife edge.","#fbbf24"];
+  const games=[...d.rows].sort((a,b)=>Math.abs(a.points-a.opp)-Math.abs(b.points-b.opp)).map(r=>{
+    const margin=r.points-r.opp,winning=margin>0,tied=margin===0;
+    const color=tied?"#fbbf24":winning?"#34d399":"#fb7185";
+    return `<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#101b2d"><tr><td style="padding:15px 16px"><div style="font-size:14px;font-weight:800;color:#f8fafc">${esc(r.name)}</div><div style="padding-top:5px;font-size:11px;color:#8292aa">${r.empty?`⚠ ${r.empty} empty lineup slot${r.empty===1?"":"s"}`:"Lineup submitted"}</div></td><td align="right" style="padding:15px 16px;white-space:nowrap"><div style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:${color}">${tied?"TIED":winning?"WIN":"LOSS"}</div><div style="padding-top:4px;font-size:18px;font-weight:900;color:#f8fafc">${r.points.toFixed(1)} <span style="color:#52627a">–</span> ${r.opp.toFixed(1)}</div><div style="padding-top:3px;font-size:10px;color:${color}">${margin>=0?"+":""}${margin.toFixed(1)} margin</div></td></tr></table></td></tr>`;
+  }).join("");
+  const metric=(value,label,color="#f8fafc",last=false)=>`<td class="metric${last?" metric-last":""}" width="25%" align="center" style="padding:17px 8px"><div style="font-size:24px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.2px;color:#718198">${label}</div></td>`;
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${d.wins}-${d.losses} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
+  <tr><td class="hero" style="padding:34px;background:linear-gradient(135deg,#101c31,#10263a 58%,#241b49)"><table role="presentation" width="100%"><tr><td><img src="https://thefantasyarsenal.com/icons/TFA.png" width="58" height="58" alt="The Fantasy Arsenal" style="display:block;width:58px;height:58px;object-fit:contain"></td><td align="right" style="font-size:10px;font-weight:900;letter-spacing:2px;color:#7dd3fc">WEEK ${week} · ${season}</td></tr></table><div style="padding-top:22px;font-size:11px;font-weight:900;letter-spacing:2px;color:${mood[2]}">${mood[0]}</div><h1 style="margin:7px 0 0;font-size:32px;line-height:1.08;color:#fff">The Weekly Arsenal</h1><p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#a7b7cd">Hey ${esc(manager)} — ${mood[1]}</p></td></tr>
+  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#0d192a"><tr>${metric(`${d.wins}-${d.losses}`,"RECORD",mood[2])}${metric(d.points.toFixed(1),"POINTS")}${metric(d.close,"CLOSE GAMES","#fbbf24")}${metric(d.empty,"EMPTY SLOTS",d.empty?"#fb7185":"#34d399",true)}</tr></table></td></tr>
+  <tr><td style="padding:28px 24px 8px"><div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#a78bfa">MATCHUP RADAR</div><h2 style="margin:5px 0 7px;font-size:21px;color:#fff">Closest decisions first</h2><p style="margin:0;font-size:12px;line-height:19px;color:#718198">The tightest margins rise to the top so you can focus where a move matters most.</p></td></tr>
+  <tr><td style="padding:12px 24px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${games||`<tr><td style="padding:22px;text-align:center;color:#8292aa">No scored matchups were available yet.</td></tr>`}</table></td></tr>
+  <tr><td align="center" style="padding:4px 24px 32px"><a href="https://thefantasyarsenal.com/account" style="display:inline-block;padding:15px 24px;border-radius:14px;background:#67e8f9;color:#07111f;font-size:13px;font-weight:900;text-decoration:none">OPEN MY COMMAND CENTER →</a><div style="padding-top:13px;font-size:10px;color:#607089">Lineups · live matchups · waivers · trades · playoff leverage</div></td></tr>
+  <tr><td align="center" style="border-top:1px solid #1d2b40;padding:20px 24px;font-size:10px;line-height:17px;color:#52627a">Built for your entire fantasy portfolio by <span style="color:#8da0ba">The Fantasy Arsenal</span>.<br>Manage weekly delivery from My Arsenal.</td></tr>
+  </table></td></tr></table></body></html>`;
 }
 
 async function ready(db){
@@ -75,9 +94,8 @@ export async function GET(request){
     for(const row of due.results||[]){
       try{
         const d=await buildDigest(row.sleeper_username,season,week);
-        const games=d.rows.map(r=>`<tr><td style="padding:8px">${r.name}</td><td style="padding:8px;text-align:right">${r.points.toFixed(1)}–${r.opp.toFixed(1)}</td></tr>`).join("");
-        const html=`<div style="font-family:Arial;background:#07111f;color:#fff;padding:28px"><h1>The Fantasy Arsenal</h1><p style="color:#7dd3fc">Week ${week} Portfolio Digest</p><h2>${row.display_name||row.sleeper_username}: ${d.wins}-${d.losses}</h2><p>${d.points.toFixed(1)} total points · ${d.close} close matchups · ${d.empty} empty lineup slots</p><table style="width:100%;color:#fff">${games}</table><p><a style="color:#67e8f9" href="https://thefantasyarsenal.com/account">Open the full interactive digest</a></p><small style="color:#94a3b8">Manage delivery from your Arsenal account profile.</small></div>`;
-        await gmail(env,row.email,`Your Week ${week} Fantasy Arsenal Portfolio Digest`,html);
+        const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week});
+        await gmail(env,row.email,`Week ${week} Arsenal: ${d.wins}-${d.losses} · ${d.points.toFixed(1)} points`,html);
         await db.prepare("UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();sent+=1;
       }catch(error){failures.push({account:row.account_id,error:String(error.message||error).slice(0,180)});}
     }
