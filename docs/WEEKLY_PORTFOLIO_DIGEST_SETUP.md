@@ -26,6 +26,11 @@ Add these as encrypted secrets in Production and Preview:
 - `GMAIL_CLIENT_SECRET`
 - `GMAIL_REFRESH_TOKEN`
 - `DIGEST_CRON_SECRET` — generate a long random value
+- `FANTASYPROS_API_KEY` — recommended; enables the official FantasyPros NFL news API.
+  Without it, the email falls back to the public FantasyPros player-news page, which may
+  expose fewer stories.
+- `X_BEARER_TOKEN` — optional; enables recent posts from Adam Schefter and Ian Rapoport
+  through the official X API. Without it, the email shows links to their verified profiles.
 
 The Gmail account that grants the refresh token must be
 `contact.stickypicky@gmail.com`, because that is the From address used by the sender.
@@ -41,8 +46,9 @@ Create a cron-job.org job:
 - Timeout: at least 60 seconds
 
 Run the cron every day. Each account chooses its Portfolio Digest delivery day and may enable a
-separate NFL News Brief on another day. The endpoint checks the configured weekday and last
-successful delivery, so only due editions are sent.
+separate Daily Intelligence Wire on any combination of weekdays. Selecting all seven days creates
+a true daily email. The endpoint checks the configured weekdays and last successful delivery, so
+only due editions are sent.
 
 Users subscribe from **My Arsenal → Command Home → Weekly Portfolio Digest**. Their address and
 enabled status are stored in the `arsenal_digest_subscriptions` D1 table. Disabling the toggle
@@ -51,4 +57,8 @@ keeps the address but stops delivery.
 Test modes do not modify normal delivery timestamps:
 
 - Portfolio Digest: `https://thefantasyarsenal.com/api/arsenal/digest?test=1`
-- NFL News Brief: `https://thefantasyarsenal.com/api/arsenal/digest?test=news`
+- Daily Intelligence Wire: `https://thefantasyarsenal.com/api/arsenal/digest?test=news`
+
+The test response includes `newsSources`. Confirm that FantasyPros reports at least one article.
+When X is configured, `X Insiders` should also report posts. Never place either API key in source
+control or a `NEXT_PUBLIC_` variable.
