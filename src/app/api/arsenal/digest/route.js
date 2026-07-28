@@ -8,8 +8,14 @@ const num=v=>Number(v||0);
 async function gmail(env,to,subject,html){
   if(!env.GMAIL_CLIENT_ID||!env.GMAIL_CLIENT_SECRET||!env.GMAIL_REFRESH_TOKEN)throw new Error("Gmail delivery secrets are not configured.");
   const tokenResponse=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:env.GMAIL_CLIENT_ID,client_secret:env.GMAIL_CLIENT_SECRET,refresh_token:env.GMAIL_REFRESH_TOKEN,grant_type:"refresh_token"})});
-  if(!tokenResponse.ok)throw new Error("Gmail token refresh failed.");
-  const access=(await tokenResponse.json()).access_token;
+  const tokenPayload=await tokenResponse.json().catch(()=>({}));
+  if(!tokenResponse.ok){
+    const code=String(tokenPayload?.error||tokenResponse.status).slice(0,60);
+    const detail=String(tokenPayload?.error_description||"Google rejected the stored OAuth credentials.").replace(/\s+/g," ").slice(0,180);
+    throw new Error(`Gmail token refresh failed: ${code} — ${detail}`);
+  }
+  const access=tokenPayload.access_token;
+  if(!access)throw new Error("Gmail token refresh failed: Google returned no access token.");
   const from="contact.stickypicky@gmail.com";
   const message=[`From: The Fantasy Arsenal <${from}>`,`To: ${to}`,`Subject: ${subject}`,"MIME-Version: 1.0","Content-Type: text/html; charset=UTF-8","",html].join("\r\n");
   const raw=btoa(unescape(encodeURIComponent(message))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");

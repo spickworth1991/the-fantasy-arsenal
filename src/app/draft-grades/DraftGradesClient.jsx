@@ -6,6 +6,7 @@ import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
+import { classifyLeagueFormat } from "../../lib/leagueFormat";
 
 const n = (value) => Number(value || 0);
 const clamp = (value, min=0, max=100) => Math.max(min, Math.min(max, value));
@@ -151,31 +152,49 @@ export default function DraftGradesClient() {
   const [draftId,setDraftId]=useState("");
   const [draft,setDraft]=useState(null);
   const [picks,setPicks]=useState([]);
-  const [loading,setLoading]=useState(false);
+  const [loadingDrafts,setLoadingDrafts]=useState(false);
+  const [loadingPicks,setLoadingPicks]=useState(false);
   const [error,setError]=useState("");
   const [tab,setTab]=useState("leaderboard");
   const [teamId,setTeamId]=useState("");
   const [query,setQuery]=useState("");
   const league=leagues.find((row)=>String(row.league_id)===String(activeLeague));
+  const loading=loadingDrafts||loadingPicks;
+  const detectedFormat=useMemo(()=>{
+    const detected=classifyLeagueFormat(league||{},drafts);
+    const explicitType=n(league?.settings?.type);
+    if(explicitType===2)return{...detected,key:"dynasty",label:"Dynasty",confidence:"high"};
+    if(explicitType===1)return{...detected,key:"keeper",label:"Keeper",confidence:"high"};
+    return detected;
+  },[drafts,league]);
+  const detectedQbType=useMemo(()=>{
+    const slots=(league?.roster_positions||[]).map((slot)=>String(slot||"").toUpperCase());
+    return slots.filter((slot)=>slot==="QB").length>=2||slots.some((slot)=>["SUPER_FLEX","SUPERFLEX","SF","OP","Q/W/R/T"].includes(slot))?"sf":"1qb";
+  },[league?.roster_positions]);
   const sourceLabel=DEFAULT_SOURCES.find((source)=>source.key===sourceKey)?.label || sourceKey;
 
   useEffect(()=>{if(!activeLeague&&leagues[0])setActiveLeague(leagues[0].league_id);},[activeLeague,leagues,setActiveLeague]);
   useEffect(()=>{
-    if(!activeLeague){setDrafts([]);setDraftId("");return;}
-    let active=true;setLoading(true);setError("");
+    if(!activeLeague){setDrafts([]);setDraftId("");setDraft(null);setPicks([]);return;}
+    let active=true;setLoadingDrafts(true);setError("");setDraft(null);setPicks([]);
     Promise.all([getJson(`https://api.sleeper.app/v1/league/${activeLeague}/drafts`),fetchLeagueRostersSilent(activeLeague)])
       .then(([rows])=>{if(!active)return;const sorted=[...(rows||[])].sort((a,b)=>n(b.season)-n(a.season)||n(b.created)-n(a.created));setDrafts(sorted);setDraftId((current)=>sorted.some((row)=>String(row.draft_id)===String(current))?current:String(sorted[0]?.draft_id||""));})
-      .catch(()=>active&&setError("Drafts could not be loaded for this league.")).finally(()=>active&&setLoading(false));
+      .catch(()=>active&&setError("Drafts could not be loaded for this league.")).finally(()=>active&&setLoadingDrafts(false));
     return()=>{active=false;};
   },[activeLeague,fetchLeagueRostersSilent]);
   useEffect(()=>{
     if(!draftId){setDraft(null);setPicks([]);return;}
-    let active=true;setLoading(true);setError("");
+    let active=true;setLoadingPicks(true);setError("");setDraft(null);setPicks([]);
     Promise.all([getJson(`https://api.sleeper.app/v1/draft/${draftId}`),getJson(`https://api.sleeper.app/v1/draft/${draftId}/picks`)])
       .then(([draftRow,pickRows])=>{if(!active)return;setDraft(draftRow);setPicks(Array.isArray(pickRows)?pickRows:[]);})
-      .catch(()=>active&&setError("The selected draft could not be graded.")).finally(()=>active&&setLoading(false));
+      .catch(()=>active&&setError("The selected draft could not be graded.")).finally(()=>active&&setLoadingPicks(false));
     return()=>{active=false;};
   },[draftId]);
+  useEffect(()=>{
+    if(!league)return;
+    setFormat(detectedFormat.key==="dynasty"?"dynasty":"redraft");
+    setQbType(detectedQbType);
+  },[activeLeague,detectedFormat.key,detectedQbType,league,setFormat,setQbType]);
   const analysis=useMemo(()=>buildGrades({ draft,picks,players,league,rosters:league?.rosters||[],users:league?.users||[],getMetric:getPlayerValue }),[draft,getPlayerValue,league,picks,players]);
   useEffect(()=>{if(analysis?.teams?.length&&!analysis.teams.some((team)=>team.rosterId===teamId))setTeamId(analysis.teams[0].rosterId);},[analysis,teamId]);
   const selectedTeam=analysis?.teams.find((team)=>team.rosterId===teamId)||analysis?.teams[0];
@@ -183,7 +202,7 @@ export default function DraftGradesClient() {
 
   return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="Draft Grade Studio"/><div className="mx-auto max-w-7xl px-4 pb-20 pt-20">
     <header className="overflow-hidden rounded-[34px] border border-violet-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(139,92,246,.22),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.15),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="text-[10px] font-bold uppercase tracking-[.28em] text-violet-200/60">League-wide draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Grade Studio</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">Grade every pick and every team using the league’s format, positional need at the moment of selection, current market rank, opportunity cost, and finished roster construction.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,.65fr)_auto]"><select value={activeLeague||""} onChange={(event)=>{setActiveLeague(event.target.value);setDraftId("");}} className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="">Choose a league</option>{leagues.map((row)=><option key={row.league_id} value={row.league_id}>{row.name}</option>)}</select><select value={draftId} onChange={(event)=>setDraftId(event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((row)=><option key={row.draft_id} value={row.draft_id}>{row.season} · {row.status} · {row.settings?.rounds||"—"} rounds</option>)}</select><button onClick={()=>window.print()} disabled={!analysis} className="rounded-2xl bg-violet-300/10 px-5 py-3 text-sm font-black text-violet-100 disabled:opacity-35">Print / save PDF</button></div></header>
-    {username?<Panel className="mt-4 overflow-visible p-4"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,480px)] lg:items-center"><div><div className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/50">Grading lens</div><h2 className="mt-1 text-xl font-black">Change the market and the grades recalculate</h2><p className="mt-1 text-xs leading-5 text-white/38">Value sources produce a current-market retrospective. Projection sources grade immediate seasonal utility. Historical reports never pretend today’s values were known on draft day.</p></div><SourceSelector sources={DEFAULT_SOURCES} value={sourceKey} onChange={setSourceKey} mode={format} qbType={qbType} onModeChange={setFormat} onQbTypeChange={setQbType} layout="inline"/></div></Panel>:null}
+    {username?<Panel className="mt-4 overflow-visible p-4"><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,480px)] lg:items-center"><div><div className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/50">Grading lens</div><h2 className="mt-1 text-xl font-black">Change the market and the grades recalculate</h2><p className="mt-1 text-xs leading-5 text-white/38">Value sources produce a current-market retrospective. Projection sources grade immediate seasonal utility. Historical reports never pretend today’s values were known on draft day.</p><div className="mt-2 text-[10px] font-semibold text-cyan-100/55">Detected: {detectedFormat.label} · {detectedQbType==="sf"?"Superflex":"1QB"} · {detectedFormat.confidence} confidence</div></div><SourceSelector sources={DEFAULT_SOURCES} value={sourceKey} onChange={setSourceKey} mode={format} qbType={qbType} onModeChange={setFormat} onQbTypeChange={setQbType} layout="inline"/></div></Panel>:null}
     {loading?<div className="mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4 text-sm text-cyan-100">Building grades from the selected draft…</div>:null}{error?<div className="mt-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.06] p-4 text-sm text-rose-100">{error}</div>:null}
     {analysis?<><section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Draft champion" value={analysis.teams[0]?.name||"—"} detail={`${analysis.teams[0]?.grade} · ${analysis.teams[0]?.score}/100`} tone="green"/><Metric label="Best selection" value={playerName(analysis.steals[0]?.player)||"—"} detail={analysis.steals[0]?`Pick #${analysis.steals[0].pick.pick_no}`:""} tone="cyan"/><Metric label="Largest reach" value={playerName(analysis.reaches[0]?.player)||"—"} detail={analysis.reaches[0]?`Pick #${analysis.reaches[0].pick.pick_no}`:""} tone="rose"/><Metric label="Draft pool" value={analysis.rookieOnly?"Rookies":"Full pool"} detail={`${analysis.eligibleCount} graded candidates`}/><Metric label="Selections" value={analysis.pickRows.length} detail={`${analysis.teams.length} teams`}/><Metric label="Position runs" value={analysis.runs.length} detail="Four of six picks" tone="amber"/></section>
       <Panel className="sticky top-14 z-30 mt-4 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur"><div className="flex w-max gap-1">{[["leaderboard","Team Grades"],["board","Every Pick"],["teams","Team Report"],["awards","Awards & Runs"],["method","Methodology"]].map(([key,label])=><button key={key} onClick={()=>setTab(key)} className={`min-h-11 rounded-xl px-4 text-sm font-bold ${tab===key?"bg-violet-300/10 text-violet-100":"text-white/40"}`}>{label}</button>)}</div></Panel>
