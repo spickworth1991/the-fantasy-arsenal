@@ -7,6 +7,10 @@ const json=async url=>{const r=await fetch(url);if(!r.ok)throw new Error(`Sleepe
 const num=v=>Number(v||0);
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 const DIGEST_TEST_EMAIL="spickworth1991@gmail.com";
+const localWeekday=(timezone="America/New_York")=>{
+  const short=new Intl.DateTimeFormat("en-US",{weekday:"short",timeZone:timezone}).format(new Date());
+  return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(short);
+};
 const decodeXml=(value="")=>value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">");
 const xmlTag=(xml,name)=>decodeXml(xml.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`,"i"))?.[1]||"").trim();
 async function topNflNews(){
@@ -33,7 +37,7 @@ async function gmail(env,to,subject,html){
   const access=tokenPayload.access_token;
   if(!access)throw new Error("Gmail token refresh failed: Google returned no access token.");
   const from="contact.stickypicky@gmail.com";
-  const message=[`From: The Fantasy Arsenal <${from}>`,`To: ${to}`,`Subject: ${subject}`,"MIME-Version: 1.0","Content-Type: text/html; charset=UTF-8","",html].join("\r\n");
+  const message=[`From: The Fantasy Arsenal <${from}>`,`To: ${to}`,`Reply-To: Fantasy Arsenal Support <${from}>`,`Subject: ${subject}`,"MIME-Version: 1.0","Content-Type: text/html; charset=UTF-8","",html].join("\r\n");
   const raw=btoa(unescape(encodeURIComponent(message))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   const sent=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{method:"POST",headers:{Authorization:`Bearer ${access}`,"Content-Type":"application/json"},body:JSON.stringify({raw})});
   if(!sent.ok)throw new Error(`Gmail send failed (${sent.status}).`);
@@ -96,7 +100,7 @@ function digestEmail({d,manager,season,week,news=[]}){
   if(notStarted)actions.push(`<b style="color:#bae6fd">${notStarted} matchup${notStarted===1?"":"s"} still waiting.</b> Recheck injuries, weather, and inactive news near kickoff.`);
   if(!actions.length)actions.push(`<b style="color:#a7f3d0">No urgent portfolio fire.</b> Your submitted lineups have no empty slots or close-game alerts right now.`);
   const actionRows=actions.map((action,index)=>`<tr><td valign="top" style="padding:${index?"7px":"0"} 10px 7px 0;color:#67e8f9;font-weight:900">${index+1}</td><td style="padding:${index?"7px":"0"} 0 7px;font-size:12px;line-height:19px;color:#9fb0c6">${action}</td></tr>`).join("");
-  const newsRows=news.slice(0,8).map((article,index)=>{
+  const newsRows=news.slice(0,3).map((article,index)=>{
     const date=article.published?new Date(article.published).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
     return `<tr><td valign="top" style="padding:11px 12px 11px 0;font-size:12px;font-weight:900;color:#67e8f9">${index+1}</td><td style="padding:11px 0;border-bottom:1px solid #233148"><a href="${esc(article.link)}" style="font-size:13px;line-height:19px;font-weight:800;color:#eef6ff;text-decoration:none">${esc(article.title)}</a><div style="padding-top:4px;font-size:10px;color:#718198">${esc(article.source||"NFL News")}${date?` · ${date}`:""}</div></td></tr>`;
   }).join("");
@@ -113,9 +117,18 @@ function digestEmail({d,manager,season,week,news=[]}){
   <tr><td style="padding:28px 24px 8px"><div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#a78bfa">MATCHUP RADAR</div><h2 style="margin:5px 0 7px;font-size:21px;color:#fff">Closest decisions first</h2><p style="margin:0;font-size:12px;line-height:19px;color:#718198">The tightest margins rise to the top so you can focus where a move matters most.</p></td></tr>
   <tr><td style="padding:12px 24px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${games||`<tr><td style="padding:22px;text-align:center;color:#8292aa">No scored matchups were available yet.</td></tr>`}</table></td></tr>
   ${newsRows?`<tr><td style="padding:4px 24px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:18px;background:#0d1727"><tr><td style="padding:20px"><div style="font-size:10px;font-weight:900;letter-spacing:1.7px;color:#fbbf24">NFL NEWSWIRE</div><h2 style="margin:6px 0 4px;font-size:20px;color:#fff">Top stories shaping the week</h2><p style="margin:0 0 8px;font-size:11px;line-height:18px;color:#718198">Fresh headlines from across the NFL. Open any story for the original coverage.</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${newsRows}</table></td></tr></table></td></tr>`:""}
-  <tr><td align="center" style="padding:4px 24px 32px"><a href="https://thefantasyarsenal.com/account" style="display:inline-block;padding:15px 24px;border-radius:14px;background:#67e8f9;color:#07111f;font-size:13px;font-weight:900;text-decoration:none">OPEN MY COMMAND CENTER →</a><div style="padding-top:13px;font-size:10px;color:#607089">Lineups · live matchups · waivers · trades · playoff leverage</div></td></tr>
-  <tr><td align="center" style="border-top:1px solid #1d2b40;padding:20px 24px;font-size:10px;line-height:17px;color:#52627a">Built for your entire fantasy portfolio by <span style="color:#8da0ba">The Fantasy Arsenal</span>.<br>Manage weekly delivery from My Arsenal.</td></tr>
+  <tr><td align="center" style="padding:4px 24px 28px"><a href="https://thefantasyarsenal.com/account" style="display:inline-block;padding:15px 24px;border-radius:14px;background:#67e8f9;color:#07111f;font-size:13px;font-weight:900;text-decoration:none">OPEN MY COMMAND CENTER →</a><div style="padding-top:13px;font-size:10px;color:#607089">Lineups · live matchups · waivers · trades · playoff leverage</div></td></tr>
+  <tr><td style="padding:0 24px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #2a3b54;border-radius:14px;background:#0c1727"><tr><td align="center" style="padding:16px"><div style="font-size:12px;font-weight:800;color:#d7e3f2">Questions, feedback, or something not looking right?</div><div style="padding-top:5px;font-size:11px;line-height:17px;color:#718198">Reply to this email or contact Fantasy Arsenal Support.</div><a href="mailto:contact.stickypicky@gmail.com?subject=${encodeURIComponent(`Fantasy Arsenal Digest Support · Week ${week}`)}" style="display:inline-block;padding-top:9px;font-size:11px;font-weight:800;color:#67e8f9;text-decoration:none">contact.stickypicky@gmail.com →</a></td></tr></table></td></tr>
+  <tr><td align="center" style="border-top:1px solid #1d2b40;padding:20px 24px;font-size:10px;line-height:17px;color:#91a4bd">Built for your entire fantasy portfolio by <span style="color:#ffffff;font-weight:900">The Fantasy Arsenal</span>.<br>Manage weekly delivery from My Arsenal.</td></tr>
   </table></td></tr></table></body></html>`;
+}
+
+function newsBriefEmail({news,season,week}){
+  const rows=news.slice(0,10).map((article,index)=>{
+    const date=article.published?new Date(article.published).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    return `<tr><td valign="top" style="padding:15px 14px 15px 0;font-size:13px;font-weight:900;color:#67e8f9">${index+1}</td><td style="padding:15px 0;border-bottom:1px solid #26354d"><a href="${esc(article.link)}" style="font-size:14px;line-height:20px;font-weight:900;color:#ffffff;text-decoration:none">${esc(article.title)}</a><div style="padding-top:5px;font-size:10px;color:#91a4bd">${esc(article.source||"NFL News")}${date?` · ${date}`:""}</div></td></tr>`;
+  }).join("");
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#050b16;font-family:Arial,sans-serif;color:#fff"><div style="display:none;max-height:0;overflow:hidden">The NFL stories most likely to shape fantasy decisions this week.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050b16"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;border:1px solid #26354d;border-radius:24px;background:#091321;overflow:hidden"><tr><td style="padding:30px;background:linear-gradient(135deg,#10263a,#241b49)"><span style="display:inline-block;border-radius:12px;background:#f8fafc;padding:8px 11px"><img src="https://thefantasyarsenal.com/icons/TFA.png" width="190" alt="The Fantasy Arsenal" style="display:block;width:190px;max-width:100%;height:auto"></span><div style="padding-top:22px;font-size:10px;font-weight:900;letter-spacing:2px;color:#fbbf24">NFL NEWS BRIEF · WEEK ${week} · ${season}</div><h1 style="margin:7px 0 0;font-size:30px;color:#fff">The Sunday Intelligence Wire</h1><p style="margin:10px 0 0;font-size:13px;line-height:21px;color:#d7e3f2">The top NFL stories most likely to affect injuries, roles, depth charts, waivers, trades, and lineup decisions.</p></td></tr><tr><td style="padding:12px 24px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows||`<tr><td style="padding:28px;text-align:center;color:#91a4bd">No fresh NFL headlines were available for this edition.</td></tr>`}</table></td></tr><tr><td align="center" style="padding:0 24px 26px"><a href="https://thefantasyarsenal.com/account" style="display:inline-block;border-radius:13px;background:#67e8f9;padding:14px 22px;color:#07111f;font-size:12px;font-weight:900;text-decoration:none">OPEN MY ARSENAL</a></td></tr><tr><td align="center" style="border-top:1px solid #26354d;padding:18px 24px;font-size:10px;line-height:17px;color:#91a4bd">Questions or feedback? Reply to this email or contact <a href="mailto:contact.stickypicky@gmail.com?subject=${encodeURIComponent(`Fantasy Arsenal News Brief Support - Week ${week}`)}" style="color:#67e8f9;text-decoration:none">contact.stickypicky@gmail.com</a>.<br><span style="color:#fff;font-weight:900">The Fantasy Arsenal</span></td></tr></table></td></tr></table></body></html>`;
 }
 
 async function ready(db){
@@ -129,6 +142,12 @@ async function ready(db){
     updated_at INTEGER NOT NULL,
     last_sent_at INTEGER
   )`).run();
+  for(const statement of[
+    "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN include_news INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_enabled INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_delivery_day INTEGER NOT NULL DEFAULT 4",
+    "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_last_sent_at INTEGER",
+  ])try{await db.prepare(statement).run();}catch{}
 }
 
 export async function POST(request){
@@ -139,11 +158,16 @@ export async function POST(request){
     const body=await request.json();
     const email=String(body?.email||"").trim().toLowerCase().slice(0,254);
     const enabled=body?.enabled?1:0;
+    const deliveryDay=Math.max(0,Math.min(6,num(body?.deliveryDay??2)));
+    const includeNews=body?.includeNews===false?0:1;
+    const newsEnabled=body?.newsEnabled?1:0;
+    const newsDeliveryDay=Math.max(0,Math.min(6,num(body?.newsDeliveryDay??4)));
     if(enabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return new NextResponse("Enter a valid delivery email.",{status:400});
-    await db.prepare(`INSERT INTO arsenal_digest_subscriptions(account_id,email,enabled,updated_at)
-      VALUES(?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET email=excluded.email,enabled=excluded.enabled,updated_at=excluded.updated_at`)
-      .bind(account.account_id,email,enabled,Date.now()).run();
-    return NextResponse.json({ok:true,email,enabled:!!enabled});
+    if(newsEnabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return new NextResponse("Enter a valid delivery email.",{status:400});
+    await db.prepare(`INSERT INTO arsenal_digest_subscriptions(account_id,email,enabled,delivery_day,include_news,news_enabled,news_delivery_day,updated_at)
+      VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET email=excluded.email,enabled=excluded.enabled,delivery_day=excluded.delivery_day,include_news=excluded.include_news,news_enabled=excluded.news_enabled,news_delivery_day=excluded.news_delivery_day,updated_at=excluded.updated_at`)
+      .bind(account.account_id,email,enabled,deliveryDay,includeNews,newsEnabled,newsDeliveryDay,Date.now()).run();
+    return NextResponse.json({ok:true,email,enabled:!!enabled,deliveryDay,includeNews:!!includeNews,newsEnabled:!!newsEnabled,newsDeliveryDay});
   }catch(error){return new NextResponse(error?.message||"Digest preference could not be saved.",{status:500});}
 }
 
@@ -154,21 +178,31 @@ export async function GET(request){
     const db=arsenalDb();await ready(db);
     const state=await json("https://api.sleeper.app/v1/state/nfl");
     const season=num(state.season)||new Date().getUTCFullYear(),week=Math.max(1,num(state.week)||1);
-    const testMode=new URL(request.url).searchParams.get("test")==="1";
+    const testParam=new URL(request.url).searchParams.get("test")||"";
+    const testMode=testParam==="1"||testParam==="digest"||testParam==="news";
+    const testKind=testParam==="news"?"news":"digest";
     const due=testMode
       ? await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id ORDER BY s.updated_at DESC LIMIT 1`).all()
-      : await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 AND (s.last_sent_at IS NULL OR s.last_sent_at<?) LIMIT 100`).bind(Date.now()-5*86400000).all();
+      : await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 OR s.news_enabled=1 LIMIT 250`).all();
     const news=(due.results||[]).length?await topNflNews():[];
     let sent=0;const failures=[];
     for(const row of due.results||[]){
-      try{
+      const weekday=localWeekday(row.timezone||"America/New_York"),cooldown=Date.now()-5*86400000;
+      const digestDue=testMode?testKind==="digest":Number(row.enabled)===1&&weekday===num(row.delivery_day)&&(!row.last_sent_at||num(row.last_sent_at)<cooldown);
+      const newsDue=testMode?testKind==="news":Number(row.news_enabled)===1&&weekday===num(row.news_delivery_day)&&(!row.news_last_sent_at||num(row.news_last_sent_at)<cooldown);
+      if(digestDue)try{
         const d=await buildDigest(row.sleeper_username,season,week);
-        const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week,news});
-        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Arsenal: ${d.wins}-${d.losses} · ${d.points.toFixed(1)} points`,html);
+        const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week,news:Number(row.include_news??1)===1?news:[]});
+        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`,html);
         if(!testMode)await db.prepare("UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();
         sent+=1;
-      }catch(error){failures.push({account:row.account_id,error:String(error.message||error).slice(0,180)});}
+      }catch(error){failures.push({account:row.account_id,type:"digest",error:String(error.message||error).slice(0,180)});}
+      if(newsDue)try{
+        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Fantasy Arsenal NFL News Brief`,newsBriefEmail({news,season,week}));
+        if(!testMode)await db.prepare("UPDATE arsenal_digest_subscriptions SET news_last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();
+        sent+=1;
+      }catch(error){failures.push({account:row.account_id,type:"news",error:String(error.message||error).slice(0,180)});}
     }
-    return NextResponse.json({ok:true,testMode,testRecipient:testMode?DIGEST_TEST_EMAIL:undefined,season,week,news:news.length,sent,failed:failures.length,failures});
+    return NextResponse.json({ok:true,testMode,testKind:testMode?testKind:undefined,testRecipient:testMode?DIGEST_TEST_EMAIL:undefined,season,week,news:news.length,sent,failed:failures.length,failures});
   }catch(error){return new NextResponse(error?.message||"Digest delivery failed.",{status:500});}
 }

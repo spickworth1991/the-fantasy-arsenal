@@ -36,15 +36,19 @@ Create a cron-job.org job:
 
 - URL: `https://thefantasyarsenal.com/api/arsenal/digest`
 - Method: `GET`
-- Schedule: Tuesday at 9:00 AM America/New_York
+- Schedule: Daily at 9:00 AM America/New_York
 - Header: `Authorization: Bearer YOUR_DIGEST_CRON_SECRET`
 - Timeout: at least 60 seconds
 
-Tuesday delivery captures the completed weekly result. The endpoint checks `last_sent_at`, so
-retries within five days do not resend the same digest. It follows Sleeper's current NFL week,
-builds each subscribed account’s portfolio summary, sends the email, and records successful
-delivery in D1.
+Run the cron every day. Each account chooses its Portfolio Digest delivery day and may enable a
+separate NFL News Brief on another day. The endpoint checks the configured weekday and last
+successful delivery, so only due editions are sent.
 
 Users subscribe from **My Arsenal → Command Home → Weekly Portfolio Digest**. Their address and
 enabled status are stored in the `arsenal_digest_subscriptions` D1 table. Disabling the toggle
 keeps the address but stops delivery.
+
+Test modes do not modify normal delivery timestamps:
+
+- Portfolio Digest: `https://thefantasyarsenal.com/api/arsenal/digest?test=1`
+- NFL News Brief: `https://thefantasyarsenal.com/api/arsenal/digest?test=news`

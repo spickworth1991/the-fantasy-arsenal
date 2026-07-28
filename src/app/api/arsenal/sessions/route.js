@@ -18,7 +18,8 @@ export async function DELETE(request){
     const db=arsenalDb();await ensureArsenalSchema(db);
     const account=await authenticateArsenal(request,db);if(!account)return new NextResponse("Unauthorized.",{status:401});
     const body=await request.json().catch(()=>({}));const current=await sha256(bearerToken(request));
-    if(body.all)await db.prepare("DELETE FROM arsenal_sessions WHERE account_id=? AND token_hash<>?").bind(account.account_id,current).run();
+    if(body.current)await db.prepare("DELETE FROM arsenal_sessions WHERE account_id=? AND token_hash=?").bind(account.account_id,current).run();
+    else if(body.all)await db.prepare("DELETE FROM arsenal_sessions WHERE account_id=? AND token_hash<>?").bind(account.account_id,current).run();
     else if(body.id&&body.id!==current)await db.prepare("DELETE FROM arsenal_sessions WHERE account_id=? AND token_hash=?").bind(account.account_id,String(body.id)).run();
     return NextResponse.json({ok:true});
   }catch(error){return new NextResponse(error?.message||"Session could not be removed.",{status:500});}

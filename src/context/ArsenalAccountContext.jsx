@@ -201,6 +201,22 @@ export function ArsenalAccountProvider({ children }) {
     setAccount(result.account);
     return result.account;
   }, [authorized]);
+  const clearAccountData = async (mode, password="") => {
+    const result=await authorized("/api/arsenal/data",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode,password})});
+    if(mode==="sync"){
+      const keys=[];for(let index=0;index<localStorage.length;index+=1){const key=localStorage.key(index);if(isSyncKey(key))keys.push(key);}
+      keys.forEach((key)=>localStorage.removeItem(key));
+      localStorage.removeItem(`${META_KEY}:${account?.accountId||"unknown"}`);
+    }else if(mode==="history"){
+      localStorage.removeItem("tfa:intelligence-actions");
+      try{const platform=JSON.parse(localStorage.getItem("tfa:account-platform")||"{}");platform.activity=[];localStorage.setItem("tfa:account-platform",JSON.stringify(platform));}catch{}
+    }else if(mode==="avatar"){
+      const refreshed=await authorized("/api/arsenal/account");
+      setAccount(refreshed.account);
+    }
+    window.dispatchEvent(new CustomEvent("tfa:cloud-sync-applied"));
+    return result;
+  };
   useEffect(() => {
     if (!token || !account?.accountId) return;
     const key = `${RECORD_REFRESH_KEY}:${account.accountId}`;
@@ -212,7 +228,10 @@ export function ArsenalAccountProvider({ children }) {
     localStorage.setItem(key, String(Date.now()));
     refreshRecord().catch(() => {});
   }, [account?.accountId, account?.record?.season, account?.record?.updatedAt, refreshRecord, token]);
-  const disconnect = () => {
+  const disconnect = async () => {
+    try {
+      if (token) await authorized("/api/arsenal/sessions", { method:"DELETE", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ current:true }) });
+    } catch {}
     localStorage.removeItem(TOKEN_KEY);
     setToken("");
     setAccount(null);
@@ -221,7 +240,7 @@ export function ArsenalAccountProvider({ children }) {
 
   const value = useMemo(() => ({
     ready, token, account, isConnected:!!account, syncing, syncState,
-    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow, accountRequest:authorized,
+    createAccount, loginAccount, connectAccount, updateProfile, uploadAvatar, refreshRecord, clearAccountData, disconnect, syncNow, accountRequest:authorized,
   }), [account, ready, syncState, syncing, token, syncNow]);
   return <ArsenalAccountContext.Provider value={value}>{children}</ArsenalAccountContext.Provider>;
 }

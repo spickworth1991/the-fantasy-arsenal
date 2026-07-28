@@ -43,6 +43,8 @@ export async function POST(request) {
     if (!sleeperResponse.ok) return new NextResponse("Sleeper username was not found.", { status: 404 });
     const sleeper = await sleeperResponse.json();
     if (!sleeper?.user_id) return new NextResponse("Sleeper username was not found.", { status: 404 });
+    const existing = await db.prepare(`SELECT account_id FROM arsenal_accounts WHERE login_name=? COLLATE NOCASE`).bind(loginName).first();
+    if (existing) return new NextResponse("That Arsenal account name is already in use.", { status:409 });
 
     const token = `tfa_${randomSecret(32)}`;
     const tokenHash = await sha256(token);
@@ -111,6 +113,10 @@ export async function PATCH(request) {
     }
     if (!nextHash) return new NextResponse("Set a password to enable account sign-in.", { status:400 });
     if (loginName && !/^[a-zA-Z0-9_.-]{3,40}$/.test(loginName)) return new NextResponse("Invalid account name.", { status:400 });
+    if(loginName){
+      const conflict=await db.prepare(`SELECT account_id FROM arsenal_accounts WHERE login_name=? COLLATE NOCASE AND account_id<>?`).bind(loginName,account.account_id).first();
+      if(conflict)return new NextResponse("That Arsenal account name is already in use.",{status:409});
+    }
     const now = Date.now();
     await db.prepare(`UPDATE arsenal_accounts SET display_name=?, bio=?, avatar_type=?, avatar_value=?, favorite_team=?, fantasy_style=?, experience_level=?, profile_public=?, leaderboard_visible=?, career_json=?, badges_json=?, public_sections_json=?, login_name=?, password_hash=?, password_salt=?, updated_at=? WHERE account_id=?`)
       .bind(displayName, bio, avatarType, avatarValue, favoriteTeam, fantasyStyle, experienceLevel, profilePublic, leaderboardVisible, careerJson || null, badgesJson || null, publicSectionsJson || null, loginName || null, nextHash || null, nextSalt || null, now, account.account_id).run();

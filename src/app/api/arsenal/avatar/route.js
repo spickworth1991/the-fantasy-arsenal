@@ -20,6 +20,8 @@ export async function POST(request) {
     const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" }[type];
     const key = `avatars/${account.account_id}/${Date.now()}.${extension}`;
     await media.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: type, cacheControl: "public, max-age=3600" } });
+    const previous=String(account.avatar_value||"").match(/[?&]key=([^&]+)/);
+    if(previous)try{await media.delete?.(decodeURIComponent(previous[1]));}catch{}
     const avatarValue = `/api/arsenal/avatar?account=${encodeURIComponent(account.account_id)}&key=${encodeURIComponent(key)}`;
     await db.prepare(`UPDATE arsenal_accounts SET avatar_type='upload', avatar_value=?, updated_at=? WHERE account_id=?`)
       .bind(avatarValue, Date.now(), account.account_id).run();

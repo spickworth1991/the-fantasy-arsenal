@@ -70,6 +70,19 @@ export async function ensureArsenalSchema(db) {
     )`).run();
     await db.prepare(`CREATE INDEX IF NOT EXISTS arsenal_sessions_account
       ON arsenal_sessions(account_id, last_seen_at)`).run();
+    await db.prepare(`CREATE TABLE IF NOT EXISTS arsenal_schema_migrations (
+      migration_key TEXT PRIMARY KEY,
+      applied_at INTEGER NOT NULL
+    )`).run();
+    const sessionsMigrated=await db.prepare(`SELECT migration_key FROM arsenal_schema_migrations WHERE migration_key='account-sessions-v1'`).first();
+    if(!sessionsMigrated){
+      await db.batch([
+        db.prepare(`INSERT OR IGNORE INTO arsenal_sessions(token_hash, account_id, created_at, last_seen_at)
+          SELECT token_hash, account_id, created_at, last_seen_at FROM arsenal_accounts
+          WHERE token_hash IS NOT NULL AND token_hash<>''`),
+        db.prepare(`INSERT OR IGNORE INTO arsenal_schema_migrations(migration_key,applied_at) VALUES ('account-sessions-v1',?)`).bind(Date.now()),
+      ]);
+    }
     await db.prepare(`CREATE INDEX IF NOT EXISTS arsenal_sync_account_updated
     ON arsenal_sync_items(account_id, updated_at)`).run();
   })();
@@ -97,9 +110,8 @@ export async function authenticateArsenal(request, db) {
   const token = bearerToken(request);
   if (!token) return null;
   const tokenHash = await sha256(token);
-  let account = await db.prepare(`SELECT a.* FROM arsenal_accounts a
+  const account = await db.prepare(`SELECT a.* FROM arsenal_accounts a
     JOIN arsenal_sessions s ON s.account_id=a.account_id WHERE s.token_hash=?`).bind(tokenHash).first();
-  if (!account) account = await db.prepare(`SELECT * FROM arsenal_accounts WHERE token_hash=?`).bind(tokenHash).first();
   if (account) {
     db.prepare(`UPDATE arsenal_accounts SET last_seen_at=? WHERE account_id=?`).bind(Date.now(), account.account_id).run().catch(() => {});
     db.prepare(`UPDATE arsenal_sessions SET last_seen_at=? WHERE token_hash=?`).bind(Date.now(), tokenHash).run().catch(() => {});
