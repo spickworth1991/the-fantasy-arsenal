@@ -42,10 +42,21 @@ async function fantasyProsNews(env){
     }
   }catch{}
   try{
-    const response=await fetch("https://www.fantasypros.com/nfl/player-news.php",{headers:{"User-Agent":"Mozilla/5.0 (compatible; TheFantasyArsenal/1.0; +https://thefantasyarsenal.com)","Accept":"text/html,application/xhtml+xml"},cf:{cacheTtl:900,cacheEverything:true}});
-    if(!response.ok)throw new Error(`HTTP ${response.status}`);
-    const articles=parseFantasyProsPage(await response.text());
-    return{articles:articles.slice(0,10),mode:"public player-news page",ok:articles.length>0};
+    const urls=["","?position=QB","?position=RB","?position=WR","?position=TE","?position=K","?position=DL"];
+    const settled=await Promise.allSettled(urls.map(async query=>{
+      const response=await fetch(`https://www.fantasypros.com/nfl/player-news.php${query}`,{headers:{"User-Agent":"Mozilla/5.0 (compatible; TheFantasyArsenal/1.0; +https://thefantasyarsenal.com)","Accept":"text/html,application/xhtml+xml"},cf:{cacheTtl:900,cacheEverything:true}});
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      return parseFantasyProsPage(await response.text());
+    }));
+    const seen=new Set(),articles=[];
+    for(const result of settled)if(result.status==="fulfilled")for(const article of result.value){
+      const key=article.link||article.title.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+      if(!key||seen.has(key))continue;
+      seen.add(key);articles.push(article);
+    }
+    const publishedTime=article=>Date.parse(String(article.published||"").replace(/(\d+)(st|nd|rd|th)/i,"$1"))||0;
+    articles.sort((a,b)=>publishedTime(b)-publishedTime(a));
+    return{articles:articles.slice(0,10),mode:"public player-news position feeds",ok:articles.length>0};
   }catch{return{articles:[],mode:env.FANTASYPROS_API_KEY?"API and page unavailable":"public page unavailable",ok:false};}
 }
 async function xInsiderPosts(env){
