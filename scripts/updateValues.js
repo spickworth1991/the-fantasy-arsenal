@@ -321,7 +321,7 @@ function writeValueCacheVersion() {
 const BYE_DIR = path.join(__dirname, "../public/byes");
 
 const IDPSHOW_URL =
-  "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjhFsZsnOa1rGqr1-pRYPtfgj8LZn6APveMDgyYPuhUaQ2dti_3bHRo_5HxJ7CakFNSbvkAy4giatyxSKHnMYy799Yzh9Kz6_8uhcG7l95qhy-5Qa5CkcZPpxl4LHti77TX1tvWxKaOQ6keSR_l1p6HeeCSpBYOvQv976JW-hAXfloylpiWHfymhpVG8oekaUEixOuCBAD2x8pPunVcGPkWHFJgQY0DUjl-A-dyuyZDOoF3HpIJUu7Dv3cSsPELlawsmLSwD4LrENbjHBnD2bb9Ui3h5A&lib=McXMtVyy2Er9rGkb_-5Dp_8icp6k4geWO";
+  "https://script.google.com/macros/s/AKfycby5CIjDtutePQl6dZZDsWZBwkwBYTiZPXLB4NFNhwC9K3pdYWpkzg7ErzRkNYP56oLZ/exec";
 
 // ---------- CLI helpers / Puppeteer debug switches ----------
 function pickPointsKey(rec) {

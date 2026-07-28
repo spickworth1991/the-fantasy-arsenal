@@ -1,7 +1,5 @@
-export const metadata = {
-  title: "Arsenal Profile",
-  description: "Optional Fantasy Arsenal profile, cross-device synchronization, and account preferences.",
-};
+import { redirect } from "next/navigation";
 
-import ProfileClient from "./ProfileClient";
-export default function ProfilePage() { return <ProfileClient />; }
+export default function ProfilePage() {
+  redirect("/account?tab=profile");
+}

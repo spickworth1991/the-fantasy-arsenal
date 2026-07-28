@@ -18,7 +18,7 @@ function PasswordField({label,visible,onToggle,...props}){
   return <label><span className="mb-1.5 block text-xs text-white/42">{label}</span><span className="relative block"><input {...props} type={visible?"text":"password"} className="w-full rounded-2xl border border-white/10 bg-slate-950 py-3 pl-4 pr-20 outline-none focus:border-cyan-300/35"/><button type="button" onClick={onToggle} className="absolute inset-y-1 right-1 rounded-xl px-3 text-[10px] font-bold text-cyan-100/65 hover:bg-white/[0.05]">{visible?"Hide":"Show"}</button></span></label>;
 }
 
-export default function ProfileClient() {
+export default function ProfileClient({ embedded=false }) {
   const { username } = useSleeper();
   const accountState = useArsenalAccount();
   const { account, isConnected, createAccount, loginAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow, syncing, syncState } = accountState;
@@ -57,7 +57,7 @@ export default function ProfileClient() {
     await syncNow();setMessage("Intelligence preferences saved and synced.");
   });
 
-  return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="Arsenal Profile"/><div className="mx-auto max-w-6xl px-4 pb-20 pt-20">
+  return <main className={embedded?"text-white":"min-h-screen text-white"}>{!embedded?<><BackgroundParticles/><Navbar pageTitle="Arsenal Profile"/></>:null}<div className={embedded?"mx-auto max-w-6xl":"mx-auto max-w-6xl px-4 pb-20 pt-20"}>
     <header className="overflow-hidden rounded-[34px] border border-violet-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(139,92,246,.22),transparent_38%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8">
       <div className="text-[10px] font-semibold uppercase tracking-[.28em] text-violet-200/60">Optional identity and continuity</div>
       <h1 className="mt-2 text-3xl font-black sm:text-5xl">Your Arsenal profile</h1>
