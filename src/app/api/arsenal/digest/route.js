@@ -7,6 +7,20 @@ const json=async url=>{const r=await fetch(url);if(!r.ok)throw new Error(`Sleepe
 const num=v=>Number(v||0);
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 const DIGEST_TEST_EMAIL="spickworth1991@gmail.com";
+const decodeXml=(value="")=>value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">");
+const xmlTag=(xml,name)=>decodeXml(xml.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`,"i"))?.[1]||"").trim();
+async function topNflNews(){
+  try{
+    const response=await fetch("https://news.google.com/rss/search?q=NFL+fantasy+football+when%3A7d&hl=en-US&gl=US&ceid=US%3Aen",{headers:{"User-Agent":"The Fantasy Arsenal/1.0"},cf:{cacheTtl:900,cacheEverything:true}});
+    if(!response.ok)return[];
+    const xml=await response.text();
+    return[...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0,8).map(match=>{
+      const item=match[1],rawTitle=xmlTag(item,"title"),parts=rawTitle.split(" - ");
+      const source=xmlTag(item,"source")||(parts.length>1?parts.pop():"");
+      return{title:parts.join(" - ")||rawTitle,source,link:xmlTag(item,"link"),published:xmlTag(item,"pubDate")};
+    }).filter(article=>article.title&&article.link);
+  }catch{return[];}
+}
 async function gmail(env,to,subject,html){
   if(!env.GMAIL_CLIENT_ID||!env.GMAIL_CLIENT_SECRET||!env.GMAIL_REFRESH_TOKEN)throw new Error("Gmail delivery secrets are not configured.");
   const tokenResponse=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:env.GMAIL_CLIENT_ID,client_secret:env.GMAIL_CLIENT_SECRET,refresh_token:env.GMAIL_REFRESH_TOKEN,grant_type:"refresh_token"})});
@@ -31,15 +45,61 @@ async function buildDigest(username,season,week){
     const [rosters,matchups]=await Promise.all([json(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),json(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).catch(()=>[])]);
     const mine=rosters.find(r=>String(r.owner_id)===String(user.user_id));const my=matchups.find(m=>String(m.roster_id)===String(mine?.roster_id));const opp=matchups.find(m=>m.matchup_id===my?.matchup_id&&String(m.roster_id)!==String(mine?.roster_id));if(!my)return null;
     const points=num(my.points),oppPoints=num(opp?.points);
-    return{name:league.name,points,opp:oppPoints,started:points>0||oppPoints>0,empty:(my.starters||[]).filter(id=>!id||id==="0").length};
+    return{name:league.name,points,opp:oppPoints,started:points>0||oppPoints>0,empty:(my.starters||[]).filter(id=>!id||id==="0").length,playoffWeekStart:num(league.settings?.playoff_week_start)||15};
   }))).filter(Boolean);
   const active=rows.filter(r=>r.started);
   const wins=active.filter(r=>r.points>r.opp).length,losses=active.filter(r=>r.points<r.opp).length,points=rows.reduce((s,r)=>s+r.points,0),empty=rows.reduce((s,r)=>s+r.empty,0),close=active.filter(r=>Math.abs(r.points-r.opp)<=10).length;
-  return{rows,wins,losses,points,empty,close};
+  return{rows,wins,losses,points,empty,close,playoffLeagues:rows.filter(r=>week>=r.playoffWeekStart).length,playoffPushLeagues:rows.filter(r=>week>=Math.max(9,r.playoffWeekStart-3)&&week<r.playoffWeekStart).length};
 }
 
-function digestEmail({d,manager,season,week}){
-  const mood=d.wins>d.losses?["WINNING WEEK","Your portfolio brought the fire.","#34d399"]:d.wins<d.losses?["BOUNCE-BACK BOARD","A few pressure points need your attention.","#fb7185"]:["PHOTO FINISH","Your portfolio is balanced on a knife edge.","#fbbf24"];
+function digestEmail({d,manager,season,week,news=[]}){
+  const active=d.rows.filter(r=>r.started),notStarted=d.rows.length-active.length;
+  const ties=active.length-d.wins-d.losses;
+  const winRate=active.length?(d.wins+ties*.5)/active.length:0;
+  const gradedEmpty=active.reduce((sum,r)=>sum+r.empty,0);
+  const score=active.length?Math.round(Math.max(0,Math.min(100,76+winRate*22-gradedEmpty*4))):null;
+  const letter=score==null?"—":score>=97?"A+":score>=93?"A":score>=90?"A−":score>=87?"B+":score>=83?"B":score>=80?"B−":score>=77?"C+":score>=73?"C":"D";
+  const best=[...active].sort((a,b)=>(b.points-b.opp)-(a.points-a.opp))[0];
+  const danger=[...active].sort((a,b)=>(a.points-a.opp)-(b.points-b.opp))[0];
+  const seed=[...String(manager)].reduce((sum,char)=>sum+char.charCodeAt(0),week*37+d.wins*11+d.losses*7);
+  const choose=(items,offset=0)=>items[(seed+offset)%items.length];
+  const winningLines=["Your portfolio brought the fire.","The win column is doing the talking.","Green lights are spreading across the board.","Your teams are controlling the weekly script.","The portfolio is stacking positive results.","This slate has serious victory-lap energy.","The Arsenal is winning the leverage battles.","Your weekly decisions are paying rent."];
+  const losingLines=["A few pressure points need your attention.","The board is asking for a counterpunch.","There is still time to rescue the swing matchups.","The margins are exposing this week’s pressure valves.","A course correction can still change the portfolio story.","The red side of the board needs a response.","This is a triage week: protect the closest paths first.","The slate is bruised, not buried."];
+  const evenLines=["Your portfolio is balanced on a knife edge.","The week is still writing its ending.","Every close decision carries extra weight.","The board is split and leverage is everywhere.","One lineup swing could tilt the whole portfolio.","The slate remains very much in play.","No runaway verdict yet—this is a decision week.","The portfolio is waiting for a hero matchup."];
+  const mood=d.wins>d.losses?[choose(["WINNING WEEK","GREEN BOARD","PORTFOLIO SURGE","MOMENTUM REPORT"],1),choose(winningLines,3),"#34d399"]:d.wins<d.losses?[choose(["BOUNCE-BACK BOARD","PRESSURE REPORT","RECOVERY MODE","DECISION WEEK"],1),choose(losingLines,3),"#fb7185"]:[choose(["PHOTO FINISH","LEVERAGE WEEK","SPLIT BOARD","MARGIN WATCH"],1),choose(evenLines,3),"#fbbf24"];
+  const opening=choose([
+    `Across ${d.rows.length} leagues, the Arsenal has mapped the clearest pressure points.`,
+    `This week’s portfolio scan separates signal from noise across ${d.rows.length} leagues.`,
+    `The board is built: ${d.rows.length} leagues, one prioritized weekly story.`,
+    `Your portfolio pulse is in, with the closest decisions pushed to the front.`,
+    `The Arsenal reviewed every loaded matchup and ranked what deserves attention first.`,
+    `This is the weekly command brief for all ${d.rows.length} of your active league views.`,
+  ],5);
+  const phaseBanner=d.playoffLeagues
+    ? `🏆 <b>${d.playoffLeagues} league playoff${d.playoffLeagues===1?" is":"s are"} active.</b> Survival, advancement, and championship paths now outweigh ordinary margin chasing.`
+    : d.playoffPushLeagues
+      ? `🔥 <b>Playoff push alert in ${d.playoffPushLeagues} league${d.playoffPushLeagues===1?"":"s"}.</b> Seeding leverage is rising; close matchups and empty slots carry extra cost.`
+      : week>=12
+        ? `🏁 <b>Stretch-run mode.</b> Playoff fields and seed lines are tightening across the portfolio.`
+        : week>=8
+          ? `📈 <b>Midseason leverage is here.</b> Every win now shapes the playoff runway and trade posture.`
+          : week<=4
+            ? `🚀 <b>Opening-phase report.</b> Early results matter, but roster process is more trustworthy than a small record sample.`
+            : `🧭 <b>Season-building phase.</b> Protect weekly points while keeping waiver and trade flexibility intact.`;
+  const briefing=!active.length
+    ? `${opening} Your slate is staged and waiting for kickoff. No matchup has been graded, so the portfolio remains neutral.`
+    : `${opening} The live record is ${d.wins}-${d.losses}${ties?`-${ties}`:""} through ${active.length} matchup${active.length===1?"":"s"}. ${best?choose([`${esc(best.name)} sets the pace at ${(best.points-best.opp)>=0?"+":""}${(best.points-best.opp).toFixed(1)}.`,`${esc(best.name)} is carrying the strongest live margin: ${(best.points-best.opp)>=0?"+":""}${(best.points-best.opp).toFixed(1)}.`,`The current portfolio leader is ${esc(best.name)} at ${(best.points-best.opp)>=0?"+":""}${(best.points-best.opp).toFixed(1)}.`],9):""} ${danger&&danger!==best?choose([`${esc(danger.name)} is the pressure point at ${(danger.points-danger.opp).toFixed(1)}.`,`${esc(danger.name)} needs the closest attention with a ${(danger.points-danger.opp).toFixed(1)} margin.`,`The rescue board starts with ${esc(danger.name)} at ${(danger.points-danger.opp).toFixed(1)}.`],13):""}`;
+  const actions=[];
+  if(d.empty)actions.push(`<b style="color:#fda4af">Fix ${d.empty} empty lineup slot${d.empty===1?"":"s"}.</b> Open affected lineups before their players lock.`);
+  if(d.close)actions.push(`<b style="color:#fde68a">Watch ${d.close} close matchup${d.close===1?"":"s"}.</b> These are the leagues where one decision has the most leverage.`);
+  if(d.playoffLeagues||d.playoffPushLeagues)actions.push(`<b style="color:#c4b5fd">Open the playoff leverage board.</b> Prioritize advancement and seeding paths over low-impact margin chasing.`);
+  if(notStarted)actions.push(`<b style="color:#bae6fd">${notStarted} matchup${notStarted===1?"":"s"} still waiting.</b> Recheck injuries, weather, and inactive news near kickoff.`);
+  if(!actions.length)actions.push(`<b style="color:#a7f3d0">No urgent portfolio fire.</b> Your submitted lineups have no empty slots or close-game alerts right now.`);
+  const actionRows=actions.map((action,index)=>`<tr><td valign="top" style="padding:${index?"7px":"0"} 10px 7px 0;color:#67e8f9;font-weight:900">${index+1}</td><td style="padding:${index?"7px":"0"} 0 7px;font-size:12px;line-height:19px;color:#9fb0c6">${action}</td></tr>`).join("");
+  const newsRows=news.slice(0,8).map((article,index)=>{
+    const date=article.published?new Date(article.published).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    return `<tr><td valign="top" style="padding:11px 12px 11px 0;font-size:12px;font-weight:900;color:#67e8f9">${index+1}</td><td style="padding:11px 0;border-bottom:1px solid #233148"><a href="${esc(article.link)}" style="font-size:13px;line-height:19px;font-weight:800;color:#eef6ff;text-decoration:none">${esc(article.title)}</a><div style="padding-top:4px;font-size:10px;color:#718198">${esc(article.source||"NFL News")}${date?` · ${date}`:""}</div></td></tr>`;
+  }).join("");
   const games=[...d.rows].sort((a,b)=>Math.abs(a.points-a.opp)-Math.abs(b.points-b.opp)).map(r=>{
     const margin=r.points-r.opp,winning=margin>0,tied=r.started&&margin===0;
     const color=!r.started?"#8292aa":tied?"#fbbf24":winning?"#34d399":"#fb7185";
@@ -47,10 +107,12 @@ function digestEmail({d,manager,season,week}){
   }).join("");
   const metric=(value,label,color="#f8fafc",last=false)=>`<td class="metric${last?" metric-last":""}" width="25%" align="center" style="padding:17px 8px"><div style="font-size:24px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.2px;color:#718198">${label}</div></td>`;
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${d.wins}-${d.losses} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
-  <tr><td class="hero" style="padding:34px;background:linear-gradient(135deg,#101c31,#10263a 58%,#241b49)"><table role="presentation" width="100%"><tr><td><img src="https://thefantasyarsenal.com/icons/TFA.png" width="58" height="58" alt="The Fantasy Arsenal" style="display:block;width:58px;height:58px;object-fit:contain"></td><td align="right" style="font-size:10px;font-weight:900;letter-spacing:2px;color:#7dd3fc">WEEK ${week} · ${season}</td></tr></table><div style="padding-top:22px;font-size:11px;font-weight:900;letter-spacing:2px;color:${mood[2]}">${mood[0]}</div><h1 style="margin:7px 0 0;font-size:32px;line-height:1.08;color:#fff">The Weekly Arsenal</h1><p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#a7b7cd">Hey ${esc(manager)} — ${mood[1]}</p></td></tr>
-  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#0d192a"><tr>${metric(`${d.wins}-${d.losses}`,"RECORD",mood[2])}${metric(d.points.toFixed(1),"POINTS")}${metric(d.close,"CLOSE GAMES","#fbbf24")}${metric(d.empty,"EMPTY SLOTS",d.empty?"#fb7185":"#34d399",true)}</tr></table></td></tr>
+  <tr><td class="hero" style="padding:34px;background:linear-gradient(135deg,#101c31,#10263a 58%,#241b49)"><table role="presentation" width="100%"><tr><td><span style="display:inline-block;border-radius:12px;background:#f8fafc;padding:8px 11px"><img src="https://thefantasyarsenal.com/icons/TFA.png" width="190" alt="The Fantasy Arsenal" style="display:block;width:190px;max-width:100%;height:auto"></span></td><td align="right" style="font-size:10px;font-weight:900;letter-spacing:2px;color:#bae6fd">WEEK ${week} · ${season}</td></tr></table><div style="padding-top:22px;font-size:11px;font-weight:900;letter-spacing:2px;color:${mood[2]}">${mood[0]}</div><h1 style="margin:7px 0 0;font-size:32px;line-height:1.08;color:#fff">The Weekly Arsenal</h1><p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#d7e3f2">Hey ${esc(manager)} — ${mood[1]}</p></td></tr>
+  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #34445e;border-radius:16px;background:#0d192a"><tr>${metric(`${d.wins}-${d.losses}`,"LIVE RECORD",mood[2])}${metric(d.points.toFixed(1),"POINTS")}${metric(letter,"LIVE GRADE",score==null?"#8292aa":"#c4b5fd")}${metric(d.empty,"EMPTY SLOTS",d.empty?"#fb7185":"#34d399",true)}</tr></table></td></tr>
+  <tr><td style="padding:28px 24px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #31415c;border-radius:18px;background:#101a30"><tr><td style="padding:20px"><div style="font-size:10px;font-weight:900;letter-spacing:1.8px;color:#67e8f9">ARSENAL INTELLIGENCE BRIEFING</div><h2 style="margin:7px 0 8px;font-size:20px;color:#fff">What the week is saying</h2><p style="margin:0;font-size:13px;line-height:21px;color:#b9c8dc">${briefing}</p><div style="margin-top:15px;border:1px solid #4c3f75;border-radius:12px;background:#211b3a;padding:12px;font-size:12px;line-height:19px;color:#ddd6fe">${phaseBanner}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;border-top:1px solid #26354d;padding-top:13px">${actionRows}</table></td></tr></table></td></tr>
   <tr><td style="padding:28px 24px 8px"><div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#a78bfa">MATCHUP RADAR</div><h2 style="margin:5px 0 7px;font-size:21px;color:#fff">Closest decisions first</h2><p style="margin:0;font-size:12px;line-height:19px;color:#718198">The tightest margins rise to the top so you can focus where a move matters most.</p></td></tr>
   <tr><td style="padding:12px 24px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${games||`<tr><td style="padding:22px;text-align:center;color:#8292aa">No scored matchups were available yet.</td></tr>`}</table></td></tr>
+  ${newsRows?`<tr><td style="padding:4px 24px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:18px;background:#0d1727"><tr><td style="padding:20px"><div style="font-size:10px;font-weight:900;letter-spacing:1.7px;color:#fbbf24">NFL NEWSWIRE</div><h2 style="margin:6px 0 4px;font-size:20px;color:#fff">Top stories shaping the week</h2><p style="margin:0 0 8px;font-size:11px;line-height:18px;color:#718198">Fresh headlines from across the NFL. Open any story for the original coverage.</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${newsRows}</table></td></tr></table></td></tr>`:""}
   <tr><td align="center" style="padding:4px 24px 32px"><a href="https://thefantasyarsenal.com/account" style="display:inline-block;padding:15px 24px;border-radius:14px;background:#67e8f9;color:#07111f;font-size:13px;font-weight:900;text-decoration:none">OPEN MY COMMAND CENTER →</a><div style="padding-top:13px;font-size:10px;color:#607089">Lineups · live matchups · waivers · trades · playoff leverage</div></td></tr>
   <tr><td align="center" style="border-top:1px solid #1d2b40;padding:20px 24px;font-size:10px;line-height:17px;color:#52627a">Built for your entire fantasy portfolio by <span style="color:#8da0ba">The Fantasy Arsenal</span>.<br>Manage weekly delivery from My Arsenal.</td></tr>
   </table></td></tr></table></body></html>`;
@@ -96,16 +158,17 @@ export async function GET(request){
     const due=testMode
       ? await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id ORDER BY s.updated_at DESC LIMIT 1`).all()
       : await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 AND (s.last_sent_at IS NULL OR s.last_sent_at<?) LIMIT 100`).bind(Date.now()-5*86400000).all();
+    const news=(due.results||[]).length?await topNflNews():[];
     let sent=0;const failures=[];
     for(const row of due.results||[]){
       try{
         const d=await buildDigest(row.sleeper_username,season,week);
-        const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week});
+        const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week,news});
         await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Arsenal: ${d.wins}-${d.losses} · ${d.points.toFixed(1)} points`,html);
         if(!testMode)await db.prepare("UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();
         sent+=1;
       }catch(error){failures.push({account:row.account_id,error:String(error.message||error).slice(0,180)});}
     }
-    return NextResponse.json({ok:true,testMode,testRecipient:testMode?DIGEST_TEST_EMAIL:undefined,season,week,sent,failed:failures.length,failures});
+    return NextResponse.json({ok:true,testMode,testRecipient:testMode?DIGEST_TEST_EMAIL:undefined,season,week,news:news.length,sent,failed:failures.length,failures});
   }catch(error){return new NextResponse(error?.message||"Digest delivery failed.",{status:500});}
 }
