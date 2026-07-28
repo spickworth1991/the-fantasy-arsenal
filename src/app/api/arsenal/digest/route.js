@@ -6,6 +6,7 @@ import { arsenalDb, arsenalEnv, authenticateArsenal, ensureArsenalSchema } from 
 const json=async url=>{const r=await fetch(url);if(!r.ok)throw new Error(`Sleeper HTTP ${r.status}`);return r.json();};
 const num=v=>Number(v||0);
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+const DIGEST_TEST_EMAIL="spickworth1991@gmail.com";
 async function gmail(env,to,subject,html){
   if(!env.GMAIL_CLIENT_ID||!env.GMAIL_CLIENT_SECRET||!env.GMAIL_REFRESH_TOKEN)throw new Error("Gmail delivery secrets are not configured.");
   const tokenResponse=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:env.GMAIL_CLIENT_ID,client_secret:env.GMAIL_CLIENT_SECRET,refresh_token:env.GMAIL_REFRESH_TOKEN,grant_type:"refresh_token"})});
@@ -29,18 +30,20 @@ async function buildDigest(username,season,week){
   const rows=(await Promise.all((leagues||[]).map(async league=>{
     const [rosters,matchups]=await Promise.all([json(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),json(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).catch(()=>[])]);
     const mine=rosters.find(r=>String(r.owner_id)===String(user.user_id));const my=matchups.find(m=>String(m.roster_id)===String(mine?.roster_id));const opp=matchups.find(m=>m.matchup_id===my?.matchup_id&&String(m.roster_id)!==String(mine?.roster_id));if(!my)return null;
-    return{name:league.name,points:num(my.points),opp:num(opp?.points),empty:(my.starters||[]).filter(id=>!id||id==="0").length};
+    const points=num(my.points),oppPoints=num(opp?.points);
+    return{name:league.name,points,opp:oppPoints,started:points>0||oppPoints>0,empty:(my.starters||[]).filter(id=>!id||id==="0").length};
   }))).filter(Boolean);
-  const wins=rows.filter(r=>r.points>r.opp).length,losses=rows.filter(r=>r.points<r.opp).length,points=rows.reduce((s,r)=>s+r.points,0),empty=rows.reduce((s,r)=>s+r.empty,0),close=rows.filter(r=>Math.abs(r.points-r.opp)<=10).length;
+  const active=rows.filter(r=>r.started);
+  const wins=active.filter(r=>r.points>r.opp).length,losses=active.filter(r=>r.points<r.opp).length,points=rows.reduce((s,r)=>s+r.points,0),empty=rows.reduce((s,r)=>s+r.empty,0),close=active.filter(r=>Math.abs(r.points-r.opp)<=10).length;
   return{rows,wins,losses,points,empty,close};
 }
 
 function digestEmail({d,manager,season,week}){
   const mood=d.wins>d.losses?["WINNING WEEK","Your portfolio brought the fire.","#34d399"]:d.wins<d.losses?["BOUNCE-BACK BOARD","A few pressure points need your attention.","#fb7185"]:["PHOTO FINISH","Your portfolio is balanced on a knife edge.","#fbbf24"];
   const games=[...d.rows].sort((a,b)=>Math.abs(a.points-a.opp)-Math.abs(b.points-b.opp)).map(r=>{
-    const margin=r.points-r.opp,winning=margin>0,tied=margin===0;
-    const color=tied?"#fbbf24":winning?"#34d399":"#fb7185";
-    return `<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#101b2d"><tr><td style="padding:15px 16px"><div style="font-size:14px;font-weight:800;color:#f8fafc">${esc(r.name)}</div><div style="padding-top:5px;font-size:11px;color:#8292aa">${r.empty?`⚠ ${r.empty} empty lineup slot${r.empty===1?"":"s"}`:"Lineup submitted"}</div></td><td align="right" style="padding:15px 16px;white-space:nowrap"><div style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:${color}">${tied?"TIED":winning?"WIN":"LOSS"}</div><div style="padding-top:4px;font-size:18px;font-weight:900;color:#f8fafc">${r.points.toFixed(1)} <span style="color:#52627a">–</span> ${r.opp.toFixed(1)}</div><div style="padding-top:3px;font-size:10px;color:${color}">${margin>=0?"+":""}${margin.toFixed(1)} margin</div></td></tr></table></td></tr>`;
+    const margin=r.points-r.opp,winning=margin>0,tied=r.started&&margin===0;
+    const color=!r.started?"#8292aa":tied?"#fbbf24":winning?"#34d399":"#fb7185";
+    return `<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#101b2d"><tr><td style="padding:15px 16px"><div style="font-size:14px;font-weight:800;color:#f8fafc">${esc(r.name)}</div><div style="padding-top:5px;font-size:11px;color:#8292aa">${r.empty?`⚠ ${r.empty} empty lineup slot${r.empty===1?"":"s"}`:"Lineup submitted"}</div></td><td align="right" style="padding:15px 16px;white-space:nowrap"><div style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:${color}">${!r.started?"NOT STARTED":tied?"TIED":winning?"WIN":"LOSS"}</div><div style="padding-top:4px;font-size:18px;font-weight:900;color:#f8fafc">${r.points.toFixed(1)} <span style="color:#52627a">–</span> ${r.opp.toFixed(1)}</div><div style="padding-top:3px;font-size:10px;color:${color}">${r.started?`${margin>=0?"+":""}${margin.toFixed(1)} margin`:"Waiting for kickoff"}</div></td></tr></table></td></tr>`;
   }).join("");
   const metric=(value,label,color="#f8fafc",last=false)=>`<td class="metric${last?" metric-last":""}" width="25%" align="center" style="padding:17px 8px"><div style="font-size:24px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.2px;color:#718198">${label}</div></td>`;
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${d.wins}-${d.losses} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
@@ -89,16 +92,20 @@ export async function GET(request){
     const db=arsenalDb();await ready(db);
     const state=await json("https://api.sleeper.app/v1/state/nfl");
     const season=num(state.season)||new Date().getUTCFullYear(),week=Math.max(1,num(state.week)||1);
-    const due=await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 AND (s.last_sent_at IS NULL OR s.last_sent_at<?) LIMIT 100`).bind(Date.now()-5*86400000).all();
+    const testMode=new URL(request.url).searchParams.get("test")==="1";
+    const due=testMode
+      ? await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id ORDER BY s.updated_at DESC LIMIT 1`).all()
+      : await db.prepare(`SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 AND (s.last_sent_at IS NULL OR s.last_sent_at<?) LIMIT 100`).bind(Date.now()-5*86400000).all();
     let sent=0;const failures=[];
     for(const row of due.results||[]){
       try{
         const d=await buildDigest(row.sleeper_username,season,week);
         const html=digestEmail({d,manager:row.display_name||row.sleeper_username,season,week});
-        await gmail(env,row.email,`Week ${week} Arsenal: ${d.wins}-${d.losses} · ${d.points.toFixed(1)} points`,html);
-        await db.prepare("UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();sent+=1;
+        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Arsenal: ${d.wins}-${d.losses} · ${d.points.toFixed(1)} points`,html);
+        if(!testMode)await db.prepare("UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();
+        sent+=1;
       }catch(error){failures.push({account:row.account_id,error:String(error.message||error).slice(0,180)});}
     }
-    return NextResponse.json({ok:true,season,week,sent,failed:failures.length,failures});
+    return NextResponse.json({ok:true,testMode,testRecipient:testMode?DIGEST_TEST_EMAIL:undefined,season,week,sent,failed:failures.length,failures});
   }catch(error){return new NextResponse(error?.message||"Digest delivery failed.",{status:500});}
 }
