@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useRef, useContext, useState, useEffect, useMemo } from "react";
+import { createContext, useRef, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
 import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
@@ -1407,7 +1407,7 @@ export const SleeperProvider = ({ children }) => {
   };
 
   /** ✅ Silent roster fetch: no global overlay, returns data, still updates context leagues */
-  const fetchLeagueRostersSilent = async (leagueId) => {
+  const fetchLeagueRostersSilent = useCallback(async (leagueId) => {
     try {
       const [rostersRes, usersRes] = await Promise.all([
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
@@ -1420,17 +1420,16 @@ export const SleeperProvider = ({ children }) => {
       const rosters = await rostersRes.json();
       const users = await usersRes.json();
 
-      const updatedLeagues = leagues.map((lg) =>
-        lg.league_id === leagueId ? { ...lg, rosters, users } : lg
-      );
-      setLeagues(updatedLeagues);
+      setLeagues((currentLeagues) => currentLeagues.map((lg) =>
+        String(lg.league_id) === String(leagueId) ? { ...lg, rosters, users } : lg
+      ));
 
       return { rosters, users };
     } catch (err) {
       console.error("❌ Silent roster fetch error:", err);
       throw err;
     }
-  };
+  }, []);
 
   return (
   <SleeperContext.Provider

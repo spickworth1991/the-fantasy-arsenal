@@ -36,8 +36,14 @@ export function accountAvatar(account) {
 }
 
 const isSyncKey = (key) => key && (SYNC_EXACT.has(key) || SYNC_PREFIXES.some((prefix) => key.startsWith(prefix)));
+const accountApiUrl = (url) => {
+  if (typeof window === "undefined" || !String(url).startsWith("/api/arsenal/")) return url;
+  return window.location.pathname === "/tools/app" || window.location.pathname.startsWith("/tools/app/")
+    ? `/tools/app${url}`
+    : url;
+};
 const request = async (url, options = {}, token = "") => {
-  const response = await fetch(url, {
+  const response = await fetch(accountApiUrl(url), {
     ...options,
     headers: { ...(options.headers || {}), ...(token ? { Authorization:`Bearer ${token}` } : {}) },
   });
