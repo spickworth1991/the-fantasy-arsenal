@@ -5,7 +5,6 @@ import { useSleeper } from "../../context/SleeperContext";
 import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import Link from "next/link";
-import DecisionInbox from "../../components/DecisionInbox";
 
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), {
   ssr: false,
@@ -52,7 +51,6 @@ export default function HomeClient() {
   const { username, loadPortfolio, loading, error } = useSleeper();
   const [unameInput, setUnameInput] = useState("");
   const [yearInput, setYearInput] = useState(new Date().getFullYear());
-  const [intelligenceOpen, setIntelligenceOpen] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -313,15 +311,13 @@ export default function HomeClient() {
             <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
               <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">Your fantasy operating system</div>
               <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[["/intelligence","Arsenal Intelligence","See today’s decisions across every league"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/account","My Arsenal","Profile, digest, identity, and saved workspace"],["/leaderboard","Manager Leaderboard","Compare verified Sleeper portfolio records"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[["/draft-helper","Draft Command Center","Live recommendations, board pressure, and team needs"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/account","My Arsenal","Profile, digest, identity, and saved workspace"],["/leaderboard","Manager Leaderboard","Compare verified Sleeper portfolio records"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
             </section>
-            <section className="overflow-hidden rounded-[30px] border border-amber-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(251,191,36,.12),transparent_38%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.1),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))]">
-              <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-3xl"><div className="text-[10px] font-semibold uppercase tracking-[.24em] text-amber-200/55">Arsenal Intelligence</div><h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Your daily decision command center</h2><p className="mt-2 text-sm leading-6 text-white/44">Prioritize lineup issues, injuries, waivers, drafts, trades, playoff leverage, exposure, and commissioner responsibilities across every league.</p></div>
-                <div className="flex shrink-0 flex-col gap-2 sm:flex-row"><button type="button" onClick={()=>setIntelligenceOpen((open)=>!open)} aria-expanded={intelligenceOpen} className="min-h-11 rounded-2xl bg-amber-300/10 px-5 text-sm font-black text-amber-100">{intelligenceOpen ? "Collapse briefing" : "Show today’s briefing"}</button><Link href="/intelligence" className="grid min-h-11 place-items-center rounded-2xl bg-violet-300/10 px-5 text-sm font-black text-violet-100">Open full command center →</Link></div>
-              </div>
-              {intelligenceOpen ? <div className="border-t border-white/10 p-2 sm:p-3"><DecisionInbox /></div> : <div className="grid grid-cols-3 gap-px border-t border-white/[0.07] bg-white/[0.07]"><div className="bg-slate-950/75 p-3 text-center"><b className="text-sm text-rose-100">Urgent</b><small className="mt-1 block text-[9px] uppercase tracking-wider text-white/25">Lineups & injuries</small></div><div className="bg-slate-950/75 p-3 text-center"><b className="text-sm text-cyan-100">Actionable</b><small className="mt-1 block text-[9px] uppercase tracking-wider text-white/25">Waivers & trades</small></div><div className="bg-slate-950/75 p-3 text-center"><b className="text-sm text-violet-100">Connected</b><small className="mt-1 block text-[9px] uppercase tracking-wider text-white/25">Every league</small></div></div>}
-            </section>
+            <Link href="/intelligence" className="group flex flex-col gap-4 rounded-[24px] border border-amber-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(251,191,36,.1),transparent_42%),linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.94))] p-4 transition hover:-translate-y-0.5 hover:border-amber-300/25 sm:flex-row sm:items-center">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-lg font-black text-amber-100">A</div>
+              <div className="min-w-0 flex-1"><div className="text-[9px] font-semibold uppercase tracking-[.22em] text-amber-200/50">Arsenal Intelligence</div><h2 className="mt-0.5 text-lg font-black text-white">What should I do today?</h2><p className="mt-1 text-xs leading-5 text-white/38">Open your prioritized lineup, waiver, trade, draft, playoff, portfolio, and commissioner workflow.</p></div>
+              <div className="flex shrink-0 items-center gap-3"><div className="hidden gap-1.5 lg:flex"><span className="rounded-full bg-rose-300/[0.07] px-2.5 py-1 text-[9px] text-rose-100">Urgent</span><span className="rounded-full bg-cyan-300/[0.07] px-2.5 py-1 text-[9px] text-cyan-100">Opportunities</span><span className="rounded-full bg-violet-300/[0.07] px-2.5 py-1 text-[9px] text-violet-100">Memory</span></div><span className="text-sm font-black text-amber-100 transition group-hover:translate-x-0.5">Open →</span></div>
+            </Link>
             {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
 
             {/* Extra space below cards so they never feel cramped */}

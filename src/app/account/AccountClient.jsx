@@ -6,6 +6,7 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import DecisionInbox from "../../components/DecisionInbox";
 import WeeklyPortfolioDigest from "../../components/WeeklyPortfolioDigest";
+import CommissionerDigestPreference from "../../components/CommissionerDigestPreference";
 import ProfileClient from "../profile/ProfileClient";
 import { useArsenalAccount, accountAvatar } from "../../context/ArsenalAccountContext";
 import { useSleeper } from "../../context/SleeperContext";
@@ -76,7 +77,7 @@ export default function AccountClient(){
     <div className="mt-5 flex snap-x gap-2 overflow-x-auto pb-2">{[["home","Command Home"],["profile","Profile & Preferences"],["career","Career & Badges"],["collection","Collections"],["community","Community"],["privacy","Account Control"]].map(([key,label])=><button key={key} onClick={()=>setTab(key)} className={`min-h-11 shrink-0 rounded-xl px-4 text-xs font-black ${tab===key?"bg-cyan-300 text-slate-950":"bg-white/[0.05] text-white/50"}`}>{label}</button>)}</div>
     {message?<div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-3 text-xs text-cyan-100">{message}</div>:null}
     {tab==="home"?<><Home account={account} data={data} counts={counts} leagues={leagues} toggleLeague={toggleLeague}/><AccountFocusBoard account={account} data={data} save={save}/><div className="mt-5"><WeeklyPortfolioDigest/></div></>:null}
-    {tab==="profile"?<div className="mt-5"><ProfileClient embedded/></div>:null}
+    {tab==="profile"?<div className="mt-5"><ProfileClient embedded/><CommissionerDigestPreference/></div>:null}
     {tab==="career"?<Career account={account} busy={careerBusy} scan={scanCareer}/>:null}
     {tab==="collection"?<Collections data={data} save={save} log={log} leagues={leagues} toggleLeague={toggleLeague}/>:null}
     {tab==="community"?<Community data={data} save={save} log={log}/>:null}

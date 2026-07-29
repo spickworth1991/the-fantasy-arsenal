@@ -112,14 +112,22 @@ async function buildDigest(username,season,week){
   const user=await json(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`);
   const leagues=await json(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${season}`);
   const rows=(await Promise.all((leagues||[]).map(async league=>{
-    const [rosters,matchups]=await Promise.all([json(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),json(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).catch(()=>[])]);
+    const commissioner=String(league.owner_id||"")===String(user.user_id);
+    const [rosters,users,matchups,transactions]=await Promise.all([json(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),commissioner?json(`https://api.sleeper.app/v1/league/${league.league_id}/users`).catch(()=>[]):Promise.resolve([]),json(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).catch(()=>[]),commissioner?json(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week}`).catch(()=>[]):Promise.resolve([])]);
     const mine=rosters.find(r=>String(r.owner_id)===String(user.user_id));const my=matchups.find(m=>String(m.roster_id)===String(mine?.roster_id));const opp=matchups.find(m=>m.matchup_id===my?.matchup_id&&String(m.roster_id)!==String(mine?.roster_id));if(!my)return null;
     const points=num(my.points),oppPoints=num(opp?.points);
-    return{name:league.name,points,opp:oppPoints,started:points>0||oppPoints>0,empty:(my.starters||[]).filter(id=>!id||id==="0").length,playoffWeekStart:num(league.settings?.playoff_week_start)||15};
+    const managerName=rosterId=>{const roster=rosters.find(row=>String(row.roster_id)===String(rosterId));const manager=users.find(row=>String(row.user_id)===String(roster?.owner_id));return manager?.metadata?.team_name||manager?.display_name||manager?.username||`Roster ${rosterId}`;};
+    const commissionerSignals=[];
+    if(commissioner){
+      matchups.forEach(matchup=>{const lineupEmpty=(matchup.starters||[]).filter(id=>!id||String(id)==="0").length;if(lineupEmpty)commissionerSignals.push({leagueId:String(league.league_id),leagueName:league.name,type:"empty-lineup",priority:100,title:`${managerName(matchup.roster_id)} has ${lineupEmpty} empty starting slot${lineupEmpty===1?"":"s"}`,detail:`Week ${week} lineup requires commissioner follow-up.`,href:`https://sleeper.com/leagues/${league.league_id}/matchup`});});
+      const pending=transactions.filter(row=>row.type==="trade"&&!["complete","completed","failed"].includes(String(row.status||"").toLowerCase()));
+      if(pending.length)commissionerSignals.push({leagueId:String(league.league_id),leagueName:league.name,type:"pending-trade",priority:78,title:`${pending.length} unresolved trade${pending.length===1?"":"s"} in ${league.name}`,detail:"Review transaction status and affected managers before dependent roster moves.",href:`https://thefantasyarsenal.com/commissioner-dashboard?league=${league.league_id}`});
+    }
+    return{name:league.name,points,opp:oppPoints,started:points>0||oppPoints>0,empty:(my.starters||[]).filter(id=>!id||id==="0").length,playoffWeekStart:num(league.settings?.playoff_week_start)||15,commissionerSignals};
   }))).filter(Boolean);
   const active=rows.filter(r=>r.started);
   const wins=active.filter(r=>r.points>r.opp).length,losses=active.filter(r=>r.points<r.opp).length,points=rows.reduce((s,r)=>s+r.points,0),empty=rows.reduce((s,r)=>s+r.empty,0),close=active.filter(r=>Math.abs(r.points-r.opp)<=10).length;
-  return{rows,wins,losses,points,empty,close,playoffLeagues:rows.filter(r=>week>=r.playoffWeekStart).length,playoffPushLeagues:rows.filter(r=>week>=Math.max(9,r.playoffWeekStart-3)&&week<r.playoffWeekStart).length};
+  return{rows,wins,losses,points,empty,close,commissionerSignals:rows.flatMap(row=>row.commissionerSignals||[]).sort((a,b)=>b.priority-a.priority),playoffLeagues:rows.filter(r=>week>=r.playoffWeekStart).length,playoffPushLeagues:rows.filter(r=>week>=Math.max(9,r.playoffWeekStart-3)&&week<r.playoffWeekStart).length};
 }
 
 function digestEmail({d,manager,season,week,news=[]}){
@@ -189,7 +197,7 @@ function digestEmail({d,manager,season,week,news=[]}){
   </table></td></tr></table></body></html>`;
 }
 
-function newsBriefEmail({news,insiders,d,manager,season,week}){
+function newsBriefEmail({news,insiders,d,manager,season,week,includeCommissioner=false}){
   const rows=news.slice(0,10).map((article,index)=>{
     const date=article.published?new Date(article.published).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
     return `<tr><td valign="top" style="padding:15px 14px 15px 0;font-size:13px;font-weight:900;color:#67e8f9">${index+1}</td><td style="padding:15px 0;border-bottom:1px solid #26354d"><a href="${esc(article.link)}" style="font-size:14px;line-height:20px;font-weight:900;color:#ffffff;text-decoration:none">${esc(article.title)}</a>${article.summary?`<div style="padding-top:5px;font-size:11px;line-height:18px;color:#b8c7da">${esc(article.summary).slice(0,360)}</div>`:""}<div style="padding-top:5px;font-size:10px;color:#91a4bd">${esc(article.source||"FantasyPros")}${date?` · ${date}`:""}</div></td></tr>`;
@@ -205,6 +213,7 @@ function newsBriefEmail({news,insiders,d,manager,season,week}){
   if(closeLeagues.length)actions.push({tone:"#fbbf24",title:`Monitor ${closeLeagues.length} high-leverage matchup${closeLeagues.length===1?"":"s"}`,detail:`Closest: ${closeLeagues.slice(0,3).map(row=>`${esc(row.name)} (${Math.abs(row.points-row.opp).toFixed(1)} pts)`).join(", ")}.`});
   if(notStarted)actions.push({tone:"#67e8f9",title:`Recheck ${notStarted} lineup${notStarted===1?"":"s"} before kickoff`,detail:"Confirm injuries, inactives, weather, and late-swap flexibility before players lock."});
   if(d.playoffLeagues||d.playoffPushLeagues)actions.push({tone:"#c4b5fd",title:"Review playoff leverage",detail:`${d.playoffLeagues?`${d.playoffLeagues} playoff league${d.playoffLeagues===1?"":"s"} active. `:""}${d.playoffPushLeagues?`${d.playoffPushLeagues} league${d.playoffPushLeagues===1?" is":"s are"} in the playoff push.`:""}`});
+  if(includeCommissioner)(d.commissionerSignals||[]).slice(0,6).forEach(signal=>actions.push({tone:signal.priority>=90?"#fb7185":"#fbbf24",title:`Commissioner · ${signal.title}`,detail:`${signal.leagueName}: ${signal.detail}`}));
   if(!actions.length)actions.push({tone:"#34d399",title:"No urgent portfolio fire",detail:"No empty starters or close-game alerts were detected. Check again near the next kickoff window."});
   const actionRows=actions.map((action,index)=>`<tr><td valign="top" style="padding:12px 12px 12px 0;color:${action.tone};font-size:13px;font-weight:900">${index+1}</td><td style="padding:12px 0;border-bottom:1px solid #26354d"><div style="font-size:13px;line-height:19px;font-weight:900;color:#ffffff!important;-webkit-text-fill-color:#ffffff">${action.title}</div><div style="padding-top:4px;font-size:11px;line-height:17px;color:#aebed2">${action.detail}</div></td></tr>`).join("");
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark only"><meta name="supported-color-schemes" content="dark"></head><body style="margin:0;background:#050b16;font-family:Arial,sans-serif;color:#ffffff"><div style="display:none;max-height:0;overflow:hidden">Urgent portfolio actions and the NFL stories shaping fantasy decisions.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#050b16" style="background:#050b16"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#091321" style="width:100%;max-width:680px;border:1px solid #26354d;border-radius:24px;background:#091321;overflow:hidden">
@@ -233,6 +242,7 @@ async function ready(db){
     "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_delivery_day INTEGER NOT NULL DEFAULT 4",
     "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_delivery_days TEXT",
     "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN news_last_sent_at INTEGER",
+    "ALTER TABLE arsenal_digest_subscriptions ADD COLUMN commissioner_urgent INTEGER NOT NULL DEFAULT 0",
   ])try{await db.prepare(statement).run();}catch{}
 }
 
@@ -249,12 +259,13 @@ export async function POST(request){
     const newsEnabled=body?.newsEnabled?1:0;
     const newsDeliveryDay=Math.max(0,Math.min(6,num(body?.newsDeliveryDay??4)));
     const newsDeliveryDays=[...new Set((Array.isArray(body?.newsDeliveryDays)?body.newsDeliveryDays:[newsDeliveryDay]).map(num).filter(day=>day>=0&&day<=6))].sort((a,b)=>a-b);
+    const commissionerUrgent=body?.commissionerUrgent?1:0;
     if(enabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return new NextResponse("Enter a valid delivery email.",{status:400});
     if(newsEnabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return new NextResponse("Enter a valid delivery email.",{status:400});
-    await db.prepare(`INSERT INTO arsenal_digest_subscriptions(account_id,email,enabled,delivery_day,include_news,news_enabled,news_delivery_day,news_delivery_days,updated_at)
-      VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET email=excluded.email,enabled=excluded.enabled,delivery_day=excluded.delivery_day,include_news=excluded.include_news,news_enabled=excluded.news_enabled,news_delivery_day=excluded.news_delivery_day,news_delivery_days=excluded.news_delivery_days,updated_at=excluded.updated_at`)
-      .bind(account.account_id,email,enabled,deliveryDay,includeNews,newsEnabled,newsDeliveryDay,JSON.stringify(newsDeliveryDays.length?newsDeliveryDays:[4]),Date.now()).run();
-    return NextResponse.json({ok:true,email,enabled:!!enabled,deliveryDay,includeNews:!!includeNews,newsEnabled:!!newsEnabled,newsDeliveryDays});
+    await db.prepare(`INSERT INTO arsenal_digest_subscriptions(account_id,email,enabled,delivery_day,include_news,news_enabled,news_delivery_day,news_delivery_days,commissioner_urgent,updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET email=excluded.email,enabled=excluded.enabled,delivery_day=excluded.delivery_day,include_news=excluded.include_news,news_enabled=excluded.news_enabled,news_delivery_day=excluded.news_delivery_day,news_delivery_days=excluded.news_delivery_days,commissioner_urgent=excluded.commissioner_urgent,updated_at=excluded.updated_at`)
+      .bind(account.account_id,email,enabled,deliveryDay,includeNews,newsEnabled,newsDeliveryDay,JSON.stringify(newsDeliveryDays.length?newsDeliveryDays:[4]),commissionerUrgent,Date.now()).run();
+    return NextResponse.json({ok:true,email,enabled:!!enabled,deliveryDay,includeNews:!!includeNews,newsEnabled:!!newsEnabled,newsDeliveryDays,commissionerUrgent:!!commissionerUrgent});
   }catch(error){return new NextResponse(error?.message||"Digest preference could not be saved.",{status:500});}
 }
 
@@ -289,7 +300,7 @@ export async function GET(request){
       }catch(error){failures.push({account:row.account_id,type:"digest",error:String(error.message||error).slice(0,180)});}
       if(newsDue)try{
         const d=digestData||await buildDigest(row.sleeper_username,season,week);
-        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Fantasy Arsenal Daily Intelligence`,newsBriefEmail({news,insiders:newsResult.insiders,d,manager:row.display_name||row.sleeper_username,season,week}));
+        await gmail(env,testMode?DIGEST_TEST_EMAIL:row.email,`Week ${week} Fantasy Arsenal Daily Intelligence`,newsBriefEmail({news,insiders:newsResult.insiders,d,manager:row.display_name||row.sleeper_username,season,week,includeCommissioner:Number(row.commissioner_urgent||0)===1}));
         if(!testMode)await db.prepare("UPDATE arsenal_digest_subscriptions SET news_last_sent_at=? WHERE account_id=?").bind(Date.now(),row.account_id).run();
         sent+=1;
       }catch(error){failures.push({account:row.account_id,type:"news",error:String(error.message||error).slice(0,180)});}
