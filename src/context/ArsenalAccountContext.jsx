@@ -1,23 +1,26 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useSleeper } from "./SleeperContext";
 
 const TOKEN_KEY = "tfa:account-token";
 const META_KEY = "tfa:sync-meta";
 const PREFER_REMOTE_KEY = "tfa:sync-prefer-remote";
 const RECORD_REFRESH_KEY = "tfa:leaderboard-record-refresh";
+const UI_PREFERENCES_KEY = "tfa:ui-preferences";
 const SYNC_EXACT = new Set([
   "format", "qbType", "sourceKey", "year",
   "tfa:account-preferences", "tfa:intelligence-actions",
   "tfa:account-platform",
+  UI_PREFERENCES_KEY,
   "draft-helper-watchlist", "leagueHubWatchlist",
 ]);
 const SYNC_PREFIXES = [
   "commissioner-", "orphan-recruiting:", "lineup-saves:", "lineup-controls:",
   "draft-helper-queue:", "playoff-scenarios:",
   "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",
-  "ps:guard:",
+  "ps:guard:", "ps:ballsville:",
 ];
 const ArsenalAccountContext = createContext(null);
 
@@ -60,6 +63,7 @@ const digest = async (value) => {
 };
 
 export function ArsenalAccountProvider({ children }) {
+  const pathname = usePathname();
   const { username:activeSleeperUsername, year:activeSleeperYear, loadPortfolio, storageReady:sleeperStorageReady } = useSleeper();
   const [token, setToken] = useState("");
   const [account, setAccount] = useState(null);
@@ -139,6 +143,107 @@ export function ArsenalAccountProvider({ children }) {
       setSyncing(false);
     }
   }, [account?.accountId, authorized, token]);
+
+  useEffect(() => {
+    if (!account?.accountId || !pathname) return undefined;
+    const supported = "select,input[type='checkbox'],input[type='radio'],input[type='range'],button[aria-pressed]";
+    const clean = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").replace(/\d+/g, "#").trim().slice(0, 140);
+    const eligible = (element) => element instanceof HTMLElement
+      && element.matches(supported)
+      && !element.disabled
+      && !element.closest("[data-no-account-persist]")
+      && element.getAttribute("data-account-persist") !== "off";
+    const identity = (element) => {
+      const explicit = element.getAttribute("data-account-preference");
+      if (explicit) return `${pathname}|explicit:${explicit}`;
+      const named = element.id || element.getAttribute("name") || element.getAttribute("aria-label");
+      if (named) return `${pathname}|${element.tagName.toLowerCase()}:${clean(named)}`;
+      const label = element.closest("label")?.innerText || element.parentElement?.querySelector?.("label")?.innerText || "";
+      if (clean(label)) return `${pathname}|${element.tagName.toLowerCase()}:${element.getAttribute("type") || ""}:label:${clean(label)}`;
+      const controls = [...document.querySelectorAll(supported)].filter(eligible);
+      const optionKey = element instanceof HTMLSelectElement
+        ? [...element.options].slice(0, 8).map((option) => option.value).join(",")
+        : "";
+      return `${pathname}|${element.tagName.toLowerCase()}:${element.getAttribute("type") || ""}:options:${clean(optionKey)}:index:${controls.indexOf(element)}`;
+    };
+    const readStore = () => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(UI_PREFERENCES_KEY) || "{}");
+        return parsed && typeof parsed === "object" ? { version:1, controls:{}, ...parsed, controls:{ ...(parsed.controls || {}) } } : { version:1, controls:{} };
+      } catch {
+        return { version:1, controls:{} };
+      }
+    };
+    let syncTimer;
+    const save = (element) => {
+      if (!eligible(element)) return;
+      const store = readStore();
+      const key = identity(element);
+      store.controls[key] = {
+        type:element instanceof HTMLSelectElement ? "select" : element.matches("button[aria-pressed]") ? "pressed-button" : element.type,
+        value:String(element.value ?? ""),
+        checked:element.matches("button[aria-pressed]") ? element.getAttribute("aria-pressed") === "true" : "checked" in element ? !!element.checked : undefined,
+        updatedAt:Date.now(),
+      };
+      localStorage.setItem(UI_PREFERENCES_KEY, JSON.stringify(store));
+      clearTimeout(syncTimer);
+      syncTimer = window.setTimeout(() => syncNow({ quiet:true }), 900);
+    };
+    const setNative = (element, field, value) => {
+      const prototype = element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(prototype, field)?.set;
+      if (setter) setter.call(element, value);
+      else element[field] = value;
+    };
+    const restore = () => {
+      const controls = readStore().controls;
+      document.querySelectorAll(supported).forEach((element) => {
+        if (!eligible(element)) return;
+        const saved = controls[identity(element)];
+        if (!saved) return;
+        let changed = false;
+        if ((element instanceof HTMLSelectElement || element.type === "range") && String(element.value) !== String(saved.value)) {
+          setNative(element, "value", String(saved.value));
+          changed = true;
+        }
+        if ((element.type === "checkbox" || element.type === "radio") && typeof saved.checked === "boolean" && element.checked !== saved.checked) {
+          setNative(element, "checked", saved.checked);
+          changed = true;
+        }
+        if (element.matches("button[aria-pressed]") && typeof saved.checked === "boolean") {
+          const pressed = element.getAttribute("aria-pressed") === "true";
+          const groupSize = element.parentElement?.querySelectorAll?.("button[aria-pressed]").length || 1;
+          if (pressed !== saved.checked && (groupSize === 1 || saved.checked)) element.click();
+        }
+        if (changed) {
+          element.dispatchEvent(new Event("input", { bubbles:true }));
+          element.dispatchEvent(new Event("change", { bubbles:true }));
+        }
+      });
+    };
+    const onControl = (event) => save(event.target);
+    const onClick = (event) => {
+      if (!event.target?.matches?.("button[aria-pressed]")) return;
+      window.setTimeout(() => save(event.target), 0);
+    };
+    const onCloud = () => window.setTimeout(restore, 0);
+    window.addEventListener("change", onControl, true);
+    window.addEventListener("input", onControl, true);
+    window.addEventListener("click", onClick, true);
+    window.addEventListener("tfa:cloud-sync-applied", onCloud);
+    const observer = new MutationObserver(() => window.requestAnimationFrame(restore));
+    observer.observe(document.body, { childList:true, subtree:true });
+    const initial = window.setTimeout(restore, 0);
+    return () => {
+      clearTimeout(initial);
+      clearTimeout(syncTimer);
+      observer.disconnect();
+      window.removeEventListener("change", onControl, true);
+      window.removeEventListener("input", onControl, true);
+      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("tfa:cloud-sync-applied", onCloud);
+    };
+  }, [account?.accountId, pathname, syncNow]);
 
   useEffect(() => {
     if (!token || !account) return undefined;
