@@ -518,7 +518,7 @@ export default function CommissionerDashboardClient() {
   const [progress, setProgress] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("summary");
+  const [tab, setTab] = useState("overview");
   const [portfolioSummary, setPortfolioSummary] = useState([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [portfolioProgress, setPortfolioProgress] = useState("");
@@ -546,7 +546,7 @@ export default function CommissionerDashboardClient() {
   const chooseLeague = (leagueId) => {
     setActiveLeague(leagueId);
     setData(null);
-    setTab("overview");
+    setTab("command");
     setLeagueQuery("");
     if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
   };
@@ -558,7 +558,7 @@ export default function CommissionerDashboardClient() {
 
   useEffect(() => {
     let active = true;
-    if (!username || !leagues.length || !players || tab !== "summary") {
+    if (!username || !leagues.length || !players || tab !== "overview") {
       if (!username) setPortfolioSummary([]);
       return () => { active = false; };
     }
@@ -570,7 +570,9 @@ export default function CommissionerDashboardClient() {
           getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`),
           getJson("https://api.sleeper.app/v1/state/nfl").catch(() => ({})),
         ]);
-        const commissioned = leagues.filter((row) => String(row.owner_id || "") === String(root.user_id));
+        // Sleeper does not consistently include owner_id on portfolio league rows.
+        // Audit the user list and accept either ownership signal.
+        const commissioned = leagues;
         const rows = await mapConcurrent(commissioned, 4, async (target) => {
           const throughWeek = String(state.season) === String(target.season) ? clamp(number(state.week || 1) - 1, 0, 18) : 18;
           const weeks = Array.from({ length:throughWeek }, (_, index) => index + 1);
@@ -582,6 +584,10 @@ export default function CommissionerDashboardClient() {
             mapConcurrent(transactionWeeks, 6, async (week) => getJson(`https://api.sleeper.app/v1/league/${target.league_id}/transactions/${week}`).catch(() => [])),
             getJson(`https://api.sleeper.app/v1/league/${target.league_id}/traded_picks`).catch(() => []),
           ]);
+          const ownerMembership = users.find((row) => String(row.user_id) === String(root.user_id));
+          const ownerFlag = ownerMembership?.is_owner;
+          const isCommissioner = String(target.owner_id || "") === String(root.user_id) || ownerFlag === true || number(ownerFlag) === 1 || String(ownerFlag).toLowerCase() === "true";
+          if (!isCommissioner) return null;
           const txMap = new Map();
           transactionRows.flat().forEach((transaction) => txMap.set(String(transaction.transaction_id || `${transaction.created}-${transaction.type}`), transaction));
           const hydrated = { ...target, rosters, users };
@@ -590,7 +596,7 @@ export default function CommissionerDashboardClient() {
             audit:buildAudit({ league:hydrated, matchups:matchupRows, transactions:[...txMap.values()], tradedPicks, players, valueFor, pickValueFor, throughWeek }),
           };
         }, (done, total) => active && setPortfolioProgress(`${done}/${total} commissioned leagues audited`));
-        if (active) setPortfolioSummary(rows);
+        if (active) setPortfolioSummary(rows.filter(Boolean));
       } catch {
         if (active) setPortfolioError("The commissioner portfolio summary could not be completed. Individual league audits are still available.");
       } finally {
@@ -725,7 +731,7 @@ export default function CommissionerDashboardClient() {
     {error ? <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</div> : null}
     {!username ? <Shell className="mt-6 p-8 text-center text-white/55">Load a Sleeper portfolio to select and audit one of its leagues.</Shell> : null}
 
-    {username && tab === "summary" ? <div className="mt-6 space-y-5">
+    {username && tab === "overview" ? <div className="mt-6 space-y-5">
       <Shell className="overflow-hidden"><div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.15),transparent_42%)] p-5 sm:p-6"><div className="text-[11px] font-semibold uppercase tracking-[.22em] text-cyan-200/55">Portfolio command summary</div><h2 className="mt-1 text-2xl font-black sm:text-3xl">Issues across every league you commission</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">The same season-long lineup, activity, roster, and trade-review checks used by each league audit are rolled up here. Signals request context; they never declare misconduct.</p></div>
         {portfolioLoading ? <div className="flex items-center gap-3 p-5 text-sm text-cyan-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />{portfolioProgress || "Finding commissioned leagues…"}</div> : null}
         {portfolioError ? <div className="m-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.07] p-4 text-sm text-rose-100">{portfolioError}</div> : null}
@@ -740,7 +746,7 @@ export default function CommissionerDashboardClient() {
 
     {data ? <><section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Health score" value={`${Math.round(data.healthScore)}/100`} detail="Composite participation and balance signal" tone={data.healthScore >= 75 ? "good" : data.healthScore >= 55 ? "warn" : "risk"} /><Metric label="Balance" value={`${Math.round(data.balanceScore)}/100`} detail={`${data.valueSpread.toFixed(1)}× top-to-bottom value`} /><Metric label="Balance trend" value={data.parityTrend} detail="Early weeks compared with recent weeks" /><Metric label="Participation" value={percent(data.participation * 100)} detail="Managers with recorded activity" /><Metric label="Needs review" value={data.attentionCount} detail="Manager and trade signals" tone={data.attentionCount ? "warn" : "good"} /><Metric label="Open rosters" value={data.managers.filter((manager) => manager.orphan).length} detail="No Sleeper owner assigned" tone={data.managers.some((manager) => manager.orphan) ? "risk" : "good"} /></section>
 
-      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["summary","All Leagues"],["overview","Overview"],["command","Command Center"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
+      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["overview","Overview"],["command","Command Center"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
 
       {tab === "network" ? <CommissionerLeagueNetwork league={league} data={data} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}

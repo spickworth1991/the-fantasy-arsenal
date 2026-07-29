@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSleeper } from "../context/SleeperContext";
 import { useArsenalAccount } from "../context/ArsenalAccountContext";
+import { classifyLeagueFormat } from "../lib/leagueFormat";
 
 const n = (value) => Number(value || 0);
 const CACHE_MS = 5 * 60 * 1000;
@@ -110,7 +111,7 @@ export default function DecisionInbox({ full=false }) {
   const [category, setCategory] = useState("all");
   const [notificationRules, setNotificationRules] = useState({ critical:true, lineup:true, drafts:true, commissioner:false, minimumPriority:70 });
   const [browserPermission, setBrowserPermission] = useState(() => typeof Notification === "undefined" ? "unsupported" : Notification.permission);
-  const cacheKey = `tfa:intelligence-cache:${String(username || "").toLowerCase()}:${year || new Date().getFullYear()}:${sourceKey || "default"}`;
+  const cacheKey = `tfa:intelligence-cache:v2:${String(username || "").toLowerCase()}:${year || new Date().getFullYear()}:${sourceKey || "default"}`;
 
   useEffect(() => {
     try {
@@ -223,7 +224,9 @@ export default function DecisionInbox({ full=false }) {
           const leagueItems = [];
           const base = { leagueId, leagueName:league.name, teamName };
           const leagueStatus = String(league.status || "").toLowerCase();
-          const opportunitiesAvailable = !["pre_draft", "drafting"].includes(leagueStatus);
+          const leagueFormat = classifyLeagueFormat(league, drafts);
+          const isRegularBestBall = leagueFormat.flags.bestBall && n(league?.settings?.type) !== 2 && !leagueFormat.flags.strongDynastySignal;
+          const opportunitiesAvailable = !["pre_draft", "drafting"].includes(leagueStatus) && !isRegularBestBall;
           const empty = starters.filter((id) => !id || id === "0").length;
           if (empty) leagueItems.push({ ...base, id:`empty:${leagueId}:${week}`, category:"lineup", priority:100, tone:"critical", title:`Fill ${empty} empty starting slot${empty === 1 ? "" : "s"}`, impact:"Prevents a zero", confidence:100, deadline:null, why:"An empty starter guarantees lost scoring opportunity and is the highest-priority action in the portfolio.", href:`https://sleeper.com/leagues/${leagueId}/matchup`, external:true, action:"Fix in Sleeper" });
 
