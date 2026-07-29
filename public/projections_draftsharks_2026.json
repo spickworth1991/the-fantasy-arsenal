@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-28T04:06:43.357Z",
+  "updated": "2026-07-29T04:06:45.957Z",
   "season": 2026,
   "source": "DraftSharks",
   "scoring": "PPR",
@@ -474,7 +474,7 @@
       "team": "LAC",
       "position": "QB",
       "points": 354,
-      "source_rank": 82,
+      "source_rank": 83,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 354,
@@ -540,7 +540,7 @@
       "team": "CHI",
       "position": "QB",
       "points": 354,
-      "source_rank": 84,
+      "source_rank": 85,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 354,
@@ -606,7 +606,7 @@
       "team": "SF",
       "position": "QB",
       "points": 353,
-      "source_rank": 85,
+      "source_rank": 86,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 353,
@@ -718,7 +718,7 @@
         "dsValue": 26
       },
       "analysis": {
-        "player.bottom_line": "Murray lands in an ideal rebound spot with Kevin O’Connell calling plays and Minnesota supplying proven playmakers. The passing volume might not spike, but Murray’s history shows he can add fantasy value on the ground. He’s tied for 13th in our QB rankings , making him a bargain if he stays at his early QB17 ADP. Read Full Profile > Customize Murray’s projection for your exact league settings inside the Draft War Room ."
+        "player.bottom_line": "Murray lands in an ideal rebound spot with Kevin O’Connell calling plays and Minnesota supplying proven playmakers. The passing volume might not spike, but Murray’s history shows he can add fantasy value on the ground. He’s 11th in our QB rankings , making him a bargain if he stays at his early QB16 ADP. Read Full Profile > Customize Murray’s projection for your exact league settings inside the Draft War Room ."
       },
       "analysis_links": {
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/kyler-murray/10217"
@@ -726,7 +726,7 @@
       "analysis_articles": [
         {
           "key": "player.bottom_line",
-          "text": "Murray lands in an ideal rebound spot with Kevin O’Connell calling plays and Minnesota supplying proven playmakers. The passing volume might not spike, but Murray’s history shows he can add fantasy value on the ground. He’s tied for 13th in our QB rankings , making him a bargain if he stays at his early QB17 ADP. Read Full Profile > Customize Murray’s projection for your exact league settings inside the Draft War Room .",
+          "text": "Murray lands in an ideal rebound spot with Kevin O’Connell calling plays and Minnesota supplying proven playmakers. The passing volume might not spike, but Murray’s history shows he can add fantasy value on the ground. He’s 11th in our QB rankings , making him a bargain if he stays at his early QB16 ADP. Read Full Profile > Customize Murray’s projection for your exact league settings inside the Draft War Room .",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/kyler-murray/10217"
         }
       ]
@@ -2099,7 +2099,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 72
+        "dsValue": 71
       },
       "analysis": {
         "player.bottom_line": "Barkley’s 2024 was more different from the rest of his career than his 2025 was. Combine that with his limited receiving relative to other top RBs, and he belongs in Round 2 of 2026 drafts. That said, he’s a solid-to-strong target in that range. An offensive rebound in Philly would return top-5 across fantasy formats to its star RB. Read Full Profile >"
@@ -3428,7 +3428,7 @@
       "team": "NYJ",
       "position": "RB",
       "points": 211,
-      "source_rank": 42,
+      "source_rank": 43,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 211,
@@ -4415,10 +4415,10 @@
         "rushTotal": "0",
         "rush_yds": "0",
         "rush_tds": "0",
-        "receivingTotal": 184.79,
+        "receivingTotal": 183.77,
         "rec_catch": 90.1,
         "rec_yds": 1348.1,
-        "rec_tds": 8.33,
+        "rec_tds": 8.16,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -4445,7 +4445,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 66
+        "dsValue": 65
       },
       "analysis": {
         "player.bottom_line": "Collins continued to perform despite the lackluster Texans’ passing game and balanced offense. He finished as WR9 in PPR points per game over his 14 full outings. His sturdy floor and high ceiling make Collins a target at a WR10 ADP. Customize Collins’ projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -4534,7 +4534,7 @@
       "team": "JAC",
       "position": "LB",
       "points": 196,
-      "source_rank": 165,
+      "source_rank": 166,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 196,
@@ -4598,7 +4598,7 @@
       "team": "WAS",
       "position": "LB",
       "points": 196,
-      "source_rank": 166,
+      "source_rank": 167,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 196,
@@ -4662,7 +4662,7 @@
       "team": "CHI",
       "position": "LB",
       "points": 196,
-      "source_rank": 167,
+      "source_rank": 168,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 196,
@@ -4979,78 +4979,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "12599",
-      "name": "George Pickens",
-      "team": "DAL",
-      "position": "WR",
-      "points": 190,
-      "source_rank": 18,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 190,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 176.84,
-        "rec_catch": 84.9,
-        "rec_yds": 1278.8,
-        "rec_tds": 8.16,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 61
-      },
-      "analysis": {
-        "player.bottom_line": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
-      },
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "12594",
       "name": "Drake London",
       "team": "ATL",
       "position": "WR",
       "points": 190,
-      "source_rank": 19,
+      "source_rank": 18,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 190,
@@ -5106,6 +5040,72 @@
           "key": "player.bottom_line",
           "text": "London followed a WR13 finish in PPR points per game in 2024 with a WR8 finish last year. He’s been a target hog throughout his career so far and might still be ascending at 25 years old (in July). A shaky QB room and new coaching staff under Kevin Stefanski add some risk, but London still looks like a relatively safe bet for WR1 production in 2026 and a nice Round 2 pick in fantasy drafts. Customize London’s projection for your exact league settings inside the Draft War Room . Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/drake-london/12594"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "12599",
+      "name": "George Pickens",
+      "team": "DAL",
+      "position": "WR",
+      "points": 190,
+      "source_rank": 19,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 190,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 176.84,
+        "rec_catch": 84.9,
+        "rec_yds": 1278.8,
+        "rec_tds": 8.16,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 61
+      },
+      "analysis": {
+        "player.bottom_line": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
+      },
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
         }
       ]
     },
@@ -5452,13 +5452,13 @@
         "pass_yds": "0",
         "pass_tds": "0",
         "pass_int": "0",
-        "rushTotal": 134.35,
-        "rush_yds": 918.5,
-        "rush_tds": 7.45,
-        "receivingTotal": 16.95,
-        "rec_catch": 16.4,
-        "rec_yds": 132.3,
-        "rec_tds": 0.62,
+        "rushTotal": 134.64,
+        "rush_yds": 921.6,
+        "rush_tds": 7.38,
+        "receivingTotal": 17.28,
+        "rec_catch": 17.6,
+        "rec_yds": 136.8,
+        "rec_tds": 0.6,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -5507,23 +5507,23 @@
       "name": "Bhayshul Tuten",
       "team": "JAC",
       "position": "RB",
-      "points": 181,
-      "source_rank": 86,
+      "points": 183,
+      "source_rank": 82,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 181,
+        "weekly3dPts": 183,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
         "pass_yds": "0",
         "pass_tds": "0",
         "pass_int": "0",
-        "rushTotal": 125.8,
-        "rush_yds": 894.2,
-        "rush_tds": 6.63,
-        "receivingTotal": 25.33,
+        "rushTotal": 127.84,
+        "rush_yds": 904.4,
+        "rush_tds": 6.8,
+        "receivingTotal": 26.01,
         "rec_catch": 25.5,
-        "rec_yds": 192.1,
+        "rec_yds": 198.9,
         "rec_tds": 1.02,
         "returningTotal": "0",
         "pr_yds_total": "0",
@@ -5551,7 +5551,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 26
+        "dsValue": 27
       },
       "analysis": {
         "player.bottom_line": "Tuten’s rookie season was largely buried behind Travis Etienne and he has yet to prove he can handle a full workload. But, he has the athleticism and underlying metrics to be an impact fantasy RB2 on a productive Jacksonville offense. He's a boom-or-bust option worth at look at his early RB25 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -6222,7 +6222,7 @@
       "team": "LAR",
       "position": "DB",
       "points": 174,
-      "source_rank": 168,
+      "source_rank": 169,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 174,
@@ -6286,7 +6286,7 @@
       "team": "TB",
       "position": "DB",
       "points": 174,
-      "source_rank": 170,
+      "source_rank": 171,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 174,
@@ -6350,7 +6350,7 @@
       "team": "PIT",
       "position": "DB",
       "points": 173,
-      "source_rank": 171,
+      "source_rank": 172,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 173,
@@ -6710,11 +6710,11 @@
         "def_int": "0",
         "def_fum_rec": "0",
         "def_tds": "0",
-        "idpTotal": 164.72,
-        "idp_solo": 37.86,
+        "idpTotal": 164.58,
+        "idp_solo": 37.87,
         "idp_assist": 32.3,
         "idp_sack": 3.4,
-        "idp_pass_def": 9.9,
+        "idp_pass_def": 9.8,
         "idp_int": 1.7,
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
@@ -6870,7 +6870,7 @@
       "team": "LAC",
       "position": "K",
       "points": 170,
-      "source_rank": 164,
+      "source_rank": 165,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -6934,7 +6934,7 @@
       "team": "CAR",
       "position": "DB",
       "points": 169,
-      "source_rank": 196,
+      "source_rank": 195,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 169,
@@ -7744,8 +7744,8 @@
         "def_int": "0",
         "def_fum_rec": "0",
         "def_tds": "0",
-        "idpTotal": 151.48,
-        "idp_solo": 33.27,
+        "idpTotal": 151.5,
+        "idp_solo": 33.28,
         "idp_assist": 32.3,
         "idp_sack": 1.7,
         "idp_pass_def": 10.2,
@@ -10186,7 +10186,7 @@
       "team": "IND",
       "position": "TE",
       "points": 148,
-      "source_rank": 43,
+      "source_rank": 42,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 148,
@@ -10448,7 +10448,7 @@
       "team": "JAC",
       "position": "WR",
       "points": 145,
-      "source_rank": 83,
+      "source_rank": 84,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 145,
@@ -11040,7 +11040,7 @@
       "team": "JAC",
       "position": "RB",
       "points": 142,
-      "source_rank": 148,
+      "source_rank": 149,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 142,
@@ -11757,6 +11757,72 @@
     },
     {
       "player_id": "",
+      "source_player_id": "13564",
+      "name": "Zach Charbonnet",
+      "team": "SEA",
+      "position": "RB",
+      "points": 133,
+      "source_rank": 164,
+      "projections": {
+        "games_played": 8,
+        "weekly3dPts": 133,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": 49.52,
+        "rush_yds": 315.2,
+        "rush_tds": 3,
+        "receivingTotal": 12.92,
+        "rec_catch": 14,
+        "rec_yds": 102.8,
+        "rec_tds": 0.44,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 11
+      },
+      "analysis": {
+        "player.bottom_line": "If you’re drafting right now, then Charbonnet shouldn’t enter your consideration until the very late rounds. Even in a best ball format with playoff weeks such as Underdog Fantasy’s most common setup, Charbs presents as much risk as upside from his current ADP early in Round 14. We’ll see about his outlook for non-best ball drafts as the season draws closer and we know more about his recovery. Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/zach-charbonnet/13564"
+      },
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "If you’re drafting right now, then Charbonnet shouldn’t enter your consideration until the very late rounds. Even in a best ball format with playoff weeks such as Underdog Fantasy’s most common setup, Charbs presents as much risk as upside from his current ADP early in Round 14. We’ll see about his outlook for non-best ball drafts as the season draws closer and we know more about his recovery. Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/zach-charbonnet/13564"
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "35948",
       "name": "Makai Lemon",
       "team": "PHI",
@@ -12149,72 +12215,6 @@
     },
     {
       "player_id": "",
-      "source_player_id": "13564",
-      "name": "Zach Charbonnet",
-      "team": "SEA",
-      "position": "RB",
-      "points": 130,
-      "source_rank": 174,
-      "projections": {
-        "games_played": 6,
-        "weekly3dPts": 130,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": 38.3,
-        "rush_yds": 243.8,
-        "rush_tds": 2.32,
-        "receivingTotal": 10.02,
-        "rec_catch": 10.8,
-        "rec_yds": 79.8,
-        "rec_tds": 0.34,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 10
-      },
-      "analysis": {
-        "player.bottom_line": "If you’re drafting right now, then Charbonnet shouldn’t enter your consideration until the very late rounds. Even in a best ball format with playoff weeks such as Underdog Fantasy’s most common setup, Charbs presents as much risk as upside from his current ADP early in Round 14. We’ll see about his outlook for non-best ball drafts as the season draws closer and we know more about his recovery. Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/zach-charbonnet/13564"
-      },
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "If you’re drafting right now, then Charbonnet shouldn’t enter your consideration until the very late rounds. Even in a best ball format with playoff weeks such as Underdog Fantasy’s most common setup, Charbs presents as much risk as upside from his current ADP early in Round 14. We’ll see about his outlook for non-best ball drafts as the season draws closer and we know more about his recovery. Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/zach-charbonnet/13564"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "35515",
       "name": "Matthew Golden",
       "team": "GB",
@@ -12550,7 +12550,7 @@
       "team": "IND",
       "position": "WR",
       "points": 127,
-      "source_rank": 149,
+      "source_rank": 148,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 127,
@@ -12746,7 +12746,7 @@
       "team": "LAR",
       "position": "DL",
       "points": 126,
-      "source_rank": 169,
+      "source_rank": 170,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 126,
@@ -13590,7 +13590,7 @@
       "team": "TEN",
       "position": "RB",
       "points": 122,
-      "source_rank": 195,
+      "source_rank": 196,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 122,
@@ -15674,7 +15674,7 @@
       "team": "NE",
       "position": "TE",
       "points": 107,
-      "source_rank": 172,
+      "source_rank": 173,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 107,
@@ -15740,7 +15740,7 @@
       "team": "PHI",
       "position": "TE",
       "points": 107,
-      "source_rank": 173,
+      "source_rank": 174,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 107,
@@ -16482,10 +16482,10 @@
     "robertspillane": 193,
     "daiyan henley": 192,
     "daiyanhenley": 192,
-    "george pickens": 190,
-    "georgepickens": 190,
     "drake london": 190,
     "drakelondon": 190,
+    "george pickens": 190,
+    "georgepickens": 190,
     "bucky irving": 189,
     "buckyirving": 189,
     "alex singleton": 189,
@@ -16498,8 +16498,8 @@
     "rasheerice": 184,
     "jadarian price": 184,
     "jadarianprice": 184,
-    "bhayshul tuten": 181,
-    "bhayshultuten": 181,
+    "bhayshul tuten": 183,
+    "bhayshultuten": 183,
     "antoine winfield": 180,
     "antoinewinfieldjr.": 180,
     "grant delpit": 179,
@@ -16690,6 +16690,8 @@
     "jakobimeyers": 134,
     "tuli tuipulotu": 133,
     "tulituipulotu": 133,
+    "zach charbonnet": 133,
+    "zachcharbonnet": 133,
     "makai lemon": 131,
     "makailemon": 131,
     "jeffery simmons": 131,
@@ -16702,8 +16704,6 @@
     "michaelpittmanjr.": 130,
     "romeo doubs": 130,
     "romeodoubs": 130,
-    "zach charbonnet": 130,
-    "zachcharbonnet": 130,
     "matthew golden": 128,
     "matthewgolden": 128,
     "kc concepcion": 128,
