@@ -19,7 +19,6 @@ html[data-arsenal-embedded="true"] {
 html[data-arsenal-embedded="true"],
 html[data-arsenal-embedded="true"] body {
   min-height: 100dvh;
-  overscroll-behavior-y: contain;
 }
 
 html[data-arsenal-embedded="true"] body {
@@ -27,6 +26,10 @@ html[data-arsenal-embedded="true"] body {
 }
 
 @media (max-width: 640px) {
+  html[data-arsenal-embedded="true"],
+  html[data-arsenal-embedded="true"] body {
+    overscroll-behavior-y: contain;
+  }
   html[data-arsenal-embedded="true"] main > .mx-auto {
     padding-left: var(--arsenal-embed-gutter) !important;
     padding-right: var(--arsenal-embed-gutter) !important;

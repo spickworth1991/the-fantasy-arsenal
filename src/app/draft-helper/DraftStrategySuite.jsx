@@ -36,6 +36,7 @@ export default function DraftStrategySuite({
   teams,
   rounds,
   draft,
+  byeWeeks = {},
   onInspect,
 }) {
   const [view, setView] = useState("simulator");
@@ -92,8 +93,10 @@ export default function DraftStrategySuite({
     return { rosterId:String(roster.roster_id), manager:user?.metadata?.team_name || user?.display_name || `Roster ${roster.roster_id}`, likely:lowest, count:n(counts[lowest]) };
   });
   const targetThreats = upcomingThreats.filter((row) => row.likely === target?.pos).slice(0, 6);
-  const byeCounts = (rosterMap.get(String(focusRosterId))?.players || []).reduce((map, id) => {
-    const week = n(players?.[id]?.bye_week);
+  const byeRosterIds = [...new Set([...(rosterMap.get(String(focusRosterId))?.players || []).map(String), ...(draftedByRoster.get(String(focusRosterId)) || []).map(String)])];
+  const byeCounts = byeRosterIds.reduce((map, id) => {
+    const team = String(players?.[id]?.team || "").toUpperCase();
+    const week = n(byeWeeks[team] || players?.[id]?.bye_week);
     if (week) map[week] = (map[week] || 0) + 1;
     return map;
   }, {});

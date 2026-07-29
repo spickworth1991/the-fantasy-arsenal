@@ -460,6 +460,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [ballsvilleDynastyAdpMap, setBallsvilleDynastyAdpMap] = useState(() => new Map());
   const [ballsvilleAdpLoading, setBallsvilleAdpLoading] = useState(false);
   const [ballsvilleAdpError, setBallsvilleAdpError] = useState("");
+  const ballsvilleAssignmentSeasonRef = useRef("");
 
   useEffect(() => {
     const key = `ps:trending:add:${trendingHours}:L${TRENDING_LIMIT}`;
@@ -523,14 +524,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
     async function loadBallsvilleModes() {
       setBallsvilleModesLoading(true);
       setBallsvilleModesError("");
+      let hadCachedModes = false;
 
       try {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
           const rows = normalizeBallsvilleModesPayload(parsed, targetSeason);
-          if (!cancelled) setBallsvilleModes(rows);
-          return;
+          if (rows.length) {
+            hadCachedModes = true;
+            if (!cancelled) setBallsvilleModes(rows);
+          }
         }
 
         const url = getBallsvilleJsonUrl(`data/draft-compare/modes_${targetSeason}.json`);
@@ -547,8 +551,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         if (!cancelled) setBallsvilleModes(rows);
       } catch (e) {
         if (!cancelled) {
-          setBallsvilleModes([]);
-          setBallsvilleModesError(e?.message || "Ballsville ADP modes could not be loaded.");
+          if (!hadCachedModes) setBallsvilleModes([]);
+          setBallsvilleModesError(hadCachedModes ? "Showing cached Ballsville groups; the latest group list could not be checked." : e?.message || "Ballsville ADP modes could not be loaded.");
         }
       }
     }
@@ -564,23 +568,22 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
   useEffect(() => {
     if (!ballsvilleModes.length) return;
-
-    setSelectedBallsvilleRedraftModes((prev) => {
-      if (prev.size > 0) return prev;
-      const defaults = ballsvilleModes
-        .filter((row) => row.modeSlug === "redraft")
-        .map((row) => row.modeSlug);
-      return new Set(defaults);
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    if (ballsvilleAssignmentSeasonRef.current === targetSeason) return;
+    ballsvilleAssignmentSeasonRef.current = targetSeason;
+    const storageKey = `ps:ballsville:assignments:${targetSeason}`;
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
+    const redraft = new Set();
+    const dynasty = new Set();
+    ballsvilleModes.forEach((mode) => {
+      const assigned = saved[mode.modeSlug] || (mode.modeSlug === "redraft" ? "redraft" : mode.modeSlug === "big-game" ? "dynasty" : "unassigned");
+      if (assigned === "redraft") redraft.add(mode.modeSlug);
+      if (assigned === "dynasty") dynasty.add(mode.modeSlug);
     });
-
-    setSelectedBallsvilleDynastyModes((prev) => {
-      if (prev.size > 0) return prev;
-      const bigGame = ballsvilleModes
-        .filter((row) => row.modeSlug === "big-game")
-        .map((row) => row.modeSlug);
-      return new Set(bigGame);
-    });
-  }, [ballsvilleModes]);
+    setSelectedBallsvilleRedraftModes(redraft);
+    setSelectedBallsvilleDynastyModes(dynasty);
+  }, [ballsvilleModes, year, paramsKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -657,10 +660,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
   const withLocalPlayerData = (row) => {
     const p = players?.[row.player_id];
+    const storedName = String(row.name || "").trim();
     const resolvedName =
-      row.name ||
       p?.full_name ||
       `${p?.first_name || ""} ${p?.last_name || ""}`.trim() ||
+      (storedName && storedName !== String(row.player_id) ? storedName : "") ||
       "Unknown";
     const resolvedPos = (row.position || p?.position || "").toUpperCase();
     const resolvedTeam = (row.team || p?.team || "").toUpperCase();
@@ -1263,12 +1267,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setLastUpdated(new Date());
         setProgressPct(100);
         setProgressText("Done!");
+        setLoading(false);
 
-        try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(payload));
-        } catch (cacheError) {
-          console.warn("Player Stock result was too large to cache in this session.", cacheError);
-        }
+        const cacheResult = () => {
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+          } catch {
+            // Caching is optional; large portfolios must still render.
+          }
+        };
+        if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(cacheResult, { timeout:1500 });
+        else window.setTimeout(cacheResult, 0);
       } catch (e) {
         setError(e?.message || "Scan failed");
       } finally {
@@ -1533,29 +1542,40 @@ export default function ClientResults({ initialSearchParams = {} }) {
     });
   };
 
-  const ballsvilleRedraftModes = useMemo(
-    () => ballsvilleModes.filter((row) => row.modeSlug === "redraft"),
-    [ballsvilleModes]
-  );
-  const ballsvilleDynastyModes = useMemo(
-    () => ballsvilleModes.filter((row) => row.modeSlug === "big-game"),
-    [ballsvilleModes]
-  );
+  const ballsvilleAssignment = (slug) => selectedBallsvilleRedraftModes.has(slug)
+    ? "redraft"
+    : selectedBallsvilleDynastyModes.has(slug)
+      ? "dynasty"
+      : "unassigned";
 
-  const toggleBallsvilleMode = (bucket, slug) => {
-    const setter = bucket === "dynasty" ? setSelectedBallsvilleDynastyModes : setSelectedBallsvilleRedraftModes;
-    setter((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
+  const assignBallsvilleMode = (slug, assignment) => {
+    setSelectedBallsvilleRedraftModes((current) => {
+      const next = new Set(current);
+      if (assignment === "redraft") next.add(slug);
+      else next.delete(slug);
       return next;
     });
+    setSelectedBallsvilleDynastyModes((current) => {
+      const next = new Set(current);
+      if (assignment === "dynasty") next.add(slug);
+      else next.delete(slug);
+      return next;
+    });
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    const storageKey = `ps:ballsville:assignments:${targetSeason}`;
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
+    saved[slug] = assignment;
+    localStorage.setItem(storageKey, JSON.stringify(saved));
   };
 
-  const setAllBallsvilleModes = (bucket, enabled) => {
-    const source = bucket === "dynasty" ? ballsvilleDynastyModes : ballsvilleRedraftModes;
-    const setter = bucket === "dynasty" ? setSelectedBallsvilleDynastyModes : setSelectedBallsvilleRedraftModes;
-    setter(enabled ? new Set(source.map((row) => row.modeSlug)) : new Set());
+  const unassignAllBallsvilleModes = () => {
+    setSelectedBallsvilleRedraftModes(new Set());
+    setSelectedBallsvilleDynastyModes(new Set());
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    localStorage.setItem(`ps:ballsville:assignments:${targetSeason}`, JSON.stringify(
+      Object.fromEntries(ballsvilleModes.map((mode) => [mode.modeSlug, "unassigned"]))
+    ));
   };
 
   return (
@@ -2058,51 +2078,29 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     {ballsvilleModesLoading ? <span className="text-[11px] text-gray-500">Loading…</span> : null}
                   </div>
                   <div className="mt-2 text-[11px] text-gray-500">
-                    Compare the dedicated 2026 Redraft and Big Game draft pools without blending in other contest formats.
+                    Assign any dynamically discovered Ballsville draft group to the Redraft or Dynasty comparison. Unassigned groups do not affect either ADP.
                   </div>
 
-                  <div className="mt-3 grid grid-cols-1 gap-3">
-                    <div>
-                      <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500">
-                        <span>Ballsville Redraft Pool</span>
-                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("redraft", true)}>All</button>
-                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("redraft", false)}>None</button>
-                      </div>
-                      <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
-                        {ballsvilleRedraftModes.map((mode) => (
-                          <label key={`bs-redraft-${mode.modeSlug}`} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-800/60 border border-white/10">
-                            <input
-                              type="checkbox"
-                              checked={selectedBallsvilleRedraftModes.has(mode.modeSlug)}
-                              onChange={() => toggleBallsvilleMode("redraft", mode.modeSlug)}
-                            />
-                            <span className="truncate">{mode.title}</span>
-                          </label>
-                        ))}
-                        {!ballsvilleRedraftModes.length ? <div className="text-xs text-gray-500">No redraft Ballsville modes found.</div> : null}
-                      </div>
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/15">
+                    <div className="grid grid-cols-[76px_minmax(130px,1fr)_92px] items-center gap-2 border-b border-white/10 px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-white/35 sm:grid-cols-[104px_minmax(180px,1fr)_104px]">
+                      <span className="text-amber-200/70">Redraft</span>
+                      <span>Unassigned</span>
+                      <span className="text-cyan-200/70">Dynasty</span>
                     </div>
-
-                    <div>
-                      <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500">
-                        <span>Ballsville Big Game Pool</span>
-                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", true)}>All</button>
-                        <button type="button" className="rounded px-2 py-0.5 border border-white/20 hover:bg-white/10" onClick={() => setAllBallsvilleModes("dynasty", false)}>None</button>
-                      </div>
-                      <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
-                        {ballsvilleDynastyModes.map((mode) => (
-                          <label key={`bs-dynasty-${mode.modeSlug}`} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-gray-800/60 border border-white/10">
-                            <input
-                              type="checkbox"
-                              checked={selectedBallsvilleDynastyModes.has(mode.modeSlug)}
-                              onChange={() => toggleBallsvilleMode("dynasty", mode.modeSlug)}
-                            />
-                            <span className="truncate">{mode.title}</span>
-                            {mode.startupLike ? <span className="ml-auto text-[10px] text-gray-500">startup</span> : null}
-                          </label>
-                        ))}
-                        {!ballsvilleDynastyModes.length ? <div className="text-xs text-gray-500">No Big Game Ballsville mode found.</div> : null}
-                      </div>
+                    <div className="max-h-72 space-y-1 overflow-y-auto p-2">
+                      {ballsvilleModes.map((mode) => {
+                        const assignment = ballsvilleAssignment(mode.modeSlug);
+                        return <div key={`bs-mode-${mode.modeSlug}`} className="grid grid-cols-[76px_minmax(130px,1fr)_92px] items-center gap-2 rounded-xl border border-white/[0.06] bg-gray-900/70 p-1.5 sm:grid-cols-[104px_minmax(180px,1fr)_104px]">
+                          <button type="button" aria-pressed={assignment === "redraft"} onClick={() => assignBallsvilleMode(mode.modeSlug, "redraft")} className={`min-h-9 rounded-lg px-2 text-[10px] font-bold transition ${assignment === "redraft" ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/30" : "text-white/25 hover:bg-white/[0.04] hover:text-white/55"}`}>{assignment === "redraft" ? "✓ Redraft" : "Redraft"}</button>
+                          <button type="button" aria-pressed={assignment === "unassigned"} onClick={() => assignBallsvilleMode(mode.modeSlug, "unassigned")} className={`min-w-0 rounded-lg px-2 py-2 text-left transition ${assignment === "unassigned" ? "bg-white/[0.07] ring-1 ring-white/10" : "hover:bg-white/[0.035]"}`}><span className="block truncate text-xs font-semibold text-white/80">{mode.title}</span><span className="block truncate text-[9px] text-white/28">{mode.subtitle || mode.modeSlug}</span></button>
+                          <button type="button" aria-pressed={assignment === "dynasty"} onClick={() => assignBallsvilleMode(mode.modeSlug, "dynasty")} className={`min-h-9 rounded-lg px-2 text-[10px] font-bold transition ${assignment === "dynasty" ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/30" : "text-white/25 hover:bg-white/[0.04] hover:text-white/55"}`}>{assignment === "dynasty" ? "Dynasty ✓" : "Dynasty"}</button>
+                        </div>;
+                      })}
+                      {!ballsvilleModes.length ? <div className="p-3 text-xs text-gray-500">No Ballsville ADP groups were discovered for this season.</div> : null}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-[10px] text-white/35">
+                      <span>{selectedBallsvilleRedraftModes.size} redraft · {ballsvilleModes.length - selectedBallsvilleRedraftModes.size - selectedBallsvilleDynastyModes.size} unassigned · {selectedBallsvilleDynastyModes.size} dynasty</span>
+                      <button type="button" onClick={unassignAllBallsvilleModes} className="rounded-lg border border-white/10 px-2.5 py-1.5 font-semibold text-white/50 hover:bg-white/[0.05]">Unassign all</button>
                     </div>
                   </div>
                 </div>
@@ -2399,6 +2397,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   >
                     ✕
                   </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("tfa:inspect-player", { detail:{ playerId:String(openRow.player_id) } }))} className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-2 text-xs font-bold text-cyan-100">All sources, news & research</button>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs text-white/45">{selectedBallsvilleRedraftModes.size + selectedBallsvilleDynastyModes.size} Ballsville ADP pools included</div>
                 </div>
 
                 <div className={`mt-4 grid grid-cols-1 ${showBallsvilleRedraftColumn && showBallsvilleDynastyColumn ? "md:grid-cols-5" : showBallsvilleRedraftColumn || showBallsvilleDynastyColumn ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>

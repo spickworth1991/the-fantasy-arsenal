@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
+import { useArsenalAccount } from "../../context/ArsenalAccountContext";
 import TradeSide from "../../components/TradeSide";
 import SearchBox from "../../components/SearchBox";
 import PlayerCard from "../../components/PlayerCard";
@@ -93,6 +94,7 @@ function getSeasonPointsForPlayer(map, p) {
 }
 
 export default function TradeAnalyzer() {
+  const { isConnected, syncNow } = useArsenalAccount();
   const {
     username,
     leagues,
@@ -121,6 +123,7 @@ export default function TradeAnalyzer() {
   const [selectedOwnerA, setSelectedOwnerA] = useState("");
   const [selectedOwnerB, setSelectedOwnerB] = useState("");
   const [tradeTab, setTradeTab] = useState("analyzer");
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -342,6 +345,34 @@ export default function TradeAnalyzer() {
     .filter((p) => getMetric(p) > 0)
     .sort((a, b) => getMetric(b) - getMetric(a))
     .slice(0, 10);
+  const saveCurrentTrade = async () => {
+    if (!isConnected) {
+      setSaveMessage("Sign in to an Arsenal account to save trades across devices.");
+      return;
+    }
+    if (!sideA.length && !sideB.length) {
+      setSaveMessage("Add at least one asset before saving.");
+      return;
+    }
+    const key = `tfa:trade-workspaces:${String(activeLeague || "global")}`;
+    let current = [];
+    try { current = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+    const item = {
+      id:crypto.randomUUID?.() || String(Date.now()),
+      createdAt:Date.now(),
+      ownerA:selectedOwnerA,
+      ownerB:selectedOwnerB,
+      sideA:sideA.map((player) => String(player.player_id)),
+      sideB:sideB.map((player) => String(player.player_id)),
+      valueA:tradeValueA,
+      valueB:tradeValueB,
+      sourceKey,
+      outcome:"Open",
+    };
+    localStorage.setItem(key, JSON.stringify([item, ...current].slice(0, 30)));
+    await syncNow({ quiet:true }).catch(() => {});
+    setSaveMessage("Trade saved to your Arsenal account.");
+  };
 
   return (
     <>
@@ -420,9 +451,9 @@ export default function TradeAnalyzer() {
               </div>
             </div>
 
-            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["suite","Additional Trade Tools"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
+            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["finder","Partner Finder"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
 
-            <div className={tradeTab === "suite" ? "block" : "hidden"}><TradeWorkspaceSuite
+            <div className={tradeTab !== "analyzer" ? "block" : "hidden"}><TradeWorkspaceSuite
               league={league}
               players={players}
               getMetric={getMetric}
@@ -437,7 +468,10 @@ export default function TradeAnalyzer() {
                 setSideB(nextB || []);
                 setSelectedOwnerA(ownerA || "");
                 setSelectedOwnerB(ownerB || "");
+                setTradeTab("analyzer");
               }}
+              initialTab={tradeTab === "analyzer" ? "finder" : tradeTab}
+              hideNavigation
             /></div>
 
             <div className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
@@ -453,6 +487,11 @@ export default function TradeAnalyzer() {
                 <div className="text-xs uppercase tracking-wide text-white/45">Verdict</div>
                 <div className="mt-1 text-lg font-semibold text-white">{recommendation}</div>
               </div>
+            </div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={saveCurrentTrade} className="rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-black text-cyan-100">Save trade</button>
+              <button type="button" onClick={() => window.print()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white/65">Print / save PDF</button>
+              {saveMessage ? <span className="text-xs text-white/45">{saveMessage}</span> : null}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

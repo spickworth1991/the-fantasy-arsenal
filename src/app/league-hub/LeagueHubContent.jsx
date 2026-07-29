@@ -2597,13 +2597,13 @@ export default function LeagueHubContent() {
                 <h2 className="mt-2 text-2xl font-black tracking-tight">{actionCenterOpen ? "Your next best moves" : `${visibleActionItems.length} item${visibleActionItems.length === 1 ? "" : "s"} need attention`}</h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-white/58">A prioritized inbox built from lineup pressure, injuries, free-agent opportunities, and pending league activity.</p>
               </div>
-              <div className="flex items-center gap-2">
-                {actionCenterOpen ? <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+                {actionCenterOpen ? <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
                 {[["all","All"],["lineup","Lineups"],["injury","Injuries"],["waiver","Waivers"],["trade","Trades"]].map(([key, label]) => (
                   <button key={key} type="button" onClick={() => setActionFilter(key)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${actionFilter === key ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-50" : "border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white"}`}>{label}</button>
                 ))}
                 </div> : null}
-                <button type="button" onClick={() => setActionCenterOpen((open) => !open)} aria-expanded={actionCenterOpen} aria-controls="action-center-items" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white">
+                <button type="button" onClick={() => setActionCenterOpen((open) => !open)} aria-expanded={actionCenterOpen} aria-controls="action-center-items" className="inline-flex shrink-0 items-center justify-center gap-2 self-end rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white sm:self-auto">
                   {actionCenterOpen ? "Collapse" : "Expand"}<span className={`text-sm transition-transform ${actionCenterOpen ? "rotate-180" : ""}`}>⌄</span>
                 </button>
               </div>
@@ -2622,7 +2622,7 @@ export default function LeagueHubContent() {
                       <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${priority.dot} shadow-[0_0_18px_currentColor]`} />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42"><span>{priority.label}</span><span className="text-white/20">•</span><span>{item.eyebrow}</span></div>
-                        <h3 className="mt-1.5 truncate text-base font-bold text-white">{item.title}</h3>
+                        <h3 className="mt-1.5 break-words text-base font-bold text-white">{item.title}</h3>
                         <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-white/55">{item.body}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <a href={item.href} className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:bg-white/10">{item.cta}</a>
