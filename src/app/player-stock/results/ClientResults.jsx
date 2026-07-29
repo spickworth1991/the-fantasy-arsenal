@@ -577,7 +577,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     const redraft = new Set();
     const dynasty = new Set();
     ballsvilleModes.forEach((mode) => {
-      const assigned = saved[mode.modeSlug] || (mode.modeSlug === "redraft" ? "redraft" : mode.modeSlug === "big-game" ? "dynasty" : "unassigned");
+      const assigned = saved[mode.modeSlug] || (mode.key === "dynasty" ? "dynasty" : "redraft");
       if (assigned === "redraft") redraft.add(mode.modeSlug);
       if (assigned === "dynasty") dynasty.add(mode.modeSlug);
     });
@@ -2081,25 +2081,33 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     Assign any dynamically discovered Ballsville draft group to the Redraft or Dynasty comparison. Unassigned groups do not affect either ADP.
                   </div>
 
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/15">
-                    <div className="grid grid-cols-[76px_minmax(130px,1fr)_92px] items-center gap-2 border-b border-white/10 px-2 py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-white/35 sm:grid-cols-[104px_minmax(180px,1fr)_104px]">
-                      <span className="text-amber-200/70">Redraft</span>
-                      <span>Unassigned</span>
-                      <span className="text-cyan-200/70">Dynasty</span>
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.035] to-black/15">
+                    <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-white/75">ADP group assignments</div>
+                        <div className="mt-0.5 text-[10px] text-white/30">Dynasty-named groups default right; every other new group defaults left.</div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 text-[9px] font-semibold">
+                        <span className="rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-2.5 py-1 text-amber-100/75">{selectedBallsvilleRedraftModes.size} Redraft</span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-white/45">{ballsvilleModes.length - selectedBallsvilleRedraftModes.size - selectedBallsvilleDynastyModes.size} Unassigned</span>
+                        <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[0.07] px-2.5 py-1 text-cyan-100/75">{selectedBallsvilleDynastyModes.size} Dynasty</span>
+                      </div>
                     </div>
-                    <div className="max-h-72 space-y-1 overflow-y-auto p-2">
+                    <div className="max-h-80 space-y-2 overflow-y-auto p-2.5">
                       {ballsvilleModes.map((mode) => {
                         const assignment = ballsvilleAssignment(mode.modeSlug);
-                        return <div key={`bs-mode-${mode.modeSlug}`} className="grid grid-cols-[76px_minmax(130px,1fr)_92px] items-center gap-2 rounded-xl border border-white/[0.06] bg-gray-900/70 p-1.5 sm:grid-cols-[104px_minmax(180px,1fr)_104px]">
-                          <button type="button" aria-pressed={assignment === "redraft"} onClick={() => assignBallsvilleMode(mode.modeSlug, "redraft")} className={`min-h-9 rounded-lg px-2 text-[10px] font-bold transition ${assignment === "redraft" ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/30" : "text-white/25 hover:bg-white/[0.04] hover:text-white/55"}`}>{assignment === "redraft" ? "✓ Redraft" : "Redraft"}</button>
-                          <button type="button" aria-pressed={assignment === "unassigned"} onClick={() => assignBallsvilleMode(mode.modeSlug, "unassigned")} className={`min-w-0 rounded-lg px-2 py-2 text-left transition ${assignment === "unassigned" ? "bg-white/[0.07] ring-1 ring-white/10" : "hover:bg-white/[0.035]"}`}><span className="block truncate text-xs font-semibold text-white/80">{mode.title}</span><span className="block truncate text-[9px] text-white/28">{mode.subtitle || mode.modeSlug}</span></button>
-                          <button type="button" aria-pressed={assignment === "dynasty"} onClick={() => assignBallsvilleMode(mode.modeSlug, "dynasty")} className={`min-h-9 rounded-lg px-2 text-[10px] font-bold transition ${assignment === "dynasty" ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/30" : "text-white/25 hover:bg-white/[0.04] hover:text-white/55"}`}>{assignment === "dynasty" ? "Dynasty ✓" : "Dynasty"}</button>
+                        return <div key={`bs-mode-${mode.modeSlug}`} className="rounded-xl border border-white/[0.07] bg-slate-950/65 p-2.5 shadow-sm shadow-black/20">
+                          <div className="mb-2 min-w-0 px-0.5"><span className="block truncate text-xs font-semibold text-white/85">{mode.title}</span>{mode.subtitle ? <span className="mt-0.5 block truncate text-[9px] text-white/28">{mode.subtitle}</span> : null}</div>
+                          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-white/10 bg-black/20 p-0.5">
+                            <button type="button" aria-pressed={assignment === "redraft"} onClick={() => assignBallsvilleMode(mode.modeSlug, "redraft")} className={`min-h-9 rounded-md px-2 text-[10px] font-bold transition ${assignment === "redraft" ? "bg-amber-300/15 text-amber-100 shadow-sm ring-1 ring-amber-300/25" : "text-white/30 hover:bg-white/[0.04] hover:text-white/60"}`}>{assignment === "redraft" ? "✓ Redraft" : "Redraft"}</button>
+                            <button type="button" aria-pressed={assignment === "unassigned"} onClick={() => assignBallsvilleMode(mode.modeSlug, "unassigned")} className={`min-h-9 rounded-md px-2 text-[10px] font-bold transition ${assignment === "unassigned" ? "bg-white/[0.09] text-white/75 shadow-sm ring-1 ring-white/15" : "text-white/25 hover:bg-white/[0.04] hover:text-white/55"}`}>{assignment === "unassigned" ? "✓ Unassigned" : "Unassigned"}</button>
+                            <button type="button" aria-pressed={assignment === "dynasty"} onClick={() => assignBallsvilleMode(mode.modeSlug, "dynasty")} className={`min-h-9 rounded-md px-2 text-[10px] font-bold transition ${assignment === "dynasty" ? "bg-cyan-300/15 text-cyan-100 shadow-sm ring-1 ring-cyan-300/25" : "text-white/30 hover:bg-white/[0.04] hover:text-white/60"}`}>{assignment === "dynasty" ? "Dynasty ✓" : "Dynasty"}</button>
+                          </div>
                         </div>;
                       })}
                       {!ballsvilleModes.length ? <div className="p-3 text-xs text-gray-500">No Ballsville ADP groups were discovered for this season.</div> : null}
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-[10px] text-white/35">
-                      <span>{selectedBallsvilleRedraftModes.size} redraft · {ballsvilleModes.length - selectedBallsvilleRedraftModes.size - selectedBallsvilleDynastyModes.size} unassigned · {selectedBallsvilleDynastyModes.size} dynasty</span>
+                    <div className="flex items-center justify-end border-t border-white/10 px-3 py-2">
                       <button type="button" onClick={unassignAllBallsvilleModes} className="rounded-lg border border-white/10 px-2.5 py-1.5 font-semibold text-white/50 hover:bg-white/[0.05]">Unassign all</button>
                     </div>
                   </div>
