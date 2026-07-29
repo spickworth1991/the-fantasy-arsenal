@@ -222,6 +222,8 @@ export default function DecisionInbox({ full=false }) {
           const rostered = new Set(rosters.flatMap((roster) => roster.players || []).map(String));
           const leagueItems = [];
           const base = { leagueId, leagueName:league.name, teamName };
+          const leagueStatus = String(league.status || "").toLowerCase();
+          const opportunitiesAvailable = !["pre_draft", "drafting"].includes(leagueStatus);
           const empty = starters.filter((id) => !id || id === "0").length;
           if (empty) leagueItems.push({ ...base, id:`empty:${leagueId}:${week}`, category:"lineup", priority:100, tone:"critical", title:`Fill ${empty} empty starting slot${empty === 1 ? "" : "s"}`, impact:"Prevents a zero", confidence:100, deadline:null, why:"An empty starter guarantees lost scoring opportunity and is the highest-priority action in the portfolio.", href:`https://sleeper.com/leagues/${leagueId}/matchup`, external:true, action:"Fix in Sleeper" });
 
@@ -236,19 +238,21 @@ export default function DecisionInbox({ full=false }) {
             if (game?.weather && !game?.venue?.indoor && (n(game.weather.windSpeed) >= 18 || n(game.weather.precipitationProbability) >= 65)) leagueItems.push({ ...base, id:`weather:${leagueId}:${week}:${starterId}`, category:"weather", priority:58, tone:"opportunity", title:`Weather watch · ${name(players, starterId)}`, impact:"Raises scoring volatility", confidence:72, deadline:game.date, why:`${game.weather.summary || "Outdoor conditions"} with ${n(game.weather.windSpeed)} mph wind and ${n(game.weather.precipitationProbability)}% precipitation probability deserves a final pre-kickoff check.`, href:"/game-center", action:"Review game context" });
           }
 
-          const weakestByPos = new Map();
-          rosterIds.forEach((id) => { const player=players?.[id];const position=pos(player);const value=n(getPlayerValue(player));if(!weakestByPos.has(position)||value<weakestByPos.get(position).value)weakestByPos.set(position,{ id,value }); });
-          const waiver = rankedPlayers.find((row) => !rostered.has(row.id) && row.value > n(weakestByPos.get(pos(row.player))?.value) * 1.15);
-          if (waiver) {
-            const weakest = weakestByPos.get(pos(waiver.player));
-            const waiverDelta = waiver.value - n(weakest?.value);
-            leagueItems.push({ ...base, id:`waiver:${leagueId}:${week}:${waiver.id}`, category:"waiver", priority:68, tone:"opportunity", title:`${name(players, waiver.id)} is available`, impact:metricType === "projection" ? `+${(waiverDelta / 17).toFixed(1)} expected weekly pts` : `+${Math.round(waiverDelta).toLocaleString()} market value`, confidence:80, deadline:null, why:`The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`, href:`/league-hub?player=${waiver.id}`, action:"Build waiver claim" });
-          }
+          if (opportunitiesAvailable) {
+            const weakestByPos = new Map();
+            rosterIds.forEach((id) => { const player=players?.[id];const position=pos(player);const value=n(getPlayerValue(player));if(!weakestByPos.has(position)||value<weakestByPos.get(position).value)weakestByPos.set(position,{ id,value }); });
+            const waiver = rankedPlayers.find((row) => !rostered.has(row.id) && row.value > n(weakestByPos.get(pos(row.player))?.value) * 1.15);
+            if (waiver) {
+              const weakest = weakestByPos.get(pos(waiver.player));
+              const waiverDelta = waiver.value - n(weakest?.value);
+              leagueItems.push({ ...base, id:`waiver:${leagueId}:${week}:${waiver.id}`, category:"waiver", priority:68, tone:"opportunity", title:`${name(players, waiver.id)} is available`, impact:metricType === "projection" ? `+${(waiverDelta / 17).toFixed(1)} expected weekly pts` : `+${Math.round(waiverDelta).toLocaleString()} market value`, confidence:80, deadline:null, why:`The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`, href:`/league-hub?player=${waiver.id}`, action:"Build waiver claim" });
+            }
 
-          const counts = rosterIds.reduce((map,id) => { const p=pos(players?.[id]);map[p]=(map[p]||0)+1;return map; },{});
-          const surplus = Object.entries(counts).filter(([position,count]) => ["QB","RB","WR","TE"].includes(position) && count >= ({QB:4,RB:7,WR:9,TE:4}[position] || 99)).sort((a,b)=>b[1]-a[1])[0];
-          const need = ["QB","RB","WR","TE"].sort((a,b)=>n(counts[a])-n(counts[b]))[0];
-          if (surplus && surplus[0] !== need) leagueItems.push({ ...base, id:`trade-fit:${leagueId}:${week}:${surplus[0]}:${need}`, category:"trade", priority:44, tone:"planning", title:`Convert ${surplus[0]} depth into ${need}`, impact:"Improves roster balance", confidence:65, deadline:null, why:`Your roster carries ${surplus[1]} ${surplus[0]}s while ${need} is the thinnest core position. Trade Partner Finder can identify a manager with the inverse need.`, href:"/trade", action:"Find a partner" });
+            const counts = rosterIds.reduce((map,id) => { const p=pos(players?.[id]);map[p]=(map[p]||0)+1;return map; },{});
+            const surplus = Object.entries(counts).filter(([position,count]) => ["QB","RB","WR","TE"].includes(position) && count >= ({QB:4,RB:7,WR:9,TE:4}[position] || 99)).sort((a,b)=>b[1]-a[1])[0];
+            const need = ["QB","RB","WR","TE"].sort((a,b)=>n(counts[a])-n(counts[b]))[0];
+            if (surplus && surplus[0] !== need) leagueItems.push({ ...base, id:`trade-fit:${leagueId}:${week}:${surplus[0]}:${need}`, category:"trade", priority:44, tone:"planning", title:`Convert ${surplus[0]} depth into ${need}`, impact:"Improves roster balance", confidence:65, deadline:null, why:`Your roster carries ${surplus[1]} ${surplus[0]}s while ${need} is the thinnest core position. Trade Partner Finder can identify a manager with the inverse need.`, href:"/trade", action:"Find a partner" });
+          }
 
           const activeDraft = drafts.find((draft) => ["drafting","paused"].includes(String(draft.status).toLowerCase()));
           if (activeDraft || String(league.status).toLowerCase() === "drafting") leagueItems.push({ ...base, id:`draft:${activeDraft?.draft_id || leagueId}`, category:"draft", priority:92, tone:"critical", title:"Draft currently active", impact:"Live selection clock", confidence:100, deadline:null, why:"The Draft Command Center can refresh every five seconds, remove selected players, and tailor recommendations to this roster.", href:`/draft-helper?league=${leagueId}${activeDraft?.draft_id ? `&draft=${activeDraft.draft_id}` : ""}`, action:"Enter draft room" });
@@ -269,6 +273,45 @@ export default function DecisionInbox({ full=false }) {
             });
             rosters.filter((row) => !row.owner_id).forEach((row) => leagueItems.push({ ...base, id:`commissioner-orphan:${leagueId}:${row.roster_id}`, category:"commissioner", priority:84, tone:"warning", title:`Roster ${row.roster_id} has no assigned manager`, impact:"League continuity", confidence:100, deadline:null, why:"Sleeper exposes this roster without an owner ID.", evidence:[`Roster ${row.roster_id}`,"No Sleeper owner ID"], href:`/commissioner-dashboard?league=${leagueId}&tab=orphan`, action:"Open orphan evaluator" }));
             if (pendingTrades.length) leagueItems.push({ ...base, id:`commissioner-trades:${leagueId}:${week}`, category:"commissioner", priority:78, tone:"warning", title:`Review ${pendingTrades.length} unresolved league trade${pendingTrades.length === 1 ? "" : "s"}`, impact:"Transaction review", confidence:96, deadline:null, why:"One or more league trades have not reached a completed or failed state.", evidence:pendingTrades.slice(0,4).map((row) => `Transaction ${row.transaction_id || "pending"}`), href:`/commissioner-dashboard?league=${leagueId}&tab=review`, action:"Review trade evidence" });
+
+            const completedWeek = Math.max(0, week - 1);
+            if (completedWeek) {
+              const historyWeeks = Array.from({ length:completedWeek }, (_, index) => index + 1);
+              const [matchupHistory, transactionHistory] = await Promise.all([
+                concurrentMap(historyWeeks, 6, async (scanWeek) => ({ week:scanWeek, rows:await getJson(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${scanWeek}`).catch(() => []) })),
+                concurrentMap([0, ...historyWeeks], 6, async (scanWeek) => getJson(`https://api.sleeper.app/v1/league/${leagueId}/transactions/${scanWeek}`).catch(() => [])),
+              ]);
+              const completedMoves = transactionHistory.flat().filter((row) => String(row.status).toLowerCase() === "complete");
+              const movesByRoster = new Map();
+              completedMoves.forEach((row) => (row.roster_ids || Object.values(row.adds || {})).map(String).forEach((id) => movesByRoster.set(id, n(movesByRoster.get(id)) + 1)));
+              const lineupsByRoster = new Map();
+              matchupHistory.forEach(({ week:scanWeek, rows }) => rows.forEach((row) => {
+                const id = String(row.roster_id);
+                const startersKey = (row.starters || []).map(String).join("|");
+                const existing = lineupsByRoster.get(id) || [];
+                existing.push({ week:scanWeek, startersKey });
+                lineupsByRoster.set(id, existing);
+              }));
+              rosters.forEach((row) => {
+                const rosterId = String(row.roster_id);
+                if (completedWeek >= 4 && !n(movesByRoster.get(rosterId))) leagueItems.push({ ...base, id:`commissioner-inactive:${leagueId}:${rosterId}:${completedWeek}`, category:"commissioner", priority:70, tone:"warning", title:`${managerName(rosterId)} has no recorded activity`, impact:"Manager participation review", confidence:96, deadline:null, why:"No completed trade, waiver, or free-agent move was found during the same completed-week window used by the Commissioner Dashboard.", evidence:[`Manager: ${managerName(rosterId)}`,`Weeks 1-${completedWeek}`,"0 completed transactions"], href:`/commissioner-dashboard?league=${leagueId}&tab=activity`, action:"Review activity evidence" });
+                const history = lineupsByRoster.get(rosterId) || [];
+                let unchanged = 0;
+                history.forEach((entry, index) => { if (index && entry.startersKey && entry.startersKey === history[index - 1].startersKey) unchanged += 1; });
+                if (unchanged >= Math.max(3, Math.floor(history.length * .65))) leagueItems.push({ ...base, id:`commissioner-unchanged:${leagueId}:${rosterId}:${completedWeek}`, category:"commissioner", priority:58, tone:"opportunity", title:`${managerName(rosterId)} has a frequently unchanged lineup`, impact:"Lineup-management context", confidence:82, deadline:null, why:"The same starter combination crossed the Commissioner Dashboard’s consecutive-week threshold. Byes, injuries, Best Ball, and intentional lineup choices may explain it.", evidence:[`Manager: ${managerName(rosterId)}`,`${unchanged} unchanged consecutive-week comparisons`], href:`/commissioner-dashboard?league=${leagueId}&tab=activity`, action:"Review lineup history" });
+              });
+              const pairCounts = new Map();
+              completedMoves.filter((row) => row.type === "trade").forEach((row) => {
+                const ids = [...new Set((row.roster_ids || []).map(String))].sort();
+                if (ids.length < 2) return;
+                const key = ids.join("|");
+                pairCounts.set(key, n(pairCounts.get(key)) + 1);
+              });
+              [...pairCounts.entries()].filter(([,count]) => count >= 4).forEach(([key,count]) => {
+                const ids = key.split("|");
+                leagueItems.push({ ...base, id:`commissioner-repeat-trades:${leagueId}:${key}`, category:"commissioner", priority:64, tone:"opportunity", title:`${managerName(ids[0])} and ${managerName(ids[1])} traded ${count} times`, impact:"Repeated trade relationship", confidence:100, deadline:null, why:"This pair crossed the same repeated-trader review threshold used by the Commissioner Dashboard. Frequency alone is not evidence of misconduct.", evidence:ids.map((id) => `Manager: ${managerName(id)}`), href:`/commissioner-dashboard?league=${leagueId}&tab=review`, action:"Review trade relationship" });
+              });
+            }
           }
           if (week >= 11 && String(league.status).toLowerCase() === "in_season") leagueItems.push({ ...base, id:`playoffs:${leagueId}:${week}`, category:"playoffs", priority:52, tone:"opportunity", title:"Playoff leverage is active", impact:"Seed and qualification odds", confidence:82, deadline:null, why:`Week ${week} outcomes can materially change qualification and seeding paths. The Scenario Explorer identifies the matchups that matter most.`, href:"/playoff-odds", action:"Explore scenarios" });
           return { items:leagueItems, exposure:rosterIds };

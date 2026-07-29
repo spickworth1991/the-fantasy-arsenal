@@ -98,6 +98,43 @@ async function buildSnapshot(account, previous, requestedLeagueIds = []) {
             const involved = [...new Set(pending.flatMap((row) => row.roster_ids || Object.values(row.adds || {})).map(String))];
             collected.push({ ...base, id:`commissioner-trades:${leagueId}:${week}`, category:"commissioner", priority:78, title:`Review ${pending.length} unresolved league trade${pending.length === 1 ? "" : "s"}`, impact:"Transaction review", impactValue:pending.length, confidence:96, deadline:null, why:"One or more league trades have not reached a completed or failed state.", evidence:[...involved.slice(0,6).map((id) => `Manager: ${managerName(id)}`), ...pending.slice(0,4).map((row) => `Transaction ${row.transaction_id || "pending"}`)], href:`/commissioner-dashboard?league=${leagueId}&tab=review`, action:"Review trade evidence" });
           }
+          const completedWeek = Math.max(0, week - 1);
+          if (completedWeek) {
+            const historyWeeks = Array.from({ length:completedWeek }, (_, index) => index + 1);
+            const [matchupHistory, transactionHistory] = await Promise.all([
+              Promise.all(historyWeeks.map(async (scanWeek) => ({ week:scanWeek, rows:await sleeper(`/league/${leagueId}/matchups/${scanWeek}`).catch(() => []) }))),
+              Promise.all([0, ...historyWeeks].map((scanWeek) => sleeper(`/league/${leagueId}/transactions/${scanWeek}`).catch(() => []))),
+            ]);
+            const completedMoves = transactionHistory.flat().filter((row) => String(row.status).toLowerCase() === "complete");
+            const movesByRoster = new Map();
+            completedMoves.forEach((row) => (row.roster_ids || Object.values(row.adds || {})).map(String).forEach((id) => movesByRoster.set(id, number(movesByRoster.get(id)) + 1)));
+            const lineupsByRoster = new Map();
+            matchupHistory.forEach(({ rows }) => rows.forEach((row) => {
+              const id = String(row.roster_id);
+              const existing = lineupsByRoster.get(id) || [];
+              existing.push((row.starters || []).map(String).join("|"));
+              lineupsByRoster.set(id, existing);
+            }));
+            rosters.forEach((row) => {
+              const rosterId = String(row.roster_id);
+              if (completedWeek >= 4 && !number(movesByRoster.get(rosterId))) collected.push({ ...base, id:`commissioner-inactive:${leagueId}:${rosterId}:${completedWeek}`, category:"commissioner", priority:70, title:`${managerName(rosterId)} has no recorded activity`, impact:"Manager participation review", impactValue:completedWeek, confidence:96, deadline:null, why:"No completed trade, waiver, or free-agent move was found during the same completed-week window used by the Commissioner Dashboard.", evidence:[`Manager: ${managerName(rosterId)}`,`Weeks 1-${completedWeek}`,"0 completed transactions"], href:`/commissioner-dashboard?league=${leagueId}&tab=activity`, action:"Review activity evidence" });
+              const lineupHistory = lineupsByRoster.get(rosterId) || [];
+              let unchanged = 0;
+              lineupHistory.forEach((starterKey, index) => { if (index && starterKey && starterKey === lineupHistory[index - 1]) unchanged += 1; });
+              if (unchanged >= Math.max(3, Math.floor(lineupHistory.length * .65))) collected.push({ ...base, id:`commissioner-unchanged:${leagueId}:${rosterId}:${completedWeek}`, category:"commissioner", priority:58, title:`${managerName(rosterId)} has a frequently unchanged lineup`, impact:"Lineup-management context", impactValue:unchanged, confidence:82, deadline:null, why:"The same starter combination crossed the Commissioner Dashboard’s consecutive-week threshold. Byes, injuries, Best Ball, and intentional lineup choices may explain it.", evidence:[`Manager: ${managerName(rosterId)}`,`${unchanged} unchanged consecutive-week comparisons`], href:`/commissioner-dashboard?league=${leagueId}&tab=activity`, action:"Review lineup history" });
+            });
+            const pairCounts = new Map();
+            completedMoves.filter((row) => row.type === "trade").forEach((row) => {
+              const ids = [...new Set((row.roster_ids || []).map(String))].sort();
+              if (ids.length < 2) return;
+              const key = ids.join("|");
+              pairCounts.set(key, number(pairCounts.get(key)) + 1);
+            });
+            [...pairCounts.entries()].filter(([,count]) => count >= 4).forEach(([key,count]) => {
+              const ids = key.split("|");
+              collected.push({ ...base, id:`commissioner-repeat-trades:${leagueId}:${key}`, category:"commissioner", priority:64, title:`${managerName(ids[0])} and ${managerName(ids[1])} traded ${count} times`, impact:"Repeated trade relationship", impactValue:count, confidence:100, deadline:null, why:"This pair crossed the same repeated-trader review threshold used by the Commissioner Dashboard. Frequency alone is not evidence of misconduct.", evidence:ids.map((id) => `Manager: ${managerName(id)}`), href:`/commissioner-dashboard?league=${leagueId}&tab=review`, action:"Review trade relationship" });
+            });
+          }
         }
         if (week >= 11 && String(league.status).toLowerCase() === "in_season") collected.push({ ...base, id:`playoffs:${leagueId}:${week}`, category:"playoffs", priority:52, title:"Playoff leverage is active", impact:"Qualification and seeding paths", impactValue:week, confidence:82, deadline:null, why:`The NFL state is in Week ${week}, when remaining results can materially affect playoff qualification and seeding.`, evidence:[`Week ${week}`,`${number(league.settings?.playoff_teams) || "Configured"} playoff teams`], href:`/playoff-odds?league=${leagueId}`, action:"Explore scenarios" });
       } catch (error) {

@@ -518,7 +518,11 @@ export default function CommissionerDashboardClient() {
   const [progress, setProgress] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("summary");
+  const [portfolioSummary, setPortfolioSummary] = useState([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [portfolioProgress, setPortfolioProgress] = useState("");
+  const [portfolioError, setPortfolioError] = useState("");
   const [leagueQuery, setLeagueQuery] = useState("");
   const [reportRosterId, setReportRosterId] = useState("");
   const [copied, setCopied] = useState(false);
@@ -542,6 +546,7 @@ export default function CommissionerDashboardClient() {
   const chooseLeague = (leagueId) => {
     setActiveLeague(leagueId);
     setData(null);
+    setTab("overview");
     setLeagueQuery("");
     if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
   };
@@ -550,6 +555,50 @@ export default function CommissionerDashboardClient() {
   const selectedValueSource = DEFAULT_SOURCES.find((source) => source.key === commissionerSourceKey) || DEFAULT_SOURCES[0];
   const valueFor = useMemo(() => (player) => getPlayerValue(player, { format, qbType, sourceKey: commissionerSourceKey }) || 0, [commissionerSourceKey, format, getPlayerValue, qbType]);
   const pickValueFor = useMemo(() => (pick, slot = 0, teams = number(league?.total_rosters) || 12) => getMarketPickValue({ players, valueFor, season:pick?.season, round:pick?.round, slot, teams }), [league?.total_rosters, players, valueFor]);
+
+  useEffect(() => {
+    let active = true;
+    if (!username || !leagues.length || !players || tab !== "summary") {
+      if (!username) setPortfolioSummary([]);
+      return () => { active = false; };
+    }
+    setPortfolioLoading(true);
+    setPortfolioError("");
+    (async () => {
+      try {
+        const [root, state] = await Promise.all([
+          getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`),
+          getJson("https://api.sleeper.app/v1/state/nfl").catch(() => ({})),
+        ]);
+        const commissioned = leagues.filter((row) => String(row.owner_id || "") === String(root.user_id));
+        const rows = await mapConcurrent(commissioned, 4, async (target) => {
+          const throughWeek = String(state.season) === String(target.season) ? clamp(number(state.week || 1) - 1, 0, 18) : 18;
+          const weeks = Array.from({ length:throughWeek }, (_, index) => index + 1);
+          const transactionWeeks = Array.from(new Set([0, ...weeks, Math.min(18, throughWeek + 1)]));
+          const [rosters, users, matchupRows, transactionRows, tradedPicks] = await Promise.all([
+            target.rosters?.length ? target.rosters : getJson(`https://api.sleeper.app/v1/league/${target.league_id}/rosters`).catch(() => []),
+            target.users?.length ? target.users : getJson(`https://api.sleeper.app/v1/league/${target.league_id}/users`).catch(() => []),
+            mapConcurrent(weeks, 6, async (week) => ({ week, rows:await getJson(`https://api.sleeper.app/v1/league/${target.league_id}/matchups/${week}`).catch(() => []) })),
+            mapConcurrent(transactionWeeks, 6, async (week) => getJson(`https://api.sleeper.app/v1/league/${target.league_id}/transactions/${week}`).catch(() => [])),
+            getJson(`https://api.sleeper.app/v1/league/${target.league_id}/traded_picks`).catch(() => []),
+          ]);
+          const txMap = new Map();
+          transactionRows.flat().forEach((transaction) => txMap.set(String(transaction.transaction_id || `${transaction.created}-${transaction.type}`), transaction));
+          const hydrated = { ...target, rosters, users };
+          return {
+            league:hydrated,
+            audit:buildAudit({ league:hydrated, matchups:matchupRows, transactions:[...txMap.values()], tradedPicks, players, valueFor, pickValueFor, throughWeek }),
+          };
+        }, (done, total) => active && setPortfolioProgress(`${done}/${total} commissioned leagues audited`));
+        if (active) setPortfolioSummary(rows);
+      } catch {
+        if (active) setPortfolioError("The commissioner portfolio summary could not be completed. Individual league audits are still available.");
+      } finally {
+        if (active) { setPortfolioLoading(false); setPortfolioProgress(""); }
+      }
+    })();
+    return () => { active = false; };
+  }, [leagues, pickValueFor, players, tab, username, valueFor]);
 
 
   useEffect(() => {
@@ -676,9 +725,22 @@ export default function CommissionerDashboardClient() {
     {error ? <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</div> : null}
     {!username ? <Shell className="mt-6 p-8 text-center text-white/55">Load a Sleeper portfolio to select and audit one of its leagues.</Shell> : null}
 
+    {username && tab === "summary" ? <div className="mt-6 space-y-5">
+      <Shell className="overflow-hidden"><div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.15),transparent_42%)] p-5 sm:p-6"><div className="text-[11px] font-semibold uppercase tracking-[.22em] text-cyan-200/55">Portfolio command summary</div><h2 className="mt-1 text-2xl font-black sm:text-3xl">Issues across every league you commission</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">The same season-long lineup, activity, roster, and trade-review checks used by each league audit are rolled up here. Signals request context; they never declare misconduct.</p></div>
+        {portfolioLoading ? <div className="flex items-center gap-3 p-5 text-sm text-cyan-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />{portfolioProgress || "Finding commissioned leagues…"}</div> : null}
+        {portfolioError ? <div className="m-5 rounded-2xl border border-rose-300/15 bg-rose-300/[0.07] p-4 text-sm text-rose-100">{portfolioError}</div> : null}
+        {!portfolioLoading && !portfolioError ? <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4"><Metric label="Leagues commissioned" value={portfolioSummary.length} /><Metric label="Issues found" value={portfolioSummary.reduce((sum,row) => sum + row.audit.attentionCount, 0)} tone={portfolioSummary.some((row) => row.audit.attentionCount) ? "warn" : "good"} /><Metric label="Open rosters" value={portfolioSummary.reduce((sum,row) => sum + row.audit.managers.filter((manager) => manager.orphan).length, 0)} /><Metric label="Trade reviews" value={portfolioSummary.reduce((sum,row) => sum + row.audit.tradeSignals.length, 0)} /></div> : null}
+      </Shell>
+      {!portfolioLoading && !portfolioSummary.length && !portfolioError ? <Shell className="p-7 text-center"><div className="text-lg font-black">No commissioned leagues found</div><p className="mt-2 text-sm text-white/42">The loaded Sleeper manager is not listed as the owner of a current-season league.</p></Shell> : null}
+      <div className="grid gap-4 lg:grid-cols-2">{[...portfolioSummary].sort((a,b) => b.audit.attentionCount-a.audit.attentionCount).map(({ league:row, audit }) => {
+        const managerSignals = audit.managers.flatMap((manager) => manager.reviewSignals.map((signal) => ({ manager:manager.name, ...signal })));
+        return <Shell key={row.league_id} className="p-5"><div className="flex items-start gap-3"><AvatarImage src={leagueAvatar(row.avatar)} fallbackSrc={DEFAULT_LEAGUE_IMG} alt="" className="h-12 w-12 rounded-2xl object-cover" /><div className="min-w-0 flex-1"><div className="truncate text-lg font-black">{row.name}</div><div className="mt-1 text-xs text-white/38">{row.season} · {audit.managers.length} teams · through Week {audit.throughWeek || 0}</div></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${audit.attentionCount ? "bg-amber-300/10 text-amber-100" : "bg-emerald-300/10 text-emerald-100"}`}>{audit.attentionCount ? `${audit.attentionCount} REVIEW` : "CLEAR"}</span></div><div className="mt-4 grid grid-cols-3 gap-2"><Metric label="Health" value={`${Math.round(audit.healthScore)}/100`} /><Metric label="Manager signals" value={managerSignals.length} /><Metric label="Trade signals" value={audit.tradeSignals.length} /></div>{managerSignals.length || audit.tradeSignals.length ? <div className="mt-4 space-y-2">{managerSignals.slice(0,3).map((signal,index) => <div key={`${signal.manager}-${signal.label}-${index}`} className="rounded-xl border border-white/8 bg-white/[0.025] p-3"><div className="text-xs font-semibold">{signal.manager} · {signal.label}</div><div className="mt-1 line-clamp-2 text-[11px] leading-5 text-white/42">{signal.detail}</div></div>)}{audit.tradeSignals.slice(0,2).map((signal) => <div key={signal.id} className="rounded-xl border border-rose-300/10 bg-rose-300/[0.035] p-3 text-xs"><span className="font-semibold text-rose-100">Trade review:</span> <span className="text-white/45">{signal.detail}</span></div>)}</div> : <div className="mt-4 rounded-2xl bg-emerald-400/[0.055] p-4 text-sm text-emerald-100">No audit thresholds were crossed.</div>}<button type="button" onClick={() => chooseLeague(row.league_id)} className="mt-4 w-full rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.07] px-4 py-3 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/[0.12]">Open full league audit →</button></Shell>;
+      })}</div>
+    </div> : null}
+
     {data ? <><section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6"><Metric label="Health score" value={`${Math.round(data.healthScore)}/100`} detail="Composite participation and balance signal" tone={data.healthScore >= 75 ? "good" : data.healthScore >= 55 ? "warn" : "risk"} /><Metric label="Balance" value={`${Math.round(data.balanceScore)}/100`} detail={`${data.valueSpread.toFixed(1)}× top-to-bottom value`} /><Metric label="Balance trend" value={data.parityTrend} detail="Early weeks compared with recent weeks" /><Metric label="Participation" value={percent(data.participation * 100)} detail="Managers with recorded activity" /><Metric label="Needs review" value={data.attentionCount} detail="Manager and trade signals" tone={data.attentionCount ? "warn" : "good"} /><Metric label="Open rosters" value={data.managers.filter((manager) => manager.orphan).length} detail="No Sleeper owner assigned" tone={data.managers.some((manager) => manager.orphan) ? "risk" : "good"} /></section>
 
-      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["overview","Overview"],["command","Command Center"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
+      <nav className="sticky top-16 z-30 -mx-4 mt-4 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border"><div className="flex w-max gap-1">{[["summary","All Leagues"],["overview","Overview"],["command","Command Center"],["analysis","League Analysis"],["admin","League Admin"],["network","Network"],["history","History"],["reports","Reports"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === key ? "bg-white/10 text-white" : "text-white/48 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div></nav>
 
       {tab === "network" ? <CommissionerLeagueNetwork league={league} data={data} /> : null}
       {tab === "history" ? <HistoricalHealth league={league} /> : null}
