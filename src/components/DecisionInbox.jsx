@@ -63,6 +63,22 @@ function actionHref(path, leagueId) {
   const divider = path.includes("?") ? "&" : "?";
   return leagueId ? `${path}${divider}league=${encodeURIComponent(leagueId)}` : path;
 }
+function mergeDecisionRows(serverRows = [], localRows = []) {
+  const merged = new Map();
+  [...serverRows, ...localRows].forEach((item) => {
+    if (!item?.id) return;
+    const existing = merged.get(item.id) || {};
+    merged.set(item.id, {
+      ...existing,
+      ...item,
+      evidence:item.evidence?.length ? item.evidence : existing.evidence,
+      priorityReason:item.priorityReason || existing.priorityReason,
+      previousPriority:item.previousPriority ?? existing.previousPriority,
+      priorityChange:item.priorityChange ?? existing.priorityChange ?? 0,
+    });
+  });
+  return [...merged.values()].sort((a,b) => n(b.priority)-n(a.priority));
+}
 
 function RecommendationCard({ item, state, update, compact=false }) {
   const content = <><div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-sm font-black ${toneClass(item.tone)}`}>{item.priority >= 90 ? "!" : item.category === "draft" ? "D" : item.category === "waiver" ? "W" : item.category === "trade" ? "T" : "A"}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="font-black text-white">{item.title}</span><span className={`rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider ${toneClass(item.tone)}`}>{priorityLabel(item.priority)}</span></div><div className="mt-1 text-xs text-white/38">{item.leagueName}{item.teamName ? ` · ${item.teamName}` : ""}</div>{!compact ? <><p className="mt-2 text-xs leading-5 text-white/55">{item.why}</p><div className="mt-2 flex flex-wrap gap-2 text-[9px]"><span className="rounded-full bg-white/[0.04] px-2 py-1 text-white/42">Impact · {item.impact}</span><span className="rounded-full bg-white/[0.04] px-2 py-1 text-white/42">Confidence · {item.confidence}%</span><span className="rounded-full bg-white/[0.04] px-2 py-1 text-white/42">{deadlineText(item.deadline)}</span></div></> : null}</div><span className="shrink-0 text-[10px] font-bold text-cyan-100">{item.action} →</span></>;
@@ -70,18 +86,19 @@ function RecommendationCard({ item, state, update, compact=false }) {
   return <article className="rounded-[24px] border border-white/[0.07] bg-white/[0.025] p-3 sm:p-4">
     {item.external ? <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3">{content}</a> : <Link href={href} className="flex items-center gap-3">{content}</Link>}
     {!compact ? <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
-      <button type="button" onClick={() => update(item.id, { saved:!state?.saved })} className={`rounded-xl px-3 py-2 text-[10px] font-bold ${state?.saved ? "bg-violet-300/12 text-violet-100" : "bg-white/[0.045] text-white/45"}`}>{state?.saved ? "Saved" : "Save"}</button>
-      <button type="button" onClick={() => update(item.id, { snoozedUntil:Date.now() + 4 * 3600000, status:"snoozed" })} className="rounded-xl bg-white/[0.045] px-3 py-2 text-[10px] font-bold text-white/45">Snooze 4h</button>
-      <button type="button" onClick={() => update(item.id, { status:"completed", completedAt:Date.now() })} className="rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Mark completed</button>
-      <button type="button" onClick={() => update(item.id, { status:"dismissed", completedAt:Date.now() })} className="rounded-xl bg-white/[0.035] px-3 py-2 text-[10px] font-bold text-white/30">Dismiss</button>
+      <button type="button" onClick={() => update(item.id, { saved:!state?.saved, decision:item })} className={`rounded-xl px-3 py-2 text-[10px] font-bold ${state?.saved ? "bg-violet-300/12 text-violet-100" : "bg-white/[0.045] text-white/45"}`}>{state?.saved ? "Saved" : "Save"}</button>
+      <button type="button" onClick={() => update(item.id, { snoozedUntil:Date.now() + 4 * 3600000, status:"snoozed", decision:item })} className="rounded-xl bg-white/[0.045] px-3 py-2 text-[10px] font-bold text-white/45">Snooze 4h</button>
+      <button type="button" onClick={() => update(item.id, { status:"completed", completedAt:Date.now(), decision:item }, "completed") } className="rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Mark completed</button>
+      <button type="button" onClick={() => update(item.id, { status:"dismissed", completedAt:Date.now(), decision:item })} className="rounded-xl bg-white/[0.035] px-3 py-2 text-[10px] font-bold text-white/30">Dismiss</button>
     </div> : null}
+    {!compact && (item.priorityReason || item.evidence?.length) ? <details className="mt-3 rounded-xl border border-white/[0.06] bg-black/15 p-3"><summary className="cursor-pointer text-[10px] font-bold text-white/45">Why this priority?</summary><p className="mt-2 text-xs leading-5 text-white/48">{item.priorityReason || item.why}</p>{item.priorityChange ? <div className={`mt-2 text-[10px] font-bold ${item.priorityChange > 0 ? "text-rose-100" : "text-emerald-100"}`}>{item.priorityChange > 0 ? "Priority increased" : "Priority decreased"} by {Math.abs(item.priorityChange)} points since the prior server snapshot.</div> : null}{item.evidence?.length ? <ul className="mt-2 space-y-1 text-[10px] text-white/32">{item.evidence.map((row,index)=><li key={`${row}-${index}`}>• {row}</li>)}</ul> : null}</details> : null}
     {!compact && state?.status === "completed" && !state?.outcome ? <div className="mt-3 rounded-xl bg-cyan-300/[0.04] p-3 text-xs text-white/50"><span>Did this decision help?</span><button onClick={() => update(item.id, { outcome:"helped" })} className="ml-3 text-emerald-100">Yes</button><button onClick={() => update(item.id, { outcome:"did-not-help" })} className="ml-3 text-rose-100">No</button></div> : null}
   </article>;
 }
 
 export default function DecisionInbox({ full=false }) {
   const { username, leagues=[], players, year, getPlayerValue, metricType, sourceKey } = useSleeper();
-  const { isConnected, syncNow } = useArsenalAccount();
+  const { isConnected, syncNow, accountRequest } = useArsenalAccount();
   const [items, setItems] = useState([]);
   const [actions, setActions] = useState({});
   const [loading, setLoading] = useState(false);
@@ -90,11 +107,14 @@ export default function DecisionInbox({ full=false }) {
   const [updatedAt, setUpdatedAt] = useState(null);
   const [tab, setTab] = useState("now");
   const [category, setCategory] = useState("all");
+  const [notificationRules, setNotificationRules] = useState({ critical:true, lineup:true, drafts:true, commissioner:false, minimumPriority:70 });
   const cacheKey = `tfa:intelligence-cache:${String(username || "").toLowerCase()}:${year || new Date().getFullYear()}:${sourceKey || "default"}`;
 
   useEffect(() => {
     try {
       setActions(JSON.parse(localStorage.getItem(ACTIONS_KEY) || "{}"));
+      const preferences = JSON.parse(localStorage.getItem("tfa:account-preferences") || "{}");
+      if (preferences.intelligenceNotifications) setNotificationRules((current) => ({ ...current, ...preferences.intelligenceNotifications }));
       const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
       if (cached?.at && Date.now() - cached.at < CACHE_MS && Array.isArray(cached.items)) {
         setItems(cached.items); setUpdatedAt(new Date(cached.at));
@@ -102,8 +122,47 @@ export default function DecisionInbox({ full=false }) {
     } catch {}
   }, [cacheKey]);
 
-  const updateAction = (id, patch) => {
-    const next = { ...actions, [id]:{ ...(actions[id] || {}), ...patch, updatedAt:Date.now() } };
+  const saveNotificationRules = (patch) => {
+    const next = { ...notificationRules, ...patch };
+    setNotificationRules(next);
+    try {
+      const preferences = JSON.parse(localStorage.getItem("tfa:account-preferences") || "{}");
+      localStorage.setItem("tfa:account-preferences", JSON.stringify({ ...preferences, intelligenceNotifications:next }));
+    } catch {}
+    if (isConnected) window.setTimeout(() => syncNow({ quiet:true }), 100);
+  };
+
+  useEffect(() => {
+    if (!isConnected) return;
+    let active = true;
+    const hydrate = async () => {
+      try {
+        const result = await accountRequest("/api/arsenal/intelligence");
+        if (!active) return;
+        if (result?.snapshot?.items?.length) {
+          setItems((current) => mergeDecisionRows(result.snapshot.items, current));
+          setUpdatedAt(new Date(result.snapshot.generatedAt));
+        }
+        if (result?.stale) {
+          const refreshed = await accountRequest("/api/arsenal/intelligence", {
+            method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ force:false }),
+          });
+          if (active && refreshed?.snapshot) {
+            setItems((current) => mergeDecisionRows(refreshed.snapshot.items, current));
+            setUpdatedAt(new Date(refreshed.snapshot.generatedAt));
+          }
+        }
+      } catch {}
+    };
+    hydrate();
+    return () => { active = false; };
+  }, [accountRequest, isConnected]);
+
+  const updateAction = (id, patch, eventType = "") => {
+    const previous = actions[id] || {};
+    const event = eventType || (patch.status ? patch.status : patch.saved !== undefined ? (patch.saved ? "saved" : "unsaved") : patch.outcome ? `outcome:${patch.outcome}` : "updated");
+    const history = [...(previous.history || []), { event, at:Date.now() }].slice(-40);
+    const next = { ...actions, [id]:{ ...previous, ...patch, history, updatedAt:Date.now() } };
     setActions(next);
     try { localStorage.setItem(ACTIONS_KEY, JSON.stringify(next)); } catch {}
     if (isConnected) window.setTimeout(() => syncNow({ quiet:true }), 100);
@@ -113,6 +172,15 @@ export default function DecisionInbox({ full=false }) {
     if (!username || loading) return;
     setLoading(true); setError("");
     try {
+      let serverItems = [];
+      if (isConnected) {
+        try {
+          const result = await accountRequest("/api/arsenal/intelligence", {
+            method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ force:true }),
+          });
+          serverItems = result?.snapshot?.items || [];
+        } catch {}
+      }
       const [root, nflState, scoreboard] = await Promise.all([
         getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`),
         getJson("https://api.sleeper.app/v1/state/nfl"),
@@ -193,7 +261,8 @@ export default function DecisionInbox({ full=false }) {
       const concentrated = [...exposure.entries()].filter(([,count]) => count >= threshold).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([id,count]) => ({
         id:`exposure:${id}:${leagues.length}`, category:"portfolio", priority:40 + Math.min(20,count), tone:"planning", title:`High exposure · ${name(players,id)}`, leagueName:"Portfolio-wide", teamName:`Rostered in ${count} of ${leagues.length} leagues`, impact:`${Math.round(count/Math.max(1,leagues.length)*100)}% concentration`, confidence:96, deadline:null, why:"Concentration can create an edge when correct, but one injury or role change affects several teams. Review whether this is intentional.", href:`/player-stock/results?player=${id}`, action:"Review exposure",
       }));
-      const next = [...scans.flatMap((scan) => scan.items), ...concentrated].map((item) => ({ ...item, tone:item.tone || tone(item.priority) })).sort((a,b) => b.priority-a.priority);
+      const localItems = [...scans.flatMap((scan) => scan.items), ...concentrated].map((item) => ({ ...item, tone:item.tone || tone(item.priority) }));
+      const next = mergeDecisionRows(serverItems, localItems);
       const at = Date.now();
       setItems(next); setUpdatedAt(new Date(at));
       localStorage.setItem(cacheKey, JSON.stringify({ at, items:next }));
@@ -204,14 +273,18 @@ export default function DecisionInbox({ full=false }) {
     }
   };
 
-  const activeItems = useMemo(() => items.filter((item) => {
+  const itemsForView = useMemo(() => {
+    if (tab !== "history") return items;
+    return mergeDecisionRows(items, Object.values(actions).map((state) => state?.decision).filter(Boolean));
+  }, [actions, items, tab]);
+  const activeItems = useMemo(() => itemsForView.filter((item) => {
     const state = actions[item.id] || {};
     if (tab === "history") return ["completed","dismissed"].includes(state.status);
     if (tab === "saved") return state.saved && !["completed","dismissed"].includes(state.status);
     if (["completed","dismissed"].includes(state.status)) return false;
     if (state.status === "snoozed" && n(state.snoozedUntil) > Date.now()) return false;
     return true;
-  }).filter((item) => category === "all" || item.category === category), [actions, category, items, tab]);
+  }).filter((item) => category === "all" || item.category === category), [actions, category, itemsForView, tab]);
   const categories = [...new Set(items.map((item) => item.category))];
   const visible = full ? activeItems : activeItems.slice(0, 8);
   const critical = activeItems.filter((item) => item.priority >= 90).length;
@@ -221,7 +294,7 @@ export default function DecisionInbox({ full=false }) {
     <div className="border-b border-white/10 p-4 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.24em] text-amber-200/55">Arsenal Intelligence</div><h2 className="mt-1 text-2xl font-black sm:text-4xl">What should I do today?</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/44">One prioritized workflow across lineups, injuries, weather, waivers, drafts, trades, playoffs, portfolio exposure, and commissioner responsibilities.</p></div><div className="flex flex-wrap gap-2"><button onClick={scan} disabled={loading || !username} className="min-h-11 rounded-2xl bg-amber-300/10 px-5 text-sm font-black text-amber-100 disabled:opacity-40">{loading ? `Scanning ${progress}` : items.length ? "Refresh intelligence" : "Scan every league"}</button>{!full ? <Link href="/intelligence" className="grid min-h-11 place-items-center rounded-2xl bg-violet-300/10 px-5 text-sm font-black text-violet-100">Open command center</Link> : null}</div></div>
       <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-2xl bg-black/20 p-3"><b className="text-2xl">{activeItems.length}</b><small className="block text-[9px] uppercase text-white/30">Open decisions</small></div><div className="rounded-2xl bg-rose-300/[0.05] p-3"><b className="text-2xl text-rose-100">{critical}</b><small className="block text-[9px] uppercase text-white/30">Critical now</small></div><div className="rounded-2xl bg-emerald-300/[0.05] p-3"><b className="text-2xl text-emerald-100">{potential || "—"}</b><small className="block text-[9px] uppercase text-white/30">Modeled upside</small></div><div className="rounded-2xl bg-violet-300/[0.05] p-3"><b className="text-2xl text-violet-100">{isConnected ? "Cloud" : "Local"}</b><small className="block text-[9px] uppercase text-white/30">Decision memory</small></div></div>
     </div>
-    {full ? <div className="border-b border-white/10 p-3 sm:p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex overflow-x-auto">{[["now","Act now"],["saved","Saved"],["history","History"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-xs font-bold ${tab===key ? "bg-white/10 text-white" : "text-white/38"}`}>{label}</button>)}</div><select value={category} onChange={(event) => setCategory(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs"><option value="all">Every decision type</option>{categories.map((value) => <option key={value} value={value}>{value[0].toUpperCase()+value.slice(1)}</option>)}</select></div></div> : null}
+    {full ? <div className="border-b border-white/10 p-3 sm:p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex overflow-x-auto">{[["now","Act now"],["saved","Saved"],["history","History"]].map(([key,label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-xs font-bold ${tab===key ? "bg-white/10 text-white" : "text-white/38"}`}>{label}</button>)}</div><select value={category} onChange={(event) => setCategory(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs"><option value="all">Every decision type</option>{categories.map((value) => <option key={value} value={value}>{value[0].toUpperCase()+value.slice(1)}</option>)}</select></div><details className="mt-3 rounded-2xl border border-white/[0.06] bg-black/15 p-3"><summary className="cursor-pointer text-xs font-bold text-white/50">Notification rules</summary><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{[["critical","Critical"],["lineup","Lineups"],["drafts","Active drafts"],["commissioner","Commissioner"]].map(([key,label])=><label key={key} className="flex items-center justify-between rounded-xl bg-white/[0.035] px-3 py-2 text-xs text-white/55">{label}<input type="checkbox" checked={!!notificationRules[key]} onChange={(event)=>saveNotificationRules({[key]:event.target.checked})}/></label>)}<label className="rounded-xl bg-white/[0.035] px-3 py-2 text-[10px] text-white/40">Minimum priority<select value={notificationRules.minimumPriority} onChange={(event)=>saveNotificationRules({minimumPriority:Number(event.target.value)})} className="ml-2 rounded-lg bg-slate-950 px-2 py-1 text-white"><option value="90">Critical</option><option value="70">High</option><option value="45">Opportunity</option></select></label></div><p className="mt-2 text-[10px] text-white/28">These account-synced rules prepare notification eligibility. Browser and email delivery still follow each channel’s permission and subscription settings.</p></details></div> : null}
     {error ? <div className="border-b border-white/10 p-4 text-sm text-rose-100">{error}</div> : null}
     <div className={full ? "grid gap-3 p-3 sm:p-5 lg:grid-cols-2" : "divide-y divide-white/[0.06]"}>
       {visible.map((item) => full ? <RecommendationCard key={item.id} item={item} state={actions[item.id]} update={updateAction} /> : <div key={item.id} className="p-2 sm:p-3"><RecommendationCard item={item} state={actions[item.id]} update={updateAction} compact /></div>)}

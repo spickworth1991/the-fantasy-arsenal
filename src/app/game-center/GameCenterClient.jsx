@@ -19,6 +19,10 @@ const injury = (player) => String(player?.injury_status || "").toUpperCase();
 const isRisk = (player) => ["OUT", "DOUBTFUL", "QUESTIONABLE", "IR", "PUP", "SUSPENDED"].includes(injury(player)) || String(player?.status || "").toLowerCase() === "inactive";
 const isUnavailable = (player) => ["OUT", "DOUBTFUL", "IR", "PUP", "SUSPENDED"].includes(injury(player)) || String(player?.status || "").toLowerCase() === "inactive";
 const isFinal = (game) => String(game?.status || "").toLowerCase().startsWith("final");
+const isGameActive = (game) => {
+  const status = String(game?.status || "").toLowerCase();
+  return !isFinal(game) && ["live","progress","quarter","halftime","q1","q2","q3","q4","ot"].some((value) => status.includes(value));
+};
 const leagueFormat = (league) => {
   if (Number(league?.settings?.best_ball) === 1) return "bestball";
   if (Number(league?.settings?.type) === 2) return "dynasty";
@@ -87,6 +91,7 @@ export default function GameCenterClient() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [liveEvents, setLiveEvents] = useState([]);
   const priorPoints = useRef(new Map());
+  const priorWinProbabilities = useRef(new Map());
   const scanRunning = useRef(false);
 
   useEffect(() => {
@@ -145,12 +150,6 @@ export default function GameCenterClient() {
     if (username && leagues.length) scan(false);
   }, [username, week]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!liveMode) return undefined;
-    const timer = window.setInterval(() => scan(true), 15000);
-    return () => window.clearInterval(timer);
-  }, [liveMode, scan]);
-
   const visibleRows = useMemo(() => rows.filter((row) => {
     const format = leagueFormat(row.league);
     if (bestBallFilter === "exclude" && format === "bestball") return false;
@@ -163,6 +162,36 @@ export default function GameCenterClient() {
     games.forEach((game) => (game.teams || []).forEach((team) => map.set(team, game)));
     return map;
   }, [games]);
+  const activeGameCount = useMemo(() => games.filter(isGameActive).length, [games]);
+  const upcomingSoon = useMemo(() => games.some((game) => {
+    const kickoff = new Date(game?.date || 0).getTime();
+    return !isFinal(game) && kickoff > Date.now() && kickoff - Date.now() < 90 * 60 * 1000;
+  }), [games]);
+  const liveRefreshSeconds = activeGameCount ? 10 : upcomingSoon ? 30 : 90;
+
+  useEffect(() => {
+    if (!liveMode) return undefined;
+    let timer;
+    let stopped = false;
+    const schedule = () => {
+      const hiddenMultiplier = document.visibilityState === "hidden" ? 4 : 1;
+      timer = window.setTimeout(async () => {
+        await scan(true);
+        if (!stopped) schedule();
+      }, liveRefreshSeconds * hiddenMultiplier * 1000);
+    };
+    const visibility = () => {
+      window.clearTimeout(timer);
+      if (!stopped) schedule();
+    };
+    schedule();
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [liveMode, liveRefreshSeconds, scan]);
 
   const weeklyProjection = useCallback((id) => n(getProjection?.(players?.[id], projectionSource)) / 17, [getProjection, players, projectionSource]);
 
@@ -261,6 +290,29 @@ export default function GameCenterClient() {
     if (nextEvents.length) setLiveEvents((current) => [...nextEvents, ...current].slice(0, 8));
   }, [playerRows, liveMode]);
 
+  useEffect(() => {
+    if (!liveMode || !matchupRows.length) {
+      priorWinProbabilities.current = new Map(matchupRows.map((row) => [String(row.league.league_id), row.winProbability]));
+      return;
+    }
+    const alerts = [];
+    matchupRows.forEach((row) => {
+      const id = String(row.league.league_id);
+      const previous = priorWinProbabilities.current.get(id);
+      if (previous == null) return;
+      const crossed = (previous < 50 && row.winProbability >= 50) || (previous >= 50 && row.winProbability < 50);
+      const becameClose = Math.abs(previous - 50) > 10 && Math.abs(row.winProbability - 50) <= 10;
+      if (crossed || becameClose) alerts.push({
+        id:`matchup-${Date.now()}-${id}`,
+        text:crossed
+          ? `${row.league.name} flipped to ${row.winProbability >= 50 ? "your side" : row.opponentName} (${row.winProbability}% win probability).`
+          : `${row.league.name} moved into one-play territory at ${row.winProbability}% win probability.`,
+      });
+    });
+    priorWinProbabilities.current = new Map(matchupRows.map((row) => [String(row.league.league_id), row.winProbability]));
+    if (alerts.length) setLiveEvents((current) => [...alerts, ...current].slice(0, 12));
+  }, [liveMode, matchupRows]);
+
   const counts = useMemo(() => ({
     winning:matchupRows.filter((row) => row.status === "winning").length,
     losing:matchupRows.filter((row) => row.status === "losing").length,
@@ -291,7 +343,7 @@ export default function GameCenterClient() {
       <header className="rounded-[30px] border border-emerald-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(16,185,129,.2),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.13),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-4 sm:p-7">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[.24em] text-emerald-200/60"><span>Weekly portfolio command</span>{liveMode ? <span className="rounded-full bg-emerald-300/12 px-2 py-1 tracking-normal text-emerald-100">LIVE · 15s</span> : null}</div>
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[.24em] text-emerald-200/60"><span>Weekly portfolio command</span>{liveMode ? <span className="rounded-full bg-emerald-300/12 px-2 py-1 tracking-normal text-emerald-100">LIVE · {liveRefreshSeconds}s{activeGameCount ? ` · ${activeGameCount} game${activeGameCount === 1 ? "" : "s"} active` : " · waiting for kickoff"}</span> : null}</div>
             <h1 className="mt-2 text-3xl font-black sm:text-5xl">Fantasy Game Center</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-white/48">One Sunday screen for scores, remaining players, lineup risk, late swaps, conflicts, weather, and the plays moving several leagues at once.</p>
           </div>

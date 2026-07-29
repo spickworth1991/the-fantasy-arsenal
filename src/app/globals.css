@@ -10,6 +10,33 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
+html[data-arsenal-embedded="true"] {
+  --arsenal-embed-gutter: clamp(0.5rem, 1.6vw, 1rem);
+  scroll-padding-top: calc(3.5rem + env(safe-area-inset-top));
+}
+
+html[data-arsenal-embedded="true"],
+html[data-arsenal-embedded="true"] body {
+  min-height: 100dvh;
+  overscroll-behavior-y: contain;
+}
+
+html[data-arsenal-embedded="true"] body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 640px) {
+  html[data-arsenal-embedded="true"] main > .mx-auto {
+    padding-left: var(--arsenal-embed-gutter) !important;
+    padding-right: var(--arsenal-embed-gutter) !important;
+  }
+
+  html[data-arsenal-embedded="true"] .fixed.top-0 {
+    padding-top: env(safe-area-inset-top);
+    height: calc(3.5rem + env(safe-area-inset-top));
+  }
+}
 .logo:hover { filter: drop-shadow(0 0 2em #646cffaa); }
 .logo.react:hover { filter: drop-shadow(0 0 2em #61dafbaa); }
 

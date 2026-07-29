@@ -5,30 +5,31 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSleeper } from "../context/SleeperContext";
 import { accountAvatar, useArsenalAccount } from "../context/ArsenalAccountContext";
+import { useEmbeddedMode } from "../context/EmbeddedModeContext";
 
 // Put these PNGs in /public/icons/
 const ICONS = {
-  football: "/icons/football-icon.png",
+  football: "/icons/football-icon.webp",
   home: "/icons/home-icon.png",
   trade: "/icons/trade-icon.png",
   stock: "/icons/stock-icon.png",
   availability: "/icons/availability-icon.png",
-  powerrank: "/icons/power-icon.png",
-  sos: "/icons/sos-icon.png",
-  playoff: "/icons/playoff-icon.png",
-  lineup: "/icons/lineup-icon.png",
-  draft: "/icons/draft-icon.png",
+  powerrank: "/icons/power-icon.webp",
+  sos: "/icons/sos-icon.webp",
+  playoff: "/icons/playoff-icon.webp",
+  lineup: "/icons/lineup-icon.webp",
+  draft: "/icons/draft-icon.webp",
   ballsville: "/brand/ballsville.png",
-  leaguehub: "/icons/league-hub.png",
-  history: "/icons/league-history-icon.png",
-  commissioner: "/icons/commissioner-dashboard-icon.png",
-  manager: "/icons/manager-intelligence-icon.png",
-  gamecenter: "/icons/fantasy-game-center-icon.png",
-  draftcommand: "/icons/draft-command-center-icon.png",
-  depthcharts: "/icons/lineup-icon.png",
-  intelligence: "/icons/football-icon.png",
-  trust: "/icons/power-icon.png",
-  profile: "/icons/manager-intelligence-icon.png",
+  leaguehub: "/icons/league-hub.webp",
+  history: "/icons/league-history-icon.webp",
+  commissioner: "/icons/commissioner-dashboard-icon.webp",
+  manager: "/icons/manager-intelligence-icon.webp",
+  gamecenter: "/icons/fantasy-game-center-icon.webp",
+  draftcommand: "/icons/draft-command-center-icon.webp",
+  depthcharts: "/icons/lineup-icon.webp",
+  intelligence: "/icons/football-icon.webp",
+  trust: "/icons/power-icon.webp",
+  profile: "/icons/manager-intelligence-icon.webp",
 };
 
 // Set badges for sidebar links here (optional).
@@ -72,7 +73,7 @@ function SidebarLink({ href, icon, label, onClick, badge }) {
       className="group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-white/62 transition hover:bg-white/[0.055] hover:text-cyan-100"
       onClick={onClick}
     >
-      <img src={icon} alt="" className="h-6 w-6 opacity-80 transition group-hover:opacity-100" />
+      <img src={icon} alt="" width="24" height="24" loading="lazy" decoding="async" className="h-6 w-6 opacity-80 transition group-hover:opacity-100" />
       <span className="font-medium">{label}</span>
       {badge ? <NavBadge text={badge} /> : null}
     </Link>
@@ -112,6 +113,7 @@ function BallsvilleLink({ className = "" }) {
 export default function Navbar({ pageTitle }) {
   const { username, year, loadPortfolio, clearPortfolio } = useSleeper();
   const { account, isConnected, disconnect } = useArsenalAccount();
+  const { embedded, openFullscreen } = useEmbeddedMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const [portfolioInput, setPortfolioInput] = useState("");
@@ -207,11 +209,12 @@ export default function Navbar({ pageTitle }) {
         {/* Right: Ballsville + user */}
         <div className="flex items-center gap-3">
           {/* ✅ hide Ballsville promo if accessed via Ballsville */}
-          {!hideBallsville && (
+          {!hideBallsville && !embedded && (
             <div className="hidden lg:block">
               <BallsvilleLink />
             </div>
           )}
+          {embedded ? <button type="button" onClick={openFullscreen} className="hidden rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-bold text-cyan-100 sm:block" title="Open this tool directly in The Fantasy Arsenal">Full screen ↗</button> : null}
 
           {username ? <Link href="/account" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span><span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "My Arsenal" : `${year || ""} · Guest`}</small></span></Link> : null}
 
@@ -254,7 +257,8 @@ export default function Navbar({ pageTitle }) {
               <img src={ICONS.football} alt="Logo" className="w-[120px] h-12" />
 
               {/* ✅ Ballsville promo inside sidebar (hide when in Ballsville context) */}
-              {!hideBallsville && <BallsvilleLink className="w-full justify-between" />}
+              {!hideBallsville && !embedded && <BallsvilleLink className="w-full justify-between" />}
+              {embedded ? <div className="grid w-full grid-cols-2 gap-2"><a href="https://theballsvillegame.com/tools" target="_top" className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[10px] font-bold text-white/55">Back to Ballsville</a><button type="button" onClick={openFullscreen} className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-bold text-cyan-100">Full screen ↗</button></div> : null}
             </div>
 
             {/* Navigation Links */}

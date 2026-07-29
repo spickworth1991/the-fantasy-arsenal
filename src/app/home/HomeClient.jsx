@@ -32,20 +32,20 @@ const TOOL_ICONS = {
   "Trade Analyzer": "/icons/trade-icon.png",
   "Player Stock": "/icons/stock-icon.png",
   "Player Availability": "/icons/availability-icon.png",
-  "Power Rankings": "/icons/power-icon.png",
-  "Strength of Schedule": "/icons/sos-icon.png",
-  "Lineup Optimizer": "/icons/lineup-icon.png",
-  "Draft Monitor": "/icons/draft-icon.png",
-  "Draft Command Center": "/icons/draft-command-center-icon.png",
-  "Draft Grade Studio": "/icons/draft-command-center-icon.png",
-  "Manager Intelligence": "/icons/manager-intelligence-icon.png",
-  "Fantasy Game Center": "/icons/fantasy-game-center-icon.png",
-  "League Hub": "/icons/league-hub.png",
-  "League History": "/icons/league-history-icon.png",
-  "Commissioner Dashboard": "/icons/commissioner-dashboard-icon.png",
-  "Playoff Odds": "/icons/playoff-icon.png",
-  "NFL Depth Charts": "/icons/lineup-icon.png",
-  "Trust & Accuracy Center": "/icons/power-icon.png",
+  "Power Rankings": "/icons/power-icon.webp",
+  "Strength of Schedule": "/icons/sos-icon.webp",
+  "Lineup Optimizer": "/icons/lineup-icon.webp",
+  "Draft Monitor": "/icons/draft-icon.webp",
+  "Draft Command Center": "/icons/draft-command-center-icon.webp",
+  "Draft Grade Studio": "/icons/draft-command-center-icon.webp",
+  "Manager Intelligence": "/icons/manager-intelligence-icon.webp",
+  "Fantasy Game Center": "/icons/fantasy-game-center-icon.webp",
+  "League Hub": "/icons/league-hub.webp",
+  "League History": "/icons/league-history-icon.webp",
+  "Commissioner Dashboard": "/icons/commissioner-dashboard-icon.webp",
+  "Playoff Odds": "/icons/playoff-icon.webp",
+  "NFL Depth Charts": "/icons/lineup-icon.webp",
+  "Trust & Accuracy Center": "/icons/power-icon.webp",
 };
 
 export default function HomeClient() {
@@ -352,7 +352,7 @@ function ToolCard({ name, link, description, comingSoon, badge, delay, disabled,
     >
       {icon && (
         <div className="mb-4">
-          <img src={icon} alt={`${name} icon`} className="h-11 w-11 drop-shadow-lg" />
+          <img src={icon} alt={`${name} icon`} width="44" height="44" loading="lazy" decoding="async" className="h-11 w-11 drop-shadow-lg" />
         </div>
       )}
 
@@ -368,7 +368,7 @@ function ToolCard({ name, link, description, comingSoon, badge, delay, disabled,
     >
       {icon && (
         <div className="mb-4 sm:mb-0">
-          <img src={icon} alt={`${name} icon`} className="h-11 w-11 drop-shadow-lg transition group-hover:scale-105" />
+          <img src={icon} alt={`${name} icon`} width="44" height="44" loading="lazy" decoding="async" className="h-11 w-11 drop-shadow-lg transition group-hover:scale-105" />
         </div>
       )}
 

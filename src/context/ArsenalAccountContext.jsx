@@ -22,11 +22,11 @@ const SYNC_PREFIXES = [
 const ArsenalAccountContext = createContext(null);
 
 export const STOCK_AVATARS = [
-  { key:"blitz", label:"Blitz", src:"/icons/football-icon.png", gradient:"from-cyan-400/30 to-blue-600/20" },
-  { key:"architect", label:"Architect", src:"/icons/draft-command-center-icon.png", gradient:"from-violet-400/30 to-fuchsia-600/20" },
+  { key:"blitz", label:"Blitz", src:"/icons/football-icon.webp", gradient:"from-cyan-400/30 to-blue-600/20" },
+  { key:"architect", label:"Architect", src:"/icons/draft-command-center-icon.webp", gradient:"from-violet-400/30 to-fuchsia-600/20" },
   { key:"closer", label:"Closer", src:"/icons/trade-icon.png", gradient:"from-emerald-400/30 to-cyan-600/20" },
-  { key:"scout", label:"Scout", src:"/icons/manager-intelligence-icon.png", gradient:"from-amber-400/30 to-orange-600/20" },
-  { key:"commissioner", label:"Commissioner", src:"/icons/commissioner-dashboard-icon.png", gradient:"from-rose-400/30 to-violet-600/20" },
+  { key:"scout", label:"Scout", src:"/icons/manager-intelligence-icon.webp", gradient:"from-amber-400/30 to-orange-600/20" },
+  { key:"commissioner", label:"Commissioner", src:"/icons/commissioner-dashboard-icon.webp", gradient:"from-rose-400/30 to-violet-600/20" },
   { key:"analyst", label:"Analyst", src:"/icons/stock-icon.png", gradient:"from-sky-400/30 to-indigo-600/20" },
 ];
 

@@ -5,6 +5,7 @@ import { SleeperProvider, useSleeper } from "../context/SleeperContext";
 import LoadingScreen from "../components/LoadingScreen";
 import GlobalPlayerSourceDrawer from "../components/GlobalPlayerSourceDrawer";
 import { ArsenalAccountProvider } from "../context/ArsenalAccountContext";
+import { EmbeddedModeProvider } from "../context/EmbeddedModeContext";
 
 function GlobalOverlay() {
   const { loading, progress } = useSleeper();
@@ -29,12 +30,14 @@ function GlobalOverlay() {
 
 export default function Providers({ children }) {
   return (
-    <SleeperProvider>
-      <ArsenalAccountProvider>
-        <GlobalOverlay />
-        <GlobalPlayerSourceDrawer />
-        {children}
-      </ArsenalAccountProvider>
-    </SleeperProvider>
+    <EmbeddedModeProvider>
+      <SleeperProvider>
+        <ArsenalAccountProvider>
+          <GlobalOverlay />
+          <GlobalPlayerSourceDrawer />
+          {children}
+        </ArsenalAccountProvider>
+      </SleeperProvider>
+    </EmbeddedModeProvider>
   );
 }
