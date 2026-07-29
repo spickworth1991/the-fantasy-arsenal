@@ -7,7 +7,7 @@ const allowedKey = (key) => {
   const value = String(key || "");
   const exact = new Set(["format","qbType","sourceKey","year","tfa:account-preferences","tfa:intelligence-actions","tfa:account-platform","draft-helper-watchlist","leagueHubWatchlist"]);
   return exact.has(value) || [
-    "commissioner-", "orphan-recruiting:", "lineup-saves:", "draft-helper-queue:",
+    "commissioner-", "orphan-recruiting:", "lineup-saves:", "lineup-controls:", "draft-helper-queue:",
     "playoff-scenarios:", "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:", "ps:guard:",
   ].some((prefix) => value.startsWith(prefix));
 };

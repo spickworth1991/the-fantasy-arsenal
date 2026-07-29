@@ -39,6 +39,13 @@ function normalizePos(x) {
   if (p === "PK") return "K";
   return p;
 }
+function gameHasStarted(game) {
+  if (!game) return false;
+  const status = String(game.status || "").toLowerCase();
+  if (status.startsWith("final") || ["live","in_progress","halftime","q1","q2","q3","q4","ot"].some((value) => status.includes(value))) return true;
+  const kickoff = new Date(game.date || game.startTime || 0).getTime();
+  return Number.isFinite(kickoff) && kickoff > 0 && kickoff <= Date.now() && !["postponed","canceled","cancelled"].some((value) => status.includes(value));
+}
 function buildProjectionMapFromJSON(json) {
   const rows = Array.isArray(json) ? json : (json?.rows || []);
   const byId = Object.create(null);
@@ -135,6 +142,9 @@ function inferQbTypeFromLeague(league) {
   return rp.includes("SUPER_FLEX") || rp.includes("SUPERFLEX") || rp.includes("Q/W/R/T") ? "sf" : "1qb";
 }
 function inferFormatFromLeague(league) {
+  const type = Number(league?.settings?.type);
+  if (type === 2 || type === 1) return "dynasty";
+  if (type === 0) return "redraft";
   const name = String(league?.name || "").toLowerCase();
   return name.includes("dynasty") || name.includes("keeper") || !!league?.previous_league_id ? "dynasty" : "redraft";
 }
@@ -143,10 +153,11 @@ function inferFormatFromLeague(league) {
 function solveOptimalLineup({ roster, players, getWeeklyMetric, getMarketValue, slots, week, byeMap, weatherMap = {}, kickoffMap = {}, strategy = "median", lockedIds = new Set(), excludedIds = new Set() }) {
   if (!roster) return { starters: [], bench: [], score: 0, floorScore: 0, ceilingScore: 0 };
   const ids = [...new Set([...(roster.starters || []), ...(roster.players || [])].filter(Boolean))];
+  const currentStarterIds = new Set((roster.starters || []).map(String).filter((id) => id && id !== "0"));
   const qbTeams = new Set(ids.map((pid) => players?.[pid]).filter((p) => normalizePos(p?.position) === "QB" && p?.team).map((p) => normalizeTeamAbbr(p.team)));
   const volatilityByPos = { QB: 0.17, RB: 0.27, WR: 0.31, TE: 0.3, K: 0.34, DEF: 0.34 };
 
-  const candidates = ids
+  const allCandidates = ids
     .map((pid) => {
       const p = players?.[pid];
       if (!p) return null;
@@ -154,12 +165,19 @@ function solveOptimalLineup({ roster, players, getWeeklyMetric, getMarketValue, 
       const team = (p?.team || "").toUpperCase();
       const byeWeeks = byeMap?.by_team?.[team] || [];
       const isOnBye = Array.isArray(byeWeeks) && byeWeeks.includes(week);
-      const median = isOnBye ? 0 : (getWeeklyMetric(p) || 0);
+      const rawMedian = isOnBye ? 0 : (getWeeklyMetric(p) || 0);
       const injury = String(p?.injury_status || "").toUpperCase();
+      const inactive = String(p?.status || "").toLowerCase() === "inactive";
+      const unavailable = ["OUT","IR","PUP","SUSPENDED"].includes(injury) || inactive;
+      const availabilityMultiplier = unavailable ? 0 : injury === "DOUBTFUL" ? 0.45 : injury === "QUESTIONABLE" ? 0.9 : 1;
+      const median = rawMedian * availabilityMultiplier;
       const injuryPenalty = injury === "OUT" || injury === "IR" ? 0.55 : injury === "DOUBTFUL" ? 0.3 : injury === "QUESTIONABLE" ? 0.14 : 0;
       const weather = weatherMap?.[team] || null;
       const game = kickoffMap?.[team] || null;
-      const started = game ? !["scheduled", "pre"].includes(String(game.status || "").toLowerCase()) : false;
+      const gameStarted = gameHasStarted(game);
+      const currentStarter = currentStarterIds.has(String(pid));
+      const started = currentStarter && gameStarted;
+      const lockedOnBench = !currentStarter && gameStarted;
       const weatherText = String(weather?.summary || "").toLowerCase();
       const weatherPenalty = /snow|rain|storm|wind/.test(weatherText) ? 0.08 : 0;
       const volatility = Math.min(0.65, (volatilityByPos[pos === "DST" ? "DEF" : pos] || 0.25) + injuryPenalty + weatherPenalty);
@@ -169,23 +187,32 @@ function solveOptimalLineup({ roster, players, getWeeklyMetric, getMarketValue, 
       const selectionScore = strategy === "safe" ? floor : strategy === "aggressive" ? ceiling + stackBonus : median;
       return {
         pid,
+        currentStarter,
         name: p?.full_name || p?.search_full_name || pid,
         pos: pos === "DST" ? "DEF" : pos,
         team,
         proj: median,
+        rawProj: rawMedian,
         floor,
         ceiling,
         selectionScore,
         marketValue: getMarketValue?.(p) || 0,
         injury,
+        unavailable,
+        inactive,
         isOnBye,
         stackBonus,
         weather,
         game,
+        gameStarted,
         started,
+        lockedOnBench,
       };
     })
-    .filter((candidate) => candidate && !excludedIds.has(String(candidate.pid)))
+    .filter(Boolean);
+  const candidates = allCandidates
+    .filter((candidate) => !candidate.lockedOnBench)
+    .filter((candidate) => !excludedIds.has(String(candidate.pid)) || candidate.started)
     .sort((a, b) => (b.selectionScore || 0) - (a.selectionScore || 0));
 
   const starters = [];
@@ -216,7 +243,7 @@ function solveOptimalLineup({ roster, players, getWeeklyMetric, getMarketValue, 
   const score = starters.reduce((s, x) => s + (x.proj || 0), 0);
   const floorScore = starters.reduce((s, x) => s + (x.floor || 0), 0);
   const ceilingScore = starters.reduce((s, x) => s + (x.ceiling || 0) + (strategy === "aggressive" ? x.stackBonus || 0 : 0), 0);
-  return { starters, bench, score, floorScore, ceilingScore, strategy };
+  return { starters, bench, allCandidates, score, floorScore, ceilingScore, strategy };
 }
 
 function winProbability(scoreA, scoreB) {
@@ -226,7 +253,7 @@ function winProbability(scoreA, scoreB) {
 function buildDecisionRows(result, opponentScore, metricMode) {
   if (!result) return [];
   return result.starters.map((starter) => {
-    const alternative = result.bench.filter((player) => player.pos === starter.pos && player.proj > 0).sort((a, b) => b.selectionScore - a.selectionScore)[0];
+    const alternative = result.bench.filter((player) => player.pos === starter.pos && player.proj > 0 && !player.gameStarted && !player.unavailable).sort((a, b) => b.selectionScore - a.selectionScore)[0];
     if (!alternative) return null;
     const projectionGap = starter.proj - alternative.proj;
     const currentWin = winProbability(result.score, opponentScore);
@@ -256,6 +283,62 @@ function LineupPersonalization({ result, lockedIds, excludedIds, setLockedIds, s
   const replacements = result.starters.filter((player)=>["OUT","DOUBTFUL"].includes(player.injury)).map((player)=>({player,replacement:result.bench.filter((row)=>row.pos===player.pos&&!row.started&&!excludedIds.has(String(row.pid))).sort((a,b)=>b.selectionScore-a.selectionScore)[0]})).filter((row)=>row.replacement);
   const startedCount=result.starters.filter((player)=>player.started).length;
   return <div className="mb-4 rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-400/[0.06] to-slate-950/60 p-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-cyan-200/55">Custom lineup lab</div><h3 className="mt-1 text-lg font-black">Lock, exclude, compare, and save</h3><p className="mt-1 text-xs text-white/38">Locked players are prioritized by the solver. Excluded players are removed from consideration.</p></div><div className="flex flex-wrap gap-2">{[["safe","Safe"],["median","Median"],["aggressive","Ceiling"],["custom","Custom"]].map(([key,label])=><button key={key} onClick={()=>saveAs(key)} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/[0.08]">Save {label}</button>)}</div></div><details className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-3"><summary className="cursor-pointer text-sm font-semibold">Player controls · {lockedIds.size} locked · {excludedIds.size} excluded</summary><div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{players.map(player=>{const id=String(player.pid);return <div key={id} className="flex items-center gap-2 rounded-xl bg-white/[0.03] p-2"><div className="min-w-0 flex-1"><div className="truncate text-xs font-semibold">{player.name}</div><div className="text-[9px] text-white/30">{player.pos} · {player.proj.toFixed(1)} · {player.started?"Started / locked":player.injury||"Active"}</div></div><button onClick={()=>toggle(setLockedIds,setExcludedIds,id)} className={`rounded-lg px-2 py-1 text-[9px] font-bold ${lockedIds.has(id)?"bg-emerald-300/15 text-emerald-100":"bg-white/[0.04] text-white/35"}`}>LOCK</button><button onClick={()=>toggle(setExcludedIds,setLockedIds,id)} className={`rounded-lg px-2 py-1 text-[9px] font-bold ${excludedIds.has(id)?"bg-rose-300/15 text-rose-100":"bg-white/[0.04] text-white/35"}`}>OUT</button></div>})}</div></details><div className="mt-3 rounded-xl bg-emerald-300/[0.04] p-3 text-xs text-white/45"><b className="text-emerald-100">Late-swap plan:</b> {startedCount} starters have begun and should be treated as locked. Keep the latest-starting eligible FLEX option available when uncertainty remains.</div>{replacements.length?<div className="mt-3 grid gap-2 sm:grid-cols-2">{replacements.map(({player,replacement})=><div key={player.pid} className="rounded-xl border border-amber-300/10 bg-amber-300/[0.045] p-3 text-xs"><b className="text-amber-100">Replacement alert:</b> {player.name} is {player.injury}. {replacement.name} is the top same-position alternative ({replacement.proj.toFixed(1)} projected).</div>)}</div>:null}{Object.keys(savedLineups).length?<div className="mt-3 text-[10px] text-white/35">Saved locally: {Object.entries(savedLineups).map(([key,row])=>`${key} (${row.players.length})`).join(" · ")}</div>:null}</div>;
+}
+
+function LineupPersonalizationPremium({ result, lockedIds, excludedIds, setLockedIds, setExcludedIds, savedLineups, saveAs, restoreSaved }) {
+  if (!result) return null;
+  const toggle = (setter, otherSetter, id, disabled = false) => {
+    if (disabled) return;
+    setter((current) => {
+      const next = new Set(current);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+    otherSetter((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  };
+  const controls = [...(result.allCandidates || [...result.starters, ...result.bench])]
+    .sort((a,b) => Number(excludedIds.has(String(a.pid))) - Number(excludedIds.has(String(b.pid))) || b.selectionScore - a.selectionScore);
+  const replacements = controls
+    .filter((player) => player.currentStarter && !player.started && (["OUT","DOUBTFUL","IR","PUP","SUSPENDED"].includes(player.injury) || player.inactive))
+    .map((player) => ({
+      player,
+      replacement:[...result.starters, ...result.bench]
+        .filter((row) => row.pos === player.pos && !row.gameStarted && !row.unavailable && !excludedIds.has(String(row.pid)))
+        .sort((a,b) => b.selectionScore - a.selectionScore)[0],
+    }))
+    .filter((row) => row.replacement);
+  const startedCount = controls.filter((player) => player.started).length;
+
+  return <div className="mb-4 rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-400/[0.06] to-slate-950/60 p-4">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-cyan-200/55">Custom lineup lab</div><h3 className="mt-1 text-lg font-black">Lock, exclude, compare, and save</h3><p className="mt-1 text-xs text-white/38">Manual exclusions are separate from Sleeper injury tags. Excluded players stay visible and can always be restored.</p></div>
+      <div className="flex flex-wrap gap-2">{[["safe","Safe"],["median","Median"],["aggressive","Ceiling"],["custom","Custom"]].map(([key,label])=><button type="button" key={key} onClick={()=>saveAs(key)} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/[0.08]">Save {label}</button>)}</div>
+    </div>
+    <details className="mt-4 rounded-2xl border border-white/[0.07] bg-black/15 p-3">
+      <summary className="cursor-pointer text-sm font-semibold">Player controls · {lockedIds.size} manually locked · {excludedIds.size} excluded</summary>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><p className="text-[10px] text-white/35">Started players are automatically locked and cannot be excluded.</p>{excludedIds.size?<button type="button" onClick={()=>setExcludedIds(new Set())} className="rounded-lg bg-rose-300/10 px-3 py-1.5 text-[10px] font-bold text-rose-100">Restore all excluded</button>:null}</div>
+      <div className="mt-3 grid max-h-[440px] gap-2 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-2 xl:grid-cols-3">
+        {controls.map((player) => {
+          const id = String(player.pid);
+          const excluded = excludedIds.has(id) && !player.gameStarted;
+          const locked = lockedIds.has(id) || player.gameStarted;
+          const immutable = player.gameStarted;
+          return <div key={id} className={`flex items-center gap-2 rounded-xl border p-2 ${excluded ? "border-rose-300/15 bg-rose-300/[0.045]" : "border-transparent bg-white/[0.03]"}`}>
+            <div className="min-w-0 flex-1"><div className={`truncate text-xs font-semibold ${excluded ? "text-white/45" : ""}`}>{player.name}</div><div className="text-[9px] text-white/30">{player.pos} · {player.proj.toFixed(1)}{player.rawProj !== player.proj ? ` (${player.rawProj.toFixed(1)} before availability)` : ""} · {player.started ? "Started in lineup / locked" : player.lockedOnBench ? "Game started on bench / locked" : player.injury || (player.inactive ? "Inactive" : "Active")}</div></div>
+            <button type="button" disabled={immutable} onClick={()=>toggle(setLockedIds,setExcludedIds,id,immutable)} className={`rounded-lg px-2 py-1 text-[9px] font-bold disabled:cursor-not-allowed ${locked ? "bg-emerald-300/15 text-emerald-100" : "bg-white/[0.04] text-white/35"}`}>{immutable ? "LOCKED" : locked ? "UNLOCK" : "LOCK"}</button>
+            <button type="button" disabled={immutable} onClick={()=>toggle(setExcludedIds,setLockedIds,id,immutable)} className={`rounded-lg px-2 py-1 text-[9px] font-bold disabled:cursor-not-allowed disabled:opacity-35 ${excluded ? "bg-emerald-300/15 text-emerald-100" : "bg-white/[0.04] text-white/35"}`}>{excluded ? "INCLUDE" : "EXCLUDE"}</button>
+          </div>;
+        })}
+      </div>
+    </details>
+    <div className="mt-3 rounded-xl bg-emerald-300/[0.04] p-3 text-xs text-white/45"><b className="text-emerald-100">Late-swap protection:</b> {startedCount} players have begun and are automatically protected. The solver will never recommend moving or excluding them.</div>
+    {replacements.length?<div className="mt-3 grid gap-2 sm:grid-cols-2">{replacements.map(({player,replacement})=><div key={player.pid} className="rounded-xl border border-amber-300/10 bg-amber-300/[0.045] p-3 text-xs"><b className="text-amber-100">Replacement alert:</b> {player.name} is {player.injury || "inactive"}. {replacement.name} is the top healthy same-position alternative ({replacement.proj.toFixed(1)} projected).</div>)}</div>:null}
+    {Object.keys(savedLineups).length?<div className="mt-3"><div className="text-[10px] font-bold uppercase tracking-wider text-white/30">Saved lineups</div><div className="mt-2 flex flex-wrap gap-2">{Object.entries(savedLineups).map(([key,row])=><button type="button" key={key} onClick={()=>restoreSaved(key,row)} className="rounded-xl bg-white/[0.045] px-3 py-2 text-[10px] font-bold text-white/55">Load {key} · {row.players.length}</button>)}</div></div>:null}
+  </div>;
 }
 
 /* ---------- Close-alternative suggestions (projections only) ---------- */
@@ -344,6 +427,7 @@ export default function LineupTool() {
   const [lineupStrategy, setLineupStrategy] = useState("median");
   const [lockedPlayerIds, setLockedPlayerIds] = useState(() => new Set());
   const [excludedPlayerIds, setExcludedPlayerIds] = useState(() => new Set());
+  const [controlsScope, setControlsScope] = useState("");
   const [savedLineups, setSavedLineups] = useState({});
   const [weatherMap, setWeatherMap] = useState({});
   const [kickoffMap, setKickoffMap] = useState({});
@@ -480,10 +564,10 @@ export default function LineupTool() {
     setOwnerB(""); // reset opponent when switching leagues
     if (!myUserId) return;
     if (rosterByOwnerId[myUserId]) setOwnerA(myUserId);
-    if (!formatLocal || !qbLocal) {
-      setFormatLocal(inferFormatFromLeague(league));
-      setQbLocal(inferQbTypeFromLeague(league));
-    }
+    setFormatLocal(inferFormatFromLeague(league));
+    setQbLocal(inferQbTypeFromLeague(league));
+    setUserTouchedFormat(false);
+    setUserTouchedQB(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league, myUserId]);
 
@@ -561,7 +645,22 @@ export default function LineupTool() {
     return (p) => getValueMetric(p) || 0;
   }, [metricMode, getWeeklyProj, getValueMetric]);
 
-  const startedIdsFor = (uid) => new Set((rosterByOwnerId[uid]?.starters || []).map(String).filter((id) => { const team=String(players?.[id]?.team||"").toUpperCase();const game=kickoffMap?.[team];return game && !["scheduled","pre"].includes(String(game.status||"").toLowerCase()); }));
+  const startedIdsFor = (uid) => new Set((rosterByOwnerId[uid]?.starters || []).map(String).filter((id) => {
+    const team=String(players?.[id]?.team||"").toUpperCase();
+    return gameHasStarted(kickoffMap?.[team]);
+  }));
+  useEffect(() => {
+    if (!ownerA) return;
+    const immutable = new Set((rosterByOwnerId[ownerA]?.players || []).map(String).filter((id) => {
+      const team=String(players?.[id]?.team||"").toUpperCase();
+      return gameHasStarted(kickoffMap?.[team]);
+    }));
+    if (!immutable.size) return;
+    setExcludedPlayerIds((current) => {
+      const next = new Set([...current].filter((id) => !immutable.has(String(id))));
+      return next.size === current.size ? current : next;
+    });
+  }, [kickoffMap, ownerA, players, rosterByOwnerId]);
   const compute = (uid) =>
     solveOptimalLineup({
       roster: rosterByOwnerId[uid],
@@ -637,10 +736,42 @@ export default function LineupTool() {
   useEffect(() => {
     try { setSavedLineups(JSON.parse(localStorage.getItem(`lineup-saves:${activeLeague}:${week}`) || "{}")); } catch { setSavedLineups({}); }
   }, [activeLeague, week]);
+  useEffect(() => {
+    if (!activeLeague || !ownerA) return;
+    const scope = `${activeLeague}:${week}:${ownerA}`;
+    try {
+      const saved = JSON.parse(localStorage.getItem(`lineup-controls:${scope}`) || "{}");
+      setLockedPlayerIds(new Set((saved.locked || []).map(String)));
+      setExcludedPlayerIds(new Set((saved.excluded || []).map(String)));
+    } catch {
+      setLockedPlayerIds(new Set());
+      setExcludedPlayerIds(new Set());
+    }
+    setControlsScope(scope);
+  }, [activeLeague, ownerA, week]);
+  useEffect(() => {
+    if (!activeLeague || !ownerA) return;
+    const scope = `${activeLeague}:${week}:${ownerA}`;
+    if (controlsScope !== scope) return;
+    try {
+      localStorage.setItem(`lineup-controls:${scope}`, JSON.stringify({
+        locked:[...lockedPlayerIds],
+        excluded:[...excludedPlayerIds],
+        updatedAt:Date.now(),
+      }));
+    } catch {}
+  }, [activeLeague, controlsScope, excludedPlayerIds, lockedPlayerIds, ownerA, week]);
   const saveLineupAs = (label) => {
     if (!matchup?.a) return;
     const row = { players:matchup.a.starters.map((player)=>String(player.pid)), strategy:lineupStrategy, score:matchup.a.score, savedAt:Date.now() };
     setSavedLineups((current) => { const next={...current,[label]:row}; try{localStorage.setItem(`lineup-saves:${activeLeague}:${week}`,JSON.stringify(next));}catch{} return next; });
+  };
+  const restoreSavedLineup = (_label, row) => {
+    const valid = new Set((rosterByOwnerId[ownerA]?.players || []).map(String));
+    const selected = (row?.players || []).map(String).filter((id) => valid.has(id) && !gameHasStarted(kickoffMap?.[String(players?.[id]?.team||"").toUpperCase()]));
+    setLockedPlayerIds(new Set(selected));
+    setExcludedPlayerIds(new Set());
+    if (["safe","median","aggressive"].includes(row?.strategy)) setLineupStrategy(row.strategy);
   };
 
   return (
@@ -866,7 +997,7 @@ export default function LineupTool() {
                   </div>
                 </div>
 
-                <LineupPersonalization result={matchup?.a} lockedIds={lockedPlayerIds} excludedIds={excludedPlayerIds} setLockedIds={setLockedPlayerIds} setExcludedIds={setExcludedPlayerIds} savedLineups={savedLineups} saveAs={saveLineupAs}/>
+                <LineupPersonalizationPremium result={matchup?.a} lockedIds={lockedPlayerIds} excludedIds={excludedPlayerIds} setLockedIds={setLockedPlayerIds} setExcludedIds={setExcludedPlayerIds} savedLineups={savedLineups} saveAs={saveLineupAs} restoreSaved={restoreSavedLineup}/>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <TeamBox
