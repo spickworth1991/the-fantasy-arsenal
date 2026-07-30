@@ -13,7 +13,7 @@ const getJson = async (url) => { const response=await fetch(url,{cache:"no-store
 async function concurrentMap(rows,limit,worker){const results=new Array(rows.length);let cursor=0;await Promise.all(Array.from({length:Math.min(limit,rows.length)},async()=>{while(cursor<rows.length){const index=cursor++;results[index]=await worker(rows[index],index);}}));return results;}
 const nameFor = (user, roster) => user?.metadata?.team_name || user?.display_name || user?.username || `Roster ${roster?.roster_id || "—"}`;
 function Panel({children,className=""}){return <div className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/90 to-slate-950/85 ${className}`}>{children}</div>;}
-function Stat({label,value,detail}){return <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><div className="text-[9px] font-semibold uppercase tracking-[.17em] text-white/35">{label}</div><div className="mt-1 text-xl font-black">{value}</div>{detail?<div className="mt-1 text-[10px] text-white/35">{detail}</div>:null}</div>;}
+function Stat({label,value,detail}){const liveMarked=String(value).endsWith("*");return <div title={liveMarked?"A matchup is currently in progress. Live scoring is not included in this completed record.":undefined} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><div className="text-[9px] font-semibold uppercase tracking-[.17em] text-white/35">{label}</div><div className="mt-1 text-xl font-black">{value}</div>{detail?<div className="mt-1 text-[10px] text-white/35">{detail}</div>:liveMarked?<div className="mt-1 text-[10px] text-amber-100/60">Live game excluded</div>:null}</div>;}
 
 function ManagerCompare({ owners, league, players }) {
   const [leftId, setLeftId] = useState("");
@@ -226,13 +226,16 @@ function RivalryCenter({ initialLeft="", initialRight="", season, players }) {
   const build=async(event)=>{
     event.preventDefault();const clean=names.map(name=>name.trim());const nextErrors=clean.map((name,index)=>name?"":`Enter manager ${index+1}.`);if(nextErrors.some(Boolean)){setErrors(nextErrors);return;}setLoading(true);setErrors(["",""]);
     try{
-      const users=await Promise.all(clean.map(async name=>{const response=await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(name)}`,{cache:"no-store"});if(!response.ok)throw new Error(name);const user=await response.json();if(!user?.user_id)throw new Error(name);return user;}));
+      const [users,nflState]=await Promise.all([
+        Promise.all(clean.map(async name=>{const response=await fetch(`https://api.sleeper.app/v1/user/${encodeURIComponent(name)}`,{cache:"no-store"});if(!response.ok)throw new Error(name);const user=await response.json();if(!user?.user_id)throw new Error(name);return user;})),
+        getJson("https://api.sleeper.app/v1/state/nfl").catch(()=>null),
+      ]);
       const years=historyScope==="all"
         ? Array.from({length:Math.max(1,seasonNow-sleeperHistoryStart+1)},(_,index)=>seasonNow-index)
         : [historyYear];
       const histories=await Promise.all(users.map(user=>Promise.all(years.map(async year=>({year,leagues:await getJson(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${year}`).catch(()=>[])})))));
       const shared=years.flatMap((year,index)=>histories[0][index].leagues.filter(league=>histories[1][index].leagues.some(other=>String(other.league_id)===String(league.league_id))).map(league=>({year,league})));
-      const leagueRows=await concurrentMap(shared,4,async row=>{
+      const scannedLeagueRows=await concurrentMap(shared,4,async row=>{
         const rosters=await getJson(`https://api.sleeper.app/v1/league/${row.league.league_id}/rosters`).catch(()=>[]);
         const rosterIds=users.map(user=>String(rosters.find(roster=>String(roster.owner_id)===String(user.user_id))?.roster_id||""));
         const weeks=await concurrentMap(Array.from({length:18},(_,index)=>index+1),6,async week=>{
@@ -248,12 +251,18 @@ function RivalryCenter({ initialLeft="", initialRight="", season, players }) {
         });
         return{...row,rosterIds,games:weeks.map(item=>item.headToHead).filter(Boolean),trades:weeks.flatMap(item=>item.trades)};
       });
-      const games=leagueRows.flatMap(row=>row.games.map(game=>({...game,league:row.league,year:row.year})));
+      const allGames=scannedLeagueRows.flatMap(row=>row.games.map(game=>({...game,league:row.league,year:row.year})));
+      const liveSeason=num(nflState?.season)||seasonNow;
+      const liveWeek=Math.max(1,num(nflState?.week));
+      const games=allGames.filter(game=>game.year<liveSeason||(game.year===liveSeason&&game.week<liveWeek)).filter(game=>num(game.left.points)!==0||num(game.right.points)!==0);
+      const liveGames=allGames.filter(game=>game.year===liveSeason&&game.week===liveWeek&&(num(game.left.points)!==0||num(game.right.points)!==0));
+      const completedKeys=new Set(games.map(game=>`${game.league.league_id}:${game.year}:${game.week}`));
+      const leagueRows=scannedLeagueRows.map(row=>({...row,games:row.games.filter(game=>completedKeys.has(`${row.league.league_id}:${row.year}:${game.week}`))}));
       const leftWins=games.filter(game=>num(game.left.points)>num(game.right.points)).length;
       const rightWins=games.filter(game=>num(game.right.points)>num(game.left.points)).length;
-      const ties=games.length-leftWins-rightWins;
+      const ties=`${games.length-leftWins-rightWins}${liveGames.length?"*":""}`;
       const trades=leagueRows.flatMap(row=>row.trades.map(tx=>({tx,league:row.league,year:row.year})));
-      setData({users,shared,leagueRows,games,leftWins,rightWins,ties,trades,years,historyScope});
+      setData({users,shared,leagueRows,games,liveGames,leftWins,rightWins,ties,trades,years,historyScope});
     }catch(error){const failed=clean.find(name=>name===error?.message);setErrors(failed?clean.map(name=>name===failed?`No Sleeper manager was found for “${name}”.`:""):["Rivalry history could not be loaded.","Rivalry history could not be loaded."]);}
     finally{setLoading(false);}
   };

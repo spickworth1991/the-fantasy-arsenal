@@ -45,7 +45,7 @@ function LifetimeRivalry({ viewer, subject }) {
     }
     let active = true;
     const load = async () => {
-      const cacheKey = `tfa:profile-rivalry:${String(viewer).toLowerCase()}:${String(subject).toLowerCase()}`;
+      const cacheKey = `tfa:profile-rivalry:v2:${String(viewer).toLowerCase()}:${String(subject).toLowerCase()}`;
       try {
         const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
         if (cached?.savedAt > Date.now() - 6 * 60 * 60 * 1000 && cached?.data) {
@@ -54,7 +54,10 @@ function LifetimeRivalry({ viewer, subject }) {
         }
       } catch {}
       try {
-        const users = await Promise.all([viewer, subject].map((name) => getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(name)}`)));
+        const [users, nflState] = await Promise.all([
+          Promise.all([viewer, subject].map((name) => getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(name)}`))),
+          getJson("https://api.sleeper.app/v1/state/nfl").catch(() => null),
+        ]);
         if (!users.every((user) => user?.user_id)) throw new Error("One of the connected Sleeper managers could not be verified.");
         const currentYear = new Date().getFullYear();
         const years = Array.from({ length:currentYear - HISTORY_START + 1 }, (_, index) => currentYear - index);
@@ -77,7 +80,13 @@ function LifetimeRivalry({ viewer, subject }) {
           });
           return weeks.filter(Boolean);
         });
-        const games = leagueResults.flat();
+        const allGames = leagueResults.flat();
+        const stateSeason = number(nflState?.season) || currentYear;
+        const stateWeek = Math.max(1, number(nflState?.week));
+        const games = allGames.filter((game) => game.year < stateSeason || (game.year === stateSeason && game.week < stateWeek))
+          .filter((game) => game.left !== 0 || game.right !== 0);
+        const live = allGames.filter((game) => game.year === stateSeason && game.week === stateWeek && (game.left !== 0 || game.right !== 0))
+          .sort((a, b) => Math.abs(b.left - b.right) - Math.abs(a.left - a.right))[0] || null;
         const data = {
           leftWins:games.filter((game) => game.left > game.right).length,
           rightWins:games.filter((game) => game.right > game.left).length,
@@ -88,6 +97,7 @@ function LifetimeRivalry({ viewer, subject }) {
           pointsLeft:games.reduce((sum, game) => sum + game.left, 0),
           pointsRight:games.reduce((sum, game) => sum + game.right, 0),
           latest:games.sort((a, b) => b.year - a.year || b.week - a.week)[0] || null,
+          live,
         };
         try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt:Date.now(), data })); } catch {}
         if (active) setState({ loading:false, error:"", data });
@@ -108,7 +118,7 @@ function LifetimeRivalry({ viewer, subject }) {
     </div>
     {loading ? <div className="p-5 text-sm text-white/42">Reconstructing shared seasons and matchup history…</div> : null}
     {error ? <div className="p-5 text-sm text-rose-100/75">{error}</div> : null}
-    {data ? <div className="p-4 sm:p-5"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label={`Your wins`} value={data.leftWins} accent/><Stat label={`${subject}'s wins`} value={data.rightWins}/><Stat label="Ties" value={data.ties}/><Stat label="Meetings" value={data.meetings}/></div><div className="mt-3 grid gap-2 text-xs sm:grid-cols-3"><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.sharedLeagues}</b><span className="ml-1 text-white/35">shared league-seasons</span></div><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.sharedSeasons}</b><span className="ml-1 text-white/35">shared seasons</span></div><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.pointsLeft.toFixed(1)}–{data.pointsRight.toFixed(1)}</b><span className="ml-1 text-white/35">lifetime points</span></div></div>{!data.meetings ? <p className="mt-3 text-xs leading-5 text-white/35">These managers have no verified head-to-head meetings in their shared Sleeper history.</p> : data.latest ? <p className="mt-3 text-xs text-white/35">Latest meeting: {data.latest.league} · {data.latest.year} Week {data.latest.week} · {data.latest.left.toFixed(1)}–{data.latest.right.toFixed(1)}</p> : null}</div> : null}
+    {data ? <div className="p-4 sm:p-5"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label={`Your wins`} value={data.leftWins} accent/><Stat label={`${subject}'s wins`} value={data.rightWins}/><Stat label="Ties" value={data.ties}/><Stat label="Completed meetings" value={data.meetings}/></div>{data.live ? <div title="Live matchup scores are still changing and are not included in the completed rivalry record." className="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.055] p-3 text-xs text-amber-100"><b>Live meeting*</b> · {data.live.league} · Week {data.live.week} · {data.live.left.toFixed(1)}–{data.live.right.toFixed(1)}<span className="ml-2 text-amber-100/55">Not included in record</span></div> : null}<div className="mt-3 grid gap-2 text-xs sm:grid-cols-3"><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.sharedLeagues}</b><span className="ml-1 text-white/35">shared league-seasons</span></div><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.sharedSeasons}</b><span className="ml-1 text-white/35">shared seasons</span></div><div className="rounded-xl bg-white/[0.035] p-3"><b>{data.pointsLeft.toFixed(1)}–{data.pointsRight.toFixed(1)}</b><span className="ml-1 text-white/35">completed-game points</span></div></div>{!data.meetings ? <p className="mt-3 text-xs leading-5 text-white/35">These managers have no completed head-to-head meetings in their shared Sleeper history.</p> : data.latest ? <p className="mt-3 text-xs text-white/35">Latest completed meeting: {data.latest.league} · {data.latest.year} Week {data.latest.week} · {data.latest.left.toFixed(1)}–{data.latest.right.toFixed(1)}</p> : null}</div> : null}
   </section>;
 }
 
