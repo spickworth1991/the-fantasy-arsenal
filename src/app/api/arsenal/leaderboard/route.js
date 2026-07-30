@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { arsenalDb, authenticateArsenal, ensureArsenalSchema, publicAccount, publicProfile } from "../../../../lib/arsenalAccountServer";
 
 const number = (value) => Number(value || 0);
+const ownsRoster = (roster, userId) => String(roster?.owner_id || "") === String(userId)
+  || (Array.isArray(roster?.co_owners) && roster.co_owners.some((ownerId) => String(ownerId) === String(userId)));
 const getJson = async (url) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
@@ -57,7 +59,7 @@ export async function POST(request) {
       const group=(leagues || []).slice(start,start+12);
       const rosterGroups=await Promise.all(group.map((league)=>getJson(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[])));
       rosterGroups.forEach((rosters)=>{
-        const roster=(rosters || []).find((row)=>String(row.owner_id)===String(sleeper.user_id));
+        const roster=(rosters || []).find((row)=>ownsRoster(row,sleeper.user_id));
         if(!roster)return;
         const settings=roster.settings || {};
         wins+=number(settings.wins);

@@ -17,6 +17,7 @@ const json=(value,fallback)=>{try{return JSON.parse(value)||fallback;}catch{retu
 const n=(v)=>Number(v||0);
 const get=async(url)=>{const response=await fetch(url);if(!response.ok)throw new Error(`Sleeper HTTP ${response.status}`);return response.json();};
 const rate=(row)=>(n(row.wins)+n(row.ties)*.5)/Math.max(1,n(row.wins)+n(row.losses)+n(row.ties))*100;
+const ownsRoster=(roster,userId)=>String(roster?.owner_id||"")===String(userId)||(Array.isArray(roster?.co_owners)&&roster.co_owners.some(ownerId=>String(ownerId)===String(userId)));
 const storageCount=(test)=>{let count=0;for(let i=0;i<localStorage.length;i+=1){const key=localStorage.key(i);if(test(key)){const value=json(localStorage.getItem(key),null);count+=Array.isArray(value)?value.length:value&&typeof value==="object"?Object.keys(value).length:1;}}return count;};
 function Panel({children,className=""}){return <section className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}>{children}</section>;}
 function Metric({label,value,tone="text-white"}){return <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"><div className={`text-2xl font-black ${tone}`}>{value}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[.14em] text-white/28">{label}</div></div>;}
@@ -56,7 +57,7 @@ export default function AccountClient(){
         if(!seasonLeagues.length)continue;
         const detail=await Promise.all(seasonLeagues.map(async league=>{
           const [rosters,bracket]=await Promise.all([get(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(()=>[]),get(`https://api.sleeper.app/v1/league/${league.league_id}/winners_bracket`).catch(()=>[])]);
-          const roster=rosters.find(row=>String(row.owner_id)===String(user.user_id));if(!roster)return null;
+          const roster=rosters.find(row=>ownsRoster(row,user.user_id));if(!roster)return null;
           const s=roster.settings||{};const champion=bracket.find(row=>n(row.p)===1)?.w;const rank=n(s.rank);const playoffTeams=n(league.settings?.playoff_teams||6);
           return {wins:n(s.wins),losses:n(s.losses),ties:n(s.ties),points:n(s.fpts)+n(s.fpts_decimal)/100,champion:String(champion||"")===String(roster.roster_id),playoffs:rank>0&&rank<=playoffTeams,commissioner:String(league.creator)===String(user.user_id),name:league.name};
         }));
