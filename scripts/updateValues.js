@@ -2141,7 +2141,7 @@ function projectionOutput(source, rows, extra = {}) {
 async function updateFantasyProsProjections() {
   const apiKey = String(process.env.FANTASYPROS_API_KEY || "").trim();
   if (!apiKey) throw new Error("FANTASYPROS_API_KEY is not configured.");
-  const endpoint = `https://api.fantasypros.com/v2/json/nfl/${CURRENT_SEASON}/projections?week=0&positions=QB:RB:WR:TE:DST:K`;
+  const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${CURRENT_SEASON}/projections?week=0&positions=QB:RB:WR:TE:DST:K`;
   const response = await fetch(endpoint, {
     headers: { "x-api-key": apiKey, accept: "application/json" },
     signal: AbortSignal.timeout(30000),
@@ -2149,6 +2149,10 @@ async function updateFantasyProsProjections() {
   if (!response.ok) throw new Error(`FantasyPros projections returned HTTP ${response.status}.`);
   const payload = await response.json();
   const sourceRows = Array.isArray(payload?.players) ? payload.players : [];
+  const declaredCount = Number(payload?.count || 0);
+  if (declaredCount > sourceRows.length && sourceRows.length <= 10) {
+    throw new Error(`FantasyPros API access returned only ${sourceRows.length} of ${declaredCount} declared projections. The key works, but its current access tier is returning a sample rather than the complete projection set.`);
+  }
   const rows = sourceRows.map((player) => {
     const stats = player?.stats || {};
     const pointsStd = Number(stats.points ?? player.points ?? 0) || 0;

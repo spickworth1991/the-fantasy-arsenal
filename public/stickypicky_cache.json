@@ -4,7 +4,7 @@
       "name": "Josh Allen",
       "team": "BUF",
       "position": "QB",
-      "value": 9990,
+      "value": 9982,
       "source_count": 7,
       "sources": [
         "FC",
@@ -106,7 +106,7 @@
       "name": "Lamar Jackson",
       "team": "BAL",
       "position": "QB",
-      "value": 9718,
+      "value": 9710,
       "source_count": 7,
       "sources": [
         "FC",
@@ -123,7 +123,7 @@
       "name": "Jayden Daniels",
       "team": "WAS",
       "position": "QB",
-      "value": 9694,
+      "value": 9709,
       "source_count": 7,
       "sources": [
         "FC",
@@ -204,7 +204,7 @@
       "name": "Amon-Ra St. Brown",
       "team": "DET",
       "position": "WR",
-      "value": 9534,
+      "value": 9533,
       "source_count": 7,
       "sources": [
         "FC",
@@ -255,7 +255,7 @@
       "name": "Malik Nabers",
       "team": "NYG",
       "position": "WR",
-      "value": 9346,
+      "value": 9345,
       "source_count": 7,
       "sources": [
         "FC",
@@ -272,7 +272,7 @@
       "name": "Justin Herbert",
       "team": "LAC",
       "position": "QB",
-      "value": 9340,
+      "value": 9339,
       "source_count": 7,
       "sources": [
         "FC",
@@ -289,7 +289,7 @@
       "name": "CeeDee Lamb",
       "team": "DAL",
       "position": "WR",
-      "value": 9322,
+      "value": 9321,
       "source_count": 7,
       "sources": [
         "FC",
@@ -339,7 +339,7 @@
       "name": "2027 Early 1st",
       "team": "NA",
       "position": "PICK",
-      "value": 9225,
+      "value": 9224,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -353,7 +353,7 @@
       "name": "Justin Jefferson",
       "team": "MIN",
       "position": "WR",
-      "value": 9168,
+      "value": 9157,
       "source_count": 7,
       "sources": [
         "FC",
@@ -384,23 +384,6 @@
       "confidence": "high"
     },
     {
-      "name": "Drake London",
-      "team": "ATL",
-      "position": "WR",
-      "value": 9136,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "2026 Pick 1.02",
       "team": "",
       "position": "PICK",
@@ -412,6 +395,23 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Drake London",
+      "team": "ATL",
+      "position": "WR",
+      "value": 9128,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Trey McBride",
@@ -451,7 +451,7 @@
       "name": "Omarion Hampton",
       "team": "LAC",
       "position": "RB",
-      "value": 9028,
+      "value": 9035,
       "source_count": 7,
       "sources": [
         "FC",
@@ -468,7 +468,7 @@
       "name": "Jaxson Dart",
       "team": "NYG",
       "position": "QB",
-      "value": 8976,
+      "value": 8975,
       "source_count": 7,
       "sources": [
         "FC",
@@ -502,7 +502,7 @@
       "name": "Tetairoa McMillan",
       "team": "CAR",
       "position": "WR",
-      "value": 8935,
+      "value": 8934,
       "source_count": 7,
       "sources": [
         "FC",
@@ -519,7 +519,7 @@
       "name": "Bo Nix",
       "team": "DEN",
       "position": "QB",
-      "value": 8848,
+      "value": 8847,
       "source_count": 7,
       "sources": [
         "FC",
@@ -549,7 +549,7 @@
       "name": "Brock Purdy",
       "team": "SF",
       "position": "QB",
-      "value": 8725,
+      "value": 8724,
       "source_count": 7,
       "sources": [
         "FC",
@@ -583,7 +583,7 @@
       "name": "Emeka Egbuka",
       "team": "TB",
       "position": "WR",
-      "value": 8657,
+      "value": 8656,
       "source_count": 7,
       "sources": [
         "FC",
@@ -646,7 +646,7 @@
       "name": "Jordan Love",
       "team": "GB",
       "position": "QB",
-      "value": 8532,
+      "value": 8531,
       "source_count": 7,
       "sources": [
         "FC",
@@ -714,7 +714,7 @@
       "name": "Garrett Wilson",
       "team": "NYJ",
       "position": "WR",
-      "value": 8466,
+      "value": 8465,
       "source_count": 7,
       "sources": [
         "FC",
@@ -731,7 +731,7 @@
       "name": "2027 Mid 1st",
       "team": "NA",
       "position": "PICK",
-      "value": 8385,
+      "value": 8384,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -745,7 +745,7 @@
       "name": "Kenneth Walker",
       "team": "KC",
       "position": "RB",
-      "value": 8349,
+      "value": 8348,
       "source_count": 7,
       "sources": [
         "FC",
@@ -779,7 +779,7 @@
       "name": "Breece Hall",
       "team": "NYJ",
       "position": "RB",
-      "value": 8235,
+      "value": 8234,
       "source_count": 7,
       "sources": [
         "FC",
@@ -796,7 +796,7 @@
       "name": "2028 Early 1st",
       "team": "",
       "position": "PICK",
-      "value": 8233,
+      "value": 8230,
       "source_count": 3,
       "sources": [
         "FN",
@@ -856,7 +856,7 @@
       "name": "Fernando Mendoza",
       "team": "LV",
       "position": "QB",
-      "value": 8135,
+      "value": 8134,
       "source_count": 6,
       "sources": [
         "FC",
@@ -872,7 +872,7 @@
       "name": "DeVonta Smith",
       "team": "PHI",
       "position": "WR",
-      "value": 8027,
+      "value": 8026,
       "source_count": 7,
       "sources": [
         "FC",
@@ -889,7 +889,7 @@
       "name": "TreVeyon Henderson",
       "team": "NE",
       "position": "RB",
-      "value": 7998,
+      "value": 7997,
       "source_count": 7,
       "sources": [
         "FC",
@@ -906,7 +906,7 @@
       "name": "Christian McCaffrey",
       "team": "SF",
       "position": "RB",
-      "value": 7994,
+      "value": 7993,
       "source_count": 7,
       "sources": [
         "FC",
@@ -923,7 +923,7 @@
       "name": "Quinshon Judkins",
       "team": "CLE",
       "position": "RB",
-      "value": 7987,
+      "value": 7986,
       "source_count": 7,
       "sources": [
         "FC",
@@ -957,7 +957,7 @@
       "name": "Chase Brown",
       "team": "CIN",
       "position": "RB",
-      "value": 7972,
+      "value": 7971,
       "source_count": 7,
       "sources": [
         "FC",
@@ -974,7 +974,7 @@
       "name": "A.J. Brown",
       "team": "NE",
       "position": "WR",
-      "value": 7948,
+      "value": 7947,
       "source_count": 7,
       "sources": [
         "FC",
@@ -991,7 +991,7 @@
       "name": "Jordyn Tyson",
       "team": "NO",
       "position": "WR",
-      "value": 7931,
+      "value": 7930,
       "source_count": 6,
       "sources": [
         "FC",
@@ -1007,7 +1007,7 @@
       "name": "Dak Prescott",
       "team": "DAL",
       "position": "QB",
-      "value": 7930,
+      "value": 7929,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1037,7 +1037,7 @@
       "name": "2026 Early 1st",
       "team": "",
       "position": "PICK",
-      "value": 7884,
+      "value": 7882,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -1050,7 +1050,7 @@
       "name": "Cam Ward",
       "team": "TEN",
       "position": "QB",
-      "value": 7876,
+      "value": 7875,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1067,7 +1067,7 @@
       "name": "Rome Odunze",
       "team": "CHI",
       "position": "WR",
-      "value": 7835,
+      "value": 7834,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1084,7 +1084,7 @@
       "name": "Saquon Barkley",
       "team": "PHI",
       "position": "RB",
-      "value": 7759,
+      "value": 7758,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1101,7 +1101,7 @@
       "name": "Marvin Harrison Jr",
       "team": "ARI",
       "position": "WR",
-      "value": 7718,
+      "value": 7717,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1118,7 +1118,7 @@
       "name": "Zay Flowers",
       "team": "BAL",
       "position": "WR",
-      "value": 7712,
+      "value": 7711,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1152,7 +1152,7 @@
       "name": "Makai Lemon",
       "team": "PHI",
       "position": "WR",
-      "value": 7601,
+      "value": 7600,
       "source_count": 6,
       "sources": [
         "FC",
@@ -1179,7 +1179,7 @@
       "name": "Rashee Rice",
       "team": "KC",
       "position": "WR",
-      "value": 7529,
+      "value": 7528,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1208,7 +1208,7 @@
       "name": "2027 Late 1st",
       "team": "NA",
       "position": "PICK",
-      "value": 7507,
+      "value": 7505,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -1222,7 +1222,7 @@
       "name": "2028 Mid 1st",
       "team": "",
       "position": "PICK",
-      "value": 7504,
+      "value": 7501,
       "source_count": 3,
       "sources": [
         "FN",
@@ -1230,23 +1230,6 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Kyren Williams",
-      "team": "LAR",
-      "position": "RB",
-      "value": 7482,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "2026 Pick 1.07",
@@ -1262,10 +1245,27 @@
       "confidence": "medium"
     },
     {
+      "name": "Kyren Williams",
+      "team": "LAR",
+      "position": "RB",
+      "value": 7474,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "C.J. Stroud",
       "team": "HOU",
       "position": "QB",
-      "value": 7472,
+      "value": 7471,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1282,7 +1282,7 @@
       "name": "Jaylen Waddle",
       "team": "DEN",
       "position": "WR",
-      "value": 7469,
+      "value": 7468,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1311,7 +1311,7 @@
       "name": "Brian Thomas",
       "team": "JAX",
       "position": "WR",
-      "value": 7407,
+      "value": 7406,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1328,7 +1328,7 @@
       "name": "Bucky Irving",
       "team": "TB",
       "position": "RB",
-      "value": 7260,
+      "value": 7259,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1345,7 +1345,7 @@
       "name": "Jared Goff",
       "team": "DET",
       "position": "QB",
-      "value": 7259,
+      "value": 7258,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1375,7 +1375,7 @@
       "name": "Baker Mayfield",
       "team": "TB",
       "position": "QB",
-      "value": 7217,
+      "value": 7215,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1403,7 +1403,7 @@
       "name": "Tucker Kraft",
       "team": "GB",
       "position": "TE",
-      "value": 7162,
+      "value": 7161,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1420,7 +1420,7 @@
       "name": "Jameson Williams",
       "team": "DET",
       "position": "WR",
-      "value": 7155,
+      "value": 7161,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1437,7 +1437,7 @@
       "name": "2028 Late 1st",
       "team": "",
       "position": "PICK",
-      "value": 7144,
+      "value": 7140,
       "source_count": 3,
       "sources": [
         "FN",
@@ -1450,7 +1450,7 @@
       "name": "Sam LaPorta",
       "team": "DET",
       "position": "TE",
-      "value": 7116,
+      "value": 7115,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1492,7 +1492,7 @@
       "name": "Cam Skattebo",
       "team": "NYG",
       "position": "RB",
-      "value": 7065,
+      "value": 7071,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1509,7 +1509,7 @@
       "name": "Jadarian Price",
       "team": "SEA",
       "position": "RB",
-      "value": 7012,
+      "value": 7011,
       "source_count": 6,
       "sources": [
         "FC",
@@ -1525,7 +1525,7 @@
       "name": "Tyler Shough",
       "team": "NO",
       "position": "QB",
-      "value": 7007,
+      "value": 7006,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1567,7 +1567,7 @@
       "name": "2026 Mid 1st",
       "team": "",
       "position": "PICK",
-      "value": 6913,
+      "value": 6910,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -1580,7 +1580,7 @@
       "name": "Harold Fannin",
       "team": "CLE",
       "position": "TE",
-      "value": 6887,
+      "value": 6880,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1597,7 +1597,7 @@
       "name": "Kyler Murray",
       "team": "MIN",
       "position": "QB",
-      "value": 6873,
+      "value": 6872,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1625,7 +1625,7 @@
       "name": "Travis Etienne",
       "team": "NO",
       "position": "RB",
-      "value": 6843,
+      "value": 6841,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1642,7 +1642,7 @@
       "name": "Sam Darnold",
       "team": "SEA",
       "position": "QB",
-      "value": 6825,
+      "value": 6824,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1671,7 +1671,7 @@
       "name": "KC Concepcion",
       "team": "CLE",
       "position": "WR",
-      "value": 6800,
+      "value": 6798,
       "source_count": 6,
       "sources": [
         "FC",
@@ -1711,7 +1711,7 @@
       "name": "Javonte Williams",
       "team": "DAL",
       "position": "RB",
-      "value": 6774,
+      "value": 6773,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1752,7 +1752,7 @@
       "name": "Derrick Henry",
       "team": "BAL",
       "position": "RB",
-      "value": 6691,
+      "value": 6689,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1769,7 +1769,7 @@
       "name": "Kyle Pitts",
       "team": "ATL",
       "position": "TE",
-      "value": 6690,
+      "value": 6689,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1786,7 +1786,7 @@
       "name": "Josh Jacobs",
       "team": "GB",
       "position": "RB",
-      "value": 6615,
+      "value": 6613,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1840,7 +1840,7 @@
       "name": "Bryce Young",
       "team": "CAR",
       "position": "QB",
-      "value": 6542,
+      "value": 6540,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1869,7 +1869,7 @@
       "name": "2027 Early 2nd",
       "team": "NA",
       "position": "PICK",
-      "value": 6478,
+      "value": 6476,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -1883,7 +1883,7 @@
       "name": "2026 Late 1st",
       "team": "",
       "position": "PICK",
-      "value": 6465,
+      "value": 6462,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -1908,7 +1908,7 @@
       "name": "Jordan Addison",
       "team": "MIN",
       "position": "WR",
-      "value": 6418,
+      "value": 6417,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1925,7 +1925,7 @@
       "name": "Kenyon Sadiq",
       "team": "NYJ",
       "position": "TE",
-      "value": 6389,
+      "value": 6388,
       "source_count": 6,
       "sources": [
         "FC",
@@ -1941,7 +1941,7 @@
       "name": "Bhayshul Tuten",
       "team": "JAX",
       "position": "RB",
-      "value": 6362,
+      "value": 6360,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1958,7 +1958,7 @@
       "name": "Terry McLaurin",
       "team": "WAS",
       "position": "WR",
-      "value": 6348,
+      "value": 6346,
       "source_count": 7,
       "sources": [
         "FC",
@@ -1988,7 +1988,7 @@
       "name": "DJ Moore",
       "team": "BUF",
       "position": "WR",
-      "value": 6296,
+      "value": 6288,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2005,7 +2005,7 @@
       "name": "Christian Watson",
       "team": "GB",
       "position": "WR",
-      "value": 6262,
+      "value": 6261,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2022,7 +2022,7 @@
       "name": "Alec Pierce",
       "team": "IND",
       "position": "WR",
-      "value": 6214,
+      "value": 6213,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2039,7 +2039,7 @@
       "name": "Matthew Stafford",
       "team": "LAR",
       "position": "QB",
-      "value": 6210,
+      "value": 6209,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2056,7 +2056,7 @@
       "name": "Omar Cooper",
       "team": "NYJ",
       "position": "WR",
-      "value": 6162,
+      "value": 6154,
       "source_count": 6,
       "sources": [
         "FC",
@@ -2133,7 +2133,7 @@
       "name": "DK Metcalf",
       "team": "PIT",
       "position": "WR",
-      "value": 6068,
+      "value": 6066,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2184,7 +2184,7 @@
       "name": "D'Andre Swift",
       "team": "CHI",
       "position": "RB",
-      "value": 5989,
+      "value": 5988,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2213,7 +2213,7 @@
       "name": "Malik Willis",
       "team": "MIA",
       "position": "QB",
-      "value": 5957,
+      "value": 5955,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2230,7 +2230,7 @@
       "name": "2028 Early 2nd",
       "team": "",
       "position": "PICK",
-      "value": 5937,
+      "value": 5931,
       "source_count": 3,
       "sources": [
         "FN",
@@ -2243,7 +2243,7 @@
       "name": "Daniel Jones",
       "team": "IND",
       "position": "QB",
-      "value": 5924,
+      "value": 5923,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2297,7 +2297,7 @@
       "name": "Parker Washington",
       "team": "JAX",
       "position": "WR",
-      "value": 5883,
+      "value": 5881,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2326,7 +2326,7 @@
       "name": "David Montgomery",
       "team": "HOU",
       "position": "RB",
-      "value": 5864,
+      "value": 5863,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2343,7 +2343,7 @@
       "name": "Ricky Pearsall",
       "team": "SF",
       "position": "WR",
-      "value": 5861,
+      "value": 5860,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2372,7 +2372,7 @@
       "name": "Matthew Golden",
       "team": "GB",
       "position": "WR",
-      "value": 5842,
+      "value": 5840,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2401,7 +2401,7 @@
       "name": "Eli Stowers",
       "team": "PHI",
       "position": "TE",
-      "value": 5800,
+      "value": 5799,
       "source_count": 6,
       "sources": [
         "FC",
@@ -2414,10 +2414,24 @@
       "confidence": "high"
     },
     {
+      "name": "2027 Mid 2nd",
+      "team": "NA",
+      "position": "PICK",
+      "value": 5794,
+      "source_count": 4,
+      "sources": [
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Travis Hunter",
       "team": "JAX",
       "position": "WR",
-      "value": 5791,
+      "value": 5790,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2429,20 +2443,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "2027 Mid 2nd",
-      "team": "NA",
-      "position": "PICK",
-      "value": 5785,
-      "source_count": 4,
-      "sources": [
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Fred Warner",
@@ -2460,7 +2460,7 @@
       "name": "Davante Adams",
       "team": "LAR",
       "position": "WR",
-      "value": 5760,
+      "value": 5758,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2477,7 +2477,7 @@
       "name": "Denzel Boston",
       "team": "CLE",
       "position": "WR",
-      "value": 5736,
+      "value": 5735,
       "source_count": 6,
       "sources": [
         "FC",
@@ -2493,7 +2493,7 @@
       "name": "Michael Wilson",
       "team": "ARI",
       "position": "WR",
-      "value": 5719,
+      "value": 5718,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2510,7 +2510,7 @@
       "name": "George Kittle",
       "team": "SF",
       "position": "TE",
-      "value": 5718,
+      "value": 5716,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2527,7 +2527,7 @@
       "name": "RJ Harvey",
       "team": "DEN",
       "position": "RB",
-      "value": 5713,
+      "value": 5711,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2544,7 +2544,7 @@
       "name": "Josh Downs",
       "team": "IND",
       "position": "WR",
-      "value": 5700,
+      "value": 5699,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2573,7 +2573,7 @@
       "name": "Jayden Higgins",
       "team": "HOU",
       "position": "WR",
-      "value": 5646,
+      "value": 5657,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2590,24 +2590,7 @@
       "name": "Mike Evans",
       "team": "SF",
       "position": "WR",
-      "value": 5642,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Isaiah Likely",
-      "team": "NYG",
-      "position": "TE",
-      "value": 5628,
+      "value": 5634,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2630,6 +2613,23 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Isaiah Likely",
+      "team": "NYG",
+      "position": "TE",
+      "value": 5620,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "2026 Pick 2.04",
@@ -2660,7 +2660,7 @@
       "name": "Dalton Kincaid",
       "team": "BUF",
       "position": "TE",
-      "value": 5597,
+      "value": 5596,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2677,7 +2677,7 @@
       "name": "Ty Simpson",
       "team": "LAR",
       "position": "QB",
-      "value": 5595,
+      "value": 5593,
       "source_count": 6,
       "sources": [
         "FC",
@@ -2702,10 +2702,22 @@
       "confidence": "low"
     },
     {
+      "name": "Jordyn Brooks",
+      "team": "MIA",
+      "position": "LB",
+      "value": 5544,
+      "source_count": 2,
+      "sources": [
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Michael Pittman",
       "team": "PIT",
       "position": "WR",
-      "value": 5545,
+      "value": 5537,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2717,18 +2729,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Jordyn Brooks",
-      "team": "MIA",
-      "position": "LB",
-      "value": 5544,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Brian Burns",
@@ -2754,22 +2754,10 @@
       "confidence": "low"
     },
     {
-      "name": "Nick Bolton",
-      "team": "KC",
-      "position": "LB",
-      "value": 5514,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low"
-    },
-    {
       "name": "Xavier Worthy",
       "team": "KC",
       "position": "WR",
-      "value": 5512,
+      "value": 5517,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2783,17 +2771,16 @@
       "confidence": "high"
     },
     {
-      "name": "2026 Early 2nd",
-      "team": "",
-      "position": "PICK",
-      "value": 5445,
-      "source_count": 3,
+      "name": "Nick Bolton",
+      "team": "KC",
+      "position": "LB",
+      "value": 5514,
+      "source_count": 2,
       "sources": [
-        "KTC",
         "IDP",
         "IDPSHOW"
       ],
-      "confidence": "medium"
+      "confidence": "low"
     },
     {
       "name": "2027 1st (Mid)",
@@ -2819,6 +2806,19 @@
       "confidence": "low"
     },
     {
+      "name": "2026 Early 2nd",
+      "team": "",
+      "position": "PICK",
+      "value": 5426,
+      "source_count": 3,
+      "sources": [
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Brian Branch",
       "team": "DET",
       "position": "DB",
@@ -2834,7 +2834,7 @@
       "name": "Quentin Johnston",
       "team": "LAC",
       "position": "WR",
-      "value": 5419,
+      "value": 5417,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2863,24 +2863,7 @@
       "name": "Jayden Reed",
       "team": "GB",
       "position": "WR",
-      "value": 5409,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Wan'Dale Robinson",
-      "team": "TEN",
-      "position": "WR",
-      "value": 5406,
+      "value": 5407,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2906,6 +2889,23 @@
       "confidence": "low"
     },
     {
+      "name": "Wan'Dale Robinson",
+      "team": "TEN",
+      "position": "WR",
+      "value": 5405,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "2026 Pick 2.05",
       "team": "",
       "position": "PICK",
@@ -2922,7 +2922,7 @@
       "name": "Oronde Gadsden",
       "team": "LAC",
       "position": "TE",
-      "value": 5358,
+      "value": 5356,
       "source_count": 7,
       "sources": [
         "FC",
@@ -2939,7 +2939,7 @@
       "name": "2028 Mid 2nd",
       "team": "",
       "position": "PICK",
-      "value": 5358,
+      "value": 5351,
       "source_count": 3,
       "sources": [
         "FN",
@@ -2947,6 +2947,23 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Jonathon Brooks",
+      "team": "CAR",
+      "position": "RB",
+      "value": 5318,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Laitau Latu",
@@ -2970,23 +2987,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Jonathon Brooks",
-      "team": "CAR",
-      "position": "RB",
-      "value": 5308,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Devin Lloyd",
@@ -3028,7 +3028,7 @@
       "name": "Chuba Hubbard",
       "team": "CAR",
       "position": "RB",
-      "value": 5242,
+      "value": 5241,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3045,7 +3045,7 @@
       "name": "Kyle Monangai",
       "team": "CHI",
       "position": "RB",
-      "value": 5241,
+      "value": 5239,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3087,7 +3087,7 @@
       "name": "Zach Charbonnet",
       "team": "SEA",
       "position": "RB",
-      "value": 5208,
+      "value": 5207,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3116,7 +3116,7 @@
       "name": "2027 Late 2nd",
       "team": "NA",
       "position": "PICK",
-      "value": 5159,
+      "value": 5156,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -3130,7 +3130,7 @@
       "name": "Jake Ferguson",
       "team": "DAL",
       "position": "TE",
-      "value": 5156,
+      "value": 5154,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3147,7 +3147,7 @@
       "name": "Michael Penix",
       "team": "ATL",
       "position": "QB",
-      "value": 5152,
+      "value": 5150,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3164,7 +3164,7 @@
       "name": "Blake Corum",
       "team": "LAR",
       "position": "RB",
-      "value": 5135,
+      "value": 5133,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3181,7 +3181,7 @@
       "name": "Jaylen Warren",
       "team": "PIT",
       "position": "RB",
-      "value": 5132,
+      "value": 5131,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3198,7 +3198,7 @@
       "name": "Courtland Sutton",
       "team": "DEN",
       "position": "WR",
-      "value": 5103,
+      "value": 5101,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3227,7 +3227,7 @@
       "name": "2028 Late 2nd",
       "team": "",
       "position": "PICK",
-      "value": 5093,
+      "value": 5087,
       "source_count": 3,
       "sources": [
         "FN",
@@ -3265,7 +3265,7 @@
       "name": "Chris Godwin",
       "team": "TB",
       "position": "WR",
-      "value": 4969,
+      "value": 4967,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3365,7 +3365,7 @@
       "name": "2026 Mid 2nd",
       "team": "",
       "position": "PICK",
-      "value": 4827,
+      "value": 4823,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -3389,7 +3389,7 @@
       "name": "Jonah Coleman",
       "team": "DEN",
       "position": "RB",
-      "value": 4804,
+      "value": 4796,
       "source_count": 6,
       "sources": [
         "FC",
@@ -3417,7 +3417,7 @@
       "name": "Jakobi Meyers",
       "team": "JAX",
       "position": "WR",
-      "value": 4748,
+      "value": 4746,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3458,7 +3458,7 @@
       "name": "J.J. McCarthy",
       "team": "MIN",
       "position": "QB",
-      "value": 4728,
+      "value": 4726,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3475,7 +3475,7 @@
       "name": "Tua Tagovailoa",
       "team": "ATL",
       "position": "QB",
-      "value": 4727,
+      "value": 4724,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3492,7 +3492,7 @@
       "name": "Brenton Strange",
       "team": "JAX",
       "position": "TE",
-      "value": 4699,
+      "value": 4696,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3518,24 +3518,10 @@
       "confidence": "low"
     },
     {
-      "name": "Chigoziem Okonkwo",
-      "team": "TEN",
-      "position": "TE",
-      "value": 4647,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Jalen Coker",
       "team": "CAR",
       "position": "WR",
-      "value": 4646,
+      "value": 4645,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3549,10 +3535,24 @@
       "confidence": "high"
     },
     {
+      "name": "Chigoziem Okonkwo",
+      "team": "TEN",
+      "position": "TE",
+      "value": 4643,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Romeo Doubs",
       "team": "NE",
       "position": "WR",
-      "value": 4644,
+      "value": 4642,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3578,10 +3578,26 @@
       "confidence": "low"
     },
     {
+      "name": "Antonio Williams",
+      "team": "WAS",
+      "position": "WR",
+      "value": 4626,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Rico Dowdle",
       "team": "PIT",
       "position": "RB",
-      "value": 4625,
+      "value": 4623,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3595,40 +3611,10 @@
       "confidence": "high"
     },
     {
-      "name": "Antonio Williams",
-      "team": "WAS",
-      "position": "WR",
-      "value": 4619,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Kenneth Gainwell",
-      "team": "TB",
-      "position": "RB",
-      "value": 4617,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Khalil Shakir",
       "team": "BUF",
       "position": "WR",
-      "value": 4615,
+      "value": 4613,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3645,7 +3631,7 @@
       "name": "Rhamondre Stevenson",
       "team": "NE",
       "position": "RB",
-      "value": 4614,
+      "value": 4612,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3659,10 +3645,24 @@
       "confidence": "high"
     },
     {
+      "name": "Kenneth Gainwell",
+      "team": "TB",
+      "position": "RB",
+      "value": 4610,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Tony Pollard",
       "team": "TEN",
       "position": "RB",
-      "value": 4605,
+      "value": 4603,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3692,7 +3692,7 @@
       "name": "Jalen McMillan",
       "team": "TB",
       "position": "WR",
-      "value": 4586,
+      "value": 4579,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3709,7 +3709,7 @@
       "name": "Chris Bell",
       "team": "MIA",
       "position": "WR",
-      "value": 4573,
+      "value": 4571,
       "source_count": 6,
       "sources": [
         "FC",
@@ -3725,7 +3725,7 @@
       "name": "Mark Andrews",
       "team": "BAL",
       "position": "TE",
-      "value": 4570,
+      "value": 4562,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3755,7 +3755,7 @@
       "name": "2026 Late 2nd",
       "team": "",
       "position": "PICK",
-      "value": 4408,
+      "value": 4417,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -3768,7 +3768,7 @@
       "name": "Shedeur Sanders",
       "team": "CLE",
       "position": "QB",
-      "value": 4404,
+      "value": 4402,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3785,7 +3785,7 @@
       "name": "De'Zhaun Stribling",
       "team": "SF",
       "position": "WR",
-      "value": 4389,
+      "value": 4393,
       "source_count": 5,
       "sources": [
         "FC",
@@ -3812,7 +3812,7 @@
       "name": "Tre' Harris",
       "team": "LAC",
       "position": "WR",
-      "value": 4353,
+      "value": 4351,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3829,7 +3829,7 @@
       "name": "J.K. Dobbins",
       "team": "DEN",
       "position": "RB",
-      "value": 4319,
+      "value": 4317,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3846,7 +3846,7 @@
       "name": "T.J. Hockenson",
       "team": "MIN",
       "position": "TE",
-      "value": 4302,
+      "value": 4300,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3887,7 +3887,7 @@
       "name": "Germie Bernard",
       "team": "PIT",
       "position": "WR",
-      "value": 4237,
+      "value": 4234,
       "source_count": 6,
       "sources": [
         "FC",
@@ -3928,24 +3928,7 @@
       "name": "Travis Kelce",
       "team": "KC",
       "position": "TE",
-      "value": 4217,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Rashid Shaheed",
-      "team": "SEA",
-      "position": "WR",
-      "value": 4175,
+      "value": 4215,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3971,10 +3954,27 @@
       "confidence": "low"
     },
     {
+      "name": "Rashid Shaheed",
+      "team": "SEA",
+      "position": "WR",
+      "value": 4173,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Rachaad White",
       "team": "WAS",
       "position": "RB",
-      "value": 4158,
+      "value": 4156,
       "source_count": 7,
       "sources": [
         "FC",
@@ -3991,7 +3991,7 @@
       "name": "Terrance Ferguson",
       "team": "LAR",
       "position": "TE",
-      "value": 4142,
+      "value": 4145,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4008,7 +4008,7 @@
       "name": "Nicholas Singleton",
       "team": "TEN",
       "position": "RB",
-      "value": 4139,
+      "value": 4136,
       "source_count": 6,
       "sources": [
         "FC",
@@ -4024,7 +4024,7 @@
       "name": "Jordan Mason",
       "team": "MIN",
       "position": "RB",
-      "value": 4090,
+      "value": 4089,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4041,7 +4041,7 @@
       "name": "Jaylin Noel",
       "team": "HOU",
       "position": "WR",
-      "value": 4087,
+      "value": 4085,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4058,7 +4058,7 @@
       "name": "Jacory Croskey-Merritt",
       "team": "WAS",
       "position": "RB",
-      "value": 4082,
+      "value": 4080,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4075,7 +4075,7 @@
       "name": "Dallas Goedert",
       "team": "PHI",
       "position": "TE",
-      "value": 4082,
+      "value": 4080,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4166,7 +4166,7 @@
       "name": "2027 Early 3rd",
       "team": "NA",
       "position": "PICK",
-      "value": 3991,
+      "value": 3987,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -4192,7 +4192,7 @@
       "name": "Tyrone Tracy",
       "team": "NYG",
       "position": "RB",
-      "value": 3982,
+      "value": 3980,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4241,21 +4241,10 @@
       "confidence": "medium"
     },
     {
-      "name": "2025 Early 3rd",
-      "team": "",
-      "position": "PI",
-      "value": 3959,
-      "source_count": 1,
-      "sources": [
-        "IDP"
-      ],
-      "confidence": "low"
-    },
-    {
       "name": "Dylan Sampson",
       "team": "CLE",
       "position": "RB",
-      "value": 3958,
+      "value": 3961,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4267,6 +4256,17 @@
         "IDPSHOW"
       ],
       "confidence": "high"
+    },
+    {
+      "name": "2025 Early 3rd",
+      "team": "",
+      "position": "PI",
+      "value": 3959,
+      "source_count": 1,
+      "sources": [
+        "IDP"
+      ],
+      "confidence": "low"
     },
     {
       "name": "Zaire Franklin",
@@ -4344,7 +4344,7 @@
       "name": "Jauan Jennings",
       "team": "MIN",
       "position": "WR",
-      "value": 3881,
+      "value": 3878,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4385,7 +4385,7 @@
       "name": "Tyler Allgeier",
       "team": "ARI",
       "position": "RB",
-      "value": 3855,
+      "value": 3853,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4402,7 +4402,7 @@
       "name": "Jerry Jeudy",
       "team": "CLE",
       "position": "WR",
-      "value": 3841,
+      "value": 3839,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4431,7 +4431,7 @@
       "name": "Zachariah Branch",
       "team": "ATL",
       "position": "WR",
-      "value": 3774,
+      "value": 3771,
       "source_count": 6,
       "sources": [
         "FC",
@@ -4447,7 +4447,7 @@
       "name": "Jacoby Brissett",
       "team": "ARI",
       "position": "QB",
-      "value": 3750,
+      "value": 3748,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4464,7 +4464,7 @@
       "name": "Woody Marks",
       "team": "HOU",
       "position": "RB",
-      "value": 3713,
+      "value": 3711,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4494,7 +4494,7 @@
       "name": "Geno Smith",
       "team": "NYJ",
       "position": "QB",
-      "value": 3693,
+      "value": 3705,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4511,7 +4511,7 @@
       "name": "Elijah Sarratt",
       "team": "BAL",
       "position": "WR",
-      "value": 3683,
+      "value": 3679,
       "source_count": 6,
       "sources": [
         "FC",
@@ -4527,7 +4527,7 @@
       "name": "Adonai Mitchell",
       "team": "NYJ",
       "position": "WR",
-      "value": 3680,
+      "value": 3678,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4555,7 +4555,7 @@
       "name": "Anthony Richardson",
       "team": "IND",
       "position": "QB",
-      "value": 3643,
+      "value": 3623,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4572,7 +4572,7 @@
       "name": "2027 Mid 3rd",
       "team": "NA",
       "position": "PICK",
-      "value": 3612,
+      "value": 3608,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -4603,7 +4603,7 @@
       "name": "Mac Jones",
       "team": "SF",
       "position": "QB",
-      "value": 3562,
+      "value": 3560,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4620,7 +4620,7 @@
       "name": "Gunnar Helm",
       "team": "TEN",
       "position": "TE",
-      "value": 3561,
+      "value": 3558,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4650,7 +4650,7 @@
       "name": "AJ Barner",
       "team": "SEA",
       "position": "TE",
-      "value": 3549,
+      "value": 3547,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4679,7 +4679,7 @@
       "name": "Isaac TeSlaa",
       "team": "DET",
       "position": "WR",
-      "value": 3531,
+      "value": 3528,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4696,7 +4696,7 @@
       "name": "Ted Hurst",
       "team": "TB",
       "position": "WR",
-      "value": 3517,
+      "value": 3513,
       "source_count": 6,
       "sources": [
         "FC",
@@ -4712,24 +4712,7 @@
       "name": "Tank Bigsby",
       "team": "PHI",
       "position": "RB",
-      "value": 3511,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Tank Dell",
-      "team": "HOU",
-      "position": "WR",
-      "value": 3488,
+      "value": 3510,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4756,10 +4739,27 @@
       "confidence": "medium"
     },
     {
+      "name": "Tank Dell",
+      "team": "HOU",
+      "position": "WR",
+      "value": 3486,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Braelon Allen",
       "team": "NYJ",
       "position": "RB",
-      "value": 3484,
+      "value": 3482,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4776,7 +4776,7 @@
       "name": "Tyjae Spears",
       "team": "TEN",
       "position": "RB",
-      "value": 3475,
+      "value": 3473,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4828,7 +4828,7 @@
       "name": "Aaron Jones",
       "team": "MIN",
       "position": "RB",
-      "value": 3446,
+      "value": 3444,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4865,19 +4865,6 @@
       "confidence": "low"
     },
     {
-      "name": "2028 Early 3rd",
-      "team": "",
-      "position": "PICK",
-      "value": 3424,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Patrick Queen",
       "team": "PIT",
       "position": "LB",
@@ -4893,7 +4880,7 @@
       "name": "Carson Beck",
       "team": "ARI",
       "position": "QB",
-      "value": 3419,
+      "value": 3415,
       "source_count": 6,
       "sources": [
         "FC",
@@ -4922,7 +4909,7 @@
       "name": "Stefon Diggs",
       "team": "",
       "position": "WR",
-      "value": 3407,
+      "value": 3405,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4934,6 +4921,19 @@
         "IDPSHOW"
       ],
       "confidence": "high"
+    },
+    {
+      "name": "2028 Early 3rd",
+      "team": "",
+      "position": "PICK",
+      "value": 3401,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Daiyan Henley",
@@ -4963,7 +4963,7 @@
       "name": "Jack Bech",
       "team": "LV",
       "position": "WR",
-      "value": 3364,
+      "value": 3362,
       "source_count": 7,
       "sources": [
         "FC",
@@ -4980,7 +4980,7 @@
       "name": "Elic Ayomanor",
       "team": "TEN",
       "position": "WR",
-      "value": 3312,
+      "value": 3310,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5009,7 +5009,7 @@
       "name": "Mason Taylor",
       "team": "NYJ",
       "position": "TE",
-      "value": 3285,
+      "value": 3282,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5026,7 +5026,7 @@
       "name": "Brian Robinson",
       "team": "ATL",
       "position": "RB",
-      "value": 3282,
+      "value": 3280,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5043,7 +5043,7 @@
       "name": "Isiah Pacheco",
       "team": "DET",
       "position": "RB",
-      "value": 3280,
+      "value": 3278,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5073,7 +5073,7 @@
       "name": "Keon Coleman",
       "team": "BUF",
       "position": "WR",
-      "value": 3254,
+      "value": 3252,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5082,22 +5082,6 @@
         "KTC",
         "DP",
         "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Malachi Fields",
-      "team": "NYG",
-      "position": "WR",
-      "value": 3253,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -5115,6 +5099,22 @@
       "confidence": "low"
     },
     {
+      "name": "Malachi Fields",
+      "team": "NYG",
+      "position": "WR",
+      "value": 3250,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Nick Cross",
       "team": "IND",
       "position": "DB",
@@ -5130,7 +5130,7 @@
       "name": "2026 Early 3rd",
       "team": "",
       "position": "PICK",
-      "value": 3238,
+      "value": 3233,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -5143,7 +5143,7 @@
       "name": "Pat Bryant",
       "team": "DEN",
       "position": "WR",
-      "value": 3217,
+      "value": 3215,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5184,7 +5184,7 @@
       "name": "2027 Late 3rd",
       "team": "NA",
       "position": "PICK",
-      "value": 3200,
+      "value": 3196,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -5198,24 +5198,7 @@
       "name": "David Njoku",
       "team": "LAC",
       "position": "TE",
-      "value": 3197,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Troy Franklin",
-      "team": "DEN",
-      "position": "WR",
-      "value": 3192,
+      "value": 3195,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5241,10 +5224,27 @@
       "confidence": "low"
     },
     {
+      "name": "Troy Franklin",
+      "team": "DEN",
+      "position": "WR",
+      "value": 3189,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Pat Freiermuth",
       "team": "PIT",
       "position": "TE",
-      "value": 3183,
+      "value": 3181,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5261,7 +5261,7 @@
       "name": "Keaton Mitchell",
       "team": "LAC",
       "position": "RB",
-      "value": 3174,
+      "value": 3172,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5290,24 +5290,7 @@
       "name": "Kayshon Boutte",
       "team": "NE",
       "position": "WR",
-      "value": 3163,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Chris Rodriguez",
-      "team": "JAX",
-      "position": "RB",
-      "value": 3156,
+      "value": 3161,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5332,6 +5315,23 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Chris Rodriguez",
+      "team": "JAX",
+      "position": "RB",
+      "value": 3151,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Justin Fields",
@@ -5366,7 +5366,7 @@
       "name": "Cade Otton",
       "team": "TB",
       "position": "TE",
-      "value": 3131,
+      "value": 3133,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5383,7 +5383,7 @@
       "name": "Juwan Johnson",
       "team": "NO",
       "position": "TE",
-      "value": 3112,
+      "value": 3110,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5400,7 +5400,7 @@
       "name": "Kaleb Johnson",
       "team": "PIT",
       "position": "RB",
-      "value": 3103,
+      "value": 3100,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5429,7 +5429,7 @@
       "name": "Emmett Johnson",
       "team": "KC",
       "position": "RB",
-      "value": 3087,
+      "value": 3083,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5445,7 +5445,7 @@
       "name": "Elijah Arroyo",
       "team": "SEA",
       "position": "TE",
-      "value": 3075,
+      "value": 3073,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5457,19 +5457,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "2028 Mid 3rd",
-      "team": "",
-      "position": "PICK",
-      "value": 3072,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "2027 2nd (Mid)",
@@ -5486,7 +5473,7 @@
       "name": "Hunter Henry",
       "team": "NE",
       "position": "TE",
-      "value": 3068,
+      "value": 3066,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5495,6 +5482,35 @@
         "KTC",
         "DP",
         "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "2028 Mid 3rd",
+      "team": "",
+      "position": "PICK",
+      "value": 3064,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Chris Brazzell",
+      "team": "CAR",
+      "position": "WR",
+      "value": 3063,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -5510,22 +5526,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Chris Brazzell",
-      "team": "CAR",
-      "position": "WR",
-      "value": 3059,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Kayvon Thibodeaux",
@@ -5555,7 +5555,7 @@
       "name": "Tory Horton",
       "team": "SEA",
       "position": "WR",
-      "value": 3025,
+      "value": 3022,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5585,7 +5585,7 @@
       "name": "Dontayvion Wicks",
       "team": "PHI",
       "position": "WR",
-      "value": 3006,
+      "value": 3004,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5602,7 +5602,7 @@
       "name": "Jalen Nailor",
       "team": "LV",
       "position": "WR",
-      "value": 3000,
+      "value": 2996,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5619,7 +5619,7 @@
       "name": "Kyle Williams",
       "team": "NE",
       "position": "WR",
-      "value": 2993,
+      "value": 2990,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5636,7 +5636,7 @@
       "name": "Kaytron Allen",
       "team": "WAS",
       "position": "RB",
-      "value": 2986,
+      "value": 2981,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5652,7 +5652,7 @@
       "name": "Dalton Schultz",
       "team": "HOU",
       "position": "TE",
-      "value": 2977,
+      "value": 2975,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5681,7 +5681,7 @@
       "name": "2026 Mid 3rd",
       "team": "",
       "position": "PICK",
-      "value": 2974,
+      "value": 2969,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -5718,7 +5718,7 @@
       "name": "Skyler Bell",
       "team": "BUF",
       "position": "WR",
-      "value": 2933,
+      "value": 2905,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5747,7 +5747,7 @@
       "name": "Malik Washington",
       "team": "MIA",
       "position": "WR",
-      "value": 2888,
+      "value": 2884,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5781,7 +5781,7 @@
       "name": "Aaron Rodgers",
       "team": "PIT",
       "position": "QB",
-      "value": 2865,
+      "value": 2862,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5798,7 +5798,7 @@
       "name": "Alvin Kamara",
       "team": "NO",
       "position": "RB",
-      "value": 2865,
+      "value": 2859,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5839,7 +5839,7 @@
       "name": "Tre Tucker",
       "team": "LV",
       "position": "WR",
-      "value": 2841,
+      "value": 2838,
       "source_count": 7,
       "sources": [
         "FC",
@@ -5880,7 +5880,7 @@
       "name": "Mike Washington",
       "team": "LV",
       "position": "RB",
-      "value": 2771,
+      "value": 2768,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5896,7 +5896,7 @@
       "name": "Jalen Milroe",
       "team": "SEA",
       "position": "QB",
-      "value": 2761,
+      "value": 2758,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5925,7 +5925,7 @@
       "name": "Max Klare",
       "team": "LAR",
       "position": "TE",
-      "value": 2739,
+      "value": 2734,
       "source_count": 6,
       "sources": [
         "FC",
@@ -5988,7 +5988,7 @@
       "name": "Darnell Mooney",
       "team": "NYG",
       "position": "WR",
-      "value": 2706,
+      "value": 2703,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6014,10 +6014,27 @@
       "confidence": "low"
     },
     {
+      "name": "Ollie Gordon",
+      "team": "MIA",
+      "position": "RB",
+      "value": 2681,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "2028 Late 3rd",
       "team": "",
       "position": "PICK",
-      "value": 2689,
+      "value": 2681,
       "source_count": 3,
       "sources": [
         "FN",
@@ -6025,40 +6042,6 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Ollie Gordon",
-      "team": "MIA",
-      "position": "RB",
-      "value": 2683,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Trey Benson",
-      "team": "ARI",
-      "position": "RB",
-      "value": 2622,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Keldric Faulk",
@@ -6070,6 +6053,23 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Trey Benson",
+      "team": "ARI",
+      "position": "RB",
+      "value": 2620,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Quentin Lake",
@@ -6084,10 +6084,22 @@
       "confidence": "low"
     },
     {
+      "name": "Devon Witherspoon",
+      "team": "SEA",
+      "position": "DB",
+      "value": 2614,
+      "source_count": 2,
+      "sources": [
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Theo Johnson",
       "team": "NYG",
       "position": "TE",
-      "value": 2614,
+      "value": 2612,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6101,22 +6113,10 @@
       "confidence": "high"
     },
     {
-      "name": "Devon Witherspoon",
-      "team": "SEA",
-      "position": "DB",
-      "value": 2614,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low"
-    },
-    {
       "name": "Marvin Mims",
       "team": "DEN",
       "position": "WR",
-      "value": 2608,
+      "value": 2606,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6180,7 +6180,7 @@
       "name": "Michael Mayer",
       "team": "LV",
       "position": "TE",
-      "value": 2567,
+      "value": 2564,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6197,7 +6197,7 @@
       "name": "Jaylen Wright",
       "team": "MIA",
       "position": "RB",
-      "value": 2564,
+      "value": 2562,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6214,7 +6214,7 @@
       "name": "MarShawn Lloyd",
       "team": "GB",
       "position": "RB",
-      "value": 2558,
+      "value": 2556,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6243,7 +6243,7 @@
       "name": "Ja'Tavion Sanders",
       "team": "CAR",
       "position": "TE",
-      "value": 2535,
+      "value": 2533,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6259,7 +6259,7 @@
       "name": "Jaydon Blue",
       "team": "DAL",
       "position": "RB",
-      "value": 2525,
+      "value": 2523,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6276,7 +6276,7 @@
       "name": "Rashod Bateman",
       "team": "BAL",
       "position": "WR",
-      "value": 2525,
+      "value": 2522,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6293,7 +6293,7 @@
       "name": "2026 Late 3rd",
       "team": "",
       "position": "PICK",
-      "value": 2515,
+      "value": 2519,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -6301,6 +6301,21 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Ja'Kobi Lane",
+      "team": "BAL",
+      "position": "WR",
+      "value": 2516,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "2027 2nd (Late)",
@@ -6317,7 +6332,7 @@
       "name": "DeMario Douglas",
       "team": "NE",
       "position": "WR",
-      "value": 2513,
+      "value": 2510,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6325,21 +6340,6 @@
         "KTC",
         "DP",
         "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Ja'Kobi Lane",
-      "team": "BAL",
-      "position": "WR",
-      "value": 2511,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FP",
-        "KTC",
-        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -6372,7 +6372,7 @@
       "name": "Deshaun Watson",
       "team": "CLE",
       "position": "QB",
-      "value": 2499,
+      "value": 2497,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6423,7 +6423,7 @@
       "name": "Kirk Cousins",
       "team": "LV",
       "position": "QB",
-      "value": 2448,
+      "value": 2446,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6440,7 +6440,7 @@
       "name": "Greg Dulcich",
       "team": "MIA",
       "position": "TE",
-      "value": 2443,
+      "value": 2439,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6457,7 +6457,7 @@
       "name": "Eli Raridon",
       "team": "NE",
       "position": "TE",
-      "value": 2430,
+      "value": 2426,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6498,7 +6498,7 @@
       "name": "Jordan James",
       "team": "SF",
       "position": "RB",
-      "value": 2417,
+      "value": 2415,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6515,7 +6515,7 @@
       "name": "Jake Tonges",
       "team": "SF",
       "position": "TE",
-      "value": 2402,
+      "value": 2399,
       "source_count": 5,
       "sources": [
         "FC",
@@ -6538,10 +6538,21 @@
       "confidence": "low"
     },
     {
+      "name": "Hollywood Brown",
+      "team": "PHI",
+      "position": "WR",
+      "value": 2388,
+      "source_count": 1,
+      "sources": [
+        "DP"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Ray Davis",
       "team": "BUF",
       "position": "RB",
-      "value": 2388,
+      "value": 2386,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6553,17 +6564,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Hollywood Brown",
-      "team": "PHI",
-      "position": "WR",
-      "value": 2388,
-      "source_count": 1,
-      "sources": [
-        "DP"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Chop Robinson",
@@ -6578,10 +6578,21 @@
       "confidence": "low"
     },
     {
+      "name": "Jonas Sanker",
+      "team": "SAINTS",
+      "position": "S",
+      "value": 2370,
+      "source_count": 1,
+      "sources": [
+        "IDPSHOW"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Sean Tucker",
       "team": "TB",
       "position": "RB",
-      "value": 2370,
+      "value": 2367,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6593,17 +6604,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Jonas Sanker",
-      "team": "SAINTS",
-      "position": "S",
-      "value": 2370,
-      "source_count": 1,
-      "sources": [
-        "IDPSHOW"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Tyreek Hill",
@@ -6623,10 +6623,10 @@
       "confidence": "high"
     },
     {
-      "name": "Chimere Dike",
-      "team": "TEN",
+      "name": "Xavier Legette",
+      "team": "CAR",
       "position": "WR",
-      "value": 2333,
+      "value": 2329,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6640,10 +6640,10 @@
       "confidence": "high"
     },
     {
-      "name": "Xavier Legette",
-      "team": "CAR",
+      "name": "Chimere Dike",
+      "team": "TEN",
       "position": "WR",
-      "value": 2332,
+      "value": 2327,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6671,7 +6671,7 @@
       "name": "Demond Claiborne",
       "team": "MIN",
       "position": "RB",
-      "value": 2317,
+      "value": 2305,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6722,7 +6722,7 @@
       "name": "Trevor Etienne",
       "team": "CAR",
       "position": "RB",
-      "value": 2288,
+      "value": 2286,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6738,7 +6738,7 @@
       "name": "Devin Neal",
       "team": "NO",
       "position": "RB",
-      "value": 2286,
+      "value": 2283,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6755,7 +6755,7 @@
       "name": "Will Howard",
       "team": "PIT",
       "position": "QB",
-      "value": 2280,
+      "value": 2277,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6783,28 +6783,12 @@
       "name": "Kimani Vidal",
       "team": "LAC",
       "position": "RB",
-      "value": 2267,
+      "value": 2263,
       "source_count": 7,
       "sources": [
         "FC",
         "FN",
         "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Jalen Royals",
-      "team": "KC",
-      "position": "WR",
-      "value": 2255,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
         "KTC",
         "DP",
         "IDP",
@@ -6825,6 +6809,22 @@
       "confidence": "low"
     },
     {
+      "name": "Jalen Royals",
+      "team": "KC",
+      "position": "WR",
+      "value": 2252,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Demetrius Knight",
       "team": "CIN",
       "position": "LB",
@@ -6840,7 +6840,7 @@
       "name": "Christian Kirk",
       "team": "SF",
       "position": "WR",
-      "value": 2225,
+      "value": 2223,
       "source_count": 7,
       "sources": [
         "FC",
@@ -6882,28 +6882,12 @@
       "name": "Cole Kmet",
       "team": "CHI",
       "position": "TE",
-      "value": 2198,
+      "value": 2195,
       "source_count": 7,
       "sources": [
         "FC",
         "FN",
         "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Cooper Kupp",
-      "team": "SEA",
-      "position": "WR",
-      "value": 2183,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
         "KTC",
         "DP",
         "IDP",
@@ -6924,10 +6908,26 @@
       "confidence": "low"
     },
     {
+      "name": "Cooper Kupp",
+      "team": "SEA",
+      "position": "WR",
+      "value": 2180,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "2027 Early 4th",
       "team": "NA",
       "position": "PICK",
-      "value": 2180,
+      "value": 2169,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -6964,7 +6964,7 @@
       "name": "Kaelon Black",
       "team": "SF",
       "position": "RB",
-      "value": 2139,
+      "value": 2136,
       "source_count": 6,
       "sources": [
         "FC",
@@ -6980,24 +6980,7 @@
       "name": "Calvin Ridley",
       "team": "TEN",
       "position": "WR",
-      "value": 2139,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Tez Johnson",
-      "team": "TB",
-      "position": "WR",
-      "value": 2133,
+      "value": 2136,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7021,6 +7004,23 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Tez Johnson",
+      "team": "TB",
+      "position": "WR",
+      "value": 2130,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "2026 Pick 4.02",
@@ -7063,7 +7063,7 @@
       "name": "Quinn Ewers",
       "team": "MIA",
       "position": "QB",
-      "value": 2081,
+      "value": 2079,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7079,7 +7079,7 @@
       "name": "DJ Giddens",
       "team": "IND",
       "position": "RB",
-      "value": 2059,
+      "value": 2057,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7204,7 +7204,7 @@
       "name": "Oscar Delp",
       "team": "NO",
       "position": "TE",
-      "value": 2003,
+      "value": 1998,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7261,7 +7261,7 @@
       "name": "Evan Engram",
       "team": "DEN",
       "position": "TE",
-      "value": 1954,
+      "value": 1952,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7278,7 +7278,7 @@
       "name": "James Conner",
       "team": "ARI",
       "position": "RB",
-      "value": 1950,
+      "value": 1948,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7295,7 +7295,7 @@
       "name": "Cedric Tillman",
       "team": "CLE",
       "position": "WR",
-      "value": 1940,
+      "value": 1941,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7349,7 +7349,7 @@
       "name": "2027 Mid 4th",
       "team": "NA",
       "position": "PICK",
-      "value": 1932,
+      "value": 1928,
       "source_count": 4,
       "sources": [
         "KTC",
@@ -7375,28 +7375,11 @@
       "name": "Jaylin Lane",
       "team": "WAS",
       "position": "WR",
-      "value": 1909,
+      "value": 1903,
       "source_count": 6,
       "sources": [
         "FC",
         "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Ben Sinnott",
-      "team": "WAS",
-      "position": "TE",
-      "value": 1896,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -7415,6 +7398,23 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Ben Sinnott",
+      "team": "WAS",
+      "position": "TE",
+      "value": 1894,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Odafe Oweh",
@@ -7451,23 +7451,6 @@
       "confidence": "low"
     },
     {
-      "name": "Isaiah Davis",
-      "team": "NYJ",
-      "position": "RB",
-      "value": 1857,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Leonard Williams",
       "team": "SEA",
       "position": "DL",
@@ -7493,14 +7476,15 @@
       "confidence": "medium"
     },
     {
-      "name": "Jalen Tolbert",
-      "team": "MIA",
-      "position": "WR",
-      "value": 1851,
-      "source_count": 6,
+      "name": "Isaiah Davis",
+      "team": "NYJ",
+      "position": "RB",
+      "value": 1855,
+      "source_count": 7,
       "sources": [
         "FC",
         "FN",
+        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -7509,10 +7493,10 @@
       "confidence": "high"
     },
     {
-      "name": "Isaiah Bond",
-      "team": "CLE",
+      "name": "Jalen Tolbert",
+      "team": "MIA",
       "position": "WR",
-      "value": 1840,
+      "value": 1849,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7537,6 +7521,22 @@
       "confidence": "low"
     },
     {
+      "name": "Isaiah Bond",
+      "team": "CLE",
+      "position": "WR",
+      "value": 1836,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "P.J. Locke",
       "team": "DEN",
       "position": "DB",
@@ -7551,7 +7551,7 @@
       "name": "Tahj Brooks",
       "team": "CIN",
       "position": "RB",
-      "value": 1816,
+      "value": 1813,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7579,7 +7579,7 @@
       "name": "Kevin Coleman",
       "team": "MIA",
       "position": "WR",
-      "value": 1806,
+      "value": 1802,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7608,7 +7608,7 @@
       "name": "Drew Allar",
       "team": "PIT",
       "position": "QB",
-      "value": 1797,
+      "value": 1792,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7660,19 +7660,6 @@
       "confidence": "low"
     },
     {
-      "name": "2026 Early 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1751,
-      "source_count": 3,
-      "sources": [
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "TJ Parker",
       "team": "BUF",
       "position": "DL",
@@ -7683,6 +7670,19 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "2026 Early 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1746,
+      "source_count": 3,
+      "sources": [
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Aaron Anderson",
@@ -7706,19 +7706,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "2028 Early 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1732,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Harold Landry",
@@ -7757,10 +7744,23 @@
       "confidence": "low"
     },
     {
+      "name": "2028 Early 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1725,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Darius Slayton",
       "team": "NYG",
       "position": "WR",
-      "value": 1725,
+      "value": 1722,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7840,10 +7840,25 @@
       "confidence": "high"
     },
     {
+      "name": "Marquise Brown",
+      "team": "PHI",
+      "position": "WR",
+      "value": 1680,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Savion Williams",
       "team": "GB",
       "position": "WR",
-      "value": 1682,
+      "value": 1680,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7856,25 +7871,10 @@
       "confidence": "high"
     },
     {
-      "name": "Marquise Brown",
-      "team": "PHI",
-      "position": "WR",
-      "value": 1681,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Garrett Nussmeier",
       "team": "KC",
       "position": "QB",
-      "value": 1677,
+      "value": 1675,
       "source_count": 5,
       "sources": [
         "FC",
@@ -7901,7 +7901,7 @@
       "name": "Cade Klubnik",
       "team": "NYJ",
       "position": "QB",
-      "value": 1668,
+      "value": 1664,
       "source_count": 6,
       "sources": [
         "FC",
@@ -7957,7 +7957,7 @@
       "name": "Kendre Miller",
       "team": "NO",
       "position": "RB",
-      "value": 1648,
+      "value": 1646,
       "source_count": 7,
       "sources": [
         "FC",
@@ -7974,7 +7974,7 @@
       "name": "Joe Milton",
       "team": "DAL",
       "position": "QB",
-      "value": 1646,
+      "value": 1644,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8001,26 +8001,10 @@
       "confidence": "medium"
     },
     {
-      "name": "Luke McCaffrey",
-      "team": "WAS",
-      "position": "WR",
-      "value": 1635,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Dawson Knox",
       "team": "BUF",
       "position": "TE",
-      "value": 1634,
+      "value": 1632,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8036,7 +8020,7 @@
       "name": "Jarquez Hunter",
       "team": "LAR",
       "position": "RB",
-      "value": 1634,
+      "value": 1632,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8050,10 +8034,26 @@
       "confidence": "high"
     },
     {
+      "name": "Luke McCaffrey",
+      "team": "WAS",
+      "position": "WR",
+      "value": 1629,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Luke Musgrave",
       "team": "GB",
       "position": "TE",
-      "value": 1620,
+      "value": 1617,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8069,7 +8069,7 @@
       "name": "Bryce Lance",
       "team": "NO",
       "position": "WR",
-      "value": 1616,
+      "value": 1614,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8085,7 +8085,7 @@
       "name": "Brashard Smith",
       "team": "KC",
       "position": "RB",
-      "value": 1615,
+      "value": 1612,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8122,22 +8122,6 @@
       "confidence": "low"
     },
     {
-      "name": "Justin Joly",
-      "team": "DEN",
-      "position": "TE",
-      "value": 1610,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "2026 Pick 4.09",
       "team": "",
       "position": "PICK",
@@ -8151,10 +8135,26 @@
       "confidence": "medium"
     },
     {
+      "name": "Justin Joly",
+      "team": "DEN",
+      "position": "TE",
+      "value": 1606,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Andrei Iosivas",
       "team": "CIN",
       "position": "WR",
-      "value": 1601,
+      "value": 1599,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8182,7 +8182,7 @@
       "name": "Ryan Flournoy",
       "team": "DAL",
       "position": "WR",
-      "value": 1591,
+      "value": 1588,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8199,7 +8199,7 @@
       "name": "Will Shipley",
       "team": "PHI",
       "position": "RB",
-      "value": 1582,
+      "value": 1579,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8215,7 +8215,7 @@
       "name": "Najee Harris",
       "team": "",
       "position": "RB",
-      "value": 1567,
+      "value": 1566,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8224,22 +8224,6 @@
         "KTC",
         "DP",
         "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Caleb Douglas",
-      "team": "MIA",
-      "position": "WR",
-      "value": 1566,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -8254,6 +8238,36 @@
         "FN",
         "DP",
         "IDP"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Caleb Douglas",
+      "team": "MIA",
+      "position": "WR",
+      "value": 1563,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "2027 Late 4th",
+      "team": "NA",
+      "position": "PICK",
+      "value": 1554,
+      "source_count": 4,
+      "sources": [
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
       ],
       "confidence": "medium"
     },
@@ -8293,20 +8307,6 @@
       "confidence": "medium"
     },
     {
-      "name": "2027 Late 4th",
-      "team": "NA",
-      "position": "PICK",
-      "value": 1552,
-      "source_count": 4,
-      "sources": [
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Danny Stutsman",
       "team": "NO",
       "position": "LB",
@@ -8335,19 +8335,6 @@
       "confidence": "high"
     },
     {
-      "name": "2028 Mid 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1535,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Minkah Fitzpatrick",
       "team": "NYJ",
       "position": "DB",
@@ -8360,10 +8347,23 @@
       "confidence": "low"
     },
     {
+      "name": "2028 Mid 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1532,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Emanuel Wilson",
       "team": "SEA",
       "position": "RB",
-      "value": 1523,
+      "value": 1518,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8393,22 +8393,6 @@
       "confidence": "high"
     },
     {
-      "name": "Jahan Dotson",
-      "team": "ATL",
-      "position": "WR",
-      "value": 1511,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "DeForest Buckner",
       "team": "IND",
       "position": "DL",
@@ -8419,19 +8403,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "2026 Mid 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1507,
-      "source_count": 3,
-      "sources": [
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Keionte Scott",
@@ -8445,9 +8416,9 @@
       "confidence": "low"
     },
     {
-      "name": "Audric Estime",
-      "team": "NO",
-      "position": "RB",
+      "name": "Jahan Dotson",
+      "team": "ATL",
+      "position": "WR",
       "value": 1505,
       "source_count": 6,
       "sources": [
@@ -8461,10 +8432,39 @@
       "confidence": "high"
     },
     {
+      "name": "Audric Estime",
+      "team": "NO",
+      "position": "RB",
+      "value": 1503,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "2026 Mid 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1502,
+      "source_count": 3,
+      "sources": [
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Dont'e Thornton",
       "team": "LV",
       "position": "WR",
-      "value": 1500,
+      "value": 1496,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8559,10 +8559,22 @@
       "confidence": "high"
     },
     {
+      "name": "Boye Mafe",
+      "team": "CIN",
+      "position": "DL",
+      "value": 1457,
+      "source_count": 2,
+      "sources": [
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Colby Parkinson",
       "team": "LAR",
       "position": "TE",
-      "value": 1459,
+      "value": 1455,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8579,7 +8591,7 @@
       "name": "LeQuint Allen",
       "team": "JAX",
       "position": "RB",
-      "value": 1459,
+      "value": 1453,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8591,18 +8603,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Boye Mafe",
-      "team": "CIN",
-      "position": "DL",
-      "value": 1457,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Jevon Holland",
@@ -8650,6 +8650,17 @@
       "source_count": 1,
       "sources": [
         "IDP"
+      ],
+      "confidence": "low"
+    },
+    {
+      "name": "Robert Henry Jr.",
+      "team": "WAS",
+      "position": "RB",
+      "value": 1446,
+      "source_count": 1,
+      "sources": [
+        "DP"
       ],
       "confidence": "low"
     },
@@ -8717,7 +8728,7 @@
       "name": "Darnell Washington",
       "team": "PIT",
       "position": "TE",
-      "value": 1435,
+      "value": 1433,
       "source_count": 7,
       "sources": [
         "FC",
@@ -8746,7 +8757,7 @@
       "name": "Noah Gray",
       "team": "KC",
       "position": "TE",
-      "value": 1424,
+      "value": 1422,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8809,22 +8820,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tutu Atwell",
-      "team": "MIA",
-      "position": "WR",
-      "value": 1378,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Ed Oliver",
       "team": "BUF",
       "position": "DL",
@@ -8835,6 +8830,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Tutu Atwell",
+      "team": "MIA",
+      "position": "WR",
+      "value": 1376,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Jalen Thompson",
@@ -8864,7 +8875,7 @@
       "name": "Justice Hill",
       "team": "BAL",
       "position": "RB",
-      "value": 1360,
+      "value": 1357,
       "source_count": 6,
       "sources": [
         "FC",
@@ -8990,7 +9001,7 @@
       "name": "Zavion Thomas",
       "team": "CHI",
       "position": "WR",
-      "value": 1317,
+      "value": 1314,
       "source_count": 5,
       "sources": [
         "FC",
@@ -9017,7 +9028,7 @@
       "name": "2026 Late 4th",
       "team": "",
       "position": "PICK",
-      "value": 1312,
+      "value": 1308,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -9060,21 +9071,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tai Felton",
-      "team": "MIN",
-      "position": "WR",
-      "value": 1306,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Jordan Davis",
       "team": "EAGLES",
       "position": "DT",
@@ -9086,17 +9082,16 @@
       "confidence": "low"
     },
     {
-      "name": "Brenen Thompson",
-      "team": "LAC",
+      "name": "Tai Felton",
+      "team": "MIN",
       "position": "WR",
-      "value": 1299,
-      "source_count": 6,
+      "value": 1303,
+      "source_count": 5,
       "sources": [
-        "FC",
         "FN",
-        "FP",
         "KTC",
         "DP",
+        "IDP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -9112,6 +9107,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Brenen Thompson",
+      "team": "LAC",
+      "position": "WR",
+      "value": 1294,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Mykel Williams",
@@ -9141,7 +9152,7 @@
       "name": "Joshua Palmer",
       "team": "BUF",
       "position": "WR",
-      "value": 1278,
+      "value": 1276,
       "source_count": 7,
       "sources": [
         "FC",
@@ -9302,7 +9313,7 @@
       "name": "Noah Fant",
       "team": "NO",
       "position": "TE",
-      "value": 1220,
+      "value": 1217,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9310,22 +9321,6 @@
         "KTC",
         "DP",
         "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Eli Heidenreich",
-      "team": "PIT",
-      "position": "RB",
-      "value": 1213,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -9340,6 +9335,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Eli Heidenreich",
+      "team": "PIT",
+      "position": "RB",
+      "value": 1209,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Kobie Turner",
@@ -9357,7 +9368,7 @@
       "name": "Roman Wilson",
       "team": "PIT",
       "position": "WR",
-      "value": 1200,
+      "value": 1198,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9373,7 +9384,7 @@
       "name": "John Metchie",
       "team": "CAR",
       "position": "WR",
-      "value": 1197,
+      "value": 1195,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9504,7 +9515,7 @@
       "name": "Jaleel McLaughlin",
       "team": "DEN",
       "position": "RB",
-      "value": 1174,
+      "value": 1172,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9577,7 +9588,7 @@
       "name": "Roschon Johnson",
       "team": "CHI",
       "position": "RB",
-      "value": 1143,
+      "value": 1141,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9651,7 +9662,7 @@
       "name": "Devontez Walker",
       "team": "BAL",
       "position": "WR",
-      "value": 1118,
+      "value": 1116,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9702,21 +9713,6 @@
       "confidence": "low"
     },
     {
-      "name": "Malik Davis",
-      "team": "DAL",
-      "position": "RB",
-      "value": 1101,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Austin Hooper",
       "team": "ATL",
       "position": "TE",
@@ -9727,6 +9723,21 @@
         "DP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Malik Davis",
+      "team": "DAL",
+      "position": "RB",
+      "value": 1098,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Lathan Ransom",
@@ -9784,7 +9795,7 @@
       "name": "Damien Martinez",
       "team": "GB",
       "position": "RB",
-      "value": 1082,
+      "value": 1079,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9800,7 +9811,7 @@
       "name": "Riley Leonard",
       "team": "IND",
       "position": "QB",
-      "value": 1080,
+      "value": 1077,
       "source_count": 6,
       "sources": [
         "FC",
@@ -9882,6 +9893,22 @@
       "confidence": "low"
     },
     {
+      "name": "Treylon Burks",
+      "team": "WAS",
+      "position": "WR",
+      "value": 1060,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Riley Nowakowski",
       "team": "PIT",
       "position": "TE",
@@ -9926,22 +9953,6 @@
       "confidence": "low"
     },
     {
-      "name": "Treylon Burks",
-      "team": "WAS",
-      "position": "WR",
-      "value": 1058,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Austin Booker",
       "team": "CHI",
       "position": "DL",
@@ -9965,19 +9976,6 @@
       "confidence": "low"
     },
     {
-      "name": "2028 Late 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1047,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Jaishawn Barham",
       "team": "COWBOYS",
       "position": "LB",
@@ -9989,10 +9987,34 @@
       "confidence": "low"
     },
     {
+      "name": "2026 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1040,
+      "source_count": 1,
+      "sources": [
+        "FC"
+      ],
+      "confidence": "low"
+    },
+    {
+      "name": "2028 Late 4th",
+      "team": "",
+      "position": "PICK",
+      "value": 1040,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Cade Stover",
       "team": "HOU",
       "position": "TE",
-      "value": 1041,
+      "value": 1039,
       "source_count": 6,
       "sources": [
         "FC",
@@ -10003,17 +10025,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "2026 4th",
-      "team": "",
-      "position": "PICK",
-      "value": 1040,
-      "source_count": 1,
-      "sources": [
-        "FC"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Nickolas Martin",
@@ -10041,21 +10052,6 @@
       "confidence": "high"
     },
     {
-      "name": "Jalin Hyatt",
-      "team": "NYG",
-      "position": "WR",
-      "value": 1022,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Jermaine Johnson",
       "team": "TEN",
       "position": "DL",
@@ -10068,6 +10064,21 @@
       "confidence": "low"
     },
     {
+      "name": "Jalin Hyatt",
+      "team": "NYG",
+      "position": "WR",
+      "value": 1019,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Jordan Whitehead",
       "team": "TB",
       "position": "DB",
@@ -10077,22 +10088,6 @@
         "IDP"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "George Holani",
-      "team": "SEA",
-      "position": "RB",
-      "value": 1013,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Hunter Long",
@@ -10119,17 +10114,17 @@
       "confidence": "low"
     },
     {
-      "name": "Xavier Hutchinson",
-      "team": "HOU",
-      "position": "WR",
-      "value": 1009,
+      "name": "George Holani",
+      "team": "SEA",
+      "position": "RB",
+      "value": 1010,
       "source_count": 6,
       "sources": [
         "FC",
         "FN",
+        "FP",
         "KTC",
         "DP",
-        "IDP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -10138,7 +10133,7 @@
       "name": "Erick All",
       "team": "CIN",
       "position": "TE",
-      "value": 1008,
+      "value": 1006,
       "source_count": 6,
       "sources": [
         "FC",
@@ -10173,6 +10168,22 @@
       "confidence": "low"
     },
     {
+      "name": "Xavier Hutchinson",
+      "team": "HOU",
+      "position": "WR",
+      "value": 1005,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Dani Dennis-Sutton",
       "team": "PACKERS",
       "position": "ED",
@@ -10198,7 +10209,7 @@
       "name": "Trey Palmer",
       "team": "NO",
       "position": "WR",
-      "value": 992,
+      "value": 989,
       "source_count": 5,
       "sources": [
         "FN",
@@ -10257,25 +10268,22 @@
       "confidence": "low"
     },
     {
-      "name": "Tommy Tremble",
-      "team": "CAR",
-      "position": "TE",
-      "value": 970,
-      "source_count": 5,
+      "name": "Kwity Paye",
+      "team": "LV",
+      "position": "DL",
+      "value": 966,
+      "source_count": 2,
       "sources": [
-        "FN",
-        "KTC",
-        "DP",
         "IDP",
         "IDPSHOW"
       ],
-      "confidence": "high"
+      "confidence": "low"
     },
     {
       "name": "Tyler Higbee",
       "team": "LAR",
       "position": "TE",
-      "value": 966,
+      "value": 964,
       "source_count": 6,
       "sources": [
         "FC",
@@ -10288,16 +10296,19 @@
       "confidence": "high"
     },
     {
-      "name": "Kwity Paye",
-      "team": "LV",
-      "position": "DL",
-      "value": 966,
-      "source_count": 2,
+      "name": "Tommy Tremble",
+      "team": "CAR",
+      "position": "TE",
+      "value": 960,
+      "source_count": 5,
       "sources": [
+        "FN",
+        "KTC",
+        "DP",
         "IDP",
         "IDPSHOW"
       ],
-      "confidence": "low"
+      "confidence": "high"
     },
     {
       "name": "2027 4th (Mid)",
@@ -10344,23 +10355,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tyquan Thornton",
-      "team": "KC",
-      "position": "WR",
-      "value": 954,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Devin Singletary",
       "team": "NYG",
       "position": "RB",
@@ -10369,6 +10363,23 @@
       "sources": [
         "FC",
         "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Tyquan Thornton",
+      "team": "KC",
+      "position": "WR",
+      "value": 950,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -10393,7 +10404,7 @@
       "name": "Dillon Gabriel",
       "team": "CLE",
       "position": "QB",
-      "value": 943,
+      "value": 941,
       "source_count": 6,
       "sources": [
         "FC",
@@ -10529,21 +10540,6 @@
       "confidence": "low"
     },
     {
-      "name": "Xavier Restrepo",
-      "team": "TEN",
-      "position": "WR",
-      "value": 918,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Junior Colson",
       "team": "LAC",
       "position": "LB",
@@ -10556,10 +10552,25 @@
       "confidence": "low"
     },
     {
+      "name": "Xavier Restrepo",
+      "team": "TEN",
+      "position": "WR",
+      "value": 915,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Cyrus Allen",
       "team": "KC",
       "position": "WR",
-      "value": 914,
+      "value": 912,
       "source_count": 5,
       "sources": [
         "FC",
@@ -10677,13 +10688,15 @@
       "confidence": "low"
     },
     {
-      "name": "Jordan Watkins",
-      "team": "SF",
-      "position": "WR",
-      "value": 885,
-      "source_count": 4,
+      "name": "Adam Randall",
+      "team": "BAL",
+      "position": "RB",
+      "value": 882,
+      "source_count": 6,
       "sources": [
+        "FC",
         "FN",
+        "FP",
         "KTC",
         "DP",
         "IDPSHOW"
@@ -10691,15 +10704,13 @@
       "confidence": "high"
     },
     {
-      "name": "Adam Randall",
-      "team": "BAL",
-      "position": "RB",
-      "value": 884,
-      "source_count": 6,
+      "name": "Jordan Watkins",
+      "team": "SF",
+      "position": "WR",
+      "value": 881,
+      "source_count": 4,
       "sources": [
-        "FC",
         "FN",
-        "FP",
         "KTC",
         "DP",
         "IDPSHOW"
@@ -10722,7 +10733,7 @@
       "name": "Kendrick Bourne",
       "team": "ARI",
       "position": "WR",
-      "value": 876,
+      "value": 874,
       "source_count": 6,
       "sources": [
         "FC",
@@ -10750,25 +10761,9 @@
       "name": "Malachi Corley",
       "team": "CLE",
       "position": "WR",
-      "value": 868,
+      "value": 865,
       "source_count": 5,
       "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Ty Johnson",
-      "team": "BUF",
-      "position": "RB",
-      "value": 862,
-      "source_count": 6,
-      "sources": [
-        "FC",
         "FN",
         "KTC",
         "DP",
@@ -10822,6 +10817,22 @@
       "confidence": "low"
     },
     {
+      "name": "Ty Johnson",
+      "team": "BUF",
+      "position": "RB",
+      "value": 860,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Adam Trautman",
       "team": "DEN",
       "position": "TE",
@@ -10832,21 +10843,6 @@
         "DP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Rasheen Ali",
-      "team": "BAL",
-      "position": "RB",
-      "value": 850,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Grant Calcaterra",
@@ -10861,6 +10857,21 @@
         "IDPSHOW"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Rasheen Ali",
+      "team": "BAL",
+      "position": "RB",
+      "value": 847,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Zamir White",
@@ -10885,18 +10896,6 @@
         "FN",
         "DP",
         "IDP"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "name": "Mitchell Trubisky",
-      "team": "BUF",
-      "position": "QB",
-      "value": 840,
-      "source_count": 2,
-      "sources": [
-        "FN",
-        "DP"
       ],
       "confidence": "medium"
     },
@@ -10932,7 +10931,7 @@
       "name": "Greg Dortch",
       "team": "DET",
       "position": "WR",
-      "value": 830,
+      "value": 827,
       "source_count": 5,
       "sources": [
         "FN",
@@ -10962,22 +10961,6 @@
       "value": 815,
       "source_count": 5,
       "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "KeAndre Lambert-Smith",
-      "team": "LAC",
-      "position": "WR",
-      "value": 812,
-      "source_count": 6,
-      "sources": [
-        "FC",
         "FN",
         "KTC",
         "DP",
@@ -11085,6 +11068,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "KeAndre Lambert-Smith",
+      "team": "LAC",
+      "position": "WR",
+      "value": 808,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Eric McAlister",
@@ -11241,21 +11240,6 @@
       "confidence": "low"
     },
     {
-      "name": "Jimmy Horn",
-      "team": "CAR",
-      "position": "WR",
-      "value": 802,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Alohi Gilman",
       "team": "BAL",
       "position": "DB",
@@ -11268,10 +11252,10 @@
       "confidence": "low"
     },
     {
-      "name": "Deion Burks",
-      "team": "IND",
+      "name": "Jimmy Horn",
+      "team": "CAR",
       "position": "WR",
-      "value": 800,
+      "value": 799,
       "source_count": 5,
       "sources": [
         "FC",
@@ -11293,6 +11277,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Deion Burks",
+      "team": "IND",
+      "position": "WR",
+      "value": 797,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Wade Woodaz",
@@ -11318,21 +11317,6 @@
       "confidence": "low"
     },
     {
-      "name": "KaVontae Turpin",
-      "team": "DAL",
-      "position": "WR",
-      "value": 778,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Pete Werner",
       "team": "NO",
       "position": "LB",
@@ -11345,10 +11329,10 @@
       "confidence": "low"
     },
     {
-      "name": "Raheim Sanders",
-      "team": "CLE",
-      "position": "RB",
-      "value": 769,
+      "name": "KaVontae Turpin",
+      "team": "DAL",
+      "position": "WR",
+      "value": 775,
       "source_count": 5,
       "sources": [
         "FN",
@@ -11371,6 +11355,21 @@
       "confidence": "low"
     },
     {
+      "name": "Raheim Sanders",
+      "team": "CLE",
+      "position": "RB",
+      "value": 766,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Justin Reid",
       "team": "NO",
       "position": "DB",
@@ -11386,7 +11385,7 @@
       "name": "Luke Schoonmaker",
       "team": "DAL",
       "position": "TE",
-      "value": 761,
+      "value": 758,
       "source_count": 5,
       "sources": [
         "FN",
@@ -11451,7 +11450,7 @@
       "name": "Konata Mumpfield",
       "team": "LAR",
       "position": "WR",
-      "value": 740,
+      "value": 735,
       "source_count": 6,
       "sources": [
         "FC",
@@ -11467,7 +11466,7 @@
       "name": "Jacob Cowing",
       "team": "SF",
       "position": "WR",
-      "value": 735,
+      "value": 733,
       "source_count": 5,
       "sources": [
         "FN",
@@ -11494,7 +11493,7 @@
       "name": "Chris Brooks",
       "team": "GB",
       "position": "RB",
-      "value": 730,
+      "value": 726,
       "source_count": 7,
       "sources": [
         "FC",
@@ -11511,7 +11510,7 @@
       "name": "Michael Trigg",
       "team": "DAL",
       "position": "TE",
-      "value": 727,
+      "value": 724,
       "source_count": 5,
       "sources": [
         "FC",
@@ -11598,22 +11597,6 @@
       "confidence": "low"
     },
     {
-      "name": "Marcus Mariota",
-      "team": "WAS",
-      "position": "QB",
-      "value": 699,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Hendon Hooker",
       "team": "NYJ",
       "position": "QB",
@@ -11625,6 +11608,22 @@
         "IDP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Marcus Mariota",
+      "team": "WAS",
+      "position": "QB",
+      "value": 697,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Lukas Van Ness",
@@ -11642,7 +11641,7 @@
       "name": "Daniel Bellinger",
       "team": "TEN",
       "position": "TE",
-      "value": 691,
+      "value": 689,
       "source_count": 6,
       "sources": [
         "FC",
@@ -11658,7 +11657,7 @@
       "name": "Kameron Johnson",
       "team": "TB",
       "position": "WR",
-      "value": 683,
+      "value": 678,
       "source_count": 3,
       "sources": [
         "FN",
@@ -11671,7 +11670,7 @@
       "name": "Elijah Mitchell",
       "team": "PHI",
       "position": "RB",
-      "value": 676,
+      "value": 675,
       "source_count": 5,
       "sources": [
         "FN",
@@ -11749,7 +11748,7 @@
       "name": "Tahj Washington",
       "team": "MIA",
       "position": "WR",
-      "value": 653,
+      "value": 649,
       "source_count": 5,
       "sources": [
         "FN",
@@ -11800,21 +11799,6 @@
       "confidence": "low"
     },
     {
-      "name": "Sam Howell",
-      "team": "DAL",
-      "position": "QB",
-      "value": 633,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Uchenna Nwosu",
       "team": "SEA",
       "position": "DL",
@@ -11825,6 +11809,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Sam Howell",
+      "team": "DAL",
+      "position": "QB",
+      "value": 630,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Odell Beckham",
@@ -11839,21 +11838,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Kenny Pickett",
-      "team": "CAR",
-      "position": "QB",
-      "value": 629,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Zaven Collins",
       "team": "ARI",
       "position": "DL",
@@ -11864,6 +11848,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Kenny Pickett",
+      "team": "CAR",
+      "position": "QB",
+      "value": 626,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Carson Wentz",
@@ -11998,25 +11997,10 @@
       "confidence": "low"
     },
     {
-      "name": "Tanner McKee",
-      "team": "PHI",
-      "position": "QB",
-      "value": 610,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Elijah Higgins",
       "team": "ARI",
       "position": "TE",
-      "value": 610,
+      "value": 608,
       "source_count": 6,
       "sources": [
         "FC",
@@ -12029,10 +12013,25 @@
       "confidence": "high"
     },
     {
+      "name": "Tanner McKee",
+      "team": "PHI",
+      "position": "QB",
+      "value": 607,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Gabriel Davis",
       "team": "BUF",
       "position": "WR",
-      "value": 610,
+      "value": 606,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -12045,7 +12044,7 @@
       "name": "Davis Mills",
       "team": "HOU",
       "position": "QB",
-      "value": 605,
+      "value": 603,
       "source_count": 5,
       "sources": [
         "FC",
@@ -12060,7 +12059,7 @@
       "name": "Brevin Jordan",
       "team": "HOU",
       "position": "TE",
-      "value": 605,
+      "value": 602,
       "source_count": 5,
       "sources": [
         "FN",
@@ -12075,7 +12074,7 @@
       "name": "Tyrell Shavers",
       "team": "BUF",
       "position": "WR",
-      "value": 599,
+      "value": 596,
       "source_count": 4,
       "sources": [
         "FN",
@@ -12097,19 +12096,17 @@
       "confidence": "low"
     },
     {
-      "name": "Jonathan Mingo",
-      "team": "DAL",
+      "name": "JuJu Smith-Schuster",
+      "team": "KC",
       "position": "WR",
       "value": 594,
-      "source_count": 5,
+      "source_count": 3,
       "sources": [
         "FN",
-        "KTC",
         "DP",
-        "IDP",
-        "IDPSHOW"
+        "IDP"
       ],
-      "confidence": "high"
+      "confidence": "medium"
     },
     {
       "name": "Noah Sewell",
@@ -12122,6 +12119,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Jonathan Mingo",
+      "team": "DAL",
+      "position": "WR",
+      "value": 591,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Akeem Davis Gaither",
@@ -12138,7 +12150,7 @@
       "name": "Seth McGowan",
       "team": "IND",
       "position": "RB",
-      "value": 589,
+      "value": 586,
       "source_count": 6,
       "sources": [
         "FC",
@@ -12166,7 +12178,7 @@
       "name": "Taylen Green",
       "team": "CLE",
       "position": "QB",
-      "value": 576,
+      "value": 573,
       "source_count": 6,
       "sources": [
         "FC",
@@ -12220,7 +12232,7 @@
       "name": "Nick Westbrook-Ikhine",
       "team": "IND",
       "position": "WR",
-      "value": 558,
+      "value": 556,
       "source_count": 6,
       "sources": [
         "FC",
@@ -12236,7 +12248,7 @@
       "name": "Joe Flacco",
       "team": "CIN",
       "position": "QB",
-      "value": 556,
+      "value": 554,
       "source_count": 7,
       "sources": [
         "FC",
@@ -12299,21 +12311,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Mitchell Evans",
-      "team": "CAR",
-      "position": "TE",
-      "value": 532,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Logan Wilson",
       "team": "FA",
       "position": "LB",
@@ -12325,10 +12322,25 @@
       "confidence": "low"
     },
     {
+      "name": "Mitchell Evans",
+      "team": "CAR",
+      "position": "TE",
+      "value": 530,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Charlie Kolar",
       "team": "LAC",
       "position": "TE",
-      "value": 526,
+      "value": 524,
       "source_count": 5,
       "sources": [
         "FC",
@@ -12343,25 +12355,12 @@
       "name": "Jeremy McNichols",
       "team": "WAS",
       "position": "RB",
-      "value": 525,
+      "value": 524,
       "source_count": 3,
       "sources": [
         "FN",
         "KTC",
         "DP"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "name": "Bam Knight",
-      "team": "ARI",
-      "position": "RB",
-      "value": 524,
-      "source_count": 3,
-      "sources": [
-        "KTC",
-        "DP",
-        "IDPSHOW"
       ],
       "confidence": "medium"
     },
@@ -12414,6 +12413,19 @@
       "confidence": "low"
     },
     {
+      "name": "Bam Knight",
+      "team": "ARI",
+      "position": "RB",
+      "value": 520,
+      "source_count": 3,
+      "sources": [
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Taron Johnson",
       "team": "BUF",
       "position": "DB",
@@ -12441,7 +12453,7 @@
       "name": "Zach Wilson",
       "team": "NO",
       "position": "QB",
-      "value": 516,
+      "value": 513,
       "source_count": 5,
       "sources": [
         "FN",
@@ -12468,7 +12480,7 @@
       "name": "Efton Chism",
       "team": "NE",
       "position": "WR",
-      "value": 509,
+      "value": 507,
       "source_count": 5,
       "sources": [
         "FC",
@@ -12495,27 +12507,13 @@
       "name": "Isaiah Hodgins",
       "team": "NYG",
       "position": "WR",
-      "value": 505,
+      "value": 503,
       "source_count": 5,
       "sources": [
         "FN",
         "KTC",
         "DP",
         "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Kalel Mullings",
-      "team": "TEN",
-      "position": "RB",
-      "value": 504,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -12531,6 +12529,20 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Kalel Mullings",
+      "team": "TEN",
+      "position": "RB",
+      "value": 501,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Nick Martin",
@@ -12567,21 +12579,6 @@
       "confidence": "low"
     },
     {
-      "name": "Javon Baker",
-      "team": "SF",
-      "position": "WR",
-      "value": 490,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Tatum Bethune",
       "team": "SF",
       "position": "LB",
@@ -12592,6 +12589,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Javon Baker",
+      "team": "SF",
+      "position": "WR",
+      "value": 487,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Vita Vea",
@@ -12628,23 +12640,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tyson Bagent",
-      "team": "CHI",
-      "position": "QB",
-      "value": 462,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Ji'Ayir Brown",
       "team": "SF",
       "position": "DB",
@@ -12655,21 +12650,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "CJ Daniels",
-      "team": "LAR",
-      "position": "WR",
-      "value": 460,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Byron Murphy II",
@@ -12684,17 +12664,33 @@
       "confidence": "low"
     },
     {
-      "name": "Phil Mafah",
-      "team": "DAL",
-      "position": "RB",
+      "name": "Tyson Bagent",
+      "team": "CHI",
+      "position": "QB",
       "value": 458,
-      "source_count": 6,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "CJ Daniels",
+      "team": "LAR",
+      "position": "WR",
+      "value": 458,
+      "source_count": 5,
       "sources": [
         "FC",
         "FN",
         "KTC",
         "DP",
-        "IDP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -12710,6 +12706,22 @@
         "DP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Olamide Zaccheaus",
+      "team": "ATL",
+      "position": "WR",
+      "value": 457,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Johnny Newton",
@@ -12746,10 +12758,10 @@
       "confidence": "low"
     },
     {
-      "name": "Olamide Zaccheaus",
-      "team": "ATL",
-      "position": "WR",
-      "value": 456,
+      "name": "Phil Mafah",
+      "team": "DAL",
+      "position": "RB",
+      "value": 455,
       "source_count": 6,
       "sources": [
         "FC",
@@ -12773,36 +12785,6 @@
         "DP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "J'Mari Taylor",
-      "team": "JAX",
-      "position": "RB",
-      "value": 451,
-      "source_count": 4,
-      "sources": [
-        "FC",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Emari Demercado",
-      "team": "KC",
-      "position": "RB",
-      "value": 451,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Bryan Bresee",
@@ -12850,6 +12832,36 @@
         "DP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "J'Mari Taylor",
+      "team": "JAX",
+      "position": "RB",
+      "value": 448,
+      "source_count": 4,
+      "sources": [
+        "FC",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Emari Demercado",
+      "team": "KC",
+      "position": "RB",
+      "value": 448,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Elandon Roberts",
@@ -12934,21 +12946,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tyler Badie",
-      "team": "DEN",
-      "position": "RB",
-      "value": 436,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Jahlani Tavai",
       "team": "NE",
       "position": "LB",
@@ -12972,10 +12969,25 @@
       "confidence": "medium"
     },
     {
+      "name": "Tyler Badie",
+      "team": "DEN",
+      "position": "RB",
+      "value": 434,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Bo Melton",
       "team": "GB",
       "position": "WR",
-      "value": 432,
+      "value": 430,
       "source_count": 5,
       "sources": [
         "FN",
@@ -12990,7 +13002,7 @@
       "name": "Gardner Minshew",
       "team": "ARI",
       "position": "QB",
-      "value": 429,
+      "value": 427,
       "source_count": 6,
       "sources": [
         "FC",
@@ -13076,7 +13088,7 @@
       "name": "Cole Payton",
       "team": "PHI",
       "position": "QB",
-      "value": 414,
+      "value": 412,
       "source_count": 6,
       "sources": [
         "FC",
@@ -13087,20 +13099,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Donovan Edwards",
-      "team": "MIA",
-      "position": "RB",
-      "value": 409,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Drew Lock",
@@ -13125,6 +13123,20 @@
       "source_count": 3,
       "sources": [
         "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Donovan Edwards",
+      "team": "MIA",
+      "position": "RB",
+      "value": 405,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
         "IDP",
         "IDPSHOW"
       ],
@@ -13394,7 +13406,7 @@
       "name": "Israel Abanikanda",
       "team": "DAL",
       "position": "RB",
-      "value": 371,
+      "value": 369,
       "source_count": 5,
       "sources": [
         "FN",
@@ -13428,21 +13440,6 @@
       "confidence": "low"
     },
     {
-      "name": "Alexander Mattison",
-      "team": "MIA",
-      "position": "RB",
-      "value": 366,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Jason Pinnock",
       "team": "NYG",
       "position": "DB",
@@ -13466,13 +13463,12 @@
       "confidence": "low"
     },
     {
-      "name": "Mack Hollins",
-      "team": "NE",
-      "position": "WR",
+      "name": "Alexander Mattison",
+      "team": "MIA",
+      "position": "RB",
       "value": 364,
-      "source_count": 6,
+      "source_count": 5,
       "sources": [
-        "FC",
         "FN",
         "KTC",
         "DP",
@@ -13517,21 +13513,6 @@
       "confidence": "low"
     },
     {
-      "name": "Tyler Goodson",
-      "team": "ATL",
-      "position": "RB",
-      "value": 360,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Princely Umanmielen",
       "team": "PANTHERS",
       "position": "ED",
@@ -13553,6 +13534,37 @@
         "DP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Mack Hollins",
+      "team": "NE",
+      "position": "WR",
+      "value": 358,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Tyler Goodson",
+      "team": "ATL",
+      "position": "RB",
+      "value": 358,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Brandin Cooks",
@@ -13641,7 +13653,7 @@
       "name": "Demarcus Robinson",
       "team": "SF",
       "position": "WR",
-      "value": 342,
+      "value": 340,
       "source_count": 5,
       "sources": [
         "FN",
@@ -13725,21 +13737,6 @@
       "confidence": "low"
     },
     {
-      "name": "Davis Allen",
-      "team": "LAR",
-      "position": "TE",
-      "value": 326,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Jaylon Carlies",
       "team": "IND",
       "position": "LB",
@@ -13772,6 +13769,21 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Davis Allen",
+      "team": "LAR",
+      "position": "TE",
+      "value": 324,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Gracen Halton",
@@ -13865,20 +13877,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Brenden Rice",
-      "team": "GB",
-      "position": "WR",
-      "value": 309,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Jelani Woods",
       "team": "NYJ",
       "position": "TE",
@@ -13904,14 +13902,16 @@
       "confidence": "low"
     },
     {
-      "name": "Robert Henry Jr.",
-      "team": "WAS",
-      "position": "RB",
-      "value": 308,
-      "source_count": 2,
+      "name": "Brenden Rice",
+      "team": "GB",
+      "position": "WR",
+      "value": 306,
+      "source_count": 4,
       "sources": [
+        "FN",
         "KTC",
-        "DP"
+        "IDP",
+        "IDPSHOW"
       ],
       "confidence": "medium"
     },
@@ -13927,20 +13927,6 @@
         "IDP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Barion Brown",
-      "team": "NO",
-      "position": "WR",
-      "value": 304,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Isaiah McGuire",
@@ -13963,6 +13949,20 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Barion Brown",
+      "team": "NO",
+      "position": "WR",
+      "value": 300,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Genesis Smith",
@@ -14001,21 +14001,6 @@
       "confidence": "low"
     },
     {
-      "name": "Kenny McIntosh",
-      "team": "SEA",
-      "position": "RB",
-      "value": 295,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Kylen Granson",
       "team": "PHI",
       "position": "TE",
@@ -14038,6 +14023,21 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Kenny McIntosh",
+      "team": "SEA",
+      "position": "RB",
+      "value": 293,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Kenneth Murray",
@@ -14125,7 +14125,7 @@
       "name": "Trey Lance",
       "team": "LAC",
       "position": "QB",
-      "value": 283,
+      "value": 282,
       "source_count": 6,
       "sources": [
         "FC",
@@ -14134,20 +14134,6 @@
         "DP",
         "IDP",
         "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "JuJu Smith-Schuster",
-      "team": "KC",
-      "position": "WR",
-      "value": 283,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
       ],
       "confidence": "high"
     },
@@ -14201,21 +14187,6 @@
       "confidence": "low"
     },
     {
-      "name": "Jamari Thrash",
-      "team": "CLE",
-      "position": "WR",
-      "value": 272,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Darius Robinson",
       "team": "CARDINALS",
       "position": "ED",
@@ -14225,6 +14196,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Jamari Thrash",
+      "team": "CLE",
+      "position": "WR",
+      "value": 270,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Anthony Walker",
@@ -14264,7 +14250,7 @@
       "name": "Jam Miller",
       "team": "NE",
       "position": "RB",
-      "value": 263,
+      "value": 264,
       "source_count": 6,
       "sources": [
         "FC",
@@ -14280,7 +14266,7 @@
       "name": "Michael Carter",
       "team": "TEN",
       "position": "RB",
-      "value": 263,
+      "value": 261,
       "source_count": 6,
       "sources": [
         "FC",
@@ -14296,7 +14282,7 @@
       "name": "AJ Dillon",
       "team": "CAR",
       "position": "RB",
-      "value": 262,
+      "value": 261,
       "source_count": 5,
       "sources": [
         "FN",
@@ -14311,7 +14297,7 @@
       "name": "Lil'Jordan Humphrey",
       "team": "DEN",
       "position": "WR",
-      "value": 262,
+      "value": 261,
       "source_count": 3,
       "sources": [
         "FN",
@@ -14324,7 +14310,7 @@
       "name": "Tyler Huntley",
       "team": "BAL",
       "position": "QB",
-      "value": 261,
+      "value": 260,
       "source_count": 6,
       "sources": [
         "FC",
@@ -14397,21 +14383,6 @@
       "confidence": "high"
     },
     {
-      "name": "Bub Means",
-      "team": "NO",
-      "position": "WR",
-      "value": 255,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Tarheeb Still",
       "team": "CHARGERS",
       "position": "CB",
@@ -14433,6 +14404,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Bub Means",
+      "team": "NO",
+      "position": "WR",
+      "value": 253,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Cam Taylor-Britt",
@@ -14468,21 +14454,6 @@
       "confidence": "low"
     },
     {
-      "name": "Brock Wright",
-      "team": "DET",
-      "position": "TE",
-      "value": 246,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Haason Reddick",
       "team": "TB",
       "position": "DL",
@@ -14505,6 +14476,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Brock Wright",
+      "team": "DET",
+      "position": "TE",
+      "value": 243,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "JD Bertrand",
@@ -14578,21 +14564,6 @@
       "confidence": "low"
     },
     {
-      "name": "Hassan Haskins",
-      "team": "LAC",
-      "position": "RB",
-      "value": 236,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Carson Steele",
       "team": "FA",
       "position": "RB",
@@ -14627,6 +14598,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Hassan Haskins",
+      "team": "LAC",
+      "position": "RB",
+      "value": 234,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Germaine Pratt",
@@ -14664,20 +14650,6 @@
       "confidence": "low"
     },
     {
-      "name": "Sione Vaki",
-      "team": "DET",
-      "position": "RB",
-      "value": 231,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Drake Jackson",
       "team": "SF",
       "position": "DL",
@@ -14710,6 +14682,33 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Colbie Young",
+      "team": "CIN",
+      "position": "WR",
+      "value": 229,
+      "source_count": 3,
+      "sources": [
+        "FC",
+        "KTC",
+        "DP"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Sione Vaki",
+      "team": "DET",
+      "position": "RB",
+      "value": 229,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Jeff Wilson",
@@ -14820,33 +14819,6 @@
       "confidence": "low"
     },
     {
-      "name": "Colbie Young",
-      "team": "CIN",
-      "position": "WR",
-      "value": 227,
-      "source_count": 3,
-      "sources": [
-        "FC",
-        "KTC",
-        "DP"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "name": "Mason Tipton",
-      "team": "NO",
-      "position": "WR",
-      "value": 226,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Christian Benford",
       "team": "BILLS",
       "position": "CB",
@@ -14870,6 +14842,20 @@
         "IDP"
       ],
       "confidence": "high"
+    },
+    {
+      "name": "Mason Tipton",
+      "team": "NO",
+      "position": "WR",
+      "value": 224,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Arik Armstead",
@@ -15278,21 +15264,6 @@
       "confidence": "high"
     },
     {
-      "name": "Frank Gore",
-      "team": "BUF",
-      "position": "RB",
-      "value": 215,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Preston Smith",
       "team": "GB",
       "position": "DL",
@@ -15304,10 +15275,10 @@
       "confidence": "low"
     },
     {
-      "name": "Xavier Gipson",
-      "team": "NYG",
-      "position": "WR",
-      "value": 213,
+      "name": "Frank Gore",
+      "team": "BUF",
+      "position": "RB",
+      "value": 214,
       "source_count": 5,
       "sources": [
         "FN",
@@ -15328,6 +15299,21 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Xavier Gipson",
+      "team": "NYG",
+      "position": "WR",
+      "value": 212,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Jordan Magee",
@@ -15373,6 +15359,19 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Mitchell Trubisky",
+      "team": "BUF",
+      "position": "QB",
+      "value": 204,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Shaquil Barrett",
@@ -15467,21 +15466,6 @@
       "confidence": "low"
     },
     {
-      "name": "Ty Chandler",
-      "team": "NO",
-      "position": "RB",
-      "value": 194,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Ja'Quan McMillian",
       "team": "BRONCOS",
       "position": "CB",
@@ -15504,6 +15488,21 @@
         "FP",
         "KTC",
         "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Ty Chandler",
+      "team": "NO",
+      "position": "RB",
+      "value": 192,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -15543,24 +15542,10 @@
       "confidence": "low"
     },
     {
-      "name": "Ray-Ray McCloud",
-      "team": "NYG",
-      "position": "WR",
-      "value": 188,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Tyler Scott",
       "team": "LAR",
       "position": "WR",
-      "value": 187,
+      "value": 186,
       "source_count": 5,
       "sources": [
         "FN",
@@ -15628,6 +15613,20 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Ray-Ray McCloud",
+      "team": "NYG",
+      "position": "WR",
+      "value": 181,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Joshua Dobbs",
@@ -15739,7 +15738,7 @@
       "name": "Kendall Milton",
       "team": "CIN",
       "position": "RB",
-      "value": 172,
+      "value": 170,
       "source_count": 5,
       "sources": [
         "FN",
@@ -15766,7 +15765,7 @@
       "name": "Van Jefferson",
       "team": "WAS",
       "position": "WR",
-      "value": 167,
+      "value": 166,
       "source_count": 5,
       "sources": [
         "FN",
@@ -15803,7 +15802,7 @@
       "name": "Samaje Perine",
       "team": "CIN",
       "position": "RB",
-      "value": 164,
+      "value": 163,
       "source_count": 6,
       "sources": [
         "FC",
@@ -15851,35 +15850,6 @@
       "confidence": "low"
     },
     {
-      "name": "David Bell",
-      "team": "CLE",
-      "position": "WR",
-      "value": 159,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "name": "Jack Endries",
-      "team": "CIN",
-      "position": "TE",
-      "value": 158,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Osa Odighizuwa",
       "team": "49ERS",
       "position": "DT",
@@ -15900,6 +15870,35 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "David Bell",
+      "team": "CLE",
+      "position": "WR",
+      "value": 157,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Jack Endries",
+      "team": "CIN",
+      "position": "TE",
+      "value": 156,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Mecole Hardman",
@@ -15927,18 +15926,6 @@
       "confidence": "low"
     },
     {
-      "name": "Le'Veon Moss",
-      "team": "MIA",
-      "position": "RB",
-      "value": 152,
-      "source_count": 2,
-      "sources": [
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Tyrique Stevenson",
       "team": "CHI",
       "position": "DB",
@@ -15951,10 +15938,22 @@
       "confidence": "low"
     },
     {
+      "name": "Le'Veon Moss",
+      "team": "MIA",
+      "position": "RB",
+      "value": 150,
+      "source_count": 2,
+      "sources": [
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Skyy Moore",
       "team": "GB",
       "position": "WR",
-      "value": 151,
+      "value": 149,
       "source_count": 5,
       "sources": [
         "FN",
@@ -16074,6 +16073,22 @@
       "confidence": "low"
     },
     {
+      "name": "Tyler Conklin",
+      "team": "DET",
+      "position": "TE",
+      "value": 133,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Pat Surtain",
       "team": "DEN",
       "position": "DB",
@@ -16096,22 +16111,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Tyler Conklin",
-      "team": "DET",
-      "position": "TE",
-      "value": 132,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Josey Jewell",
@@ -16317,22 +16316,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Arian Smith",
-      "team": "NYJ",
-      "position": "WR",
-      "value": 118,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Terrion Arnold",
       "team": "DET",
       "position": "DB",
@@ -16345,10 +16328,26 @@
       "confidence": "low"
     },
     {
+      "name": "Arian Smith",
+      "team": "NYJ",
+      "position": "WR",
+      "value": 117,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Zay Jones",
       "team": "ARI",
       "position": "WR",
-      "value": 117,
+      "value": 116,
       "source_count": 4,
       "sources": [
         "FN",
@@ -16619,10 +16618,22 @@
       "confidence": "medium"
     },
     {
+      "name": "Nathan Carter",
+      "team": "ATL",
+      "position": "RB",
+      "value": 107,
+      "source_count": 2,
+      "sources": [
+        "FN",
+        "KTC"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Terrell Jennings",
       "team": "NE",
       "position": "RB",
-      "value": 109,
+      "value": 107,
       "source_count": 4,
       "sources": [
         "FN",
@@ -16699,18 +16710,6 @@
         "IDP"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Nathan Carter",
-      "team": "ATL",
-      "position": "RB",
-      "value": 104,
-      "source_count": 2,
-      "sources": [
-        "FN",
-        "KTC"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Ben Skowronek",
@@ -16906,21 +16905,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Johnny Wilson",
-      "team": "PHI",
-      "position": "WR",
-      "value": 91,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Drew Sample",
       "team": "CIN",
       "position": "TE",
@@ -16957,6 +16941,21 @@
         "IDP"
       ],
       "confidence": "medium"
+    },
+    {
+      "name": "Johnny Wilson",
+      "team": "PHI",
+      "position": "WR",
+      "value": 90,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "KJ Hamler",
@@ -17048,22 +17047,6 @@
       "confidence": "low"
     },
     {
-      "name": "Mason Rudolph",
-      "team": "PIT",
-      "position": "QB",
-      "value": 83,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Rakim Jarrett",
       "team": "PIT",
       "position": "WR",
@@ -17087,6 +17070,22 @@
       "confidence": "low"
     },
     {
+      "name": "Mason Rudolph",
+      "team": "PIT",
+      "position": "QB",
+      "value": 80,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Luke Lachey",
       "team": "FA",
       "position": "TE",
@@ -17102,7 +17101,7 @@
       "name": "Derius Davis",
       "team": "LAC",
       "position": "WR",
-      "value": 77,
+      "value": 76,
       "source_count": 5,
       "sources": [
         "FN",
@@ -17296,7 +17295,7 @@
       "name": "Josh Oliver",
       "team": "MIN",
       "position": "TE",
-      "value": 62,
+      "value": 61,
       "source_count": 4,
       "sources": [
         "FN",
@@ -17310,7 +17309,7 @@
       "name": "Ainias Smith",
       "team": "CAR",
       "position": "WR",
-      "value": 61,
+      "value": 60,
       "source_count": 5,
       "sources": [
         "FN",
@@ -17498,18 +17497,6 @@
       "confidence": "low"
     },
     {
-      "name": "Matthew Hibner",
-      "team": "BAL",
-      "position": "TE",
-      "value": 56,
-      "source_count": 2,
-      "sources": [
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Hayden Hurst",
       "team": "FA",
       "position": "TE",
@@ -17531,6 +17518,18 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Matthew Hibner",
+      "team": "BAL",
+      "position": "TE",
+      "value": 54,
+      "source_count": 2,
+      "sources": [
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Donovan Wilson",
@@ -17558,20 +17557,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Zavier Scott",
-      "team": "MIN",
-      "position": "RB",
-      "value": 51,
-      "source_count": 4,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Donovan Peoples-Jones",
       "team": "FA",
       "position": "WR",
@@ -17595,10 +17580,24 @@
       "confidence": "low"
     },
     {
+      "name": "Zavier Scott",
+      "team": "MIN",
+      "position": "RB",
+      "value": 49,
+      "source_count": 4,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Tyler Johnson",
       "team": "DAL",
       "position": "WR",
-      "value": 49,
+      "value": 48,
       "source_count": 5,
       "sources": [
         "FN",
@@ -17974,19 +17973,6 @@
       "confidence": "low"
     },
     {
-      "name": "Malik Heath",
-      "team": "ATL",
-      "position": "WR",
-      "value": 28,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Darrick Forrest",
       "team": "WFT",
       "position": "DB",
@@ -17996,6 +17982,19 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Malik Heath",
+      "team": "ATL",
+      "position": "WR",
+      "value": 27,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Asante Samuel Jr.",
@@ -18044,19 +18043,6 @@
       "confidence": "medium"
     },
     {
-      "name": "LaJohntay Wester",
-      "team": "BAL",
-      "position": "WR",
-      "value": 20,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Tyler Boyd",
       "team": "FA",
       "position": "WR",
@@ -18065,6 +18051,19 @@
       "sources": [
         "FN",
         "IDP"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "LaJohntay Wester",
+      "team": "BAL",
+      "position": "WR",
+      "value": 19,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDPSHOW"
       ],
       "confidence": "medium"
     },
@@ -18328,7 +18327,7 @@
       "name": "2026 Pick 1.13",
       "team": "",
       "position": "PICK",
-      "value": 6679,
+      "value": 6682,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18336,7 +18335,7 @@
       "name": "2026 Pick 1.14",
       "team": "",
       "position": "PICK",
-      "value": 6788,
+      "value": 6795,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18344,7 +18343,7 @@
       "name": "2026 Pick 1.15",
       "team": "",
       "position": "PICK",
-      "value": 6900,
+      "value": 6909,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18352,7 +18351,7 @@
       "name": "2026 Pick 1.16",
       "team": "",
       "position": "PICK",
-      "value": 7013,
+      "value": 7026,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18424,7 +18423,7 @@
       "name": "2026 Pick 4.13",
       "team": "",
       "position": "PICK",
-      "value": 1596,
+      "value": 1601,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18432,7 +18431,7 @@
       "name": "2026 Pick 4.14",
       "team": "",
       "position": "PICK",
-      "value": 1760,
+      "value": 1771,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18440,7 +18439,7 @@
       "name": "2026 Pick 4.15",
       "team": "",
       "position": "PICK",
-      "value": 1941,
+      "value": 1959,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18448,7 +18447,7 @@
       "name": "2026 Pick 4.16",
       "team": "",
       "position": "PICK",
-      "value": 2141,
+      "value": 2167,
       "generatedPickValue": true,
       "pickValueMethod": "source-curve interpolation"
     },
@@ -18689,7 +18688,7 @@
       "name": "Drake London",
       "team": "ATL",
       "position": "WR",
-      "value": 9469,
+      "value": 9461,
       "source_count": 7,
       "sources": [
         "FC",
@@ -18902,7 +18901,7 @@
       "name": "Nico Collins",
       "team": "HOU",
       "position": "WR",
-      "value": 8994,
+      "value": 9001,
       "source_count": 7,
       "sources": [
         "FC",
@@ -18936,7 +18935,7 @@
       "name": "Kenneth Walker",
       "team": "KC",
       "position": "RB",
-      "value": 8916,
+      "value": 8924,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19004,7 +19003,7 @@
       "name": "Ladd McConkey",
       "team": "LAC",
       "position": "WR",
-      "value": 8794,
+      "value": 8786,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19051,7 +19050,7 @@
       "name": "Chris Olave",
       "team": "NO",
       "position": "WR",
-      "value": 8664,
+      "value": 8671,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19119,7 +19118,7 @@
       "name": "Quinshon Judkins",
       "team": "CLE",
       "position": "RB",
-      "value": 8549,
+      "value": 8541,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19153,7 +19152,7 @@
       "name": "DeVonta Smith",
       "team": "PHI",
       "position": "WR",
-      "value": 8527,
+      "value": 8520,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19489,7 +19488,7 @@
       "name": "Jaylen Waddle",
       "team": "DEN",
       "position": "WR",
-      "value": 7964,
+      "value": 7956,
       "source_count": 7,
       "sources": [
         "FC",
@@ -19684,7 +19683,7 @@
       "name": "Tucker Kraft",
       "team": "GB",
       "position": "TE",
-      "value": 7525,
+      "value": 7532,
       "source_count": 7,
       "sources": [
         "FC",
@@ -20253,7 +20252,7 @@
       "name": "D'Andre Swift",
       "team": "CHI",
       "position": "RB",
-      "value": 6609,
+      "value": 6616,
       "source_count": 7,
       "sources": [
         "FC",
@@ -20397,7 +20396,7 @@
       "name": "David Montgomery",
       "team": "HOU",
       "position": "RB",
-      "value": 6332,
+      "value": 6325,
       "source_count": 7,
       "sources": [
         "FC",
@@ -20658,10 +20657,10 @@
       "confidence": "high"
     },
     {
-      "name": "Michael Pittman",
-      "team": "PIT",
+      "name": "Jayden Higgins",
+      "team": "HOU",
       "position": "WR",
-      "value": 6071,
+      "value": 6073,
       "source_count": 7,
       "sources": [
         "FC",
@@ -20675,10 +20674,10 @@
       "confidence": "high"
     },
     {
-      "name": "Jayden Higgins",
-      "team": "HOU",
+      "name": "Michael Pittman",
+      "team": "PIT",
       "position": "WR",
-      "value": 6067,
+      "value": 6071,
       "source_count": 7,
       "sources": [
         "FC",
@@ -21140,7 +21139,7 @@
       "name": "Oronde Gadsden",
       "team": "LAC",
       "position": "TE",
-      "value": 5612,
+      "value": 5621,
       "source_count": 7,
       "sources": [
         "FC",
@@ -23050,22 +23049,6 @@
       "confidence": "low"
     },
     {
-      "name": "Ted Hurst",
-      "team": "TB",
-      "position": "WR",
-      "value": 3622,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Azeez Al-Shaair",
       "team": "HOU",
       "position": "LB",
@@ -23076,6 +23059,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Ted Hurst",
+      "team": "TB",
+      "position": "WR",
+      "value": 3615,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "2026 Pick 3.02",
@@ -23253,7 +23252,7 @@
       "name": "Keaton Mitchell",
       "team": "LAC",
       "position": "RB",
-      "value": 3494,
+      "value": 3498,
       "source_count": 7,
       "sources": [
         "FC",
@@ -23283,7 +23282,7 @@
       "name": "Elic Ayomanor",
       "team": "TEN",
       "position": "WR",
-      "value": 3476,
+      "value": 3481,
       "source_count": 7,
       "sources": [
         "FC",
@@ -24524,6 +24523,23 @@
       "confidence": "medium"
     },
     {
+      "name": "Kimani Vidal",
+      "team": "LAC",
+      "position": "RB",
+      "value": 2624,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Cole Bishop",
       "team": "BUF",
       "position": "DB",
@@ -24540,23 +24556,6 @@
       "team": "CLE",
       "position": "QB",
       "value": 2621,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Kimani Vidal",
-      "team": "LAC",
-      "position": "RB",
-      "value": 2619,
       "source_count": 7,
       "sources": [
         "FC",
@@ -24631,7 +24630,7 @@
       "name": "Sean Tucker",
       "team": "TB",
       "position": "RB",
-      "value": 2567,
+      "value": 2563,
       "source_count": 7,
       "sources": [
         "FC",
@@ -25233,7 +25232,7 @@
       "name": "Trevor Etienne",
       "team": "CAR",
       "position": "RB",
-      "value": 2257,
+      "value": 2253,
       "source_count": 6,
       "sources": [
         "FC",
@@ -25300,23 +25299,6 @@
       "confidence": "medium"
     },
     {
-      "name": "Cole Kmet",
-      "team": "CHI",
-      "position": "TE",
-      "value": 2205,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "2026 Pick 4.02",
       "team": "",
       "position": "PICK",
@@ -25339,6 +25321,23 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Cole Kmet",
+      "team": "CHI",
+      "position": "TE",
+      "value": 2201,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Eli Raridon",
@@ -26009,23 +26008,6 @@
       "confidence": "low"
     },
     {
-      "name": "Mac Jones",
-      "team": "SF",
-      "position": "QB",
-      "value": 1775,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Keenan Allen",
       "team": "",
       "position": "WR",
@@ -26034,6 +26016,23 @@
       "sources": [
         "FC",
         "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Ryan Flournoy",
+      "team": "DAL",
+      "position": "WR",
+      "value": 1774,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -26076,14 +26075,15 @@
       "confidence": "high"
     },
     {
-      "name": "Darius Slayton",
-      "team": "NYG",
-      "position": "WR",
-      "value": 1765,
-      "source_count": 6,
+      "name": "Mac Jones",
+      "team": "SF",
+      "position": "QB",
+      "value": 1767,
+      "source_count": 7,
       "sources": [
         "FC",
         "FN",
+        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -26092,15 +26092,14 @@
       "confidence": "high"
     },
     {
-      "name": "Ryan Flournoy",
-      "team": "DAL",
+      "name": "Darius Slayton",
+      "team": "NYG",
       "position": "WR",
-      "value": 1763,
-      "source_count": 7,
+      "value": 1765,
+      "source_count": 6,
       "sources": [
         "FC",
         "FN",
-        "FP",
         "KTC",
         "DP",
         "IDP",
@@ -26198,20 +26197,6 @@
       "confidence": "high"
     },
     {
-      "name": "2027 Late 4th",
-      "team": "NA",
-      "position": "PICK",
-      "value": 1713,
-      "source_count": 4,
-      "sources": [
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Carl Granderson",
       "team": "NO",
       "position": "DL",
@@ -26222,6 +26207,20 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "2027 Late 4th",
+      "team": "NA",
+      "position": "PICK",
+      "value": 1707,
+      "source_count": 4,
+      "sources": [
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Ja'Lynn Polk",
@@ -26569,10 +26568,21 @@
       "confidence": "high"
     },
     {
+      "name": "Mike Sainristil",
+      "team": "COMMANDERS",
+      "position": "CB",
+      "value": 1605,
+      "source_count": 1,
+      "sources": [
+        "IDPSHOW"
+      ],
+      "confidence": "low"
+    },
+    {
       "name": "Will Shipley",
       "team": "PHI",
       "position": "RB",
-      "value": 1605,
+      "value": 1601,
       "source_count": 6,
       "sources": [
         "FC",
@@ -26583,17 +26593,6 @@
         "IDPSHOW"
       ],
       "confidence": "high"
-    },
-    {
-      "name": "Mike Sainristil",
-      "team": "COMMANDERS",
-      "position": "CB",
-      "value": 1605,
-      "source_count": 1,
-      "sources": [
-        "IDPSHOW"
-      ],
-      "confidence": "low"
     },
     {
       "name": "Jahan Dotson",
@@ -27732,7 +27731,7 @@
       "name": "Caleb Douglas",
       "team": "MIA",
       "position": "WR",
-      "value": 1287,
+      "value": 1291,
       "source_count": 6,
       "sources": [
         "FC",
@@ -27957,18 +27956,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Mitchell Trubisky",
-      "team": "BUF",
-      "position": "QB",
-      "value": 1208,
-      "source_count": 2,
-      "sources": [
-        "FN",
-        "DP"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "Kenneth Grant",
@@ -28794,7 +28781,7 @@
       "name": "Kendrick Bourne",
       "team": "ARI",
       "position": "WR",
-      "value": 1016,
+      "value": 1013,
       "source_count": 6,
       "sources": [
         "FC",
@@ -29164,6 +29151,21 @@
       "confidence": "low"
     },
     {
+      "name": "Jimmy Horn",
+      "team": "CAR",
+      "position": "WR",
+      "value": 922,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Jared Wiley",
       "team": "KC",
       "position": "TE",
@@ -29203,21 +29205,6 @@
       "confidence": "low"
     },
     {
-      "name": "Jimmy Horn",
-      "team": "CAR",
-      "position": "WR",
-      "value": 918,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Grant Calcaterra",
       "team": "PHI",
       "position": "TE",
@@ -29242,6 +29229,22 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "George Holani",
+      "team": "SEA",
+      "position": "RB",
+      "value": 914,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Zach Sieler",
@@ -29277,22 +29280,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "George Holani",
-      "team": "SEA",
-      "position": "RB",
-      "value": 907,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Jordan Whitehead",
@@ -29409,7 +29396,7 @@
       "name": "Sam Howell",
       "team": "DAL",
       "position": "QB",
-      "value": 878,
+      "value": 879,
       "source_count": 5,
       "sources": [
         "FN",
@@ -29538,6 +29525,19 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "JuJu Smith-Schuster",
+      "team": "KC",
+      "position": "WR",
+      "value": 852,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "DP",
+        "IDP"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Zamir White",
@@ -29874,7 +29874,7 @@
       "name": "Joe Milton",
       "team": "DAL",
       "position": "QB",
-      "value": 780,
+      "value": 783,
       "source_count": 7,
       "sources": [
         "FC",
@@ -30303,10 +30303,26 @@
       "confidence": "low"
     },
     {
+      "name": "Seth McGowan",
+      "team": "IND",
+      "position": "RB",
+      "value": 644,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Olamide Zaccheaus",
       "team": "ATL",
       "position": "WR",
-      "value": 647,
+      "value": 642,
       "source_count": 6,
       "sources": [
         "FC",
@@ -30330,22 +30346,6 @@
         "IDP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Seth McGowan",
-      "team": "IND",
-      "position": "RB",
-      "value": 638,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Henry To'oTo'o",
@@ -30526,6 +30526,19 @@
       "confidence": "low"
     },
     {
+      "name": "Jeremy McNichols",
+      "team": "WAS",
+      "position": "RB",
+      "value": 563,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Kamren Kinchens",
       "team": "LAR",
       "position": "DB",
@@ -30536,19 +30549,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Jeremy McNichols",
-      "team": "WAS",
-      "position": "RB",
-      "value": 562,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP"
-      ],
-      "confidence": "medium"
     },
     {
       "name": "CJ Daniels",
@@ -30742,6 +30742,19 @@
       "confidence": "medium"
     },
     {
+      "name": "Mitchell Trubisky",
+      "team": "BUF",
+      "position": "QB",
+      "value": 541,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP"
+      ],
+      "confidence": "medium"
+    },
+    {
       "name": "Dax Hill",
       "team": "CIN",
       "position": "DB",
@@ -30907,7 +30920,7 @@
       "name": "Demarcus Robinson",
       "team": "SF",
       "position": "WR",
-      "value": 505,
+      "value": 502,
       "source_count": 5,
       "sources": [
         "FN",
@@ -31373,20 +31386,6 @@
         "DP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "JuJu Smith-Schuster",
-      "team": "KC",
-      "position": "WR",
-      "value": 441,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Donovan Edwards",
@@ -31860,22 +31859,10 @@
       "confidence": "low"
     },
     {
-      "name": "Jonathan Allen",
-      "team": "CIN",
-      "position": "DL",
-      "value": 378,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low"
-    },
-    {
       "name": "Deshaun Watson",
       "team": "CLE",
       "position": "QB",
-      "value": 376,
+      "value": 378,
       "source_count": 7,
       "sources": [
         "FC",
@@ -31887,6 +31874,18 @@
         "IDPSHOW"
       ],
       "confidence": "high"
+    },
+    {
+      "name": "Jonathan Allen",
+      "team": "CIN",
+      "position": "DL",
+      "value": 378,
+      "source_count": 2,
+      "sources": [
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "low"
     },
     {
       "name": "Jason Pinnock",
@@ -32376,7 +32375,7 @@
       "name": "Colbie Young",
       "team": "CIN",
       "position": "WR",
-      "value": 315,
+      "value": 317,
       "source_count": 3,
       "sources": [
         "FC",
@@ -32827,6 +32826,21 @@
       "confidence": "low"
     },
     {
+      "name": "AJ Dillon",
+      "team": "CAR",
+      "position": "RB",
+      "value": 266,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Jeremiah Owusu-Koramoah",
       "team": "CLE",
       "position": "LB",
@@ -32847,21 +32861,6 @@
         "IDP"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "AJ Dillon",
-      "team": "CAR",
-      "position": "RB",
-      "value": 263,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Hassan Haskins",
@@ -33829,6 +33828,20 @@
       "confidence": "low"
     },
     {
+      "name": "Dylan Laube",
+      "team": "LV",
+      "position": "RB",
+      "value": 190,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Geno Stone",
       "team": "CIN",
       "position": "DB",
@@ -33861,20 +33874,6 @@
         "IDP"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Dylan Laube",
-      "team": "LV",
-      "position": "RB",
-      "value": 188,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Jerome Baker",
@@ -34265,7 +34264,7 @@
       "name": "Jack Endries",
       "team": "CIN",
       "position": "TE",
-      "value": 177,
+      "value": 178,
       "source_count": 5,
       "sources": [
         "FC",
@@ -34286,6 +34285,20 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Ray-Ray McCloud",
+      "team": "NYG",
+      "position": "WR",
+      "value": 175,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP"
+      ],
+      "confidence": "high"
     },
     {
       "name": "Clyde Edwards-Helaire",
@@ -34313,24 +34326,10 @@
       "confidence": "low"
     },
     {
-      "name": "Ray-Ray McCloud",
-      "team": "NYG",
-      "position": "WR",
-      "value": 173,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Nathan Carter",
       "team": "ATL",
       "position": "RB",
-      "value": 170,
+      "value": 173,
       "source_count": 2,
       "sources": [
         "FN",
@@ -34487,10 +34486,24 @@
       "confidence": "low"
     },
     {
+      "name": "Josh Oliver",
+      "team": "MIN",
+      "position": "TE",
+      "value": 154,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Tyler Conklin",
       "team": "DET",
       "position": "TE",
-      "value": 151,
+      "value": 153,
       "source_count": 6,
       "sources": [
         "FC",
@@ -34499,20 +34512,6 @@
         "DP",
         "IDP",
         "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Josh Oliver",
-      "team": "MIN",
-      "position": "TE",
-      "value": 151,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP"
       ],
       "confidence": "high"
     },
@@ -34595,6 +34594,21 @@
       "confidence": "low"
     },
     {
+      "name": "Jeremy Ruckert",
+      "team": "NYJ",
+      "position": "TE",
+      "value": 143,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Deommodore Lenoir",
       "team": "SF",
       "position": "DB",
@@ -34617,21 +34631,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Jeremy Ruckert",
-      "team": "NYJ",
-      "position": "TE",
-      "value": 141,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Jadon Canady",
@@ -34729,6 +34728,20 @@
       "confidence": "low"
     },
     {
+      "name": "Terrell Jennings",
+      "team": "NE",
+      "position": "RB",
+      "value": 131,
+      "source_count": 4,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Chris Johnson",
       "team": "DOLPHINS",
       "position": "CB",
@@ -34749,20 +34762,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Terrell Jennings",
-      "team": "NE",
-      "position": "RB",
-      "value": 129,
-      "source_count": 4,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "DJ Reader",
@@ -34826,7 +34825,7 @@
       "name": "Zay Jones",
       "team": "ARI",
       "position": "WR",
-      "value": 117,
+      "value": 118,
       "source_count": 4,
       "sources": [
         "FN",
@@ -34920,6 +34919,21 @@
       "confidence": "medium"
     },
     {
+      "name": "Davis Mills",
+      "team": "HOU",
+      "position": "QB",
+      "value": 109,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Marcus Davenport",
       "team": "DET",
       "position": "DL",
@@ -34941,21 +34955,6 @@
         "IDPSHOW"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Davis Mills",
-      "team": "HOU",
-      "position": "QB",
-      "value": 108,
-      "source_count": 5,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Arden Key",
@@ -35104,7 +35103,7 @@
       "name": "Kenny Pickett",
       "team": "CAR",
       "position": "QB",
-      "value": 97,
+      "value": 98,
       "source_count": 5,
       "sources": [
         "FN",
@@ -35393,6 +35392,21 @@
       "confidence": "low"
     },
     {
+      "name": "Ainias Smith",
+      "team": "CAR",
+      "position": "WR",
+      "value": 91,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Cole Payton",
       "team": "PHI",
       "position": "QB",
@@ -35404,21 +35418,6 @@
         "FP",
         "KTC",
         "DP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
-      "name": "Ainias Smith",
-      "team": "CAR",
-      "position": "WR",
-      "value": 90,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
         "IDPSHOW"
       ],
       "confidence": "high"
@@ -35482,6 +35481,21 @@
       "confidence": "low"
     },
     {
+      "name": "Zach Wilson",
+      "team": "NO",
+      "position": "QB",
+      "value": 88,
+      "source_count": 5,
+      "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "D'Ernest Johnson",
       "team": "NE",
       "position": "RB",
@@ -35518,21 +35532,6 @@
         "IDP"
       ],
       "confidence": "medium"
-    },
-    {
-      "name": "Zach Wilson",
-      "team": "NO",
-      "position": "QB",
-      "value": 85,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Isaiah Rodgers",
@@ -35663,9 +35662,25 @@
       "name": "Tyler Johnson",
       "team": "DAL",
       "position": "WR",
-      "value": 75,
+      "value": 76,
       "source_count": 5,
       "sources": [
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Gardner Minshew",
+      "team": "ARI",
+      "position": "QB",
+      "value": 74,
+      "source_count": 6,
+      "sources": [
+        "FC",
         "FN",
         "KTC",
         "DP",
@@ -35708,22 +35723,6 @@
       "confidence": "low"
     },
     {
-      "name": "Gardner Minshew",
-      "team": "ARI",
-      "position": "QB",
-      "value": 73,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Antonio Johnson",
       "team": "JAX",
       "position": "DB",
@@ -35738,7 +35737,7 @@
       "name": "Drew Lock",
       "team": "SEA",
       "position": "QB",
-      "value": 70,
+      "value": 71,
       "source_count": 5,
       "sources": [
         "FN",
@@ -35946,7 +35945,7 @@
       "name": "Tyler Huntley",
       "team": "BAL",
       "position": "QB",
-      "value": 56,
+      "value": 57,
       "source_count": 6,
       "sources": [
         "FC",
@@ -36026,6 +36025,22 @@
       "confidence": "medium"
     },
     {
+      "name": "Trey Lance",
+      "team": "LAC",
+      "position": "QB",
+      "value": 51,
+      "source_count": 6,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Roger McCreary",
       "team": "TEN",
       "position": "DB",
@@ -36048,22 +36063,6 @@
       "confidence": "low"
     },
     {
-      "name": "Trey Lance",
-      "team": "LAC",
-      "position": "QB",
-      "value": 50,
-      "source_count": 6,
-      "sources": [
-        "FC",
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
-    },
-    {
       "name": "Kendall Fuller",
       "team": "MIA",
       "position": "DB",
@@ -36084,6 +36083,19 @@
         "IDP"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Malik Heath",
+      "team": "ATL",
+      "position": "WR",
+      "value": 47,
+      "source_count": 3,
+      "sources": [
+        "FN",
+        "KTC",
+        "IDP"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Donovan Wilson",
@@ -36148,19 +36160,6 @@
       "confidence": "high"
     },
     {
-      "name": "Malik Heath",
-      "team": "ATL",
-      "position": "WR",
-      "value": 45,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDP"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Marcus Williams",
       "team": "FA",
       "position": "DB",
@@ -36216,6 +36215,21 @@
       "confidence": "low"
     },
     {
+      "name": "Tanner McKee",
+      "team": "PHI",
+      "position": "QB",
+      "value": 43,
+      "source_count": 5,
+      "sources": [
+        "FC",
+        "FN",
+        "KTC",
+        "DP",
+        "IDPSHOW"
+      ],
+      "confidence": "high"
+    },
+    {
       "name": "Brandon Stephens",
       "team": "BAL",
       "position": "DB",
@@ -36227,19 +36241,17 @@
       "confidence": "low"
     },
     {
-      "name": "Tanner McKee",
-      "team": "PHI",
-      "position": "QB",
-      "value": 42,
-      "source_count": 5,
+      "name": "LaJohntay Wester",
+      "team": "BAL",
+      "position": "WR",
+      "value": 40,
+      "source_count": 3,
       "sources": [
-        "FC",
         "FN",
         "KTC",
-        "DP",
         "IDPSHOW"
       ],
-      "confidence": "high"
+      "confidence": "medium"
     },
     {
       "name": "Rayshawn Jenkins",
@@ -36275,19 +36287,6 @@
       "confidence": "low"
     },
     {
-      "name": "LaJohntay Wester",
-      "team": "BAL",
-      "position": "WR",
-      "value": 39,
-      "source_count": 3,
-      "sources": [
-        "FN",
-        "KTC",
-        "IDPSHOW"
-      ],
-      "confidence": "medium"
-    },
-    {
       "name": "Justin Simmons",
       "team": "FA",
       "position": "DB",
@@ -36299,16 +36298,19 @@
       "confidence": "low"
     },
     {
-      "name": "Matthew Hibner",
-      "team": "BAL",
-      "position": "TE",
+      "name": "Kyle McCord",
+      "team": "GB",
+      "position": "QB",
       "value": 38,
-      "source_count": 2,
+      "source_count": 5,
       "sources": [
+        "FN",
         "KTC",
+        "DP",
+        "IDP",
         "IDPSHOW"
       ],
-      "confidence": "medium"
+      "confidence": "high"
     },
     {
       "name": "Jordan Poyer",
@@ -36320,21 +36322,6 @@
         "IDP"
       ],
       "confidence": "low"
-    },
-    {
-      "name": "Kyle McCord",
-      "team": "GB",
-      "position": "QB",
-      "value": 37,
-      "source_count": 5,
-      "sources": [
-        "FN",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high"
     },
     {
       "name": "Jamal Adams",
@@ -36357,6 +36344,18 @@
         "IDPSHOW"
       ],
       "confidence": "low"
+    },
+    {
+      "name": "Matthew Hibner",
+      "team": "BAL",
+      "position": "TE",
+      "value": 36,
+      "source_count": 2,
+      "sources": [
+        "KTC",
+        "IDPSHOW"
+      ],
+      "confidence": "medium"
     },
     {
       "name": "Darrick Forrest",
@@ -36418,7 +36417,7 @@
       "name": "Mason Rudolph",
       "team": "PIT",
       "position": "QB",
-      "value": 27,
+      "value": 28,
       "source_count": 6,
       "sources": [
         "FC",
