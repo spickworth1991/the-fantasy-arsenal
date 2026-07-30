@@ -520,6 +520,8 @@ useEffect(() => {
   const [bestLimit, setBestLimit] = useState(25);
   const [bestMinOpenPct, setBestMinOpenPct] = useState(0);
   const [minOpenSlots, setMinOpenSlots] = useState(1);
+  const [requestedLeagueId,setRequestedLeagueId]=useState("");
+  useEffect(()=>{const params=new URLSearchParams(window.location.search);setRequestedLeagueId(params.get("league")||"");const need=String(params.get("need")||"").toUpperCase();if(["QB","RB","WR","TE","K","DEF"].includes(need))setBestPos(need);},[]);
 
 
   // Filters modal (desktop + mobile)
@@ -782,6 +784,10 @@ useEffect(() => {
 
   useEffect(() => {
     if (!scanLeagues || scanLeagues.length === 0) return;
+    if (requestedLeagueId && visibleLeagueIds.has(requestedLeagueId)) {
+      setIncludedLeagueIds(new Set([requestedLeagueId]));
+      return;
+    }
     setIncludedLeagueIds((prev) => {
       const vis = visibleLeagueIds;
       if (!prev || prev.size === 0) return new Set([...vis]);
@@ -791,7 +797,7 @@ useEffect(() => {
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleLeagueCount]);
+  }, [visibleLeagueCount, requestedLeagueId]);
 
   useEffect(() => {
     if (!includeKey) return;

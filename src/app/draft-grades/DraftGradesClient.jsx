@@ -241,6 +241,7 @@ export default function DraftGradesClient() {
   const [adpLoading,setAdpLoading]=useState(false);
   const [adpError,setAdpError]=useState("");
   const league=leagues.find((row)=>String(row.league_id)===String(activeLeague));
+  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested)))setActiveLeague(requested);},[leagues,setActiveLeague]);
   const loading=loadingDrafts||loadingPicks||adpLoading;
   const detectedFormat=useMemo(()=>{
     const detected=classifyLeagueFormat(league||{},drafts);

@@ -369,6 +369,7 @@ export default function LeagueHubContent() {
   const [excludeBestBall, setExcludeBestBall] = useState(false);
   const [includeDrafting, setIncludeDrafting] = useState(true);
   const [leagueQuery, setLeagueQuery] = useState("");
+  useEffect(()=>{const leagueId=new URLSearchParams(window.location.search).get("league");if(leagueId)setLeagueQuery(leagueId);},[]);
   const [leagueFormatFilter, setLeagueFormatFilter] = useState("ALL");
   const [leagueSizeFilter, setLeagueSizeFilter] = useState("ALL");
   const [scoringFilter, setScoringFilter] = useState("ALL");

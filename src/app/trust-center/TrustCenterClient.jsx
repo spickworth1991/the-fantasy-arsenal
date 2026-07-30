@@ -90,7 +90,19 @@ function isPprComparable(scoring){
 }
 
 function Panel({children,className=""}){return <section className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}>{children}</section>;}
-function Metric({label,value,detail}){return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><div className="text-[9px] font-bold uppercase tracking-[.16em] text-white/30">{label}</div><div className="mt-1 text-2xl font-black">{value}</div><div className="mt-1 text-[10px] leading-4 text-white/35">{detail}</div></div>;}
+function ledgerMetric(label,value,detail){
+  if(typeof window==="undefined"||!["Resolved recommendations","Observed benefit","Selection bias"].includes(label))return{value,detail};
+  let actions={};try{actions=JSON.parse(localStorage.getItem("tfa:intelligence-actions")||"{}");}catch{}
+  const rows=Object.values(actions||{});
+  const completed=rows.filter((row)=>row.status==="completed");
+  const resolved=completed.filter((row)=>["helped","did-not-help"].includes(row.outcome));
+  const helped=resolved.filter((row)=>row.outcome==="helped").length;
+  const dismissed=rows.filter((row)=>row.status==="dismissed").length;
+  if(label==="Resolved recommendations")return{value:resolved.length,detail:`${completed.length-resolved.length} completed decisions still await outcome feedback`};
+  if(label==="Observed benefit")return{value:resolved.length?`${Math.round(helped/resolved.length*100)}%`:"—",detail:resolved.length?`${helped} of ${resolved.length} outcomes marked helpful`:"Mark completed decisions helpful or not helpful"};
+  return{value:dismissed,detail:`Dismissed advice stays separate from ${resolved.length} rated outcome${resolved.length===1?"":"s"}`};
+}
+function Metric({label,value,detail}){const display=ledgerMetric(label,value,detail);return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><div className="text-[9px] font-bold uppercase tracking-[.16em] text-white/30">{label}</div><div className="mt-1 text-2xl font-black">{display.value}</div><div className="mt-1 text-[10px] leading-4 text-white/35">{display.detail}</div></div>;}
 function Type({children,type}){const styles=type==="Fact"?"bg-emerald-300/10 text-emerald-100":type==="Estimate"?"bg-cyan-300/10 text-cyan-100":"bg-violet-300/10 text-violet-100";return <span className={`inline-flex rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider ${styles}`}>{children||type}</span>;}
 function ValueIntelligence({metrics,records,valueFormat}){
   const valueSources=records.filter((source)=>source.kind==="Value");

@@ -473,6 +473,20 @@ export default function PlayoffOddsPage() {
   const [tradeGiveId, setTradeGiveId] = useState("");
   const [tradeReceiveId, setTradeReceiveId] = useState("");
   const debTimer = useRef(null);
+  const routeHandoffApplied = useRef(false);
+  useEffect(() => {
+    if (routeHandoffApplied.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedLeague = params.get("league");
+    const requestedTeam = params.get("team");
+    if (requestedLeague && leagues.some((item) => String(item.league_id) === String(requestedLeague))) {
+      routeHandoffApplied.current = true;
+      handleLeagueChange(requestedLeague);
+    }
+    if (requestedTeam) setFocusRosterId(requestedTeam);
+    // Apply route handoffs after the Sleeper portfolio is available.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagues]);
 
   const leagueSeason = Number(league?.season || 0) || stateSeason || new Date().getFullYear();
   const regularSeasonEnd = useMemo(() => {
@@ -1096,7 +1110,7 @@ export default function PlayoffOddsPage() {
       <BackgroundParticles />
       <Navbar pageTitle="Playoff Odds" />
 
-      <div className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-3 pb-12 pt-20 sm:px-4">
+      <div className="mx-auto w-full min-w-0 max-w-7xl overflow-x-clip px-3 pb-12 pt-20 [overflow-wrap:anywhere] sm:px-4">
         <Card className="p-5 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -1275,8 +1289,8 @@ export default function PlayoffOddsPage() {
           ) : null}
         </Card>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
-          <div className="space-y-6">
+        <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
+          <div className="min-w-0 space-y-6">
 
             <SectionTitle subtitle="A cleaner read on the race, with enough context to make the percentages feel trustworthy.">
               Outlook
@@ -1300,8 +1314,8 @@ export default function PlayoffOddsPage() {
               </Card>
             ) : (
               <>
-                <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-3">
-                  <div className="min-w-[86%] snap-start md:min-w-0">
+                <div className="mx-0 flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:grid md:snap-none md:grid-cols-2 md:overflow-visible md:pb-0 xl:grid-cols-3">
+                  <div className="min-w-[88%] max-w-[88%] snap-start md:min-w-0 md:max-w-none">
                   <InsightCard
                     eyebrow="Title Favorite"
                     title={resultSummary?.favorite ? `${resultSummary.favorite.summaryLabel} | ${formatPct(resultSummary.favorite.champPct)}` : "Waiting for a favorite"}
@@ -1314,7 +1328,7 @@ export default function PlayoffOddsPage() {
                   />
                   </div>
 
-                  <div className="min-w-[86%] snap-start md:min-w-0">
+                  <div className="min-w-[88%] max-w-[88%] snap-start md:min-w-0 md:max-w-none">
                   <InsightCard
                     eyebrow="Bubble Watch"
                     title={resultSummary?.bubble ? `${resultSummary.bubble.summaryLabel} | ${formatPct(resultSummary.bubble.makePct)}` : "No bubble pressure"}
@@ -1327,7 +1341,7 @@ export default function PlayoffOddsPage() {
                   />
                   </div>
 
-                  <div className="min-w-[86%] snap-start md:min-w-0">
+                  <div className="min-w-[88%] max-w-[88%] snap-start md:min-w-0 md:max-w-none">
                   <InsightCard
                     eyebrow="Best Surge"
                     title={resultSummary?.surge ? `${resultSummary.surge.summaryLabel} | ${formatSigned(resultSummary.surge.winDelta)} wins` : "No surge found"}

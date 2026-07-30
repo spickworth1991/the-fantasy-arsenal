@@ -485,6 +485,7 @@ export default function PowerRankingsPage() {
     () => leagues.find((lg) => lg.league_id === activeLeague),
     [leagues, activeLeague]
   );
+  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested)))setActiveLeague(requested);},[leagues,setActiveLeague]);
 
   useEffect(() => {
     if (league && !league.rosters) {

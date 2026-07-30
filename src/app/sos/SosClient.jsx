@@ -329,6 +329,7 @@ function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferr
 export default function SOSPage() {
   const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
   const contextLeague = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
+  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested)))setActiveLeague(requested);},[leagues,setActiveLeague]);
   const [hydratedLeague, setHydratedLeague] = useState(null);
   const [leagueLoading, setLeagueLoading] = useState(false);
   const league = useMemo(() => {

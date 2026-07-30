@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import { useArsenalAccount } from "../../context/ArsenalAccountContext";
 import TradeSide from "../../components/TradeSide";
@@ -124,6 +124,22 @@ export default function TradeAnalyzer() {
   const [selectedOwnerB, setSelectedOwnerB] = useState("");
   const [tradeTab, setTradeTab] = useState("analyzer");
   const [saveMessage, setSaveMessage] = useState("");
+  const [offerBufferPct, setOfferBufferPct] = useState(0);
+  const routeHandoffApplied = useRef(false);
+
+  useEffect(() => {
+    if (routeHandoffApplied.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedLeague = params.get("league");
+    const requestedTab = params.get("tab");
+    if (requestedLeague && leagues.some((item) => String(item.league_id) === String(requestedLeague))) {
+      routeHandoffApplied.current = true;
+      handleLeagueChange(requestedLeague);
+    }
+    if (["analyzer","finder","block","history","market"].includes(requestedTab)) setTradeTab(requestedTab);
+    // URL handoff is intentionally applied when the loaded portfolio changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagues]);
 
   useEffect(() => {
     let mounted = true;
@@ -302,7 +318,7 @@ export default function TradeAnalyzer() {
     }
   }
 
-  const targetValue = Math.abs(diff);
+  const targetValue = Math.abs(diff) * (1 + offerBufferPct / 100);
   const recommendedPlayers = recSide
     ? candidatePool
         .filter((p) => getMetric(p) > 0)
@@ -488,6 +504,7 @@ export default function TradeAnalyzer() {
                 <div className="mt-1 text-lg font-semibold text-white">{recommendation}</div>
               </div>
             </div>
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-300/15 bg-violet-300/[0.045] p-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-black text-violet-100">Negotiation cushion</div><p className="mt-1 text-xs text-white/40">Optionally recommend an add that leaves the receiving side slightly ahead, creating room for a counter without immediately falling below the current package value.</p></div><select value={offerBufferPct} onChange={(event)=>setOfferBufferPct(Number(event.target.value))} className="min-h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="0">Exact balance</option><option value="3">3% cushion</option><option value="5">5% cushion</option><option value="10">10% cushion</option></select></div>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <button type="button" onClick={saveCurrentTrade} className="rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-black text-cyan-100">Save trade</button>
               <button type="button" onClick={() => window.print()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white/65">Print / save PDF</button>

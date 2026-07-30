@@ -444,7 +444,7 @@ export default function DraftHelperClient() {
             <div className="mt-1 text-lg font-black">{fastDraft ? "Five-second command mode" : "Standard draft monitoring"}</div>
             <p className="mt-1 text-xs text-white/38">{fastDraft ? `Refreshing every five seconds${lastRefreshAt ? ` · next check in ${refreshCountdown}s` : ""}.` : draft.status === "drafting" ? "Currently refreshing every ten seconds." : "Fast Draft activates when this draft is live."}</p>
           </div>
-          <button type="button" onClick={() => { const next=!fastDraft; setFastDraft(next); setTab("room"); if(next) refreshDraft(true); }} disabled={draft.status !== "drafting"} className={`rounded-2xl border px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${fastDraft ? "border-emerald-300/35 bg-emerald-300/15 text-emerald-50" : "border-white/10 bg-white/[0.045] text-white/70 hover:border-emerald-300/25 hover:text-emerald-100"}`}>{fastDraft ? "Exit Fast Draft" : "Start Fast Draft"}</button>
+          <div className="flex flex-wrap gap-2"><a href={`/draft-pick-tracker?league=${encodeURIComponent(activeLeague)}`} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] px-5 py-3 text-sm font-black text-cyan-100">Draft Monitor</a><button type="button" onClick={() => { const next=!fastDraft; setFastDraft(next); setTab("room"); if(next) refreshDraft(true); }} disabled={draft.status !== "drafting"} className={`rounded-2xl border px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${fastDraft ? "border-emerald-300/35 bg-emerald-300/15 text-emerald-50" : "border-white/10 bg-white/[0.045] text-white/70 hover:border-emerald-300/25 hover:text-emerald-100"}`}>{fastDraft ? "Exit Fast Draft" : "Start Fast Draft"}</button></div>
         </div>
         {fastDraft ? <div className="border-t border-white/10 bg-emerald-300/[0.025] p-3 sm:p-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.25fr_1.5fr]">
@@ -456,7 +456,8 @@ export default function DraftHelperClient() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Latest picks</span>
             {[...picks].reverse().slice(0,3).map(pick=><button type="button" onClick={()=>inspectPlayer(pick.player_id)} key={pick.pick_no} className="rounded-lg bg-white/[0.045] px-2.5 py-1.5 text-[10px] hover:bg-cyan-300/[0.09]">#{pick.pick_no} <b>{playerName(players?.[pick.player_id],pick.player_id)}</b></button>)}
-            <button type="button" onClick={()=>refreshDraft()} disabled={loading} className="ml-auto rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Sync now</button>
+            <a href={`/draft-pick-tracker?league=${encodeURIComponent(activeLeague)}`} className="ml-auto rounded-xl bg-cyan-300/10 px-3 py-2 text-[10px] font-bold text-cyan-100">Open this league in Draft Monitor →</a>
+            <button type="button" onClick={()=>refreshDraft()} disabled={loading} className="rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Sync now</button>
           </div>
         </div> : null}
       </Panel>

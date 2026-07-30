@@ -304,6 +304,7 @@ export default function DraftPickTrackerClient() {
   const [err, setErr] = useState("");
 
   const [search, setSearch] = useState("");
+  const [requestedLeagueId, setRequestedLeagueId] = useState("");
   const [onlyDrafting, setOnlyDrafting] = useState(true);
   const [includePaused, setIncludePaused] = useState(false);
 
@@ -328,6 +329,13 @@ export default function DraftPickTrackerClient() {
   // per-league expand/collapse for recent picks
   const [expandedRecent, setExpandedRecent] = useState({}); // { [leagueId]: boolean }
   const [mobileDetailRow, setMobileDetailRow] = useState(null);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("league") || "";
+    if (requested) {
+      setRequestedLeagueId(requested);
+      setOnlyDrafting(false);
+    }
+  }, []);
 
   // ticker so clocks count down without refetching
   const [now, setNow] = useState(Date.now());
@@ -658,6 +666,7 @@ export default function DraftPickTrackerClient() {
   const filteredDraftRows = useMemo(() => {
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
+    if (requestedLeagueId) r = r.filter((x) => String(x.leagueId) === String(requestedLeagueId));
 
     if (onlyDrafting) {
       r = r.filter((x) => {
@@ -719,6 +728,7 @@ export default function DraftPickTrackerClient() {
     return r;
   }, [
     rows,
+    requestedLeagueId,
     search,
     onlyDrafting,
     includePaused,
