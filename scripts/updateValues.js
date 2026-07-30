@@ -2141,7 +2141,7 @@ function projectionOutput(source, rows, extra = {}) {
 async function updateFantasyProsProjections() {
   const apiKey = String(process.env.FANTASYPROS_API_KEY || "").trim();
   if (!apiKey) throw new Error("FANTASYPROS_API_KEY is not configured.");
-  const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${CURRENT_SEASON}/projections?week=0&positions=QB:RB:WR:TE:DST:K`;
+  const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${CURRENT_SEASON}/projections?position=ALL&week=0`;
   const response = await fetch(endpoint, {
     headers: { "x-api-key": apiKey, accept: "application/json" },
     signal: AbortSignal.timeout(30000),
