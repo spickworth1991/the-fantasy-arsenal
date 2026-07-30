@@ -19,6 +19,27 @@ import {
 
 // For __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Local updates automatically read secrets from the ignored `.env.local`.
+// Existing shell/GitHub environment variables always take precedence.
+function loadLocalEnvironment() {
+  const envPath = path.join(__dirname, "../.env.local");
+  if (!fs.existsSync(envPath)) return;
+  const raw = fs.readFileSync(envPath, "utf8");
+  for (const line of raw.split(/\r?\n/)) {
+    const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!match || process.env[match[1]] != null) continue;
+    let value = match[2];
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    } else {
+      value = value.replace(/\s+#.*$/, "").trim();
+    }
+    process.env[match[1]] = value.replace(/\\n/g, "\n");
+  }
+}
+loadLocalEnvironment();
 
 // Configuration constants
 const CONFIG = {
@@ -78,7 +99,6 @@ function logProgress(message, current, total) {
     console.log(message);
   }
 }
-const __dirname = path.dirname(__filename);
 const CURRENT_SEASON = Number(process.env.NFL_SEASON) || new Date().getUTCFullYear();
 const VERBOSE_LOGS =
   process.env.UPDATE_VERBOSE === "1" ||
