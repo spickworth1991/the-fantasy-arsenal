@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29T04:06:45.294Z",
+  "updated": "2026-07-30T04:06:28.659Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -3360,10 +3360,10 @@
     },
     {
       "player_id": "3257",
-      "points": 290.96,
-      "points_ppr": 290.96,
-      "points_half_ppr": 290.96,
-      "points_standard": 290.96,
+      "points": 290.94,
+      "points_ppr": 290.94,
+      "points_half_ppr": 290.94,
+      "points_standard": 290.94,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -3382,9 +3382,9 @@
           "standard": 17.1
         },
         "4": {
-          "ppr": 17.08,
-          "half_ppr": 17.08,
-          "standard": 17.08
+          "ppr": 17.07,
+          "half_ppr": 17.07,
+          "standard": 17.07
         },
         "5": {
           "ppr": 17.08,
@@ -3422,9 +3422,9 @@
           "standard": 17.01
         },
         "12": {
-          "ppr": 17.57,
-          "half_ppr": 17.57,
-          "standard": 17.57
+          "ppr": 17.56,
+          "half_ppr": 17.56,
+          "standard": 17.56
         },
         "13": {
           "ppr": 16.94,
@@ -25606,10 +25606,10 @@
     },
     {
       "player_id": "9501",
-      "points": 88.26,
-      "points_ppr": 88.26,
-      "points_half_ppr": 73.34,
-      "points_standard": 58.43,
+      "points": 88.27,
+      "points_ppr": 88.27,
+      "points_half_ppr": 73.37,
+      "points_standard": 58.44,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -25629,7 +25629,7 @@
         },
         "4": {
           "ppr": 5.29,
-          "half_ppr": 4.39,
+          "half_ppr": 4.4,
           "standard": 3.5
         },
         "5": {
@@ -25643,7 +25643,7 @@
           "standard": 3.53
         },
         "7": {
-          "ppr": 5.38,
+          "ppr": 5.39,
           "half_ppr": 4.48,
           "standard": 3.57
         },
@@ -25659,7 +25659,7 @@
         },
         "10": {
           "ppr": 5.34,
-          "half_ppr": 4.43,
+          "half_ppr": 4.44,
           "standard": 3.53
         },
         "12": {
@@ -25669,7 +25669,7 @@
         },
         "13": {
           "ppr": 5.29,
-          "half_ppr": 4.39,
+          "half_ppr": 4.4,
           "standard": 3.5
         },
         "14": {
@@ -25680,7 +25680,7 @@
         "15": {
           "ppr": 5.3,
           "half_ppr": 4.4,
-          "standard": 3.5
+          "standard": 3.51
         },
         "16": {
           "ppr": 5.32,
@@ -26194,8 +26194,8 @@
     },
     {
       "player_id": "4177",
-      "points": 85.09,
-      "points_ppr": 85.09,
+      "points": 85.06,
+      "points_ppr": 85.06,
       "points_half_ppr": 70.22,
       "points_standard": 55.38,
       "projected_weeks": 17,
@@ -26236,7 +26236,7 @@
           "standard": 3.38
         },
         "8": {
-          "ppr": 5.22,
+          "ppr": 5.21,
           "half_ppr": 4.31,
           "standard": 3.41
         },
@@ -26266,7 +26266,7 @@
           "standard": 3.31
         },
         "15": {
-          "ppr": 5.11,
+          "ppr": 5.1,
           "half_ppr": 4.21,
           "standard": 3.32
         },
@@ -26281,7 +26281,7 @@
           "standard": 3.27
         },
         "18": {
-          "ppr": 5.22,
+          "ppr": 5.21,
           "half_ppr": 4.31,
           "standard": 3.41
         }
@@ -93277,7 +93277,7 @@
     "3233": 1.86,
     "3236": 7.6,
     "3256": 4.76,
-    "3257": 290.96,
+    "3257": 290.94,
     "3268": 3.91,
     "3271": 34.87,
     "3281": 1.01,
@@ -93311,7 +93311,7 @@
     "4147": 89.57,
     "4168": 3.57,
     "4170": 6.61,
-    "4177": 85.09,
+    "4177": 85.06,
     "4189": 7.04,
     "4195": 114.08,
     "4199": 209.61,
@@ -93725,7 +93725,7 @@
     "9493": 298.1,
     "9494": 76.16,
     "9500": 186.03,
-    "9501": 88.26,
+    "9501": 88.27,
     "9502": 76.35,
     "9504": 109.84,
     "9506": 83.56,
@@ -94260,8 +94260,8 @@
     "genosmith": 294.73,
     "jaxon smithnjigba": 291.94,
     "jaxonsmith-njigba": 291.94,
-    "jacoby brissett": 290.96,
-    "jacobybrissett": 290.96,
+    "jacoby brissett": 290.94,
+    "jacobybrissett": 290.94,
     "aaron rodgers": 286.78,
     "aaronrodgers": 286.78,
     "daniel jones": 282.95,
@@ -94714,8 +94714,8 @@
     "elistowers": 89.2,
     "theo johnson": 88.68,
     "theojohnson": 88.68,
-    "demario douglas": 88.26,
-    "demariodouglas": 88.26,
+    "demario douglas": 88.27,
+    "demariodouglas": 88.27,
     "tyquan thornton": 87.99,
     "tyquanthornton": 87.99,
     "isaiah davis": 87.01,
@@ -94726,8 +94726,8 @@
     "braelonallen": 86.25,
     "rashod bateman": 85.78,
     "rashodbateman": 85.78,
-    "mack hollins": 85.09,
-    "mackhollins": 85.09,
+    "mack hollins": 85.06,
+    "mackhollins": 85.06,
     "sean tucker": 83.56,
     "seantucker": 83.56,
     "tennessee titans": 82.77,
