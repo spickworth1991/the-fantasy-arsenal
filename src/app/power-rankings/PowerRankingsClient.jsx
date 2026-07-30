@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
@@ -485,7 +485,8 @@ export default function PowerRankingsPage() {
     () => leagues.find((lg) => lg.league_id === activeLeague),
     [leagues, activeLeague]
   );
-  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested)))setActiveLeague(requested);},[leagues,setActiveLeague]);
+  const routeHandoffApplied=useRef(false);
+  useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
 
   useEffect(() => {
     if (league && !league.rosters) {

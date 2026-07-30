@@ -189,7 +189,9 @@ export default function DraftHelperClient() {
   const [lastRefreshAt, setLastRefreshAt] = useState(0);
   const [refreshCountdown, setRefreshCountdown] = useState(0);
   const [byeWeeks, setByeWeeks] = useState({});
-  const [requestedDraftId,setRequestedDraftId]=useState("");
+  const routeLeagueId = useRef(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("league") || "" : "");
+  const routeHandoffApplied = useRef(false);
+  const [requestedDraftId,setRequestedDraftId]=useState(() => typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("draft") || "" : "");
   const refreshInFlight = useRef(false);
   const league = useMemo(() => (leagues || []).find((item) => String(item.league_id) === String(activeLeague)), [activeLeague, leagues]);
   const draftingLeagues = useMemo(() => (leagues || [])
@@ -197,12 +199,11 @@ export default function DraftHelperClient() {
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))), [leagues]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requested = params.get("league");
-    setRequestedDraftId(params.get("draft")||"");
-    if (requested && (leagues || []).some((item) => String(item.league_id) === String(requested)) && String(activeLeague || "") !== String(requested)) {
-      setActiveLeague(requested);
-    }
+    if (routeHandoffApplied.current || !routeLeagueId.current) return;
+    const requested = routeLeagueId.current;
+    if (!(leagues || []).some((item) => String(item.league_id) === String(requested))) return;
+    routeHandoffApplied.current = true;
+    if (String(activeLeague || "") !== String(requested)) setActiveLeague(requested);
   }, [activeLeague, leagues, setActiveLeague]);
 
   useEffect(() => {
@@ -222,6 +223,9 @@ export default function DraftHelperClient() {
 
   useEffect(() => {
     let active = true;
+    // A persisted league can hydrate before the portfolio and URL handoff do.
+    // Never fetch that stale league while an explicit cross-tool target is pending.
+    if (routeLeagueId.current && !routeHandoffApplied.current) return undefined;
     if (!activeLeague) { setDrafts([]); setDraftId(""); return undefined; }
     setLoading(true); setError("");
     Promise.all([

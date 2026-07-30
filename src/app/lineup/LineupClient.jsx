@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 import dynamic from "next/dynamic";
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
@@ -432,7 +432,8 @@ export default function LineupTool() {
   const [weatherMap, setWeatherMap] = useState({});
   const [kickoffMap, setKickoffMap] = useState({});
 
-  useEffect(()=>{try{const params=new URLSearchParams(window.location.search);const leagueId=params.get("league");const strategy=params.get("strategy");if(leagueId)setActiveLeague(leagueId);if(["safe","median","aggressive"].includes(strategy))setLineupStrategy(strategy);}catch{}},[setActiveLeague]);
+  const routeHandoffApplied=useRef(false);
+  useEffect(()=>{if(routeHandoffApplied.current)return;try{const params=new URLSearchParams(window.location.search);const leagueId=params.get("league");const strategy=params.get("strategy");if(leagueId&&leagues.some((row)=>String(row.league_id)===String(leagueId))){routeHandoffApplied.current=true;setActiveLeague(leagueId);}if(["safe","median","aggressive"].includes(strategy))setLineupStrategy(strategy);}catch{}},[leagues,setActiveLeague]);
   useEffect(()=>{fetch(`/api/nfl-scoreboard?season=${season}&week=${week}`).then(response=>response.ok?response.json():{games:[]}).then(data=>{const map={};(data.games||[]).forEach(game=>(game.teams||[]).forEach(team=>{map[team]=game;}));setKickoffMap(map);}).catch(()=>setKickoffMap({}));},[season,week]);
 
   const [ownerA, setOwnerA] = useState("");

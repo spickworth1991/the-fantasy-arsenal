@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
@@ -241,7 +241,8 @@ export default function DraftGradesClient() {
   const [adpLoading,setAdpLoading]=useState(false);
   const [adpError,setAdpError]=useState("");
   const league=leagues.find((row)=>String(row.league_id)===String(activeLeague));
-  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested)))setActiveLeague(requested);},[leagues,setActiveLeague]);
+  const routeHandoffApplied=useRef(false);
+  useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
   const loading=loadingDrafts||loadingPicks||adpLoading;
   const detectedFormat=useMemo(()=>{
     const detected=classifyLeagueFormat(league||{},drafts);
