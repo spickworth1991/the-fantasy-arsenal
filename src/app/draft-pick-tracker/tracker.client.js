@@ -304,7 +304,6 @@ export default function DraftPickTrackerClient() {
   const [err, setErr] = useState("");
 
   const [search, setSearch] = useState("");
-  const [requestedLeagueId, setRequestedLeagueId] = useState("");
   const [onlyDrafting, setOnlyDrafting] = useState(true);
   const [includePaused, setIncludePaused] = useState(false);
 
@@ -329,13 +328,6 @@ export default function DraftPickTrackerClient() {
   // per-league expand/collapse for recent picks
   const [expandedRecent, setExpandedRecent] = useState({}); // { [leagueId]: boolean }
   const [mobileDetailRow, setMobileDetailRow] = useState(null);
-  useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("league") || "";
-    if (requested) {
-      setRequestedLeagueId(requested);
-      setOnlyDrafting(false);
-    }
-  }, []);
 
   // ticker so clocks count down without refetching
   const [now, setNow] = useState(Date.now());
@@ -666,7 +658,6 @@ export default function DraftPickTrackerClient() {
   const filteredDraftRows = useMemo(() => {
     const q = String(search || "").toLowerCase().trim();
     let r = rows || [];
-    if (requestedLeagueId) r = r.filter((x) => String(x.leagueId) === String(requestedLeagueId));
 
     if (onlyDrafting) {
       r = r.filter((x) => {
@@ -728,7 +719,6 @@ export default function DraftPickTrackerClient() {
     return r;
   }, [
     rows,
-    requestedLeagueId,
     search,
     onlyDrafting,
     includePaused,
@@ -819,6 +809,12 @@ export default function DraftPickTrackerClient() {
           </div>
 
           <div className="mt-4 flex gap-2">
+            <a
+              href={`/draft-helper?league=${encodeURIComponent(r.leagueId)}&draft=${encodeURIComponent(r.draftId || "")}`}
+              className="flex-1 rounded-2xl border border-violet-300/20 bg-violet-300/10 px-4 py-2 text-center text-sm font-semibold text-violet-100"
+            >
+              Command Center
+            </a>
             <a
               href={`https://sleeper.com/draft/nfl/${String(r.draftId)}`}
               target="_blank"
@@ -1167,6 +1163,7 @@ export default function DraftPickTrackerClient() {
                       )}
                     </div>
                   </div>
+                  <a href={`/draft-helper?league=${encodeURIComponent(r.leagueId)}&draft=${encodeURIComponent(r.draftId || "")}`} className="mt-3 block rounded-xl border border-violet-300/20 bg-violet-300/10 px-4 py-2.5 text-center text-xs font-bold text-violet-100">Open this league in Draft Command Center →</a>
                 </div>
               </div>
             );
@@ -1338,7 +1335,7 @@ export default function DraftPickTrackerClient() {
                     >
                       <td className="px-5 py-4">
                         <div>
-                          <div className="text-white font-semibold">{r.leagueName}</div>
+                          <a href={`/draft-helper?league=${encodeURIComponent(r.leagueId)}&draft=${encodeURIComponent(r.draftId || "")}`} className="text-white font-semibold hover:text-violet-100">{r.leagueName}</a>
                           <div className="text-xs text-gray-400">
                             {r.teams ? `${r.teams} teams` : "—"}
                             {r.rounds ? ` · ${r.rounds} rounds` : ""}

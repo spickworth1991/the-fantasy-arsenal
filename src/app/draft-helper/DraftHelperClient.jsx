@@ -189,6 +189,7 @@ export default function DraftHelperClient() {
   const [lastRefreshAt, setLastRefreshAt] = useState(0);
   const [refreshCountdown, setRefreshCountdown] = useState(0);
   const [byeWeeks, setByeWeeks] = useState({});
+  const [requestedDraftId,setRequestedDraftId]=useState("");
   const refreshInFlight = useRef(false);
   const league = useMemo(() => (leagues || []).find((item) => String(item.league_id) === String(activeLeague)), [activeLeague, leagues]);
   const draftingLeagues = useMemo(() => (leagues || [])
@@ -196,7 +197,9 @@ export default function DraftHelperClient() {
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))), [leagues]);
 
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("league");
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("league");
+    setRequestedDraftId(params.get("draft")||"");
     if (requested && (leagues || []).some((item) => String(item.league_id) === String(requested)) && String(activeLeague || "") !== String(requested)) {
       setActiveLeague(requested);
     }
@@ -229,10 +232,13 @@ export default function DraftHelperClient() {
       if (!active) return;
       const sorted = [...(draftRows || [])].sort((a, b) => a.status === "drafting" ? -1 : b.status === "drafting" ? 1 : n(b.created) - n(a.created));
       setDrafts(sorted); setRosters(rosterRows || []); setUsers(userRows || []);
-      setDraftId((current) => sorted.some((item) => String(item.draft_id) === String(current)) ? current : String(sorted[0]?.draft_id || ""));
+      setDraftId((current) => {
+        if (requestedDraftId && sorted.some((item) => String(item.draft_id) === String(requestedDraftId))) return String(requestedDraftId);
+        return sorted.some((item) => String(item.draft_id) === String(current)) ? current : String(sorted[0]?.draft_id || "");
+      });
     }).catch(() => active && setError("This league's draft information could not be loaded.")).finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [activeLeague, league?.rosters, league?.users]);
+  }, [activeLeague, league?.rosters, league?.users, requestedDraftId]);
 
   const refreshDraft = useCallback(async (quiet = false) => {
     if (!draftId || refreshInFlight.current === draftId) return;
@@ -444,7 +450,7 @@ export default function DraftHelperClient() {
             <div className="mt-1 text-lg font-black">{fastDraft ? "Five-second command mode" : "Standard draft monitoring"}</div>
             <p className="mt-1 text-xs text-white/38">{fastDraft ? `Refreshing every five seconds${lastRefreshAt ? ` · next check in ${refreshCountdown}s` : ""}.` : draft.status === "drafting" ? "Currently refreshing every ten seconds." : "Fast Draft activates when this draft is live."}</p>
           </div>
-          <div className="flex flex-wrap gap-2"><a href={`/draft-pick-tracker?league=${encodeURIComponent(activeLeague)}`} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] px-5 py-3 text-sm font-black text-cyan-100">Draft Monitor</a><button type="button" onClick={() => { const next=!fastDraft; setFastDraft(next); setTab("room"); if(next) refreshDraft(true); }} disabled={draft.status !== "drafting"} className={`rounded-2xl border px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${fastDraft ? "border-emerald-300/35 bg-emerald-300/15 text-emerald-50" : "border-white/10 bg-white/[0.045] text-white/70 hover:border-emerald-300/25 hover:text-emerald-100"}`}>{fastDraft ? "Exit Fast Draft" : "Start Fast Draft"}</button></div>
+          <button type="button" onClick={() => { const next=!fastDraft; setFastDraft(next); setTab("room"); if(next) refreshDraft(true); }} disabled={draft.status !== "drafting"} className={`rounded-2xl border px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${fastDraft ? "border-emerald-300/35 bg-emerald-300/15 text-emerald-50" : "border-white/10 bg-white/[0.045] text-white/70 hover:border-emerald-300/25 hover:text-emerald-100"}`}>{fastDraft ? "Exit Fast Draft" : "Start Fast Draft"}</button>
         </div>
         {fastDraft ? <div className="border-t border-white/10 bg-emerald-300/[0.025] p-3 sm:p-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.25fr_1.5fr]">
@@ -456,8 +462,7 @@ export default function DraftHelperClient() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Latest picks</span>
             {[...picks].reverse().slice(0,3).map(pick=><button type="button" onClick={()=>inspectPlayer(pick.player_id)} key={pick.pick_no} className="rounded-lg bg-white/[0.045] px-2.5 py-1.5 text-[10px] hover:bg-cyan-300/[0.09]">#{pick.pick_no} <b>{playerName(players?.[pick.player_id],pick.player_id)}</b></button>)}
-            <a href={`/draft-pick-tracker?league=${encodeURIComponent(activeLeague)}`} className="ml-auto rounded-xl bg-cyan-300/10 px-3 py-2 text-[10px] font-bold text-cyan-100">Open this league in Draft Monitor →</a>
-            <button type="button" onClick={()=>refreshDraft()} disabled={loading} className="rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Sync now</button>
+            <button type="button" onClick={()=>refreshDraft()} disabled={loading} className="ml-auto rounded-xl bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-100">Sync now</button>
           </div>
         </div> : null}
       </Panel>
