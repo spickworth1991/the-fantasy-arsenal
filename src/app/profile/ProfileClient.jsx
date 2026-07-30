@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import { STOCK_AVATARS, accountAvatar, useArsenalAccount } from "../../context/ArsenalAccountContext";
@@ -19,6 +20,7 @@ function PasswordField({label,visible,onToggle,...props}){
 }
 
 export default function ProfileClient({ embedded=false }) {
+  const router = useRouter();
   const { username } = useSleeper();
   const accountState = useArsenalAccount();
   const { account, isConnected, createAccount, loginAccount, updateProfile, uploadAvatar, refreshRecord, disconnect, syncNow, syncing, syncState } = accountState;
@@ -46,7 +48,7 @@ export default function ProfileClient({ embedded=false }) {
   const run=async(action)=>{setBusy(true);setMessage("");try{await action();}catch(error){setMessage(error?.message||"That action could not be completed.");}finally{setBusy(false);}};
   const togglePassword=(key)=>setVisiblePasswords((current)=>({...current,[key]:!current[key]}));
   const create=()=>run(async()=>{if(password!==confirmPassword)throw new Error("Passwords do not match.");await createAccount(username,loginName,password,confirmPassword);setPassword("");setConfirmPassword("");setMessage("Account created. Your Arsenal workspace will now follow you across devices.");});
-  const login=()=>run(async()=>{await loginAccount(loginName,password);setPassword("");setMessage("Signed in. Your saved workspace is being restored.");});
+  const login=()=>run(async()=>{await loginAccount(loginName,password);setPassword("");setMessage("Signed in. Loading your attached Sleeper portfolio…");router.push("/");});
   const saveProfile=()=>run(async()=>{await updateProfile({displayName,bio,favoriteTeam,fantasyStyle,experienceLevel,profilePublic,leaderboardVisible});await syncNow();setMessage("Profile saved and workspace synced.");});
   const saveCredentials=()=>run(async()=>{await updateProfile({loginName,...(newPassword?{newPassword}:{})});setNewPassword("");setMessage("Account sign-in updated.");});
   const chooseAvatar=(avatarValue)=>run(async()=>{await updateProfile({avatarType:"stock",avatarValue});setMessage("Avatar updated.");});

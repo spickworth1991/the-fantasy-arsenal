@@ -840,7 +840,7 @@ export default function PowerRankingsPage() {
     <>
       <BackgroundParticles />
       <Navbar pageTitle="Power Rankings" />
-      <div className="max-w-7xl mx-auto px-4 pt-20 -mt-2">
+      <div className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-3 pt-20 -mt-2 sm:px-4">
         {!username ? (
           <div className="text-center text-gray-400 mt-20">
             Please log in on the{" "}
@@ -891,12 +891,12 @@ export default function PowerRankingsPage() {
                 </details>
 
                 <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">League:</span>
+                  <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                    <span className="shrink-0 font-semibold">League:</span>
                     <select
                       value={activeLeague || ""}
                       onChange={(e) => setActiveLeague(e.target.value)}
-                      className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+                      className="w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white sm:w-auto"
                     >
                       <option value="">Choose a League</option>
                       {leagues.map((lg) => (

@@ -332,7 +332,7 @@ function isObservedMatchupUsable(teamA, teamB) {
 
 function Card({ children, className = "" }) {
   return (
-    <div className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/92 via-slate-900/82 to-slate-950/92 shadow-[0_30px_100px_-60px_rgba(15,23,42,1)] backdrop-blur ${className}`}>
+    <div className={`min-w-0 max-w-full rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/92 via-slate-900/82 to-slate-950/92 shadow-[0_30px_100px_-60px_rgba(15,23,42,1)] backdrop-blur ${className}`}>
       {children}
     </div>
   );
@@ -358,19 +358,19 @@ function StatChip({ label, value, tone = "default", className = "" }) {
       : "border-white/10 bg-white/5 text-white/80";
 
   return (
-    <div className={`rounded-2xl border px-3 py-2 ${toneClass} ${className}`}>
+    <div className={`min-w-0 rounded-2xl border px-3 py-2 ${toneClass} ${className}`}>
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">{label}</div>
-      <div className="mt-1 text-sm font-semibold">{value}</div>
+      <div className="mt-1 break-words text-sm font-semibold">{value}</div>
     </div>
   );
 }
 
 function CompactSelect({ label, value, onChange, options = [], className = "" }) {
   return (
-    <label className={`block rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white/80 ${className}`}>
+    <label className={`block min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white/80 ${className}`}>
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">{label}</div>
       <select
-        className="mt-1 w-full bg-transparent text-sm font-semibold text-white outline-none"
+        className="mt-1 w-full min-w-0 max-w-full bg-transparent text-sm font-semibold text-white outline-none"
         value={value}
         onChange={onChange}
       >
@@ -1096,7 +1096,7 @@ export default function PlayoffOddsPage() {
       <BackgroundParticles />
       <Navbar pageTitle="Playoff Odds" />
 
-      <div className="mx-auto max-w-7xl px-4 pb-12 pt-20">
+      <div className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-3 pb-12 pt-20 sm:px-4">
         <Card className="p-5 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
