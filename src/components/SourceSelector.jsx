@@ -3,6 +3,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSleeper } from "../context/SleeperContext";
 
 /**
  * Reusable, premium source selector.
@@ -36,6 +37,7 @@ const ICONS = {
   Sleeper: "/icons/sleeper.webp",
   FantasySharks: "/icons/fantasy-sharks-logo.jpg",
   DraftSharks: "/icons/draft-sharks-logo.jpg",
+  FantasyProsProjections: "/icons/fantasypro-logo.png",
 };
 
 const LABELS = {
@@ -54,6 +56,7 @@ const LABELS = {
   Sleeper: "Sleeper Projections",
   FantasySharks: "FantasySharks Projections",
   DraftSharks: "DraftSharks Projections",
+  FantasyProsProjections: "FantasyPros Projections",
 };
 
 // Per-brand sizes: "button" = closed control; "menu" = options in dropdown
@@ -74,6 +77,7 @@ const ICON_SIZES = {
     Sleeper: { w: 48, h: 24 },
     FantasySharks: { w: 90, h: 24 },
     DraftSharks: { w: 90, h: 24 },
+    FantasyProsProjections: { w: 112, h: 28 },
   },
   menu: {
     FantasyCalc: { w: 112, h: 21 },
@@ -91,6 +95,7 @@ const ICON_SIZES = {
     Sleeper: { w: 112, h: 24 },
     FantasySharks: { w: 140, h: 24 },
     DraftSharks: { w: 140, h: 24 },
+    FantasyProsProjections: { w: 120, h: 30 },
   },
 };
 
@@ -164,6 +169,7 @@ export const DEFAULT_SOURCES = [
   { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper" },
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
   { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks" },
+  { key: "proj:fantasypros", type: "projection", label: "FantasyPros Projections", logoKey: "FantasyProsProjections", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal" },
 ];
 
@@ -367,6 +373,7 @@ export default function SourceSelector({
   showToggles = true,
   layout = "stacked",
 }) {
+  const { projectionScoring = "ppr", setProjectionScoring } = useSleeper();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const btnRef = useRef(null);
@@ -377,6 +384,7 @@ export default function SourceSelector({
     const v = typeof value === "string" ? value : value?.key;
     return sources.find((s) => s.key === v) || sources[0];
   }, [sources, value]);
+  const scoringOptions = selected?.supports?.scoring || [];
 
   useEffect(() => setMounted(true), []);
 
@@ -553,6 +561,19 @@ export default function SourceSelector({
           onQbTypeChange={onQbTypeChange}
           inline={inline}
         />
+      ) : null}
+      {selected?.type === "projection" && scoringOptions.length > 1 ? (
+        <div className={`${layout === "inline" ? "mt-2" : "mt-2"} rounded-2xl border border-white/10 bg-black/20 p-3`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Scoring</span>
+            <div className="inline-flex rounded-xl border border-white/10 bg-black/20 p-1">
+              {[["std","Standard"],["half","Half PPR"],["ppr","PPR"]].filter(([key]) => scoringOptions.includes(key)).map(([key,label]) => (
+                <SegButton key={key} active={projectionScoring === key} onClick={() => setProjectionScoring?.(key)}>{label}</SegButton>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 text-[11px] text-white/45">FantasyPros publishes separate season totals for these scoring formats.</div>
+        </div>
       ) : null}
 
       {mounted && open ? createPortal(menu, document.body) : null}

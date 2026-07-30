@@ -10,7 +10,7 @@ const PREFER_REMOTE_KEY = "tfa:sync-prefer-remote";
 const RECORD_REFRESH_KEY = "tfa:leaderboard-record-refresh";
 const UI_PREFERENCES_KEY = "tfa:ui-preferences";
 const SYNC_EXACT = new Set([
-  "format", "qbType", "sourceKey", "year",
+  "format", "qbType", "sourceKey", "projectionScoring", "year",
   "tfa:account-preferences", "tfa:intelligence-actions",
   "tfa:account-platform",
   UI_PREFERENCES_KEY,

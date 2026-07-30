@@ -37,6 +37,7 @@ jobs:
         run: npm run update:daily
         env:
           UPDATE_VERBOSE: ${{ inputs.verbose_logs && '1' || '0' }}
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
 
       - name: Commit updated data and archive
         shell: bash

@@ -123,6 +123,7 @@ const CBS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_cbs_${CURR
 const SLEEPER_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_sleeper_${CURRENT_SEASON}.json`);
 const FANTASYSHARKS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_fantasysharks_${CURRENT_SEASON}.json`);
 const DRAFTSHARKS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_draftsharks_${CURRENT_SEASON}.json`);
+const FANTASYPROS_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_fantasypros_${CURRENT_SEASON}.json`);
 const ARSENAL_PROJ_OUT_PATH = path.join(__dirname, `../public/projections_thefantasyarsenal_${CURRENT_SEASON}.json`);
 const ARCHIVE_DIR = path.join(__dirname, "../public/archive");
 const SOURCE_FRESHNESS_PATH = path.join(__dirname, "../public/source-freshness.json");
@@ -152,7 +153,7 @@ function archiveUpdatedValues(failures = []) {
   const files = [
     FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, FP_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
     PROJ_OUT_PATH, ESPN_PROJ_OUT_PATH, CBS_PROJ_OUT_PATH, SLEEPER_PROJ_OUT_PATH,
-    FANTASYSHARKS_PROJ_OUT_PATH, DRAFTSHARKS_PROJ_OUT_PATH, ARSENAL_PROJ_OUT_PATH,
+    FANTASYSHARKS_PROJ_OUT_PATH, DRAFTSHARKS_PROJ_OUT_PATH, FANTASYPROS_PROJ_OUT_PATH, ARSENAL_PROJ_OUT_PATH,
   ].filter((file) => fs.existsSync(file));
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   const archived = files.map((file) => {
@@ -2117,6 +2118,49 @@ function projectionOutput(source, rows, extra = {}) {
   return { updated: new Date().toISOString(), season: CURRENT_SEASON, source, scoring: "PPR", count: clean.length, rows: clean, by_id: {}, by_name, ...extra };
 }
 
+async function updateFantasyProsProjections() {
+  const apiKey = String(process.env.FANTASYPROS_API_KEY || "").trim();
+  if (!apiKey) throw new Error("FANTASYPROS_API_KEY is not configured.");
+  const endpoint = `https://api.fantasypros.com/v2/json/nfl/${CURRENT_SEASON}/projections?week=0&positions=QB:RB:WR:TE:DST:K`;
+  const response = await fetch(endpoint, {
+    headers: { "x-api-key": apiKey, accept: "application/json" },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error(`FantasyPros projections returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  const sourceRows = Array.isArray(payload?.players) ? payload.players : [];
+  const rows = sourceRows.map((player) => {
+    const stats = player?.stats || {};
+    const pointsStd = Number(stats.points ?? player.points ?? 0) || 0;
+    const pointsPpr = Number(stats.points_ppr ?? player.points_ppr ?? pointsStd) || pointsStd;
+    const pointsHalf = Number(stats.points_half ?? player.points_half ?? ((pointsStd + pointsPpr) / 2)) || pointsStd;
+    return {
+      player_id: "",
+      source_player_id: String(player.fpid ?? player.player_id ?? ""),
+      name: String(player.name || player.player_name || "").trim(),
+      team: normalizeFantasyTeamAbbr(player.team_id || player.team || ""),
+      position: normalizePos(player.position_id || player.position || ""),
+      points: Number(pointsPpr.toFixed(3)),
+      points_std: Number(pointsStd.toFixed(3)),
+      points_half: Number(pointsHalf.toFixed(3)),
+      points_ppr: Number(pointsPpr.toFixed(3)),
+      stats,
+    };
+  }).filter((row) => row.name && row.position && row.points > 0);
+  const coreCount = rows.filter((row) => ["QB","RB","WR","TE"].includes(row.position)).length;
+  if (coreCount < 100) throw new Error(`FantasyPros projection coverage is incomplete (${coreCount} offensive players); existing cache was not overwritten.`);
+  const output = projectionOutput("FantasyPros", rows, {
+    scoring: "STD/HALF/PPR",
+    scoring_variants: ["std","half","ppr"],
+    default_scoring: "ppr",
+    endpoint,
+    api_requests: 1,
+    source_updated: payload.last_updated || payload.updated || null,
+  });
+  fs.writeFileSync(FANTASYPROS_PROJ_OUT_PATH, JSON.stringify(output, null, 2));
+  console.log(`✅ projections_fantasypros_${CURRENT_SEASON}.json written (${rows.length} players, one API request).`);
+}
+
 function updateArsenalProjections() {
   const sourceFiles = [
     { key: "FFA", path: PROJ_OUT_PATH, weight: 1 },
@@ -2127,6 +2171,7 @@ function updateArsenalProjections() {
     { key: "Sleeper", path: SLEEPER_PROJ_OUT_PATH, weight: 0.35 },
     { key: "FantasySharks", path: FANTASYSHARKS_PROJ_OUT_PATH, weight: 1 },
     { key: "DraftSharks", path: DRAFTSHARKS_PROJ_OUT_PATH, weight: 1 },
+    { key: "FantasyPros", path: FANTASYPROS_PROJ_OUT_PATH, weight: 1 },
   ];
   const available = sourceFiles.filter((source) => fs.existsSync(source.path));
   if (available.length < 2) throw new Error("At least two projection caches are required to calculate The Fantasy Arsenal Projections.");
@@ -2561,7 +2606,7 @@ async function updateCBSProjections() {
       return;
     }
     const onlyArg = process.argv.find((arg)=>arg.startsWith("--only="));
-    const dailySources = ["fc","dp","ktc","fn","fp","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","espn_proj","cbs_proj","arsenal_proj"];
+    const dailySources = ["fc","dp","ktc","fn","fp","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","fantasypros_proj","espn_proj","cbs_proj","arsenal_proj"];
     const requestedSources = process.argv.includes("--daily") ? dailySources : onlyArg ? onlyArg.slice("--only=".length).split(",").map((value)=>value.trim()).filter(Boolean) : null;
     const { sources } = requestedSources ? { sources:requestedSources } : await inquirer.prompt([
       {
@@ -2582,6 +2627,7 @@ async function updateCBSProjections() {
           { name: "Sleeper Projections (undocumented API)", value: "sleeper_proj" },
           { name: "FantasySharks Projections (first-party CSV)", value: "fantasysharks_proj" },
           { name: "DraftSharks Projections + Analysis (first-party table feed)", value: "draftsharks_proj" },
+          { name: "FantasyPros Projections (official API · STD/Half/PPR)", value: "fantasypros_proj" },
           { name: "The Fantasy Arsenal Projections (calculated average)", value: "arsenal_proj" },
           { name: "ESPN Projections (scrape)", value: "espn_proj" },
           { name: "CBS Projections (scrape)", value: "cbs_proj" },
@@ -2607,6 +2653,7 @@ async function updateCBSProjections() {
       { key: "sleeper_proj", name: "Sleeper Projections", fn: updateSleeperProjections },
       { key: "fantasysharks_proj", name: "FantasySharks Projections", fn: updateFantasySharksProjections },
       { key: "draftsharks_proj", name: "DraftSharks Projections", fn: updateDraftSharksProjections },
+      { key: "fantasypros_proj", name: "FantasyPros Projections", fn: updateFantasyProsProjections },
       { key: "espn_proj", name: "ESPN Projections", fn: updateESPNProjections },
       { key: "cbs_proj", name: "CBS Projections", fn: updateCBSProjections },
       { key: "arsenal_proj", name: "The Fantasy Arsenal Projections", fn: updateArsenalProjections },

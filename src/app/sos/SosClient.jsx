@@ -327,7 +327,7 @@ function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferr
 }
 
 export default function SOSPage() {
-  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType } = useSleeper();
+  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType, getProjection } = useSleeper();
   const contextLeague = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
   const routeHandoffApplied=useRef(false);
   useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
@@ -473,6 +473,7 @@ export default function SOSPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "FANTASYPROS") return (p) => (getProjection(p, "FANTASYPROS") || 0) / 17;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
         projectionSource === "CBS"  ? projMaps.CBS  :
@@ -484,7 +485,7 @@ export default function SOSPage() {
       if (chosen) return makeWeeklyProjectionGetter(chosen);
     }
     return wrapValuesAsWeekly(getValueRaw);
-  }, [metricMode, projectionSource, projMaps, getValueRaw]);
+  }, [metricMode, projectionSource, projMaps, getValueRaw, getProjection]);
 
 
 
@@ -886,6 +887,7 @@ export default function SOSPage() {
                   {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                   {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                   {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
+                  <option value="FANTASYPROS">FantasyPros</option>
                   {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
                 </select>
               </>

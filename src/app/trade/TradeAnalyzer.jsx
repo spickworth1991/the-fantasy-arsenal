@@ -108,6 +108,7 @@ export default function TradeAnalyzer() {
     setQbType,
     sourceKey,
     setSourceKey,
+    getProjection,
   } = useSleeper();
 
   const metricMode = metricModeFromSourceKey(sourceKey);
@@ -232,13 +233,14 @@ export default function TradeAnalyzer() {
 
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "FANTASYPROS") return (p) => getProjection(p, "FANTASYPROS") || 0;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
       if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
       return () => 0;
     }
     return (p) => getPlayerValue(p) || 0;
-  }, [metricMode, projectionSource, projMaps, getPlayerValue]);
+  }, [metricMode, projectionSource, projMaps, getPlayerValue, getProjection]);
 
   const tradeValueA = sideA.reduce((sum, p) => sum + getMetric(p), 0);
   const tradeValueB = sideB.reduce((sum, p) => sum + getMetric(p), 0);

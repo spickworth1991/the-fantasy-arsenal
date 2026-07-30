@@ -378,6 +378,7 @@ export default function PowerRankingsPage() {
     activeLeague,
     setActiveLeague,
     fetchLeagueRostersSilent,
+    getProjection,
   } = useSleeper();
 
   // Controls
@@ -503,6 +504,7 @@ export default function PowerRankingsPage() {
 
   const getMetricRaw = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "FANTASYPROS") return (p) => getProjection(p, "FANTASYPROS") || 0;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
         projectionSource === "CBS"  ? projMaps.CBS  :
@@ -519,7 +521,7 @@ export default function PowerRankingsPage() {
     }
     // Values mode
     return (p) => getValueRaw(p) || 0;
-  }, [metricMode, projectionSource, projMaps, getValueRaw]);
+  }, [metricMode, projectionSource, projMaps, getValueRaw, getProjection]);
 
   const startersCount = useMemo(() => {
     const rp = league?.roster_positions || [];
@@ -948,6 +950,7 @@ export default function PowerRankingsPage() {
                         {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                         {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                         {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
+                        <option value="FANTASYPROS">FantasyPros</option>
                         {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
                       </select>
                     </div>

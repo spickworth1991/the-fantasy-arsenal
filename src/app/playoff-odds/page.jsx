@@ -443,6 +443,7 @@ export default function PlayoffOddsPage() {
     players,
     format,
     qbType,
+    getProjection,
   } = useSleeper();
   const league = useMemo(
     () => leagues.find((item) => item.league_id === activeLeague) || null,
@@ -688,6 +689,12 @@ export default function PlayoffOddsPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "FANTASYPROS") return (player, currentWeek, currentByeMap) => {
+        if (!player) return 0;
+        const team = String(player.team || "").toUpperCase();
+        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
+        return byes.includes(currentWeek) ? 0 : (getProjection(player, "FANTASYPROS") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
+      };
       const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
       if (!chosen) return () => 0;
       return (player, currentWeek, currentByeMap) => {
@@ -707,7 +714,7 @@ export default function PlayoffOddsPage() {
       if (byes.includes(currentWeek)) return 0;
       return getValue(player) || 0;
     };
-  }, [getValue, metricMode, projMaps, projectionSource]);
+  }, [getValue, getProjection, metricMode, projMaps, projectionSource]);
 
   const loadWeek = async (currentWeek) => {
     if (!activeLeague) return { groups: [], hasRealMatchups: false };

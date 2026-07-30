@@ -10,7 +10,7 @@ import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
-import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -46,7 +46,7 @@ function gameHasStarted(game) {
   const kickoff = new Date(game.date || game.startTime || 0).getTime();
   return Number.isFinite(kickoff) && kickoff > 0 && kickoff <= Date.now() && !["postponed","canceled","cancelled"].some((value) => status.includes(value));
 }
-function buildProjectionMapFromJSON(json) {
+function buildProjectionMapFromJSON(json, scoring = "ppr") {
   const rows = Array.isArray(json) ? json : (json?.rows || []);
   const byId = Object.create(null);
   const byName = Object.create(null);
@@ -56,7 +56,7 @@ function buildProjectionMapFromJSON(json) {
   rows.forEach((r) => {
     const pid = r.player_id != null ? String(r.player_id) : "";
     const name = r.name || r.player || r.full_name || "";
-    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+    const seasonPts = Number(scoring === "std" ? r.points_std : scoring === "half" ? r.points_half : r.points_ppr ?? r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
 
     const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
     const team = normalizeTeamAbbr(rawTeam);
@@ -75,11 +75,11 @@ function buildProjectionMapFromJSON(json) {
 
   return { byId, byName, byNameTeam, byNamePos };
 }
-async function fetchProjectionMap(url) {
+async function fetchProjectionMap(url, scoring) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const json = await res.json();
-  return buildProjectionMapFromJSON(json);
+  return buildProjectionMapFromJSON(json, scoring);
 }
 function getSeasonPointsForPlayer(map, p) {
   if (!map || !p) return 0;
@@ -397,6 +397,7 @@ export default function LineupTool() {
     format,
     qbType,
     fetchLeagueRostersSilent,
+    projectionScoring,
   } = useSleeper();
 
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -407,7 +408,7 @@ export default function LineupTool() {
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -492,27 +493,29 @@ export default function LineupTool() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
           fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
+          fetchProjectionMap(PROJ_FANTASYPROS_JSON_URL, projectionScoring),
           fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
         ]);
         if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null };
         if (csv.status === "fulfilled")  next.CSV  = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled")  next.CBS  = cbs.value;
         if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
         if (fantasySharks.status === "fulfilled") next.FANTASYSHARKS = fantasySharks.value;
         if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
+        if (fantasyPros.status === "fulfilled") next.FANTASYPROS = fantasyPros.value;
         if (arsenal.status === "fulfilled") next.ARSENAL = arsenal.value;
         setProjMaps(next);
 
-        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL) {
+        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.FANTASYPROS && !next.ARSENAL) {
           setProjError("No projections available — using Values.");
           setSourceKey("val:thefantasyarsenal");
         } else {
@@ -522,6 +525,7 @@ export default function LineupTool() {
           if (projectionSource === "SLEEPER" && !next.SLEEPER) setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
           if (projectionSource === "FANTASYSHARKS" && !next.FANTASYSHARKS) setSourceKey(next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : "proj:espn");
           if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS) setSourceKey(next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : "proj:espn");
+          if (projectionSource === "FANTASYPROS" && !next.FANTASYPROS) setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
           if (projectionSource === "ARSENAL" && !next.ARSENAL) setSourceKey(next.CSV ? "proj:ffa" : "proj:espn");
         }
       } catch {
@@ -534,7 +538,7 @@ export default function LineupTool() {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectionScoring]);
 
   useEffect(() => {
     let mounted = true;
@@ -628,6 +632,7 @@ export default function LineupTool() {
       projectionSource === "SLEEPER" ? projMaps.SLEEPER :
       projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
       projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+      projectionSource === "FANTASYPROS" ? projMaps.FANTASYPROS :
       projectionSource === "ARSENAL" ? projMaps.ARSENAL :
       projMaps.CSV;
     if (!chosen) return null;
@@ -889,6 +894,7 @@ export default function LineupTool() {
                         {projMaps.SLEEPER && <option value="SLEEPER">Sleeper</option>}
                         {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                         {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
+                        {projMaps.FANTASYPROS && <option value="FANTASYPROS">FantasyPros</option>}
                         {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
                       </select>
                     </>

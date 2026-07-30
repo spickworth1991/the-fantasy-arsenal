@@ -227,6 +227,7 @@ async function fetchProjectionMap(url) {
 }
 function getSeasonPointsForPlayer(map, p) {
   if (!map || !p) return 0;
+  if (map.fantasyProsGetter) return map.fantasyProsGetter(p, "FANTASYPROS") || 0;
 
   const hit = map.byId?.[String(p.player_id)];
   if (hit != null) return hit;
@@ -426,7 +427,7 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisiti
 // Page
 // =====================
 export default function PlayerAvailabilityContent() {
-  const { username, players, year, format, qbType } = useSleeper();
+  const { username, players, year, format, qbType, getProjection } = useSleeper();
 
 // local overrides (so you can toggle without mutating global context)
 const [mode, setMode] = useState((format || "dynasty").toLowerCase()); // dynasty | redraft
@@ -614,8 +615,9 @@ useEffect(() => {
   }, []);
 
   const activeProjMap = useMemo(() => {
+    if (projSource === "FANTASYPROS") return { fantasyProsGetter: getProjection };
     return projSource === "ESPN" ? projectionMaps.ESPN : projSource === "CBS" ? projectionMaps.CBS : projSource === "SLEEPER" ? projectionMaps.SLEEPER : projSource === "FANTASYSHARKS" ? projectionMaps.FANTASYSHARKS : projSource === "DRAFTSHARKS" ? projectionMaps.DRAFTSHARKS : projSource === "ARSENAL" ? projectionMaps.ARSENAL : projectionMaps.CSV;
-  }, [projSource, projectionMaps]);
+  }, [projSource, projectionMaps, getProjection]);
 
   // ---------- Scan leagues with cache ----------
   useEffect(() => {

@@ -101,6 +101,7 @@ export default function TradeFinder() {
     setQbType,
     sourceKey,
     setSourceKey,
+    getProjection,
   } = useSleeper();
 
   const league = useMemo(() => (leagues || []).find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
@@ -179,13 +180,14 @@ export default function TradeFinder() {
 
   const getMetricRaw = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "FANTASYPROS") return (p) => getProjection(p, "FANTASYPROS") || 0;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
       if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
       return () => 0;
     }
     return (p) => getPlayerValue(p) || 0;
-  }, [metricMode, projectionSource, projMaps, getPlayerValue]);
+  }, [metricMode, projectionSource, projMaps, getPlayerValue, getProjection]);
 
   useEffect(() => {
     let mounted = true;

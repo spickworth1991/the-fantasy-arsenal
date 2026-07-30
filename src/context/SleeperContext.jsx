@@ -3,7 +3,7 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
-import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
   getPickDisplayLastName,
@@ -454,7 +454,7 @@ function getSleeperPosForProj(p) {
 function createProjectionIndex(seedByName) {
   const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
 
-  function add({ name, pos, team, pts }) {
+  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr }) {
     const nn = keyName(name);
     if (!nn) return;
 
@@ -462,6 +462,9 @@ function createProjectionIndex(seedByName) {
       pos: normalizePos(pos),
       team: normalizeTeamAbbr(team),
       pts: safeNum(pts),
+      pointsStd: safeNum(pointsStd),
+      pointsHalf: safeNum(pointsHalf),
+      pointsPpr: safeNum(pointsPpr),
     };
     if (!(cand.pts > 0)) return;
 
@@ -525,7 +528,12 @@ function buildProjectionIndexFromJSON(json) {
     const pos = normalizePos(rawPos);
 
     if (!name) return;
-    idx.add({ name, pos, team, pts });
+    idx.add({
+      name, pos, team, pts,
+      pointsStd: r.points_std ?? r.pointsStd,
+      pointsHalf: r.points_half ?? r.pointsHalf,
+      pointsPpr: r.points_ppr ?? r.pointsPpr,
+    });
   });
 
   return idx;
@@ -556,6 +564,7 @@ export const SleeperProvider = ({ children }) => {
 
   // Unified source key used by SourceSelector (can be either proj:* or val:*)
   const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
+  const [projectionScoring, setProjectionScoring] = useState("ppr");
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -576,6 +585,7 @@ export const SleeperProvider = ({ children }) => {
     FANTASYSHARKS: null,
     DRAFTSHARKS: null,
     ARSENAL: null,
+    FANTASYPROS: null,
   });
 
   // Hydrate browser-only preferences after the first render. Keeping the
@@ -587,6 +597,7 @@ export const SleeperProvider = ({ children }) => {
     setFormat(lsGet("format", "dynasty"));
     setQbType(lsGet("qbType", "sf"));
     setSourceKey(lsGet("sourceKey", "val:thefantasyarsenal"));
+    setProjectionScoring(lsGet("projectionScoring", "ppr"));
     setActiveLeague(lsGet("activeLeague", null));
     setStorageReady(true);
   }, []);
@@ -598,6 +609,7 @@ export const SleeperProvider = ({ children }) => {
       setFormat(lsGet("format", "dynasty"));
       setQbType(lsGet("qbType", "sf"));
       setSourceKey(lsGet("sourceKey", "val:thefantasyarsenal"));
+      setProjectionScoring(lsGet("projectionScoring", "ppr"));
     };
     window.addEventListener("tfa:cloud-sync-applied", applyCloudPreferences);
     return () => window.removeEventListener("tfa:cloud-sync-applied", applyCloudPreferences);
@@ -623,6 +635,10 @@ export const SleeperProvider = ({ children }) => {
     if (!storageReady) return;
     lsSet("sourceKey", sourceKey);
   }, [storageReady, sourceKey]);
+  useEffect(() => {
+    if (!storageReady) return;
+    lsSet("projectionScoring", projectionScoring);
+  }, [storageReady, projectionScoring]);
   useEffect(() => {
     if (!storageReady) return;
     if (activeLeague) lsSet("activeLeague", activeLeague);
@@ -661,6 +677,7 @@ export const SleeperProvider = ({ children }) => {
       "proj:sleeper": "SLEEPER",
       "proj:fantasysharks": "FANTASYSHARKS",
       "proj:draftsharks": "DRAFTSHARKS",
+      "proj:fantasypros": "FANTASYPROS",
       "proj:thefantasyarsenal": "ARSENAL",
     };
     return map[String(k || "")] || "FFA";
@@ -732,14 +749,14 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
-    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null });
     setActiveLeague(null);
     preloadCalled.current = false;
   };
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = `projIndex_v1.108:${PROJECTION_DATA_SEASON}`;
+  const PROJ_CACHE_KEY = `projIndex_v1.109:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
@@ -759,9 +776,10 @@ export const SleeperProvider = ({ children }) => {
         const hasFantasySharks = cached?.FANTASYSHARKS && typeof cached.FANTASYSHARKS === "object" && Object.keys(cached.FANTASYSHARKS).length > 0;
         const hasDraftSharks = cached?.DRAFTSHARKS && typeof cached.DRAFTSHARKS === "object" && Object.keys(cached.DRAFTSHARKS).length > 0;
         const hasArsenal = cached?.ARSENAL && typeof cached.ARSENAL === "object" && Object.keys(cached.ARSENAL).length > 0;
+        const hasFantasyPros = cached?.FANTASYPROS && typeof cached.FANTASYPROS === "object" && Object.keys(cached.FANTASYPROS).length > 0;
 
         // ✅ Only early-return if we actually have at least one non-empty index cached
-        if (hasFFA || hasESPN || hasCBS || hasSleeper || hasFantasySharks || hasDraftSharks || hasArsenal) {
+        if (hasFFA || hasESPN || hasCBS || hasSleeper || hasFantasySharks || hasDraftSharks || hasArsenal || hasFantasyPros) {
           setProjectionIndexes({
             FFA: hydrate(cached?.FFA) || null,
             ESPN: hydrate(cached?.ESPN) || null,
@@ -770,18 +788,20 @@ export const SleeperProvider = ({ children }) => {
             FANTASYSHARKS: hydrate(cached?.FANTASYSHARKS) || null,
             DRAFTSHARKS: hydrate(cached?.DRAFTSHARKS) || null,
             ARSENAL: hydrate(cached?.ARSENAL) || null,
+            FANTASYPROS: hydrate(cached?.FANTASYPROS) || null,
           });
           return;
         }
       }
 
-      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.all([
+      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal] = await Promise.all([
         fetchProjectionIndex(PROJ_JSON_URL),        // ✅ FFA
         fetchProjectionIndex(PROJ_ESPN_JSON_URL),
         fetchProjectionIndex(PROJ_CBS_JSON_URL),
         fetchProjectionIndex(PROJ_SLEEPER_JSON_URL),
         fetchProjectionIndex(PROJ_FANTASYSHARKS_JSON_URL),
         fetchProjectionIndex(PROJ_DRAFTSHARKS_JSON_URL),
+        fetchProjectionIndex(PROJ_FANTASYPROS_JSON_URL),
         fetchProjectionIndex(PROJ_ARSENAL_JSON_URL),
       ]);
 
@@ -793,6 +813,7 @@ export const SleeperProvider = ({ children }) => {
         FANTASYSHARKS: fantasySharks?.raw || null,
         DRAFTSHARKS: draftSharks?.raw || null,
         ARSENAL: arsenal?.raw || null,
+        FANTASYPROS: fantasyPros?.raw || null,
       };
 
       await set(PROJ_CACHE_KEY, payloadRaw);
@@ -805,10 +826,11 @@ export const SleeperProvider = ({ children }) => {
         FANTASYSHARKS: hydrate(payloadRaw.FANTASYSHARKS),
         DRAFTSHARKS: hydrate(payloadRaw.DRAFTSHARKS),
         ARSENAL: hydrate(payloadRaw.ARSENAL),
+        FANTASYPROS: hydrate(payloadRaw.FANTASYPROS),
       });
     } catch (e) {
       console.error("❌ Projection preload error:", e);
-      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, FANTASYPROS: null });
     }
   };
 
@@ -818,7 +840,7 @@ export const SleeperProvider = ({ children }) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
 
-    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "ARSENAL"].includes(src)) src = "FFA";
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL"].includes(src)) src = "FFA";
     if (!p) return 0;
 
     const idx =
@@ -832,6 +854,8 @@ export const SleeperProvider = ({ children }) => {
         ? projectionIndexes.FANTASYSHARKS
         : src === "DRAFTSHARKS"
         ? projectionIndexes.DRAFTSHARKS
+        : src === "FANTASYPROS"
+        ? projectionIndexes.FANTASYPROS
         : src === "ARSENAL"
         ? projectionIndexes.ARSENAL
         : projectionIndexes.FFA;
@@ -847,6 +871,11 @@ export const SleeperProvider = ({ children }) => {
     const team = getSleeperTeamForProj(p);
 
     const best = idx.pickBest({ name: fullName, pos, team });
+    if (src === "FANTASYPROS") {
+      if (projectionScoring === "std") return safeNum(best?.pointsStd || best?.pts);
+      if (projectionScoring === "half") return safeNum(best?.pointsHalf || best?.pts);
+      return safeNum(best?.pointsPpr || best?.pts);
+    }
     return safeNum(best?.pts);
   };
 
@@ -857,7 +886,7 @@ export const SleeperProvider = ({ children }) => {
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
     const missingProjs =
-      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.ARSENAL;
+      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.FANTASYPROS && !projectionIndexes?.ARSENAL;
 
     if (!hasUsername) return;
     if (loading) return;
@@ -1461,6 +1490,8 @@ export const SleeperProvider = ({ children }) => {
 
       // ✅ Projections in context
       projectionIndexes,
+      projectionScoring,
+      setProjectionScoring,
       preloadProjections,
       getProjection,
 
