@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-30T04:06:28.659Z",
+  "updated": "2026-07-30T22:57:21.666Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -3657,7 +3657,7 @@
       "points": 270.31,
       "points_ppr": 270.31,
       "points_half_ppr": 239.93,
-      "points_standard": 209.56,
+      "points_standard": 209.57,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -3728,7 +3728,7 @@
         "15": {
           "ppr": 15.62,
           "half_ppr": 13.83,
-          "standard": 12.04
+          "standard": 12.05
         },
         "16": {
           "ppr": 15.8,
@@ -29035,104 +29035,6 @@
       "position": "WR"
     },
     {
-      "player_id": "13353",
-      "points": 74.09,
-      "points_ppr": 74.09,
-      "points_half_ppr": 61.29,
-      "points_standard": 48.54,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 4.42,
-          "half_ppr": 3.66,
-          "standard": 2.9
-        },
-        "2": {
-          "ppr": 4.4,
-          "half_ppr": 3.64,
-          "standard": 2.88
-        },
-        "3": {
-          "ppr": 4.35,
-          "half_ppr": 3.6,
-          "standard": 2.86
-        },
-        "4": {
-          "ppr": 4.37,
-          "half_ppr": 3.62,
-          "standard": 2.86
-        },
-        "6": {
-          "ppr": 4.32,
-          "half_ppr": 3.57,
-          "standard": 2.82
-        },
-        "7": {
-          "ppr": 4.41,
-          "half_ppr": 3.65,
-          "standard": 2.89
-        },
-        "8": {
-          "ppr": 4.37,
-          "half_ppr": 3.61,
-          "standard": 2.86
-        },
-        "9": {
-          "ppr": 4.27,
-          "half_ppr": 3.53,
-          "standard": 2.79
-        },
-        "10": {
-          "ppr": 4.34,
-          "half_ppr": 3.59,
-          "standard": 2.85
-        },
-        "11": {
-          "ppr": 4.31,
-          "half_ppr": 3.56,
-          "standard": 2.81
-        },
-        "12": {
-          "ppr": 4.41,
-          "half_ppr": 3.65,
-          "standard": 2.89
-        },
-        "13": {
-          "ppr": 4.33,
-          "half_ppr": 3.58,
-          "standard": 2.83
-        },
-        "14": {
-          "ppr": 4.34,
-          "half_ppr": 3.59,
-          "standard": 2.85
-        },
-        "15": {
-          "ppr": 4.41,
-          "half_ppr": 3.66,
-          "standard": 2.91
-        },
-        "16": {
-          "ppr": 4.33,
-          "half_ppr": 3.58,
-          "standard": 2.84
-        },
-        "17": {
-          "ppr": 4.31,
-          "half_ppr": 3.56,
-          "standard": 2.82
-        },
-        "18": {
-          "ppr": 4.4,
-          "half_ppr": 3.64,
-          "standard": 2.88
-        }
-      },
-      "name": "Chris Brazzell",
-      "team": "CAR",
-      "position": "WR"
-    },
-    {
       "player_id": "12521",
       "points": 72.8,
       "points_ppr": 72.8,
@@ -29719,6 +29621,99 @@
       "name": "Mason Taylor",
       "team": "NYJ",
       "position": "TE"
+    },
+    {
+      "player_id": "13353",
+      "points": 69.67,
+      "points_ppr": 69.67,
+      "points_half_ppr": 57.63,
+      "points_standard": 45.63,
+      "projected_weeks": 16,
+      "weekly": {
+        "2": {
+          "ppr": 4.4,
+          "half_ppr": 3.64,
+          "standard": 2.88
+        },
+        "3": {
+          "ppr": 4.35,
+          "half_ppr": 3.6,
+          "standard": 2.86
+        },
+        "4": {
+          "ppr": 4.37,
+          "half_ppr": 3.62,
+          "standard": 2.86
+        },
+        "6": {
+          "ppr": 4.32,
+          "half_ppr": 3.57,
+          "standard": 2.82
+        },
+        "7": {
+          "ppr": 4.41,
+          "half_ppr": 3.65,
+          "standard": 2.89
+        },
+        "8": {
+          "ppr": 4.37,
+          "half_ppr": 3.61,
+          "standard": 2.86
+        },
+        "9": {
+          "ppr": 4.27,
+          "half_ppr": 3.53,
+          "standard": 2.79
+        },
+        "10": {
+          "ppr": 4.34,
+          "half_ppr": 3.59,
+          "standard": 2.85
+        },
+        "11": {
+          "ppr": 4.31,
+          "half_ppr": 3.56,
+          "standard": 2.81
+        },
+        "12": {
+          "ppr": 4.41,
+          "half_ppr": 3.65,
+          "standard": 2.89
+        },
+        "13": {
+          "ppr": 4.33,
+          "half_ppr": 3.58,
+          "standard": 2.82
+        },
+        "14": {
+          "ppr": 4.34,
+          "half_ppr": 3.59,
+          "standard": 2.85
+        },
+        "15": {
+          "ppr": 4.41,
+          "half_ppr": 3.66,
+          "standard": 2.91
+        },
+        "16": {
+          "ppr": 4.33,
+          "half_ppr": 3.58,
+          "standard": 2.84
+        },
+        "17": {
+          "ppr": 4.31,
+          "half_ppr": 3.56,
+          "standard": 2.82
+        },
+        "18": {
+          "ppr": 4.4,
+          "half_ppr": 3.64,
+          "standard": 2.88
+        }
+      },
+      "name": "Chris Brazzell",
+      "team": "CAR",
+      "position": "WR"
     },
     {
       "player_id": "11600",
@@ -32270,9 +32265,9 @@
     },
     {
       "player_id": "13337",
-      "points": 50.93,
-      "points_ppr": 50.93,
-      "points_half_ppr": 45.98,
+      "points": 50.95,
+      "points_ppr": 50.95,
+      "points_half_ppr": 45.99,
       "points_standard": 41.04,
       "projected_weeks": 17,
       "weekly": {
@@ -32292,7 +32287,7 @@
           "standard": 2.45
         },
         "4": {
-          "ppr": 3.02,
+          "ppr": 3.03,
           "half_ppr": 2.73,
           "standard": 2.44
         },
@@ -32318,7 +32313,7 @@
         },
         "10": {
           "ppr": 3.02,
-          "half_ppr": 2.72,
+          "half_ppr": 2.73,
           "standard": 2.43
         },
         "11": {
@@ -32357,7 +32352,7 @@
           "standard": 2.44
         },
         "18": {
-          "ppr": 3.02,
+          "ppr": 3.03,
           "half_ppr": 2.73,
           "standard": 2.44
         }
@@ -94092,7 +94087,7 @@
     "13324": 26.02,
     "13330": 109.48,
     "13333": 78.9,
-    "13337": 50.93,
+    "13337": 50.95,
     "13338": 49.17,
     "13340": 6.81,
     "13341": 8.72,
@@ -94101,7 +94096,7 @@
     "13347": 33.47,
     "13348": 18.37,
     "13349": 89.2,
-    "13353": 74.09,
+    "13353": 69.67,
     "13356": 3.59,
     "13359": 4.44,
     "13360": 1.86,
@@ -94784,8 +94779,6 @@
     "evanengram": 75.3,
     "kavontae turpin": 75.24,
     "kavontaeturpin": 75.24,
-    "chris brazzell": 74.09,
-    "chrisbrazzell": 74.09,
     "elijah arroyo": 72.8,
     "elijaharroyo": 72.8,
     "ted hurst": 72.65,
@@ -94798,6 +94791,8 @@
     "tankbigsby": 70.88,
     "mason taylor": 70.7,
     "masontaylor": 70.7,
+    "chris brazzell": 69.67,
+    "chrisbrazzell": 69.67,
     "jatavion sanders": 68.97,
     "ja'tavionsanders": 68.97,
     "mike washington": 68.82,
@@ -94850,8 +94845,8 @@
     "brockwright": 51.13,
     "kimani vidal": 51.09,
     "kimanividal": 51.09,
-    "emmett johnson": 50.93,
-    "emmettjohnson": 50.93,
+    "emmett johnson": 50.95,
+    "emmettjohnson": 50.95,
     "alvin kamara": 50.83,
     "alvinkamara": 50.83,
     "tutu atwell": 50.53,
