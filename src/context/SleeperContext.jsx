@@ -1183,18 +1183,18 @@ export const SleeperProvider = ({ children }) => {
       ingest4WayList(spData, spIndex);
 
       const ECR_BUCKETS = {
-        Dynasty_SF_STD:"dynasty_sf_std", Dynasty_SF_HALF:"dynasty_sf_half", Dynasty_SF_PPR:"dynasty_sf_ppr",
-        Dynasty_1QB_STD:"dynasty_1qb_std", Dynasty_1QB_HALF:"dynasty_1qb_half", Dynasty_1QB_PPR:"dynasty_1qb_ppr",
-        Redraft_SF_STD:"redraft_sf_std", Redraft_SF_HALF:"redraft_sf_half", Redraft_SF_PPR:"redraft_sf_ppr",
-        Redraft_1QB_STD:"redraft_1qb_std", Redraft_1QB_HALF:"redraft_1qb_half", Redraft_1QB_PPR:"redraft_1qb_ppr",
+        Dynasty_SF:["dynasty_sf_std","dynasty_sf_half","dynasty_sf_ppr"],
+        Dynasty_1QB:["dynasty_1qb_std","dynasty_1qb_half","dynasty_1qb_ppr"],
+        Redraft_SF_STD:["redraft_sf_std"], Redraft_SF_HALF:["redraft_sf_half"], Redraft_SF_PPR:["redraft_sf_ppr"],
+        Redraft_1QB_STD:["redraft_1qb_std"], Redraft_1QB_HALF:["redraft_1qb_half"], Redraft_1QB_PPR:["redraft_1qb_ppr"],
       };
-      Object.entries(ECR_BUCKETS).forEach(([bucket,valueKey])=>{
+      Object.entries(ECR_BUCKETS).forEach(([bucket,valueKeys])=>{
         (Array.isArray(fpEcrData?.formats?.[bucket]) ? fpEcrData.formats[bucket] : []).forEach((row)=>{
           fpEcrIndex.addCandidate({
             name:row?.name,
             pos:row?.position,
             team:row?.team,
-            values:{[valueKey]:row?.value},
+            values:Object.fromEntries(valueKeys.map((valueKey)=>[valueKey,row?.value])),
           });
         });
       });

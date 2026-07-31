@@ -309,11 +309,11 @@ function applyValueOverridesToData(data, label = "value cache") {
   return data;
 }
 
-function applyValueOverridesToFile(filePath, label) {
+function applyValueOverridesToFile(filePath, label, compact = false) {
   if (!fs.existsSync(filePath)) return;
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   applyValueOverridesToData(data, label);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  fs.writeFileSync(filePath, compact ? JSON.stringify(data) : JSON.stringify(data, null, 2));
 }
 
 function applyValueOverridesToAllCaches() {
@@ -323,11 +323,11 @@ function applyValueOverridesToAllCaches() {
     [KTC_OUT_PATH, "KTC"],
     [FN_OUT_PATH, "Fantasy Navigator"],
     [FP_OUT_PATH, "FantasyPros"],
-    [FP_ECR_OUT_PATH, "FantasyPros ECR"],
+    [FP_ECR_OUT_PATH, "FantasyPros ECR", true],
     [IDP_OUT_PATH, "IDynastyP"],
     [IDPSHOW_OUT_PATH, "The IDP Show"],
     [SP_OUT_PATH, "StickyPicky"],
-  ].forEach(([filePath, label]) => applyValueOverridesToFile(filePath, label));
+  ].forEach(([filePath, label, compact]) => applyValueOverridesToFile(filePath, label, compact));
 }
 
 function writeValueCacheVersion() {
@@ -928,19 +928,21 @@ async function updateFantasyProsECR() {
   if (!apiKey) throw new Error("FANTASYPROS_API_KEY is required for FantasyPros ECR.");
 
   const formats = [
-    { key:"Dynasty_1QB", type:"DYNASTY", position:"ALL" },
-    { key:"Dynasty_SF", type:"DYNASTY", position:"OP" },
-    { key:"Redraft_1QB", type:"DRAFT", position:"ALL" },
-    { key:"Redraft_SF", type:"DRAFT", position:"OP" },
+    { key:"Dynasty_1QB", type:"DYNASTY", position:"ALL", scoringSpecific:false },
+    { key:"Dynasty_SF", type:"DYNASTY", position:"OP", scoringSpecific:false },
+    { key:"Redraft_1QB", type:"DRAFT", position:"ALL", scoringSpecific:true },
+    { key:"Redraft_SF", type:"DRAFT", position:"OP", scoringSpecific:true },
   ];
   const scoringTypes = [{ key:"std", api:"STD" },{ key:"half", api:"HALF" },{ key:"ppr", api:"PPR" }];
-  const variants = formats.flatMap((format) => scoringTypes.map((scoring) => ({ ...format, scoring })));
+  const variants = formats.flatMap((format) =>
+    (format.scoringSpecific ? scoringTypes : [{ key:"neutral", api:"PPR" }]).map((scoring) => ({ ...format, scoring }))
+  );
   const output = {
     updated:new Date().toISOString(),
     source:"FantasyPros ECR",
     source_type:"expert_consensus_rankings",
     season:CURRENT_SEASON,
-    methodology:"Actual FantasyPros ECR order converted to a 10,000-to-100 rank score for Arsenal display compatibility. rank_ecr preserves the published ordinal rank. This score is not a FantasyPros trade value and is not inherently additive.",
+    methodology:"Actual FantasyPros ECR order converted to a 10,000-to-100 rank score for Arsenal display compatibility. rank_ecr preserves the published ordinal rank. Dynasty ECR is scoring-neutral; redraft has distinct STD, HALF, and PPR boards. This score is not a FantasyPros trade value and is not inherently additive.",
     formats:{},
     experts_by_format:{},
     request_count:variants.length,
@@ -964,7 +966,7 @@ async function updateFantasyProsECR() {
       if(sourceRows.length<100||sourceRows.length<Math.min(100,declaredCount)){
         throw new Error(`FantasyPros ECR ${variant.key} ${variant.scoring.api} coverage is incomplete (${sourceRows.length}/${declaredCount}).`);
       }
-      const listKey=`${variant.key}_${variant.scoring.api}`;
+      const listKey=variant.scoringSpecific?`${variant.key}_${variant.scoring.api}`:variant.key;
       const total=Math.max(1,sourceRows.length);
       const rows=sourceRows.map((row,index)=>{
         const rank=Number(row?.rank_ecr)||index+1;
@@ -999,7 +1001,7 @@ async function updateFantasyProsECR() {
           publications:payload?.expert_pub||{},
           ranking_type:payload?.type||payload?.ranking_type_name||variant.type,
           position:variant.position,
-          scoring:variant.scoring.api,
+          scoring:variant.scoringSpecific?variant.scoring.api:"NEUTRAL",
         },
       };
     }));
@@ -1010,9 +1012,9 @@ async function updateFantasyProsECR() {
   }
 
   const counts=Object.values(output.formats).map((rows)=>rows.length);
-  if(counts.length!==12)throw new Error(`FantasyPros ECR produced ${counts.length}/12 expected format tables.`);
+  if(counts.length!==8)throw new Error(`FantasyPros ECR produced ${counts.length}/8 expected unique format tables.`);
   fs.writeFileSync(FP_ECR_OUT_PATH,JSON.stringify(output));
-  console.log(`✅ fantasypros_ecr_cache.json updated (12 boards, ${counts.reduce((sum,count)=>sum+count,0)} ranked rows).`);
+  console.log(`✅ fantasypros_ecr_cache.json updated (8 unique boards, ${counts.reduce((sum,count)=>sum+count,0)} ranked rows).`);
 }
 
 // ---------- IDynastyP (Google Sheets GViz) helpers ----------
@@ -2737,7 +2739,7 @@ async function updateCBSProjections() {
           { name: "KeepTradeCut (KTC)", value: "ktc" },
           { name: "FantasyNavigator", value: "fn" },
           { name: "FantasyPros (official public dynasty charts)", value: "fp" },
-          { name: "FantasyPros ECR (12 official API ranking boards)", value: "fantasypros_ecr" },
+          { name: "FantasyPros ECR (8 unique official API ranking boards)", value: "fantasypros_ecr" },
           { name: "IDynastyP", value: "idp" },
           { name: "The IDP Show", value: "idpshow" },
           { name: "StickyPicky (averaged)", value: "sp" },

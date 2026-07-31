@@ -395,7 +395,10 @@ export default function SourceSelector({
     const v = typeof value === "string" ? value : value?.key;
     return sources.find((s) => s.key === v) || sources[0];
   }, [sources, value]);
-  const scoringOptions = selected?.supports?.scoring || [];
+  const scoringOptions =
+    selected?.key === "val:fantasypros-ecr" && mode === "dynasty"
+      ? []
+      : selected?.supports?.scoring || [];
 
   useEffect(() => setMounted(true), []);
 
