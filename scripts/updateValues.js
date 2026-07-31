@@ -1011,7 +1011,7 @@ async function updateFantasyProsECR() {
 
   const counts=Object.values(output.formats).map((rows)=>rows.length);
   if(counts.length!==12)throw new Error(`FantasyPros ECR produced ${counts.length}/12 expected format tables.`);
-  fs.writeFileSync(FP_ECR_OUT_PATH,JSON.stringify(output,null,2));
+  fs.writeFileSync(FP_ECR_OUT_PATH,JSON.stringify(output));
   console.log(`✅ fantasypros_ecr_cache.json updated (12 boards, ${counts.reduce((sum,count)=>sum+count,0)} ranked rows).`);
 }
 
