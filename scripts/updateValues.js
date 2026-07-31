@@ -708,12 +708,26 @@ async function scrapeKTC(superflex = true) {
 async function updateFantasyCalc() {
   console.log("🔄 Updating FantasyCalc values...");
   const results = {};
+  const compact = Object.fromEntries(combinations.map(({ key }) => [key, new Map()]));
+  const scoringProfiles = [
+    { key: "std", ppr: 0, tep: "none" },
+    { key: "half", ppr: 0.5, tep: "none" },
+    { key: "ppr", ppr: 1, tep: "none" },
+    { key: "std-tep", ppr: 0, tep: "te+" },
+    { key: "half-tep", ppr: 0.5, tep: "te+" },
+    { key: "ppr-tep", ppr: 1, tep: "te+" },
+    { key: "std-tep-plus", ppr: 0, tep: "te++" },
+    { key: "half-tep-plus", ppr: 0.5, tep: "te++" },
+    { key: "ppr-tep-plus", ppr: 1, tep: "te++" },
+  ];
+  const requests = combinations.flatMap((combination) =>
+    scoringProfiles.map((profile) => ({ ...combination, profile })));
 
-  for (let i = 0; i < combinations.length; i++) {
-    const { isDynasty, numQbs, key } = combinations[i];
-    const url = `https://api.fantasycalc.com/values/current?isDynasty=${isDynasty}&numQbs=${numQbs}&numTeams=12&ppr=1`;
+  for (let i = 0; i < requests.length; i++) {
+    const { isDynasty, numQbs, key, profile } = requests[i];
+    const url = `https://api.fantasycalc.com/values/current?isDynasty=${isDynasty}&numQbs=${numQbs}&numTeams=12&ppr=${profile.ppr}&tep=${encodeURIComponent(profile.tep)}&includeAdp=false&includeRosterPercent=false`;
 
-    logProgress(`  📡 Fetching FantasyCalc ${key}`, i + 1, combinations.length);
+    logProgress(`  📡 Fetching FantasyCalc ${key} ${profile.key}`, i + 1, requests.length);
 
     try {
       const response = await retryOperation(async () => {
@@ -722,7 +736,19 @@ async function updateFantasyCalc() {
         return res;
       });
 
-      results[key] = response.data;
+      (Array.isArray(response.data) ? response.data : []).forEach((row) => {
+        const player = row?.player || {};
+        const identity = String(player?.sleeperId || `${normName(player?.name || row?.name)}|${normalizePos(player?.position || row?.position)}`);
+        if (!identity) return;
+        const current = compact[key].get(identity) || {
+          ...row,
+          value: 0,
+          variant_values: {},
+        };
+        current.variant_values[profile.key] = Number(row?.value) || 0;
+        if (profile.key === "ppr") current.value = Number(row?.value) || 0;
+        compact[key].set(identity, current);
+      });
     } catch (error) {
       console.error(`  ❌ Failed to fetch FantasyCalc ${key}:`, error.message);
       // Continue with other combinations rather than failing completely
@@ -730,11 +756,15 @@ async function updateFantasyCalc() {
   }
 
   if (Object.keys(results).length === 0) {
-    throw new Error('Failed to fetch any FantasyCalc data');
+    const total = Object.values(compact).reduce((sum, rows) => sum + rows.size, 0);
+    if (!total) throw new Error('Failed to fetch any FantasyCalc data');
   }
+  Object.entries(compact).forEach(([key, rows]) => {
+    results[key] = [...rows.values()].sort((a, b) => (b.value || 0) - (a.value || 0));
+  });
 
   fs.writeFileSync(FC_OUT_PATH, JSON.stringify(results, null, 2));
-  console.log(`✅ fantasycalc_cache.json updated (${Object.keys(results).length}/${combinations.length} combinations).`);
+  console.log(`✅ fantasycalc_cache.json updated with ${requests.length} verified format/scoring boards.`);
 }
 
 async function updateDynastyProcess() {
@@ -1093,63 +1123,30 @@ function parseIdpSheetToRows(gvizObj) {
   return out;
 }
 
-// ---------- UPDATED: IDynastyP now from GViz ----------
+// ---------- IDynastyP first-party values feed ----------
 async function updateIDynastyP() {
-  // iDynastyP appears to use these two sheets:
-  // SF:
-  const SF_URL =
-    "https://docs.google.com/spreadsheets/d/1VPCr8ucfWVVhgEqlDgscZCQikHO7QpWTYdzYKBGsul0/gviz/tq?tqx=out:json";
-  // 1QB:
-  const ONEQB_URL =
-    "https://docs.google.com/spreadsheets/d/1jmPKSQXHmB-3G02UHr5OB9P7Hpob82E3D61rnjXlRww/gviz/tq?tqx=out:json";
-
-  console.log("Fetching IDynastyP (SF) GViz:", SF_URL);
-  const sfRes = await axios.get(SF_URL, { timeout: 120000, responseType: "text" });
-  const sfObj = parseGvizResponseText(sfRes.data);
-  const sfRows = parseIdpSheetToRows(sfObj);
-
-  console.log("Fetching IDynastyP (1QB) GViz:", ONEQB_URL);
-  const qbRes = await axios.get(ONEQB_URL, { timeout: 120000, responseType: "text" });
-  const qbObj = parseGvizResponseText(qbRes.data);
-  const qbRows = parseIdpSheetToRows(qbObj);
-
-  // Merge by normalized name (same normalization you use elsewhere)
-  const byName = new Map(); // nn -> { name, team, position, one_qb, superflex }
-  const upsert = (row, which) => {
-    const nn = normName(row.name);
-    if (!nn) return;
-
-    const existing = byName.get(nn) || {
-      name: row.name,
-      team: row.team || "",
-      position: row.position || "",
-      one_qb: 0,
-      superflex: 0,
-    };
-
-    // prefer filling missing meta
-    if (!existing.team && row.team) existing.team = row.team;
-    if (!existing.position && row.position) existing.position = row.position;
-
-    // keep a nicer displayName if we already had a short/odd one
-    if (!existing.name || existing.name.length < row.name.length) existing.name = row.name;
-
-    if (which === "sf") existing.superflex = row.value || existing.superflex || 0;
-    if (which === "1qb") existing.one_qb = row.value || existing.one_qb || 0;
-
-    byName.set(nn, existing);
-  };
-
-  sfRows.forEach((r) => upsert(r, "sf"));
-  qbRows.forEach((r) => upsert(r, "1qb"));
-
-  const normalized = Array.from(byName.values()).map((r) => ({
-    name: r.name || "",
-    team: r.team || "",
-    position: r.position || "",
-    one_qb: Number(r.one_qb) || 0,
-    superflex: Number(r.superflex) || 0,
-  }));
+  const url = "https://script.google.com/macros/s/AKfycbwn_NRprftHtibfVrnjIt-xzNV1uQdeJKccUklMCnJjv9mQgor5Ru3qGs1RKrfvpFmn/exec";
+  console.log("Fetching IDynastyP first-party values feed...");
+  const response = await axios.get(url, { timeout: 120000, family: 4 });
+  const byName = new Map();
+  coerceSheets(response.data).flatMap((sheet) => sheet.rows || []).forEach((row) => {
+    const name = String(row?.name || "").trim();
+    const position = normalizePos(row?.position || "");
+    if (!name || !position) return;
+    const identity = `${normName(name)}|${position}`;
+    if (byName.has(identity)) return;
+    byName.set(identity, {
+      name,
+      team: normalizeTeamAbbr(row?.team || ""),
+      position,
+      one_qb: Number(row?.value_1qb) || 0,
+      one_qb_tep: Number(row?.value_tep) || 0,
+      superflex: Number(row?.value_sf) || 0,
+      superflex_tep: Number(row?.value_sftep) || 0,
+    });
+  });
+  const normalized = [...byName.values()];
+  if (!normalized.length) throw new Error("IDynastyP returned no usable rows.");
 
   fs.writeFileSync(IDP_OUT_PATH, JSON.stringify(normalized, null, 2));
   console.log(`✅ idynastyp_cache.json updated from GViz with ${normalized.length} entries.`);
@@ -1365,6 +1362,7 @@ async function updateStickyPicky() {
     { name: 'KTC', path: KTC_OUT_PATH, required: true },
     { name: 'FantasyNavigator', path: FN_OUT_PATH, required: true },
     { name: 'FantasyPros', path: FP_OUT_PATH, required: false },
+    { name: 'FantasyProsECR', path: FP_ECR_OUT_PATH, required: false },
     { name: 'IDynastyP', path: IDP_OUT_PATH, required: true },
     { name: 'IDPShow', path: IDPSHOW_OUT_PATH, required: true },
   ];
@@ -1385,13 +1383,13 @@ async function updateStickyPicky() {
     }
   }
 
-  const { fantasycalc: fcData, dynastyprocess: dpData, ktc: ktcData, fantasynavigator: fnData, fantasypros: fpData, idynastyp: idpData, idpshow: idpshowData } = loadedData;
+  const { fantasycalc: fcData, dynastyprocess: dpData, ktc: ktcData, fantasynavigator: fnData, fantasypros: fpData, fantasyprosecr: fpEcrData, idynastyp: idpData, idpshow: idpshowData } = loadedData;
 
   const tables = {
-    Dynasty_SF:    { FC: {}, FN: {}, FP: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
-    Dynasty_1QB:   { FC: {}, FN: {}, FP: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
-    Redraft_SF:    { FC: {}, FN: {}, IDPSHOW: {} },
-    Redraft_1QB:   { FC: {}, FN: {}, IDPSHOW: {} },
+    Dynasty_SF:    { FC: {}, FN: {}, FP: {}, FPECR: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
+    Dynasty_1QB:   { FC: {}, FN: {}, FP: {}, FPECR: {}, KTC: {}, DP: {}, IDP: {}, IDPSHOW: {} },
+    Redraft_SF:    { FC: {}, FN: {}, FPECR: {}, IDPSHOW: {} },
+    Redraft_1QB:   { FC: {}, FN: {}, FPECR: {}, IDPSHOW: {} },
   };
 
   for (const key of ["Dynasty_SF","Dynasty_1QB","Redraft_SF","Redraft_1QB"]) {
@@ -1408,6 +1406,20 @@ async function updateStickyPicky() {
       tables[key].FP[normName(row.name)] = { name:row.name,value:row.value||0,team:row.team||"",position:row.position||"" };
     });
   }
+  const ecrBuckets = {
+    Dynasty_SF: ["Dynasty_SF"],
+    Dynasty_1QB: ["Dynasty_1QB"],
+    Redraft_SF: ["Redraft_SF_PPR"],
+    Redraft_1QB: ["Redraft_1QB_PPR"],
+  };
+  Object.entries(ecrBuckets).forEach(([formatKey, buckets]) => {
+    buckets.flatMap((bucket) => fpEcrData?.formats?.[bucket] || []).forEach((row) => {
+      if (!row?.name || !(Number(row?.value) > 0)) return;
+      tables[formatKey].FPECR[normName(row.name)] = {
+        name: row.name, value: Number(row.value), team: row.team || "", position: row.position || "",
+      };
+    });
+  });
 
   for (const key of ["Dynasty_SF","Dynasty_1QB","Redraft_SF","Redraft_1QB"]) {
     (fnData[key] || []).forEach((row) => {
@@ -1489,7 +1501,7 @@ async function updateStickyPicky() {
       const corroboratingMedian = corroboratingSorted.length % 2
         ? corroboratingSorted[middle]
         : (corroboratingSorted[middle - 1] + corroboratingSorted[middle]) / 2;
-      const sourceWeights = { FC: 1.35, KTC: 1.25, FP: 1.15, DP: 1, FN: 0.55, IDP: 0.65, IDPSHOW: 0.55 };
+      const sourceWeights = { FC: 1.35, KTC: 1.25, FP: 1.15, FPECR: 0.8, DP: 1, FN: 0.55, IDP: 0.65, IDPSHOW: 0.55 };
       const allSorted = sourcePcts.map((entry) => entry.percentile).sort((a, b) => a - b);
       const allMiddle = Math.floor(allSorted.length / 2);
       const marketMedian = allSorted.length % 2
@@ -1516,6 +1528,8 @@ async function updateStickyPicky() {
       // market scale preserves ordering while creating realistic separation:
       // elite assets remain near 10k and replaceable depth falls much faster.
       const stickyValue = Math.round(Math.pow(consensusPct, 2.1) * 10000 * coverageMultiplier);
+      const variance = adjusted.reduce((sum, entry) => sum + ((entry.adjustedPercentile - consensusPct) ** 2), 0) / Math.max(1, adjusted.length);
+      const disagreement = Math.sqrt(variance);
       const meta = pickMeta(
         [sources.FC?.[nn], sources.FN?.[nn], sources.FP?.[nn], sources.DP?.[nn], sources.KTC?.[nn], sources.IDP?.[nn], sources.IDPSHOW?.[nn]]
           .map((x) => (x ? { team: x.team, position: x.position } : null))
@@ -1533,12 +1547,22 @@ async function updateStickyPicky() {
         source_count: adjusted.length,
         sources: adjusted.map((entry) => entry.source),
         confidence: independentCoverage >= 4 ? "high" : independentCoverage >= 2 ? "medium" : "low",
+        confidence_score: Math.round(Math.max(20, Math.min(98, 45 + independentCoverage * 11 - disagreement * 120))),
+        disagreement: Number(disagreement.toFixed(4)),
+        model_version: "arsenal-values-2.0",
       });
     }
 
     out[formatKey].sort((a, b) => (b.value - a.value));
   }
 
+  out.metadata = {
+    updated: new Date().toISOString(),
+    model_version: "arsenal-values-2.0",
+    method: "scale-free weighted market consensus with outlier bounds and independent-source coverage correction",
+    fantasypros_policy: "Official FantasyPros trade values and ECR are separate inputs; ECR is rank-normalized and receives less weight than a published trade-value board.",
+    sleeper_context_policy: "Sleeper age, experience, status and depth context are retained by the app for explanation and confidence. They do not receive a second arbitrary dynasty-value adjustment because market sources already price those traits.",
+  };
   fs.writeFileSync(SP_OUT_PATH, JSON.stringify(out, null, 2));
   console.log("✅ stickypicky_cache.json updated.");
 }
@@ -2281,7 +2305,7 @@ async function updateFantasyProsProjections() {
   console.log(`✅ projections_fantasypros_${CURRENT_SEASON}.json written (${rows.length} players, one API request).`);
 }
 
-function updateArsenalProjections() {
+async function updateArsenalProjections() {
   const sourceFiles = [
     { key: "FFA", path: PROJ_OUT_PATH, weight: 1 },
     { key: "ESPN", path: ESPN_PROJ_OUT_PATH, weight: 1 },
@@ -2296,6 +2320,14 @@ function updateArsenalProjections() {
   const available = sourceFiles.filter((source) => fs.existsSync(source.path));
   if (available.length < 2) throw new Error("At least two projection caches are required to calculate The Fantasy Arsenal Projections.");
 
+  const sleeperPlayers = await fetchSleeperPlayersMap();
+  const sleeperContext = new Map();
+  Object.values(sleeperPlayers || {}).forEach((player) => {
+    const name = String(player?.full_name || `${player?.first_name || ""} ${player?.last_name || ""}`).trim();
+    const position = normalizePos(player?.position || player?.fantasy_positions?.[0] || "");
+    if (!name || !position) return;
+    sleeperContext.set(`${normNameForMap(name)}|${position}`, player);
+  });
   const players = new Map();
   available.forEach((source) => {
     const data = JSON.parse(fs.readFileSync(source.path, "utf8"));
@@ -2309,29 +2341,104 @@ function updateArsenalProjections() {
       if (!players.has(key)) players.set(key, { name, position, team: normalizeFantasyTeamAbbr(row?.team || ""), inputs: [] });
       const player = players.get(key);
       if (!player.team && row?.team) player.team = normalizeFantasyTeamAbbr(row.team);
-      player.inputs.push({ source: source.key, points, weight: source.weight });
+      player.inputs.push({
+        source: source.key,
+        weight: source.weight,
+        ppr: Number(row?.points_ppr ?? row?.pointsPpr ?? row?.points) || 0,
+        half: Number(row?.points_half ?? row?.points_half_ppr ?? row?.pointsHalf ?? row?.points) || 0,
+        std: Number(row?.points_std ?? row?.points_standard ?? row?.pointsStd ?? row?.points) || 0,
+      });
     });
   });
 
   const rows = [...players.values()].filter((player) => player.inputs.length >= 2).map((player) => {
-    const totalWeight = player.inputs.reduce((sum, input) => sum + input.weight, 0);
-    const points = player.inputs.reduce((sum, input) => sum + input.points * input.weight, 0) / totalWeight;
+    const consensus = (field) => {
+      const inputs = player.inputs.filter((input) => input[field] > 0);
+      const ordered = [...inputs].sort((a, b) => a[field] - b[field]);
+      const trimmed = ordered.length >= 5 ? ordered.slice(1, -1) : ordered;
+      const totalWeight = trimmed.reduce((sum, input) => sum + input.weight, 0);
+      return trimmed.reduce((sum, input) => sum + input[field] * input.weight, 0) / Math.max(0.01, totalWeight);
+    };
+    const pprBase = consensus("ppr");
+    const halfBase = consensus("half");
+    const stdBase = consensus("std");
+    const context = sleeperContext.get(`${normNameForMap(player.name)}|${player.position}`) || {};
+    const injury = String(context?.injury_status || context?.status || "").toLowerCase();
+    const active = context?.active !== false;
+    const depth = Number(context?.depth_chart_order) || null;
+    const sourcePoints = player.inputs.map((input) => input.ppr).filter((value) => value > 0);
+    const average = sourcePoints.reduce((sum, value) => sum + value, 0) / Math.max(1, sourcePoints.length);
+    const disagreement = average > 0
+      ? Math.sqrt(sourcePoints.reduce((sum, value) => sum + ((value - average) ** 2), 0) / Math.max(1, sourcePoints.length)) / average
+      : 0;
+    let contextMultiplier = 1;
+    const contextReasons = [];
+    if (!active) {
+      contextMultiplier *= 0.35;
+      contextReasons.push("Sleeper lists the player inactive");
+    } else if (["ir","pup","out"].includes(injury)) {
+      contextMultiplier *= 0.88;
+      contextReasons.push(`Sleeper availability: ${injury.toUpperCase()}`);
+    } else if (injury === "doubtful") {
+      contextMultiplier *= 0.96;
+      contextReasons.push("Sleeper availability: Doubtful");
+    }
+    // Depth is only a small tie-breaker when source coverage is thin or the
+    // sources disagree. This avoids double-counting a role already in forecasts.
+    if ((player.inputs.length < 4 || disagreement > 0.22) && depth) {
+      const roleAdjustment = depth === 1 ? 1.02 : depth === 2 ? 0.99 : depth >= 4 ? 0.96 : 0.98;
+      contextMultiplier *= roleAdjustment;
+      contextReasons.push(`Depth-chart order ${depth} used as a bounded correction`);
+    }
+    contextMultiplier = Math.max(0.3, Math.min(1.04, contextMultiplier));
+    const pointsPpr = pprBase * contextMultiplier;
+    const pointsHalf = halfBase * contextMultiplier;
+    const pointsStd = stdBase * contextMultiplier;
+    const confidence = Math.round(Math.max(20, Math.min(98,
+      42 + player.inputs.length * 8 - disagreement * 70 - (contextReasons.length ? 5 : 0))));
     return {
-      player_id: "",
+      player_id: String(context?.player_id || ""),
       name: player.name,
       team: player.team,
       position: player.position,
-      points: Number(points.toFixed(3)),
+      points: Number(pointsPpr.toFixed(3)),
+      points_ppr: Number(pointsPpr.toFixed(3)),
+      points_half: Number(pointsHalf.toFixed(3)),
+      points_std: Number(pointsStd.toFixed(3)),
       source_count: player.inputs.length,
-      sources: Object.fromEntries(player.inputs.map((input) => [input.source, Number(input.points.toFixed(3))])),
+      confidence,
+      disagreement: Number(disagreement.toFixed(4)),
+      context: {
+        age: Number(context?.age) || null,
+        years_experience: Number(context?.years_exp) || 0,
+        depth_chart_order: depth,
+        injury_status: context?.injury_status || null,
+        active,
+        adjustment: Number(contextMultiplier.toFixed(4)),
+        reasons: contextReasons,
+      },
+      sources: Object.fromEntries(player.inputs.map((input) => [input.source, {
+        ppr: Number(input.ppr.toFixed(3)),
+        half: Number(input.half.toFixed(3)),
+        std: Number(input.std.toFixed(3)),
+      }])),
     };
   });
   const coreCount = rows.filter((row) => ["QB", "RB", "WR", "TE"].includes(row.position)).length;
   if (coreCount < 100) throw new Error(`Calculated projection coverage is incomplete (${coreCount} core offensive players). Existing cache was not overwritten.`);
 
   const output = projectionOutput("The Fantasy Arsenal", rows, {
-    method: "weighted_mean",
+    method: "coverage-weighted trimmed consensus with bounded Sleeper role/availability correction",
     minimum_sources: 2,
+    scoring_variants: ["std","half","ppr"],
+    default_scoring: "ppr",
+    model_version: "arsenal-projections-2.0",
+    context_policy: {
+      direct_inputs: ["Sleeper active status", "Sleeper injury status", "Sleeper depth-chart order when coverage is thin or disagreement is high"],
+      confidence_inputs: ["source count", "source disagreement", "age", "experience", "depth-chart coverage"],
+      maximum_positive_adjustment: "4%",
+      note: "Age and experience are not independently applied to current-season points because projection sources already price those effects; doing so again would double-count them.",
+    },
     source_weights: Object.fromEntries(sourceFiles.map((source) => [source.key, source.weight])),
   });
   fs.writeFileSync(ARSENAL_PROJ_OUT_PATH, JSON.stringify(output, null, 2));

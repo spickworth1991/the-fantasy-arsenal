@@ -268,8 +268,9 @@ function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
     const qb = (qbType || "sf").toLowerCase(); // sf | 1qb
 
     if (valueSource === "FantasyCalc") {
-      if (fmt === "dynasty") return qb === "sf" ? Number(p.fc_values?.dynasty_sf || 0) : Number(p.fc_values?.dynasty_1qb || 0);
-      return qb === "sf" ? Number(p.fc_values?.redraft_sf || 0) : Number(p.fc_values?.redraft_1qb || 0);
+      const base=`${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}`;
+      const profile=["std","half","ppr","std-tep","half-tep","ppr-tep","std-tep-plus","half-tep-plus","ppr-tep-plus"].includes(String(scoring).toLowerCase())?String(scoring).toLowerCase():"ppr";
+      return Number(p.fc_values?.[`${base}__${profile}`] || p.fc_values?.[base] || 0);
     }
     if (valueSource === "DynastyProcess") return qb === "sf" ? Number(p.dp_values?.superflex || 0) : Number(p.dp_values?.one_qb || 0);
     if (valueSource === "KeepTradeCut") return qb === "sf" ? Number(p.ktc_values?.superflex || 0) : Number(p.ktc_values?.one_qb || 0);
@@ -287,7 +288,10 @@ function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
       const key=`${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}_${score}`;
       return Number(p.fpecr_values?.[key]||0);
     }
-    if (valueSource === "IDynastyP") return qb === "sf" ? Number(p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb || 0);
+    if (valueSource === "IDynastyP") {
+      if (String(scoring).toLowerCase() === "tep") return qb === "sf" ? Number(p.idp_values?.superflex_tep || p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb_tep || p.idp_values?.one_qb || 0);
+      return qb === "sf" ? Number(p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb || 0);
+    }
     if (valueSource === "TheFantasyArsenal") {
       if (fmt === "dynasty") return qb === "sf" ? Number(p.sp_values?.dynasty_sf || 0) : Number(p.sp_values?.dynasty_1qb || 0);
       return qb === "sf" ? Number(p.sp_values?.redraft_sf || 0) : Number(p.sp_values?.redraft_1qb || 0);

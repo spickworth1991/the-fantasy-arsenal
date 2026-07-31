@@ -70,13 +70,13 @@ const SOURCE_METHODS = {
   },
   arsenal: {
     origin: "Arsenal calculated projection consensus",
-    method: "Comparable source projections are blended with coverage controls; Sleeper is intentionally lower priority when stronger coverage exists.",
-    use: "A single multi-source season projection with source coverage context.",
-    limits: "The result inherits uncertainty and missing-player risk from its inputs.",
+    method: "Standard, Half PPR, and PPR totals use a coverage-weighted trimmed consensus. Source count and disagreement set confidence. Sleeper active, injury, and depth-chart context can make a bounded correction when coverage is thin or sources materially disagree.",
+    use: "A scoring-specific multi-source season projection with per-player confidence, disagreement, inputs, and contextual reasons.",
+    limits: "Age and experience are evidence—not automatic point penalties—because publishers already price them into forecasts. The result still inherits uncertainty and missing-player risk from its inputs.",
   },
   fantasycalc: {
     origin: "FantasyCalc published market data",
-    method: "Published player and pick values are normalized into supported dynasty and redraft, 1QB and Superflex boards.",
+    method: "The first-party API supplies 36 distinct boards: dynasty/redraft, 1QB/Superflex, Standard/Half/PPR, and no TEP/TE+/TE++. The exact selected board is retained; PPR/no-TEP remains the backward-compatible default.",
     use: "Trade-market comparison and roster valuation.",
     limits: "Values represent a market estimate, not expected fantasy points.",
   },
@@ -112,7 +112,7 @@ const SOURCE_METHODS = {
   },
   idynastyp: {
     origin: "IDynastyP published IDP values",
-    method: "Published defensive-player values are normalized by player and position for 1QB and Superflex use.",
+    method: "The first-party feed's four explicit columns are preserved: 1QB, 1QB TEP, Superflex, and Superflex TEP.",
     use: "IDP dynasty roster and trade evaluation.",
     limits: "Designed for IDP formats; offensive-only leagues should use an offensive value source.",
   },

@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-07-31T03:23:26.337Z",
+  "updated_at": "2026-07-31T04:05:24.167Z",
   "sources": {
     "fc": {
       "key": "fc",
       "name": "FantasyCalc",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:02:31.711Z",
-      "last_success_at": "2026-07-30T23:02:31.711Z",
+      "last_attempt_at": "2026-07-31T04:05:24.167Z",
+      "last_success_at": "2026-07-31T04:05:24.167Z",
       "last_error": ""
     },
     "dp": {
@@ -37,8 +37,8 @@
       "key": "idp",
       "name": "IDynastyP",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:03:19.220Z",
-      "last_success_at": "2026-07-30T23:03:19.220Z",
+      "last_attempt_at": "2026-07-31T04:02:37.012Z",
+      "last_success_at": "2026-07-31T04:02:37.012Z",
       "last_error": ""
     },
     "idpshow": {
@@ -53,8 +53,8 @@
       "key": "sp",
       "name": "StickyPicky",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:03:22.770Z",
-      "last_success_at": "2026-07-30T23:03:22.770Z",
+      "last_attempt_at": "2026-07-31T04:03:47.516Z",
+      "last_success_at": "2026-07-31T04:03:47.516Z",
       "last_error": ""
     },
     "proj": {
@@ -109,8 +109,8 @@
       "key": "arsenal_proj",
       "name": "The Fantasy Arsenal Projections",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:04:00.337Z",
-      "last_success_at": "2026-07-30T23:04:00.337Z",
+      "last_attempt_at": "2026-07-31T04:03:20.041Z",
+      "last_success_at": "2026-07-31T04:03:20.041Z",
       "last_error": ""
     },
     "fp": {

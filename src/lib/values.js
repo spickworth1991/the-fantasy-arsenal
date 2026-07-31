@@ -9,9 +9,11 @@ export function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr")
   return (p) => {
     if (!p) return 0;
     if (valueSource === "FantasyCalc") {
-      return format === "dynasty"
-        ? (qbType === "sf" ? p.fc_values?.dynasty_sf : p.fc_values?.dynasty_1qb)
-        : (qbType === "sf" ? p.fc_values?.redraft_sf : p.fc_values?.redraft_1qb);
+      const base = `${format === "dynasty" ? "dynasty" : "redraft"}_${qbType === "sf" ? "sf" : "1qb"}`;
+      const profile = ["std","half","ppr","std-tep","half-tep","ppr-tep","std-tep-plus","half-tep-plus","ppr-tep-plus"].includes(String(scoring).toLowerCase())
+        ? String(scoring).toLowerCase()
+        : "ppr";
+      return p.fc_values?.[`${base}__${profile}`] || p.fc_values?.[base] || 0;
     }
     if (valueSource === "DynastyProcess") {
       return qbType === "sf" ? (p.dp_values?.superflex || 0) : (p.dp_values?.one_qb || 0);
@@ -37,6 +39,11 @@ export function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr")
       return p.fpecr_values?.[key] || 0;
     }
     if (valueSource === "IDynastyP") {
+      if (String(scoring).toLowerCase() === "tep") {
+        return qbType === "sf"
+          ? (p.idp_values?.superflex_tep || p.idp_values?.superflex || 0)
+          : (p.idp_values?.one_qb_tep || p.idp_values?.one_qb || 0);
+      }
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
     }
     if (valueSource === "IDPShow") {

@@ -239,7 +239,7 @@ function createCandidateIndex4(seedByName, valueKeys = VALUE_KEYS) {
 }
 
 function createCandidateIndex2(seedByName) {
-  // nameKey -> array of candidates: { pos, team, one_qb, superflex }
+  // nameKey -> array of candidates; TEP variants are optional.
   const byName =
     seedByName && typeof seedByName === "object"
       ? seedByName
@@ -256,6 +256,8 @@ function createCandidateIndex2(seedByName) {
     if (existing) {
       if (cand.one_qb > 0) existing.one_qb = cand.one_qb;
       if (cand.superflex > 0) existing.superflex = cand.superflex;
+      if (cand.one_qb_tep > 0) existing.one_qb_tep = cand.one_qb_tep;
+      if (cand.superflex_tep > 0) existing.superflex_tep = cand.superflex_tep;
       if (cand.pickKey && !existing.pickKey) existing.pickKey = cand.pickKey;
       return;
     }
@@ -263,7 +265,7 @@ function createCandidateIndex2(seedByName) {
     store[storeKey].push(cand);
   }
 
-  function addCandidate({ name, pos, team, one_qb, superflex }) {
+  function addCandidate({ name, pos, team, one_qb, superflex, one_qb_tep, superflex_tep }) {
     const nn = keyName(name);
     if (!nn) return;
     const candPos = normalizeIdpPosForMatch(pos);
@@ -275,10 +277,12 @@ function createCandidateIndex2(seedByName) {
       team: normTeam(team),
       one_qb: safeNum(one_qb),
       superflex: safeNum(superflex),
+      one_qb_tep: safeNum(one_qb_tep),
+      superflex_tep: safeNum(superflex_tep),
       pickKey: pickMeta?.key || "",
     };
 
-    if (!(cand.one_qb > 0 || cand.superflex > 0)) return;
+    if (!(cand.one_qb > 0 || cand.superflex > 0 || cand.one_qb_tep > 0 || cand.superflex_tep > 0)) return;
 
     mergeIntoStore(byName, nn, cand);
     if (pickMeta?.key) {
@@ -897,7 +901,7 @@ export const SleeperProvider = ({ children }) => {
     const team = getSleeperTeamForProj(p);
 
     const best = idx.pickBest({ name: fullName, pos, team });
-    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS") {
+    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL") {
       const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
       if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) || best?.pts);
       if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) || best?.pts);
@@ -1111,6 +1115,18 @@ export const SleeperProvider = ({ children }) => {
       const dynasty1QBMap = mapBySleeperId(fcData?.Dynasty_1QB);
       const redraftSFMap = mapBySleeperId(fcData?.Redraft_SF);
       const redraft1QBMap = mapBySleeperId(fcData?.Redraft_1QB);
+      const fantasyCalcProfiles = ["std","half","ppr","std-tep","half-tep","ppr-tep","std-tep-plus","half-tep-plus","ppr-tep-plus"];
+      const fantasyCalcVariantMaps = {};
+      ["Dynasty_SF","Dynasty_1QB","Redraft_SF","Redraft_1QB"].forEach((bucket) => {
+        fantasyCalcProfiles.forEach((profile) => {
+          const map = {};
+          (Array.isArray(fcData?.[bucket]) ? fcData[bucket] : []).forEach((row) => {
+            const sleeperId = row?.player?.sleeperId;
+            if (sleeperId) map[String(sleeperId)] = safeNum(row?.variant_values?.[profile]);
+          });
+          fantasyCalcVariantMaps[`${bucket}__${profile}`] = map;
+        });
+      });
 
       const knownPickMeta = new Map();
       const fcPickIndex = createCandidateIndex4();
@@ -1266,6 +1282,8 @@ export const SleeperProvider = ({ children }) => {
           team,
           one_qb: oneQb,
           superflex: sf,
+          one_qb_tep: row?.one_qb_tep ?? row?.value_tep,
+          superflex_tep: row?.superflex_tep ?? row?.value_sftep,
         });
       });
 
@@ -1341,6 +1359,8 @@ export const SleeperProvider = ({ children }) => {
         return {
           one_qb: safeNum(cand?.one_qb),
           superflex: safeNum(cand?.superflex),
+          one_qb_tep: safeNum(cand?.one_qb_tep),
+          superflex_tep: safeNum(cand?.superflex_tep),
         };
       };
 
@@ -1360,6 +1380,12 @@ export const SleeperProvider = ({ children }) => {
           dynasty_1qb: safeNum(dynasty1QBMap[id]),
           redraft_sf: safeNum(redraftSFMap[id]),
           redraft_1qb: safeNum(redraft1QBMap[id]),
+          ...Object.fromEntries(
+            Object.entries(fantasyCalcVariantMaps).map(([bucket, values]) => [
+              bucket.toLowerCase(),
+              safeNum(values[id]),
+            ]),
+          ),
         };
 
         const fantasyRelevant = isFantasyRelevantSleeperPlayer(p);

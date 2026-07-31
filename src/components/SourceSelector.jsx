@@ -115,7 +115,7 @@ export const DEFAULT_SOURCES = [
     type: "value",
     label: "FantasyCalc",
     logoKey: "FantasyCalc",
-    supports: { dynasty: true, redraft: true, qbToggle: true },
+    supports: { dynasty: true, redraft: true, qbToggle: true, scoring: ["std","half","ppr","std-tep","half-tep","ppr-tep","std-tep-plus","half-tep-plus","ppr-tep-plus"] },
   },
   {
     key: "val:keeptradecut",
@@ -157,7 +157,7 @@ export const DEFAULT_SOURCES = [
     type: "value",
     label: "IDynastyP",
     logoKey: "IDynastyP",
-    supports: { dynasty: true, redraft: false, qbToggle: true },
+    supports: { dynasty: true, redraft: false, qbToggle: true, scoring: ["base", "tep"] },
   },
   {
     key: "val:idpshow",
@@ -181,7 +181,7 @@ export const DEFAULT_SOURCES = [
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
   { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks", supports: { scoring: ["std", "half", "ppr", "tep"] } },
   { key: "proj:fantasypros", type: "projection", label: "FantasyPros Projections", logoKey: "FantasyProsProjections", supports: { scoring: ["std", "half", "ppr"] } },
-  { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal" },
+  { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
 ];
 
 function clamp(n, min, max) {
@@ -588,7 +588,7 @@ export default function SourceSelector({
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Scoring</span>
             <div className="inline-flex rounded-xl border border-white/10 bg-black/20 p-1">
-              {[["base","Base"],["std","Standard"],["half","Half PPR"],["ppr","PPR"],["tep","TE Premium"]].filter(([key]) => scoringOptions.includes(key)).map(([key,label]) => (
+              {[["base","Base"],["std","Standard"],["half","Half PPR"],["ppr","PPR"],["tep","TE Premium"],["std-tep","STD + TE+"],["half-tep","Half + TE+"],["ppr-tep","PPR + TE+"],["std-tep-plus","STD + TE++"],["half-tep-plus","Half + TE++"],["ppr-tep-plus","PPR + TE++"]].filter(([key]) => scoringOptions.includes(key)).map(([key,label]) => (
                 <SegButton key={key} active={projectionScoring === key} onClick={() => setProjectionScoring?.(key)}>{label}</SegButton>
               ))}
             </div>
