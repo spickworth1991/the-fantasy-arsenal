@@ -617,6 +617,10 @@ const normalizeTeam = (team) =>
 function MatchupLab({ players, schedule, season }) {
   const [position, setPosition] = useState("QB");
   const [offense, setOffense] = useState("");
+  const [defense, setDefense] = useState("");
+  const [playerQuery, setPlayerQuery] = useState("");
+  const [minimumPoints, setMinimumPoints] = useState(0);
+  const [sortKey, setSortKey] = useState("points");
   const rows = useMemo(() => {
     const opponentByWeek = {};
     (schedule?.weeks || []).forEach(({ week, games }) =>
@@ -627,8 +631,9 @@ function MatchupLab({ players, schedule, season }) {
         opponentByWeek[`${week}:${away}`] = home;
       }),
     );
-    const defense = new Map(),
-      attack = new Map();
+    const defenseRows = new Map(),
+      attackRows = new Map(),
+      games = [];
     players
       .filter((player) => ["QB", "RB", "WR", "TE"].includes(player.position))
       .forEach((player) =>
@@ -638,24 +643,51 @@ function MatchupLab({ players, schedule, season }) {
           if (!team || !opponent) return;
           const dKey = `${opponent}:${player.position}`,
             oKey = `${team}:${player.position}`;
-          const d = defense.get(dKey) || {
+          const stats = player.weekly_stats?.[week] || {};
+          const game = {
+            key: `${player.key}:${week}`,
+            player: player.name,
+            playerKey: player.key,
+            team,
+            opponent,
+            position: player.position,
+            week: num(week),
+            points: num(points),
+            stats,
+          };
+          games.push(game);
+          const d = defenseRows.get(dKey) || {
             team: opponent,
             position: player.position,
             points: 0,
             weeks: new Set(),
+            stats: {},
+            playerGames: 0,
+            booms: 0,
           };
           d.points += num(points);
           d.weeks.add(String(week));
-          defense.set(dKey, d);
-          const o = attack.get(oKey) || {
+          d.playerGames += 1;
+          if (num(points) >= 20) d.booms += 1;
+          Object.entries(stats).forEach(([key, value]) => {
+            if (Number.isFinite(Number(value)))
+              d.stats[key] = num(d.stats[key]) + num(value);
+          });
+          defenseRows.set(dKey, d);
+          const o = attackRows.get(oKey) || {
             team,
             position: player.position,
             points: 0,
             weeks: new Set(),
+            stats: {},
           };
           o.points += num(points);
           o.weeks.add(String(week));
-          attack.set(oKey, o);
+          Object.entries(stats).forEach(([key, value]) => {
+            if (Number.isFinite(Number(value)))
+              o.stats[key] = num(o.stats[key]) + num(value);
+          });
+          attackRows.set(oKey, o);
         }),
       );
     const finish = (map) =>
@@ -663,8 +695,9 @@ function MatchupLab({ players, schedule, season }) {
         ...row,
         games: row.weeks.size,
         average: row.points / Math.max(1, row.weeks.size),
+        boomRate: row.playerGames ? (row.booms / row.playerGames) * 100 : 0,
       }));
-    return { defense: finish(defense), attack: finish(attack) };
+    return { defense: finish(defenseRows), attack: finish(attackRows), games };
   }, [players, schedule]);
   if (!(schedule?.weeks || []).some((row) => (row.games || []).length))
     return (
@@ -683,13 +716,106 @@ function MatchupLab({ players, schedule, season }) {
     .filter((row) => row.position === position)
     .sort((a, b) => b.average - a.average);
   const teams = [...new Set(rows.attack.map((row) => row.team))].sort();
+  const defenseTeams = [...new Set(rows.defense.map((row) => row.team))].sort();
   const selectedOffense = offense || teams[0] || "";
+  const selectedDefense = defense || defenseTeams[0] || "";
   const offenseRow = rows.attack.find(
     (row) => row.team === selectedOffense && row.position === position,
   );
   const leagueOffense =
     offenses.reduce((sum, row) => sum + row.average, 0) /
     Math.max(1, offenses.length);
+  const defenseRow = rows.defense.find(
+    (row) => row.team === selectedDefense && row.position === position,
+  );
+  const defenseIndex = defenseRow
+    ? defenseRow.average / Math.max(1, leagueOffense)
+    : 1;
+  const offenseIndex = offenseRow
+    ? offenseRow.average / Math.max(1, leagueOffense)
+    : 1;
+  const modeledRoomPoints =
+    leagueOffense * Math.sqrt(Math.max(0.01, offenseIndex * defenseIndex));
+  const matchupEdge = modeledRoomPoints - num(offenseRow?.average);
+  const matchupGrade =
+    matchupEdge >= 4
+      ? "Elite"
+      : matchupEdge >= 1.5
+        ? "Favorable"
+        : matchupEdge <= -4
+          ? "Avoid"
+          : matchupEdge <= -1.5
+            ? "Difficult"
+            : "Neutral";
+  const selectedGames = rows.games
+    .filter(
+      (game) => game.position === position && game.opponent === selectedDefense,
+    )
+    .filter((game) => game.points >= minimumPoints)
+    .filter(
+      (game) =>
+        !playerQuery || normalize(game.player).includes(normalize(playerQuery)),
+    )
+    .sort((a, b) =>
+      sortKey === "week"
+        ? b.week - a.week
+        : sortKey === "yards"
+          ? num(b.stats.pass_yd) +
+            num(b.stats.rush_yd) +
+            num(b.stats.rec_yd) -
+            (num(a.stats.pass_yd) + num(a.stats.rush_yd) + num(a.stats.rec_yd))
+          : b.points - a.points,
+    );
+  const playerLeaders = new Map();
+  selectedGames.forEach((game) => {
+    const current = playerLeaders.get(game.player) || {
+      player: game.player,
+      team: game.team,
+      games: 0,
+      points: 0,
+      best: 0,
+      stats: {},
+    };
+    current.games += 1;
+    current.points += game.points;
+    current.best = Math.max(current.best, game.points);
+    Object.entries(game.stats).forEach(([key, value]) => {
+      if (Number.isFinite(Number(value)))
+        current.stats[key] = num(current.stats[key]) + num(value);
+    });
+    playerLeaders.set(game.player, current);
+  });
+  const specialists = [...playerLeaders.values()]
+    .map((row) => ({ ...row, average: row.points / row.games }))
+    .sort((a, b) => b.average - a.average);
+  const defenseStatCards =
+    position === "QB"
+      ? [
+          ["Pass yards allowed", "pass_yd"],
+          ["Pass TD allowed", "pass_td"],
+          ["Interceptions", "pass_int"],
+          ["QB rush yards", "rush_yd"],
+        ]
+      : position === "RB"
+        ? [
+            ["Rush yards allowed", "rush_yd"],
+            ["Rush TD allowed", "rush_td"],
+            ["RB receptions", "rec"],
+            ["RB receiving yards", "rec_yd"],
+          ]
+        : [
+            ["Receiving yards allowed", "rec_yd"],
+            ["Receiving TD allowed", "rec_td"],
+            ["Targets allowed", "rec_tgt"],
+            ["Receptions allowed", "rec"],
+          ];
+  const positionPlayers = players
+    .filter(
+      (player) =>
+        player.position === position &&
+        normalizeTeam(player.team) === selectedOffense,
+    )
+    .sort((a, b) => b.average - a.average);
   return (
     <div className="space-y-4">
       <Panel className="p-5 sm:p-6">
@@ -705,7 +831,7 @@ function MatchupLab({ players, schedule, season }) {
               per team game—not a defensive player grade.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <Select label="Position" value={position} onChange={setPosition}>
               {["QB", "RB", "WR", "TE"].map((item) => (
                 <option key={item}>{item}</option>
@@ -720,6 +846,112 @@ function MatchupLab({ players, schedule, season }) {
                 <option key={team}>{team}</option>
               ))}
             </Select>
+            <Select
+              label="Defense"
+              value={selectedDefense}
+              onChange={setDefense}
+            >
+              {defenseTeams.map((team) => (
+                <option key={team}>{team}</option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Panel>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric
+          label="Matchup grade"
+          value={matchupGrade}
+          detail={`${selectedOffense} ${position} vs ${selectedDefense}`}
+          tone={
+            matchupEdge > 1 ? "emerald" : matchupEdge < -1 ? "rose" : "amber"
+          }
+        />
+        <Metric
+          label="Modeled room output"
+          value={`${modeledRoomPoints.toFixed(1)} pts`}
+          detail={`Baseline ${num(offenseRow?.average).toFixed(1)} · change ${matchupEdge >= 0 ? "+" : ""}${matchupEdge.toFixed(1)}`}
+          tone="cyan"
+        />
+        <Metric
+          label="Defense allowed"
+          value={defenseRow ? `${defenseRow.average.toFixed(1)} pts` : "—"}
+          detail={`${position} fantasy points per team game`}
+          tone="violet"
+        />
+        <Metric
+          label="Evidence"
+          value={defenseRow ? `${defenseRow.games} games` : "—"}
+          detail={`${defenseRow?.playerGames || 0} player performances`}
+          tone="amber"
+        />
+      </div>
+      <Panel className="p-5 sm:p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="text-xl font-black">
+              {selectedDefense} defensive profile vs {position}
+            </h3>
+            <p className="mt-1 text-xs text-white/35">
+              The production behind the fantasy-points-allowed ranking.
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-3 py-1 text-[10px] font-black ${defenseIndex <= 0.9 ? "bg-emerald-300/10 text-emerald-100" : defenseIndex >= 1.1 ? "bg-rose-300/10 text-rose-100" : "bg-white/5 text-white/50"}`}
+          >
+            {Math.round(defenseIndex * 100)} allowance index · 100 average
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {defenseStatCards.map(([label, key]) => (
+            <Metric
+              key={key}
+              label={label}
+              value={
+                defenseRow
+                  ? (
+                      num(defenseRow.stats?.[key]) /
+                      Math.max(1, defenseRow.games)
+                    ).toFixed(1)
+                  : "—"
+              }
+              detail="Per defensive team game"
+            />
+          ))}
+        </div>
+        <div className="mt-5 overflow-x-auto">
+          <div
+            className="flex min-w-[720px] items-end gap-1.5 border-b border-white/10 pb-2"
+            style={{ height: 190 }}
+          >
+            {defenses.map((row) => {
+              const max = Math.max(1, ...defenses.map((item) => item.average));
+              const active = row.team === selectedDefense;
+              return (
+                <button
+                  key={row.team}
+                  onClick={() => setDefense(row.team)}
+                  className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                  title={`${row.team}: ${row.average.toFixed(1)} ${position} points allowed`}
+                >
+                  <div
+                    className={`w-full rounded-t ${active ? "bg-amber-300" : "bg-gradient-to-t from-cyan-400/45 to-violet-300/70"}`}
+                    style={{
+                      height: `${Math.max(4, (row.average / max) * 145)}px`,
+                    }}
+                  />
+                  <span
+                    className={`text-[8px] ${active ? "font-black text-amber-100" : "text-white/30"}`}
+                  >
+                    {row.team}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2 flex justify-between text-[9px] text-white/30">
+            <span>Shorter = tougher defense</span>
+            <span>Taller = more points allowed</span>
           </div>
         </div>
       </Panel>
@@ -831,6 +1063,171 @@ function MatchupLab({ players, schedule, season }) {
           evidence rather than official NFL splits.
         </p>
       </Panel>
+      <Panel className="overflow-hidden">
+        <div className="border-b border-white/10 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <h3 className="text-xl font-black">
+                Best {position} performances vs {selectedDefense}
+              </h3>
+              <p className="mt-1 text-xs text-white/35">
+                Every saved player-game supplies the evidence. Filter and sort
+                without changing the underlying sample.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <input
+                value={playerQuery}
+                onChange={(event) => setPlayerQuery(event.target.value)}
+                placeholder="Filter player…"
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              />
+              <select
+                value={minimumPoints}
+                onChange={(event) => setMinimumPoints(num(event.target.value))}
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              >
+                <option value="0">Any score</option>
+                <option value="10">10+ points</option>
+                <option value="15">15+ points</option>
+                <option value="20">20+ points</option>
+                <option value="25">25+ points</option>
+              </select>
+              <select
+                value={sortKey}
+                onChange={(event) => setSortKey(event.target.value)}
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              >
+                <option value="points">Sort: points</option>
+                <option value="yards">Sort: yards</option>
+                <option value="week">Sort: recent week</option>
+              </select>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-white/45">
+                {selectedGames.length} games
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-xs">
+            <thead className="bg-white/[0.035] text-[9px] uppercase tracking-wider text-white/35">
+              <tr>
+                <th className="px-4 py-3">Player</th>
+                <th>Team</th>
+                <th>Week</th>
+                <th>Fantasy</th>
+                <th>Passing</th>
+                <th>Rushing</th>
+                <th>Receiving</th>
+                <th>TD</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.06]">
+              {selectedGames.slice(0, 150).map((game) => (
+                <tr key={game.key} className="hover:bg-white/[0.025]">
+                  <td className="px-4 py-3 font-bold">{game.player}</td>
+                  <td>{game.team}</td>
+                  <td>W{game.week}</td>
+                  <td className="font-black text-cyan-100">
+                    {game.points.toFixed(1)}
+                  </td>
+                  <td>
+                    {num(game.stats.pass_yd).toFixed(0)} yd ·{" "}
+                    {num(game.stats.pass_td)} TD
+                  </td>
+                  <td>
+                    {num(game.stats.rush_att)} car ·{" "}
+                    {num(game.stats.rush_yd).toFixed(0)} yd
+                  </td>
+                  <td>
+                    {num(game.stats.rec_tgt)} tgt · {num(game.stats.rec)} rec ·{" "}
+                    {num(game.stats.rec_yd).toFixed(0)} yd
+                  </td>
+                  <td>
+                    {num(game.stats.pass_td) +
+                      num(game.stats.rush_td) +
+                      num(game.stats.rec_td)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel className="p-5">
+          <h3 className="text-lg font-black">
+            {position} specialists vs {selectedDefense}
+          </h3>
+          <p className="mt-1 text-xs text-white/35">
+            Multi-game averages distinguish repeat success from one-week spikes.
+          </p>
+          <div className="mt-4 space-y-2">
+            {specialists.slice(0, 12).map((row, index) => (
+              <div
+                key={row.player}
+                className="grid grid-cols-[30px_minmax(0,1fr)_55px_55px] items-center gap-2 rounded-xl bg-black/15 px-3 py-2.5 text-xs"
+              >
+                <span className="text-white/25">#{index + 1}</span>
+                <div className="min-w-0">
+                  <b className="block truncate">{row.player}</b>
+                  <small className="text-white/28">
+                    {row.team} · {row.games} game{row.games === 1 ? "" : "s"}
+                  </small>
+                </div>
+                <div className="text-right">
+                  <b>{row.average.toFixed(1)}</b>
+                  <small className="block text-[8px] text-white/25">AVG</small>
+                </div>
+                <div className="text-right">
+                  <b>{row.best.toFixed(1)}</b>
+                  <small className="block text-[8px] text-white/25">BEST</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+        <Panel className="p-5">
+          <div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/45">
+            Arsenal matchup model · v1.0
+          </div>
+          <h3 className="mt-1 text-lg font-black">
+            Explainable player estimates
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-white/38">
+            The first model scales each player’s observed average by the square
+            root of the selected defense’s positional allowance index. It avoids
+            pretending that small samples are certainty.
+          </p>
+          <div className="mt-4 space-y-2">
+            {positionPlayers.slice(0, 10).map((player) => {
+              const estimate =
+                player.average * Math.sqrt(Math.max(0.35, defenseIndex));
+              return (
+                <div
+                  key={player.key}
+                  className="grid grid-cols-[minmax(0,1fr)_65px_75px] items-center gap-2 rounded-xl border border-white/[0.06] p-3 text-xs"
+                >
+                  <b className="truncate">{player.name}</b>
+                  <span className="text-right text-white/40">
+                    {player.average.toFixed(1)} base
+                  </span>
+                  <b className="text-right text-emerald-100">
+                    {estimate.toFixed(1)} proj
+                  </b>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-3 text-[10px] leading-4 text-amber-100/60">
+            For 2026, forecasts should be frozen before kickoff with model
+            version, inputs, confidence, and source timestamp. Actual results
+            can then be scored with MAE, RMSE, bias, and calibration in Trust &
+            Accuracy. No retroactive edits should overwrite a published
+            forecast.
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }
