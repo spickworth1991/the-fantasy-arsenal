@@ -594,3 +594,10 @@ body {
     text-align: center;
   }
 }
+label[data-stat-comparison="true"] {
+  display: none;
+}
+
+html[data-stat-tab="compare"] label[data-stat-comparison="true"] {
+  display: block;
+}

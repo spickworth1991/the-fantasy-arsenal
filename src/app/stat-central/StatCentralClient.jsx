@@ -6,9 +6,9 @@ import BackgroundParticles from "../../components/BackgroundParticles";
 import { useSleeper } from "../../context/SleeperContext";
 
 const TABS = [
-  ["overview","Performance Lab"],
-  ["history","Historical"],
-  ["compare","Start/Sit History"],
+  ["overview","Player Research"],
+  ["history","Career History"],
+  ["compare","Compare Players"],
   ["leaders","Leaderboards"],
   ["method","Data Guide"],
 ];
@@ -36,7 +36,8 @@ function PlayerName({ player }) {
   return <div className="min-w-0"><div className="truncate font-black">{player?.name || "Unknown player"}</div><div className="mt-0.5 text-[10px] text-white/35">{[player?.team,player?.position].filter(Boolean).join(" · ") || "Player"}</div></div>;
 }
 function Select({ label, value, onChange, children }) {
-  return <label className="min-w-0"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">{label}</span><select data-stat-season={label === "Season" ? "true" : undefined} value={value} onChange={(event)=>onChange(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm">{children}</select></label>;
+  const comparison=label === "Comparison player";
+  return <label data-stat-comparison={comparison ? "true" : undefined} className="min-w-0"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">{label}</span><select data-stat-season={label === "Season" ? "true" : undefined} value={value} onChange={(event)=>onChange(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm">{children}</select></label>;
 }
 function playerMetrics(player, positionPlayers=[]) {
   const values=Object.values(player?.weeks || {}).map(num).filter((value)=>Number.isFinite(value));
@@ -126,10 +127,11 @@ async function loadSavedSeason(season, scoring, position, signal) {
 function WeeklyChart({ player, opponent }) {
   const weeks=Array.from({length:18},(_,index)=>index+1);
   const max=Math.max(1,...weeks.flatMap((week)=>[num(player?.weeks?.[week]),num(opponent?.weeks?.[week])]));
-  return <div className="overflow-x-auto"><div className="flex min-w-[680px] items-end gap-2 border-b border-white/10 pb-2" style={{height:230}}>{weeks.map((week)=>{
+  const played=weeks.filter((week)=>Object.prototype.hasOwnProperty.call(player?.weeks||{},week));
+  return <div><div className="overflow-x-auto"><div className="flex min-w-[680px] items-end gap-2 border-b border-white/10 pb-2" style={{height:230}}>{weeks.map((week)=>{
     const primary=num(player?.weeks?.[week]), secondary=num(opponent?.weeks?.[week]);
     return <div key={week} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><div className="flex w-full items-end justify-center gap-0.5"><div className="w-1/2 rounded-t bg-cyan-300/65" style={{height:`${Math.max(primary?3:0,primary/max*150)}px`}} title={`${player?.name}: ${primary.toFixed(1)}`}/>{opponent?<div className="w-1/2 rounded-t bg-violet-300/65" style={{height:`${Math.max(secondary?3:0,secondary/max*150)}px`}} title={`${opponent?.name}: ${secondary.toFixed(1)}`}/>:null}</div><span className="text-[8px] text-white/30">W{week}</span></div>;
-  })}</div></div>;
+  })}</div></div>{!opponent?<div className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07]"><div className="grid grid-cols-[70px_1fr_100px] bg-white/[0.04] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-white/35"><span>Week</span><span>Result</span><span className="text-right">Fantasy pts</span></div><div className="divide-y divide-white/[0.06]">{played.map((week)=>{const points=num(player?.weeks?.[week]);const average=num(player?.average);return <div key={week} className="grid grid-cols-[70px_1fr_100px] items-center px-4 py-2.5 text-xs"><b>Week {week}</b><span className={points>=average?"text-emerald-200":"text-white/38"}>{points>=average?"Above season average":"Below season average"}</span><b className="text-right text-cyan-100">{points.toFixed(1)}</b></div>})}</div></div>:null}</div>;
 }
 
 function PerformanceLab({ selected, metrics, positionPlayers }) {
@@ -169,6 +171,11 @@ export default function StatCentralClient() {
   const [careerLoading,setCareerLoading]=useState(false);
   const [availableSeasons,setAvailableSeasons]=useState([completedSeason]);
   const [reloadToken,setReloadToken]=useState(0);
+
+  useEffect(()=>{
+    document.documentElement.dataset.statTab=tab;
+    return()=>{delete document.documentElement.dataset.statTab;};
+  },[tab]);
 
   useEffect(()=>{fetch("/stats/history/manifest.json",{cache:"force-cache"}).then((response)=>response.ok?response.json():null).then((manifest)=>{const saved=(manifest?.seasons||[]).map((row)=>num(row.season)).filter(Boolean).sort((a,b)=>b-a);if(saved.length){setAvailableSeasons(saved);setSeason((current)=>saved.includes(current)?current:saved[0]);}}).catch(()=>{});},[]);
   useEffect(()=>{
