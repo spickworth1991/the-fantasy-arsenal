@@ -109,6 +109,7 @@ export default function TradeAnalyzer() {
     sourceKey,
     setSourceKey,
     getProjection,
+    projectionScoring,
   } = useSleeper();
 
   const metricMode = metricModeFromSourceKey(sourceKey);
@@ -229,7 +230,7 @@ export default function TradeAnalyzer() {
     return side === "A" ? "Side A" : "Side B";
   };
 
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType), [valueSource, format, qbType]);
+  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType, projectionScoring), [valueSource, format, qbType, projectionScoring]);
 
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {

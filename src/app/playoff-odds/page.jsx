@@ -444,6 +444,7 @@ export default function PlayoffOddsPage() {
     format,
     qbType,
     getProjection,
+    projectionScoring,
   } = useSleeper();
   const league = useMemo(
     () => leagues.find((item) => item.league_id === activeLeague) || null,
@@ -683,8 +684,8 @@ export default function PlayoffOddsPage() {
   };
 
   const getValue = useMemo(
-    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal),
-    [valueSource, formatLocal, qbLocal]
+    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal, projectionScoring),
+    [valueSource, formatLocal, qbLocal, projectionScoring]
   );
 
   const getMetricWeekly = useMemo(() => {

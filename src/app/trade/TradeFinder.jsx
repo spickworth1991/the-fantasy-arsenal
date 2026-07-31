@@ -102,6 +102,7 @@ export default function TradeFinder() {
     sourceKey,
     setSourceKey,
     getProjection,
+    projectionScoring,
   } = useSleeper();
 
   const league = useMemo(() => (leagues || []).find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
@@ -176,7 +177,7 @@ export default function TradeFinder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType), [valueSource, format, qbType]);
+  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType, projectionScoring), [valueSource, format, qbType, projectionScoring]);
 
   const getMetricRaw = useMemo(() => {
     if (metricMode === "projections") {

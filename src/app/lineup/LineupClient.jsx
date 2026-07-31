@@ -620,8 +620,8 @@ export default function LineupTool() {
 
   /* ----- Metric functions ----- */
   const getValueMetric = useMemo(
-    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal),
-    [valueSource, formatLocal, qbLocal]
+    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal, projectionScoring),
+    [valueSource, formatLocal, qbLocal, projectionScoring]
   );
 
   const getWeeklyProj = useMemo(() => {

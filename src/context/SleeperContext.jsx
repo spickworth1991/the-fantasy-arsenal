@@ -764,10 +764,18 @@ export const SleeperProvider = ({ children }) => {
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = `projIndex_v1.109:${PROJECTION_DATA_SEASON}`;
+  const PROJ_CACHE_KEY = `projIndex_v1.110:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
+      let projectionCacheKey = PROJ_CACHE_KEY;
+      try {
+        const versionResponse = await fetch("/value-cache-version.json", { cache:"no-store" });
+        if (versionResponse.ok) {
+          const manifest = await versionResponse.json();
+          if (manifest?.version) projectionCacheKey = `${PROJ_CACHE_KEY}:${manifest.version}`;
+        }
+      } catch {}
       const hydrate = (raw) => {
         if (!raw || typeof raw !== "object") return null;
         const idx = createProjectionIndex(raw);
@@ -775,7 +783,7 @@ export const SleeperProvider = ({ children }) => {
         return size > 0 ? idx : null;
       };
 
-      const cached = await get(PROJ_CACHE_KEY);
+      const cached = await get(projectionCacheKey);
       if (cached && typeof cached === "object") {
         const hasFFA = cached?.FFA && typeof cached.FFA === "object" && Object.keys(cached.FFA).length > 0;
         const hasESPN = cached?.ESPN && typeof cached.ESPN === "object" && Object.keys(cached.ESPN).length > 0;
@@ -787,7 +795,7 @@ export const SleeperProvider = ({ children }) => {
         const hasFantasyPros = cached?.FANTASYPROS && typeof cached.FANTASYPROS === "object" && Object.keys(cached.FANTASYPROS).length > 0;
 
         // ✅ Only early-return if we actually have at least one non-empty index cached
-        if (hasFFA || hasESPN || hasCBS || hasSleeper || hasFantasySharks || hasDraftSharks || hasArsenal || hasFantasyPros) {
+        if (hasFFA && hasESPN && hasCBS && hasSleeper && hasFantasySharks && hasDraftSharks && hasArsenal && hasFantasyPros) {
           setProjectionIndexes({
             FFA: hydrate(cached?.FFA) || null,
             ESPN: hydrate(cached?.ESPN) || null,
@@ -824,7 +832,7 @@ export const SleeperProvider = ({ children }) => {
         FANTASYPROS: fantasyPros?.raw || null,
       };
 
-      await set(PROJ_CACHE_KEY, payloadRaw);
+      await set(projectionCacheKey, payloadRaw);
 
       setProjectionIndexes({
         FFA: hydrate(payloadRaw.FFA),

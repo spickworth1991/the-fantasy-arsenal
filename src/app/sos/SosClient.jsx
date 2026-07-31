@@ -327,7 +327,7 @@ function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferr
 }
 
 export default function SOSPage() {
-  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType, getProjection } = useSleeper();
+  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType, getProjection, projectionScoring } = useSleeper();
   const contextLeague = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
   const routeHandoffApplied=useRef(false);
   useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
@@ -393,8 +393,8 @@ export default function SOSPage() {
   }, [sourceKey]);
 
   const getValueRaw = useMemo(
-    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal),
-    [valueSource, formatLocal, qbLocal]
+    () => makeGetPlayerValue(valueSource, formatLocal, qbLocal, projectionScoring),
+    [valueSource, formatLocal, qbLocal, projectionScoring]
   );
 
   const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
