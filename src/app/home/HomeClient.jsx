@@ -45,6 +45,7 @@ const TOOL_ICONS = {
   "Playoff Odds": "/icons/playoff-icon.webp",
   "NFL Depth Charts": "/icons/lineup-icon.webp",
   "Trust & Accuracy Center": "/icons/power-icon.webp",
+  "Stat Central": "/icons/power-icon.webp",
 };
 
 export default function HomeClient() {
@@ -94,6 +95,12 @@ export default function HomeClient() {
       name: "Trust & Accuracy Center",
       link: "/trust-center",
       description: "Audit source freshness, coverage, disagreement, projection accuracy, confidence, and the evidence behind every calculation.",
+      badge: "NEW",
+    },
+    {
+      name: "Stat Central",
+      link: "/stat-central",
+      description: "Explore historical fantasy scoring, weekly game logs, floor and ceiling, consistency, player archetypes, raw stats, career trends, and start/sit comparisons.",
       badge: "NEW",
     },
     {
@@ -166,7 +173,7 @@ export default function HomeClient() {
     { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and review the complete league draft.", names:["Draft Command Center","Draft Monitor","Draft Grade Studio"] },
     { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
-    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, NFL opportunity, league strength, schedules, playoff paths, history, and model evidence.", names:["Manager Intelligence","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History","Trust & Accuracy Center"] },
+    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, player production, NFL opportunity, league strength, schedules, playoff paths, history, and model evidence.", names:["Manager Intelligence","Stat Central","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History","Trust & Accuracy Center"] },
     { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 

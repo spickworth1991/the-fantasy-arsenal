@@ -28,4 +28,5 @@ backup.zip
 /backup
 /scripts/*
 !/scripts/updateValues.js
+!/scripts/updateHistoricalStats.js
 /docs/

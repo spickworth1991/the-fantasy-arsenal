@@ -6,6 +6,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
+    "update:stats": "node --no-warnings ./scripts/updateHistoricalStats.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
