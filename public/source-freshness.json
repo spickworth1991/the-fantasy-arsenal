@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-31T02:33:31.265Z",
+  "updated_at": "2026-07-31T03:23:26.337Z",
   "sources": {
     "fc": {
       "key": "fc",
@@ -85,8 +85,8 @@
       "key": "draftsharks_proj",
       "name": "DraftSharks Projections",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:03:43.943Z",
-      "last_success_at": "2026-07-30T23:03:43.943Z",
+      "last_attempt_at": "2026-07-31T03:23:26.337Z",
+      "last_success_at": "2026-07-31T03:23:26.337Z",
       "last_error": ""
     },
     "espn_proj": {
@@ -117,8 +117,8 @@
       "key": "fp",
       "name": "FantasyPros",
       "status": "success",
-      "last_attempt_at": "2026-07-30T23:03:14.829Z",
-      "last_success_at": "2026-07-30T23:03:14.829Z",
+      "last_attempt_at": "2026-07-31T03:23:25.437Z",
+      "last_success_at": "2026-07-31T03:23:25.437Z",
       "last_error": ""
     },
     "fantasypros_proj": {

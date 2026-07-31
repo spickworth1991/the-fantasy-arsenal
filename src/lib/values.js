@@ -26,6 +26,9 @@ export function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr")
     }
     if (valueSource === "FantasyPros") {
       if (format !== "dynasty") return 0;
+      if (String(scoring).toLowerCase() === "tep") {
+        return qbType === "sf" ? (p.fp_values?.dynasty_sf_tep || p.fp_values?.dynasty_sf || 0) : (p.fp_values?.dynasty_1qb_tep || p.fp_values?.dynasty_1qb || 0);
+      }
       return qbType === "sf" ? (p.fp_values?.dynasty_sf || 0) : (p.fp_values?.dynasty_1qb || 0);
     }
     if (valueSource === "FantasyProsECR") {

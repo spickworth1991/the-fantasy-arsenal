@@ -460,7 +460,7 @@ function getSleeperPosForProj(p) {
 function createProjectionIndex(seedByName) {
   const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
 
-  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr }) {
+  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf }) {
     const nn = keyName(name);
     if (!nn) return;
 
@@ -471,6 +471,11 @@ function createProjectionIndex(seedByName) {
       pointsStd: safeNum(pointsStd),
       pointsHalf: safeNum(pointsHalf),
       pointsPpr: safeNum(pointsPpr),
+      pointsTep: safeNum(pointsTep),
+      pointsStdSf: safeNum(pointsStdSf),
+      pointsHalfSf: safeNum(pointsHalfSf),
+      pointsPprSf: safeNum(pointsPprSf),
+      pointsTepSf: safeNum(pointsTepSf),
     };
     if (!(cand.pts > 0)) return;
 
@@ -539,6 +544,11 @@ function buildProjectionIndexFromJSON(json) {
       pointsStd: r.points_std ?? r.pointsStd,
       pointsHalf: r.points_half ?? r.pointsHalf,
       pointsPpr: r.points_ppr ?? r.pointsPpr,
+      pointsTep: r.points_tep ?? r.pointsTep,
+      pointsStdSf: r.points_std_sf ?? r.pointsStdSf,
+      pointsHalfSf: r.points_half_sf ?? r.pointsHalfSf,
+      pointsPprSf: r.points_ppr_sf ?? r.pointsPprSf,
+      pointsTepSf: r.points_tep_sf ?? r.pointsTepSf,
     });
   });
 
@@ -887,10 +897,12 @@ export const SleeperProvider = ({ children }) => {
     const team = getSleeperTeamForProj(p);
 
     const best = idx.pickBest({ name: fullName, pos, team });
-    if (src === "FANTASYPROS") {
-      if (projectionScoring === "std") return safeNum(best?.pointsStd || best?.pts);
-      if (projectionScoring === "half") return safeNum(best?.pointsHalf || best?.pts);
-      return safeNum(best?.pointsPpr || best?.pts);
+    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS") {
+      const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
+      if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) || best?.pts);
+      if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) || best?.pts);
+      if (projectionScoring === "tep") return safeNum((sf ? best?.pointsTepSf : best?.pointsTep) || (sf ? best?.pointsPprSf : best?.pointsPpr) || best?.pts);
+      return safeNum((sf ? best?.pointsPprSf : best?.pointsPpr) || best?.pts);
     }
     return safeNum(best?.pts);
   };
@@ -1179,7 +1191,21 @@ export const SleeperProvider = ({ children }) => {
       };
 
       ingest4WayList(fnData, fnIndex);
-      ingest4WayList(fpData, fpIndex);
+      const ingestFantasyPros = (data, index) => {
+        const KEY_MAP = { Dynasty_SF:"dynasty_sf", Dynasty_1QB:"dynasty_1qb" };
+        Object.entries(KEY_MAP).forEach(([bucket,outKey]) => {
+          (Array.isArray(data?.[bucket]) ? data[bucket] : []).forEach((row) => {
+            if (!row?.name) return;
+            index.addCandidate({
+              name:row.name,
+              pos:row.position||row.pos,
+              team:row.team,
+              values:{ [outKey]:row.value, [`${outKey}_tep`]:row.tep_value||row.value },
+            });
+          });
+        });
+      };
+      ingestFantasyPros(fpData, fpIndex);
       ingest4WayList(spData, spIndex);
 
       const ECR_BUCKETS = {
@@ -1294,6 +1320,8 @@ export const SleeperProvider = ({ children }) => {
           dynasty_1qb: safeNum(cand?.values?.dynasty_1qb),
           redraft_sf: safeNum(cand?.values?.redraft_sf),
           redraft_1qb: safeNum(cand?.values?.redraft_1qb),
+          dynasty_sf_tep: safeNum(cand?.values?.dynasty_sf_tep),
+          dynasty_1qb_tep: safeNum(cand?.values?.dynasty_1qb_tep),
         };
         return {
           ...out,

@@ -46,7 +46,7 @@ function gameHasStarted(game) {
   const kickoff = new Date(game.date || game.startTime || 0).getTime();
   return Number.isFinite(kickoff) && kickoff > 0 && kickoff <= Date.now() && !["postponed","canceled","cancelled"].some((value) => status.includes(value));
 }
-function buildProjectionMapFromJSON(json, scoring = "ppr") {
+function buildProjectionMapFromJSON(json, scoring = "ppr", qb = "1qb") {
   const rows = Array.isArray(json) ? json : (json?.rows || []);
   const byId = Object.create(null);
   const byName = Object.create(null);
@@ -56,7 +56,13 @@ function buildProjectionMapFromJSON(json, scoring = "ppr") {
   rows.forEach((r) => {
     const pid = r.player_id != null ? String(r.player_id) : "";
     const name = r.name || r.player || r.full_name || "";
-    const seasonPts = Number(scoring === "std" ? r.points_std : scoring === "half" ? r.points_half : r.points_ppr ?? r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+    const sf = qb === "sf";
+    const seasonPts = Number(
+      scoring === "std" ? (sf ? r.points_std_sf ?? r.points_std : r.points_std)
+      : scoring === "half" ? (sf ? r.points_half_sf ?? r.points_half : r.points_half)
+      : scoring === "tep" ? (sf ? r.points_tep_sf ?? r.points_tep : r.points_tep)
+      : (sf ? r.points_ppr_sf ?? r.points_ppr : r.points_ppr) ?? r.points ?? r.pts ?? r.total ?? r.projection ?? 0
+    ) || 0;
 
     const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
     const team = normalizeTeamAbbr(rawTeam);
@@ -75,11 +81,11 @@ function buildProjectionMapFromJSON(json, scoring = "ppr") {
 
   return { byId, byName, byNameTeam, byNamePos };
 }
-async function fetchProjectionMap(url, scoring) {
+async function fetchProjectionMap(url, scoring, qb) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const json = await res.json();
-  return buildProjectionMapFromJSON(json, scoring);
+  return buildProjectionMapFromJSON(json, scoring, qb);
 }
 function getSeasonPointsForPlayer(map, p) {
   if (!map || !p) return 0;
@@ -497,9 +503,9 @@ export default function LineupTool() {
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
-          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
+          fetchProjectionMap(PROJ_SLEEPER_JSON_URL, projectionScoring),
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
-          fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
+          fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL, projectionScoring, qbLocal),
           fetchProjectionMap(PROJ_FANTASYPROS_JSON_URL, projectionScoring),
           fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
         ]);
@@ -538,7 +544,7 @@ export default function LineupTool() {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectionScoring]);
+  }, [projectionScoring, qbLocal]);
 
   useEffect(() => {
     let mounted = true;

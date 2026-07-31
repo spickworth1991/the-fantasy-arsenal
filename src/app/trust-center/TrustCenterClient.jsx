@@ -46,7 +46,7 @@ const SOURCE_METHODS = {
   },
   sleeper: {
     origin: "Sleeper projection feed",
-    method: "Sleeper player projections are matched to the shared player index and kept in fantasy-point units.",
+    method: "Sleeper player projections are matched to the shared player index with separate Standard, Half PPR, and PPR totals.",
     use: "Lineup and weekly context; lower-priority input in Arsenal consensus where coverage is inconsistent.",
     limits: "Sleeper coverage and scoring assumptions can differ from other season sources.",
   },
@@ -58,7 +58,7 @@ const SOURCE_METHODS = {
   },
   draftsharks: {
     origin: "DraftSharks public season rankings",
-    method: "Published season projection data is matched to players; available analysis links remain source context.",
+    method: "Four distinct published boards are collected: Standard, Half PPR, PPR, and TE Premium. Available analysis links remain attached as source context.",
     use: "Season projections, comparisons, and player research.",
     limits: "Availability and coverage are controlled by the publisher’s public response.",
   },
@@ -100,7 +100,7 @@ const SOURCE_METHODS = {
   },
   fantasypros: {
     origin: "Official FantasyPros Dynasty Trade Value Chart CSV",
-    method: "FantasyPros’ published Trade Value and Superflex Value numbers are preserved; Arsenal multiplies them by 100 only for display-scale compatibility.",
+    method: "FantasyPros’ published Trade Value, Superflex Value, and TE Premium Value numbers are preserved; Arsenal multiplies them by 100 only for display-scale compatibility.",
     use: "Official published dynasty trade values and package comparison.",
     limits: "Dynasty-only, monthly-chart data; the original number remains available as source_value.",
   },

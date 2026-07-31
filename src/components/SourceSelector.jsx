@@ -143,7 +143,7 @@ export const DEFAULT_SOURCES = [
     type: "value",
     label: "FantasyPros Trade Values",
     logoKey: "FantasyPros",
-    supports: { dynasty: true, redraft: false, qbToggle: true },
+    supports: { dynasty: true, redraft: false, qbToggle: true, scoring: ["base", "tep"] },
   },
   {
     key: "val:fantasypros-ecr",
@@ -177,9 +177,9 @@ export const DEFAULT_SOURCES = [
   { key: "proj:espn", type: "projection", label: "ESPN Projections", logoKey: "ESPN" },
   { key: "proj:cbs", type: "projection", label: "CBS Projections", logoKey: "CBS" },
   { key: "proj:ffa", type: "projection", label: "FFA Projections", logoKey: "FFA" },
-  { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper" },
+  { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
-  { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks" },
+  { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks", supports: { scoring: ["std", "half", "ppr", "tep"] } },
   { key: "proj:fantasypros", type: "projection", label: "FantasyPros Projections", logoKey: "FantasyProsProjections", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal" },
 ];
@@ -235,7 +235,8 @@ function InlineToggles({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.key]);
 
-  if (!selected || selected.type !== "value") return null;
+  if (!selected) return null;
+  if (selected.type !== "value" && !showQB) return null;
   if (!showMode && !showQB) return null;
 
   const m = String(mode || "dynasty").toLowerCase();
@@ -249,7 +250,7 @@ function InlineToggles({
       ].join(" ")}
     >
       <div className="flex flex-wrap items-center gap-2">
-        {showMode && (
+        {showMode && selected.type === "value" && (
           <div className="flex items-center gap-2">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-white/50 mr-1">
               Mode
@@ -291,8 +292,9 @@ function InlineToggles({
       </div>
 
       <div className="mt-2 text-[11px] text-white/45">
-        These settings apply to{" "}
-        <span className="text-white/70 font-semibold">value-based</span> rankings only.
+        {selected.type === "projection"
+          ? "DraftSharks publishes separate 1QB and Superflex projection boards."
+          : <>These settings apply to <span className="text-white/70 font-semibold">value-based</span> rankings.</>}
       </div>
     </div>
   );
@@ -399,6 +401,11 @@ export default function SourceSelector({
     selected?.key === "val:fantasypros-ecr" && mode === "dynasty"
       ? []
       : selected?.supports?.scoring || [];
+
+  useEffect(() => {
+    if (scoringOptions.length < 1 || scoringOptions.includes(projectionScoring)) return;
+    setProjectionScoring?.(scoringOptions.includes("ppr") ? "ppr" : scoringOptions[0]);
+  }, [selected?.key, mode, projectionScoring, scoringOptions, setProjectionScoring]);
 
   useEffect(() => setMounted(true), []);
 
@@ -581,7 +588,7 @@ export default function SourceSelector({
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Scoring</span>
             <div className="inline-flex rounded-xl border border-white/10 bg-black/20 p-1">
-              {[["std","Standard"],["half","Half PPR"],["ppr","PPR"]].filter(([key]) => scoringOptions.includes(key)).map(([key,label]) => (
+              {[["base","Base"],["std","Standard"],["half","Half PPR"],["ppr","PPR"],["tep","TE Premium"]].filter(([key]) => scoringOptions.includes(key)).map(([key,label]) => (
                 <SegButton key={key} active={projectionScoring === key} onClick={() => setProjectionScoring?.(key)}>{label}</SegButton>
               ))}
             </div>
@@ -589,7 +596,11 @@ export default function SourceSelector({
           <div className="mt-2 text-[11px] text-white/45">
             {selected?.key === "val:fantasypros-ecr"
               ? "FantasyPros publishes separate expert-consensus boards for these scoring formats."
-              : "FantasyPros publishes separate season totals for these scoring formats."}
+              : selected?.key === "val:fantasypros"
+                ? "Base uses the published Trade Value column; TE Premium uses FantasyPros’ published TEP value for tight ends."
+                : selected?.key === "proj:draftsharks"
+                  ? "DraftSharks publishes separate scoring and roster-format boards."
+                  : `${selected?.label || "This source"} publishes separate totals for these scoring formats.`}
           </div>
         </div>
       ) : null}

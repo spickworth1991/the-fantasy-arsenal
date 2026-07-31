@@ -910,11 +910,11 @@ async function updateFantasyPros() {
       const name=String(row.Name||"").trim();
       const raw=Number(row["Trade Value"])||0;
       if(!name||raw<=0)return;
-      const common={name,position:positions[index],team:normalizeTeamAbbr(row.Team||""),age:Number(row.Age)||null,source_value:raw,value:Math.round(raw*100),source_date:sourceDate,chart_id:chartId};
-      if(positions[index]==="TE"&&Number(row["TEP Value"]))common.tep_source_value=Number(row["TEP Value"]);
+      const tepRaw=positions[index]==="TE"?(Number(row["TEP Value"])||raw):raw;
+      const common={name,position:positions[index],team:normalizeTeamAbbr(row.Team||""),age:Number(row.Age)||null,source_value:raw,value:Math.round(raw*100),tep_source_value:tepRaw,tep_value:Math.round(tepRaw*100),source_date:sourceDate,chart_id:chartId};
       output.Dynasty_1QB.push(common);
       const sfRaw=positions[index]==="QB"?(Number(row["SF Value"])||raw):raw;
-      output.Dynasty_SF.push({...common,source_value:sfRaw,value:Math.round(sfRaw*100)});
+      output.Dynasty_SF.push({...common,source_value:sfRaw,value:Math.round(sfRaw*100),tep_source_value:positions[index]==="QB"?sfRaw:tepRaw,tep_value:Math.round((positions[index]==="QB"?sfRaw:tepRaw)*100)});
     });
   }
   output.Dynasty_SF.sort((a,b)=>b.value-a.value);
@@ -2419,12 +2419,27 @@ function parseDraftSharksRows(html) {
 
 async function updateDraftSharksProjections() {
   const base = "https://www.draftsharks.com/rankings/load-table";
-  const query = (depth) => `${base}?pprSuperflexSlug=&fantasyPosition=&researchDepth=${depth}&playerGroup=all&sort=-dsValue&selectedTeam=&playerSearchTerm=`;
-  const [projectionHtml, analysisHtml] = await Promise.all(["projections", "analysis"].map((depth) => fetch(query(depth), { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } }).then((response) => {
-    if (!response.ok) throw new Error(`DraftSharks ${depth} endpoint returned HTTP ${response.status}`);
+  const query = (depth, slug = "") => `${base}?pprSuperflexSlug=${slug}&fantasyPosition=&researchDepth=${depth}&playerGroup=all&sort=-dsValue&selectedTeam=&playerSearchTerm=`;
+  const variants = [
+    { key:"std", slug:"" }, { key:"half", slug:"half-ppr" }, { key:"ppr", slug:"ppr" }, { key:"tep", slug:"te-premium" },
+  ];
+  const fetchHtml = (url, label) => fetch(url, { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } }).then((response) => {
+    if (!response.ok) throw new Error(`DraftSharks ${label} endpoint returned HTTP ${response.status}`);
     return response.text();
-  })));
-  const rows = parseDraftSharksRows(projectionHtml);
+  });
+  const [variantPayloads, analysisHtml] = await Promise.all([
+    Promise.all(variants.map(async (variant) => ({...variant, html:await fetchHtml(query("projections",variant.slug),`projections ${variant.key}`)}))),
+    fetchHtml(query("analysis"),"analysis"),
+  ]);
+  const variantRows = Object.fromEntries(variantPayloads.map((variant)=>[variant.key,parseDraftSharksRows(variant.html)]));
+  const rows = variantRows.ppr.length ? variantRows.ppr : variantRows.std;
+  const byVariant = Object.fromEntries(Object.entries(variantRows).map(([key,list])=>[key,new Map(list.map((row)=>[row.source_player_id,row]))]));
+  rows.forEach((row)=>{
+    row.points_std=Number(byVariant.std.get(row.source_player_id)?.points)||0;
+    row.points_half=Number(byVariant.half.get(row.source_player_id)?.points)||0;
+    row.points_ppr=Number(byVariant.ppr.get(row.source_player_id)?.points)||row.points;
+    row.points_tep=Number(byVariant.tep.get(row.source_player_id)?.points)||row.points_ppr;
+  });
   const analysisRows = new Map(parseDraftSharksRows(analysisHtml).map((row) => [row.source_player_id, row]));
   rows.forEach((row) => {
     const analysisRow = analysisRows.get(row.source_player_id);
@@ -2435,7 +2450,10 @@ async function updateDraftSharksProjections() {
   const coreRows = rows.filter((row) => ["QB", "RB", "WR", "TE"].includes(row.position) && row.points > 0);
   const coverage = rows.reduce((map, row) => { map[row.position || "UNKNOWN"] = (map[row.position || "UNKNOWN"] || 0) + (row.points > 0 ? 1 : 0); return map; }, {});
   if (coreRows.length < 50) throw new Error(`DraftSharks projection coverage is incomplete (${JSON.stringify(coverage)}); existing cache was not overwritten.`);
-  fs.writeFileSync(DRAFTSHARKS_PROJ_OUT_PATH, JSON.stringify(projectionOutput("DraftSharks", rows, { endpoints: { projections: query("projections"), analysis: query("analysis") }, includes_analysis: true }), null, 2));
+  fs.writeFileSync(DRAFTSHARKS_PROJ_OUT_PATH, JSON.stringify(projectionOutput("DraftSharks", rows, {
+    scoring:"STD/HALF/PPR/TEP", scoring_variants:["std","half","ppr","tep"], default_scoring:"ppr",
+    endpoints:Object.fromEntries([...variants.map((variant)=>[variant.key,query("projections",variant.slug)]),["analysis",query("analysis")]]), includes_analysis:true,
+  }), null, 2));
   console.log(`✅ projections_draftsharks_${CURRENT_SEASON}.json written (${rows.length} rows).`);
 }
 
