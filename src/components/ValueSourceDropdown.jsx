@@ -65,6 +65,10 @@ function useClickAway(ref, onAway) {
 }
 
 const SHOW_TEXT = (key) => key === "FantasyNavigator";
+const PRODUCT_LABELS = {
+  FantasyPros: "Trade Values",
+  FantasyProsECR: "Calculated ECR Values",
+};
 
 export default function ValueSourceDropdown({ valueSource, setValueSource }) {
   const [open, setOpen] = useState(false);
@@ -84,14 +88,17 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
       >
         {/* Selected logo */}
         {ICONS[valueSource] && (
-          <img
-            src={ICONS[valueSource]}
-            alt={`${LABELS[valueSource]} logo`}
-            width={btnSize.w}
-            height={btnSize.h}
-            className={`${["FantasyPros","FantasyProsECR"].includes(valueSource) ? "object-cover object-center" : "object-contain"}`}
-            loading="lazy"
-          />
+          <span className="flex flex-col items-center">
+            <img
+              src={ICONS[valueSource]}
+              alt={`${LABELS[valueSource]} logo`}
+              width={btnSize.w}
+              height={btnSize.h}
+              className={`${["FantasyPros","FantasyProsECR"].includes(valueSource) ? "object-cover object-center" : "object-contain"}`}
+              loading="lazy"
+            />
+            {PRODUCT_LABELS[valueSource] ? <span className="mt-0.5 whitespace-nowrap text-[9px] font-bold text-cyan-100/75">{PRODUCT_LABELS[valueSource]}</span> : null}
+          </span>
         )}
         {/* Only FantasyNavigator shows visible text */}
         {SHOW_TEXT(valueSource) ? (
@@ -125,14 +132,17 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
                 }`}
               >
                 {ICONS[opt] ? (
-                  <img
-                    src={ICONS[opt]}
-                    alt={`${LABELS[opt]} logo`}
-                    width={size.w}
-                    height={size.h}
-                    className={`${["FantasyPros","FantasyProsECR"].includes(opt) ? "object-cover object-center" : "object-contain"} shrink-0`}
-                    loading="lazy"
-                  />
+                  <span className="flex min-w-[120px] flex-col items-start">
+                    <img
+                      src={ICONS[opt]}
+                      alt={`${LABELS[opt]} logo`}
+                      width={size.w}
+                      height={size.h}
+                      className={`${["FantasyPros","FantasyProsECR"].includes(opt) ? "object-cover object-center" : "object-contain"} shrink-0`}
+                      loading="lazy"
+                    />
+                    {PRODUCT_LABELS[opt] ? <span className="mt-0.5 whitespace-nowrap text-[9px] font-bold text-cyan-100/75">{PRODUCT_LABELS[opt]}</span> : null}
+                  </span>
                 ) : null}
                 {/* Only FantasyNavigator shows visible text in the menu */}
                 {SHOW_TEXT(opt) ? (

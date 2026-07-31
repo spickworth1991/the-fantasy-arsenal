@@ -105,6 +105,20 @@ const ICON_SIZES = {
 
 // Only some logos need visible text; render it like part of the logo/wordmark
 const SHOW_TEXT = (key) => key === "FantasyNavigator";
+const PRODUCT_LABELS = {
+  FantasyPros: "Trade Values",
+  FantasyProsECR: "Calculated ECR Values",
+};
+
+function ProductLabel({ source }) {
+  const text = PRODUCT_LABELS[source?.logoKey];
+  if (!text) return null;
+  return (
+    <div className="mt-0.5 whitespace-nowrap text-center text-[10px] font-bold tracking-wide text-cyan-100/75">
+      {text}
+    </div>
+  );
+}
 
 /** ========== Defaults ========== */
 export const DEFAULT_SOURCES = [
@@ -494,6 +508,7 @@ export default function SourceSelector({
                     <div className="mt-1 text-center text-[11px] text-white/45">
                       {s.type === "projection" ? "Projections" : "Values"}
                     </div>
+                    <ProductLabel source={s} />
                   </div>
 
                   {/* keep label hidden but accessible */}
@@ -548,6 +563,7 @@ export default function SourceSelector({
                 <div className="mt-1 text-center text-[11px] text-white/45">
                   {selected.type === "projection" ? "Projections" : "Values"}
                 </div>
+                <ProductLabel source={selected} />
               </div>
 
               {/* keep label hidden but accessible */}
