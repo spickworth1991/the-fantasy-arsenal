@@ -139,17 +139,20 @@ function saveManifestEntry(entry) {
 let completed = 0;
 for (const season of seasons) {
   const existingDirectory = path.join(root, "public", "stats", "history", String(season));
-  if (!force && fs.existsSync(path.join(existingDirectory, "fantasypros.json")) && fs.existsSync(path.join(existingDirectory, "sleeper.json"))) {
+  const requiresSleeper = season >= 2018;
+  if (!force && fs.existsSync(path.join(existingDirectory, "fantasypros.json")) && (!requiresSleeper || fs.existsSync(path.join(existingDirectory, "sleeper.json")))) {
     console.log(`Keeping saved ${season} historical statistics (use --force to rebuild).`);
     continue;
   }
   console.log(`Building saved ${season} historical statistics...`);
   const directory = path.join(root, "public", "stats", "history", String(season));
-  const sleeperPayload = season >= 2018 ? await sleeper(season) : {
+  const sleeperPayload = requiresSleeper ? await sleeper(season) : {
     source:"Sleeper read-only weekly stats", season, updated:new Date().toISOString(),
     completed_weeks:0, count:0, players:[],
   };
-  writeJson(path.join(directory, "sleeper.json"), sleeperPayload);
+  const sleeperPath = path.join(directory, "sleeper.json");
+  if (requiresSleeper) writeJson(sleeperPath, sleeperPayload);
+  else if (fs.existsSync(sleeperPath)) fs.unlinkSync(sleeperPath);
   const scoringPayloads = {};
   for (const scoring of ["STD","HALF","PPR"]) {
     const payload = await fantasyPros(season, scoring);
