@@ -24,8 +24,9 @@ const facts = [
   "The Vince Lombardi Trophy is made of sterling silver.",
 ];
 
-export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
+export default function LoadingScreen({ progress, text = "Loading..." }) {
   const [currentFact, setCurrentFact] = useState(facts[0]);
+  const [estimatedProgress, setEstimatedProgress] = useState(8);
 
   useEffect(() => {
     const factInterval = setInterval(() => {
@@ -34,7 +35,23 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
     return () => clearInterval(factInterval);
   }, []);
 
-  const runnerPosition = `${progress}%`;
+  useEffect(() => {
+    if (Number.isFinite(Number(progress))) return;
+    setEstimatedProgress(8);
+    const timer = setInterval(() => {
+      setEstimatedProgress((current) =>
+        current >= 92
+          ? 18
+          : Math.min(92, current + Math.max(1, (94 - current) * 0.08)),
+      );
+    }, 450);
+    return () => clearInterval(timer);
+  }, [progress]);
+
+  const shownProgress = Number.isFinite(Number(progress))
+    ? Math.max(0, Math.min(100, Number(progress)))
+    : estimatedProgress;
+  const runnerPosition = `${shownProgress}%`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 backdrop-blur-lg sm:px-4">
@@ -53,7 +70,9 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
 
         {/* Overlay for text clarity */}
         <div className="relative z-10 text-center">
-          <h1 className="mb-5 text-2xl font-bold text-blue-400 sm:mb-6 sm:text-3xl">{text}</h1>
+          <h1 className="mb-5 text-2xl font-bold text-blue-400 sm:mb-6 sm:text-3xl">
+            {text}
+          </h1>
 
           {/* Progress Bar */}
           <div className="relative mb-5 h-10 w-full overflow-hidden rounded-full border-4 border-white bg-green-900 shadow-lg sm:mb-6 sm:h-12">
@@ -69,7 +88,7 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
             {/* Progress fill */}
             <div
               className="absolute top-0 left-0 h-full bg-green-600 transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${shownProgress}%` }}
             ></div>
 
             {/* Runner */}
@@ -82,7 +101,9 @@ export default function LoadingScreen({ progress = 0, text = "Loading..." }) {
           </div>
 
           {/* Progress Text */}
-          <p className="text-gray-200 text-lg font-semibold mb-2">{Math.floor(progress)}%</p>
+          <p className="text-gray-200 text-lg font-semibold mb-2">
+            {Math.floor(shownProgress)}%
+          </p>
 
           {/* NFL Fact */}
           <p className="text-gray-400 italic">{currentFact}</p>
