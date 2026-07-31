@@ -21,6 +21,7 @@ const VALUE_SOURCES = {
   KeepTradeCut:     { label: "KeepTradeCut",     supports: { dynasty: true,  redraft: false, qbToggle: true  } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
   FantasyPros:      { label: "FantasyPros",      supports: { dynasty: true,  redraft: false, qbToggle: true  } },
+  FantasyProsECR:   { label: "FantasyPros ECR",  supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
   IDynastyP:        { label: "IDynastyP",        supports: { dynasty: true,  redraft: false, qbToggle: true  } },
   IDPShow:          { label: "IDPShow",          supports: { dynasty: true,  redraft: false, qbToggle: true  } },
   TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true,  redraft: true,  qbToggle: true  } },
@@ -106,7 +107,7 @@ function MobileAccordion({ title, children, defaultOpen=false }) {
 /* ===========================
    Values + ages
 =========================== */
-function makeGetPlayerValue(valueSource, format, qbType) {
+function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
   return (p) => {
     if (!p) return 0;
     if (valueSource === "FantasyCalc") {
@@ -128,6 +129,10 @@ function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "FantasyPros") {
       if (format !== "dynasty") return 0;
       return qbType === "sf" ? (p.fp_values?.dynasty_sf || 0) : (p.fp_values?.dynasty_1qb || 0);
+    }
+    if (valueSource === "FantasyProsECR") {
+      const key=`${format === "dynasty" ? "dynasty" : "redraft"}_${qbType === "sf" ? "sf" : "1qb"}_${["std","half","ppr"].includes(scoring)?scoring:"ppr"}`;
+      return p.fpecr_values?.[key] || 0;
     }
     if (valueSource === "IDynastyP") {
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
@@ -155,6 +160,7 @@ function getAnyPickValue(p, valueSource, format, qbType) {
     "KeepTradeCut",
     "FantasyNavigator",
     "FantasyPros",
+    "FantasyProsECR",
     "IDynastyP",
     "IDPShow",
   ];
@@ -379,6 +385,7 @@ export default function PowerRankingsPage() {
     setActiveLeague,
     fetchLeagueRostersSilent,
     getProjection,
+    projectionScoring,
   } = useSleeper();
 
   // Controls
@@ -498,8 +505,8 @@ export default function PowerRankingsPage() {
 
   // Metric getter: projections (season points) OR values
   const getValueRaw = useMemo(
-    () => makeGetPlayerValue(valueSource, format, qbType),
-    [valueSource, format, qbType]
+    () => makeGetPlayerValue(valueSource, format, qbType, projectionScoring),
+    [valueSource, format, qbType, projectionScoring]
   );
 
   const getMetricRaw = useMemo(() => {

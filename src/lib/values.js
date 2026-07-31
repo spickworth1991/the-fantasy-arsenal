@@ -5,7 +5,7 @@ export const isIDP  = (pos) => pos && IDP_POS.includes(String(pos).toUpperCase()
 export const isPick = (pos) => String(pos || "").toUpperCase() === "PICK";
 
 // Copied from your Power Rankings logic (kept 1:1)
-export function makeGetPlayerValue(valueSource, format, qbType) {
+export function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
   return (p) => {
     if (!p) return 0;
     if (valueSource === "FantasyCalc") {
@@ -27,6 +27,11 @@ export function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "FantasyPros") {
       if (format !== "dynasty") return 0;
       return qbType === "sf" ? (p.fp_values?.dynasty_sf || 0) : (p.fp_values?.dynasty_1qb || 0);
+    }
+    if (valueSource === "FantasyProsECR") {
+      const score = ["std","half","ppr"].includes(String(scoring).toLowerCase()) ? String(scoring).toLowerCase() : "ppr";
+      const key = `${format === "dynasty" ? "dynasty" : "redraft"}_${qbType === "sf" ? "sf" : "1qb"}_${score}`;
+      return p.fpecr_values?.[key] || 0;
     }
     if (valueSource === "IDynastyP") {
       return qbType === "sf" ? (p.idp_values?.superflex || 0) : (p.idp_values?.one_qb || 0);
@@ -54,6 +59,7 @@ export function getAnyPickValue(p, valueSource, format, qbType) {
     "KeepTradeCut",
     "FantasyNavigator",
     "FantasyPros",
+    "FantasyProsECR",
     "IDynastyP",
     "IDPShow",
   ];
@@ -82,4 +88,3 @@ export function getPlayerAge(p) {
   const years = (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
   return Math.max(0, Math.round(years * 10) / 10);
 }
-

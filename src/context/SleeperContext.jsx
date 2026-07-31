@@ -89,6 +89,12 @@ const safeNum = (v) => {
 
 // Formats that exist in FN/SP caches
 const VALUE_KEYS = ["dynasty_sf", "dynasty_1qb", "redraft_sf", "redraft_1qb"];
+const ECR_VALUE_KEYS = [
+  "dynasty_sf_std","dynasty_sf_half","dynasty_sf_ppr",
+  "dynasty_1qb_std","dynasty_1qb_half","dynasty_1qb_ppr",
+  "redraft_sf_std","redraft_sf_half","redraft_sf_ppr",
+  "redraft_1qb_std","redraft_1qb_half","redraft_1qb_ppr",
+];
 
 // Sleeper positions you typically want values for.
 const FANTASY_RELEVANT = new Set([
@@ -134,7 +140,7 @@ function isFantasyRelevantSleeperPlayer(p) {
 // =====================
 // Candidate-based matching (prevents name-only collisions)
 // =====================
-function createCandidateIndex4(seedByName) {
+function createCandidateIndex4(seedByName, valueKeys = VALUE_KEYS) {
   // nameKey -> array of candidates: { pos, team, values: {dynasty_sf,...} }
   const byName =
     seedByName && typeof seedByName === "object"
@@ -151,7 +157,7 @@ function createCandidateIndex4(seedByName) {
     );
 
     if (existing) {
-      VALUE_KEYS.forEach((k) => {
+      valueKeys.forEach((k) => {
         if (incoming[k] > 0) existing.values[k] = incoming[k];
       });
       if (pickKey && !existing.pickKey) existing.pickKey = pickKey;
@@ -175,11 +181,11 @@ function createCandidateIndex4(seedByName) {
     const pickMeta = candPos === "PICK" ? parsePickLabel(name) : null;
 
     const incoming = {};
-    VALUE_KEYS.forEach((k) => {
+    valueKeys.forEach((k) => {
       incoming[k] = safeNum(values?.[k]);
     });
 
-    const hasAny = VALUE_KEYS.some((k) => incoming[k] > 0);
+    const hasAny = valueKeys.some((k) => incoming[k] > 0);
     if (!hasAny) return;
 
     mergeIntoStore(byName, nn, candPos, candTeam, incoming, pickMeta?.key);
@@ -658,6 +664,7 @@ export const SleeperProvider = ({ children }) => {
       "val:dynastyprocess": "DynastyProcess",
       "val:fantasynav": "FantasyNavigator",
       "val:fantasypros": "FantasyPros",
+      "val:fantasypros-ecr": "FantasyProsECR",
       "val:idynastyp": "IDynastyP",
       "val:idpshow": "IDPShow",
       "val:thefantasyarsenal": "TheFantasyArsenal",
@@ -696,9 +703,10 @@ export const SleeperProvider = ({ children }) => {
     return makeGetPlayerValue(
       activeValueSource,
       String(format || "dynasty").toLowerCase(),
-      String(qbType || "sf").toLowerCase()
+      String(qbType || "sf").toLowerCase(),
+      projectionScoring
     );
-  }, [activeValueSource, format, qbType]);
+  }, [activeValueSource, format, qbType, projectionScoring]);
 
   // Universal helper: can be called with overrides (sourceKey/format/qbType)
   const getPlayerValue = (p, opts = null) => {
@@ -717,7 +725,7 @@ export const SleeperProvider = ({ children }) => {
       return getPlayerValueFn(p);
     }
     const src = valueSourceFromKey(srcKey);
-    return makeGetPlayerValue(src, fmt, qb)(p);
+    return makeGetPlayerValue(src, fmt, qb, projectionScoring)(p);
   };
 
   useEffect(() => {
@@ -1025,6 +1033,7 @@ export const SleeperProvider = ({ children }) => {
               ktc_values: cached.ktc_values,
               fn_values: cached.fn_values,
               fp_values: cached.fp_values,
+              fpecr_values: cached.fpecr_values,
               sp_values: cached.sp_values,
               idp_values: cached.idp_values,
               idpshow_values: cached.idpshow_values,
@@ -1043,23 +1052,25 @@ export const SleeperProvider = ({ children }) => {
       const playersData = await playersRes.json();
       updateProgress(68);
 
-      const [fcRes, dpRes, ktcRes, fnRes, fpRes, idpRes, idpShowRes, spRes] = await Promise.all([
+      const [fcRes, dpRes, ktcRes, fnRes, fpRes, fpEcrRes, idpRes, idpShowRes, spRes] = await Promise.all([
         fetch("/fantasycalc_cache.json", { cache: "no-store" }),
         fetch("/dynastyprocess_cache.json", { cache: "no-store" }),
         fetch("/ktc_cache.json", { cache: "no-store" }),
         fetch("/fantasynav_cache.json", { cache: "no-store" }),
         fetch("/fantasypros_cache.json", { cache: "no-store" }),
+        fetch("/fantasypros_ecr_cache.json", { cache: "no-store" }),
         fetch("/idynastyp_cache.json", { cache: "no-store" }),
         fetch("/idpshow_cache.json", { cache: "no-store" }),
         fetch("/stickypicky_cache.json", { cache: "no-store" }),
       ]);
 
-      const [fcData, dpData, ktcData, fnData, fpData, idpData, idpShowData, spData] = await Promise.all([
+      const [fcData, dpData, ktcData, fnData, fpData, fpEcrData, idpData, idpShowData, spData] = await Promise.all([
         fcRes.json(),
         dpRes.json(),
         ktcRes.json(),
         fnRes.json(),
         fpRes.json(),
+        fpEcrRes.json(),
         idpRes.json(),
         idpShowRes.json(),
         spRes.json(),
@@ -1131,6 +1142,7 @@ export const SleeperProvider = ({ children }) => {
 
       const fnIndex = createCandidateIndex4();
       const fpIndex = createCandidateIndex4();
+      const fpEcrIndex = createCandidateIndex4(undefined, ECR_VALUE_KEYS);
       const spIndex = createCandidateIndex4();
 
       const ingest4WayList = (data, index) => {
@@ -1161,6 +1173,23 @@ export const SleeperProvider = ({ children }) => {
       ingest4WayList(fnData, fnIndex);
       ingest4WayList(fpData, fpIndex);
       ingest4WayList(spData, spIndex);
+
+      const ECR_BUCKETS = {
+        Dynasty_SF_STD:"dynasty_sf_std", Dynasty_SF_HALF:"dynasty_sf_half", Dynasty_SF_PPR:"dynasty_sf_ppr",
+        Dynasty_1QB_STD:"dynasty_1qb_std", Dynasty_1QB_HALF:"dynasty_1qb_half", Dynasty_1QB_PPR:"dynasty_1qb_ppr",
+        Redraft_SF_STD:"redraft_sf_std", Redraft_SF_HALF:"redraft_sf_half", Redraft_SF_PPR:"redraft_sf_ppr",
+        Redraft_1QB_STD:"redraft_1qb_std", Redraft_1QB_HALF:"redraft_1qb_half", Redraft_1QB_PPR:"redraft_1qb_ppr",
+      };
+      Object.entries(ECR_BUCKETS).forEach(([bucket,valueKey])=>{
+        (Array.isArray(fpEcrData?.formats?.[bucket]) ? fpEcrData.formats[bucket] : []).forEach((row)=>{
+          fpEcrIndex.addCandidate({
+            name:row?.name,
+            pos:row?.position,
+            team:row?.team,
+            values:{[valueKey]:row?.value},
+          });
+        });
+      });
 
       const idpIndex = createCandidateIndex2();
 
@@ -1265,6 +1294,11 @@ export const SleeperProvider = ({ children }) => {
         };
       };
 
+      const getEcrFromIndex = (index, fullName, pos0, team0) => {
+        const cand=index?.pickBest(fullName,pos0,team0);
+        return Object.fromEntries(ECR_VALUE_KEYS.map((key)=>[key,safeNum(cand?.values?.[key])]));
+      };
+
 
       const getIDP2FromIndex = (index, fullName, pos0, team0) => {
         const cand = index.pickBest(fullName, pos0, team0);
@@ -1304,6 +1338,9 @@ export const SleeperProvider = ({ children }) => {
         const fp_values = fantasyRelevant
           ? get4WayFromIndex(fpIndex, fullName, pos, team)
           : { dynasty_sf: 0, dynasty_1qb: 0, redraft_sf: 0, redraft_1qb: 0, dynasty_1QB: 0, redraft_1QB: 0 };
+        const fpecr_values = fantasyRelevant
+          ? getEcrFromIndex(fpEcrIndex, fullName, pos, team)
+          : Object.fromEntries(ECR_VALUE_KEYS.map((key)=>[key,0]));
 
         const sp_values = fantasyRelevant
           ? get4WayFromIndex(spIndex, fullName, pos, team)
@@ -1325,6 +1362,7 @@ export const SleeperProvider = ({ children }) => {
           Object.values(ktc_values).some((v) => v > 0) ||
           Object.values(fn_values).some((v) => v > 0) ||
           Object.values(fp_values).some((v) => v > 0) ||
+          Object.values(fpecr_values).some((v) => v > 0) ||
           Object.values(sp_values).some((v) => v > 0) ||
           Object.values(idp_values).some((v) => v > 0) ||
           Object.values(idpshow_values).some((v) => v > 0);
@@ -1341,6 +1379,7 @@ export const SleeperProvider = ({ children }) => {
             ktc_values,
             fn_values,
             fp_values,
+            fpecr_values,
             sp_values,
             idp_values,
             idpshow_values,

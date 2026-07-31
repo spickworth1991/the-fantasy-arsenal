@@ -27,6 +27,7 @@ const ICONS = {
   KeepTradeCut: "/icons/ktc-logo.png",
   FantasyNavigator: "/icons/fantasynav-logo.png",
   FantasyPros: "/icons/fantasypro-logo.png",
+  FantasyProsECR: "/icons/fantasypro-logo.png",
   IDynastyP: "/icons/idp-logo.png",
   IDPShow: "/icons/idpshow-logo.png",
   TheFantasyArsenal: "/icons/TFA.png",
@@ -46,6 +47,7 @@ const LABELS = {
   KeepTradeCut: "KeepTradeCut",
   FantasyNavigator: "FantasyNavigator",
   FantasyPros: "FantasyPros",
+  FantasyProsECR: "FantasyPros ECR",
   IDynastyP: "IDynastyP",
   IDPShow: "IDPShow",
   TheFantasyArsenal: "The Fantasy Arsenal",
@@ -67,6 +69,7 @@ const ICON_SIZES = {
     KeepTradeCut: { w: 136, h: 28 },
     FantasyNavigator: { w: 48, h: 20 }, // square
     FantasyPros: { w: 112, h: 28 },
+    FantasyProsECR: { w: 112, h: 28 },
     IDynastyP: { w: 60, h: 20 },
     IDPShow: { w: 60, h: 20 },
     TheFantasyArsenal: { w: 60, h: 20 },
@@ -85,6 +88,7 @@ const ICON_SIZES = {
     KeepTradeCut: { w: 136, h: 21 },
     FantasyNavigator: { w: 48, h: 21 }, // square
     FantasyPros: { w: 120, h: 30 },
+    FantasyProsECR: { w: 120, h: 30 },
     IDynastyP: { w: 140, h: 28 },
     IDPShow: { w: 140, h: 28 },
     TheFantasyArsenal: { w: 140, h: 28 },
@@ -140,6 +144,13 @@ export const DEFAULT_SOURCES = [
     label: "FantasyPros",
     logoKey: "FantasyPros",
     supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  {
+    key: "val:fantasypros-ecr",
+    type: "value",
+    label: "FantasyPros ECR",
+    logoKey: "FantasyProsECR",
+    supports: { dynasty: true, redraft: true, qbToggle: true, scoring: ["std", "half", "ppr"] },
   },
   {
     key: "val:idynastyp",
@@ -313,7 +324,7 @@ function LogoOnly({ source, variant }) {
           alt={`${LABELS[logoKey] || source?.label || "Source"} logo`}
           width={size.w}
           height={size.h}
-          className={`${logoKey === "FantasyPros" ? "object-cover object-center" : "object-contain"} shrink-0`}
+          className={`${["FantasyPros","FantasyProsECR","FantasyProsProjections"].includes(logoKey) ? "object-cover object-center" : "object-contain"} shrink-0`}
           loading="lazy"
         />
       ) : null}
@@ -562,7 +573,7 @@ export default function SourceSelector({
           inline={inline}
         />
       ) : null}
-      {selected?.type === "projection" && scoringOptions.length > 1 ? (
+      {scoringOptions.length > 1 ? (
         <div className={`${layout === "inline" ? "mt-2" : "mt-2"} rounded-2xl border border-white/10 bg-black/20 p-3`}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Scoring</span>
@@ -572,7 +583,11 @@ export default function SourceSelector({
               ))}
             </div>
           </div>
-          <div className="mt-2 text-[11px] text-white/45">FantasyPros publishes separate season totals for these scoring formats.</div>
+          <div className="mt-2 text-[11px] text-white/45">
+            {selected?.key === "val:fantasypros-ecr"
+              ? "FantasyPros publishes separate expert-consensus boards for these scoring formats."
+              : "FantasyPros publishes separate season totals for these scoring formats."}
+          </div>
         </div>
       ) : null}
 

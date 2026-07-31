@@ -131,6 +131,7 @@ const DP_OUT_PATH = path.join(__dirname, "../public/dynastyprocess_cache.json");
 const KTC_OUT_PATH = path.join(__dirname, "../public/ktc_cache.json");
 const FN_OUT_PATH = path.join(__dirname, "../public/fantasynav_cache.json");
 const FP_OUT_PATH = path.join(__dirname, "../public/fantasypros_cache.json");
+const FP_ECR_OUT_PATH = path.join(__dirname, "../public/fantasypros_ecr_cache.json");
 const IDP_OUT_PATH = path.join(__dirname, "../public/idynastyp_cache.json");
 const IDPSHOW_OUT_PATH = path.join(__dirname, "../public/idpshow_cache.json");
 const SP_OUT_PATH  = path.join(__dirname, "../public/stickypicky_cache.json");
@@ -171,7 +172,7 @@ function recordSourceFreshness(task, status = "success", error = "") {
 function archiveUpdatedValues(failures = []) {
   const date = new Date().toISOString().slice(0, 10);
   const files = [
-    FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, FP_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
+    FC_OUT_PATH, DP_OUT_PATH, KTC_OUT_PATH, FN_OUT_PATH, FP_OUT_PATH, FP_ECR_OUT_PATH, IDP_OUT_PATH, IDPSHOW_OUT_PATH, SP_OUT_PATH,
     PROJ_OUT_PATH, ESPN_PROJ_OUT_PATH, CBS_PROJ_OUT_PATH, SLEEPER_PROJ_OUT_PATH,
     FANTASYSHARKS_PROJ_OUT_PATH, DRAFTSHARKS_PROJ_OUT_PATH, FANTASYPROS_PROJ_OUT_PATH, ARSENAL_PROJ_OUT_PATH,
   ].filter((file) => fs.existsSync(file));
@@ -322,6 +323,7 @@ function applyValueOverridesToAllCaches() {
     [KTC_OUT_PATH, "KTC"],
     [FN_OUT_PATH, "Fantasy Navigator"],
     [FP_OUT_PATH, "FantasyPros"],
+    [FP_ECR_OUT_PATH, "FantasyPros ECR"],
     [IDP_OUT_PATH, "IDynastyP"],
     [IDPSHOW_OUT_PATH, "The IDP Show"],
     [SP_OUT_PATH, "StickyPicky"],
@@ -919,6 +921,98 @@ async function updateFantasyPros() {
   output.Dynasty_1QB.sort((a,b)=>b.value-a.value);
   fs.writeFileSync(FP_OUT_PATH,JSON.stringify(output,null,2));
   console.log(`✅ fantasypros_cache.json updated (${output.Dynasty_SF.length} players, publisher date ${sourceDate}).`);
+}
+
+async function updateFantasyProsECR() {
+  const apiKey = String(process.env.FANTASYPROS_API_KEY || "").trim();
+  if (!apiKey) throw new Error("FANTASYPROS_API_KEY is required for FantasyPros ECR.");
+
+  const formats = [
+    { key:"Dynasty_1QB", type:"DYNASTY", position:"ALL" },
+    { key:"Dynasty_SF", type:"DYNASTY", position:"OP" },
+    { key:"Redraft_1QB", type:"DRAFT", position:"ALL" },
+    { key:"Redraft_SF", type:"DRAFT", position:"OP" },
+  ];
+  const scoringTypes = [{ key:"std", api:"STD" },{ key:"half", api:"HALF" },{ key:"ppr", api:"PPR" }];
+  const variants = formats.flatMap((format) => scoringTypes.map((scoring) => ({ ...format, scoring })));
+  const output = {
+    updated:new Date().toISOString(),
+    source:"FantasyPros ECR",
+    source_type:"expert_consensus_rankings",
+    season:CURRENT_SEASON,
+    methodology:"Actual FantasyPros ECR order converted to a 10,000-to-100 rank score for Arsenal display compatibility. rank_ecr preserves the published ordinal rank. This score is not a FantasyPros trade value and is not inherently additive.",
+    formats:{},
+    experts_by_format:{},
+    request_count:variants.length,
+  };
+
+  for (let offset=0; offset<variants.length; offset+=3) {
+    const batch=variants.slice(offset,offset+3);
+    const results=await Promise.all(batch.map(async(variant)=>{
+      const params=new URLSearchParams({
+        position:variant.position,
+        scoring:variant.scoring.api,
+        type:variant.type,
+        experts:"show",
+      });
+      const endpoint=`https://api.fantasypros.com/public/v2/json/nfl/${CURRENT_SEASON}/consensus-rankings?${params}`;
+      const response=await fetch(endpoint,{headers:{"x-api-key":apiKey,Accept:"application/json"}});
+      if(!response.ok)throw new Error(`FantasyPros ECR ${variant.key} ${variant.scoring.api} returned HTTP ${response.status}.`);
+      const payload=await response.json();
+      const sourceRows=Array.isArray(payload?.players)?payload.players:[];
+      const declaredCount=Number(payload?.count)||sourceRows.length;
+      if(sourceRows.length<100||sourceRows.length<Math.min(100,declaredCount)){
+        throw new Error(`FantasyPros ECR ${variant.key} ${variant.scoring.api} coverage is incomplete (${sourceRows.length}/${declaredCount}).`);
+      }
+      const listKey=`${variant.key}_${variant.scoring.api}`;
+      const total=Math.max(1,sourceRows.length);
+      const rows=sourceRows.map((row,index)=>{
+        const rank=Number(row?.rank_ecr)||index+1;
+        const value=Math.max(100,Math.round(10000-((Math.max(1,rank)-1)/Math.max(1,total-1))*9900));
+        return {
+          name:String(row?.player_name||"").trim(),
+          position:String(row?.player_position_id||row?.player_positions||"").toUpperCase(),
+          team:normalizeTeamAbbr(row?.player_team_id||""),
+          value,
+          rank_ecr:rank,
+          position_rank:row?.pos_rank||null,
+          rank_min:Number(row?.rank_min)||null,
+          rank_max:Number(row?.rank_max)||null,
+          rank_average:Number(row?.rank_ave)||null,
+          rank_stddev:Number(row?.rank_std)||null,
+          rank_delta:Number(row?.player_ecr_delta)||0,
+          expert_count:Object.keys(row?.experts||{}).length,
+          fantasypros_id:Number(row?.player_id)||null,
+          player_url:row?.player_page_url||null,
+        };
+      }).filter((row)=>row.name&&row.rank_ecr>0).sort((a,b)=>a.rank_ecr-b.rank_ecr);
+      const expertNames=payload?.expert_names||payload?.expert_name||{};
+      return {
+        listKey,
+        rows,
+        experts:{
+          total:Number(payload?.total_experts)||Object.keys(expertNames).length,
+          last_updated:payload?.last_updated||null,
+          last_updated_ts:Number(payload?.last_updated_ts)||null,
+          names:expertNames,
+          twitter:payload?.expert_twitter||{},
+          publications:payload?.expert_pub||{},
+          ranking_type:payload?.type||payload?.ranking_type_name||variant.type,
+          position:variant.position,
+          scoring:variant.scoring.api,
+        },
+      };
+    }));
+    results.forEach(({listKey,rows,experts})=>{
+      output.formats[listKey]=rows;
+      output.experts_by_format[listKey]=experts;
+    });
+  }
+
+  const counts=Object.values(output.formats).map((rows)=>rows.length);
+  if(counts.length!==12)throw new Error(`FantasyPros ECR produced ${counts.length}/12 expected format tables.`);
+  fs.writeFileSync(FP_ECR_OUT_PATH,JSON.stringify(output,null,2));
+  console.log(`✅ fantasypros_ecr_cache.json updated (12 boards, ${counts.reduce((sum,count)=>sum+count,0)} ranked rows).`);
 }
 
 // ---------- IDynastyP (Google Sheets GViz) helpers ----------
@@ -2630,7 +2724,7 @@ async function updateCBSProjections() {
       return;
     }
     const onlyArg = process.argv.find((arg)=>arg.startsWith("--only="));
-    const dailySources = ["fc","dp","ktc","fn","fp","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","fantasypros_proj","espn_proj","cbs_proj","arsenal_proj"];
+    const dailySources = ["fc","dp","ktc","fn","fp","fantasypros_ecr","idp","idpshow","sp","proj","sleeper_proj","fantasysharks_proj","draftsharks_proj","fantasypros_proj","espn_proj","cbs_proj","arsenal_proj"];
     const requestedSources = process.argv.includes("--daily") ? dailySources : onlyArg ? onlyArg.slice("--only=".length).split(",").map((value)=>value.trim()).filter(Boolean) : null;
     const { sources } = requestedSources ? { sources:requestedSources } : await inquirer.prompt([
       {
@@ -2643,6 +2737,7 @@ async function updateCBSProjections() {
           { name: "KeepTradeCut (KTC)", value: "ktc" },
           { name: "FantasyNavigator", value: "fn" },
           { name: "FantasyPros (official public dynasty charts)", value: "fp" },
+          { name: "FantasyPros ECR (12 official API ranking boards)", value: "fantasypros_ecr" },
           { name: "IDynastyP", value: "idp" },
           { name: "The IDP Show", value: "idpshow" },
           { name: "StickyPicky (averaged)", value: "sp" },
@@ -2669,6 +2764,7 @@ async function updateCBSProjections() {
       { key: "ktc", name: "KeepTradeCut", fn: updateKTC },
       { key: "fn", name: "FantasyNavigator", fn: updateFantasyNavigator },
       { key: "fp", name: "FantasyPros", fn: updateFantasyPros },
+      { key: "fantasypros_ecr", name: "FantasyPros ECR", fn: updateFantasyProsECR },
       { key: "idp", name: "IDynastyP", fn: updateIDynastyP },
       { key: "idpshow", name: "The IDP Show", fn: updateIDPShow },
       { key: "sp", name: "StickyPicky", fn: updateStickyPicky },

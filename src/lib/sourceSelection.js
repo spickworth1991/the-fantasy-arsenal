@@ -20,6 +20,7 @@ export function valueSourceFromKey(sourceKey) {
   if (key === "val:dynastyprocess") return "DynastyProcess";
   if (key === "val:fantasynav") return "FantasyNavigator";
   if (key === "val:fantasypros") return "FantasyPros";
+  if (key === "val:fantasypros-ecr") return "FantasyProsECR";
   if (key === "val:idynastyp") return "IDynastyP";
   if (key === "val:idpshow") return "IDPShow";
   if (key === "val:thefantasyarsenal") return "TheFantasyArsenal";

@@ -10,6 +10,7 @@ const ICONS = {
   KeepTradeCut: "/icons/ktc-logo.png",
   FantasyNavigator: "/icons/fantasynav-logo.png", // square
   FantasyPros: "/icons/fantasypro-logo.png",
+  FantasyProsECR: "/icons/fantasypro-logo.png",
   IDynastyP: "/icons/idp-logo.png",
 };
 
@@ -20,6 +21,7 @@ const LABELS = {
   KeepTradeCut: "KeepTradeCut",
   FantasyNavigator: "FantasyNavigator",
   FantasyPros: "FantasyPros",
+  FantasyProsECR: "FantasyPros ECR",
   IDynastyP: "IDynastyP",
 };
 
@@ -32,6 +34,7 @@ const ICON_SIZES = {
     KeepTradeCut:     { w: 95, h: 28 },
     FantasyNavigator: { w: 20,  h: 20 }, // square
     FantasyPros:      { w: 84,  h: 28 },
+    FantasyProsECR:   { w: 84,  h: 28 },
     IDynastyP:        { w: 60, h: 20 },
   },
   menu: {
@@ -41,6 +44,7 @@ const ICON_SIZES = {
     KeepTradeCut:     { w: 120,  h: 21 },
     FantasyNavigator: { w: 21,  h: 21 }, // square
     FantasyPros:      { w: 96,  h: 30 },
+    FantasyProsECR:   { w: 96,  h: 30 },
     IDynastyP:        { w: 82,  h: 21 },
   },
 };
@@ -85,7 +89,7 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
             alt={`${LABELS[valueSource]} logo`}
             width={btnSize.w}
             height={btnSize.h}
-            className={`${valueSource === "FantasyPros" ? "object-cover object-center" : "object-contain"}`}
+            className={`${["FantasyPros","FantasyProsECR"].includes(valueSource) ? "object-cover object-center" : "object-contain"}`}
             loading="lazy"
           />
         )}
@@ -126,7 +130,7 @@ export default function ValueSourceDropdown({ valueSource, setValueSource }) {
                     alt={`${LABELS[opt]} logo`}
                     width={size.w}
                     height={size.h}
-                    className={`${opt === "FantasyPros" ? "object-cover object-center" : "object-contain"} shrink-0`}
+                    className={`${["FantasyPros","FantasyProsECR"].includes(opt) ? "object-cover object-center" : "object-contain"} shrink-0`}
                     loading="lazy"
                   />
                 ) : null}

@@ -256,11 +256,12 @@ const VALUE_SOURCES = {
   KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
   FantasyPros: { label: "FantasyPros", supports: { dynasty: true, redraft: false, qbToggle: true } },
+  FantasyProsECR: { label: "FantasyPros ECR", supports: { dynasty: true, redraft: true, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
   TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
 };
 
-function makeGetPlayerValue(valueSource, format, qbType) {
+function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
   return (p) => {
     if (!p) return 0;
     const fmt = (format || "dynasty").toLowerCase(); // dynasty | redraft
@@ -279,6 +280,11 @@ function makeGetPlayerValue(valueSource, format, qbType) {
     if (valueSource === "FantasyPros") {
       if (fmt !== "dynasty") return 0;
       return qb === "sf" ? Number(p.fp_values?.dynasty_sf || 0) : Number(p.fp_values?.dynasty_1qb || 0);
+    }
+    if (valueSource === "FantasyProsECR") {
+      const score=["std","half","ppr"].includes(String(scoring).toLowerCase())?String(scoring).toLowerCase():"ppr";
+      const key=`${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}_${score}`;
+      return Number(p.fpecr_values?.[key]||0);
     }
     if (valueSource === "IDynastyP") return qb === "sf" ? Number(p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb || 0);
     if (valueSource === "TheFantasyArsenal") {
@@ -427,7 +433,7 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisiti
 // Page
 // =====================
 export default function PlayerAvailabilityContent() {
-  const { username, players, year, format, qbType, getProjection } = useSleeper();
+  const { username, players, year, format, qbType, getProjection, projectionScoring } = useSleeper();
 
 // local overrides (so you can toggle without mutating global context)
 const [mode, setMode] = useState((format || "dynasty").toLowerCase()); // dynasty | redraft
@@ -507,6 +513,7 @@ useEffect(() => {
         "val:dynastyprocess": "DynastyProcess",
         "val:fantasynav": "FantasyNavigator",
         "val:fantasypros": "FantasyPros",
+        "val:fantasypros-ecr": "FantasyProsECR",
         "val:idynastyp": "IDynastyP",
         "val:thefantasyarsenal": "TheFantasyArsenal",
       };
@@ -978,7 +985,7 @@ useEffect(() => {
     () => Object.values(playersMap || {}).filter((p) => !isPickPos(p?.position)),
     [playersMap]
   );
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, mode, qb), [valueSource, mode, qb]);
+  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, mode, qb, projectionScoring), [valueSource, mode, qb, projectionScoring]);
 
 
   const bestAvailablePlayers = useMemo(() => {
