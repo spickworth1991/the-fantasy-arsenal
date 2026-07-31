@@ -22,13 +22,16 @@ loadLocalEnvironment();
 const currentSeason = new Date().getUTCFullYear();
 const all = process.argv.includes("--all");
 const force = process.argv.includes("--force");
+const sleeperOnly = process.argv.includes("--sleeper-only");
 const requested = process.argv.find((arg) => arg.startsWith("--season="));
 const requestedSeason = requested ? Number(requested.split("=")[1]) : 0;
-const seasons = all
+const seasons = sleeperOnly && all
+  ? Array.from({ length:Math.max(0, currentSeason - 2018) }, (_, index) => 2018 + index)
+  : all
   ? Array.from({ length:Math.max(1, currentSeason - 2012) }, (_, index) => 2012 + index)
   : [requestedSeason >= 2012 && requestedSeason <= currentSeason ? requestedSeason : currentSeason - 1];
 const apiKey = process.env.FANTASYPROS_API_KEY || process.env.FANTASYPROS_API_KEY2 || "";
-if (!apiKey) throw new Error("FANTASYPROS_API_KEY is required in .env.local or the workflow environment.");
+if (!sleeperOnly && !apiKey) throw new Error("FANTASYPROS_API_KEY is required in .env.local or the workflow environment.");
 
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -40,6 +43,7 @@ const writeJson = (file, payload) => {
   fs.mkdirSync(path.dirname(file), { recursive:true });
   fs.writeFileSync(file, JSON.stringify(payload));
 };
+const usefulStat = (key) => /^(pts_|pass_|rush_|rec($|_)|fum($|_)|fg($|_)|fga$|fgm$|fgmiss|xp($|_)|xpa$|xpm$|xpmiss|kick_|def_|idp_|tkl|tkl_|sack|sack_|int$|int_|ff$|fr$|fr_|pd$|blk_kick|safe$)/.test(String(key));
 
 async function fantasyPros(season, scoring) {
   const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${season}/player-points?position=ALL&scoring=${scoring}&min=false`;
@@ -104,20 +108,22 @@ async function sleeper(season) {
   const byPlayer = new Map();
   weeks.forEach(({ week, rows }) => Object.entries(rows).forEach(([playerId, payload]) => {
     const stats = payload?.stats && typeof payload.stats === "object" ? payload.stats : payload;
-    const current = byPlayer.get(String(playerId)) || { player_id:String(playerId), weeks:{}, stats:{} };
+    const current = byPlayer.get(String(playerId)) || { player_id:String(playerId), weeks:{}, weekly_stats:{}, stats:{} };
     const points = {
       std:number(stats?.pts_std),
       half:number(stats?.pts_half_ppr),
       ppr:number(stats?.pts_ppr),
     };
     if (points.std || points.half || points.ppr) current.weeks[String(week)] = points;
+    current.weekly_stats[String(week)] = Object.fromEntries(Object.entries(stats || {}).filter(([key, value]) => usefulStat(key) && Number.isFinite(Number(value))).map(([key, value]) => [key, number(value)]));
     Object.entries(stats || {}).forEach(([key, value]) => {
+      if (!usefulStat(key)) return;
       const parsed = Number(value);
       if (Number.isFinite(parsed)) current.stats[key] = number(current.stats[key]) + parsed;
     });
     byPlayer.set(String(playerId), current);
   }));
-  const players = [...byPlayer.values()];
+  const players = [...byPlayer.values()].filter((player) => Object.keys(player.weeks).length > 0);
   return {
     source:"Sleeper read-only weekly stats",
     season,
@@ -140,6 +146,17 @@ let completed = 0;
 for (const season of seasons) {
   const existingDirectory = path.join(root, "public", "stats", "history", String(season));
   const requiresSleeper = season >= 2018;
+  if (sleeperOnly) {
+    if (!requiresSleeper) continue;
+    console.log(`Enriching saved ${season} Sleeper weekly statistics...`);
+    const sleeperPayload = await sleeper(season);
+    writeJson(path.join(existingDirectory, "sleeper.json"), sleeperPayload);
+    let fantasyProsPlayers = 0;
+    try { fantasyProsPlayers = number(JSON.parse(fs.readFileSync(path.join(existingDirectory, "fantasypros.json"), "utf8"))?.count); } catch {}
+    saveManifestEntry({season,fantasypros_players:fantasyProsPlayers,fantasypros_file:"fantasypros.json",sleeper_players:sleeperPayload.count,completed_weeks:sleeperPayload.completed_weeks,weekly_box_scores:true});
+    completed += 1;
+    continue;
+  }
   if (!force && fs.existsSync(path.join(existingDirectory, "fantasypros.json")) && (!requiresSleeper || fs.existsSync(path.join(existingDirectory, "sleeper.json")))) {
     console.log(`Keeping saved ${season} historical statistics (use --force to rebuild).`);
     continue;

@@ -82,6 +82,7 @@ function mergeHistory(payload, playerDb) {
       years_exp:context?.years_exp || null,
       injury_status:context?.injury_status || null,
       stats:raw?.stats || {},
+      weekly_stats:raw?.weekly_stats || {},
       source:"FantasyPros",
     };
   });
@@ -90,6 +91,23 @@ function mergeHistory(payload, playerDb) {
     const context=sleeperById.get(String(row.player_id)) || {};
     return {...row,key:`sl:${row.player_id}`,name:context.name||row.player_id,team:context.team||"",position:context.position||"",age:context.age||null,years_exp:context.years_exp||null,injury_status:context.injury_status||null,source:"Sleeper"};
   });
+}
+
+function weeklySummary(stats, position) {
+  if(!stats||typeof stats!=="object")return "Fantasy scoring result";
+  const parts=[];
+  if(num(stats.pass_yd))parts.push(`${num(stats.pass_yd).toFixed(0)} pass yd`);
+  if(num(stats.pass_td))parts.push(`${num(stats.pass_td)} pass TD`);
+  if(num(stats.pass_int))parts.push(`${num(stats.pass_int)} INT`);
+  if(num(stats.rush_att))parts.push(`${num(stats.rush_att)} car`);
+  if(num(stats.rush_yd))parts.push(`${num(stats.rush_yd).toFixed(0)} rush yd`);
+  if(num(stats.rush_td))parts.push(`${num(stats.rush_td)} rush TD`);
+  if(num(stats.rec_tgt))parts.push(`${num(stats.rec_tgt)} tgt`);
+  if(num(stats.rec))parts.push(`${num(stats.rec)} rec`);
+  if(num(stats.rec_yd))parts.push(`${num(stats.rec_yd).toFixed(0)} rec yd`);
+  if(num(stats.rec_td))parts.push(`${num(stats.rec_td)} rec TD`);
+  if(String(position).toUpperCase()==="K"&&num(stats.fgm))parts.push(`${num(stats.fgm)}/${num(stats.fga)} FG`);
+  return parts.slice(0,5).join(" · ")||"Fantasy scoring result";
 }
 
 async function loadSavedSeason(season, scoring, position, signal) {
@@ -131,7 +149,7 @@ function WeeklyChart({ player, opponent }) {
   return <div><div className="overflow-x-auto"><div className="flex min-w-[680px] items-end gap-2 border-b border-white/10 pb-2" style={{height:230}}>{weeks.map((week)=>{
     const primary=num(player?.weeks?.[week]), secondary=num(opponent?.weeks?.[week]);
     return <div key={week} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><div className="flex w-full items-end justify-center gap-0.5"><div className="w-1/2 rounded-t bg-cyan-300/65" style={{height:`${Math.max(primary?3:0,primary/max*150)}px`}} title={`${player?.name}: ${primary.toFixed(1)}`}/>{opponent?<div className="w-1/2 rounded-t bg-violet-300/65" style={{height:`${Math.max(secondary?3:0,secondary/max*150)}px`}} title={`${opponent?.name}: ${secondary.toFixed(1)}`}/>:null}</div><span className="text-[8px] text-white/30">W{week}</span></div>;
-  })}</div></div>{!opponent?<div className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07]"><div className="grid grid-cols-[70px_1fr_100px] bg-white/[0.04] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-white/35"><span>Week</span><span>Result</span><span className="text-right">Fantasy pts</span></div><div className="divide-y divide-white/[0.06]">{played.map((week)=>{const points=num(player?.weeks?.[week]);const average=num(player?.average);return <div key={week} className="grid grid-cols-[70px_1fr_100px] items-center px-4 py-2.5 text-xs"><b>Week {week}</b><span className={points>=average?"text-emerald-200":"text-white/38"}>{points>=average?"Above season average":"Below season average"}</span><b className="text-right text-cyan-100">{points.toFixed(1)}</b></div>})}</div></div>:null}</div>;
+  })}</div></div>{!opponent?<div className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07]"><div className="grid grid-cols-[70px_1fr_100px] bg-white/[0.04] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-white/35"><span>Week</span><span>Game production</span><span className="text-right">Fantasy pts</span></div><div className="divide-y divide-white/[0.06]">{played.map((week)=>{const points=num(player?.weeks?.[week]);const average=num(player?.average);return <div key={week} className="grid grid-cols-[70px_minmax(0,1fr)_70px] items-center px-4 py-3 text-xs sm:grid-cols-[70px_minmax(0,1fr)_100px]"><b>Week {week}</b><div className="min-w-0"><div className="truncate text-white/60">{weeklySummary(player?.weekly_stats?.[week],player?.position)}</div><small className={points>=average?"text-emerald-200/70":"text-white/28"}>{points>=average?"Above season average":"Below season average"}</small></div><b className="text-right text-cyan-100">{points.toFixed(1)}</b></div>})}</div></div>:null}</div>;
 }
 
 function PerformanceLab({ selected, metrics, positionPlayers }) {
