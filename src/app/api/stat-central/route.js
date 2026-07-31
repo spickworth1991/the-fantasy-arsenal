@@ -5,25 +5,31 @@ export const runtime = "edge";
 const POSITIONS = new Set(["ALL","QB","RB","WR","TE","K","DST","DL","LB","DB"]);
 const SCORING = new Set(["STD","HALF","PPR"]);
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const PUBLIC_ASSET_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://thefantasyarsenal.com";
 
 async function readSaved(request, path) {
   // Cloning NextRequest.nextUrl is reliable on localhost, Cloudflare Pages and
   // inside the Ballsville embed. Rebuilding from request.origin can yield a
   // `null`/relative origin in some edge adapters and throw a DOM URL error.
-  try {
-    const url = request.nextUrl.clone();
-    url.pathname = path;
-    url.search = "";
-    url.hash = "";
-    const response = await fetch(url.toString(), {
-      cf:{ cacheTtl:31536000, cacheEverything:true },
-      cache:"force-cache",
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
+  const localUrl = request.nextUrl.clone();
+  localUrl.pathname = path;
+  localUrl.search = "";
+  localUrl.hash = "";
+  const urls = [
+    localUrl.toString(),
+    `${PUBLIC_ASSET_ORIGIN.replace(/\/$/, "")}${path}`,
+    `https://thefantasyarsenal.com${path}`,
+  ];
+  for (const candidate of [...new Set(urls)]) {
+    try {
+      const response = await fetch(candidate, {
+        cf:{ cacheTtl:31536000, cacheEverything:true },
+        cache:"force-cache",
+      });
+      if (response.ok) return await response.json();
+    } catch {}
   }
+  return null;
 }
 
 export async function GET(request) {
@@ -75,7 +81,7 @@ export async function GET(request) {
       season,
       scoring,
       position,
-      message:`Saved ${season} historical data is not available yet. Run npm run update:stats to build it.`,
+      message:`The saved ${season} history file could not be reached. The data may still be deploying; retry in a moment.`,
     }, { status:404 });
   }
 
