@@ -31,6 +31,11 @@ const apiKey = process.env.FANTASYPROS_API_KEY || process.env.FANTASYPROS_API_KE
 if (!apiKey) throw new Error("FANTASYPROS_API_KEY is required in .env.local or the workflow environment.");
 
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const FANTASYPROS_MIN_INTERVAL_MS = Math.max(1000, number(process.env.FANTASYPROS_MIN_INTERVAL_MS) || 7000);
+const FANTASYPROS_RUN_BUDGET = Math.max(1, number(process.env.FANTASYPROS_RUN_BUDGET) || 100);
+let fantasyProsRequests = 0;
+let lastFantasyProsRequestAt = 0;
 const writeJson = (file, payload) => {
   fs.mkdirSync(path.dirname(file), { recursive:true });
   fs.writeFileSync(file, JSON.stringify(payload));
@@ -38,8 +43,29 @@ const writeJson = (file, payload) => {
 
 async function fantasyPros(season, scoring) {
   const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${season}/player-points?position=ALL&scoring=${scoring}&min=false`;
-  const response = await fetch(endpoint, { headers:{ "x-api-key":apiKey, accept:"application/json" } });
-  if (!response.ok) throw new Error(`FantasyPros ${season} ${scoring} returned HTTP ${response.status}.`);
+  let response;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    if (fantasyProsRequests >= FANTASYPROS_RUN_BUDGET) {
+      throw new Error(`FantasyPros run budget reached (${FANTASYPROS_RUN_BUDGET}). Re-run later to resume safely.`);
+    }
+    const elapsed = Date.now() - lastFantasyProsRequestAt;
+    if (elapsed < FANTASYPROS_MIN_INTERVAL_MS) await sleep(FANTASYPROS_MIN_INTERVAL_MS - elapsed);
+    fantasyProsRequests += 1;
+    lastFantasyProsRequestAt = Date.now();
+    response = await fetch(endpoint, { headers:{ "x-api-key":apiKey, accept:"application/json" } });
+    if (response.status !== 429) break;
+    const retryHeader = response.headers.get("retry-after");
+    const retrySeconds = Number(retryHeader);
+    const retryDate = retryHeader && !Number.isFinite(retrySeconds) ? Date.parse(retryHeader) : 0;
+    const waitMs = Number.isFinite(retrySeconds) && retrySeconds > 0
+      ? retrySeconds * 1000
+      : retryDate > Date.now()
+        ? retryDate - Date.now()
+        : Math.min(300000, 65000 * attempt);
+    console.warn(`  FantasyPros rate limit reached; waiting ${Math.ceil(waitMs / 1000)} seconds before retry ${attempt}/5.`);
+    await sleep(waitMs);
+  }
+  if (!response?.ok) throw new Error(`FantasyPros ${season} ${scoring} returned HTTP ${response?.status || 0} after paced retries.`);
   const payload = await response.json();
   const players = (Array.isArray(payload?.players) ? payload.players : []).map((player) => ({
     player_id:String(player?.player_id || ""),
@@ -70,7 +96,11 @@ async function sleeperWeek(season, week) {
 }
 
 async function sleeper(season) {
-  const weeks = await Promise.all(Array.from({ length:18 }, (_, index) => sleeperWeek(season, index + 1)));
+  const weeks = [];
+  for (let start = 1; start <= 18; start += 6) {
+    const batch = await Promise.all(Array.from({ length:Math.min(6, 19 - start) }, (_, index) => sleeperWeek(season, start + index)));
+    weeks.push(...batch);
+  }
   const byPlayer = new Map();
   weeks.forEach(({ week, rows }) => Object.entries(rows).forEach(([playerId, payload]) => {
     const stats = payload?.stats && typeof payload.stats === "object" ? payload.stats : payload;
@@ -159,4 +189,4 @@ for (const season of seasons) {
   });
   completed += 1;
 }
-console.log(`Saved ${completed} new season${completed === 1 ? "" : "s"} without exposing the FantasyPros API to visitors.`);
+console.log(`Saved ${completed} new season${completed === 1 ? "" : "s"} using ${fantasyProsRequests}/${FANTASYPROS_RUN_BUDGET} permitted FantasyPros requests this run.`);

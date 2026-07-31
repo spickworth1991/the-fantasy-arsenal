@@ -41,6 +41,8 @@ jobs:
         shell: bash
         env:
           FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+          FANTASYPROS_MIN_INTERVAL_MS: 7000
+          FANTASYPROS_RUN_BUDGET: 100
           REQUESTED_SEASON: ${{ inputs.season }}
           FULL_BACKFILL: ${{ inputs.full_backfill }}
         run: |
