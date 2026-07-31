@@ -91,6 +91,38 @@ function mergeHistory(payload, playerDb) {
   });
 }
 
+async function loadSavedSeason(season, scoring, position, signal) {
+  const fantasyProsResponse=await fetch(`/stats/history/${season}/fantasypros.json`,{cache:"force-cache",signal});
+  if(!fantasyProsResponse.ok)throw new Error(`The saved ${season} scoring file is not available on this deployment.`);
+  const fantasyPros=await fantasyProsResponse.json();
+  let sleeper=null;
+  if(num(season)>=2018) {
+    try {
+      const response=await fetch(`/stats/history/${season}/sleeper.json`,{cache:"force-cache",signal});
+      if(response.ok)sleeper=await response.json();
+    } catch(failure) {
+      if(failure?.name==="AbortError")throw failure;
+    }
+  }
+  const scoreKey=String(scoring||"PPR").toLowerCase();
+  const fantasyProsPlayers=(Array.isArray(fantasyPros?.players)?fantasyPros.players:[])
+    .filter((player)=>position==="ALL"||String(player?.position||"").toUpperCase()===position)
+    .map((player)=>{
+      const values=player?.scoring?.[scoreKey]||{};
+      return {player_id:player.player_id,name:player.name,position:player.position,team:player.team,games:num(values.games),points:num(values.points),average:num(values.average),weeks:values.weeks&&typeof values.weeks==="object"?values.weeks:{}};
+    })
+    .filter((player)=>player.games>0);
+  const sleeperPlayers=(Array.isArray(sleeper?.players)?sleeper.players:[]).map((player)=>{
+    const field=scoring==="STD"?"std":scoring==="HALF"?"half":"ppr";
+    const weeks=Object.fromEntries(Object.entries(player?.weeks||{}).map(([week,points])=>[week,num(points?.[field])]));
+    const values=Object.values(weeks);
+    const points=values.reduce((sum,value)=>sum+value,0);
+    return {...player,weeks,games:values.length,points:round(points,3),average:values.length?round(points/values.length,3):0};
+  });
+  if(!fantasyProsPlayers.length&&!sleeperPlayers.length)throw new Error(`No scored ${position==="ALL"?"players":position+"s"} were found for ${season}.`);
+  return {ok:true,season:num(season),scoring,position,source:sleeperPlayers.length?"Saved FantasyPros + Sleeper":"Saved FantasyPros",fantasypros:{available:fantasyProsPlayers.length>0,updated:fantasyPros?.updated||null,players:fantasyProsPlayers},sleeper:{available:sleeperPlayers.length>0,updated:sleeper?.updated||null,players:sleeperPlayers},coverage:{fantasypros_players:fantasyProsPlayers.length,sleeper_records:sleeperPlayers.length,sleeper_raw_stats:sleeperPlayers.length>0}};
+}
+
 function WeeklyChart({ player, opponent }) {
   const weeks=Array.from({length:18},(_,index)=>index+1);
   const max=Math.max(1,...weeks.flatMap((week)=>[num(player?.weeks?.[week]),num(opponent?.weeks?.[week])]));
@@ -144,15 +176,8 @@ export default function StatCentralClient() {
     let live=true;
     setLoading(true);
     setError("");
-    const params=new URLSearchParams({season:String(season),scoring,position});
-    fetch(`/api/stat-central?${params.toString()}`,{cache:"force-cache",signal:controller.signal})
-      .then(async(response)=>{
-        const contentType=response.headers.get("content-type")||"";
-        if(!contentType.includes("application/json"))throw new Error("Stat Central received an invalid data response. Please retry.");
-        const payload=await response.json();
-        if(!response.ok||!payload.ok)throw new Error(payload?.message||"Historical scoring was unavailable.");
-        if(live)setData(payload);
-      })
+    loadSavedSeason(season,scoring,position,controller.signal)
+      .then((payload)=>{if(live)setData(payload);})
       .catch((failure)=>{if(live&&failure?.name!=="AbortError")setError(failure?.message||"Stat Central could not load this season.");})
       .finally(()=>{if(live)setLoading(false);});
     return()=>{live=false;controller.abort();};
@@ -172,8 +197,7 @@ export default function StatCentralClient() {
     const rows=[];
     for(const year of seasons) {
       try {
-        const response=await fetch(`/api/stat-central?season=${year}&scoring=${scoring}&position=${selected.position||"ALL"}`,{cache:"force-cache"});
-        const payload=await response.json();
+        const payload=await loadSavedSeason(year,scoring,selected.position||"ALL");
         const match=mergeHistory(payload,playerDb).find((player)=>normalize(player.name)===normalize(selected.name));
         if(match?.games)rows.push({...match,season:year});
       } catch {}
