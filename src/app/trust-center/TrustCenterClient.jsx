@@ -13,17 +13,122 @@ const SOURCES = [
   {key:"sleeper",freshnessKey:"sleeper_proj",label:"Sleeper",kind:"Projection",file:`/projections_sleeper_${season}.json`},
   {key:"fantasysharks",freshnessKey:"fantasysharks_proj",label:"FantasySharks",kind:"Projection",file:`/projections_fantasysharks_${season}.json`},
   {key:"draftsharks",freshnessKey:"draftsharks_proj",label:"DraftSharks",kind:"Projection",file:`/projections_draftsharks_${season}.json`},
+  {key:"fantasypros-projections",freshnessKey:"fantasypros_proj",label:"FantasyPros Projections",kind:"Projection",file:`/projections_fantasypros_${season}.json`},
   {key:"arsenal",freshnessKey:"arsenal_proj",label:"The Fantasy Arsenal",kind:"Projection",file:`/projections_thefantasyarsenal_${season}.json`},
   {key:"fantasycalc",freshnessKey:"fc",label:"FantasyCalc",kind:"Value",file:"/fantasycalc_cache.json"},
   {key:"dynastyprocess",freshnessKey:"dp",label:"DynastyProcess",kind:"Value",file:"/dynastyprocess_cache.json"},
   {key:"ktc",freshnessKey:"ktc",label:"KeepTradeCut",kind:"Value",file:"/ktc_cache.json"},
   {key:"fantasynav",freshnessKey:"fn",label:"Fantasy Navigator",kind:"Value",file:"/fantasynav_cache.json"},
-  {key:"fantasypros",freshnessKey:"fp",label:"FantasyPros",kind:"Value",file:"/fantasypros_cache.json"},
-  {key:"fantasypros-ecr",freshnessKey:"fantasypros_ecr",label:"FantasyPros ECR",kind:"Value",file:"/fantasypros_ecr_cache.json"},
+  {key:"fantasypros",freshnessKey:"fp",label:"FantasyPros Trade Values",kind:"Value",file:"/fantasypros_cache.json"},
+  {key:"fantasypros-ecr",freshnessKey:"fantasypros_ecr",label:"FantasyPros ECR Rank Score",kind:"Value",file:"/fantasypros_ecr_cache.json"},
   {key:"idynastyp",freshnessKey:"idp",label:"IDynastyP",kind:"Value",file:"/idynastyp_cache.json"},
   {key:"idpshow",freshnessKey:"idpshow",label:"IDP Show",kind:"Value",file:"/idpshow_cache.json"},
   {key:"stickypicky",freshnessKey:"sp",label:"The Fantasy Arsenal Values",kind:"Value",file:"/stickypicky_cache.json"},
 ];
+const SOURCE_METHODS = {
+  ffa: {
+    origin: "Imported projection dataset",
+    method: "Season projection rows are matched to Arsenal player identities and retained in fantasy-point units.",
+    use: "Season outlooks and cross-source projection comparisons.",
+    limits: "Coverage and scoring fields depend on the supplied projection file.",
+  },
+  espn: {
+    origin: "ESPN public projection data",
+    method: "Season projections are collected, normalized by player identity, and retained as projected fantasy points.",
+    use: "Redraft outlooks, player comparisons, and projection consensus.",
+    limits: "A publisher projection is an estimate and may change without notice.",
+  },
+  cbs: {
+    origin: "CBS public projection data",
+    method: "Season projections are collected and normalized without converting them into trade values.",
+    use: "Redraft outlooks and projection consensus.",
+    limits: "Only successfully matched, positive player projections enter coverage.",
+  },
+  sleeper: {
+    origin: "Sleeper projection feed",
+    method: "Sleeper player projections are matched to the shared player index and kept in fantasy-point units.",
+    use: "Lineup and weekly context; lower-priority input in Arsenal consensus where coverage is inconsistent.",
+    limits: "Sleeper coverage and scoring assumptions can differ from other season sources.",
+  },
+  fantasysharks: {
+    origin: "FantasySharks published projection file",
+    method: "The latest validated season file is normalized into player projection rows.",
+    use: "Independent projection comparison and consensus.",
+    limits: "Automated retrieval can be blocked; a failed run preserves the last valid file and reports it as stale.",
+  },
+  draftsharks: {
+    origin: "DraftSharks public season rankings",
+    method: "Published season projection data is matched to players; available analysis links remain source context.",
+    use: "Season projections, comparisons, and player research.",
+    limits: "Availability and coverage are controlled by the publisher’s public response.",
+  },
+  "fantasypros-projections": {
+    origin: "Official FantasyPros API",
+    method: "Projected player statistics are scored into Standard, Half PPR, and PPR fantasy-point totals.",
+    use: "Scoring-specific season projections across Arsenal tools.",
+    limits: "These are projections—not ECR ranks or trade values—and accuracy can only be graded against finalized results.",
+  },
+  arsenal: {
+    origin: "Arsenal calculated projection consensus",
+    method: "Comparable source projections are blended with coverage controls; Sleeper is intentionally lower priority when stronger coverage exists.",
+    use: "A single multi-source season projection with source coverage context.",
+    limits: "The result inherits uncertainty and missing-player risk from its inputs.",
+  },
+  fantasycalc: {
+    origin: "FantasyCalc published market data",
+    method: "Published player and pick values are normalized into supported dynasty and redraft, 1QB and Superflex boards.",
+    use: "Trade-market comparison and roster valuation.",
+    limits: "Values represent a market estimate, not expected fantasy points.",
+  },
+  dynastyprocess: {
+    origin: "DynastyProcess published data",
+    method: "Published 1QB and Superflex dynasty values are matched to Arsenal player identities.",
+    use: "Dynasty trade-market and portfolio comparisons.",
+    limits: "Dynasty-only; it should not be treated as a redraft projection.",
+  },
+  ktc: {
+    origin: "KeepTradeCut public market rankings",
+    method: "Public 1QB and Superflex dynasty market values are captured and normalized by player identity.",
+    use: "Crowd-market dynasty valuation and disagreement analysis.",
+    limits: "Crowd sentiment can move quickly and is not a projection of points.",
+  },
+  fantasynav: {
+    origin: "Fantasy Navigator public data response",
+    method: "The newest row per player and format is retained, then shared name, zero-value, and position corrections are applied.",
+    use: "Dynasty and redraft market comparisons.",
+    limits: "Historical duplicate snapshots and publisher anomalies are excluded from the active board.",
+  },
+  fantasypros: {
+    origin: "Official FantasyPros Dynasty Trade Value Chart CSV",
+    method: "FantasyPros’ published Trade Value and Superflex Value numbers are preserved; Arsenal multiplies them by 100 only for display-scale compatibility.",
+    use: "Official published dynasty trade values and package comparison.",
+    limits: "Dynasty-only, monthly-chart data; the original number remains available as source_value.",
+  },
+  "fantasypros-ecr": {
+    origin: "Official FantasyPros consensus-rankings API",
+    method: "The actual ECR order is preserved, then rank 1 through the last ranked player is mapped to an Arsenal 10,000–100 display score.",
+    use: "Rank-based player ordering across dynasty/redraft, 1QB/Superflex, and supported redraft scoring boards.",
+    limits: "Ordinal and directional—not an official FantasyPros trade value and not reliably additive in packages.",
+  },
+  idynastyp: {
+    origin: "IDynastyP published IDP values",
+    method: "Published defensive-player values are normalized by player and position for 1QB and Superflex use.",
+    use: "IDP dynasty roster and trade evaluation.",
+    limits: "Designed for IDP formats; offensive-only leagues should use an offensive value source.",
+  },
+  idpshow: {
+    origin: "The IDP Show published values",
+    method: "Published IDP rows are normalized and matched to the shared player index.",
+    use: "Independent IDP dynasty valuation.",
+    limits: "Coverage and formats follow the current published source data.",
+  },
+  stickypicky: {
+    origin: "Arsenal calculated value consensus",
+    method: "Multiple eligible market sources are converted to comparable rank percentiles, blended with source weighting and anomaly controls, then returned on a shared scale.",
+    use: "A scale-neutral consensus when publishers use incompatible raw value ranges.",
+    limits: "It is an Arsenal estimate, not a separately published market; confidence depends on input coverage and agreement.",
+  },
+};
 const num=(value)=>Number(value||0);
 const rowsOf=(data)=>Array.isArray(data)?data:Array.isArray(data?.rows)?data.rows:Object.values(data?.by_id||{});
 const dateOf=(data)=>data?.updated||data?.updated_at||data?.generated_at||data?.source_date||null;
@@ -106,6 +211,42 @@ function ledgerMetric(label,value,detail){
 }
 function Metric({label,value,detail}){const display=ledgerMetric(label,value,detail);return <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"><div className="text-[9px] font-bold uppercase tracking-[.16em] text-white/30">{label}</div><div className="mt-1 text-2xl font-black">{display.value}</div><div className="mt-1 text-[10px] leading-4 text-white/35">{display.detail}</div></div>;}
 function Type({children,type}){const styles=type==="Fact"?"bg-emerald-300/10 text-emerald-100":type==="Estimate"?"bg-cyan-300/10 text-cyan-100":"bg-violet-300/10 text-violet-100";return <span className={`inline-flex rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wider ${styles}`}>{children||type}</span>;}
+function SourceLedger({records}){
+  return <div className="mt-4 space-y-4">
+    <Panel className="p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2"><h2 className="text-xl font-black">Source methodology library</h2><Type type="Fact"/></div>
+          <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Every selectable source has a permanent explanation here: where the data originates, what the Arsenal changes, where it is used, and what it cannot prove. Names describe the data product—not merely the publisher.</p>
+        </div>
+        <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100">{records.length} monitored sources</div>
+      </div>
+      <div className="mt-5 grid gap-2 sm:grid-cols-3">
+        {[["Published value","A publisher supplies a numeric market value."],["Rank-derived score","A published order is mapped to a display score."],["Projection","Expected fantasy points, never a trade value."]].map(([title,detail])=><div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"><div className="text-xs font-black">{title}</div><p className="mt-1 text-[10px] leading-4 text-white/35">{detail}</p></div>)}
+      </div>
+    </Panel>
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {records.map((source)=>{
+        const method=SOURCE_METHODS[source.key]||{};
+        return <Panel key={source.key} className="overflow-hidden">
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div><div className="text-[9px] font-bold uppercase tracking-wider text-white/28">{source.kind} source</div><h3 className="mt-1 text-lg font-black">{source.label}</h3></div>
+              <span className={`rounded-full border px-2 py-1 text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2"><Metric label="Coverage" value={source.coverage.toLocaleString()} detail="Positive rows"/><Metric label="Age" value={age(source.updated)} detail={source.updated?new Date(source.updated).toLocaleString():"No timestamp"}/></div>
+          </div>
+          <details className="group border-t border-white/[0.07] bg-black/15" open={source.key==="fantasypros"||source.key==="fantasypros-ecr"}>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-xs font-black text-cyan-100">How this source works <span className="text-lg font-light transition group-open:rotate-45">+</span></summary>
+            <div className="space-y-3 border-t border-white/[0.05] px-5 pb-5 pt-4">
+              {[["Data origin",method.origin],["Arsenal handling",method.method],["Best use",method.use],["Important limit",method.limits]].map(([label,detail])=><div key={label}><div className="text-[8px] font-black uppercase tracking-[.16em] text-white/25">{label}</div><p className="mt-1 text-[10px] leading-4 text-white/45">{detail||"Methodology is being documented."}</p></div>)}
+            </div>
+          </details>
+        </Panel>;
+      })}
+    </div>
+  </div>;
+}
 function ValueIntelligence({metrics,records,valueFormat,valueScoring}){
   const valueSources=records.filter((source)=>source.kind==="Value");
   const ecr=records.find((source)=>source.key==="fantasypros-ecr");
@@ -224,7 +365,7 @@ export default function TrustCenterClient(){
       {tab==="accuracy"?<LeagueAccuracySummary accuracy={accuracy} leagues={leagues} leagueId={accuracyLeagueId} onLeagueChange={(value)=>setAccuracyLeagueId(value)} onRetry={()=>setAccuracyRun((value)=>value+1)} />:null}
       {tab==="overview"?<div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_.85fr]"><Panel className="p-5"><div className="flex items-center justify-between"><div><h2 className="text-xl font-black">Freshness monitor</h2><p className="mt-1 text-[10px] text-white/32">Last success is when Arsenal retrieved the file. Source date is when the publisher says its underlying ranking changed.</p></div><Type type="Fact"/></div><div className="mt-4 space-y-2">{records.map((source)=><div key={source.key} className="rounded-xl border border-white/[0.06] bg-black/15 p-3"><div className="grid grid-cols-[minmax(0,1fr)_80px_90px] items-center gap-2"><div className="min-w-0"><div className="truncate text-sm font-bold">{source.label}</div><div className="mt-0.5 text-[9px] text-white/28">{source.kind} · {source.coverage.toLocaleString()} covered</div></div><span className={`rounded-full border px-2 py-1 text-center text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span><time className="text-right text-[9px] text-white/35">{source.updated?new Date(source.updated).toLocaleDateString():"Unavailable"}</time></div>{source.sourceDataDate?<div className="mt-2 text-[9px] text-amber-100/55">Publisher data date: {source.sourceDataDate}</div>:null}{source.lastError?<div className="mt-2 text-[9px] text-rose-100/60">Last attempt failed: {source.lastError}</div>:null}</div>)}</div></Panel><div className="space-y-4"><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">What changed?</h2><Type type="Fact"/></div><p className="mt-3 text-sm leading-6 text-white/42">{archive?.archives?.[0]?.partial_update?`The latest daily update was partial. Stale inputs: ${(archive.archives[0].stale_sources||[]).join(", ")||"not specified"}. Existing files were preserved rather than replaced with incomplete data.`:"The latest archived run completed without a source being marked stale."}</p><div className="mt-4 rounded-2xl bg-white/[0.03] p-4 text-xs text-white/45">Latest archive: <b className="text-white/75">{archive?.archives?.[0]?.date||"Not available"}</b> · {archive?.archives?.[0]?.files||0} compressed snapshots</div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">How to read disagreement</h2><Type type="Estimate"/></div><p className="mt-3 text-xs leading-5 text-white/42">A 30% value range means the highest and lowest normalized source values differ by 30% of their average. It signals market uncertainty, format differences, or a fast-moving player—not automatically a bad source.</p><div className="mt-4 grid grid-cols-2 gap-2">{["Coverage","Agreement","Freshness","Context"].map((item)=><div key={item} className="rounded-xl bg-cyan-300/[0.04] p-3 text-xs font-bold text-cyan-100">{item}</div>)}</div></Panel></div></div>:null}
       {tab==="accuracy"?<div className="mt-4 grid gap-4 lg:grid-cols-2"><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Weekly projection accuracy</h2><Type type="Fact"/></div><p className="mt-3 text-sm leading-6 text-white/45">Daily dated projection archives began on <b className="text-white/75">{archive?.archives?.at(-1)?.date||"the first successful archive run"}</b>. Weekly accuracy becomes eligible only when a forecast was frozen before kickoff and actual fantasy scoring is final.</p><div className="mt-4 rounded-2xl border border-amber-300/12 bg-amber-300/[0.05] p-4"><div className="font-bold text-amber-100">Awaiting comparable {season} completed weeks</div><div className="mt-1 text-xs leading-5 text-amber-100/55">Season-long projections are not mislabeled as weekly forecasts. Sleeper weekly rows can be scored after games; other sources require matching weekly snapshots before they receive weekly rankings.</div></div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Prior-season scoring check</h2><Type type="Fact"/></div><p className="mt-2 text-xs leading-5 text-white/42">Where a dated season projection file exists, it is compared with final PPR scoring from Sleeper. MAE is season points missed per matched player; lower is better.</p><div className="mt-4 space-y-2">{accuracy.status==="loading"?<div className="text-sm text-cyan-100">Matching projections to final scoring…</div>:accuracy.rows.map((row)=><div key={row.source} className="grid grid-cols-[minmax(0,1fr)_70px_70px] items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><div><b className="text-sm">{row.source}</b><div className="text-[9px] text-white/28">{row.sample} matched players · {accuracy.season}</div></div><div className="text-right"><div className="text-lg font-black">{row.mae.toFixed(1)}</div><div className="text-[8px] text-white/28">MAE</div></div><div className="text-right text-[9px] text-white/35">{row.updated?new Date(row.updated).toLocaleDateString():"Snapshot"}</div></div>)}{accuracy.status==="unavailable"?<div className="rounded-xl bg-white/[0.03] p-3 text-xs text-white/40">No comparable prior-season files and finalized scoring could be matched.</div>:null}</div></Panel><Panel className="p-5"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Metrics reported as evidence grows</h2><Type type="Estimate"/></div><div className="mt-4 space-y-2">{[["MAE","Average absolute points missed"],["RMSE","Extra penalty for large misses"],["Rank correlation","How well a source ordered players"],["Hit rate","Players correctly placed within tolerance"],["Coverage","Eligible players actually projected"]].map(([name,detail])=><div key={name} className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3"><b className="text-sm">{name}</b><p className="mt-1 text-[10px] text-white/35">{detail}</p></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Recommendation performance ledger</h2><p className="mt-2 text-xs leading-5 text-white/42">Saved and completed Arsenal Intelligence decisions will form the recommendation ledger. Lineup recommendations can be judged by points gained versus the alternative; waiver and trade decisions require longer outcome windows and stay open until that window closes.</p><div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1"><Metric label="Resolved recommendations" value="0" detail="Tracking begins with opted-in outcomes"/><Metric label="Observed benefit" value="—" detail="Not enough resolved decisions"/><Metric label="Selection bias" value="Disclosed" detail="Dismissed advice is tracked separately"/></div></Panel></div>:null}
-      {tab==="sources"?<div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{records.map((source)=><Panel key={source.key} className="p-5"><div className="flex items-start justify-between gap-3"><div><div className="text-[9px] font-bold uppercase tracking-wider text-white/28">{source.kind} source</div><h3 className="mt-1 text-lg font-black">{source.label}</h3></div><span className={`rounded-full border px-2 py-1 text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span></div><div className="mt-4 grid grid-cols-2 gap-2"><Metric label="Coverage" value={source.coverage.toLocaleString()} detail="Positive rows"/><Metric label="Age" value={age(source.updated)} detail={source.updated?new Date(source.updated).toLocaleString():"No timestamp"}/></div><p className="mt-4 text-[10px] leading-4 text-white/32">Freshness reports the source file’s own update timestamp. Coverage counts usable rows; it does not imply correctness. Accuracy is displayed only after a comparable frozen forecast and final result exist.</p></Panel>)}</div>:null}
+      {tab==="sources"?<SourceLedger records={records}/>:null}
       {tab==="models"?<div className="mt-4 space-y-4"><Panel className="p-5"><h2 className="text-xl font-black">Fact, estimate, and simulation</h2><div className="mt-4 grid gap-3 md:grid-cols-3">{[[<Type key="f" type="Fact"/>,"Observed data","Sleeper rosters, completed scores, transactions, source timestamps, and published source values."],[<Type key="e" type="Estimate"/>,"Calculated expectation","Projections, roster fit, player value, confidence, team need, and expected-point impact."],[<Type key="s" type="Simulation"/>,"Modeled futures","Playoff odds, win probabilities, scenario trees, draft outcomes, and what-if settings."]].map(([badge,title,detail])=><div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">{badge}<h3 className="mt-3 font-black">{title}</h3><p className="mt-2 text-xs leading-5 text-white/38">{detail}</p></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Probability calibration</h2><p className="mt-2 text-xs leading-5 text-white/42">A calibrated 70% forecast should occur approximately 70% of the time over a sufficiently large sample. The center will group closed matchup and playoff forecasts into probability buckets, show predicted versus observed outcomes, sample sizes, and calibration error. Until those forecasts are persistently snapshotted, the site displays no invented calibration grade.</p></Panel><div className="grid gap-4 xl:grid-cols-2"><Panel className="p-5"><h2 className="text-xl font-black">Projection disagreement</h2><p className="mt-2 text-xs text-white/38">Largest ranges among players covered by at least three projection sources.</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{metrics.disagreements.slice(0,10).map((row)=><div key={row.name} className="rounded-xl bg-violet-300/[0.04] p-3"><div className="truncate text-xs font-bold">{row.name||"Unknown player"}</div><div className="mt-1 text-lg font-black text-violet-100">{row.spread.toFixed(0)}%</div><div className="text-[9px] text-white/28">source range / mean</div></div>)}</div></Panel><Panel className="p-5"><h2 className="text-xl font-black">Value disagreement</h2><p className="mt-2 text-xs text-white/38">Largest normalized market ranges for the selected value format. Source scales are comparable because these files use a common Arsenal-facing scale.</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{metrics.valueDisagreements.slice(0,10).map((row)=><div key={row.name} className="rounded-xl bg-amber-300/[0.04] p-3"><div className="truncate text-xs font-bold">{row.name||"Unknown player"}</div><div className="mt-1 text-lg font-black text-amber-100">{row.spread.toFixed(0)}%</div><div className="text-[9px] text-white/28">source range / mean</div></div>)}{!metrics.valueDisagreements.length?<p className="text-xs text-white/35">Fewer than three sources cover this selected format.</p>:null}</div></Panel></div></div>:null}
     </>}
   </div></main>;

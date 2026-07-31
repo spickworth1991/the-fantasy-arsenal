@@ -255,8 +255,8 @@ const VALUE_SOURCES = {
   DynastyProcess: { label: "DynastyProcess", supports: { dynasty: true, redraft: false, qbToggle: true } },
   KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
   FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  FantasyPros: { label: "FantasyPros", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  FantasyProsECR: { label: "FantasyPros ECR", supports: { dynasty: true, redraft: true, qbToggle: true } },
+  FantasyPros: { label: "FantasyPros Trade Values", supports: { dynasty: true, redraft: false, qbToggle: true } },
+  FantasyProsECR: { label: "FantasyPros ECR Rank Score", supports: { dynasty: true, redraft: true, qbToggle: true } },
   IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
   TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
 };

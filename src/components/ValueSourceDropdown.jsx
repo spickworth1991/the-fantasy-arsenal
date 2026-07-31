@@ -20,8 +20,8 @@ const LABELS = {
   DynastyProcess: "DynastyProcess",
   KeepTradeCut: "KeepTradeCut",
   FantasyNavigator: "FantasyNavigator",
-  FantasyPros: "FantasyPros",
-  FantasyProsECR: "FantasyPros ECR",
+  FantasyPros: "FantasyPros Trade Values",
+  FantasyProsECR: "FantasyPros ECR Rank Score",
   IDynastyP: "IDynastyP",
 };
 
