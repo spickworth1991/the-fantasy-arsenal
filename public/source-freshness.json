@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-30T23:40:02.257Z",
+  "updated_at": "2026-07-31T00:52:38.216Z",
   "sources": {
     "fc": {
       "key": "fc",
@@ -124,10 +124,10 @@
     "fantasypros_proj": {
       "key": "fantasypros_proj",
       "name": "FantasyPros Projections",
-      "status": "failed",
-      "last_attempt_at": "2026-07-30T23:40:02.257Z",
-      "last_success_at": null,
-      "last_error": "FantasyPros API access returned only 10 of 597 declared projections. The key works, but its current access tier is returning a sample rather than the complete projection set."
+      "status": "success",
+      "last_attempt_at": "2026-07-31T00:52:38.216Z",
+      "last_success_at": "2026-07-31T00:52:38.216Z",
+      "last_error": ""
     }
   }
 }
