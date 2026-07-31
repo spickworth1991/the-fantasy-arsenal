@@ -6,18 +6,28 @@ const POSITIONS = new Set(["ALL","QB","RB","WR","TE","K","DST","DL","LB","DB"]);
 const SCORING = new Set(["STD","HALF","PPR"]);
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
-async function readSaved(requestUrl, path) {
-  const url = new URL(path, requestUrl.origin);
-  const response = await fetch(url, {
-    cf:{ cacheTtl:31536000, cacheEverything:true },
-    cache:"force-cache",
-  });
-  if (!response.ok) return null;
-  return response.json();
+async function readSaved(request, path) {
+  // Cloning NextRequest.nextUrl is reliable on localhost, Cloudflare Pages and
+  // inside the Ballsville embed. Rebuilding from request.origin can yield a
+  // `null`/relative origin in some edge adapters and throw a DOM URL error.
+  try {
+    const url = request.nextUrl.clone();
+    url.pathname = path;
+    url.search = "";
+    url.hash = "";
+    const response = await fetch(url.toString(), {
+      cf:{ cacheTtl:31536000, cacheEverything:true },
+      cache:"force-cache",
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request) {
-  const url = new URL(request.url);
+  const url = request.nextUrl;
   const currentSeason = new Date().getUTCFullYear();
   const requestedSeason = number(url.searchParams.get("season"));
   const season = requestedSeason >= 2012 && requestedSeason <= currentSeason ? requestedSeason : currentSeason - 1;
@@ -26,8 +36,8 @@ export async function GET(request) {
   const positionCandidate = String(url.searchParams.get("position") || "ALL").toUpperCase();
   const position = POSITIONS.has(positionCandidate) ? positionCandidate : "ALL";
   const [fantasyPros, sleeper] = await Promise.all([
-    readSaved(url, `/stats/history/${season}/fantasypros.json`),
-    readSaved(url, `/stats/history/${season}/sleeper.json`),
+    readSaved(request, `/stats/history/${season}/fantasypros.json`),
+    season >= 2018 ? readSaved(request, `/stats/history/${season}/sleeper.json`) : Promise.resolve(null),
   ]);
   const fantasyProsPlayers = (Array.isArray(fantasyPros?.players) ? fantasyPros.players : [])
     .filter((player) => position === "ALL" || String(player?.position || "").toUpperCase() === position)
@@ -90,6 +100,11 @@ export async function GET(request) {
       fantasypros:"Saved official historical fantasy points, games, averages, and weekly scoring.",
       sleeper:"Saved weekly raw NFL statistics and scoring fields, keyed by Sleeper player ID.",
       retrieval:"Visitors read static Arsenal files. No user request calls FantasyPros or consumes API quota.",
+    },
+    coverage:{
+      fantasypros_players:fantasyProsPlayers.length,
+      sleeper_records:sleeperPlayers.length,
+      sleeper_raw_stats:season >= 2018 && sleeperPlayers.length > 0,
     },
   }, {
     headers:{ "Cache-Control":"public, max-age=3600, s-maxage=31536000, stale-while-revalidate=604800" },

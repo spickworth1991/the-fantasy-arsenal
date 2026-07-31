@@ -136,10 +136,27 @@ export default function StatCentralClient() {
   const [career,setCareer]=useState([]);
   const [careerLoading,setCareerLoading]=useState(false);
   const [availableSeasons,setAvailableSeasons]=useState([completedSeason]);
+  const [reloadToken,setReloadToken]=useState(0);
 
   useEffect(()=>{fetch("/stats/history/manifest.json",{cache:"force-cache"}).then((response)=>response.ok?response.json():null).then((manifest)=>{const saved=(manifest?.seasons||[]).map((row)=>num(row.season)).filter(Boolean).sort((a,b)=>b-a);if(saved.length){setAvailableSeasons(saved);setSeason((current)=>saved.includes(current)?current:saved[0]);}}).catch(()=>{});},[]);
-  useEffect(()=>{const allowed=new Set(availableSeasons.map(String));document.querySelectorAll('select[data-stat-season="true"] option').forEach((option)=>{const visible=allowed.has(String(option.value));option.disabled=!visible;option.hidden=!visible;});},[availableSeasons]);
-  useEffect(()=>{let live=true;setLoading(true);setError("");fetch(`/api/stat-central?season=${season}&scoring=${scoring}&position=${position}`,{cache:"force-cache"}).then(async(response)=>{const payload=await response.json();if(!response.ok||!payload.ok)throw new Error(payload?.message||"Historical scoring was unavailable.");if(live)setData(payload);}).catch((failure)=>{if(live)setError(failure.message);}).finally(()=>{if(live)setLoading(false);});return()=>{live=false};},[season,scoring,position]);
+  useEffect(()=>{
+    const controller=new AbortController();
+    let live=true;
+    setLoading(true);
+    setError("");
+    const params=new URLSearchParams({season:String(season),scoring,position});
+    fetch(`/api/stat-central?${params.toString()}`,{cache:"force-cache",signal:controller.signal})
+      .then(async(response)=>{
+        const contentType=response.headers.get("content-type")||"";
+        if(!contentType.includes("application/json"))throw new Error("Stat Central received an invalid data response. Please retry.");
+        const payload=await response.json();
+        if(!response.ok||!payload.ok)throw new Error(payload?.message||"Historical scoring was unavailable.");
+        if(live)setData(payload);
+      })
+      .catch((failure)=>{if(live&&failure?.name!=="AbortError")setError(failure?.message||"Stat Central could not load this season.");})
+      .finally(()=>{if(live)setLoading(false);});
+    return()=>{live=false;controller.abort();};
+  },[season,scoring,position,reloadToken]);
   const allPlayers=useMemo(()=>mergeHistory(data,playerDb).filter((player)=>position==="ALL"||player.position===position),[data,playerDb,position]);
   const filtered=useMemo(()=>allPlayers.filter((player)=>!query||normalize(player.name).includes(normalize(query))).sort((a,b)=>b.points-a.points),[allPlayers,query]);
   useEffect(()=>{if(!allPlayers.length)return;if(!allPlayers.some((player)=>player.key===selectedKey))setSelectedKey(allPlayers[0].key);if(!allPlayers.some((player)=>player.key===compareKey))setCompareKey(allPlayers[1]?.key||allPlayers[0].key);},[allPlayers,selectedKey,compareKey]);
