@@ -12,8 +12,8 @@ const season =
       ?.split("=")[1],
   ) || new Date().getUTCFullYear();
 const archive = process.argv.includes("--archive");
-const MODEL_VERSION = "arsenal-stat-v2.2";
-const MODEL_SCHEMA = 7;
+const MODEL_VERSION = "arsenal-stat-v2.3";
+const MODEL_SCHEMA = 8;
 const MODEL_BUILD_HASH = crypto
   .createHash("sha256")
   .update(fs.readFileSync(scriptFile))
@@ -117,6 +117,104 @@ const coherentLine = (line = {}) => {
   return next;
 };
 
+async function enrichScheduleWeather(schedule, savedFile) {
+  const stadiumData = readJson(
+    path.join(root, "src", "data", "nfl-stadiums.json"),
+    { stadiums: [] },
+  );
+  const stadiumByTeam = new Map(
+    (stadiumData.stadiums || []).flatMap((stadium) =>
+      [...(stadium.teams || []), ...(stadium.aliases || [])].map((team) => [
+        normalizeTeam(team),
+        stadium,
+      ]),
+    ),
+  );
+  const candidates = [];
+  const weeks = (schedule.weeks || []).map((entry) => ({
+    ...entry,
+    games: (entry.games || []).map((game) => {
+      const stadium = stadiumByTeam.get(normalizeTeam(game.home));
+      const enriched = {
+        ...game,
+        venue: stadium
+          ? { name: stadium.name, roofType: stadium.roofType }
+          : game.venue || null,
+      };
+      const daysAway = (Date.parse(game.date) - Date.now()) / 86400000;
+      if (
+        stadium &&
+        stadium.roofType !== "fixed" &&
+        Number.isFinite(daysAway) &&
+        daysAway >= -1 &&
+        daysAway <= 16
+      )
+        candidates.push({ entry, game: enriched, stadium });
+      return enriched;
+    }),
+  }));
+  if (!candidates.length) return { ...schedule, weeks };
+  try {
+    const parameters = new URLSearchParams({
+      latitude: candidates.map(({ stadium }) => stadium.latitude).join(","),
+      longitude: candidates.map(({ stadium }) => stadium.longitude).join(","),
+      hourly:
+        "temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m",
+      temperature_unit: "fahrenheit",
+      wind_speed_unit: "mph",
+      timezone: "GMT",
+      forecast_days: "16",
+    });
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?${parameters}`,
+    );
+    if (!response.ok) return { ...schedule, weeks };
+    const payload = await response.json();
+    const forecasts = Array.isArray(payload) ? payload : [payload];
+    const weatherByGame = new Map();
+    candidates.forEach(({ entry, game, stadium }, index) => {
+      const hourly = forecasts[index]?.hourly;
+      const kickoff = Date.parse(game.date);
+      let nearest = -1;
+      let distance = Infinity;
+      (hourly?.time || []).forEach((time, cursor) => {
+        const delta = Math.abs(Date.parse(`${time}Z`) - kickoff);
+        if (delta < distance) {
+          nearest = cursor;
+          distance = delta;
+        }
+      });
+      if (nearest < 0 || distance > 90 * 60 * 1000) return;
+      weatherByGame.set(`${entry.week}:${game.home}`, {
+        source: "Open-Meteo",
+        temperature: num(hourly.temperature_2m?.[nearest]),
+        precipitationProbability: num(
+          hourly.precipitation_probability?.[nearest],
+        ),
+        windSpeed: num(hourly.wind_speed_10m?.[nearest]),
+        windGusts: num(hourly.wind_gusts_10m?.[nearest]),
+        forecastTime: hourly.time[nearest],
+        indoor: stadium.roofType === "fixed",
+      });
+    });
+    const result = {
+      ...schedule,
+      weather_updated: new Date().toISOString(),
+      weeks: weeks.map((entry) => ({
+        ...entry,
+        games: entry.games.map((game) => ({
+          ...game,
+          weather: weatherByGame.get(`${entry.week}:${game.home}`) || null,
+        })),
+      })),
+    };
+    writeJson(savedFile, result);
+    return result;
+  } catch {
+    return { ...schedule, weeks };
+  }
+}
+
 async function loadSchedule() {
   const saved = path.join(
     root,
@@ -133,7 +231,7 @@ async function loadSchedule() {
     Number.isFinite(existingUpdatedAt) &&
     Date.now() - existingUpdatedAt < 12 * 60 * 60 * 1000
   )
-    return existing;
+    return enrichScheduleWeather(existing, saved);
   const existingByWeek = new Map(
     (existing?.weeks || []).map((week) => [Number(week.week), week]),
   );
@@ -181,7 +279,7 @@ async function loadSchedule() {
     weeks,
   };
   writeJson(saved, result);
-  return result;
+  return enrichScheduleWeather(result, saved);
 }
 
 function projectionLine(source, row) {
@@ -1113,26 +1211,86 @@ function matchupOutcomeProfile(volatility, matchupFactor, neutralPoints) {
   };
 }
 
-function projectionLenses(projections, baselineWeekly, volatility, position) {
-  const cv = num(volatility?.cv) || 0.35;
-  const reliability = num(volatility?.reliability);
-  const spreadFactor = clamp(cv * (0.68 + reliability * 0.32), 0.14, 0.82);
-  return Object.fromEntries(
-    scoringKeys.map((scoring) => {
-      const receptionPoints = scoring === "ppr" ? 1 : scoring === "half" ? 0.5 : 0;
-      const expected = num(projections?.[scoring]);
-      const neutral = scoreLine(baselineWeekly, receptionPoints, position);
-      const spread = Math.max(1.25, neutral * spreadFactor);
-      return [
-        scoring,
-        {
-          safe: round(Math.max(0, expected - spread * 0.62)),
-          expected: round(expected),
-          upside: round(expected + spread * 0.88),
-        },
-      ];
-    }),
-  );
+function weatherRiskSignal(weather, position) {
+  if (!weather || weather.indoor) return 0;
+  const wind = Math.max(num(weather.windSpeed), num(weather.windGusts) * 0.75);
+  const precipitation = num(weather.precipitationProbability);
+  const temperature = num(weather.temperature);
+  let signal = 0;
+  if (wind >= 20) signal -= position === "RB" ? 0.025 : 0.09;
+  else if (wind >= 15) signal -= position === "RB" ? 0.01 : 0.05;
+  if (precipitation >= 70) signal -= position === "RB" ? 0.01 : 0.045;
+  else if (precipitation >= 45) signal -= position === "RB" ? 0 : 0.02;
+  if (temperature && temperature <= 15) signal -= position === "K" ? 0.05 : 0.02;
+  return clamp(signal, -0.16, 0.04);
+}
+
+function applyRiskyProjectionPath(weeks, baselineWeekly, volatility, position) {
+  const active = weeks.filter((week) => !week.bye && !week.completed);
+  if (!active.length) return weeks;
+  const sensitivity = num(volatility?.matchup_sensitivity) || 1;
+  const amplification = clamp(1.55 + sensitivity * 1.25, 2.6, 3.4);
+  const lensesByWeek = new Map(active.map((week) => [week.week, {}]));
+
+  scoringKeys.forEach((scoring) => {
+    const receptionPoints = scoring === "ppr" ? 1 : scoring === "half" ? 0.5 : 0;
+    const neutral = scoreLine(baselineWeekly, receptionPoints, position);
+    const expectedTotal = active.reduce(
+      (sum, week) => sum + num(week.projections?.[scoring]),
+      0,
+    );
+    const weightedMeanFactor = expectedTotal
+      ? active.reduce((sum, week) => {
+          const expected = num(week.projections?.[scoring]);
+          return sum + (neutral ? expected / neutral : 1) * expected;
+        }, 0) / expectedTotal
+      : 1;
+    const raw = active.map((week) => {
+      const expected = num(week.projections?.[scoring]);
+      const matchupFactor = neutral ? expected / neutral : 1;
+      const centeredMatchup = matchupFactor - weightedMeanFactor;
+      const homeSignal = week.home ? 0.012 : -0.012;
+      const weatherSignal = weatherRiskSignal(week.weather, position);
+      const riskyFactor = clamp(
+        1 + centeredMatchup * amplification + homeSignal + weatherSignal,
+        0.52,
+        1.7,
+      );
+      return { week, expected, value: expected * riskyFactor };
+    });
+    const rawTotal = raw.reduce((sum, row) => sum + row.value, 0);
+    const normalization = rawTotal ? expectedTotal / rawTotal : 1;
+    raw.forEach(({ week, expected, value }) => {
+      lensesByWeek.get(week.week)[scoring] = {
+        safe_expected: round(expected),
+        risky: round(Math.max(0, value * normalization)),
+      };
+    });
+  });
+
+  return weeks.map((week) => {
+    if (week.bye || week.completed) return week;
+    const projectionLenses = lensesByWeek.get(week.week);
+    const expected = num(projectionLenses?.ppr?.safe_expected);
+    const risky = num(projectionLenses?.ppr?.risky);
+    const riskFactor = expected ? risky / expected : 1;
+    let label = week.outcome_profile?.label || "Balanced range";
+    if (riskFactor >= 1.22) label = "Boom spot";
+    else if (riskFactor <= 0.78) label = "Bust risk";
+    else if (riskFactor >= 1.1) label = "Ceiling lean";
+    else if (riskFactor <= 0.9) label = "Floor concern";
+    return {
+      ...week,
+      projection_lenses: projectionLenses,
+      risky_factor: round(riskFactor, 4),
+      outcome_profile: {
+        ...week.outcome_profile,
+        label,
+        safe_expected_projection: round(expected),
+        risky_projection: round(risky),
+      },
+    };
+  });
 }
 
 function applyDefense(line, adjustment, position) {
@@ -1408,11 +1566,15 @@ const opponentByWeek = new Map();
       opponent: normalizeTeam(game.away),
       home: true,
       date: game.date,
+      weather: game.weather || null,
+      venue: game.venue || null,
     });
     opponentByWeek.set(`${week}:${normalizeTeam(game.away)}`, {
       opponent: normalizeTeam(game.home),
       home: false,
       date: game.date,
+      weather: game.weather || null,
+      venue: game.venue || null,
     });
   }),
 );
@@ -1518,6 +1680,8 @@ const modeledPlayers = base.rows
           opponent: matchup.opponent,
           home: matchup.home,
           kickoff: matchup.date,
+          weather: matchup.weather,
+          venue: matchup.venue,
           stat_line: actual?.stats || cleanLine(),
           projections: actual?.points || { ppr: 0, half: 0, std: 0 },
           defense: null,
@@ -1542,6 +1706,8 @@ const modeledPlayers = base.rows
         opponent: matchup.opponent,
         home: matchup.home,
         kickoff: matchup.date,
+        weather: matchup.weather,
+        venue: matchup.venue,
         completed: false,
         stat_line: guardStatRates(
           {
@@ -1559,7 +1725,7 @@ const modeledPlayers = base.rows
         personal_history: personalHistory,
       };
     });
-    const normalizedWeeks = normalizeWeeklyLines(
+    const expectedWeeks = normalizeWeeklyLines(
       unnormalizedWeeks,
       remainingLine,
       position,
@@ -1598,14 +1764,14 @@ const modeledPlayers = base.rows
           matchupFactor,
           baselinePoints,
         ),
-        projection_lenses: projectionLenses(
-          projections,
-          baselineWeekly,
-          volatility,
-          position,
-        ),
       };
     });
+    const normalizedWeeks = applyRiskyProjectionPath(
+      expectedWeeks,
+      baselineWeekly,
+      volatility,
+      position,
+    );
     const actualLine = cleanLine();
     const restOfSeasonLine = cleanLine();
     normalizedWeeks.forEach((week) => {
@@ -1726,8 +1892,11 @@ const modeledPlayers = base.rows
         defense_index: week.defense_index,
         defense_sample: week.defense_sample,
         personal_history: week.personal_history || null,
+        weather: week.weather || null,
+        venue: week.venue || null,
         outcome_profile: week.outcome_profile || null,
         projection_lenses: week.projection_lenses || null,
+        risky_factor: week.risky_factor ?? null,
       })),
       scoring,
     };
@@ -1795,7 +1964,7 @@ const output = {
     player_matchup_history:
       "When at least two recent meetings exist, each result is compared with that player's same-season average against every other opponent. The recency-weighted residual is sample-regressed, volatility-aware, and capped at +/-6%, so opponent history can create direction without overpowering role or projected stats.",
     outcomes:
-      "Safe, Expected, and Upside lenses use the player's recency-weighted weekly distribution, historical boom and bust rates, sample reliability, and the current opponent. Expected is the calibrated point estimate; Safe and Upside are decision ranges whose accuracy is archived separately.",
+      "Safe / Expected is the calibrated most-likely weekly path. Risky amplifies only centered, evidence-backed matchup differences using the player's historical volatility, defense-by-stat tendencies, personal opponent history, home/away context, and real kickoff weather when it enters the 16-day forecast window. Risky is normalized back to the same remaining season expectation, and both paths are archived and graded separately.",
     schedule:
       "The saved ESPN NFL schedule supplies opponent, home/away, bye, and kickoff context.",
     normalization:

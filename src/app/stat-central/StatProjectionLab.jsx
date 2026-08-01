@@ -148,7 +148,7 @@ function recommendedWeek(model) {
 export default function StatProjectionLab({ model }) {
   const [week, setWeek] = useState(() => recommendedWeek(model));
   const [scoring, setScoring] = useState("ppr");
-  const [lens, setLens] = useState("expected");
+  const [lens, setLens] = useState("safe_expected");
   const [position, setPosition] = useState("ALL");
   const [team, setTeam] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -282,8 +282,9 @@ export default function StatProjectionLab({ model }) {
     : null;
   const personalHistory = selected?.forecast?.personal_history || {};
   const outcomeProfile = selected?.forecast?.outcome_profile || {};
+  const weather = selected?.forecast?.weather || null;
   const modelAccuracy =
-    lens === "expected"
+    lens === "safe_expected"
       ? accuracy?.cumulative_by_model_version?.[
           model?.model_build_id || model?.model_version
         ]?.scoring?.[scoring] || null
@@ -291,7 +292,7 @@ export default function StatProjectionLab({ model }) {
           model?.model_build_id || model?.model_version
         ]?.projection_lenses?.[scoring]?.[lens] || null;
   const accuracyMetrics =
-    lens !== "expected"
+    lens !== "safe_expected"
       ? modelAccuracy
       : modelAccuracy?.cohorts?.[accuracyCohort] ||
         (accuracyCohort === "all_matched" ? modelAccuracy : null);
@@ -333,9 +334,8 @@ export default function StatProjectionLab({ model }) {
               <option value="std">Standard</option>
             </Filter>
             <Filter label="Projection lens" value={lens} onChange={setLens}>
-              <option value="safe">Safe</option>
-              <option value="expected">Expected</option>
-              <option value="upside">Upside</option>
+              <option value="safe_expected">Safe / Expected</option>
+              <option value="risky">Risky boom / bust</option>
             </Filter>
             <Filter label="Position" value={position} onChange={setPosition}>
               {["ALL", "QB", "RB", "WR", "TE", "K"].map((value) => (
@@ -401,7 +401,7 @@ export default function StatProjectionLab({ model }) {
                     {selected.projection.toFixed(1)}
                   </div>
                   <div className="text-[9px] font-black uppercase tracking-wider text-white/30">
-                    Week {week} {lens === "expected" ? "" : `${lens} `}{scoring.toUpperCase()}{" "}
+                    Week {week} {lens === "safe_expected" ? "safe / expected " : "risky "}{scoring.toUpperCase()}{" "}
                     {selected.forecast.completed ? "actual" : "points"}
                   </div>
                 </div>
@@ -513,8 +513,20 @@ export default function StatProjectionLab({ model }) {
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/30">
                     Based on {number(outcomeProfile.sample)} prior active games
-                    and this matchup. Safe and Upside are range lenses;
-                    Expected remains the model&apos;s most likely point estimate.
+                    and this matchup. Safe / Expected is the most likely path;
+                    Risky intentionally expresses evidence-backed spike and
+                    collapse weeks while preserving a realistic season total.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-white/40">Kickoff weather</span>
+                    <b>{weather ? "Included" : "Pending"}</b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/30">
+                    {weather
+                      ? `${number(weather.temperature).toFixed(0)}Â°F · ${number(weather.windSpeed).toFixed(0)} mph wind · ${number(weather.precipitationProbability).toFixed(0)}% precipitation. Outdoor weather is included in the Risky path.`
+                      : "A real kickoff forecast is added inside the 16-day weather window. No invented long-range weather adjustment is applied."}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">

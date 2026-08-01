@@ -41,7 +41,7 @@ const outputFile = path.join(
   "accuracy.json",
 );
 const scoringKeys = ["ppr", "half", "std"];
-const projectionLenses = ["safe", "expected", "upside"];
+const projectionLenses = ["safe_expected", "risky"];
 const positions = ["QB", "RB", "WR", "TE", "K"];
 const finalWindowMs = 6 * 60 * 60 * 1000;
 const evaluationTime = Date.now();
@@ -418,7 +418,7 @@ if (
         for (const lens of projectionLenses) {
           const lensProjection = finiteNumber(
             forecast.forecast?.projection_lenses?.[scoring]?.[lens] ??
-              (lens === "expected" ? projection : null),
+              (lens === "safe_expected" ? projection : null),
           );
           if (!Number.isFinite(lensProjection)) continue;
           lensLedger.push({
