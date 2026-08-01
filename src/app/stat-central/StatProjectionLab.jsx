@@ -157,6 +157,7 @@ export default function StatProjectionLab({ model }) {
   const [visibleCount, setVisibleCount] = useState(40);
   const [accuracy, setAccuracy] = useState(null);
   const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
+  const [view, setView] = useState("player");
   const teams = useMemo(
     () =>
       [
@@ -249,6 +250,16 @@ export default function StatProjectionLab({ model }) {
     1,
     ...seasonSeries.map((row) => row.projection),
   );
+  const selectedWeekIndex = seasonSeries.findIndex((row) => row.week === week);
+  const moveSelectedWeek = (direction) => {
+    if (!seasonSeries.length) return;
+    const current = selectedWeekIndex >= 0 ? selectedWeekIndex : 0;
+    const next = Math.max(
+      0,
+      Math.min(seasonSeries.length - 1, current + direction),
+    );
+    setWeek(seasonSeries[next].week);
+  };
 
   if (!model?.players?.length)
     return (
@@ -300,7 +311,7 @@ export default function StatProjectionLab({ model }) {
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden p-5 sm:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-5">
           <div>
             <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/55">
               The Fantasy Arsenal · {model.model_version}
@@ -316,7 +327,7 @@ export default function StatProjectionLab({ model }) {
               Half-PPR, and Standard.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Filter
               label="Week"
               value={week}
@@ -348,6 +359,17 @@ export default function StatProjectionLab({ model }) {
                 <option key={value}>{value}</option>
               ))}
             </Filter>
+            <label className="col-span-2 min-w-0 sm:col-span-1 lg:col-span-1">
+              <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
+                Find player
+              </span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search player…"
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              />
+            </label>
           </div>
         </div>
       </Card>
@@ -378,7 +400,27 @@ export default function StatProjectionLab({ model }) {
         />
       </div>
 
-      {selected ? (
+      <div className="sticky top-[108px] z-20 -mx-1 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:mx-0">
+        {[
+          ["player", "Player Forecast", "One player across every week"],
+          ["board", "Weekly Board", "Rank the complete slate"],
+          ["model", "Model & Accuracy", "Method and measured results"],
+        ].map(([key, label, detail]) => (
+          <button
+            type="button"
+            key={key}
+            onClick={() => setView(key)}
+            className={`min-w-[145px] flex-1 shrink-0 rounded-xl px-4 py-2.5 text-left transition ${view === key ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/[0.04]"}`}
+          >
+            <span className="block text-xs font-black">{label}</span>
+            <span className="mt-0.5 hidden text-[9px] text-white/28 sm:block">
+              {detail}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {view === "player" && selected ? (
         <>
           <div className="grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
             <Card className="p-5 sm:p-6">
@@ -405,6 +447,47 @@ export default function StatProjectionLab({ model }) {
                     {selected.forecast.completed ? "actual" : "points"}
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 rounded-2xl border border-white/[0.07] bg-black/15 p-2">
+                <button
+                  type="button"
+                  onClick={() => moveSelectedWeek(-1)}
+                  disabled={selectedWeekIndex <= 0}
+                  className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
+                  aria-label="Previous active week"
+                >
+                  ‹
+                </button>
+                <div className="min-w-0 text-center">
+                  <div className="text-[9px] font-black uppercase tracking-[.16em] text-cyan-100/45">
+                    Selected player timeline
+                  </div>
+                  <div className="mt-0.5 truncate text-sm font-black">
+                    Week {week} · {selected.forecast.home ? "vs" : "at"} {selected.forecast.opponent}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => moveSelectedWeek(1)}
+                  disabled={selectedWeekIndex < 0 || selectedWeekIndex >= seasonSeries.length - 1}
+                  className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
+                  aria-label="Next active week"
+                >
+                  ›
+                </button>
+              </div>
+              <div className="mt-2 flex snap-x gap-1.5 overflow-x-auto pb-1 sm:hidden">
+                {seasonSeries.map((row) => (
+                  <button
+                    type="button"
+                    key={row.week}
+                    onClick={() => setWeek(row.week)}
+                    className={`min-w-[58px] snap-start rounded-xl px-2 py-2 text-center ${row.week === week ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/20" : "bg-white/[0.035] text-white/40"}`}
+                  >
+                    <span className="block text-[9px] font-black">W{row.week}</span>
+                    <span className="mt-0.5 block truncate text-[8px]">{row.opponent}</span>
+                  </button>
+                ))}
               </div>
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
                 <Kpi
@@ -467,7 +550,7 @@ export default function StatProjectionLab({ model }) {
                   }
                 />
               </div>
-              <div className="mt-5 overflow-x-auto">
+              <div className="mt-5 hidden overflow-x-auto sm:block">
                 <div
                   className="flex min-w-[680px] items-end gap-1.5 border-b border-white/10 pb-2"
                   style={{ height: 190 }}
@@ -507,7 +590,7 @@ export default function StatProjectionLab({ model }) {
                   <div className="flex justify-between gap-4 text-xs">
                     <span className="text-white/40">Boom / bust range</span>
                     <b>
-                      {number(outcomeProfile.floor).toFixed(1)}â€“
+                      {number(outcomeProfile.floor).toFixed(1)}–
                       {number(outcomeProfile.ceiling).toFixed(1)}
                     </b>
                   </div>
@@ -525,7 +608,7 @@ export default function StatProjectionLab({ model }) {
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/30">
                     {weather
-                      ? `${number(weather.temperature).toFixed(0)}Â°F · ${number(weather.windSpeed).toFixed(0)} mph wind · ${number(weather.precipitationProbability).toFixed(0)}% precipitation. Outdoor weather is included in the Risky path.`
+                      ? `${number(weather.temperature).toFixed(0)}°F · ${number(weather.windSpeed).toFixed(0)} mph wind · ${number(weather.precipitationProbability).toFixed(0)}% precipitation. Outdoor weather is included in the Risky path.`
                       : "A real kickoff forecast is added inside the 16-day weather window. No invented long-range weather adjustment is applied."}
                   </p>
                 </div>
@@ -641,6 +724,7 @@ export default function StatProjectionLab({ model }) {
         </>
       ) : null}
 
+      {view === "board" ? (
       <Card className="overflow-hidden">
         <div className="border-b border-white/10 p-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -682,7 +766,10 @@ export default function StatProjectionLab({ model }) {
             <button
               type="button"
               key={player.name}
-              onClick={() => setSelectedName(player.name)}
+              onClick={() => {
+                setSelectedName(player.name);
+                setView("player");
+              }}
               className="w-full p-4 text-left hover:bg-white/[0.03]"
             >
               <div className="flex items-start justify-between gap-3">
@@ -734,7 +821,10 @@ export default function StatProjectionLab({ model }) {
               {rows.slice(0, visibleCount).map((player) => (
                 <tr
                   key={player.name}
-                  onClick={() => setSelectedName(player.name)}
+                  onClick={() => {
+                    setSelectedName(player.name);
+                    setView("player");
+                  }}
                   className={`cursor-pointer hover:bg-white/[0.035] ${selected?.name === player.name ? "bg-cyan-300/[0.04]" : ""}`}
                 >
                   <td className="px-4 py-3">
@@ -780,7 +870,9 @@ export default function StatProjectionLab({ model }) {
           </div>
         ) : null}
       </Card>
+      ) : null}
 
+      {view === "model" ? (
       <Card className="p-5 sm:p-6">
         <details>
           <summary className="cursor-pointer list-none text-lg font-black">
@@ -885,6 +977,7 @@ export default function StatProjectionLab({ model }) {
           )}
         </div>
       </Card>
+      ) : null}
     </div>
   );
 }

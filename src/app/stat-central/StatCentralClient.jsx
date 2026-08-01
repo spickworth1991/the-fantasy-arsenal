@@ -7,14 +7,41 @@ import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
 import StatProjectionLab from "./StatProjectionLab";
 
-const TABS = [
-  ["overview", "Player Research"],
-  ["history", "Career History"],
-  ["compare", "Compare Players"],
-  ["matchups", "Matchup Lab"],
-  ["projections", "Projection Lab"],
-  ["leaders", "Leaderboards"],
-  ["method", "Data Guide"],
+const WORKSPACES = [
+  {
+    key: "players",
+    label: "Player Lab",
+    detail: "Research, careers, and comparisons",
+    tabs: [
+      ["overview", "Player Research", "Production, consistency, and weekly evidence"],
+      ["history", "Career History", "Season-over-season trends and raw statistics"],
+      ["compare", "Compare Players", "Direct scoring and statistical comparison"],
+    ],
+  },
+  {
+    key: "matchups",
+    label: "Matchups",
+    detail: "Offense, defense, and positional edges",
+    tabs: [["matchups", "Matchup Lab", "Team, position, and player matchup evidence"]],
+  },
+  {
+    key: "projections",
+    label: "Projections",
+    detail: "Safe and boom/bust weekly paths",
+    tabs: [["projections", "Projection Center", "Weekly stat forecasts and model evidence"]],
+  },
+  {
+    key: "rankings",
+    label: "Rankings",
+    detail: "Season production leaders",
+    tabs: [["leaders", "Leaderboards", "Position ranks, archetypes, and consistency"]],
+  },
+  {
+    key: "guide",
+    label: "Data Guide",
+    detail: "Sources and transparent calculations",
+    tabs: [["method", "Methodology", "What is measured, modeled, and estimated"]],
+  },
 ];
 const CORE_POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"];
 const SCORING = [
@@ -2917,6 +2944,13 @@ export default function StatCentralClient() {
     (player) => player.position === selected?.position,
   );
   const metrics = playerMetrics(selected, positionPlayers);
+  const activeWorkspace =
+    WORKSPACES.find((workspace) =>
+      workspace.tabs.some(([key]) => key === tab),
+    ) || WORKSPACES[0];
+  const playerWorkspace = ["overview", "history", "compare"].includes(tab);
+  const historicalWorkspace = !["projections", "method"].includes(tab);
+  const showPositionAndSearch = playerWorkspace || tab === "leaders";
 
   async function loadCareer() {
     if (!selected) return;
@@ -2969,13 +3003,19 @@ export default function StatCentralClient() {
           </p>
           {tab === "projections" ? (
             <div className="mt-5 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4 text-xs leading-5 text-white/45">
-              Projection Lab has its own week, scoring, position, team, and
-              player controls below. Historical filters are hidden here so it is
-              always clear which settings affect the forecast.
+              Projection Center has its own week, scoring, position, team, and
+              player controls. Use Safe / Expected for the most likely path or
+              Risky to expose data-supported boom and bust weeks.
             </div>
-          ) : (
+          ) : tab === "method" ? (
+            <div className="mt-5 rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4 text-xs leading-5 text-white/45">
+              Source definitions and calculation rules are separated from the
+              research controls so facts, estimates, and modeled outputs remain
+              easy to distinguish.
+            </div>
+          ) : historicalWorkspace ? (
             <>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${showPositionAndSearch ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
                 <Select
                   label="Season"
                   value={season}
@@ -3002,77 +3042,105 @@ export default function StatCentralClient() {
                     </option>
                   ))}
                 </Select>
-                <Select
-                  label="Position"
-                  value={position}
-                  onChange={setPosition}
-                >
-                  {CORE_POSITIONS.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </Select>
-                <label>
-                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
-                    Find a player
-                  </span>
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search name…"
-                    className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
-                  />
-                </label>
+                {showPositionAndSearch ? (
+                  <>
+                    <Select label="Position" value={position} onChange={setPosition}>
+                      {CORE_POSITIONS.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </Select>
+                    <label>
+                      <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
+                        Find a player
+                      </span>
+                      <input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search name…"
+                        className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                      />
+                    </label>
+                  </>
+                ) : null}
               </div>
-              <div className="mt-4 grid gap-2 md:grid-cols-2">
-                <Select
-                  label="Primary player"
-                  value={selectedKey}
-                  onChange={setSelectedKey}
-                >
-                  {filtered.slice(0, 500).map((player) => (
-                    <option key={player.key} value={player.key}>
-                      {player.name} · {player.position} ·{" "}
-                      {player.points.toFixed(1)}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  label="Comparison player"
-                  value={compareKey}
-                  onChange={setCompareKey}
-                >
-                  {filtered.slice(0, 500).map((player) => (
-                    <option key={player.key} value={player.key}>
-                      {player.name} · {player.position} ·{" "}
-                      {player.points.toFixed(1)}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+              {playerWorkspace ? (
+                <div className={`mt-4 grid gap-2 ${tab === "compare" ? "md:grid-cols-2" : "grid-cols-1"}`}>
+                  <Select
+                    label={tab === "compare" ? "Primary player" : "Selected player"}
+                    value={selectedKey}
+                    onChange={setSelectedKey}
+                  >
+                    {filtered.slice(0, 500).map((player) => (
+                      <option key={player.key} value={player.key}>
+                        {player.name} · {player.position} · {player.points.toFixed(1)}
+                      </option>
+                    ))}
+                  </Select>
+                  {tab === "compare" ? (
+                    <Select label="Comparison player" value={compareKey} onChange={setCompareKey}>
+                      {filtered.slice(0, 500).map((player) => (
+                        <option key={player.key} value={player.key}>
+                          {player.name} · {player.position} · {player.points.toFixed(1)}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : null}
+                </div>
+              ) : null}
             </>
-          )}
+          ) : null}
         </header>
-        <div className="mt-4 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/80 p-2">
-          {TABS.map(([key, label]) => (
+        <div className="sticky top-14 z-30 -mx-3 mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto border-y border-white/10 bg-slate-950/95 px-3 py-2 backdrop-blur-xl sm:static sm:mx-0 sm:rounded-2xl sm:border">
+          {WORKSPACES.map((workspace) => (
             <button
-              key={key}
+              key={workspace.key}
               onClick={() => {
-                setTab(key);
-                if (key === "matchups" && position !== "ALL")
+                const nextTab = workspace.tabs[0][0];
+                setTab(nextTab);
+                if (nextTab === "matchups" && position !== "ALL")
                   setPosition("ALL");
               }}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-xs font-black transition ${tab === key ? "bg-cyan-300/15 text-cyan-100" : "text-white/38 hover:bg-white/5 hover:text-white/70"}`}
+              className={`min-w-[132px] shrink-0 snap-start rounded-xl px-4 py-2.5 text-left transition sm:min-w-0 sm:flex-1 ${activeWorkspace.key === workspace.key ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/5 hover:text-white/75"}`}
             >
-              {label}
+              <span className="block text-xs font-black">{workspace.label}</span>
+              <span className="mt-0.5 hidden text-[9px] font-medium text-white/30 xl:block">
+                {workspace.detail}
+              </span>
             </button>
           ))}
         </div>
-        {loading ? (
+        <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+            <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex-col lg:overflow-visible lg:p-3">
+              <div className="hidden px-2 pb-1 lg:block">
+                <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-200/40">
+                  {activeWorkspace.label}
+                </div>
+                <p className="mt-1 text-[10px] leading-4 text-white/28">
+                  {activeWorkspace.detail}
+                </p>
+              </div>
+              {activeWorkspace.tabs.map(([key, label, detail]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`min-w-[150px] shrink-0 rounded-xl px-3 py-3 text-left transition lg:min-w-0 ${tab === key ? "bg-white/[0.08] text-white ring-1 ring-white/10" : "text-white/42 hover:bg-white/[0.04] hover:text-white/72"}`}
+                >
+                  <span className="block text-xs font-black">{label}</span>
+                  <span className="mt-1 hidden text-[9px] leading-4 text-white/28 lg:block">
+                    {detail}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </aside>
+          <div className="min-w-0">
+        {loading && historicalWorkspace ? (
           <LoadingScreen
             progress={65}
             text={`Loading ${season} Stat Central…`}
           />
-        ) : error ? (
+        ) : error && historicalWorkspace ? (
           <Panel className="mt-4 border-rose-300/15 p-6 text-rose-100">
             {error}
           </Panel>
@@ -3269,6 +3337,8 @@ export default function StatCentralClient() {
             ) : null}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </main>
   );
