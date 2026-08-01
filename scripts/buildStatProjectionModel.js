@@ -12,8 +12,8 @@ const season =
       ?.split("=")[1],
   ) || new Date().getUTCFullYear();
 const archive = process.argv.includes("--archive");
-const MODEL_VERSION = "arsenal-stat-v2.1";
-const MODEL_SCHEMA = 6;
+const MODEL_VERSION = "arsenal-stat-v2.2";
+const MODEL_SCHEMA = 7;
 const MODEL_BUILD_HASH = crypto
   .createHash("sha256")
   .update(fs.readFileSync(scriptFile))
@@ -895,7 +895,74 @@ function regressVolumeAndEfficiency(line, history, position) {
   };
 }
 
-function defenseAdjustment(evidence, opponent, position) {
+function playerVolatilityProfile(key, evidence) {
+  const recency = evidenceWeights(evidence);
+  const outcomes = [];
+  let weightedMean = 0;
+  let weightedTotal = 0;
+  evidence.forEach((item, index) => {
+    const history = item.playerHistory.get(key);
+    if (!history?.weekly?.length) return;
+    const playable = history.weekly.filter(
+      (row) => num(row.points?.ppr) > 0 || Object.values(row.stats || {}).some(num),
+    );
+    if (playable.length < 3) return;
+    const seasonMean =
+      playable.reduce((sum, row) => sum + num(row.points?.ppr), 0) /
+      playable.length;
+    if (!seasonMean) return;
+    const seasonWeight = recency[index] || 0.55;
+    playable.forEach((row) => {
+      const weight = seasonWeight / playable.length;
+      const ratio = clamp(num(row.points?.ppr) / seasonMean, 0, 3);
+      outcomes.push({ ratio, weight, season: item.year, week: row.week });
+      weightedMean += ratio * weight;
+      weightedTotal += weight;
+    });
+  });
+  if (!outcomes.length || !weightedTotal)
+    return {
+      games: 0,
+      cv: 0.35,
+      boom_rate: null,
+      bust_rate: null,
+      reliability: 0,
+      matchup_sensitivity: 1,
+      outcomes: [],
+    };
+  const mean = weightedMean / weightedTotal;
+  const variance =
+    outcomes.reduce(
+      (sum, row) => sum + row.weight * (row.ratio - mean) ** 2,
+      0,
+    ) / weightedTotal;
+  const cv = clamp(Math.sqrt(variance) / Math.max(0.1, mean), 0.12, 1.15);
+  const boomWeight = outcomes.reduce(
+    (sum, row) => sum + (row.ratio >= 1.3 ? row.weight : 0),
+    0,
+  );
+  const bustWeight = outcomes.reduce(
+    (sum, row) => sum + (row.ratio <= 0.7 ? row.weight : 0),
+    0,
+  );
+  const reliability = outcomes.length / (outcomes.length + 8);
+  return {
+    games: outcomes.length,
+    cv: round(cv, 4),
+    boom_rate: round(boomWeight / weightedTotal, 4),
+    bust_rate: round(bustWeight / weightedTotal, 4),
+    reliability: round(reliability, 4),
+    // High-variance roles should react more to a matchup than stable volume
+    // earners, but the multiplier remains bounded and sample-regressed.
+    matchup_sensitivity: round(
+      clamp(0.88 + cv * 0.72 * reliability, 0.88, 1.48),
+      4,
+    ),
+    outcomes: outcomes.map(({ ratio, weight }) => ({ ratio, weight })),
+  };
+}
+
+function defenseAdjustment(evidence, opponent, position, volatility) {
   const recency = evidenceWeights(evidence);
   const factors = {};
   const indices = {};
@@ -927,11 +994,12 @@ function defenseAdjustment(evidence, opponent, position) {
     const volume = ["pass_att", "rush_att", "rec_tgt", "fga", "xpa"].includes(
       field,
     );
-    const strength = volume ? 0.18 : 0.32;
+    const sensitivity = num(volatility?.matchup_sensitivity) || 1;
+    const strength = (volume ? 0.28 : 0.48) * sensitivity;
     factors[field] = clamp(
       1 + (index - 1) * strength,
-      volume ? 0.94 : 0.88,
-      volume ? 1.06 : 1.12,
+      volume ? 0.88 : 0.76,
+      volume ? 1.12 : 1.24,
     );
     indices[field] = index;
   });
@@ -942,7 +1010,7 @@ function defenseAdjustment(evidence, opponent, position) {
   };
 }
 
-function playerOpponentAdjustment(key, opponent, evidence) {
+function playerOpponentAdjustment(key, opponent, evidence, volatility) {
   const recency = evidenceWeights(evidence);
   let splitTotal = 0;
   let splitWeight = 0;
@@ -985,13 +1053,86 @@ function playerOpponentAdjustment(key, opponent, evidence) {
   const playerBaseline = baselineTotal / baselineWeight;
   const ratio = clamp(splitAverage / Math.max(0.1, playerBaseline), 0.6, 1.4);
   const reliability = games / (games + 6);
+  const sensitivity = num(volatility?.matchup_sensitivity) || 1;
   return {
     games,
     seasons,
-    factor: clamp(1 + (ratio - 1) * reliability * 0.15, 0.97, 1.03),
+    factor: clamp(
+      1 + (ratio - 1) * reliability * 0.3 * sensitivity,
+      0.94,
+      1.06,
+    ),
     split_average: round(splitAverage),
     player_baseline: round(playerBaseline),
   };
+}
+
+function matchupOutcomeProfile(volatility, matchupFactor, neutralPoints) {
+  const outcomes = volatility?.outcomes || [];
+  const totalWeight = outcomes.reduce((sum, row) => sum + num(row.weight), 0);
+  const reliability = num(volatility?.reliability);
+  const adjusted = outcomes.map((row) => ({
+    ratio: num(row.ratio) * matchupFactor,
+    weight: num(row.weight),
+  }));
+  const empiricalBoom = totalWeight
+    ? adjusted.reduce(
+        (sum, row) => sum + (row.ratio >= 1.3 ? row.weight : 0),
+        0,
+      ) / totalWeight
+    : 0.2;
+  const empiricalBust = totalWeight
+    ? adjusted.reduce(
+        (sum, row) => sum + (row.ratio <= 0.7 ? row.weight : 0),
+        0,
+      ) / totalWeight
+    : 0.2;
+  const directionalBoom = clamp(0.2 + (matchupFactor - 1) * 1.35, 0.05, 0.58);
+  const directionalBust = clamp(0.2 - (matchupFactor - 1) * 1.35, 0.05, 0.58);
+  const historyWeight = clamp(reliability * 0.72, 0, 0.62);
+  const boomProbability =
+    empiricalBoom * historyWeight + directionalBoom * (1 - historyWeight);
+  const bustProbability =
+    empiricalBust * historyWeight + directionalBust * (1 - historyWeight);
+  const spread = Math.max(1.5, neutralPoints * (num(volatility?.cv) || 0.35));
+  let label = "Balanced range";
+  if (matchupFactor >= 1.1 || boomProbability >= 0.34) label = "Boom spot";
+  else if (matchupFactor <= 0.9 || bustProbability >= 0.34) label = "Bust risk";
+  else if (boomProbability >= 0.27) label = "Ceiling lean";
+  else if (bustProbability >= 0.27) label = "Floor concern";
+  return {
+    label,
+    boom_probability: round(clamp(boomProbability, 0.03, 0.72), 4),
+    bust_probability: round(clamp(bustProbability, 0.03, 0.72), 4),
+    boom_threshold: round(neutralPoints * 1.3),
+    bust_threshold: round(neutralPoints * 0.7),
+    floor: round(Math.max(0, neutralPoints * matchupFactor - spread)),
+    ceiling: round(neutralPoints * matchupFactor + spread * 1.35),
+    historical_cv: round(num(volatility?.cv), 4),
+    sample: num(volatility?.games),
+  };
+}
+
+function projectionLenses(projections, baselineWeekly, volatility, position) {
+  const cv = num(volatility?.cv) || 0.35;
+  const reliability = num(volatility?.reliability);
+  const spreadFactor = clamp(cv * (0.68 + reliability * 0.32), 0.14, 0.82);
+  return Object.fromEntries(
+    scoringKeys.map((scoring) => {
+      const receptionPoints = scoring === "ppr" ? 1 : scoring === "half" ? 0.5 : 0;
+      const expected = num(projections?.[scoring]);
+      const neutral = scoreLine(baselineWeekly, receptionPoints, position);
+      const spread = Math.max(1.25, neutral * spreadFactor);
+      return [
+        scoring,
+        {
+          safe: round(Math.max(0, expected - spread * 0.62)),
+          expected: round(expected),
+          upside: round(expected + spread * 0.88),
+        },
+      ];
+    }),
+  );
 }
 
 function applyDefense(line, adjustment, position) {
@@ -1331,6 +1472,7 @@ const modeledPlayers = base.rows
       ]),
     );
     const currentPlayerHistory = currentEvidence?.playerHistory.get(key);
+    const volatility = playerVolatilityProfile(key, evidence);
     const actualByWeek = new Map(
       (currentPlayerHistory?.weekly || []).map((row) => [row.week, row]),
     );
@@ -1381,11 +1523,17 @@ const modeledPlayers = base.rows
           defense: null,
         };
       }
-      const defense = defenseAdjustment(evidence, matchup.opponent, position);
+      const defense = defenseAdjustment(
+        evidence,
+        matchup.opponent,
+        position,
+        volatility,
+      );
       const personalHistory = playerOpponentAdjustment(
         key,
         matchup.opponent,
         evidence,
+        volatility,
       );
       const defenseLine = applyDefense(baselineWeekly, defense, position);
       return {
@@ -1438,15 +1586,24 @@ const modeledPlayers = base.rows
       const defenseIndex = baselinePoints
         ? projections.ppr / baselinePoints
         : 1;
+      const matchupFactor = baselinePoints ? projections.ppr / baselinePoints : 1;
       return {
         ...week,
         projections,
-        matchup_factor: round(
-          baselinePoints ? projections.ppr / baselinePoints : 1,
-          4,
-        ),
+        matchup_factor: round(matchupFactor, 4),
         defense_index: round(defenseIndex, 4),
         defense_sample: num(week.defense?.sample),
+        outcome_profile: matchupOutcomeProfile(
+          volatility,
+          matchupFactor,
+          baselinePoints,
+        ),
+        projection_lenses: projectionLenses(
+          projections,
+          baselineWeekly,
+          volatility,
+          position,
+        ),
       };
     });
     const actualLine = cleanLine();
@@ -1540,6 +1697,14 @@ const modeledPlayers = base.rows
         field_coverage: prior.coverage,
       },
       regression,
+      volatility: {
+        games: volatility.games,
+        cv: volatility.cv,
+        boom_rate: volatility.boom_rate,
+        bust_rate: volatility.bust_rate,
+        reliability: volatility.reliability,
+        matchup_sensitivity: volatility.matchup_sensitivity,
+      },
       role_calibration,
       projected_stat_line: sparseLine(seasonLine),
       projected_games: round(seasonLine.games, 1),
@@ -1561,6 +1726,8 @@ const modeledPlayers = base.rows
         defense_index: week.defense_index,
         defense_sample: week.defense_sample,
         personal_history: week.personal_history || null,
+        outcome_profile: week.outcome_profile || null,
+        projection_lenses: week.projection_lenses || null,
       })),
       scoring,
     };
@@ -1624,9 +1791,11 @@ const output = {
     role_calibration:
       "The Arsenal consensus supplies 18% of role calibration when three projected-stat sources agree, 28% with two sources, 42% with one, and 72% only for synthetic fallbacks. The remaining weight belongs to the independent stat model, and the transparent final scale factor is bounded between 55% and 135%.",
     matchup:
-      "Three years of defense-vs-position raw stats are weighted 15% / 30% / 55%, regressed by sample, then applied separately to volume and production fields. Volume moves at most 6%; other counting stats move at most 12% before season normalization.",
+      "Three years of defense-vs-position raw stats are weighted 15% / 30% / 55%, regressed by sample, then applied separately to volume and production fields. Player-specific volatility controls matchup sensitivity; volume can move up to 12% and other counting stats up to 24% before season-total normalization.",
     player_matchup_history:
-      "When at least two recent meetings exist, each result is compared with that player's same-season average against every other opponent. The recency-weighted residual is heavily regressed and capped at +/-3%, so opponent history can refine a matchup but never overpower role or projected stats.",
+      "When at least two recent meetings exist, each result is compared with that player's same-season average against every other opponent. The recency-weighted residual is sample-regressed, volatility-aware, and capped at +/-6%, so opponent history can create direction without overpowering role or projected stats.",
+    outcomes:
+      "Safe, Expected, and Upside lenses use the player's recency-weighted weekly distribution, historical boom and bust rates, sample reliability, and the current opponent. Expected is the calibrated point estimate; Safe and Upside are decision ranges whose accuracy is archived separately.",
     schedule:
       "The saved ESPN NFL schedule supplies opponent, home/away, bye, and kickoff context.",
     normalization:

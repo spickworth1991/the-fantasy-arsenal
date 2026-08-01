@@ -41,6 +41,7 @@ const outputFile = path.join(
   "accuracy.json",
 );
 const scoringKeys = ["ppr", "half", "std"];
+const projectionLenses = ["safe", "expected", "upside"];
 const positions = ["QB", "RB", "WR", "TE", "K"];
 const finalWindowMs = 6 * 60 * 60 * 1000;
 const evaluationTime = Date.now();
@@ -266,6 +267,7 @@ const actualByPlayer = new Map(
 );
 const weekResults = [];
 const ledger = [];
+const lensLedger = [];
 const coverageLedger = [];
 const snapshotWeeks = [
   ...new Set(snapshots.map((snapshot) => Number(snapshot.week))),
@@ -413,6 +415,19 @@ if (
         };
         rowsByScoring[scoring].push(row);
         ledger.push(row);
+        for (const lens of projectionLenses) {
+          const lensProjection = finiteNumber(
+            forecast.forecast?.projection_lenses?.[scoring]?.[lens] ??
+              (lens === "expected" ? projection : null),
+          );
+          if (!Number.isFinite(lensProjection)) continue;
+          lensLedger.push({
+            ...row,
+            lens,
+            projection: round(lensProjection, 3),
+            error: round(lensProjection - result, 3),
+          });
+        }
       }
     }
     const snapshotMetadata = [...usedSnapshots.values()].sort(
@@ -451,6 +466,24 @@ if (
         scoringKeys.map((key) => [
           key,
           scoringSummary(rowsByScoring[key], coverageByScoring[key]),
+        ]),
+      ),
+      projection_lenses: Object.fromEntries(
+        scoringKeys.map((scoring) => [
+          scoring,
+          Object.fromEntries(
+            projectionLenses.map((lens) => [
+              lens,
+              metrics(
+                lensLedger.filter(
+                  (row) =>
+                    row.week === week &&
+                    row.scoring === scoring &&
+                    row.lens === lens,
+                ),
+              ),
+            ]),
+          ),
         ]),
       ),
     });
@@ -500,6 +533,24 @@ const cumulativeByModelVersion = Object.fromEntries(
             ),
           ]),
         ),
+        projection_lenses: Object.fromEntries(
+          scoringKeys.map((scoring) => [
+            scoring,
+            Object.fromEntries(
+              projectionLenses.map((lens) => [
+                lens,
+                metrics(
+                  lensLedger.filter(
+                    (row) =>
+                      row.model_version === modelVersion &&
+                      row.scoring === scoring &&
+                      row.lens === lens,
+                  ),
+                ),
+              ]),
+            ),
+          ]),
+        ),
       },
     ];
   }),
@@ -541,6 +592,21 @@ const output = {
       "Spearman-style rank correlation between projected and actual player order; higher is better. It remains null when fewer than three observations or no rank variance makes it undefined.",
   },
   cumulative,
+  projection_lens_accuracy: Object.fromEntries(
+    scoringKeys.map((scoring) => [
+      scoring,
+      Object.fromEntries(
+        projectionLenses.map((lens) => [
+          lens,
+          metrics(
+            lensLedger.filter(
+              (row) => row.scoring === scoring && row.lens === lens,
+            ),
+          ),
+        ]),
+      ),
+    ]),
+  ),
   cumulative_by_model_version: cumulativeByModelVersion,
   weeks: weekResults,
 };

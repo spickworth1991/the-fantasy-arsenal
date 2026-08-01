@@ -148,6 +148,7 @@ function recommendedWeek(model) {
 export default function StatProjectionLab({ model }) {
   const [week, setWeek] = useState(() => recommendedWeek(model));
   const [scoring, setScoring] = useState("ppr");
+  const [lens, setLens] = useState("expected");
   const [position, setPosition] = useState("ALL");
   const [team, setTeam] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -171,7 +172,13 @@ export default function StatProjectionLab({ model }) {
       (model?.players || [])
         .map((player) => {
           const forecast = player.weeks?.find((row) => row.week === week);
-          const projection = number(forecast?.projections?.[scoring]);
+          const expectedProjection = number(forecast?.projections?.[scoring]);
+          const projection = forecast?.completed
+            ? expectedProjection
+            : number(
+                forecast?.projection_lenses?.[scoring]?.[lens] ??
+                  expectedProjection,
+              );
           const season = player.scoring?.[scoring] || {};
           const remainingGames = number(player.remaining_games) || 17;
           const baseline = forecast?.completed
@@ -203,12 +210,12 @@ export default function StatProjectionLab({ model }) {
                 ? b.disagreement - a.disagreement
                 : b.projection - a.projection,
         ),
-    [model, position, query, scoring, sort, team, week],
+    [lens, model, position, query, scoring, sort, team, week],
   );
   useEffect(() => setWeek(recommendedWeek(model)), [model]);
   useEffect(
     () => setVisibleCount(40),
-    [position, query, scoring, sort, team, week],
+    [lens, position, query, scoring, sort, team, week],
   );
   useEffect(() => {
     let live = true;
@@ -230,7 +237,12 @@ export default function StatProjectionLab({ model }) {
         .filter((row) => !row.bye)
         .map((row) => ({
           ...row,
-          projection: number(row.projections?.[scoring]),
+          projection: row.completed
+            ? number(row.projections?.[scoring])
+            : number(
+                row.projection_lenses?.[scoring]?.[lens] ??
+                  row.projections?.[scoring],
+              ),
         }))
     : [];
   const maxProjection = Math.max(
@@ -269,13 +281,20 @@ export default function StatProjectionLab({ model }) {
     ? number(selected?.season?.variance_from_anchor)
     : null;
   const personalHistory = selected?.forecast?.personal_history || {};
+  const outcomeProfile = selected?.forecast?.outcome_profile || {};
   const modelAccuracy =
-    accuracy?.cumulative_by_model_version?.[
-      model?.model_build_id || model?.model_version
-    ]?.scoring?.[scoring] || null;
+    lens === "expected"
+      ? accuracy?.cumulative_by_model_version?.[
+          model?.model_build_id || model?.model_version
+        ]?.scoring?.[scoring] || null
+      : accuracy?.cumulative_by_model_version?.[
+          model?.model_build_id || model?.model_version
+        ]?.projection_lenses?.[scoring]?.[lens] || null;
   const accuracyMetrics =
-    modelAccuracy?.cohorts?.[accuracyCohort] ||
-    (accuracyCohort === "all_matched" ? modelAccuracy : null);
+    lens !== "expected"
+      ? modelAccuracy
+      : modelAccuracy?.cohorts?.[accuracyCohort] ||
+        (accuracyCohort === "all_matched" ? modelAccuracy : null);
 
   return (
     <div className="space-y-4">
@@ -296,7 +315,7 @@ export default function StatProjectionLab({ model }) {
               Half-PPR, and Standard.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <Filter
               label="Week"
               value={week}
@@ -312,6 +331,11 @@ export default function StatProjectionLab({ model }) {
               <option value="ppr">PPR</option>
               <option value="half">Half PPR</option>
               <option value="std">Standard</option>
+            </Filter>
+            <Filter label="Projection lens" value={lens} onChange={setLens}>
+              <option value="safe">Safe</option>
+              <option value="expected">Expected</option>
+              <option value="upside">Upside</option>
             </Filter>
             <Filter label="Position" value={position} onChange={setPosition}>
               {["ALL", "QB", "RB", "WR", "TE", "K"].map((value) => (
@@ -377,16 +401,28 @@ export default function StatProjectionLab({ model }) {
                     {selected.projection.toFixed(1)}
                   </div>
                   <div className="text-[9px] font-black uppercase tracking-wider text-white/30">
-                    Week {week} {scoring.toUpperCase()}{" "}
+                    Week {week} {lens === "expected" ? "" : `${lens} `}{scoring.toUpperCase()}{" "}
                     {selected.forecast.completed ? "actual" : "points"}
                   </div>
                 </div>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
                 <Kpi
                   label="Neutral week"
                   value={selected.baseline.toFixed(1)}
                   detail="Season model ÷ active weeks"
+                />
+                <Kpi
+                  label="Weekly outcome"
+                  value={outcomeProfile.label || "Balanced range"}
+                  detail={`${(number(outcomeProfile.boom_probability) * 100).toFixed(0)}% boom · ${(number(outcomeProfile.bust_probability) * 100).toFixed(0)}% bust`}
+                  tone={
+                    outcomeProfile.label === "Boom spot"
+                      ? "emerald"
+                      : outcomeProfile.label === "Bust risk"
+                        ? "rose"
+                        : "amber"
+                  }
                 />
                 <Kpi
                   label={
@@ -469,6 +505,20 @@ export default function StatProjectionLab({ model }) {
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
                   <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-white/40">Boom / bust range</span>
+                    <b>
+                      {number(outcomeProfile.floor).toFixed(1)}â€“
+                      {number(outcomeProfile.ceiling).toFixed(1)}
+                    </b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/30">
+                    Based on {number(outcomeProfile.sample)} prior active games
+                    and this matchup. Safe and Upside are range lenses;
+                    Expected remains the model&apos;s most likely point estimate.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
+                  <div className="flex justify-between gap-4 text-xs">
                     <span className="text-white/40">Opponent adjustment</span>
                     <b>
                       {matchupChange >= 0 ? "+" : ""}
@@ -500,7 +550,7 @@ export default function StatProjectionLab({ model }) {
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/30">
                     {number(personalHistory.games) >= 2
-                      ? `${number(personalHistory.split_average).toFixed(1)} PPR average versus this opponent, compared with a ${number(personalHistory.player_baseline).toFixed(1)} personal baseline. Its influence is capped at ±3%.`
+                      ? `${number(personalHistory.split_average).toFixed(1)} PPR average versus this opponent, compared with a ${number(personalHistory.player_baseline).toFixed(1)} personal baseline. Its sample-weighted influence is capped at ±6%.`
                       : "Fewer than two recent meetings, so no player-specific head-to-head adjustment is applied."}
                   </p>
                 </div>
