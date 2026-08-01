@@ -46,6 +46,8 @@ const TOOL_ICONS = {
   "NFL Depth Charts": "/icons/lineup-icon.webp",
   "Trust & Accuracy Center": "/icons/power-icon.webp",
   "Stat Central": "/icons/power-icon.webp",
+  "My Arsenal": "/icons/manager-intelligence-icon.webp",
+  "Manager Leaderboard": "/icons/manager-intelligence-icon.webp",
 };
 
 export default function HomeClient() {
@@ -101,7 +103,7 @@ export default function HomeClient() {
       name: "Stat Central",
       link: "/stat-central",
       description: "Explore historical fantasy scoring, weekly game logs, floor and ceiling, consistency, player archetypes, raw stats, career trends, and start/sit comparisons.",
-      badge: "NEW",
+      badge: "DEVELOPING",
     },
     {
       name: "Manager Intelligence",
@@ -167,14 +169,29 @@ export default function HomeClient() {
       description: "Predict your team's chances of making the playoffs.",
       badge: "NEW",
     },
+    {
+      name: "My Arsenal",
+      link: "/account",
+      description:
+        "Manage your Arsenal profile, connected Sleeper portfolio, preferences, saved work, digest, achievements, and privacy.",
+      badge: "NEW",
+    },
+    {
+      name: "Manager Leaderboard",
+      link: "/leaderboard",
+      description:
+        "Compare verified Sleeper portfolio records and discover public Arsenal manager profiles.",
+      badge: "NEW",
+    },
     
   ];
   const toolGroups = [
     { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and review the complete league draft.", names:["Draft Command Center","Draft Monitor","Draft Grade Studio"] },
     { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
-    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, player production, NFL opportunity, league strength, schedules, playoff paths, history, and model evidence.", names:["Manager Intelligence","Stat Central","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History","Trust & Accuracy Center"] },
+    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, player production, NFL opportunity, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","Stat Central","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
     { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
+    { title:"Arsenal Community", eyebrow:"BUILD YOUR ARSENAL", description:"Manage your profile, compare verified records, and inspect the evidence and accuracy behind Arsenal intelligence.", names:["My Arsenal","Manager Leaderboard","Trust & Accuracy Center"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
   return (

@@ -49,7 +49,7 @@ const NAV_BADGES = {
   "/depth-charts": "NEW",
   "/intelligence": "NEW",
   "/trust-center": "NEW",
-  "/stat-central": "NEW",
+  "/stat-central": "DEVELOPING",
 };
 
 const BADGE_STYLES = {
