@@ -45,7 +45,9 @@ const seasons =
       : [
           requestedSeason >= 2012 && requestedSeason <= currentSeason
             ? requestedSeason
-            : currentSeason - 1,
+            : sleeperOnly
+              ? currentSeason
+              : currentSeason - 1,
         ];
 const apiKey =
   process.env.FANTASYPROS_API_KEY || process.env.FANTASYPROS_API_KEY2 || "";
@@ -72,9 +74,12 @@ const writeJson = (file, payload) => {
   fs.writeFileSync(file, JSON.stringify(payload));
 };
 const usefulStat = (key) =>
-  /^(pts_|pass_|rush_|rec($|_)|fum($|_)|fg($|_)|fga$|fgm$|fgmiss|xp($|_)|xpa$|xpm$|xpmiss|kick_|def_|idp_|tkl|tkl_|sack|sack_|int$|int_|ff$|fr$|fr_|pd$|blk_kick|safe$)/.test(
+  /^(gp$|gs$|gms_active$|off_snp$|tm_off_snp$|def_snp$|tm_def_snp$|pts_|pass_|rush_|rec($|_)|fum($|_)|fg($|_)|fga$|fgm$|fgmiss|xp($|_)|xpa$|xpm$|xpmiss|kick_|def_|idp_|tkl|tkl_|sack|sack_|int$|int_|ff$|fr$|fr_|pd$|blk_kick|safe$)/.test(
     String(key),
   );
+const isRateStat = (key) =>
+  /(?:pct$|_pct$|_ypa$|_ypc$|_ypr$|_ypt$|_rtg$|rate$|avg$)/.test(String(key));
+const isMaximumStat = (key) => /(?:_lng$|_long$)/.test(String(key));
 
 async function fantasyPros(season, scoring) {
   const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${season}/player-points?position=ALL&scoring=${scoring}&min=false`;
@@ -141,15 +146,42 @@ async function fantasyPros(season, scoring) {
 }
 
 async function sleeperWeek(season, week) {
-  const response = await fetch(
-    `https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`,
-  );
-  if (!response.ok) return { week, rows: {} };
-  const rows = await response.json();
-  return { week, rows: rows && typeof rows === "object" ? rows : {} };
+  try {
+    const response = await fetch(
+      `https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`,
+    );
+    if (!response.ok)
+      return { week, rows: {}, ok: false, status: response.status };
+    const rows = await response.json();
+    const normalized = rows && typeof rows === "object" ? rows : {};
+    return {
+      week,
+      rows: normalized,
+      ok: Object.keys(normalized).length > 0,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      week,
+      rows: {},
+      ok: false,
+      status: 0,
+      error: error?.message || "request failed",
+    };
+  }
 }
 
-async function sleeper(season) {
+async function sleeperPlayerDirectory() {
+  const response = await fetch("https://api.sleeper.app/v1/players/nfl");
+  if (!response.ok)
+    throw new Error(
+      `Sleeper player directory returned HTTP ${response.status}.`,
+    );
+  const payload = await response.json();
+  return payload && typeof payload === "object" ? payload : {};
+}
+
+async function sleeper(season, playerDirectory = {}, allowedWeeks = null) {
   const weeks = [];
   for (let start = 1; start <= 18; start += 6) {
     const batch = await Promise.all(
@@ -159,15 +191,25 @@ async function sleeper(season) {
     );
     weeks.push(...batch);
   }
+  const usableWeeks = allowedWeeks
+    ? weeks.filter(({ week }) => allowedWeeks.has(Number(week)))
+    : weeks;
   const byPlayer = new Map();
-  weeks.forEach(({ week, rows }) =>
+  usableWeeks.forEach(({ week, rows }) =>
     Object.entries(rows).forEach(([playerId, payload]) => {
       const stats =
         payload?.stats && typeof payload.stats === "object"
           ? payload.stats
           : payload;
+      const identity = playerDirectory[String(playerId)] || {};
       const current = byPlayer.get(String(playerId)) || {
         player_id: String(playerId),
+        name:
+          identity.full_name ||
+          `${identity.first_name || ""} ${identity.last_name || ""}`.trim() ||
+          "",
+        position: String(identity.position || "").toUpperCase(),
+        team: String(identity.team || "").toUpperCase(),
         weeks: {},
         weekly_stats: {},
         stats: {},
@@ -177,8 +219,18 @@ async function sleeper(season) {
         half: number(stats?.pts_half_ppr),
         ppr: number(stats?.pts_ppr),
       };
-      if (points.std || points.half || points.ppr)
-        current.weeks[String(week)] = points;
+      const activeGame =
+        points.std ||
+        points.half ||
+        points.ppr ||
+        number(stats?.gp) > 0 ||
+        number(stats?.gms_active) > 0 ||
+        number(stats?.pass_att) > 0 ||
+        number(stats?.rush_att) > 0 ||
+        number(stats?.rec_tgt) > 0 ||
+        number(stats?.off_snp) > 0 ||
+        number(stats?.def_snp) > 0;
+      if (activeGame) current.weeks[String(week)] = points;
       current.weekly_stats[String(week)] = Object.fromEntries(
         Object.entries(stats || {})
           .filter(
@@ -188,9 +240,13 @@ async function sleeper(season) {
       );
       Object.entries(stats || {}).forEach(([key, value]) => {
         if (!usefulStat(key)) return;
+        if (isRateStat(key)) return;
         const parsed = Number(value);
-        if (Number.isFinite(parsed))
-          current.stats[key] = number(current.stats[key]) + parsed;
+        if (Number.isFinite(parsed)) {
+          current.stats[key] = isMaximumStat(key)
+            ? Math.max(number(current.stats[key]), parsed)
+            : number(current.stats[key]) + parsed;
+        }
       });
       byPlayer.set(String(playerId), current);
     }),
@@ -198,12 +254,45 @@ async function sleeper(season) {
   const players = [...byPlayer.values()].filter(
     (player) => Object.keys(player.weeks).length > 0,
   );
+  players.forEach((player) => {
+    const stats = player.stats;
+    if (stats.pass_att) {
+      stats.cmp_pct = number(
+        ((number(stats.pass_cmp) / stats.pass_att) * 100).toFixed(2),
+      );
+      stats.pass_ypa = number(
+        (number(stats.pass_yd) / stats.pass_att).toFixed(2),
+      );
+      stats.pass_td_rate = number(
+        ((number(stats.pass_td) / stats.pass_att) * 100).toFixed(2),
+      );
+      stats.pass_int_rate = number(
+        ((number(stats.pass_int) / stats.pass_att) * 100).toFixed(2),
+      );
+    }
+    if (stats.rush_att)
+      stats.rush_ypa = number(
+        (number(stats.rush_yd) / stats.rush_att).toFixed(2),
+      );
+    if (stats.rec_tgt)
+      stats.catch_pct = number(
+        ((number(stats.rec) / stats.rec_tgt) * 100).toFixed(2),
+      );
+    if (stats.rec)
+      stats.rec_ypr = number((number(stats.rec_yd) / stats.rec).toFixed(2));
+    if (stats.rec_tgt)
+      stats.rec_ypt = number((number(stats.rec_yd) / stats.rec_tgt).toFixed(2));
+  });
   return {
     source: "Sleeper read-only weekly stats",
     season,
     updated: new Date().toISOString(),
-    completed_weeks: weeks.filter((week) => Object.keys(week.rows).length)
+    completed_weeks: usableWeeks.filter((week) => Object.keys(week.rows).length)
       .length,
+    successful_weeks: usableWeeks
+      .filter((week) => week.ok && Object.keys(week.rows).length)
+      .map((week) => Number(week.week))
+      .sort((a, b) => a - b),
     count: players.length,
     players,
   };
@@ -217,7 +306,7 @@ async function nflSchedule(season) {
         const response = await fetch(
           `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=2&week=${week}&limit=100`,
         );
-        if (!response.ok) return { week, games: [] };
+        if (!response.ok) return { week, games: [], fetched: false };
         const payload = await response.json();
         const games = (payload?.events || [])
           .map((event) => {
@@ -231,9 +320,9 @@ async function nflSchedule(season) {
               : null;
           })
           .filter(Boolean);
-        return { week, games };
+        return { week, games, fetched: true };
       } catch {
-        return { week, games: [] };
+        return { week, games: [], fetched: false };
       }
     }),
   );
@@ -243,6 +332,47 @@ async function nflSchedule(season) {
     updated: new Date().toISOString(),
     weeks,
   };
+}
+
+function mergeScheduleWithSaved(fresh, saved) {
+  const savedByWeek = new Map(
+    (saved?.weeks || []).map((entry) => [Number(entry.week), entry]),
+  );
+  const weeks = (fresh?.weeks || []).map((entry) => {
+    const previous = savedByWeek.get(Number(entry.week));
+    if ((entry.games || []).length) return entry;
+    if ((previous?.games || []).length)
+      return {
+        ...previous,
+        fetched: false,
+        retained_from_last_good_archive: true,
+      };
+    return entry;
+  });
+  return {
+    ...fresh,
+    weeks,
+    retained_schedule_weeks: weeks
+      .filter((entry) => entry.retained_from_last_good_archive)
+      .map((entry) => Number(entry.week)),
+  };
+}
+
+function finalScheduleWeeks(schedule, now = Date.now()) {
+  return new Set(
+    (schedule?.weeks || [])
+      .filter(
+        ({ games }) =>
+          (games || []).length > 0 &&
+          games.every((game) => {
+            const kickoff = Date.parse(game?.date);
+            return (
+              Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now
+            );
+          }),
+      )
+      .map(({ week }) => Number(week)),
+  );
 }
 
 const manifestPath = path.join(
@@ -266,6 +396,9 @@ function saveManifestEntry(entry) {
   writeJson(manifestPath, { updated: new Date().toISOString(), seasons: rows });
 }
 let completed = 0;
+const playerDirectory = seasons.some((season) => season >= 2018)
+  ? await sleeperPlayerDirectory()
+  : {};
 for (const season of seasons) {
   const existingDirectory = path.join(
     root,
@@ -278,10 +411,72 @@ for (const season of seasons) {
   if (sleeperOnly) {
     if (!requiresSleeper) continue;
     console.log(`Enriching saved ${season} Sleeper weekly statistics...`);
-    const [sleeperPayload, schedulePayload] = await Promise.all([
-      sleeper(season),
-      nflSchedule(season),
-    ]);
+    let savedSchedule = null;
+    let savedSleeper = null;
+    try {
+      savedSchedule = JSON.parse(
+        fs.readFileSync(path.join(existingDirectory, "schedule.json"), "utf8"),
+      );
+    } catch {
+      // The projection model already maintains a schedule before historical
+      // box scores exist. It is the first-run fallback if one ESPN week fails.
+      try {
+        savedSchedule = JSON.parse(
+          fs.readFileSync(
+            path.join(
+              root,
+              "public",
+              "stats",
+              "projections",
+              String(season),
+              "schedule.json",
+            ),
+            "utf8",
+          ),
+        );
+      } catch {}
+    }
+    try {
+      savedSleeper = JSON.parse(
+        fs.readFileSync(path.join(existingDirectory, "sleeper.json"), "utf8"),
+      );
+    } catch {}
+    const schedulePayload = mergeScheduleWithSaved(
+      await nflSchedule(season),
+      savedSchedule,
+    );
+    const finalWeeks = finalScheduleWeeks(schedulePayload);
+    const savedFinalWeeks = new Set(
+      Array.isArray(savedSleeper?.final_weeks)
+        ? savedSleeper.final_weeks.map(Number)
+        : [...finalScheduleWeeks(savedSchedule)],
+    );
+    const regressedFinalWeeks = [...savedFinalWeeks].filter(
+      (week) => !finalWeeks.has(week),
+    );
+    if (regressedFinalWeeks.length) {
+      console.warn(
+        `The NFL schedule response omitted previously finalized week${regressedFinalWeeks.length === 1 ? "" : "s"} ${regressedFinalWeeks.join(", ")}; retaining the last good ${season} archive.`,
+      );
+      continue;
+    }
+    const sleeperPayload = await sleeper(season, playerDirectory, finalWeeks);
+    const missingFinalWeeks = [...finalWeeks].filter(
+      (week) => !sleeperPayload.successful_weeks.includes(week),
+    );
+    if (missingFinalWeeks.length) {
+      console.warn(
+        `Sleeper did not return complete data for finalized week${missingFinalWeeks.length === 1 ? "" : "s"} ${missingFinalWeeks.join(", ")}; retaining the last good ${season} archive.`,
+      );
+      continue;
+    }
+    sleeperPayload.final_weeks = [...finalWeeks].sort((a, b) => a - b);
+    if (season === currentSeason && sleeperPayload.completed_weeks === 0) {
+      console.log(
+        `No ${season} regular-season box scores are available yet; leaving the live archive untouched.`,
+      );
+      continue;
+    }
     writeJson(path.join(existingDirectory, "sleeper.json"), sleeperPayload);
     writeJson(path.join(existingDirectory, "schedule.json"), schedulePayload);
     let fantasyProsPlayers = 0;
@@ -326,7 +521,7 @@ for (const season of seasons) {
     String(season),
   );
   const sleeperPayload = requiresSleeper
-    ? await sleeper(season)
+    ? await sleeper(season, playerDirectory)
     : {
         source: "Sleeper read-only weekly stats",
         season,

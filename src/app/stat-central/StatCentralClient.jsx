@@ -5,12 +5,14 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
+import StatProjectionLab from "./StatProjectionLab";
 
 const TABS = [
   ["overview", "Player Research"],
   ["history", "Career History"],
   ["compare", "Compare Players"],
   ["matchups", "Matchup Lab"],
+  ["projections", "Projection Lab"],
   ["leaders", "Leaderboards"],
   ["method", "Data Guide"],
 ];
@@ -154,17 +156,47 @@ function playerMetrics(player, positionPlayers = []) {
 }
 
 function mergeHistory(payload, playerDb) {
+  const aggregateWeeklyStats = (weeklyStats, includedWeeks) => {
+    const rateFields = new Set([
+      "cmp_pct",
+      "pass_ypa",
+      "pass_td_rate",
+      "pass_int_rate",
+      "rush_ypa",
+      "catch_pct",
+      "rec_ypr",
+      "rec_ypt",
+    ]);
+    const totals = {};
+    includedWeeks.forEach((week) => {
+      Object.entries(weeklyStats?.[String(week)] || {}).forEach(
+        ([key, value]) => {
+          if (rateFields.has(key) || !Number.isFinite(Number(value))) return;
+          totals[key] = num(totals[key]) + num(value);
+        },
+      );
+    });
+    return totals;
+  };
   const byName = new Map();
+  const byNameOnly = new Map();
   const sleeperById = new Map();
   Object.entries(playerDb || {}).forEach(([id, player]) => {
     const name =
       player?.full_name ||
       `${player?.first_name || ""} ${player?.last_name || ""}`.trim();
-    if (name)
+    if (name) {
       byName.set(
         `${normalize(name)}|${String(player?.position || "").toUpperCase()}`,
         { ...player, sleeper_id: id, name },
       );
+      if (!byNameOnly.has(normalize(name)))
+        byNameOnly.set(normalize(name), {
+          ...player,
+          sleeper_id: id,
+          name,
+        });
+    }
     sleeperById.set(String(id), { ...player, sleeper_id: id, name });
   });
   const sleeperRows = new Map(
@@ -173,18 +205,40 @@ function mergeHistory(payload, playerDb) {
       row,
     ]),
   );
+  const sleeperRowsByName = new Map(
+    (payload?.sleeper?.players || [])
+      .filter((row) => row?.name)
+      .map((row) => [
+        `${normalize(row.name)}|${String(row.position || "").toUpperCase()}`,
+        row,
+      ]),
+  );
+  const sleeperRowsByNameOnly = new Map();
+  (payload?.sleeper?.players || []).forEach((row) => {
+    if (row?.name && !sleeperRowsByNameOnly.has(normalize(row.name)))
+      sleeperRowsByNameOnly.set(normalize(row.name), row);
+  });
   const fantasyPros = (payload?.fantasypros?.players || []).map(
     (row, index) => {
       const context =
         byName.get(
           `${normalize(row.name)}|${String(row.position || "").toUpperCase()}`,
+        ) || byNameOnly.get(normalize(row.name));
+      const raw =
+        (context?.sleeper_id
+          ? sleeperRows.get(String(context.sleeper_id))
+          : null) ||
+        sleeperRowsByName.get(
+          `${normalize(row.name)}|${String(row.position || "").toUpperCase()}`,
         ) ||
-        [...byName.values()].find(
-          (player) => normalize(player.name) === normalize(row.name),
-        );
-      const raw = context?.sleeper_id
-        ? sleeperRows.get(String(context.sleeper_id))
-        : null;
+        sleeperRowsByNameOnly.get(normalize(row.name)) ||
+        null;
+      const includedWeeks = Object.keys(row.weeks || {});
+      const weeklyStats = Object.fromEntries(
+        includedWeeks
+          .filter((week) => raw?.weekly_stats?.[String(week)])
+          .map((week) => [week, raw.weekly_stats[String(week)]]),
+      );
       return {
         ...row,
         key: `fp:${row.player_id || index}:${normalize(row.name)}`,
@@ -194,8 +248,14 @@ function mergeHistory(payload, playerDb) {
         age: context?.age || null,
         years_exp: context?.years_exp || null,
         injury_status: context?.injury_status || null,
-        stats: raw?.stats || {},
-        weekly_stats: raw?.weekly_stats || {},
+        // FantasyPros historical scoring generally ends with the fantasy
+        // season. Aggregate raw box scores over those exact same weeks so a
+        // Week 18 NFL total can never be paired with a Weeks 1-17 point total.
+        stats: aggregateWeeklyStats(weeklyStats, includedWeeks),
+        weekly_stats: weeklyStats,
+        stat_period: includedWeeks.length
+          ? `Fantasy scoring weeks ${includedWeeks[0]}-${includedWeeks.at(-1)}`
+          : "No matched scoring weeks",
         source: "FantasyPros",
       };
     },
@@ -206,9 +266,9 @@ function mergeHistory(payload, playerDb) {
     return {
       ...row,
       key: `sl:${row.player_id}`,
-      name: context.name || row.player_id,
-      team: context.team || "",
-      position: context.position || "",
+      name: context.name || row.name || row.player_id,
+      team: context.team || row.team || "",
+      position: context.position || row.position || "",
       age: context.age || null,
       years_exp: context.years_exp || null,
       injury_status: context.injury_status || null,
@@ -218,7 +278,12 @@ function mergeHistory(payload, playerDb) {
 }
 
 function weeklySummary(stats, position) {
-  if (!stats || typeof stats !== "object") return "Fantasy scoring result";
+  if (
+    !stats ||
+    typeof stats !== "object" ||
+    !Object.keys(stats).some((key) => !String(key).startsWith("pts_"))
+  )
+    return "Raw box score unavailable";
   const parts = [];
   if (num(stats.pass_yd))
     parts.push(`${num(stats.pass_yd).toFixed(0)} pass yd`);
@@ -234,38 +299,244 @@ function weeklySummary(stats, position) {
   if (num(stats.rec_td)) parts.push(`${num(stats.rec_td)} rec TD`);
   if (String(position).toUpperCase() === "K" && num(stats.fgm))
     parts.push(`${num(stats.fgm)}/${num(stats.fga)} FG`);
-  return parts.slice(0, 5).join(" · ") || "Fantasy scoring result";
+  return parts.slice(0, 5).join(" · ") || "Additional box-score stats saved";
+}
+
+const hasStat = (stats, key) =>
+  !!stats &&
+  Object.prototype.hasOwnProperty.call(stats, key) &&
+  Number.isFinite(Number(stats[key]));
+const statRatio = (stats, numerator, denominator, multiplier = 1) => {
+  if (!hasStat(stats, denominator) || num(stats[denominator]) <= 0) return null;
+  return (num(stats[numerator]) / num(stats[denominator])) * multiplier;
+};
+const statSum = (stats, keys) => {
+  if (!keys.some((key) => hasStat(stats, key))) return null;
+  return keys.reduce((sum, key) => sum + num(stats?.[key]), 0);
+};
+const passerRating = (stats) => {
+  const attempts = num(stats?.pass_att);
+  if (!hasStat(stats, "pass_att") || attempts <= 0) return null;
+  const clamp = (value) => Math.max(0, Math.min(2.375, value));
+  const completions = num(stats?.pass_cmp);
+  const yards = num(stats?.pass_yd);
+  const touchdowns = num(stats?.pass_td);
+  const interceptions = num(stats?.pass_int);
+  return (
+    ((clamp((completions / attempts - 0.3) * 5) +
+      clamp((yards / attempts - 3) * 0.25) +
+      clamp((touchdowns / attempts) * 20) +
+      clamp(2.375 - (interceptions / attempts) * 25)) /
+      6) *
+    100
+  );
+};
+const statResult = (definition, stats) => {
+  const value = definition.derive
+    ? definition.derive(stats || {})
+    : hasStat(stats, definition.key)
+      ? num(stats[definition.key])
+      : null;
+  if (value == null || !Number.isFinite(Number(value))) return "—";
+  if (definition.format === "percent") return `${num(value).toFixed(1)}%`;
+  if (definition.format === "decimal") return num(value).toFixed(2);
+  if (definition.format === "one") return num(value).toFixed(1);
+  return Math.round(num(value)).toLocaleString();
+};
+
+function playerStatGroups(player) {
+  const position = String(player?.position || "").toUpperCase();
+  const passing = [
+    { label: "Pass yards", key: "pass_yd" },
+    { label: "Pass TD", key: "pass_td" },
+    { label: "Interceptions", key: "pass_int" },
+    { label: "Attempts", key: "pass_att" },
+    { label: "Completions", key: "pass_cmp" },
+  ];
+  const rushing = [
+    { label: "Carries", key: "rush_att" },
+    { label: "Rush yards", key: "rush_yd" },
+    { label: "Rush TD", key: "rush_td" },
+    {
+      label: "Yards / carry",
+      format: "decimal",
+      derive: (stats) => statRatio(stats, "rush_yd", "rush_att"),
+    },
+    { label: "Red-zone carries", key: "rush_rz_att" },
+  ];
+  const receiving = [
+    { label: "Targets", key: "rec_tgt" },
+    { label: "Receptions", key: "rec" },
+    { label: "Receiving yards", key: "rec_yd" },
+    { label: "Receiving TD", key: "rec_td" },
+    { label: "Red-zone targets", key: "rec_rz_tgt" },
+  ];
+  const receivingEfficiency = [
+    {
+      label: "Catch rate",
+      format: "percent",
+      derive: (stats) => statRatio(stats, "rec", "rec_tgt", 100),
+    },
+    {
+      label: "Yards / target",
+      format: "decimal",
+      derive: (stats) => statRatio(stats, "rec_yd", "rec_tgt"),
+    },
+    {
+      label: "Yards / reception",
+      format: "decimal",
+      derive: (stats) => statRatio(stats, "rec_yd", "rec"),
+    },
+    { label: "Air yards", key: "rec_air_yd" },
+    {
+      label: "Snap share",
+      format: "percent",
+      derive: (stats) => statRatio(stats, "off_snp", "tm_off_snp", 100),
+    },
+  ];
+  const role = [
+    {
+      label: "Touches",
+      derive: (stats) => statSum(stats, ["rush_att", "rec"]),
+    },
+    {
+      label: "Scrimmage yards",
+      derive: (stats) => statSum(stats, ["rush_yd", "rec_yd"]),
+    },
+    { label: "Offensive snaps", key: "off_snp" },
+    {
+      label: "Snap share",
+      format: "percent",
+      derive: (stats) => statRatio(stats, "off_snp", "tm_off_snp", 100),
+    },
+    { label: "Games started", key: "gs" },
+  ];
+
+  if (position === "QB")
+    return [
+      ["Passing production", passing],
+      [
+        "Passing efficiency",
+        [
+          {
+            label: "Completion rate",
+            format: "percent",
+            derive: (stats) => statRatio(stats, "pass_cmp", "pass_att", 100),
+          },
+          {
+            label: "Yards / attempt",
+            format: "decimal",
+            derive: (stats) => statRatio(stats, "pass_yd", "pass_att"),
+          },
+          {
+            label: "TD rate",
+            format: "percent",
+            derive: (stats) => statRatio(stats, "pass_td", "pass_att", 100),
+          },
+          {
+            label: "INT rate",
+            format: "percent",
+            derive: (stats) => statRatio(stats, "pass_int", "pass_att", 100),
+          },
+          {
+            label: "Passer rating",
+            format: "one",
+            derive: passerRating,
+          },
+        ],
+      ],
+      ["Rushing & role", [...rushing.slice(0, 3), ...role.slice(2)]],
+    ];
+  if (position === "RB")
+    return [
+      ["Rushing production", rushing],
+      ["Receiving production", receiving],
+      ["Workload & efficiency", [...role.slice(0, 4), receivingEfficiency[1]]],
+    ];
+  if (position === "WR" || position === "TE")
+    return [
+      ["Receiving production", receiving],
+      ["Efficiency & usage", receivingEfficiency],
+      [
+        "Role profile",
+        [...role.slice(1), { label: "Rush attempts", key: "rush_att" }],
+      ],
+    ];
+  if (position === "K")
+    return [
+      [
+        "Field goals",
+        [
+          { label: "Attempts", key: "fga" },
+          { label: "Made", key: "fgm" },
+          {
+            label: "Accuracy",
+            format: "percent",
+            derive: (stats) => statRatio(stats, "fgm", "fga", 100),
+          },
+          { label: "Misses", key: "fgmiss" },
+          { label: "Kicking points", key: "kick_pts" },
+        ],
+      ],
+      [
+        "Extra points",
+        [
+          { label: "Attempts", key: "xpa" },
+          { label: "Made", key: "xpm" },
+          {
+            label: "Accuracy",
+            format: "percent",
+            derive: (stats) => statRatio(stats, "xpm", "xpa", 100),
+          },
+          { label: "Misses", key: "xpmiss" },
+          { label: "Kicking points", key: "kick_pts" },
+        ],
+      ],
+    ];
+  return [
+    [
+      "Defensive production",
+      [
+        { label: "Sacks", key: "sack" },
+        { label: "Interceptions", key: "int" },
+        { label: "Fumble recoveries", key: "fum_rec" },
+        { label: "Defensive TD", key: "def_td" },
+        { label: "Points allowed", key: "pts_allow" },
+      ],
+    ],
+  ];
 }
 
 async function loadSavedSeason(season, scoring, position, signal) {
-  const fantasyProsResponse = await fetch(
-    `/stats/history/${season}/fantasypros.json`,
-    { cache: "force-cache", signal },
-  );
-  if (!fantasyProsResponse.ok)
-    throw new Error(
-      `The saved ${season} scoring file is not available on this deployment.`,
-    );
-  const fantasyPros = await fantasyProsResponse.json();
+  let fantasyPros = null;
   let sleeper = null;
   let schedule = null;
-  if (num(season) >= 2018) {
-    try {
-      const [sleeperResponse, scheduleResponse] = await Promise.all([
+  const cacheMode =
+    num(season) >= new Date().getUTCFullYear() ? "no-cache" : "force-cache";
+  try {
+    const requests = [
+      fetch(`/stats/history/${season}/fantasypros.json`, {
+        cache: cacheMode,
+        signal,
+      }),
+    ];
+    if (num(season) >= 2018)
+      requests.push(
         fetch(`/stats/history/${season}/sleeper.json`, {
-          cache: "force-cache",
+          cache: cacheMode,
           signal,
         }),
         fetch(`/stats/history/${season}/schedule.json`, {
-          cache: "force-cache",
+          cache: cacheMode,
           signal,
         }),
-      ]);
-      if (sleeperResponse.ok) sleeper = await sleeperResponse.json();
-      if (scheduleResponse.ok) schedule = await scheduleResponse.json();
-    } catch (failure) {
-      if (failure?.name === "AbortError") throw failure;
-    }
+      );
+    const responses = await Promise.all(requests);
+    if (responses[0]?.ok) fantasyPros = await responses[0].json();
+    if (responses[1]?.ok) sleeper = await responses[1].json();
+    if (responses[2]?.ok) schedule = await responses[2].json();
+  } catch (failure) {
+    if (failure?.name === "AbortError") throw failure;
   }
   const scoreKey = String(scoring || "PPR").toLowerCase();
   const fantasyProsPlayers = (
@@ -552,14 +823,51 @@ function ProductionTrend({ player }) {
       stats: player?.weekly_stats?.[week] || {},
     }))
     .sort((a, b) => a.week - b.week);
-  const categories = [
-    { key: "pass_yd", label: "Pass yards", tone: "bg-cyan-300/70" },
-    { key: "rush_yd", label: "Rush yards", tone: "bg-emerald-300/70" },
-    { key: "rec_yd", label: "Receiving yards", tone: "bg-violet-300/70" },
-    { key: "rec_tgt", label: "Targets", tone: "bg-amber-300/70" },
-  ].filter((category) =>
-    rows.some((row) => num(row.stats?.[category.key]) > 0),
-  );
+  const position = String(player?.position || "").toUpperCase();
+  const categoriesByPosition = {
+    QB: [
+      { key: "pass_yd", label: "Pass yards", tone: "bg-cyan-300/70" },
+      { key: "pass_att", label: "Pass attempts", tone: "bg-violet-300/70" },
+      { key: "pass_td", label: "Pass TD", tone: "bg-amber-300/70" },
+      { key: "rush_yd", label: "Rush yards", tone: "bg-emerald-300/70" },
+    ],
+    RB: [
+      { key: "rush_att", label: "Carries", tone: "bg-cyan-300/70" },
+      { key: "rush_yd", label: "Rush yards", tone: "bg-emerald-300/70" },
+      { key: "rec_tgt", label: "Targets", tone: "bg-amber-300/70" },
+      { key: "rec_yd", label: "Receiving yards", tone: "bg-violet-300/70" },
+    ],
+    WR: [
+      { key: "rec_tgt", label: "Targets", tone: "bg-amber-300/70" },
+      { key: "rec", label: "Receptions", tone: "bg-cyan-300/70" },
+      { key: "rec_yd", label: "Receiving yards", tone: "bg-violet-300/70" },
+      { key: "rec_air_yd", label: "Air yards", tone: "bg-emerald-300/70" },
+    ],
+    TE: [
+      { key: "rec_tgt", label: "Targets", tone: "bg-amber-300/70" },
+      { key: "rec", label: "Receptions", tone: "bg-cyan-300/70" },
+      { key: "rec_yd", label: "Receiving yards", tone: "bg-violet-300/70" },
+      {
+        key: "rec_rz_tgt",
+        label: "Red-zone targets",
+        tone: "bg-emerald-300/70",
+      },
+    ],
+    K: [
+      { key: "fga", label: "Field-goal attempts", tone: "bg-cyan-300/70" },
+      { key: "fgm", label: "Field goals made", tone: "bg-emerald-300/70" },
+      { key: "xpm", label: "Extra points made", tone: "bg-violet-300/70" },
+      { key: "kick_pts", label: "Kicking points", tone: "bg-amber-300/70" },
+    ],
+  };
+  const categories = (
+    categoriesByPosition[position] || [
+      { key: "sack", label: "Sacks", tone: "bg-cyan-300/70" },
+      { key: "int", label: "Interceptions", tone: "bg-violet-300/70" },
+      { key: "fum_rec", label: "Fumble recoveries", tone: "bg-emerald-300/70" },
+      { key: "def_td", label: "Defensive TD", tone: "bg-amber-300/70" },
+    ]
+  ).filter((category) => rows.some((row) => hasStat(row.stats, category.key)));
   if (!categories.length) return null;
   return (
     <Panel className="p-5 sm:p-6">
@@ -590,10 +898,10 @@ function ProductionTrend({ player }) {
                     className="group flex min-w-0 flex-1 flex-col items-center justify-end"
                   >
                     <div
-                      title={`Week ${row.week}: ${num(row.stats?.[category.key]).toFixed(0)}`}
-                      className={`w-full min-w-[3px] rounded-t ${category.tone}`}
+                      title={`Week ${row.week}: ${hasStat(row.stats, category.key) ? num(row.stats?.[category.key]).toFixed(0) : "not recorded"}`}
+                      className={`w-full min-w-[3px] rounded-t ${category.tone} ${hasStat(row.stats, category.key) ? "" : "opacity-10"}`}
                       style={{
-                        height: `${Math.max(num(row.stats?.[category.key]) ? 3 : 0, (num(row.stats?.[category.key]) / max) * 88)}px`,
+                        height: `${Math.max(hasStat(row.stats, category.key) ? 3 : 0, (num(row.stats?.[category.key]) / max) * 88)}px`,
                       }}
                     />
                     <span className="mt-1 text-[7px] text-white/25">
@@ -614,7 +922,7 @@ const normalizeTeam = (team) =>
   ({ OAK: "LV", SD: "LAC", STL: "LAR", JAX: "JAC", WSH: "WAS" })[
     String(team || "").toUpperCase()
   ] || String(team || "").toUpperCase();
-function MatchupLab({ players, schedule, season }) {
+function MatchupLab({ players, schedule, season, scoring }) {
   const [position, setPosition] = useState("QB");
   const [offense, setOffense] = useState("");
   const [defense, setDefense] = useState("");
@@ -664,15 +972,31 @@ function MatchupLab({ players, schedule, season }) {
             stats: {},
             playerGames: 0,
             booms: 0,
+            weekCoverage: new Map(),
+            rawStatsByWeek: new Map(),
           };
           d.points += num(points);
           d.weeks.add(String(week));
           d.playerGames += 1;
           if (num(points) >= 20) d.booms += 1;
-          Object.entries(stats).forEach(([key, value]) => {
-            if (Number.isFinite(Number(value)))
-              d.stats[key] = num(d.stats[key]) + num(value);
-          });
+          const rawAvailable = Object.keys(stats).some(
+            (key) => !String(key).startsWith("pts_"),
+          );
+          const weekCoverage = d.weekCoverage.get(String(week)) || {
+            scoredPlayers: 0,
+            rawPlayers: 0,
+          };
+          weekCoverage.scoredPlayers += 1;
+          if (rawAvailable) weekCoverage.rawPlayers += 1;
+          d.weekCoverage.set(String(week), weekCoverage);
+          if (rawAvailable) {
+            const weekStats = d.rawStatsByWeek.get(String(week)) || {};
+            Object.entries(stats).forEach(([key, value]) => {
+              if (Number.isFinite(Number(value)))
+                weekStats[key] = num(weekStats[key]) + num(value);
+            });
+            d.rawStatsByWeek.set(String(week), weekStats);
+          }
           defenseRows.set(dKey, d);
           const o = attackRows.get(oKey) || {
             team,
@@ -691,12 +1015,38 @@ function MatchupLab({ players, schedule, season }) {
         }),
       );
     const finish = (map) =>
-      [...map.values()].map((row) => ({
-        ...row,
-        games: row.weeks.size,
-        average: row.points / Math.max(1, row.weeks.size),
-        boomRate: row.playerGames ? (row.booms / row.playerGames) * 100 : 0,
-      }));
+      [...map.values()].map((row) => {
+        const completeRawWeeks = row.weekCoverage
+          ? [...row.weekCoverage.entries()]
+              .filter(
+                ([, coverage]) =>
+                  coverage.scoredPlayers > 0 &&
+                  coverage.rawPlayers === coverage.scoredPlayers,
+              )
+              .map(([week]) => week)
+          : [];
+        const completeStats = row.rawStatsByWeek
+          ? completeRawWeeks.reduce((totals, week) => {
+              Object.entries(row.rawStatsByWeek.get(week) || {}).forEach(
+                ([key, value]) => {
+                  totals[key] = num(totals[key]) + num(value);
+                },
+              );
+              return totals;
+            }, {})
+          : row.stats;
+        return {
+          ...row,
+          stats: completeStats,
+          games: row.weeks.size,
+          rawGames: completeRawWeeks.length,
+          rawCoverage: row.weeks.size
+            ? completeRawWeeks.length / row.weeks.size
+            : 0,
+          average: row.points / Math.max(1, row.weeks.size),
+          boomRate: row.playerGames ? (row.booms / row.playerGames) * 100 : 0,
+        };
+      });
     return { defense: finish(defenseRows), attack: finish(attackRows), games };
   }, [players, schedule]);
   if (!(schedule?.weeks || []).some((row) => (row.games || []).length))
@@ -787,6 +1137,7 @@ function MatchupLab({ players, schedule, season }) {
   });
   const specialists = [...playerLeaders.values()]
     .map((row) => ({ ...row, average: row.points / row.games }))
+    .filter((row) => row.games >= 2)
     .sort((a, b) => b.average - a.average);
   const defenseStatCards =
     position === "QB"
@@ -908,14 +1259,18 @@ function MatchupLab({ players, schedule, season }) {
               key={key}
               label={label}
               value={
-                defenseRow
+                defenseRow?.rawGames && hasStat(defenseRow.stats, key)
                   ? (
                       num(defenseRow.stats?.[key]) /
-                      Math.max(1, defenseRow.games)
+                      Math.max(1, defenseRow.rawGames)
                     ).toFixed(1)
                   : "—"
               }
-              detail="Per defensive team game"
+              detail={
+                defenseRow
+                  ? `Per complete raw-stat team game · ${defenseRow.rawGames}/${defenseRow.games} weeks (${Math.round(defenseRow.rawCoverage * 100)}%)`
+                  : "Raw-stat coverage unavailable"
+              }
             />
           ))}
         </div>
@@ -1154,6 +1509,11 @@ function MatchupLab({ players, schedule, season }) {
           </table>
         </div>
       </Panel>
+      <HistoricalOpponentSplits
+        position={position}
+        defense={selectedDefense}
+        scoring={String(scoring || "PPR").toLowerCase()}
+      />
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel className="p-5">
           <h3 className="text-lg font-black">
@@ -1232,6 +1592,716 @@ function MatchupLab({ players, schedule, season }) {
   );
 }
 
+function HistoricalOpponentSplits({ position, defense, scoring }) {
+  const [payload, setPayload] = useState(null);
+  const [loadingPosition, setLoadingPosition] = useState("");
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [scope, setScope] = useState("defense");
+  const [minimumGames, setMinimumGames] = useState(2);
+  const [sort, setSort] = useState("edge");
+
+  useEffect(() => {
+    if (!position) return;
+    const controller = new AbortController();
+    let live = true;
+    setPayload(null);
+    setLoadingPosition(position);
+    setError("");
+    fetch(`/stats/derived/opponent-splits-${position.toLowerCase()}.json`, {
+      cache: "no-cache",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok)
+          throw new Error("Multi-season opponent splits are not available.");
+        return response.json();
+      })
+      .then((result) => {
+        if (live) setPayload(result);
+      })
+      .catch((failure) => {
+        if (live && failure?.name !== "AbortError")
+          setError(failure?.message || "Opponent history could not load.");
+      })
+      .finally(() => {
+        if (live) setLoadingPosition("");
+      });
+    return () => {
+      live = false;
+      controller.abort();
+    };
+  }, [position]);
+
+  const rows = useMemo(() => {
+    if (!payload) return [];
+    const overallByName = new Map(
+      (payload.players || []).map((row) => [normalize(row.name), row]),
+    );
+    return (payload.splits || [])
+      .filter((row) => scope === "all" || row.opponent === defense)
+      .filter((row) => row.games >= minimumGames)
+      .filter((row) => !query || normalize(row.name).includes(normalize(query)))
+      .map((row) => {
+        const overall = overallByName.get(normalize(row.name));
+        const average = num(row.averages?.[scoring]);
+        const adjustment = row.opponent_adjustment?.[scoring] || null;
+        const careerBaseline = num(overall?.averages?.[scoring]);
+        const baseline =
+          adjustment?.same_season_baseline != null
+            ? num(adjustment.same_season_baseline)
+            : careerBaseline;
+        const rawEdge = average - baseline;
+        const edge =
+          adjustment?.adjusted_edge != null
+            ? num(adjustment.adjusted_edge)
+            : rawEdge;
+        return {
+          ...row,
+          average,
+          baseline,
+          careerBaseline,
+          rawEdge,
+          edge,
+          adjustment,
+        };
+      })
+      .sort((a, b) =>
+        sort === "average"
+          ? b.average - a.average
+          : sort === "sample"
+            ? b.games - a.games || b.edge - a.edge
+            : b.edge - a.edge || b.games - a.games,
+      );
+  }, [defense, minimumGames, payload, query, scope, scoring]);
+
+  if (loadingPosition === position && !payload)
+    return <LoadingScreen text={`Loading ${position} opponent history…`} />;
+  if (error && !payload)
+    return <Panel className="p-5 text-sm text-rose-100">{error}</Panel>;
+  if (!payload) return null;
+
+  const statColumns =
+    position === "QB"
+      ? [
+          ["Att", "pass_att"],
+          ["Pass yd", "pass_yd"],
+          ["Pass TD", "pass_td"],
+          ["Rush yd", "rush_yd"],
+        ]
+      : position === "RB"
+        ? [
+            ["Carries", "rush_att"],
+            ["Rush yd", "rush_yd"],
+            ["Targets", "rec_tgt"],
+            ["Rec yd", "rec_yd"],
+          ]
+        : [
+            ["Targets", "rec_tgt"],
+            ["Catches", "rec"],
+            ["Rec yd", "rec_yd"],
+            ["Air yd", "rec_air_yd"],
+          ];
+  const top = rows.slice(0, 10);
+  const maxEdge = Math.max(1, ...top.map((row) => Math.abs(row.edge)));
+  const rawCoverage = num(payload.coverage?.raw_stat_match_rate) * 100;
+
+  return (
+    <Panel className="overflow-hidden">
+      <div className="border-b border-white/10 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.12),transparent_38%)] p-5 sm:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/55">
+              Multi-season matchup fingerprints
+            </div>
+            <h3 className="mt-1 text-xl font-black">
+              Who repeatedly performs against{" "}
+              {scope === "defense" ? defense : "each defense"}?
+            </h3>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-white/38">
+              Each meeting is compared with that player&apos;s same-season
+              output against every other opponent across {payload.seasons?.[0]}–
+              {payload.seasons?.at(-1)}, recency weighted, and shrunk toward
+              zero for small samples. Raw fantasy and box-score results remain
+              visible beside the adjusted signal.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Find a player…"
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+            />
+            <select
+              value={scope}
+              onChange={(event) => setScope(event.target.value)}
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+            >
+              <option value="defense">Against {defense}</option>
+              <option value="all">Every opponent</option>
+            </select>
+            <select
+              value={minimumGames}
+              onChange={(event) => setMinimumGames(num(event.target.value))}
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+            >
+              <option value="2">2+ meetings</option>
+              <option value="3">3+ meetings</option>
+              <option value="4">4+ meetings</option>
+              <option value="6">6+ meetings</option>
+            </select>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+            >
+              <option value="edge">Sort: adjusted edge</option>
+              <option value="average">Sort: fantasy average</option>
+              <option value="sample">Sort: evidence</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-px bg-white/[0.06] sm:grid-cols-3">
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase tracking-wider text-white/30">
+            Qualified splits
+          </div>
+          <b className="mt-1 block text-2xl text-cyan-100">
+            {rows.length.toLocaleString()}
+          </b>
+          <small className="text-white/30">Current filters</small>
+        </div>
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase tracking-wider text-white/30">
+            Raw-stat coverage
+          </div>
+          <b className="mt-1 block text-2xl text-emerald-100">
+            {rawCoverage.toFixed(1)}%
+          </b>
+          <small className="text-white/30">
+            Matched historical player-games
+          </small>
+        </div>
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase tracking-wider text-white/30">
+            Scoring lens
+          </div>
+          <b className="mt-1 block text-2xl text-violet-100">
+            {scoring.toUpperCase()}
+          </b>
+          <small className="text-white/30">
+            Change it in the Stat Central header
+          </small>
+        </div>
+      </div>
+      {top.length ? (
+        <div className="border-b border-white/10 p-5">
+          <div className="mb-3 flex justify-between text-[9px] font-black uppercase tracking-wider text-white/30">
+            <span>Best opponent-adjusted edges</span>
+            <span>Same-season baseline + sample shrinkage</span>
+          </div>
+          <div className="space-y-2">
+            {top.map((row) => (
+              <div
+                key={`${row.name}:${row.opponent}`}
+                className="grid grid-cols-[minmax(0,1fr)_54px] items-center gap-3 text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="mb-1 flex justify-between gap-3">
+                    <b className="truncate">
+                      {row.name} vs {row.opponent}
+                    </b>
+                    <span className="shrink-0 text-white/35">
+                      {row.games} games · {num(row.adjustment?.confidence)}%
+                      confidence
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                    <div
+                      className={`h-full rounded-full ${row.edge >= 0 ? "bg-gradient-to-r from-cyan-300/70 to-emerald-300/80" : "bg-rose-300/70"}`}
+                      style={{
+                        width: `${Math.max(3, (Math.abs(row.edge) / maxEdge) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <b
+                  className={
+                    row.edge >= 0 ? "text-emerald-100" : "text-rose-100"
+                  }
+                >
+                  {row.edge >= 0 ? "+" : ""}
+                  {row.edge.toFixed(1)}
+                </b>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1180px] text-left text-xs">
+          <thead className="bg-white/[0.035] text-[9px] uppercase tracking-wider text-white/35">
+            <tr>
+              <th className="px-4 py-3">Player</th>
+              <th>Opponent</th>
+              <th>Meetings</th>
+              <th>Fantasy / game</th>
+              <th>Same-season baseline</th>
+              <th>Adjusted edge</th>
+              <th>Confidence</th>
+              {statColumns.map(([label, key]) => (
+                <th key={key}>{label} / game</th>
+              ))}
+              <th>Best game</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.06]">
+            {rows.slice(0, 250).map((row) => (
+              <tr
+                key={`${row.name}:${row.opponent}`}
+                className="hover:bg-white/[0.025]"
+              >
+                <td className="px-4 py-3">
+                  <b>{row.name}</b>
+                  <small className="block text-white/28">
+                    {row.team} · {row.position}
+                  </small>
+                </td>
+                <td className="font-bold">{row.opponent}</td>
+                <td>
+                  {row.games}
+                  <small className="block text-white/25">
+                    {row.seasons?.length || 0} seasons · {num(row.raw_games)}{" "}
+                    raw
+                  </small>
+                </td>
+                <td className="font-black text-cyan-100">
+                  {row.average.toFixed(1)}
+                </td>
+                <td>{row.baseline.toFixed(1)}</td>
+                <td
+                  className={
+                    row.edge >= 0
+                      ? "font-black text-emerald-100"
+                      : "font-black text-rose-100"
+                  }
+                >
+                  {row.edge >= 0 ? "+" : ""}
+                  {row.edge.toFixed(1)}
+                </td>
+                <td>
+                  <b>{num(row.adjustment?.confidence)}%</b>
+                  <small className="block capitalize text-white/25">
+                    {row.adjustment?.confidence_label || "historical"} ·{" "}
+                    {num(row.adjustment?.comparison_games)} comparison games
+                  </small>
+                </td>
+                {statColumns.map(([, key]) => (
+                  <td key={key}>
+                    {row.stats?.[key] == null || !num(row.raw_games)
+                      ? "—"
+                      : (
+                          num(row.stats[key]) / Math.max(1, row.raw_games)
+                        ).toFixed(1)}
+                  </td>
+                ))}
+                <td>
+                  {row.best?.[scoring] || row.best?.points != null
+                    ? `${num(row.best?.[scoring]?.points ?? row.best?.points).toFixed(1)} · ${row.best?.[scoring]?.season ?? row.best?.season} W${row.best?.[scoring]?.week ?? row.best?.week}`
+                    : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!rows.length ? (
+        <div className="p-6 text-sm text-white/38">
+          No split meets these filters. Lower the meeting threshold or search
+          another player.
+        </div>
+      ) : null}
+      <div className="border-t border-white/10 p-4 text-[10px] leading-4 text-white/28">
+        Historical splits describe observed outcomes; they do not prove a player
+        intrinsically “owns” a defense. Adjusted edge removes that opponent from
+        the same-season baseline, weights recent meetings more heavily, and
+        shrinks small samples toward zero. Team-change attribution remains an
+        estimate where only a season-level team was saved.
+      </div>
+    </Panel>
+  );
+}
+
+function ProjectionLab({ model }) {
+  const [week, setWeek] = useState(1);
+  const [scoring, setScoring] = useState("ppr");
+  const [position, setPosition] = useState("ALL");
+  const [team, setTeam] = useState("ALL");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("projection");
+  const [selectedName, setSelectedName] = useState("");
+  const teams = useMemo(
+    () =>
+      [
+        ...new Set(
+          (model?.players || []).map((player) => player.team).filter(Boolean),
+        ),
+      ].sort(),
+    [model],
+  );
+  const rows = useMemo(
+    () =>
+      (model?.players || [])
+        .map((player) => {
+          const forecast = player.weeks?.find((row) => row.week === week);
+          const variant = forecast?.variants?.[scoring] || {};
+          const seasonPoints = num(player.season_points?.[scoring]);
+          const baseline = seasonPoints / 17;
+          return {
+            ...player,
+            forecast,
+            variant,
+            projection: num(variant.projection),
+            baseline,
+            change: num(variant.projection) - baseline,
+            trend: player.trends?.[scoring] || {},
+          };
+        })
+        .filter((player) => !player.forecast?.bye && player.projection > 0)
+        .filter((player) => position === "ALL" || player.position === position)
+        .filter((player) => team === "ALL" || player.team === team)
+        .filter(
+          (player) =>
+            !query || normalize(player.name).includes(normalize(query)),
+        )
+        .sort((a, b) =>
+          sort === "confidence"
+            ? b.confidence - a.confidence
+            : sort === "matchup"
+              ? b.change - a.change
+              : b.projection - a.projection,
+        ),
+    [model, week, scoring, position, team, query, sort],
+  );
+  const selected = rows.find((row) => row.name === selectedName) || rows[0];
+  const seasonSeries = selected
+    ? (selected.weeks || [])
+        .filter((row) => !row.bye)
+        .map((row) => ({
+          ...row,
+          projection: num(row.variants?.[scoring]?.projection),
+          defenseIndex: num(row.variants?.[scoring]?.defense_index),
+        }))
+    : [];
+  const maxProjection = Math.max(
+    1,
+    ...seasonSeries.map((row) => row.projection),
+  );
+  if (!model?.players?.length)
+    return (
+      <Panel className="p-8 text-center">
+        <h2 className="text-xl font-black">Projection model unavailable</h2>
+        <p className="mt-2 text-sm text-white/40">
+          Run npm run update:stat-model after the current Arsenal season
+          projections are generated.
+        </p>
+      </Panel>
+    );
+  return (
+    <div className="space-y-4">
+      <Panel className="p-5 sm:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/50">
+              The Fantasy Arsenal · {model.model_version}
+            </div>
+            <h2 className="mt-1 text-2xl font-black">
+              {model.season} Weekly Projection Lab
+            </h2>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-white/40">
+              Season consensus redistributed across the real schedule using
+              three years of defense-vs-position evidence, recent player trend,
+              and matchup strength. Weekly totals always normalize back to the
+              selected season baseline.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Select
+              label="Week"
+              value={week}
+              onChange={(value) => setWeek(num(value))}
+            >
+              {Array.from({ length: 18 }, (_, index) => (
+                <option key={index + 1} value={index + 1}>
+                  Week {index + 1}
+                </option>
+              ))}
+            </Select>
+            <Select label="Scoring" value={scoring} onChange={setScoring}>
+              <option value="ppr">PPR</option>
+              <option value="half">Half PPR</option>
+              <option value="std">Standard</option>
+            </Select>
+            <Select label="Position" value={position} onChange={setPosition}>
+              {["ALL", "QB", "RB", "WR", "TE", "K"].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </Select>
+            <Select label="Team" value={team} onChange={setTeam}>
+              <option>ALL</option>
+              {teams.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Panel>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric
+          label="Model status"
+          value="Experimental"
+          detail="Versioned and auditable—not a black box"
+          tone="amber"
+        />
+        <Metric
+          label="Players modeled"
+          value={model.count.toLocaleString()}
+          detail={`${model.evidence_seasons.join(", ")} evidence seasons`}
+          tone="cyan"
+        />
+        <Metric
+          label="Current view"
+          value={`${rows.length} players`}
+          detail={`Week ${week} · ${scoring.toUpperCase()}`}
+          tone="violet"
+        />
+        <Metric
+          label="Snapshot"
+          value={new Date(model.generated_at).toLocaleDateString()}
+          detail="Dated before accuracy evaluation"
+          tone="emerald"
+        />
+      </div>
+      {selected ? (
+        <div className="grid gap-4 xl:grid-cols-[1.1fr_.9fr]">
+          <Panel className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/45">
+                  Selected player
+                </div>
+                <h3 className="mt-1 text-2xl font-black">{selected.name}</h3>
+                <p className="mt-1 text-xs text-white/35">
+                  {selected.team} · {selected.position} ·{" "}
+                  {selected.forecast?.opponent
+                    ? `${selected.forecast.home ? "vs" : "at"} ${selected.forecast.opponent}`
+                    : "Bye"}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-4xl font-black text-emerald-100">
+                  {selected.projection.toFixed(1)}
+                </div>
+                <div className="text-[9px] text-white/30">
+                  WEEK {week} PROJECTION
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Metric
+                label="Neutral baseline"
+                value={selected.baseline.toFixed(1)}
+                detail="Season projection ÷ 17"
+              />
+              <Metric
+                label="Matchup change"
+                value={`${selected.change >= 0 ? "+" : ""}${selected.change.toFixed(1)}`}
+                detail={`${Math.round(num(selected.variant.defense_index) * 100)} defense index`}
+                tone={selected.change >= 0 ? "emerald" : "rose"}
+              />
+              <Metric
+                label="Confidence"
+                value={`${selected.confidence}%`}
+                detail={`${selected.source_count} projection sources`}
+                tone="violet"
+              />
+              <Metric
+                label="Recent trend"
+                value={selected.trend.label || "No history"}
+                detail={`${selected.trend.sample || 0} historical games`}
+                tone="amber"
+              />
+            </div>
+            <div className="mt-5 overflow-x-auto">
+              <div
+                className="flex min-w-[680px] items-end gap-1.5 border-b border-white/10 pb-2"
+                style={{ height: 190 }}
+              >
+                {seasonSeries.map((row) => {
+                  const active = row.week === week;
+                  return (
+                    <button
+                      key={row.week}
+                      onClick={() => setWeek(row.week)}
+                      className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                      title={`Week ${row.week} ${row.opponent}: ${row.projection.toFixed(1)}`}
+                    >
+                      <div
+                        className={`w-full rounded-t ${active ? "bg-amber-300" : "bg-gradient-to-t from-cyan-400/55 to-violet-300/70"}`}
+                        style={{
+                          height: `${Math.max(4, (row.projection / maxProjection) * 145)}px`,
+                        }}
+                      />
+                      <span
+                        className={`text-[8px] ${active ? "font-black text-amber-100" : "text-white/25"}`}
+                      >
+                        {row.week}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </Panel>
+          <Panel className="p-5">
+            <h3 className="text-lg font-black">Why this projection moved</h3>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-2xl bg-black/15 p-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">
+                    Opponent allowance index
+                  </span>
+                  <b>{Math.round(num(selected.variant.defense_index) * 100)}</b>
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-white/30">
+                  100 is league average. Above 100 has historically allowed more{" "}
+                  {selected.position} scoring; below 100 has allowed less.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-black/15 p-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">Defensive evidence</span>
+                  <b>{selected.variant.defense_sample || 0} games</b>
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-white/30">
+                  Weighted 15% / 30% / 55% toward the latest season, then
+                  dampened to avoid overreacting.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-black/15 p-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/40">Source disagreement</span>
+                  <b>{(num(selected.disagreement) * 100).toFixed(1)}%</b>
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-white/30">
+                  Higher disagreement lowers confidence even when the point
+                  estimate remains high.
+                </p>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+      <Panel className="overflow-hidden">
+        <div className="border-b border-white/10 p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h3 className="text-xl font-black">
+                Week {week} player projections
+              </h3>
+              <p className="mt-1 text-xs text-white/35">
+                Select any row for its full-season matchup curve and
+                explanation.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search player…"
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              />
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value)}
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
+              >
+                <option value="projection">Sort: projection</option>
+                <option value="matchup">Sort: matchup boost</option>
+                <option value="confidence">Sort: confidence</option>
+              </select>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-white/45">
+                {rows.length} active
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px] text-left text-xs">
+            <thead className="bg-white/[0.035] text-[9px] uppercase tracking-wider text-white/35">
+              <tr>
+                <th className="px-4 py-3">Player</th>
+                <th>Matchup</th>
+                <th>Projection</th>
+                <th>Baseline</th>
+                <th>Change</th>
+                <th>Defense</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.06]">
+              {rows.slice(0, 250).map((player) => (
+                <tr
+                  key={player.name}
+                  onClick={() => setSelectedName(player.name)}
+                  className={`cursor-pointer hover:bg-white/[0.035] ${selected?.name === player.name ? "bg-cyan-300/[0.04]" : ""}`}
+                >
+                  <td className="px-4 py-3">
+                    <b>{player.name}</b>
+                    <small className="block text-white/28">
+                      {player.team} · {player.position}
+                    </small>
+                  </td>
+                  <td>
+                    {player.forecast.home ? "vs" : "at"}{" "}
+                    {player.forecast.opponent}
+                  </td>
+                  <td className="font-black text-emerald-100">
+                    {player.projection.toFixed(1)}
+                  </td>
+                  <td>{player.baseline.toFixed(1)}</td>
+                  <td
+                    className={
+                      player.change >= 0 ? "text-emerald-200" : "text-rose-200"
+                    }
+                  >
+                    {player.change >= 0 ? "+" : ""}
+                    {player.change.toFixed(1)}
+                  </td>
+                  <td>{Math.round(num(player.variant.defense_index) * 100)}</td>
+                  <td>{player.confidence}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel className="p-5">
+        <h3 className="font-black">Accuracy contract</h3>
+        <p className="mt-2 text-xs leading-5 text-white/38">
+          The daily updater saves a dated snapshot for the upcoming week. Trust
+          & Accuracy should score the final snapshot created before kickoff
+          against actual points using MAE, RMSE, rank correlation, positional
+          bias, and coverage. Published snapshots are never rewritten after
+          results are known.
+        </p>
+      </Panel>
+    </div>
+  );
+}
+
 function PerformanceLab({ selected, metrics, positionPlayers }) {
   if (!selected)
     return (
@@ -1239,35 +2309,18 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
         Choose a player to open the Performance Lab.
       </Panel>
     );
-  const statGroups = [
-    [
-      "Passing",
-      [
-        ["Pass yards", "pass_yd"],
-        ["Pass TD", "pass_td"],
-        ["INT", "pass_int"],
-        ["Attempts", "pass_att"],
-        ["Completions", "pass_cmp"],
-      ],
-    ],
-    [
-      "Rushing",
-      [
-        ["Rush yards", "rush_yd"],
-        ["Rush TD", "rush_td"],
-        ["Carries", "rush_att"],
-      ],
-    ],
-    [
-      "Receiving",
-      [
-        ["Targets", "rec_tgt"],
-        ["Receptions", "rec"],
-        ["Rec yards", "rec_yd"],
-        ["Rec TD", "rec_td"],
-      ],
-    ],
-  ];
+  const statGroups = playerStatGroups(selected);
+  const rawWeeks = Object.values(selected.weekly_stats || {}).filter(
+    (stats) =>
+      stats &&
+      typeof stats === "object" &&
+      Object.keys(stats).some((key) => !String(key).startsWith("pts_")),
+  ).length;
+  const rawAvailable =
+    rawWeeks > 0 ||
+    Object.keys(selected.stats || {}).some(
+      (key) => !String(key).startsWith("pts_"),
+    );
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1349,34 +2402,55 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
           <div>
             <h2 className="text-xl font-black">Underlying production</h2>
             <p className="mt-1 text-xs text-white/38">
-              Season totals from Sleeper’s raw weekly stat feed.
+              Position-specific volume, efficiency, and season totals from
+              Sleeper’s saved weekly stat feed.
             </p>
           </div>
-          <span className="rounded-full bg-white/[0.05] px-3 py-1 text-[9px] text-white/40">
-            Observed stats
+          <span
+            className={`rounded-full px-3 py-1 text-[9px] ${rawAvailable ? "bg-emerald-300/10 text-emerald-100/70" : "bg-amber-300/10 text-amber-100/70"}`}
+          >
+            {rawAvailable
+              ? `${rawWeeks} weekly box score${rawWeeks === 1 ? "" : "s"}`
+              : "Raw stats unavailable"}
           </span>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {statGroups.map(([title, stats]) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"
-            >
-              <h3 className="font-black">{title}</h3>
-              <div className="mt-3 space-y-2">
-                {stats.map(([label, key]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between text-xs"
-                  >
-                    <span className="text-white/38">{label}</span>
-                    <b>{num(selected.stats?.[key]).toLocaleString()}</b>
-                  </div>
-                ))}
+        {rawAvailable ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {statGroups.map(([title, stats]) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"
+              >
+                <h3 className="font-black">{title}</h3>
+                <div className="mt-3 space-y-2">
+                  {stats.map((definition) => (
+                    <div
+                      key={`${title}:${definition.label}`}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <span className="text-white/38">{definition.label}</span>
+                      <b className="text-right">
+                        {statResult(definition, selected.stats)}
+                      </b>
+                    </div>
+                  ))}
+                </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-5">
+            <div className="font-bold text-amber-100">
+              Fantasy scoring is available; the raw box score is not.
             </div>
-          ))}
-        </div>
+            <p className="mt-2 text-xs leading-5 text-white/40">
+              Missing passing, rushing, receiving, or kicking fields are shown
+              as unavailable instead of being reported as zero. This protects
+              the research view from implying production the saved feed did not
+              actually observe.
+            </p>
+          </div>
+        )}
       </Panel>
     </div>
   );
@@ -1397,11 +2471,8 @@ function Compare({ first, second, allPlayers }) {
     second,
     allPlayers.filter((row) => row.position === second.position),
   );
-  const weeks = Array.from(
-    new Set([
-      ...Object.keys(first.weeks || {}),
-      ...Object.keys(second.weeks || {}),
-    ]),
+  const weeks = Object.keys(first.weeks || {}).filter((week) =>
+    Object.prototype.hasOwnProperty.call(second.weeks || {}, week),
   );
   let firstWins = 0,
     secondWins = 0,
@@ -1488,6 +2559,211 @@ function Compare({ first, second, allPlayers }) {
   );
 }
 
+const CAREER_METRICS = {
+  QB: [
+    ["Fantasy points", "points"],
+    ["Pass yards", "pass_yd"],
+    ["Pass TD", "pass_td"],
+    ["Attempts", "pass_att"],
+    ["Rush yards", "rush_yd"],
+  ],
+  RB: [
+    ["Fantasy points", "points"],
+    ["Rush yards", "rush_yd"],
+    ["Carries", "rush_att"],
+    ["Targets", "rec_tgt"],
+    ["Scrimmage yards", "scrimmage_yd"],
+  ],
+  WR: [
+    ["Fantasy points", "points"],
+    ["Targets", "rec_tgt"],
+    ["Receptions", "rec"],
+    ["Receiving yards", "rec_yd"],
+    ["Receiving TD", "rec_td"],
+  ],
+  TE: [
+    ["Fantasy points", "points"],
+    ["Targets", "rec_tgt"],
+    ["Receptions", "rec"],
+    ["Receiving yards", "rec_yd"],
+    ["Receiving TD", "rec_td"],
+  ],
+  K: [
+    ["Fantasy points", "points"],
+    ["Field goals", "fgm"],
+    ["FG attempts", "fga"],
+    ["Extra points", "xpm"],
+    ["Kicking points", "kick_pts"],
+  ],
+};
+
+function careerMetricValue(row, key) {
+  if (key === "points") return num(row?.points);
+  if (key === "scrimmage_yd")
+    return hasStat(row?.stats, "rush_yd") || hasStat(row?.stats, "rec_yd")
+      ? num(row?.stats?.rush_yd) + num(row?.stats?.rec_yd)
+      : null;
+  return hasStat(row?.stats, key) ? num(row.stats[key]) : null;
+}
+
+function CareerStatTrends({ rows, position }) {
+  const metrics = CAREER_METRICS[position] || CAREER_METRICS.WR;
+  const [metric, setMetric] = useState(metrics[0][1]);
+  const [rate, setRate] = useState("total");
+  useEffect(
+    () => setMetric((CAREER_METRICS[position] || CAREER_METRICS.WR)[0][1]),
+    [position],
+  );
+  const chartRows = rows.map((row) => {
+    const raw = careerMetricValue(row, metric);
+    const games = num(row?.stats?.gp) || num(row.games);
+    return {
+      ...row,
+      metricValue:
+        raw == null ? null : rate === "game" ? raw / Math.max(1, games) : raw,
+    };
+  });
+  const usable = chartRows.filter((row) => row.metricValue != null);
+  const peak = Math.max(1, ...usable.map((row) => num(row.metricValue)));
+  const latest = usable.at(-1);
+  const previous = usable.at(-2);
+  const change =
+    latest && previous ? latest.metricValue - previous.metricValue : null;
+  const rawSeasons = rows.filter(
+    (row) => Object.keys(row.stats || {}).length,
+  ).length;
+
+  return (
+    <Panel className="overflow-hidden">
+      <div className="border-b border-white/10 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[.18em] text-violet-100/55">
+              Career production trend
+            </div>
+            <h3 className="mt-1 text-xl font-black">
+              Stats across every saved season
+            </h3>
+            <p className="mt-1 text-xs text-white/38">
+              Separate real volume and efficiency movement from changes in
+              fantasy scoring.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Select label="Metric" value={metric} onChange={setMetric}>
+              {metrics.map(([label, key]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Select label="View" value={rate} onChange={setRate}>
+              <option value="total">Season total</option>
+              <option value="game">Per game</option>
+            </Select>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-px bg-white/[0.06] sm:grid-cols-3">
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase text-white/30">Peak</div>
+          <b className="mt-1 block text-2xl text-cyan-100">
+            {usable.length ? peak.toFixed(rate === "game" ? 1 : 0) : "—"}
+          </b>
+          <small className="text-white/30">Selected stat lens</small>
+        </div>
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase text-white/30">
+            Latest change
+          </div>
+          <b
+            className={`mt-1 block text-2xl ${change == null ? "text-white/45" : change >= 0 ? "text-emerald-100" : "text-rose-100"}`}
+          >
+            {change == null
+              ? "—"
+              : `${change >= 0 ? "+" : ""}${change.toFixed(rate === "game" ? 1 : 0)}`}
+          </b>
+          <small className="text-white/30">Versus prior saved season</small>
+        </div>
+        <div className="bg-slate-950/90 p-4">
+          <div className="text-[9px] uppercase text-white/30">
+            Raw-stat coverage
+          </div>
+          <b className="mt-1 block text-2xl text-violet-100">
+            {rawSeasons}/{rows.length}
+          </b>
+          <small className="text-white/30">
+            Career seasons with box scores
+          </small>
+        </div>
+      </div>
+      <div className="overflow-x-auto p-5">
+        <div
+          className="flex min-w-[620px] items-end gap-3 border-b border-white/10 pb-2"
+          style={{ height: 220 }}
+        >
+          {chartRows.map((row) => (
+            <div
+              key={row.season}
+              className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+            >
+              <span className="text-[9px] font-bold text-white/45">
+                {row.metricValue == null
+                  ? "—"
+                  : row.metricValue.toFixed(rate === "game" ? 1 : 0)}
+              </span>
+              <div
+                className={`w-full rounded-t ${row.metricValue == null ? "bg-white/5" : "bg-gradient-to-t from-cyan-400/55 to-violet-300/75"}`}
+                style={{
+                  height: `${row.metricValue == null ? 3 : Math.max(5, (row.metricValue / peak) * 145)}px`,
+                }}
+              />
+              <span className="text-[9px] text-white/30">{row.season}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-x-auto border-t border-white/10">
+        <table className="w-full min-w-[760px] text-left text-xs">
+          <thead className="bg-white/[0.035] text-[9px] uppercase tracking-wider text-white/35">
+            <tr>
+              <th className="px-4 py-3">Season</th>
+              <th>Games</th>
+              <th>Fantasy</th>
+              {metrics.slice(1).map(([label, key]) => (
+                <th key={key}>{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.06]">
+            {rows.map((row) => (
+              <tr key={row.season}>
+                <td className="px-4 py-3 font-black text-cyan-100">
+                  {row.season}
+                </td>
+                <td>{num(row?.stats?.gp) || row.games}</td>
+                <td>{row.points.toFixed(1)}</td>
+                {metrics.slice(1).map(([, key]) => {
+                  const value = careerMetricValue(row, key);
+                  return (
+                    <td key={key}>
+                      {value == null
+                        ? "—"
+                        : value.toLocaleString(undefined, {
+                            maximumFractionDigits: 1,
+                          })}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
 export default function StatCentralClient() {
   const { players: playerDb = {} } = useSleeper();
   const completedSeason = new Date().getFullYear() - 1;
@@ -1497,6 +2773,9 @@ export default function StatCentralClient() {
   const [position, setPosition] = useState("ALL");
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
+  const [projectionModel, setProjectionModel] = useState(null);
+  const [projectionLoading, setProjectionLoading] = useState(false);
+  const [projectionError, setProjectionError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedKey, setSelectedKey] = useState("");
@@ -1515,10 +2794,15 @@ export default function StatCentralClient() {
   }, [tab]);
 
   useEffect(() => {
-    fetch("/stats/history/manifest.json", { cache: "force-cache" })
+    fetch("/stats/history/manifest.json", { cache: "no-cache" })
       .then((response) => (response.ok ? response.json() : null))
       .then((manifest) => {
         const saved = (manifest?.seasons || [])
+          .filter(
+            (row) =>
+              num(row.fantasypros_players) > 0 ||
+              (num(row.sleeper_players) > 0 && num(row.completed_weeks) > 0),
+          )
           .map((row) => num(row.season))
           .filter(Boolean)
           .sort((a, b) => b - a);
@@ -1554,12 +2838,60 @@ export default function StatCentralClient() {
       controller.abort();
     };
   }, [season, scoring, position, reloadToken]);
+  useEffect(() => {
+    if (tab !== "projections" || projectionModel) return;
+    let live = true;
+    const controller = new AbortController();
+    setProjectionLoading(true);
+    setProjectionError("");
+    fetch("/stats/projections/manifest.json", {
+      cache: "no-cache",
+      signal: controller.signal,
+    })
+      .then(async (manifestResponse) => {
+        const manifest = manifestResponse.ok
+          ? await manifestResponse.json()
+          : null;
+        const modelPath =
+          manifest?.model_path ||
+          `/stats/projections/${new Date().getUTCFullYear()}/current.json`;
+        const response = await fetch(modelPath, {
+          cache: "no-cache",
+          signal: controller.signal,
+        });
+        if (!response.ok)
+          throw new Error(
+            `The ${manifest?.current_season || "current-season"} stat projection model has not been generated yet.`,
+          );
+        return response.json();
+      })
+      .then((payload) => {
+        if (live) setProjectionModel(payload);
+      })
+      .catch((failure) => {
+        if (live && failure?.name !== "AbortError")
+          setProjectionError(
+            failure?.message || "Projection Lab could not load.",
+          );
+      })
+      .finally(() => {
+        if (live) setProjectionLoading(false);
+      });
+    return () => {
+      live = false;
+      controller.abort();
+    };
+  }, [tab, projectionModel]);
+  const seasonPlayers = useMemo(
+    () => mergeHistory(data, playerDb),
+    [data, playerDb],
+  );
   const allPlayers = useMemo(
     () =>
-      mergeHistory(data, playerDb).filter(
+      seasonPlayers.filter(
         (player) => position === "ALL" || player.position === position,
       ),
-    [data, playerDb, position],
+    [position, seasonPlayers],
   );
   const filtered = useMemo(
     () =>
@@ -1573,11 +2905,12 @@ export default function StatCentralClient() {
   );
   useEffect(() => {
     if (!allPlayers.length) return;
-    if (!allPlayers.some((player) => player.key === selectedKey))
-      setSelectedKey(allPlayers[0].key);
-    if (!allPlayers.some((player) => player.key === compareKey))
-      setCompareKey(allPlayers[1]?.key || allPlayers[0].key);
-  }, [allPlayers, selectedKey, compareKey]);
+    const choices = filtered.length ? filtered : allPlayers;
+    if (!choices.some((player) => player.key === selectedKey))
+      setSelectedKey(choices[0].key);
+    if (!choices.some((player) => player.key === compareKey))
+      setCompareKey(choices[1]?.key || choices[0].key);
+  }, [allPlayers, compareKey, filtered, selectedKey]);
   const selected = allPlayers.find((player) => player.key === selectedKey);
   const compared = allPlayers.find((player) => player.key === compareKey);
   const positionPlayers = allPlayers.filter(
@@ -1598,9 +2931,18 @@ export default function StatCentralClient() {
           scoring,
           selected.position || "ALL",
         );
-        const match = mergeHistory(payload, playerDb).find(
-          (player) => normalize(player.name) === normalize(selected.name),
-        );
+        const candidates = mergeHistory(payload, playerDb);
+        const match =
+          (selected.player_id
+            ? candidates.find(
+                (player) =>
+                  String(player.player_id || "") ===
+                  String(selected.player_id || ""),
+              )
+            : null) ||
+          candidates.find(
+            (player) => normalize(player.name) === normalize(selected.name),
+          );
         if (match?.games) rows.push({ ...match, season: year });
       } catch {}
       setCareerProgress(Math.round(((index + 1) / seasons.length) * 100));
@@ -1625,77 +2967,90 @@ export default function StatCentralClient() {
             volatility, player archetypes, raw production, and direct start/sit
             history.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Select
-              label="Season"
-              value={season}
-              onChange={(value) => {
-                setSeason(num(value));
-                setCareer([]);
-              }}
-            >
-              {Array.from(
-                { length: completedSeason - 2012 + 1 },
-                (_, index) => completedSeason - index,
-              ).map((year) => (
-                <option key={year}>{year}</option>
-              ))}
-            </Select>
-            <Select
-              label="Scoring"
-              value={scoring}
-              onChange={(value) => {
-                setScoring(value);
-                setCareer([]);
-              }}
-            >
-              {SCORING.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-            <Select label="Position" value={position} onChange={setPosition}>
-              {CORE_POSITIONS.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </Select>
-            <label>
-              <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
-                Find a player
-              </span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search name…"
-                className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
-              />
-            </label>
-          </div>
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            <Select
-              label="Primary player"
-              value={selectedKey}
-              onChange={setSelectedKey}
-            >
-              {filtered.slice(0, 500).map((player) => (
-                <option key={player.key} value={player.key}>
-                  {player.name} · {player.position} · {player.points.toFixed(1)}
-                </option>
-              ))}
-            </Select>
-            <Select
-              label="Comparison player"
-              value={compareKey}
-              onChange={setCompareKey}
-            >
-              {filtered.slice(0, 500).map((player) => (
-                <option key={player.key} value={player.key}>
-                  {player.name} · {player.position} · {player.points.toFixed(1)}
-                </option>
-              ))}
-            </Select>
-          </div>
+          {tab === "projections" ? (
+            <div className="mt-5 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4 text-xs leading-5 text-white/45">
+              Projection Lab has its own week, scoring, position, team, and
+              player controls below. Historical filters are hidden here so it is
+              always clear which settings affect the forecast.
+            </div>
+          ) : (
+            <>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Select
+                  label="Season"
+                  value={season}
+                  onChange={(value) => {
+                    setSeason(num(value));
+                    setCareer([]);
+                  }}
+                >
+                  {availableSeasons.map((year) => (
+                    <option key={year}>{year}</option>
+                  ))}
+                </Select>
+                <Select
+                  label="Scoring"
+                  value={scoring}
+                  onChange={(value) => {
+                    setScoring(value);
+                    setCareer([]);
+                  }}
+                >
+                  {SCORING.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label="Position"
+                  value={position}
+                  onChange={setPosition}
+                >
+                  {CORE_POSITIONS.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </Select>
+                <label>
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
+                    Find a player
+                  </span>
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search name…"
+                    className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 grid gap-2 md:grid-cols-2">
+                <Select
+                  label="Primary player"
+                  value={selectedKey}
+                  onChange={setSelectedKey}
+                >
+                  {filtered.slice(0, 500).map((player) => (
+                    <option key={player.key} value={player.key}>
+                      {player.name} · {player.position} ·{" "}
+                      {player.points.toFixed(1)}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label="Comparison player"
+                  value={compareKey}
+                  onChange={setCompareKey}
+                >
+                  {filtered.slice(0, 500).map((player) => (
+                    <option key={player.key} value={player.key}>
+                      {player.name} · {player.position} ·{" "}
+                      {player.points.toFixed(1)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </>
+          )}
         </header>
         <div className="mt-4 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/80 p-2">
           {TABS.map(([key, label]) => (
@@ -1739,10 +3094,20 @@ export default function StatCentralClient() {
             ) : null}
             {tab === "matchups" ? (
               <MatchupLab
-                players={allPlayers}
+                players={seasonPlayers}
                 schedule={data?.schedule}
                 season={season}
+                scoring={scoring}
               />
+            ) : null}
+            {tab === "projections" ? (
+              projectionLoading ? (
+                <LoadingScreen text="Loading the current projection model…" />
+              ) : projectionError ? (
+                <Panel className="p-6 text-rose-100">{projectionError}</Panel>
+              ) : (
+                <StatProjectionLab model={projectionModel} />
+              )
             ) : null}
             {tab === "leaders" ? (
               <Panel className="overflow-hidden">
@@ -1825,33 +3190,42 @@ export default function StatCentralClient() {
                       text={`Building ${selected?.name || "player"} career history…`}
                     />
                   ) : career.length ? (
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      {career.map((row) => {
-                        const m = playerMetrics(row, []);
-                        return (
-                          <div
-                            key={row.season}
-                            className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"
-                          >
-                            <div className="text-[10px] font-black text-cyan-100">
-                              {row.season}
+                    <>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {career.map((row) => {
+                          const m = playerMetrics(row, []);
+                          return (
+                            <div
+                              key={row.season}
+                              className="rounded-2xl border border-white/[0.07] bg-black/15 p-4"
+                            >
+                              <div className="text-[10px] font-black text-cyan-100">
+                                {row.season}
+                              </div>
+                              <div className="mt-2 text-3xl font-black">
+                                {row.points.toFixed(1)}
+                              </div>
+                              <div className="text-[9px] text-white/30">
+                                {row.games} games · {m.average.toFixed(1)}{" "}
+                                average
+                              </div>
+                              <div className="mt-3 flex justify-between text-[10px] text-white/38">
+                                <span>P90 {m.ceiling.toFixed(1)}</span>
+                                <span>
+                                  {m.consistency.toFixed(0)}% consistent
+                                </span>
+                              </div>
                             </div>
-                            <div className="mt-2 text-3xl font-black">
-                              {row.points.toFixed(1)}
-                            </div>
-                            <div className="text-[9px] text-white/30">
-                              {row.games} games · {m.average.toFixed(1)} average
-                            </div>
-                            <div className="mt-3 flex justify-between text-[10px] text-white/38">
-                              <span>P90 {m.ceiling.toFixed(1)}</span>
-                              <span>
-                                {m.consistency.toFixed(0)}% consistent
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4">
+                        <CareerStatTrends
+                          rows={career}
+                          position={selected?.position}
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div className="mt-5 rounded-2xl bg-white/[0.03] p-5 text-sm text-white/38">
                       Build the career record when you need it. Historical

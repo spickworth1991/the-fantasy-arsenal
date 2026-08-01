@@ -29,4 +29,7 @@ backup.zip
 /scripts/*
 !/scripts/updateValues.js
 !/scripts/updateHistoricalStats.js
+!/scripts/buildStatInsights.js
+!/scripts/buildStatProjectionModel.js
+!/scripts/evaluateStatProjectionModel.js
 /docs/
