@@ -85,11 +85,11 @@ function Metric({ label, value, detail, tone = "cyan" }) {
     rose: "text-rose-100",
   };
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4">
+    <div className="min-w-0 max-w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
       <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
         {label}
       </div>
-      <div className={`mt-1 text-2xl font-black ${tones[tone] || tones.cyan}`}>
+      <div className={`mt-1 break-words text-xl font-black leading-tight sm:text-2xl ${tones[tone] || tones.cyan}`}>
         {value}
       </div>
       <div className="mt-1 text-[10px] leading-4 text-white/35">{detail}</div>
@@ -2986,10 +2986,10 @@ export default function StatCentralClient() {
   }
 
   return (
-    <main className="min-h-screen text-white">
+    <main className="min-h-screen max-w-full overflow-x-clip text-white">
       <BackgroundParticles />
       <Navbar pageTitle="Stat Central" />
-      <div className="mx-auto max-w-7xl px-3 pb-24 pt-20 sm:px-5">
+      <div className="mx-auto w-full min-w-0 max-w-7xl px-3 pb-24 pt-20 sm:px-5">
         <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.2),transparent_38%),radial-gradient(circle_at_4%_100%,rgba(139,92,246,.16),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8">
           <div className="text-[10px] font-black uppercase tracking-[.28em] text-cyan-200/60">
             Production · consistency · history
@@ -3090,7 +3090,7 @@ export default function StatCentralClient() {
             </>
           ) : null}
         </header>
-        <div className="sticky top-14 z-30 -mx-3 mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto border-y border-white/10 bg-slate-950/95 px-3 py-2 backdrop-blur-xl sm:static sm:mx-0 sm:rounded-2xl sm:border">
+        <div className="sticky top-14 z-30 -mx-3 mt-4 grid grid-cols-2 gap-2 border-y border-white/10 bg-slate-950/95 px-3 py-2 backdrop-blur-xl sm:static sm:mx-0 sm:flex sm:rounded-2xl sm:border">
           {WORKSPACES.map((workspace) => (
             <button
               key={workspace.key}
@@ -3100,7 +3100,7 @@ export default function StatCentralClient() {
                 if (nextTab === "matchups" && position !== "ALL")
                   setPosition("ALL");
               }}
-              className={`min-w-[132px] shrink-0 snap-start rounded-xl px-4 py-2.5 text-left transition sm:min-w-0 sm:flex-1 ${activeWorkspace.key === workspace.key ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/5 hover:text-white/75"}`}
+              className={`min-w-0 rounded-xl px-3 py-2.5 text-left transition sm:flex-1 sm:px-4 ${activeWorkspace.key === workspace.key ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/5 hover:text-white/75"}`}
             >
               <span className="block text-xs font-black">{workspace.label}</span>
               <span className="mt-0.5 hidden text-[9px] font-medium text-white/30 xl:block">
@@ -3111,7 +3111,7 @@ export default function StatCentralClient() {
         </div>
         <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex-col lg:overflow-visible lg:p-3">
+            <div className={`grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex lg:flex-col lg:p-3 ${activeWorkspace.tabs.length > 1 ? "min-[380px]:grid-cols-3" : ""}`}>
               <div className="hidden px-2 pb-1 lg:block">
                 <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-200/40">
                   {activeWorkspace.label}
@@ -3124,7 +3124,7 @@ export default function StatCentralClient() {
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className={`min-w-[150px] shrink-0 rounded-xl px-3 py-3 text-left transition lg:min-w-0 ${tab === key ? "bg-white/[0.08] text-white ring-1 ring-white/10" : "text-white/42 hover:bg-white/[0.04] hover:text-white/72"}`}
+                  className={`min-w-0 rounded-xl px-3 py-3 text-left transition ${tab === key ? "bg-white/[0.08] text-white ring-1 ring-white/10" : "text-white/42 hover:bg-white/[0.04] hover:text-white/72"}`}
                 >
                   <span className="block text-xs font-black">{label}</span>
                   <span className="mt-1 hidden text-[9px] leading-4 text-white/28 lg:block">

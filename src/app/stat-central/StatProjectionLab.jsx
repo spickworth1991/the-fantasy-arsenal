@@ -63,7 +63,7 @@ const POSITION_STATS = {
 function Card({ children, className = "" }) {
   return (
     <section
-      className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}
+      className={`min-w-0 max-w-full rounded-[24px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 sm:rounded-[28px] ${className}`}
     >
       {children}
     </section>
@@ -79,12 +79,12 @@ function Kpi({ label, value, detail, tone = "cyan" }) {
     rose: "text-rose-100",
   };
   return (
-    <div className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4">
+    <div className="min-w-0 max-w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
       <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
         {label}
       </div>
       <div
-        className={`mt-1 truncate text-2xl font-black ${tones[tone] || tones.cyan}`}
+        className={`mt-1 break-words text-xl font-black leading-tight sm:text-2xl ${tones[tone] || tones.cyan}`}
       >
         {value}
       </div>
@@ -145,6 +145,30 @@ function recommendedWeek(model) {
   );
 }
 
+function projectionRow(player, week, scoring, lens) {
+  if (!player) return null;
+  const forecast = player.weeks?.find((row) => row.week === week);
+  const expectedProjection = number(forecast?.projections?.[scoring]);
+  const projection = forecast?.completed
+    ? expectedProjection
+    : number(
+        forecast?.projection_lenses?.[scoring]?.[lens] ?? expectedProjection,
+      );
+  const season = player.scoring?.[scoring] || {};
+  const remainingGames = number(player.remaining_games) || 17;
+  const baseline = forecast?.completed
+    ? projection
+    : number(season.remaining_points ?? season.season_points) / remainingGames;
+  return {
+    ...player,
+    forecast,
+    projection,
+    baseline,
+    change: projection - baseline,
+    season,
+  };
+}
+
 export default function StatProjectionLab({ model }) {
   const [week, setWeek] = useState(() => recommendedWeek(model));
   const [scoring, setScoring] = useState("ppr");
@@ -171,30 +195,7 @@ export default function StatProjectionLab({ model }) {
   const rows = useMemo(
     () =>
       (model?.players || [])
-        .map((player) => {
-          const forecast = player.weeks?.find((row) => row.week === week);
-          const expectedProjection = number(forecast?.projections?.[scoring]);
-          const projection = forecast?.completed
-            ? expectedProjection
-            : number(
-                forecast?.projection_lenses?.[scoring]?.[lens] ??
-                  expectedProjection,
-              );
-          const season = player.scoring?.[scoring] || {};
-          const remainingGames = number(player.remaining_games) || 17;
-          const baseline = forecast?.completed
-            ? projection
-            : number(season.remaining_points ?? season.season_points) /
-              remainingGames;
-          return {
-            ...player,
-            forecast,
-            projection,
-            baseline,
-            change: projection - baseline,
-            season,
-          };
-        })
+        .map((player) => projectionRow(player, week, scoring, lens))
         .filter((player) => !player.forecast?.bye && player.projection > 0)
         .filter((player) => position === "ALL" || player.position === position)
         .filter((player) => team === "ALL" || player.team === team)
@@ -232,7 +233,15 @@ export default function StatProjectionLab({ model }) {
       live = false;
     };
   }, [model?.season]);
-  const selected = rows.find((row) => row.name === selectedName) || rows[0];
+  useEffect(() => {
+    if (!rows.length) return;
+    if (!selectedName) setSelectedName(rows[0].name);
+  }, [rows, selectedName]);
+  const pinnedPlayer = (model?.players || []).find(
+    (player) => player.name === selectedName,
+  );
+  const selected =
+    projectionRow(pinnedPlayer, week, scoring, lens) || rows[0] || null;
   const seasonSeries = selected
     ? (selected.weeks || [])
         .filter((row) => !row.bye)
@@ -309,7 +318,7 @@ export default function StatProjectionLab({ model }) {
         (accuracyCohort === "all_matched" ? modelAccuracy : null);
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 max-w-full space-y-4 overflow-x-clip">
       <Card className="overflow-hidden p-5 sm:p-6">
         <div className="flex flex-col gap-5">
           <div>
@@ -400,7 +409,7 @@ export default function StatProjectionLab({ model }) {
         />
       </div>
 
-      <div className="sticky top-[108px] z-20 -mx-1 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:mx-0">
+      <div className="sticky top-[108px] z-20 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:gap-2">
         {[
           ["player", "Player Forecast", "One player across every week"],
           ["board", "Weekly Board", "Rank the complete slate"],
@@ -410,7 +419,7 @@ export default function StatProjectionLab({ model }) {
             type="button"
             key={key}
             onClick={() => setView(key)}
-            className={`min-w-[145px] flex-1 shrink-0 rounded-xl px-4 py-2.5 text-left transition ${view === key ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/[0.04]"}`}
+            className={`min-w-0 rounded-xl px-2 py-2.5 text-center transition sm:px-4 sm:text-left ${view === key ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/42 hover:bg-white/[0.04]"}`}
           >
             <span className="block text-xs font-black">{label}</span>
             <span className="mt-0.5 hidden text-[9px] text-white/28 sm:block">
