@@ -260,6 +260,7 @@ export default function StatProjectionLab({ model }) {
     ...seasonSeries.map((row) => row.projection),
   );
   const selectedWeekIndex = seasonSeries.findIndex((row) => row.week === week);
+  const selectWeek = (value) => setWeek(number(value));
   const moveSelectedWeek = (direction) => {
     if (!seasonSeries.length) return;
     const current = selectedWeekIndex >= 0 ? selectedWeekIndex : 0;
@@ -267,7 +268,7 @@ export default function StatProjectionLab({ model }) {
       0,
       Math.min(seasonSeries.length - 1, current + direction),
     );
-    setWeek(seasonSeries[next].week);
+    selectWeek(seasonSeries[next].week);
   };
 
   if (!model?.players?.length)
@@ -340,7 +341,7 @@ export default function StatProjectionLab({ model }) {
             <Filter
               label="Week"
               value={week}
-              onChange={(value) => setWeek(number(value))}
+              onChange={selectWeek}
             >
               {Array.from({ length: 18 }, (_, index) => (
                 <option key={index + 1} value={index + 1}>
@@ -460,9 +461,18 @@ export default function StatProjectionLab({ model }) {
               <div className="mt-4 grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 rounded-2xl border border-white/[0.07] bg-black/15 p-2">
                 <button
                   type="button"
-                  onClick={() => moveSelectedWeek(-1)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    moveSelectedWeek(-1);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      moveSelectedWeek(-1);
+                    }
+                  }}
                   disabled={selectedWeekIndex <= 0}
-                  className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
+                  className="grid h-11 w-11 touch-manipulation place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
                   aria-label="Previous active week"
                 >
                   ‹
@@ -477,9 +487,18 @@ export default function StatProjectionLab({ model }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => moveSelectedWeek(1)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    moveSelectedWeek(1);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      moveSelectedWeek(1);
+                    }
+                  }}
                   disabled={selectedWeekIndex < 0 || selectedWeekIndex >= seasonSeries.length - 1}
-                  className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
+                  className="grid h-11 w-11 touch-manipulation place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
                   aria-label="Next active week"
                 >
                   ›
@@ -490,8 +509,10 @@ export default function StatProjectionLab({ model }) {
                   <button
                     type="button"
                     key={row.week}
-                    onClick={() => setWeek(row.week)}
-                    className={`min-w-[58px] snap-start rounded-xl px-2 py-2 text-center ${row.week === week ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/20" : "bg-white/[0.035] text-white/40"}`}
+                    onPointerUp={() => {
+                      selectWeek(row.week);
+                    }}
+                    className={`min-w-[58px] touch-manipulation snap-start rounded-xl px-2 py-2 text-center ${row.week === week ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/20" : "bg-white/[0.035] text-white/40"}`}
                   >
                     <span className="block text-[9px] font-black">W{row.week}</span>
                     <span className="mt-0.5 block truncate text-[8px]">{row.opponent}</span>
@@ -559,10 +580,9 @@ export default function StatProjectionLab({ model }) {
                   }
                 />
               </div>
-              <div className="mt-5 hidden overflow-x-auto sm:block">
+              <div className="mt-5 max-w-full overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
                 <div
-                  className="flex min-w-[680px] items-end gap-1.5 border-b border-white/10 pb-2"
-                  style={{ height: 190 }}
+                  className="flex h-[170px] min-w-[560px] items-end gap-1.5 border-b border-white/10 pb-2 sm:h-[190px] sm:min-w-[680px]"
                 >
                   {seasonSeries.map((row) => {
                     const active = row.week === week;
@@ -570,8 +590,10 @@ export default function StatProjectionLab({ model }) {
                       <button
                         type="button"
                         key={row.week}
-                        onClick={() => setWeek(row.week)}
-                        className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                        onPointerUp={() => {
+                          selectWeek(row.week);
+                        }}
+                        className="flex min-w-0 touch-manipulation flex-1 flex-col items-center justify-end gap-1"
                         title={`Week ${row.week} ${row.opponent}: ${row.projection.toFixed(1)}`}
                       >
                         <div

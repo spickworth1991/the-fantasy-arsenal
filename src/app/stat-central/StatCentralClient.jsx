@@ -43,6 +43,78 @@ const WORKSPACES = [
     tabs: [["method", "Methodology", "What is measured, modeled, and estimated"]],
   },
 ];
+const STAT_GUIDES = {
+  overview: {
+    title: "What Player Research answers",
+    summary:
+      "How a player actually scored, how repeatable that production was, and which workload statistics produced it.",
+    bullets: [
+      "Weekly scoring and percentiles are observed results—not projections.",
+      "Boom, bust, consistency, and volatility are measured against the player's own scoring profile.",
+      "Underlying production separates volume from fantasy-point outcomes.",
+    ],
+  },
+  history: {
+    title: "What Career History answers",
+    summary:
+      "How a player's role, production, efficiency, and fantasy scoring changed from season to season.",
+    bullets: [
+      "Build Career History once to join every saved season by stable player identity.",
+      "Switch between totals and per-game rates to separate longevity from weekly performance.",
+      "Missing raw statistics are shown as unavailable rather than false zeroes.",
+    ],
+  },
+  compare: {
+    title: "What Compare Players answers",
+    summary:
+      "Which player produced more, which was steadier, and how often one actually outscored the other in comparable weeks.",
+    bullets: [
+      "Head-to-head weeks compare saved results in the same selected season and scoring format.",
+      "Floor and ceiling describe historical distributions, not guaranteed future outcomes.",
+      "Position rank is calculated within the current filtered player pool.",
+    ],
+  },
+  matchups: {
+    title: "How to use Matchup Lab",
+    summary:
+      "Choose a position, offense, and defense to connect team production with what that defense allowed to the position.",
+    bullets: [
+      "An allowance index of 100 is league average; higher is more favorable to the offense.",
+      "Click a defensive bar or ranked defense to load its complete position profile.",
+      "Player-v-defense history is sample-regressed and compared with that player's other opponents.",
+    ],
+  },
+  projections: {
+    title: "How to use Projection Center",
+    summary:
+      "Research one player across the schedule, rank a full weekly slate, or audit the model's frozen accuracy record.",
+    bullets: [
+      "Safe / Expected is the calibrated most-likely path; Risky redistributes the same season expectation into evidence-backed boom and bust weeks.",
+      "Use the arrows, week chips, chart bars, or week dropdown to change weeks while keeping the player pinned.",
+      "Weather is included only when a real kickoff forecast enters the 16-day window.",
+    ],
+  },
+  leaders: {
+    title: "What Leaderboards answer",
+    summary:
+      "Who led the selected season and scoring format after accounting for total production, weekly average, consistency, and archetype.",
+    bullets: [
+      "Use Position to compare like roles instead of mixing unlike scoring environments.",
+      "Selecting a row opens that player's complete research profile.",
+      "These ranks describe the selected historical season, not current market value.",
+    ],
+  },
+  method: {
+    title: "How Stat Central earns trust",
+    summary:
+      "Every section identifies whether its output is an observed fact, descriptive statistic, estimate, or forward simulation.",
+    bullets: [
+      "FantasyPros archives supply saved scoring history; Sleeper archives supply identities and raw weekly statistics.",
+      "Small samples are shrunk toward neutral before they influence matchup conclusions.",
+      "Projection builds are timestamped and evaluated without rewriting earlier forecasts.",
+    ],
+  },
+};
 const CORE_POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"];
 const SCORING = [
   ["PPR", "PPR"],
@@ -74,6 +146,35 @@ function Panel({ children, className = "" }) {
     >
       {children}
     </section>
+  );
+}
+function WorkspaceGuide({ tab }) {
+  const guide = STAT_GUIDES[tab] || STAT_GUIDES.overview;
+  return (
+    <details className="mb-4 rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4" open={tab === "matchups" || tab === "projections"}>
+      <summary className="cursor-pointer list-none">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/45">
+              Workspace guide
+            </div>
+            <h2 className="mt-1 text-base font-black text-cyan-50">{guide.title}</h2>
+            <p className="mt-1 text-[11px] leading-5 text-white/40">{guide.summary}</p>
+          </div>
+          <span className="shrink-0 rounded-lg bg-white/[0.05] px-2 py-1 text-[9px] text-white/40">
+            Details
+          </span>
+        </div>
+      </summary>
+      <ul className="mt-3 space-y-2 border-t border-white/[0.06] pt-3 text-[10px] leading-5 text-white/38">
+        {guide.bullets.map((bullet) => (
+          <li key={bullet} className="flex gap-2">
+            <span className="text-cyan-200/60">•</span>
+            <span>{bullet}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 function Metric({ label, value, detail, tone = "cyan" }) {
@@ -655,10 +756,9 @@ function WeeklyChart({ player, opponent }) {
   );
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div className="max-w-full overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
         <div
-          className="flex min-w-[680px] items-end gap-2 border-b border-white/10 pb-2"
-          style={{ height: 230 }}
+          className="flex h-[180px] min-w-[540px] items-end gap-1.5 border-b border-white/10 pb-2 sm:h-[230px] sm:min-w-[680px] sm:gap-2"
         >
           {weeks.map((week) => {
             const primary = num(player?.weeks?.[week]),
@@ -694,7 +794,7 @@ function WeeklyChart({ player, opponent }) {
       </div>
       {!opponent ? (
         <div className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07]">
-          <div className="grid grid-cols-[70px_1fr_100px] bg-white/[0.04] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-white/35">
+          <div className="grid grid-cols-[52px_minmax(0,1fr)_64px] bg-white/[0.04] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-white/35 sm:grid-cols-[70px_minmax(0,1fr)_100px] sm:px-4 sm:text-[9px]">
             <span>Week</span>
             <span>Game production</span>
             <span className="text-right">Fantasy pts</span>
@@ -706,11 +806,11 @@ function WeeklyChart({ player, opponent }) {
               return (
                 <div
                   key={week}
-                  className="grid grid-cols-[70px_minmax(0,1fr)_70px] items-center px-4 py-3 text-xs sm:grid-cols-[70px_minmax(0,1fr)_100px]"
+                  className="grid grid-cols-[52px_minmax(0,1fr)_64px] items-center gap-1 px-3 py-3 text-[11px] sm:grid-cols-[70px_minmax(0,1fr)_100px] sm:px-4 sm:text-xs"
                 >
                   <b>Week {week}</b>
                   <div className="min-w-0">
-                    <div className="truncate text-white/60">
+                    <div className="break-words leading-4 text-white/60">
                       {weeklySummary(
                         player?.weekly_stats?.[week],
                         player?.position,
@@ -1313,7 +1413,8 @@ function MatchupLab({ players, schedule, season, scoring }) {
                 <button
                   key={row.team}
                   onClick={() => setDefense(row.team)}
-                  className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"
+                  onPointerUp={() => setDefense(row.team)}
+                  className="flex min-w-0 touch-manipulation flex-1 flex-col items-center justify-end gap-1"
                   title={`${row.team}: ${row.average.toFixed(1)} ${position} points allowed`}
                 >
                   <div
@@ -1351,15 +1452,17 @@ function MatchupLab({ players, schedule, season, scoring }) {
                 Toughest
               </div>
               {defenses.slice(0, 8).map((row, index) => (
-                <div
+                <button
+                  type="button"
                   key={row.team}
-                  className="mt-2 flex justify-between text-xs"
+                  onClick={() => setDefense(row.team)}
+                  className={`mt-2 flex w-full touch-manipulation justify-between rounded-lg px-1 py-1 text-left text-xs hover:bg-white/[0.05] ${row.team === selectedDefense ? "bg-amber-300/10 ring-1 ring-amber-300/15" : ""}`}
                 >
                   <span>
                     #{index + 1} {row.team}
                   </span>
                   <b className="text-emerald-100">{row.average.toFixed(1)}</b>
-                </div>
+                </button>
               ))}
             </div>
             <div className="bg-slate-950/90 p-4">
@@ -1370,15 +1473,17 @@ function MatchupLab({ players, schedule, season, scoring }) {
                 .slice(-8)
                 .reverse()
                 .map((row, index) => (
-                  <div
+                  <button
+                    type="button"
                     key={row.team}
-                    className="mt-2 flex justify-between text-xs"
+                    onClick={() => setDefense(row.team)}
+                    className={`mt-2 flex w-full touch-manipulation justify-between rounded-lg px-1 py-1 text-left text-xs hover:bg-white/[0.05] ${row.team === selectedDefense ? "bg-amber-300/10 ring-1 ring-amber-300/15" : ""}`}
                   >
                     <span>
                       #{index + 1} {row.team}
                     </span>
                     <b className="text-rose-100">{row.average.toFixed(1)}</b>
-                  </div>
+                  </button>
                 ))}
             </div>
           </div>
@@ -3135,6 +3240,7 @@ export default function StatCentralClient() {
             </div>
           </aside>
           <div className="min-w-0">
+        <WorkspaceGuide tab={tab} />
         {loading && historicalWorkspace ? (
           <LoadingScreen
             progress={65}
