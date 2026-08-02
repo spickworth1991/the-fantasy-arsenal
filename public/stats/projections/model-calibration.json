@@ -1,0 +1,2909 @@
+{
+  "source": "The Fantasy Arsenal local walk-forward trainer",
+  "generated_at": "2026-08-02T16:35:42.944Z",
+  "version": "arsenal-trained-adjustments-v3.0",
+  "target": "weekly PPR points relative to a leakage-safe rolling player baseline",
+  "features": [
+    "baseline_points",
+    "log_baseline",
+    "week_fraction",
+    "early_season",
+    "recent_form_delta",
+    "snap_share",
+    "snap_trend",
+    "opportunity_share",
+    "opportunity_trend",
+    "red_zone_share",
+    "air_yard_share",
+    "target_share",
+    "target_share_trend",
+    "carry_share",
+    "carry_share_trend",
+    "weighted_opportunity_share",
+    "weighted_opportunity_trend",
+    "high_value_touch_rate",
+    "two_minute_opportunity_rate",
+    "third_down_opportunity_rate",
+    "opportunity_volatility",
+    "receiving_epa_per_target",
+    "rushing_epa_per_carry",
+    "ngs_cpoe",
+    "ngs_separation",
+    "ngs_yac_over_expected",
+    "ngs_ryoe_per_carry",
+    "ngs_box_eight_rate",
+    "team_pace_delta",
+    "home",
+    "defense_points_delta",
+    "defense_volume_delta",
+    "personal_delta",
+    "history_reliability",
+    "defense_reliability",
+    "personal_reliability",
+    "protection_pressure_rate",
+    "protection_sack_rate",
+    "opponent_pressure_rate",
+    "opponent_sack_rate",
+    "pressure_mismatch",
+    "opponent_blitz_rate",
+    "ol_stability",
+    "ol_continuity",
+    "time_to_throw",
+    "offense_motion_rate",
+    "offense_play_action_rate",
+    "offense_screen_rate",
+    "offense_rpo_rate",
+    "opponent_man_rate",
+    "opponent_zone_rate",
+    "offense_epa_per_play",
+    "offense_success_rate",
+    "offense_pass_rate",
+    "offense_red_zone_play_rate",
+    "opponent_epa_per_play_allowed",
+    "opponent_success_rate_allowed",
+    "opponent_pass_rate_faced",
+    "opponent_red_zone_play_rate_allowed",
+    "epa_matchup",
+    "success_matchup",
+    "offense_neutral_pass_rate",
+    "offense_two_minute_rate",
+    "offense_third_down_success_rate",
+    "offense_play_volume_delta",
+    "market_implied_points_delta",
+    "market_spread_scaled",
+    "advanced_reliability"
+  ],
+  "validation": {
+    "method": "Tune architecture and shrinkage before 2025; allow advanced-context challengers; promote each position only after a strict untouched 2025 incumbent MAE/RMSE gate; refit promoted architectures on all saved seasons.",
+    "no_future_games": true,
+    "weather_excluded": true,
+    "position_level_promotion_gate": true
+  },
+  "by_position": {
+    "QB": {
+      "training_seasons": [
+        2023
+      ],
+      "tuning_season": 2024,
+      "validation_season": 2025,
+      "final_fit_seasons": [
+        2023,
+        2024,
+        2025
+      ],
+      "training_sample": 492,
+      "tuning_sample": 574,
+      "validation_sample": 601,
+      "final_sample": 1667,
+      "selected_model": "incumbent",
+      "tuned_challenger": "ridge",
+      "tuned_feature_set": "incumbent_compatible",
+      "research_winner": {
+        "model_type": "ridge",
+        "feature_set": "incumbent_compatible",
+        "lambda": 100,
+        "strength": 1,
+        "tuning_metrics": {
+          "sample": 574,
+          "mae": 6.444,
+          "rmse": 8.044,
+          "bias": -0.149,
+          "rank_correlation": 0.4727,
+          "within_3": 0.2735,
+          "within_5": 0.4756
+        },
+        "deployment_eligible": true
+      },
+      "lambda": 100,
+      "application_strength": 1,
+      "tuning_baseline": {
+        "sample": 574,
+        "mae": 6.654,
+        "rmse": 8.249,
+        "bias": 0.235,
+        "rank_correlation": 0.4396,
+        "within_3": 0.2805,
+        "within_5": 0.446
+      },
+      "tuning_challenger": {
+        "sample": 574,
+        "mae": 6.444,
+        "rmse": 8.044,
+        "bias": -0.149,
+        "rank_correlation": 0.4727,
+        "within_3": 0.2735,
+        "within_5": 0.4756
+      },
+      "holdout_baseline": {
+        "sample": 601,
+        "mae": 6.663,
+        "rmse": 8.182,
+        "bias": 0.383,
+        "rank_correlation": 0.424,
+        "within_3": 0.2579,
+        "within_5": 0.4293
+      },
+      "holdout_incumbent": {
+        "sample": 600,
+        "mae": 6.516,
+        "rmse": 8.108,
+        "bias": 0.47,
+        "rank_correlation": 0.4272,
+        "within_3": 0.28,
+        "within_5": 0.4667
+      },
+      "holdout_challenger": {
+        "sample": 601,
+        "mae": 6.535,
+        "rmse": 8.119,
+        "bias": 0.553,
+        "rank_correlation": 0.4276,
+        "within_3": 0.2696,
+        "within_5": 0.4542
+      },
+      "holdout_trained": {
+        "sample": 600,
+        "mae": 6.516,
+        "rmse": 8.108,
+        "bias": 0.47,
+        "rank_correlation": 0.4272,
+        "within_3": 0.28,
+        "within_5": 0.4667
+      },
+      "holdout_mae_improvement": 0.147,
+      "promotion": {
+        "promoted": false,
+        "rule": "Lower 2025 MAE than incumbent by at least 0.01, improve 2025 RMSE by at least 0.001, and lower MAE than the neutral baseline. Live release audits additionally reject unstable forecast distributions.",
+        "mae_vs_incumbent": -0.019,
+        "rmse_vs_incumbent": -0.011
+      },
+      "candidate_leaderboard": [
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 100,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.444,
+            "rmse": 8.044,
+            "bias": -0.149,
+            "rank_correlation": 0.4727,
+            "within_3": 0.2735,
+            "within_5": 0.4756
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.451,
+            "rmse": 8.045,
+            "bias": -0.187,
+            "rank_correlation": 0.4759,
+            "within_3": 0.2666,
+            "within_5": 0.4617
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 30,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.456,
+            "rmse": 8.057,
+            "bias": -0.133,
+            "rank_correlation": 0.4687,
+            "within_3": 0.2666,
+            "within_5": 0.4739
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "opportunity",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.465,
+            "rmse": 8.05,
+            "bias": -0.228,
+            "rank_correlation": 0.4773,
+            "within_3": 0.2735,
+            "within_5": 0.4564
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 10,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.466,
+            "rmse": 8.066,
+            "bias": -0.13,
+            "rank_correlation": 0.4663,
+            "within_3": 0.27,
+            "within_5": 0.4791
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 100,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.472,
+            "rmse": 8.055,
+            "bias": -0.046,
+            "rank_correlation": 0.474,
+            "within_3": 0.27,
+            "within_5": 0.4599
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 30,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.474,
+            "rmse": 8.059,
+            "bias": -0.034,
+            "rank_correlation": 0.471,
+            "within_3": 0.27,
+            "within_5": 0.4669
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "opportunity",
+          "lambda": 100,
+          "strength": 1,
+          "metrics": {
+            "sample": 574,
+            "mae": 6.478,
+            "rmse": 8.074,
+            "bias": -0.318,
+            "rank_correlation": 0.4754,
+            "within_3": 0.2683,
+            "within_5": 0.4547
+          }
+        }
+      ],
+      "model_type": "ridge",
+      "intercept": -0.03365889,
+      "features": {
+        "recent_form_delta": {
+          "mean": -0.04191912,
+          "scale": 0.33084151,
+          "coefficient": 0.05081946
+        },
+        "snap_share": {
+          "mean": 0.85214385,
+          "scale": 0.19412278,
+          "coefficient": -0.00670806
+        },
+        "snap_trend": {
+          "mean": 0.00935692,
+          "scale": 0.20489538,
+          "coefficient": 0.08500661
+        },
+        "opportunity_share": {
+          "mean": 0.57118402,
+          "scale": 0.18375598,
+          "coefficient": 0.03125783
+        },
+        "opportunity_trend": {
+          "mean": -0.03508369,
+          "scale": 0.17582949,
+          "coefficient": 0.02720634
+        },
+        "red_zone_share": {
+          "mean": 0.39497521,
+          "scale": 0.15582417,
+          "coefficient": -0.01542605
+        },
+        "air_yard_share": {
+          "mean": -0.00379362,
+          "scale": 0.04771742,
+          "coefficient": 0.00065706
+        },
+        "team_pace_delta": {
+          "mean": -0.00233013,
+          "scale": 0.0354462,
+          "coefficient": -0.00787857
+        },
+        "home": {
+          "mean": 0.50120048,
+          "scale": 0.49999856,
+          "coefficient": -0.00018539
+        },
+        "defense_points_delta": {
+          "mean": -0.00061849,
+          "scale": 0.09191241,
+          "coefficient": -0.02438071
+        },
+        "defense_volume_delta": {
+          "mean": -0.00080706,
+          "scale": 0.09835542,
+          "coefficient": 0.02277202
+        },
+        "personal_delta": {
+          "mean": -0.00081386,
+          "scale": 0.01409074,
+          "coefficient": -0.00630021
+        },
+        "history_reliability": {
+          "mean": 0.75358673,
+          "scale": 0.13631148,
+          "coefficient": 0.03410211
+        }
+      },
+      "uncertainty": {
+        "p10": 0.0912,
+        "p25": 0.5592,
+        "p50": 0.9676,
+        "p75": 1.3328,
+        "p90": 1.7382
+      },
+      "probability_bins": [
+        {
+          "minimum_factor": 0.65,
+          "maximum_factor": 0.8853,
+          "sample": 333,
+          "boom_probability": 0.2252,
+          "bust_probability": 0.5435
+        },
+        {
+          "minimum_factor": 0.8855,
+          "maximum_factor": 0.972,
+          "sample": 333,
+          "boom_probability": 0.2102,
+          "bust_probability": 0.2973
+        },
+        {
+          "minimum_factor": 0.9723,
+          "maximum_factor": 1.0116,
+          "sample": 334,
+          "boom_probability": 0.2515,
+          "bust_probability": 0.2725
+        },
+        {
+          "minimum_factor": 1.0121,
+          "maximum_factor": 1.0604,
+          "sample": 333,
+          "boom_probability": 0.2432,
+          "bust_probability": 0.2673
+        },
+        {
+          "minimum_factor": 1.0606,
+          "maximum_factor": 1.4022,
+          "sample": 334,
+          "boom_probability": 0.4042,
+          "bust_probability": 0.2395
+        }
+      ],
+      "baseline_tiers": [
+        {
+          "key": "low",
+          "minimum_baseline": 0,
+          "maximum_baseline": 13.5013,
+          "sample": 556,
+          "uncertainty": {
+            "p10": -0.0094,
+            "p25": 0.0906,
+            "p50": 0.8835,
+            "p75": 1.467,
+            "p90": 2.1646
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.6783,
+              "sample": 111,
+              "boom_probability": 0.1351,
+              "bust_probability": 0.7027
+            },
+            {
+              "minimum_factor": 0.6789,
+              "maximum_factor": 0.8511,
+              "sample": 111,
+              "boom_probability": 0.3333,
+              "bust_probability": 0.5315
+            },
+            {
+              "minimum_factor": 0.853,
+              "maximum_factor": 0.9881,
+              "sample": 111,
+              "boom_probability": 0.2342,
+              "bust_probability": 0.4324
+            },
+            {
+              "minimum_factor": 0.9889,
+              "maximum_factor": 1.0991,
+              "sample": 111,
+              "boom_probability": 0.3604,
+              "bust_probability": 0.3604
+            },
+            {
+              "minimum_factor": 1.0993,
+              "maximum_factor": 1.4022,
+              "sample": 112,
+              "boom_probability": 0.5268,
+              "bust_probability": 0.2589
+            }
+          ]
+        },
+        {
+          "key": "mid",
+          "minimum_baseline": 13.5013,
+          "maximum_baseline": 17.2153,
+          "sample": 555,
+          "uncertainty": {
+            "p10": 0.3529,
+            "p25": 0.6743,
+            "p50": 1.001,
+            "p75": 1.3431,
+            "p90": 1.6987
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.9263,
+              "sample": 111,
+              "boom_probability": 0.2703,
+              "bust_probability": 0.3784
+            },
+            {
+              "minimum_factor": 0.928,
+              "maximum_factor": 0.9834,
+              "sample": 111,
+              "boom_probability": 0.2523,
+              "bust_probability": 0.2883
+            },
+            {
+              "minimum_factor": 0.9836,
+              "maximum_factor": 1.021,
+              "sample": 111,
+              "boom_probability": 0.2523,
+              "bust_probability": 0.2883
+            },
+            {
+              "minimum_factor": 1.0211,
+              "maximum_factor": 1.0672,
+              "sample": 111,
+              "boom_probability": 0.2613,
+              "bust_probability": 0.1892
+            },
+            {
+              "minimum_factor": 1.0676,
+              "maximum_factor": 1.2731,
+              "sample": 111,
+              "boom_probability": 0.3784,
+              "bust_probability": 0.2252
+            }
+          ]
+        },
+        {
+          "key": "high",
+          "minimum_baseline": 17.2153,
+          "maximum_baseline": null,
+          "sample": 556,
+          "uncertainty": {
+            "p10": 0.4356,
+            "p25": 0.7244,
+            "p50": 0.9743,
+            "p75": 1.237,
+            "p90": 1.5321
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7185,
+              "maximum_factor": 0.9555,
+              "sample": 111,
+              "boom_probability": 0.0991,
+              "bust_probability": 0.2523
+            },
+            {
+              "minimum_factor": 0.9558,
+              "maximum_factor": 0.986,
+              "sample": 111,
+              "boom_probability": 0.2252,
+              "bust_probability": 0.2162
+            },
+            {
+              "minimum_factor": 0.9861,
+              "maximum_factor": 1.015,
+              "sample": 111,
+              "boom_probability": 0.1892,
+              "bust_probability": 0.2342
+            },
+            {
+              "minimum_factor": 1.0153,
+              "maximum_factor": 1.0443,
+              "sample": 111,
+              "boom_probability": 0.2523,
+              "bust_probability": 0.2613
+            },
+            {
+              "minimum_factor": 1.0446,
+              "maximum_factor": 1.1538,
+              "sample": 112,
+              "boom_probability": 0.2321,
+              "bust_probability": 0.2411
+            }
+          ]
+        }
+      ]
+    },
+    "RB": {
+      "training_seasons": [
+        2023
+      ],
+      "tuning_season": 2024,
+      "validation_season": 2025,
+      "final_fit_seasons": [
+        2023,
+        2024,
+        2025
+      ],
+      "training_sample": 780,
+      "tuning_sample": 978,
+      "validation_sample": 1226,
+      "final_sample": 2984,
+      "selected_model": "ridge",
+      "tuned_challenger": "ridge",
+      "tuned_feature_set": "role_environment",
+      "research_winner": {
+        "model_type": "ridge",
+        "feature_set": "role_environment",
+        "lambda": 300,
+        "strength": 0.75,
+        "tuning_metrics": {
+          "sample": 978,
+          "mae": 4.975,
+          "rmse": 6.555,
+          "bias": -0.024,
+          "rank_correlation": 0.6663,
+          "within_3": 0.3722,
+          "within_5": 0.6155
+        },
+        "deployment_eligible": true
+      },
+      "lambda": 300,
+      "application_strength": 0.75,
+      "tuning_baseline": {
+        "sample": 978,
+        "mae": 5.075,
+        "rmse": 6.729,
+        "bias": -0.556,
+        "rank_correlation": 0.647,
+        "within_3": 0.3732,
+        "within_5": 0.6186
+      },
+      "tuning_challenger": {
+        "sample": 978,
+        "mae": 4.975,
+        "rmse": 6.555,
+        "bias": -0.024,
+        "rank_correlation": 0.6663,
+        "within_3": 0.3722,
+        "within_5": 0.6155
+      },
+      "holdout_baseline": {
+        "sample": 1226,
+        "mae": 4.964,
+        "rmse": 6.752,
+        "bias": -0.03,
+        "rank_correlation": 0.6579,
+        "within_3": 0.4176,
+        "within_5": 0.6436
+      },
+      "holdout_incumbent": {
+        "sample": 1229,
+        "mae": 4.93,
+        "rmse": 6.694,
+        "bias": 0.18,
+        "rank_correlation": 0.6759,
+        "within_3": 0.4272,
+        "within_5": 0.6395
+      },
+      "holdout_challenger": {
+        "sample": 1226,
+        "mae": 4.916,
+        "rmse": 6.666,
+        "bias": 0.271,
+        "rank_correlation": 0.6765,
+        "within_3": 0.4217,
+        "within_5": 0.6419
+      },
+      "holdout_trained": {
+        "sample": 1226,
+        "mae": 4.916,
+        "rmse": 6.666,
+        "bias": 0.271,
+        "rank_correlation": 0.6765,
+        "within_3": 0.4217,
+        "within_5": 0.6419
+      },
+      "holdout_mae_improvement": 0.048,
+      "promotion": {
+        "promoted": true,
+        "rule": "Lower 2025 MAE than incumbent by at least 0.01, improve 2025 RMSE by at least 0.001, and lower MAE than the neutral baseline. Live release audits additionally reject unstable forecast distributions.",
+        "mae_vs_incumbent": 0.014,
+        "rmse_vs_incumbent": 0.028
+      },
+      "candidate_leaderboard": [
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.975,
+            "rmse": 6.555,
+            "bias": -0.024,
+            "rank_correlation": 0.6663,
+            "within_3": 0.3722,
+            "within_5": 0.6155
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 100,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.975,
+            "rmse": 6.565,
+            "bias": -0.101,
+            "rank_correlation": 0.6642,
+            "within_3": 0.3804,
+            "within_5": 0.6186
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 100,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.98,
+            "rmse": 6.578,
+            "bias": -0.25,
+            "rank_correlation": 0.6629,
+            "within_3": 0.3793,
+            "within_5": 0.6186
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.984,
+            "rmse": 6.562,
+            "bias": 0.151,
+            "rank_correlation": 0.6671,
+            "within_3": 0.3763,
+            "within_5": 0.6135
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.985,
+            "rmse": 6.576,
+            "bias": -0.198,
+            "rank_correlation": 0.6638,
+            "within_3": 0.3814,
+            "within_5": 0.6155
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 30,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.987,
+            "rmse": 6.591,
+            "bias": -0.306,
+            "rank_correlation": 0.6608,
+            "within_3": 0.3712,
+            "within_5": 0.6186
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 100,
+          "strength": 1,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.989,
+            "rmse": 6.583,
+            "bias": 0.047,
+            "rank_correlation": 0.6625,
+            "within_3": 0.3763,
+            "within_5": 0.6237
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 30,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 978,
+            "mae": 4.996,
+            "rmse": 6.593,
+            "bias": -0.186,
+            "rank_correlation": 0.6603,
+            "within_3": 0.3763,
+            "within_5": 0.6227
+          }
+        }
+      ],
+      "model_type": "ridge",
+      "intercept": -0.01200124,
+      "features": {
+        "baseline_points": {
+          "mean": 9.00752012,
+          "scale": 4.75634403,
+          "coefficient": -0.09104673
+        },
+        "log_baseline": {
+          "mean": 2.1785862,
+          "scale": 0.51826757,
+          "coefficient": 0.01851785
+        },
+        "week_fraction": {
+          "mean": 0.54866696,
+          "scale": 0.28876491,
+          "coefficient": 0.0465724
+        },
+        "early_season": {
+          "mean": 0.20475871,
+          "scale": 0.40352519,
+          "coefficient": 0.02236229
+        },
+        "recent_form_delta": {
+          "mean": -0.0497791,
+          "scale": 0.42613127,
+          "coefficient": 0.04323014
+        },
+        "snap_share": {
+          "mean": 0.40568188,
+          "scale": 0.20243575,
+          "coefficient": 0.068032
+        },
+        "snap_trend": {
+          "mean": 0.02421129,
+          "scale": 0.14349528,
+          "coefficient": 0.11896275
+        },
+        "opportunity_share": {
+          "mean": 0.23335616,
+          "scale": 0.13726331,
+          "coefficient": 0.05283442
+        },
+        "opportunity_trend": {
+          "mean": -0.01376021,
+          "scale": 0.0907864,
+          "coefficient": 0.00458743
+        },
+        "red_zone_share": {
+          "mean": 0.17599637,
+          "scale": 0.12727676,
+          "coefficient": -0.00379553
+        },
+        "air_yard_share": {
+          "mean": -0.04820677,
+          "scale": 0.10125973,
+          "coefficient": -0.00472845
+        },
+        "target_share": {
+          "mean": 0.08143747,
+          "scale": 0.04975698,
+          "coefficient": 0.01238591
+        },
+        "target_share_trend": {
+          "mean": 0.00369808,
+          "scale": 0.04335745,
+          "coefficient": -0.01021595
+        },
+        "carry_share": {
+          "mean": 0.34614379,
+          "scale": 0.204445,
+          "coefficient": 0.00182741
+        },
+        "carry_share_trend": {
+          "mean": 0.03175899,
+          "scale": 0.12900152,
+          "coefficient": -0.0277709
+        },
+        "weighted_opportunity_share": {
+          "mean": 0.20353371,
+          "scale": 0.11477671,
+          "coefficient": -0.00364258
+        },
+        "weighted_opportunity_trend": {
+          "mean": -0.01376021,
+          "scale": 0.0907864,
+          "coefficient": 0.00458739
+        },
+        "high_value_touch_rate": {
+          "mean": 0.0937604,
+          "scale": 0.05842457,
+          "coefficient": -0.02180141
+        },
+        "two_minute_opportunity_rate": {
+          "mean": 0.07312832,
+          "scale": 0.08833605,
+          "coefficient": 0.01836782
+        },
+        "third_down_opportunity_rate": {
+          "mean": 0.05641249,
+          "scale": 0.06791943,
+          "coefficient": 0.02068776
+        },
+        "opportunity_volatility": {
+          "mean": 0.07863312,
+          "scale": 0.02942645,
+          "coefficient": -0.01632267
+        },
+        "team_pace_delta": {
+          "mean": 0.00260209,
+          "scale": 0.03724981,
+          "coefficient": -0.02228917
+        },
+        "home": {
+          "mean": 0.49865952,
+          "scale": 0.4999982,
+          "coefficient": 0.00724036
+        },
+        "defense_points_delta": {
+          "mean": 0.00106886,
+          "scale": 0.12197278,
+          "coefficient": 0.00040638
+        },
+        "defense_volume_delta": {
+          "mean": 0.00092393,
+          "scale": 0.12709814,
+          "coefficient": 0.00195186
+        },
+        "personal_delta": {
+          "mean": -0.00101396,
+          "scale": 0.01829071,
+          "coefficient": -0.00950616
+        },
+        "history_reliability": {
+          "mean": 0.75145025,
+          "scale": 0.14127102,
+          "coefficient": 0.02493781
+        },
+        "defense_reliability": {
+          "mean": 0.81127711,
+          "scale": 0.02757944,
+          "coefficient": -0.02350454
+        },
+        "personal_reliability": {
+          "mean": 0.15778491,
+          "scale": 0.18645053,
+          "coefficient": -0.00815471
+        },
+        "offense_neutral_pass_rate": {
+          "mean": 0.5607202,
+          "scale": 0.03728326,
+          "coefficient": 0.02081851
+        },
+        "offense_two_minute_rate": {
+          "mean": 0.11778467,
+          "scale": 0.01264349,
+          "coefficient": 0.0115973
+        },
+        "offense_third_down_success_rate": {
+          "mean": 0.39521691,
+          "scale": 0.04556846,
+          "coefficient": 0.01797747
+        },
+        "offense_play_volume_delta": {
+          "mean": -0.0317399,
+          "scale": 0.03040979,
+          "coefficient": 0.01176028
+        },
+        "market_implied_points_delta": {
+          "mean": -0.01256186,
+          "scale": 0.16532751,
+          "coefficient": -0.00417365
+        },
+        "market_spread_scaled": {
+          "mean": 0.02512751,
+          "scale": 0.60858588,
+          "coefficient": 0.03640183
+        },
+        "receiving_epa_per_target": {
+          "mean": -0.00498076,
+          "scale": 0.56454113,
+          "coefficient": 0.00603458
+        },
+        "rushing_epa_per_carry": {
+          "mean": -0.08455048,
+          "scale": 0.22676411,
+          "coefficient": 0.02710152
+        },
+        "ngs_cpoe": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_separation": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_yac_over_expected": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_ryoe_per_carry": {
+          "mean": 0.41898533,
+          "scale": 1.07007733,
+          "coefficient": 0.00403129
+        },
+        "ngs_box_eight_rate": {
+          "mean": 0.21617096,
+          "scale": 0.10425816,
+          "coefficient": 0.01739595
+        }
+      },
+      "uncertainty": {
+        "p10": 0.0798,
+        "p25": 0.3942,
+        "p50": 0.8268,
+        "p75": 1.3778,
+        "p90": 2.0578
+      },
+      "probability_bins": [
+        {
+          "minimum_factor": 0.7375,
+          "maximum_factor": 0.8709,
+          "sample": 596,
+          "boom_probability": 0.1594,
+          "bust_probability": 0.6879
+        },
+        {
+          "minimum_factor": 0.871,
+          "maximum_factor": 0.9606,
+          "sample": 597,
+          "boom_probability": 0.2647,
+          "bust_probability": 0.4539
+        },
+        {
+          "minimum_factor": 0.9607,
+          "maximum_factor": 1.0304,
+          "sample": 597,
+          "boom_probability": 0.2797,
+          "bust_probability": 0.3953
+        },
+        {
+          "minimum_factor": 1.0304,
+          "maximum_factor": 1.1064,
+          "sample": 597,
+          "boom_probability": 0.3032,
+          "bust_probability": 0.335
+        },
+        {
+          "minimum_factor": 1.1065,
+          "maximum_factor": 1.3375,
+          "sample": 597,
+          "boom_probability": 0.4137,
+          "bust_probability": 0.2429
+        }
+      ],
+      "baseline_tiers": [
+        {
+          "key": "low",
+          "minimum_baseline": 0,
+          "maximum_baseline": 5.7533,
+          "sample": 995,
+          "uncertainty": {
+            "p10": 0,
+            "p25": 0.1016,
+            "p50": 0.6017,
+            "p75": 1.443,
+            "p90": 2.8237
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.804,
+              "sample": 199,
+              "boom_probability": 0.1307,
+              "bust_probability": 0.7437
+            },
+            {
+              "minimum_factor": 0.8041,
+              "maximum_factor": 0.8696,
+              "sample": 199,
+              "boom_probability": 0.206,
+              "bust_probability": 0.6884
+            },
+            {
+              "minimum_factor": 0.8698,
+              "maximum_factor": 0.9345,
+              "sample": 199,
+              "boom_probability": 0.2864,
+              "bust_probability": 0.5176
+            },
+            {
+              "minimum_factor": 0.9354,
+              "maximum_factor": 1.0093,
+              "sample": 199,
+              "boom_probability": 0.2965,
+              "bust_probability": 0.5327
+            },
+            {
+              "minimum_factor": 1.0097,
+              "maximum_factor": 1.3083,
+              "sample": 199,
+              "boom_probability": 0.3618,
+              "bust_probability": 0.4171
+            }
+          ]
+        },
+        {
+          "key": "mid",
+          "minimum_baseline": 5.7533,
+          "maximum_baseline": 11.3435,
+          "sample": 994,
+          "uncertainty": {
+            "p10": 0.18,
+            "p25": 0.4365,
+            "p50": 0.8662,
+            "p75": 1.4234,
+            "p90": 2.1183
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.8941,
+              "sample": 198,
+              "boom_probability": 0.1616,
+              "bust_probability": 0.6061
+            },
+            {
+              "minimum_factor": 0.8942,
+              "maximum_factor": 0.9765,
+              "sample": 199,
+              "boom_probability": 0.2161,
+              "bust_probability": 0.4673
+            },
+            {
+              "minimum_factor": 0.9767,
+              "maximum_factor": 1.0467,
+              "sample": 199,
+              "boom_probability": 0.3015,
+              "bust_probability": 0.3869
+            },
+            {
+              "minimum_factor": 1.047,
+              "maximum_factor": 1.1387,
+              "sample": 199,
+              "boom_probability": 0.3719,
+              "bust_probability": 0.3065
+            },
+            {
+              "minimum_factor": 1.1392,
+              "maximum_factor": 1.3375,
+              "sample": 199,
+              "boom_probability": 0.5025,
+              "bust_probability": 0.191
+            }
+          ]
+        },
+        {
+          "key": "high",
+          "minimum_baseline": 11.3435,
+          "maximum_baseline": null,
+          "sample": 995,
+          "uncertainty": {
+            "p10": 0.3759,
+            "p25": 0.6173,
+            "p50": 0.9284,
+            "p75": 1.3052,
+            "p90": 1.6804
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.9714,
+              "sample": 199,
+              "boom_probability": 0.2312,
+              "bust_probability": 0.3467
+            },
+            {
+              "minimum_factor": 0.9717,
+              "maximum_factor": 1.0288,
+              "sample": 199,
+              "boom_probability": 0.2563,
+              "bust_probability": 0.3216
+            },
+            {
+              "minimum_factor": 1.0288,
+              "maximum_factor": 1.0801,
+              "sample": 199,
+              "boom_probability": 0.2714,
+              "bust_probability": 0.3116
+            },
+            {
+              "minimum_factor": 1.0803,
+              "maximum_factor": 1.1348,
+              "sample": 199,
+              "boom_probability": 0.3166,
+              "bust_probability": 0.2814
+            },
+            {
+              "minimum_factor": 1.135,
+              "maximum_factor": 1.3375,
+              "sample": 199,
+              "boom_probability": 0.3518,
+              "bust_probability": 0.2261
+            }
+          ]
+        }
+      ]
+    },
+    "WR": {
+      "training_seasons": [
+        2023
+      ],
+      "tuning_season": 2024,
+      "validation_season": 2025,
+      "final_fit_seasons": [
+        2023,
+        2024,
+        2025
+      ],
+      "training_sample": 1658,
+      "tuning_sample": 1945,
+      "validation_sample": 2204,
+      "final_sample": 5807,
+      "selected_model": "incumbent",
+      "tuned_challenger": "ridge",
+      "tuned_feature_set": "incumbent_compatible",
+      "research_winner": {
+        "model_type": "ridge",
+        "feature_set": "incumbent_compatible",
+        "lambda": 300,
+        "strength": 1,
+        "tuning_metrics": {
+          "sample": 1945,
+          "mae": 4.585,
+          "rmse": 6.439,
+          "bias": -0.573,
+          "rank_correlation": 0.6669,
+          "within_3": 0.4859,
+          "within_5": 0.6828
+        },
+        "deployment_eligible": true
+      },
+      "lambda": 300,
+      "application_strength": 0.75,
+      "tuning_baseline": {
+        "sample": 1945,
+        "mae": 4.735,
+        "rmse": 6.557,
+        "bias": -0.485,
+        "rank_correlation": 0.6444,
+        "within_3": 0.4401,
+        "within_5": 0.6674
+      },
+      "tuning_challenger": {
+        "sample": 1945,
+        "mae": 4.585,
+        "rmse": 6.439,
+        "bias": -0.573,
+        "rank_correlation": 0.6669,
+        "within_3": 0.4859,
+        "within_5": 0.6828
+      },
+      "holdout_baseline": {
+        "sample": 2204,
+        "mae": 4.477,
+        "rmse": 6.041,
+        "bias": 0.078,
+        "rank_correlation": 0.6287,
+        "within_3": 0.4732,
+        "within_5": 0.6838
+      },
+      "holdout_incumbent": {
+        "sample": 2206,
+        "mae": 4.429,
+        "rmse": 6.033,
+        "bias": 0.197,
+        "rank_correlation": 0.641,
+        "within_3": 0.4796,
+        "within_5": 0.6813
+      },
+      "holdout_challenger": {
+        "sample": 2204,
+        "mae": 4.429,
+        "rmse": 6.065,
+        "bias": 0.222,
+        "rank_correlation": 0.6421,
+        "within_3": 0.4859,
+        "within_5": 0.6792
+      },
+      "holdout_trained": {
+        "sample": 2206,
+        "mae": 4.429,
+        "rmse": 6.033,
+        "bias": 0.197,
+        "rank_correlation": 0.641,
+        "within_3": 0.4796,
+        "within_5": 0.6813
+      },
+      "holdout_mae_improvement": 0.048,
+      "promotion": {
+        "promoted": false,
+        "rule": "Lower 2025 MAE than incumbent by at least 0.01, improve 2025 RMSE by at least 0.001, and lower MAE than the neutral baseline. Live release audits additionally reject unstable forecast distributions.",
+        "mae_vs_incumbent": 0,
+        "rmse_vs_incumbent": -0.032
+      },
+      "candidate_leaderboard": [
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.585,
+            "rmse": 6.439,
+            "bias": -0.573,
+            "rank_correlation": 0.6669,
+            "within_3": 0.4859,
+            "within_5": 0.6828
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 100,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.589,
+            "rmse": 6.436,
+            "bias": -0.533,
+            "rank_correlation": 0.6663,
+            "within_3": 0.4859,
+            "within_5": 0.6797
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 30,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.591,
+            "rmse": 6.435,
+            "bias": -0.517,
+            "rank_correlation": 0.6659,
+            "within_3": 0.4848,
+            "within_5": 0.6781
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 10,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.592,
+            "rmse": 6.435,
+            "bias": -0.512,
+            "rank_correlation": 0.6657,
+            "within_3": 0.4864,
+            "within_5": 0.6776
+          }
+        },
+        {
+          "model_type": "boosted_stumps",
+          "feature_set": "expanded",
+          "rounds": 80,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.599,
+            "rmse": 6.452,
+            "bias": -0.624,
+            "rank_correlation": 0.6637,
+            "within_3": 0.4905,
+            "within_5": 0.6792
+          }
+        },
+        {
+          "model_type": "boosted_stumps",
+          "feature_set": "expanded",
+          "rounds": 60,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.6,
+            "rmse": 6.457,
+            "bias": -0.67,
+            "rank_correlation": 0.6638,
+            "within_3": 0.4864,
+            "within_5": 0.6787
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "opportunity",
+          "lambda": 10,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.601,
+            "rmse": 6.451,
+            "bias": -0.418,
+            "rank_correlation": 0.667,
+            "within_3": 0.4905,
+            "within_5": 0.6812
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "opportunity",
+          "lambda": 30,
+          "strength": 1,
+          "metrics": {
+            "sample": 1945,
+            "mae": 4.603,
+            "rmse": 6.452,
+            "bias": -0.406,
+            "rank_correlation": 0.6672,
+            "within_3": 0.4895,
+            "within_5": 0.6797
+          }
+        }
+      ],
+      "model_type": "ridge",
+      "intercept": -0.05869136,
+      "features": {
+        "recent_form_delta": {
+          "mean": -0.07072032,
+          "scale": 0.47270061,
+          "coefficient": 0.05323584
+        },
+        "snap_share": {
+          "mean": 0.54782181,
+          "scale": 0.24749517,
+          "coefficient": 0.08110672
+        },
+        "snap_trend": {
+          "mean": 0.01599159,
+          "scale": 0.16908548,
+          "coefficient": 0.10076338
+        },
+        "opportunity_share": {
+          "mean": 0.11339194,
+          "scale": 0.0937387,
+          "coefficient": 0.02862075
+        },
+        "opportunity_trend": {
+          "mean": -0.01981253,
+          "scale": 0.06341804,
+          "coefficient": 0.0207254
+        },
+        "red_zone_share": {
+          "mean": 0.06778661,
+          "scale": 0.06776975,
+          "coefficient": -0.0295775
+        },
+        "air_yard_share": {
+          "mean": 0.24036336,
+          "scale": 0.21447888,
+          "coefficient": 0.00965307
+        },
+        "team_pace_delta": {
+          "mean": 0.00167629,
+          "scale": 0.03684901,
+          "coefficient": -0.01277368
+        },
+        "home": {
+          "mean": 0.49827705,
+          "scale": 0.49999703,
+          "coefficient": 0.00307996
+        },
+        "defense_points_delta": {
+          "mean": 0.00314578,
+          "scale": 0.13044291,
+          "coefficient": -0.01335576
+        },
+        "defense_volume_delta": {
+          "mean": 0.00324078,
+          "scale": 0.13010397,
+          "coefficient": 0.00286809
+        },
+        "personal_delta": {
+          "mean": -0.00046078,
+          "scale": 0.02087657,
+          "coefficient": -0.02581507
+        },
+        "history_reliability": {
+          "mean": 0.75720132,
+          "scale": 0.13803573,
+          "coefficient": 0.01768105
+        }
+      },
+      "uncertainty": {
+        "p10": 0,
+        "p25": 0.1868,
+        "p50": 0.7528,
+        "p75": 1.4175,
+        "p90": 2.3035
+      },
+      "probability_bins": [
+        {
+          "minimum_factor": 0.7375,
+          "maximum_factor": 0.8163,
+          "sample": 1161,
+          "boom_probability": 0.1774,
+          "bust_probability": 0.696
+        },
+        {
+          "minimum_factor": 0.8164,
+          "maximum_factor": 0.9325,
+          "sample": 1161,
+          "boom_probability": 0.2343,
+          "bust_probability": 0.5745
+        },
+        {
+          "minimum_factor": 0.9325,
+          "maximum_factor": 1.0133,
+          "sample": 1162,
+          "boom_probability": 0.3124,
+          "bust_probability": 0.4251
+        },
+        {
+          "minimum_factor": 1.0135,
+          "maximum_factor": 1.0788,
+          "sample": 1161,
+          "boom_probability": 0.3187,
+          "bust_probability": 0.379
+        },
+        {
+          "minimum_factor": 1.0788,
+          "maximum_factor": 1.3375,
+          "sample": 1162,
+          "boom_probability": 0.3761,
+          "bust_probability": 0.3201
+        }
+      ],
+      "baseline_tiers": [
+        {
+          "key": "low",
+          "minimum_baseline": 0,
+          "maximum_baseline": 4.2,
+          "sample": 1936,
+          "uncertainty": {
+            "p10": 0,
+            "p25": 0,
+            "p50": 0.292,
+            "p75": 1.4108,
+            "p90": 3.2308
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.7461,
+              "sample": 387,
+              "boom_probability": 0.155,
+              "bust_probability": 0.7674
+            },
+            {
+              "minimum_factor": 0.7463,
+              "maximum_factor": 0.7999,
+              "sample": 387,
+              "boom_probability": 0.2119,
+              "bust_probability": 0.6615
+            },
+            {
+              "minimum_factor": 0.7999,
+              "maximum_factor": 0.8691,
+              "sample": 387,
+              "boom_probability": 0.2016,
+              "bust_probability": 0.646
+            },
+            {
+              "minimum_factor": 0.8695,
+              "maximum_factor": 0.9602,
+              "sample": 387,
+              "boom_probability": 0.2972,
+              "bust_probability": 0.5762
+            },
+            {
+              "minimum_factor": 0.9604,
+              "maximum_factor": 1.311,
+              "sample": 388,
+              "boom_probability": 0.3582,
+              "bust_probability": 0.4665
+            }
+          ]
+        },
+        {
+          "key": "mid",
+          "minimum_baseline": 4.2,
+          "maximum_baseline": 8.6808,
+          "sample": 1935,
+          "uncertainty": {
+            "p10": 0,
+            "p25": 0.3007,
+            "p50": 0.7544,
+            "p75": 1.4769,
+            "p90": 2.3943
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.8547,
+              "sample": 387,
+              "boom_probability": 0.1421,
+              "bust_probability": 0.6744
+            },
+            {
+              "minimum_factor": 0.8547,
+              "maximum_factor": 0.9483,
+              "sample": 387,
+              "boom_probability": 0.2481,
+              "bust_probability": 0.5375
+            },
+            {
+              "minimum_factor": 0.9487,
+              "maximum_factor": 1.0166,
+              "sample": 387,
+              "boom_probability": 0.3307,
+              "bust_probability": 0.4341
+            },
+            {
+              "minimum_factor": 1.0168,
+              "maximum_factor": 1.0894,
+              "sample": 387,
+              "boom_probability": 0.3488,
+              "bust_probability": 0.4367
+            },
+            {
+              "minimum_factor": 1.0895,
+              "maximum_factor": 1.3375,
+              "sample": 387,
+              "boom_probability": 0.4212,
+              "bust_probability": 0.3152
+            }
+          ]
+        },
+        {
+          "key": "high",
+          "minimum_baseline": 8.6808,
+          "maximum_baseline": null,
+          "sample": 1936,
+          "uncertainty": {
+            "p10": 0.284,
+            "p25": 0.552,
+            "p50": 0.9288,
+            "p75": 1.3712,
+            "p90": 1.8682
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.7375,
+              "maximum_factor": 0.9773,
+              "sample": 387,
+              "boom_probability": 0.2713,
+              "bust_probability": 0.3618
+            },
+            {
+              "minimum_factor": 0.9778,
+              "maximum_factor": 1.0272,
+              "sample": 387,
+              "boom_probability": 0.2868,
+              "bust_probability": 0.3902
+            },
+            {
+              "minimum_factor": 1.0273,
+              "maximum_factor": 1.0609,
+              "sample": 387,
+              "boom_probability": 0.3256,
+              "bust_probability": 0.2997
+            },
+            {
+              "minimum_factor": 1.0609,
+              "maximum_factor": 1.1041,
+              "sample": 387,
+              "boom_probability": 0.3152,
+              "bust_probability": 0.2842
+            },
+            {
+              "minimum_factor": 1.1042,
+              "maximum_factor": 1.2664,
+              "sample": 388,
+              "boom_probability": 0.3428,
+              "bust_probability": 0.3325
+            }
+          ]
+        }
+      ]
+    },
+    "TE": {
+      "training_seasons": [
+        2023
+      ],
+      "tuning_season": 2024,
+      "validation_season": 2025,
+      "final_fit_seasons": [
+        2023,
+        2024,
+        2025
+      ],
+      "training_sample": 997,
+      "tuning_sample": 1120,
+      "validation_sample": 1195,
+      "final_sample": 3312,
+      "selected_model": "incumbent",
+      "tuned_challenger": "ridge",
+      "tuned_feature_set": "incumbent_compatible",
+      "research_winner": {
+        "model_type": "ridge",
+        "feature_set": "incumbent_compatible",
+        "lambda": 300,
+        "strength": 1,
+        "tuning_metrics": {
+          "sample": 1120,
+          "mae": 3.325,
+          "rmse": 4.671,
+          "bias": -0.13,
+          "rank_correlation": 0.6149,
+          "within_3": 0.6161,
+          "within_5": 0.7946
+        },
+        "deployment_eligible": true
+      },
+      "lambda": 300,
+      "application_strength": 1,
+      "tuning_baseline": {
+        "sample": 1120,
+        "mae": 3.418,
+        "rmse": 4.746,
+        "bias": -0.33,
+        "rank_correlation": 0.5943,
+        "within_3": 0.6125,
+        "within_5": 0.7857
+      },
+      "tuning_challenger": {
+        "sample": 1120,
+        "mae": 3.325,
+        "rmse": 4.671,
+        "bias": -0.13,
+        "rank_correlation": 0.6149,
+        "within_3": 0.6161,
+        "within_5": 0.7946
+      },
+      "holdout_baseline": {
+        "sample": 1195,
+        "mae": 3.575,
+        "rmse": 5.151,
+        "bias": -0.548,
+        "rank_correlation": 0.5951,
+        "within_3": 0.605,
+        "within_5": 0.769
+      },
+      "holdout_incumbent": {
+        "sample": 1204,
+        "mae": 3.487,
+        "rmse": 5.051,
+        "bias": -0.524,
+        "rank_correlation": 0.6272,
+        "within_3": 0.6047,
+        "within_5": 0.7807
+      },
+      "holdout_challenger": {
+        "sample": 1195,
+        "mae": 3.516,
+        "rmse": 5.031,
+        "bias": -0.298,
+        "rank_correlation": 0.6234,
+        "within_3": 0.5992,
+        "within_5": 0.7757
+      },
+      "holdout_trained": {
+        "sample": 1204,
+        "mae": 3.487,
+        "rmse": 5.051,
+        "bias": -0.524,
+        "rank_correlation": 0.6272,
+        "within_3": 0.6047,
+        "within_5": 0.7807
+      },
+      "holdout_mae_improvement": 0.088,
+      "promotion": {
+        "promoted": false,
+        "rule": "Lower 2025 MAE than incumbent by at least 0.01, improve 2025 RMSE by at least 0.001, and lower MAE than the neutral baseline. Live release audits additionally reject unstable forecast distributions.",
+        "mae_vs_incumbent": -0.029,
+        "rmse_vs_incumbent": 0.02
+      },
+      "candidate_leaderboard": [
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.325,
+            "rmse": 4.671,
+            "bias": -0.13,
+            "rank_correlation": 0.6149,
+            "within_3": 0.6161,
+            "within_5": 0.7946
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 100,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.326,
+            "rmse": 4.667,
+            "bias": -0.119,
+            "rank_correlation": 0.6149,
+            "within_3": 0.6116,
+            "within_5": 0.792
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 10,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.327,
+            "rmse": 4.661,
+            "bias": -0.113,
+            "rank_correlation": 0.614,
+            "within_3": 0.6062,
+            "within_5": 0.7955
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 30,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.327,
+            "rmse": 4.664,
+            "bias": -0.115,
+            "rank_correlation": 0.6144,
+            "within_3": 0.608,
+            "within_5": 0.7955
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "opportunity",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.328,
+            "rmse": 4.685,
+            "bias": -0.102,
+            "rank_correlation": 0.6165,
+            "within_3": 0.6241,
+            "within_5": 0.7955
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.33,
+            "rmse": 4.689,
+            "bias": -0.107,
+            "rank_correlation": 0.6157,
+            "within_3": 0.6232,
+            "within_5": 0.7964
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 10,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.331,
+            "rmse": 4.654,
+            "bias": -0.167,
+            "rank_correlation": 0.6129,
+            "within_3": 0.6143,
+            "within_5": 0.7911
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "incumbent_compatible",
+          "lambda": 30,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 1120,
+            "mae": 3.331,
+            "rmse": 4.657,
+            "bias": -0.169,
+            "rank_correlation": 0.613,
+            "within_3": 0.6179,
+            "within_5": 0.792
+          }
+        }
+      ],
+      "model_type": "ridge",
+      "intercept": -0.01801254,
+      "features": {
+        "baseline_points": {
+          "mean": 4.76123466,
+          "scale": 3.42302655,
+          "coefficient": -0.15221367
+        },
+        "log_baseline": {
+          "mean": 1.58784435,
+          "scale": 0.56618616,
+          "coefficient": 0.04191763
+        },
+        "week_fraction": {
+          "mean": 0.53670814,
+          "scale": 0.29035776,
+          "coefficient": -0.06775777
+        },
+        "early_season": {
+          "mean": 0.21914509,
+          "scale": 0.41366716,
+          "coefficient": -0.02779434
+        },
+        "recent_form_delta": {
+          "mean": 0.00814639,
+          "scale": 0.5433315,
+          "coefficient": 0.04492848
+        },
+        "snap_share": {
+          "mean": 0.50834998,
+          "scale": 0.20886013,
+          "coefficient": 0.20799026
+        },
+        "snap_trend": {
+          "mean": 0.01084031,
+          "scale": 0.15112849,
+          "coefficient": 0.15354864
+        },
+        "opportunity_share": {
+          "mean": 0.0773832,
+          "scale": 0.06972385,
+          "coefficient": 0.01920167
+        },
+        "opportunity_trend": {
+          "mean": -0.0136496,
+          "scale": 0.05267365,
+          "coefficient": 0.02041209
+        },
+        "red_zone_share": {
+          "mean": 0.04779952,
+          "scale": 0.04369105,
+          "coefficient": -0.01448724
+        },
+        "air_yard_share": {
+          "mean": 0.14422007,
+          "scale": 0.14618025,
+          "coefficient": 0.03041914
+        },
+        "team_pace_delta": {
+          "mean": -0.00098643,
+          "scale": 0.03452378,
+          "coefficient": 0.01046952
+        },
+        "home": {
+          "mean": 0.50361228,
+          "scale": 0.49998695,
+          "coefficient": 0.00651482
+        },
+        "defense_points_delta": {
+          "mean": -0.00182411,
+          "scale": 0.14457934,
+          "coefficient": 0.03538222
+        },
+        "defense_volume_delta": {
+          "mean": -0.00188533,
+          "scale": 0.14279171,
+          "coefficient": -0.04012719
+        },
+        "personal_delta": {
+          "mean": -0.00091119,
+          "scale": 0.02523091,
+          "coefficient": -0.0129303
+        },
+        "history_reliability": {
+          "mean": 0.79161321,
+          "scale": 0.12255513,
+          "coefficient": -0.03594958
+        },
+        "defense_reliability": {
+          "mean": 0.83127416,
+          "scale": 0.01934167,
+          "coefficient": 0.12475714
+        },
+        "personal_reliability": {
+          "mean": 0.18761551,
+          "scale": 0.20079238,
+          "coefficient": 0.00268979
+        },
+        "protection_pressure_rate": {
+          "mean": 0.19808698,
+          "scale": 0.02785389,
+          "coefficient": 0.09379408
+        },
+        "protection_sack_rate": {
+          "mean": 0.06217747,
+          "scale": 0.01483589,
+          "coefficient": 0.00122203
+        },
+        "opponent_pressure_rate": {
+          "mean": 0.21428441,
+          "scale": 0.02657631,
+          "coefficient": -0.09085335
+        },
+        "opponent_sack_rate": {
+          "mean": 0.06314677,
+          "scale": 0.00992672,
+          "coefficient": -0.0192214
+        },
+        "pressure_mismatch": {
+          "mean": 0.01626615,
+          "scale": 0.03840608,
+          "coefficient": 0.0861294
+        },
+        "opponent_blitz_rate": {
+          "mean": 0.33450999,
+          "scale": 0.10837915,
+          "coefficient": 0.01250767
+        },
+        "ol_stability": {
+          "mean": 0.97019218,
+          "scale": 0.01248163,
+          "coefficient": -0.02368691
+        },
+        "ol_continuity": {
+          "mean": 0.88760437,
+          "scale": 0.04195261,
+          "coefficient": 0.03951548
+        },
+        "time_to_throw": {
+          "mean": 2.70022537,
+          "scale": 0.1216116,
+          "coefficient": -0.02545278
+        },
+        "offense_motion_rate": {
+          "mean": 0.32512373,
+          "scale": 0.14604355,
+          "coefficient": 0.01622373
+        },
+        "offense_play_action_rate": {
+          "mean": 0.09284284,
+          "scale": 0.03797038,
+          "coefficient": -0.04109242
+        },
+        "offense_screen_rate": {
+          "mean": 0.03898691,
+          "scale": 0.01537867,
+          "coefficient": -0.01846088
+        },
+        "offense_rpo_rate": {
+          "mean": 0.03441611,
+          "scale": 0.02124532,
+          "coefficient": 0.00769433
+        },
+        "opponent_man_rate": {
+          "mean": 0.39764301,
+          "scale": 0.08316793,
+          "coefficient": 0.00792514
+        },
+        "opponent_zone_rate": {
+          "mean": 0.602357,
+          "scale": 0.08316792,
+          "coefficient": -0.00633149
+        },
+        "advanced_reliability": {
+          "mean": 0.75731432,
+          "scale": 0.20942374,
+          "coefficient": -0.05131492
+        }
+      },
+      "uncertainty": {
+        "p10": 0,
+        "p25": 0,
+        "p50": 0.7441,
+        "p75": 1.5011,
+        "p90": 2.5594
+      },
+      "probability_bins": [
+        {
+          "minimum_factor": 0.65,
+          "maximum_factor": 0.7379,
+          "sample": 662,
+          "boom_probability": 0.1662,
+          "bust_probability": 0.6873
+        },
+        {
+          "minimum_factor": 0.7379,
+          "maximum_factor": 0.9027,
+          "sample": 662,
+          "boom_probability": 0.2764,
+          "bust_probability": 0.5347
+        },
+        {
+          "minimum_factor": 0.9028,
+          "maximum_factor": 1.0363,
+          "sample": 663,
+          "boom_probability": 0.2956,
+          "bust_probability": 0.5008
+        },
+        {
+          "minimum_factor": 1.0363,
+          "maximum_factor": 1.1873,
+          "sample": 662,
+          "boom_probability": 0.3792,
+          "bust_probability": 0.3852
+        },
+        {
+          "minimum_factor": 1.1875,
+          "maximum_factor": 1.45,
+          "sample": 663,
+          "boom_probability": 0.4585,
+          "bust_probability": 0.2941
+        }
+      ],
+      "baseline_tiers": [
+        {
+          "key": "low",
+          "minimum_baseline": 0,
+          "maximum_baseline": 2.4464,
+          "sample": 1104,
+          "uncertainty": {
+            "p10": 0,
+            "p25": 0,
+            "p50": 0,
+            "p75": 1.6682,
+            "p90": 3.6952
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.65,
+              "sample": 220,
+              "boom_probability": 0.1455,
+              "bust_probability": 0.75
+            },
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.7715,
+              "sample": 221,
+              "boom_probability": 0.2489,
+              "bust_probability": 0.629
+            },
+            {
+              "minimum_factor": 0.7717,
+              "maximum_factor": 0.8975,
+              "sample": 221,
+              "boom_probability": 0.3122,
+              "bust_probability": 0.5928
+            },
+            {
+              "minimum_factor": 0.8975,
+              "maximum_factor": 1.0377,
+              "sample": 221,
+              "boom_probability": 0.3303,
+              "bust_probability": 0.5339
+            },
+            {
+              "minimum_factor": 1.0383,
+              "maximum_factor": 1.45,
+              "sample": 221,
+              "boom_probability": 0.4615,
+              "bust_probability": 0.4027
+            }
+          ]
+        },
+        {
+          "key": "mid",
+          "minimum_baseline": 2.4464,
+          "maximum_baseline": 5.6056,
+          "sample": 1104,
+          "uncertainty": {
+            "p10": 0,
+            "p25": 0,
+            "p50": 0.7234,
+            "p75": 1.5629,
+            "p90": 2.6686
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.7647,
+              "sample": 220,
+              "boom_probability": 0.15,
+              "bust_probability": 0.7182
+            },
+            {
+              "minimum_factor": 0.7686,
+              "maximum_factor": 0.932,
+              "sample": 221,
+              "boom_probability": 0.3032,
+              "bust_probability": 0.552
+            },
+            {
+              "minimum_factor": 0.9327,
+              "maximum_factor": 1.0496,
+              "sample": 221,
+              "boom_probability": 0.2896,
+              "bust_probability": 0.543
+            },
+            {
+              "minimum_factor": 1.05,
+              "maximum_factor": 1.2138,
+              "sample": 221,
+              "boom_probability": 0.3801,
+              "bust_probability": 0.4163
+            },
+            {
+              "minimum_factor": 1.2143,
+              "maximum_factor": 1.45,
+              "sample": 221,
+              "boom_probability": 0.5113,
+              "bust_probability": 0.2851
+            }
+          ]
+        },
+        {
+          "key": "high",
+          "minimum_baseline": 5.6056,
+          "maximum_baseline": null,
+          "sample": 1104,
+          "uncertainty": {
+            "p10": 0.2334,
+            "p25": 0.4978,
+            "p50": 0.8982,
+            "p75": 1.3915,
+            "p90": 2.0016
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.65,
+              "maximum_factor": 0.8685,
+              "sample": 220,
+              "boom_probability": 0.1864,
+              "bust_probability": 0.4227
+            },
+            {
+              "minimum_factor": 0.8686,
+              "maximum_factor": 1.0262,
+              "sample": 221,
+              "boom_probability": 0.2624,
+              "bust_probability": 0.448
+            },
+            {
+              "minimum_factor": 1.0265,
+              "maximum_factor": 1.1319,
+              "sample": 221,
+              "boom_probability": 0.3213,
+              "bust_probability": 0.3665
+            },
+            {
+              "minimum_factor": 1.1319,
+              "maximum_factor": 1.2511,
+              "sample": 221,
+              "boom_probability": 0.371,
+              "bust_probability": 0.2896
+            },
+            {
+              "minimum_factor": 1.2524,
+              "maximum_factor": 1.45,
+              "sample": 221,
+              "boom_probability": 0.4525,
+              "bust_probability": 0.2579
+            }
+          ]
+        }
+      ]
+    },
+    "K": {
+      "training_seasons": [
+        2023
+      ],
+      "tuning_season": 2024,
+      "validation_season": 2025,
+      "final_fit_seasons": [
+        2023,
+        2024,
+        2025
+      ],
+      "training_sample": 325,
+      "tuning_sample": 364,
+      "validation_sample": 422,
+      "final_sample": 1111,
+      "selected_model": "ridge",
+      "tuned_challenger": "ridge",
+      "tuned_feature_set": "role_environment",
+      "research_winner": {
+        "model_type": "ridge",
+        "feature_set": "role_environment",
+        "lambda": 30,
+        "strength": 0.5,
+        "tuning_metrics": {
+          "sample": 364,
+          "mae": 3.728,
+          "rmse": 4.847,
+          "bias": -0.427,
+          "rank_correlation": 0.1304,
+          "within_3": 0.4698,
+          "within_5": 0.739
+        },
+        "deployment_eligible": true
+      },
+      "lambda": 30,
+      "application_strength": 0.5,
+      "tuning_baseline": {
+        "sample": 364,
+        "mae": 3.795,
+        "rmse": 4.898,
+        "bias": -0.366,
+        "rank_correlation": 0.0962,
+        "within_3": 0.4725,
+        "within_5": 0.7143
+      },
+      "tuning_challenger": {
+        "sample": 364,
+        "mae": 3.728,
+        "rmse": 4.847,
+        "bias": -0.427,
+        "rank_correlation": 0.1304,
+        "within_3": 0.4698,
+        "within_5": 0.739
+      },
+      "holdout_baseline": {
+        "sample": 422,
+        "mae": 3.852,
+        "rmse": 4.821,
+        "bias": -0.44,
+        "rank_correlation": 0.0596,
+        "within_3": 0.4526,
+        "within_5": 0.7062
+      },
+      "holdout_incumbent": {
+        "sample": 422,
+        "mae": 3.839,
+        "rmse": 4.793,
+        "bias": -0.165,
+        "rank_correlation": 0.0757,
+        "within_3": 0.4502,
+        "within_5": 0.7109
+      },
+      "holdout_challenger": {
+        "sample": 422,
+        "mae": 3.814,
+        "rmse": 4.785,
+        "bias": -0.443,
+        "rank_correlation": 0.0781,
+        "within_3": 0.4479,
+        "within_5": 0.7109
+      },
+      "holdout_trained": {
+        "sample": 422,
+        "mae": 3.814,
+        "rmse": 4.785,
+        "bias": -0.443,
+        "rank_correlation": 0.0781,
+        "within_3": 0.4479,
+        "within_5": 0.7109
+      },
+      "holdout_mae_improvement": 0.038,
+      "promotion": {
+        "promoted": true,
+        "rule": "Lower 2025 MAE than incumbent by at least 0.01, improve 2025 RMSE by at least 0.001, and lower MAE than the neutral baseline. Live release audits additionally reject unstable forecast distributions.",
+        "mae_vs_incumbent": 0.025,
+        "rmse_vs_incumbent": 0.008
+      },
+      "candidate_leaderboard": [
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 30,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.728,
+            "rmse": 4.847,
+            "bias": -0.427,
+            "rank_correlation": 0.1304,
+            "within_3": 0.4698,
+            "within_5": 0.739
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 100,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.729,
+            "rmse": 4.844,
+            "bias": -0.417,
+            "rank_correlation": 0.1337,
+            "within_3": 0.467,
+            "within_5": 0.7418
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.73,
+            "rmse": 4.84,
+            "bias": -0.391,
+            "rank_correlation": 0.1339,
+            "within_3": 0.4615,
+            "within_5": 0.7363
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 10,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.73,
+            "rmse": 4.85,
+            "bias": -0.428,
+            "rank_correlation": 0.1266,
+            "within_3": 0.4643,
+            "within_5": 0.7363
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 100,
+          "strength": 0.75,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.734,
+            "rmse": 4.846,
+            "bias": -0.442,
+            "rank_correlation": 0.125,
+            "within_3": 0.467,
+            "within_5": 0.7308
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 1,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.736,
+            "rmse": 4.842,
+            "bias": -0.4,
+            "rank_correlation": 0.1226,
+            "within_3": 0.467,
+            "within_5": 0.7308
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "expanded",
+          "lambda": 300,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.736,
+            "rmse": 4.869,
+            "bias": -0.629,
+            "rank_correlation": 0.1551,
+            "within_3": 0.4588,
+            "within_5": 0.7418
+          }
+        },
+        {
+          "model_type": "ridge",
+          "feature_set": "role_environment",
+          "lambda": 300,
+          "strength": 0.5,
+          "metrics": {
+            "sample": 364,
+            "mae": 3.737,
+            "rmse": 4.846,
+            "bias": -0.383,
+            "rank_correlation": 0.1275,
+            "within_3": 0.4615,
+            "within_5": 0.7418
+          }
+        }
+      ],
+      "model_type": "ridge",
+      "intercept": 0.05180732,
+      "features": {
+        "baseline_points": {
+          "mean": 8.04817323,
+          "scale": 1.03555384,
+          "coefficient": 0.01607823
+        },
+        "log_baseline": {
+          "mean": 2.19601901,
+          "scale": 0.11463555,
+          "coefficient": -0.11632459
+        },
+        "week_fraction": {
+          "mean": 0.54175418,
+          "scale": 0.29271013,
+          "coefficient": -0.00087637
+        },
+        "early_season": {
+          "mean": 0.21782178,
+          "scale": 0.41276562,
+          "coefficient": 0.0231673
+        },
+        "recent_form_delta": {
+          "mean": 0.02100448,
+          "scale": 0.28689377,
+          "coefficient": -0.0135382
+        },
+        "snap_share": {
+          "mean": 0.00003685,
+          "scale": 0.00019868,
+          "coefficient": 0.02952496
+        },
+        "snap_trend": {
+          "mean": -0.00002733,
+          "scale": 0.00039939,
+          "coefficient": 0.01466894
+        },
+        "opportunity_share": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "opportunity_trend": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "red_zone_share": {
+          "mean": 0.00000786,
+          "scale": 0.00006415,
+          "coefficient": -0.01386333
+        },
+        "air_yard_share": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "target_share": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "target_share_trend": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "carry_share": {
+          "mean": 0.00000649,
+          "scale": 0.00010608,
+          "coefficient": -0.0054255
+        },
+        "carry_share_trend": {
+          "mean": 0.00004561,
+          "scale": 0.0007265,
+          "coefficient": 0.00335906
+        },
+        "weighted_opportunity_share": {
+          "mean": 0.00000294,
+          "scale": 0.00004809,
+          "coefficient": -0.0054231
+        },
+        "weighted_opportunity_trend": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "high_value_touch_rate": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "two_minute_opportunity_rate": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "third_down_opportunity_rate": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "opportunity_volatility": {
+          "mean": 0.00000865,
+          "scale": 0.00013956,
+          "coefficient": -0.00078107
+        },
+        "team_pace_delta": {
+          "mean": 0.00206325,
+          "scale": 0.03278947,
+          "coefficient": -0.02751423
+        },
+        "home": {
+          "mean": 0.50045005,
+          "scale": 0.4999998,
+          "coefficient": 0.02205498
+        },
+        "defense_points_delta": {
+          "mean": 0.00021955,
+          "scale": 0.13286001,
+          "coefficient": 0.01973047
+        },
+        "defense_volume_delta": {
+          "mean": 0.00010693,
+          "scale": 0.10095713,
+          "coefficient": 0.00550632
+        },
+        "personal_delta": {
+          "mean": -0.00011048,
+          "scale": 0.01840487,
+          "coefficient": -0.027834
+        },
+        "history_reliability": {
+          "mean": 0.80538399,
+          "scale": 0.11888452,
+          "coefficient": 0.00502638
+        },
+        "defense_reliability": {
+          "mean": 0.74791259,
+          "scale": 0.04574322,
+          "coefficient": -0.00406049
+        },
+        "personal_reliability": {
+          "mean": 0.20059577,
+          "scale": 0.20565989,
+          "coefficient": 0.01783714
+        },
+        "offense_neutral_pass_rate": {
+          "mean": 0.56842628,
+          "scale": 0.03892981,
+          "coefficient": 0.00398275
+        },
+        "offense_two_minute_rate": {
+          "mean": 0.11797397,
+          "scale": 0.01348561,
+          "coefficient": -0.01026044
+        },
+        "offense_third_down_success_rate": {
+          "mean": 0.39413961,
+          "scale": 0.04671669,
+          "coefficient": -0.03564686
+        },
+        "offense_play_volume_delta": {
+          "mean": -0.0302614,
+          "scale": 0.03221669,
+          "coefficient": 0.01840561
+        },
+        "market_implied_points_delta": {
+          "mean": -0.00960282,
+          "scale": 0.15595067,
+          "coefficient": 0.03401788
+        },
+        "market_spread_scaled": {
+          "mean": 0.03217195,
+          "scale": 0.59102931,
+          "coefficient": 0.0265261
+        },
+        "receiving_epa_per_target": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "rushing_epa_per_carry": {
+          "mean": 2.72466,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_cpoe": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_separation": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_yac_over_expected": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_ryoe_per_carry": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        },
+        "ngs_box_eight_rate": {
+          "mean": 0,
+          "scale": 1,
+          "coefficient": 0
+        }
+      },
+      "uncertainty": {
+        "p10": 0.3503,
+        "p25": 0.6041,
+        "p50": 0.9557,
+        "p75": 1.3618,
+        "p90": 1.8189
+      },
+      "probability_bins": [
+        {
+          "minimum_factor": 0.825,
+          "maximum_factor": 0.9768,
+          "sample": 222,
+          "boom_probability": 0.2072,
+          "bust_probability": 0.3739
+        },
+        {
+          "minimum_factor": 0.9768,
+          "maximum_factor": 1.0104,
+          "sample": 222,
+          "boom_probability": 0.2387,
+          "bust_probability": 0.3153
+        },
+        {
+          "minimum_factor": 1.0104,
+          "maximum_factor": 1.0416,
+          "sample": 222,
+          "boom_probability": 0.2838,
+          "bust_probability": 0.3468
+        },
+        {
+          "minimum_factor": 1.0416,
+          "maximum_factor": 1.0756,
+          "sample": 222,
+          "boom_probability": 0.3378,
+          "bust_probability": 0.2613
+        },
+        {
+          "minimum_factor": 1.0759,
+          "maximum_factor": 1.225,
+          "sample": 223,
+          "boom_probability": 0.4439,
+          "bust_probability": 0.2152
+        }
+      ],
+      "baseline_tiers": [
+        {
+          "key": "low",
+          "minimum_baseline": 0,
+          "maximum_baseline": 7.6075,
+          "sample": 371,
+          "uncertainty": {
+            "p10": 0.3188,
+            "p25": 0.691,
+            "p50": 1.0861,
+            "p75": 1.5178,
+            "p90": 1.9878
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.936,
+              "maximum_factor": 1.0279,
+              "sample": 74,
+              "boom_probability": 0.3108,
+              "bust_probability": 0.3649
+            },
+            {
+              "minimum_factor": 1.0291,
+              "maximum_factor": 1.0525,
+              "sample": 74,
+              "boom_probability": 0.4054,
+              "bust_probability": 0.2297
+            },
+            {
+              "minimum_factor": 1.0525,
+              "maximum_factor": 1.078,
+              "sample": 74,
+              "boom_probability": 0.4189,
+              "bust_probability": 0.2297
+            },
+            {
+              "minimum_factor": 1.078,
+              "maximum_factor": 1.113,
+              "sample": 74,
+              "boom_probability": 0.4459,
+              "bust_probability": 0.2432
+            },
+            {
+              "minimum_factor": 1.1133,
+              "maximum_factor": 1.225,
+              "sample": 75,
+              "boom_probability": 0.5333,
+              "bust_probability": 0.1467
+            }
+          ]
+        },
+        {
+          "key": "mid",
+          "minimum_baseline": 7.6075,
+          "maximum_baseline": 8.3533,
+          "sample": 371,
+          "uncertainty": {
+            "p10": 0.2816,
+            "p25": 0.5106,
+            "p50": 0.8544,
+            "p75": 1.3027,
+            "p90": 1.6956
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.8869,
+              "maximum_factor": 0.9899,
+              "sample": 74,
+              "boom_probability": 0.2568,
+              "bust_probability": 0.3919
+            },
+            {
+              "minimum_factor": 0.9908,
+              "maximum_factor": 1.0128,
+              "sample": 74,
+              "boom_probability": 0.1757,
+              "bust_probability": 0.3919
+            },
+            {
+              "minimum_factor": 1.0131,
+              "maximum_factor": 1.0351,
+              "sample": 74,
+              "boom_probability": 0.2297,
+              "bust_probability": 0.4054
+            },
+            {
+              "minimum_factor": 1.0353,
+              "maximum_factor": 1.0655,
+              "sample": 74,
+              "boom_probability": 0.2432,
+              "bust_probability": 0.3784
+            },
+            {
+              "minimum_factor": 1.0677,
+              "maximum_factor": 1.1632,
+              "sample": 75,
+              "boom_probability": 0.3733,
+              "bust_probability": 0.2533
+            }
+          ]
+        },
+        {
+          "key": "high",
+          "minimum_baseline": 8.3533,
+          "maximum_baseline": null,
+          "sample": 371,
+          "uncertainty": {
+            "p10": 0.3911,
+            "p25": 0.6264,
+            "p50": 0.9403,
+            "p75": 1.2842,
+            "p90": 1.6758
+          },
+          "probability_bins": [
+            {
+              "minimum_factor": 0.825,
+              "maximum_factor": 0.938,
+              "sample": 74,
+              "boom_probability": 0.1351,
+              "bust_probability": 0.3919
+            },
+            {
+              "minimum_factor": 0.9384,
+              "maximum_factor": 0.9708,
+              "sample": 74,
+              "boom_probability": 0.2027,
+              "bust_probability": 0.3784
+            },
+            {
+              "minimum_factor": 0.971,
+              "maximum_factor": 0.9945,
+              "sample": 74,
+              "boom_probability": 0.2432,
+              "bust_probability": 0.3108
+            },
+            {
+              "minimum_factor": 0.995,
+              "maximum_factor": 1.0232,
+              "sample": 74,
+              "boom_probability": 0.2838,
+              "bust_probability": 0.2162
+            },
+            {
+              "minimum_factor": 1.024,
+              "maximum_factor": 1.1167,
+              "sample": 75,
+              "boom_probability": 0.28,
+              "bust_probability": 0.2133
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import Link from "next/link";
+import { useArsenalAccount } from "../../context/ArsenalAccountContext";
 
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), {
   ssr: false,
@@ -52,12 +53,33 @@ const TOOL_ICONS = {
 
 export default function HomeClient() {
   const { username, loadPortfolio, loading, error } = useSleeper();
+  const { account, isConnected, loginAccount } = useArsenalAccount();
   const [unameInput, setUnameInput] = useState("");
   const [yearInput, setYearInput] = useState(new Date().getFullYear());
+  const [accessMode, setAccessMode] = useState("portfolio");
+  const [accountName, setAccountName] = useState("");
+  const [accountPassword, setAccountPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountMessage, setAccountMessage] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     await loadPortfolio(unameInput, yearInput);
+  };
+  const handleAccountLogin = async (event) => {
+    event.preventDefault();
+    if (!accountName.trim() || !accountPassword) return;
+    setAccountLoading(true);
+    setAccountMessage("");
+    try {
+      await loginAccount(accountName.trim(), accountPassword);
+      setAccountPassword("");
+    } catch (failure) {
+      setAccountMessage(failure?.message || "Arsenal sign-in failed.");
+    } finally {
+      setAccountLoading(false);
+    }
   };
 
   const isLoggedIn = !!username;
@@ -212,42 +234,46 @@ export default function HomeClient() {
 
         {!isLoggedIn ? (
           <>
-            <form
-              onSubmit={handleLogin}
-              className="bg-gray-900 p-6 rounded-xl shadow-lg w-full max-w-md mb-10 animate-fadeIn"
-            >
-              <label className="block mb-2 font-semibold">Sleeper Username</label>
-              <input
-                type="text"
-                value={unameInput}
-                onChange={(e) => setUnameInput(e.target.value)}
-                required
-                className="w-full mb-4 px-4 py-2 text-black rounded-md"
-              />
-
-              <label className="block mb-2 font-semibold">Season Year</label>
-              <input
-                type="number"
-                value={yearInput}
-                onChange={(e) => setYearInput(e.target.value)}
-                className="w-full mb-4 px-4 py-2 text-black rounded-md"
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
-              >
-                {loading ? "Loading portfolio..." : "Load Sleeper Portfolio"}
-              </button>
-
-              {error && <p className="text-red-500 mt-4">{String(error)}</p>}
-
-              {/* Premium attribution without polluting SEO/H1 */}
-              <p className="mt-4 text-xs text-gray-400 text-center">
-                Created by <span className="text-gray-200 font-semibold">StickyPicky</span>
-              </p>
-            </form>
+            <section className="mb-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/95 shadow-2xl animate-fadeIn">
+              <div className="grid grid-cols-2 gap-2 border-b border-white/10 bg-black/15 p-2">
+                <button type="button" onClick={() => { setAccessMode("portfolio"); setAccountMessage(""); }} className={`min-h-12 rounded-xl px-2 text-xs font-black transition sm:text-sm ${accessMode === "portfolio" ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/40 hover:bg-white/[0.04]"}`}>Load Sleeper Portfolio</button>
+                <button type="button" onClick={() => { setAccessMode("account"); setAccountMessage(""); }} className={`min-h-12 rounded-xl px-2 text-xs font-black transition sm:text-sm ${accessMode === "account" ? "bg-violet-300/12 text-violet-100 ring-1 ring-violet-300/15" : "text-white/40 hover:bg-white/[0.04]"}`}>Arsenal Account</button>
+              </div>
+              <div className="p-5 sm:p-7">
+                {accessMode === "portfolio" ? (
+                  <form onSubmit={handleLogin}>
+                    <div className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-100/55">Free · public · read only</div>
+                    <h2 className="mt-1 text-2xl font-black text-white">Open any Sleeper portfolio</h2>
+                    <p className="mt-2 text-xs leading-5 text-white/40">No Sleeper password and no Arsenal account required. This loads public leagues and tools for the manager you enter.</p>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_130px]">
+                      <label className="text-[10px] font-bold text-white/42">Sleeper username<input type="text" value={unameInput} onChange={(event) => setUnameInput(event.target.value)} required autoFocus className="mt-1.5 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 text-sm text-white outline-none focus:border-cyan-300/35" /></label>
+                      <label className="text-[10px] font-bold text-white/42">Season<input type="number" value={yearInput} onChange={(event) => setYearInput(event.target.value)} className="mt-1.5 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 text-sm text-white outline-none focus:border-cyan-300/35" /></label>
+                    </div>
+                    <button type="submit" disabled={loading || !unameInput.trim()} className="mt-3 min-h-12 w-full rounded-2xl bg-cyan-300/12 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/18 disabled:opacity-35">{loading ? "Loading portfolio…" : "Load Sleeper portfolio"}</button>
+                    {error ? <p className="mt-3 rounded-xl border border-rose-300/12 bg-rose-300/[0.05] p-3 text-xs text-rose-100">{String(error)}</p> : null}
+                  </form>
+                ) : isConnected ? (
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-100/55">Arsenal account connected</div>
+                    <h2 className="mt-1 text-2xl font-black text-white">Welcome back, {account?.displayName}</h2>
+                    <p className="mt-2 text-xs leading-5 text-white/40">Your private settings and saved work are restored. Your connected portfolio @{account?.sleeperUsername} is loading automatically.</p>
+                    <Link href="/account" className="mt-5 block min-h-12 rounded-2xl bg-violet-300/12 px-4 py-3 text-center text-sm font-black text-violet-100">Open My Arsenal</Link>
+                  </div>
+                ) : (
+                  <form onSubmit={handleAccountLogin}>
+                    <div className="text-[10px] font-black uppercase tracking-[.18em] text-violet-100/55">Optional cross-device account</div>
+                    <h2 className="mt-1 text-2xl font-black text-white">Sign in to your Arsenal</h2>
+                    <p className="mt-2 text-xs leading-5 text-white/40">One sign-in restores your connected Sleeper portfolio, preferences, watchlists, saved decisions, and profile.</p>
+                    <label className="mt-5 block text-[10px] font-bold text-white/42">Arsenal account name<input autoComplete="username" value={accountName} onChange={(event) => setAccountName(event.target.value)} className="mt-1.5 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 text-sm text-white outline-none focus:border-violet-300/35" /></label>
+                    <label className="mt-3 block text-[10px] font-bold text-white/42">Password<span className="relative mt-1.5 block"><input type={showPassword ? "text" : "password"} autoComplete="current-password" value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} className="min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 py-3 pl-4 pr-20 text-sm text-white outline-none focus:border-violet-300/35"/><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-1 right-1 rounded-xl px-3 text-[10px] font-black text-violet-100/65 hover:bg-white/[0.04]">{showPassword ? "Hide" : "Show"}</button></span></label>
+                    <button disabled={accountLoading || !accountName.trim() || !accountPassword} className="mt-3 min-h-12 w-full rounded-2xl bg-violet-300/12 text-sm font-black text-violet-100 transition hover:bg-violet-300/18 disabled:opacity-35">{accountLoading ? "Signing in…" : "Sign in and load my portfolio"}</button>
+                    {accountMessage ? <p className="mt-3 rounded-xl border border-rose-300/12 bg-rose-300/[0.05] p-3 text-xs text-rose-100">{accountMessage}</p> : null}
+                    <Link href="/account?mode=create" className="mt-3 block rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-3 text-center text-xs font-black text-cyan-100">Create an account</Link>
+                  </form>
+                )}
+                <p className="mt-5 border-t border-white/[0.07] pt-4 text-center text-xs text-white/30">Created by <span className="font-semibold text-white/55">StickyPicky</span></p>
+              </div>
+            </section>
 
             {/* SEO content (VISIBLE ONLY WHEN LOGGED OUT) */}
             <section className="max-w-6xl mx-auto px-2 sm:px-6 pb-24 w-full">

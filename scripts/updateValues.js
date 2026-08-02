@@ -4,6 +4,7 @@
 
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import axios from "axios";
 import Papa from "papaparse";
 import puppeteer from "puppeteer";
@@ -254,11 +255,24 @@ function archiveUpdatedValues(failures = []) {
     const base = path.basename(file, ".json");
     const output = path.join(ARCHIVE_DIR, `${base}_${date}.json.gz`);
     const raw = fs.readFileSync(file);
-    fs.writeFileSync(output, gzipSync(raw, { level: 9 }));
+    const compressed = gzipSync(raw, { level: 9 });
+    fs.writeFileSync(output, compressed);
+    let sourceUpdated = null;
+    try {
+      const payload = JSON.parse(raw.toString("utf8"));
+      sourceUpdated =
+        payload?.updated || payload?.updated_at || payload?.generated_at || null;
+    } catch {}
     return {
       source: path.basename(file),
       file: path.basename(output),
       bytes: fs.statSync(output).size,
+      source_updated_at: sourceUpdated,
+      source_sha256: crypto.createHash("sha256").update(raw).digest("hex"),
+      archive_sha256: crypto
+        .createHash("sha256")
+        .update(compressed)
+        .digest("hex"),
     };
   });
   const createdAt = new Date().toISOString();
@@ -2763,6 +2777,7 @@ async function updateProjectionsFromCSV() {
   const sleeperById = needMeta ? await fetchSleeperPlayersMap() : {};
 
   const rows = [];
+  const rowIndex = new Map();
   const by_id = {};
   const by_name = {};
 
@@ -2791,7 +2806,22 @@ async function updateProjectionsFromCSV() {
     const points = Math.max(0, Number(rawPoints) || 0);
     const name = csvName; // <- use your CSV's Player column
 
-    rows.push({ player_id, name, team, position, points });
+    const identityKey = player_id
+      ? `id:${player_id}`
+      : `name:${normNameForMap(name)}|${position}`;
+    const existingIndex = rowIndex.get(identityKey);
+    if (existingIndex != null) {
+      const existing = rows[existingIndex];
+      rows[existingIndex] = {
+        ...existing,
+        team: existing.team || team,
+        position: existing.position || position,
+        points: Math.max(Number(existing.points) || 0, points),
+      };
+    } else {
+      rowIndex.set(identityKey, rows.length);
+      rows.push({ player_id, name, team, position, points });
+    }
 
     if (player_id) by_id[player_id] = points;
     if (name) by_name[normNameForMap(name)] = points;

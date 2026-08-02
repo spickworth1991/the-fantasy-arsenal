@@ -46,6 +46,8 @@ const positions = ["QB", "RB", "WR", "TE", "K"];
 const finalWindowMs = 6 * 60 * 60 * 1000;
 const evaluationTime = Date.now();
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+const clamp = (value, minimum, maximum) =>
+  Math.max(minimum, Math.min(maximum, value));
 const finiteNumber = (value) =>
   value !== null && value !== "" && Number.isFinite(Number(value))
     ? Number(value)
@@ -214,6 +216,48 @@ function scoringSummary(rows, coverage, includePositions = true) {
   return summary;
 }
 
+function probabilitySummary(rows) {
+  if (!rows.length) return null;
+  const brier = (probabilityKey, resultKey) =>
+    rows.reduce(
+      (sum, row) => sum + (row[probabilityKey] - row[resultKey]) ** 2,
+      0,
+    ) / rows.length;
+  const intervalRows = rows.filter(
+    (row) => Number.isFinite(row.floor) && Number.isFinite(row.ceiling),
+  );
+  return {
+    sample: rows.length,
+    boom_brier: round(brier("boom_probability", "boom_result"), 4),
+    bust_brier: round(brier("bust_probability", "bust_result"), 4),
+    predicted_boom_rate: round(
+      rows.reduce((sum, row) => sum + row.boom_probability, 0) / rows.length,
+      4,
+    ),
+    observed_boom_rate: round(
+      rows.reduce((sum, row) => sum + row.boom_result, 0) / rows.length,
+      4,
+    ),
+    predicted_bust_rate: round(
+      rows.reduce((sum, row) => sum + row.bust_probability, 0) / rows.length,
+      4,
+    ),
+    observed_bust_rate: round(
+      rows.reduce((sum, row) => sum + row.bust_result, 0) / rows.length,
+      4,
+    ),
+    interval_sample: intervalRows.length,
+    floor_ceiling_coverage: intervalRows.length
+      ? round(
+          intervalRows.filter(
+            (row) => row.actual >= row.floor && row.actual <= row.ceiling,
+          ).length / intervalRows.length,
+          4,
+        )
+      : null,
+  };
+}
+
 function scheduledWeeks(schedule) {
   if (!Array.isArray(schedule?.weeks)) return new Map();
   return new Map(
@@ -269,6 +313,7 @@ const weekResults = [];
 const ledger = [];
 const lensLedger = [];
 const coverageLedger = [];
+const outcomeLedger = [];
 const snapshotWeeks = [
   ...new Set(snapshots.map((snapshot) => Number(snapshot.week))),
 ].sort((a, b) => a - b);
@@ -355,9 +400,14 @@ if (
         snapshot.model_build_id || snapshot.model_version || "unknown";
       const modelReleaseVersion = snapshot.model_version || "unknown";
       usedSnapshots.set(snapshot.generated_at, {
+        snapshot_id: snapshot.snapshot_id || null,
         generated_at: snapshot.generated_at,
         model_build_id: modelBuildId,
         model_version: modelReleaseVersion,
+        feature_version: snapshot.feature_version || null,
+        input_bundle_sha256:
+          snapshot.input_manifest?.bundle_sha256 || null,
+        snapshot_class: snapshot.snapshot_class || "legacy_unclassified",
       });
       const idKey = forecast?.player_id
         ? `id:${String(forecast.player_id).trim()}`
@@ -384,6 +434,10 @@ if (
           model_version: modelBuildId,
           model_build_id: modelBuildId,
           model_release_version: modelReleaseVersion,
+          feature_version: snapshot.feature_version || null,
+          snapshot_id: snapshot.snapshot_id || null,
+          input_bundle_sha256:
+            snapshot.input_manifest?.bundle_sha256 || null,
           snapshot_generated_at: snapshot.generated_at,
           projection,
           top_100: top100,
@@ -403,6 +457,10 @@ if (
           model_version: modelBuildId,
           model_build_id: modelBuildId,
           model_release_version: modelReleaseVersion,
+          feature_version: snapshot.feature_version || null,
+          snapshot_id: snapshot.snapshot_id || null,
+          input_bundle_sha256:
+            snapshot.input_manifest?.bundle_sha256 || null,
           snapshot_generated_at: snapshot.generated_at,
           name: forecast.name,
           team: forecast.team,
@@ -415,6 +473,28 @@ if (
         };
         rowsByScoring[scoring].push(row);
         ledger.push(row);
+        if (scoring === "ppr") {
+          const outcome = forecast.forecast?.outcome_profile || {};
+          const boomProbability = finiteNumber(outcome.boom_probability);
+          const bustProbability = finiteNumber(outcome.bust_probability);
+          const boomThreshold = finiteNumber(outcome.boom_threshold);
+          const bustThreshold = finiteNumber(outcome.bust_threshold);
+          if (
+            Number.isFinite(boomProbability) &&
+            Number.isFinite(bustProbability) &&
+            Number.isFinite(boomThreshold) &&
+            Number.isFinite(bustThreshold)
+          )
+            outcomeLedger.push({
+              ...row,
+              boom_probability: clamp(boomProbability, 0, 1),
+              bust_probability: clamp(bustProbability, 0, 1),
+              boom_result: result >= boomThreshold ? 1 : 0,
+              bust_result: result <= bustThreshold ? 1 : 0,
+              floor: finiteNumber(outcome.floor),
+              ceiling: finiteNumber(outcome.ceiling),
+            });
+        }
         for (const lens of projectionLenses) {
           const lensProjection = finiteNumber(
             forecast.forecast?.projection_lenses?.[scoring]?.[lens] ??
@@ -455,6 +535,20 @@ if (
       model_version: modelBuildIds.length === 1 ? modelBuildIds[0] : null,
       model_build_ids: modelBuildIds,
       model_versions: modelReleaseVersions,
+      feature_versions: [
+        ...new Set(
+          snapshotMetadata
+            .map((snapshot) => snapshot.feature_version)
+            .filter(Boolean),
+        ),
+      ],
+      input_bundle_sha256s: [
+        ...new Set(
+          snapshotMetadata
+            .map((snapshot) => snapshot.input_bundle_sha256)
+            .filter(Boolean),
+        ),
+      ],
       schedule: {
         games: games.length,
         games_past_final_window: completedGames.length,
@@ -607,6 +701,7 @@ const output = {
       ),
     ]),
   ),
+  outcome_calibration: probabilitySummary(outcomeLedger),
   cumulative_by_model_version: cumulativeByModelVersion,
   weeks: weekResults,
 };

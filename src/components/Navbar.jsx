@@ -114,12 +114,19 @@ function BallsvilleLink({ className = "" }) {
 
 export default function Navbar({ pageTitle }) {
   const { username, year, loadPortfolio, clearPortfolio } = useSleeper();
-  const { account, isConnected, disconnect } = useArsenalAccount();
+  const { account, isConnected, disconnect, loginAccount } = useArsenalAccount();
   const { embedded, openFullscreen } = useEmbeddedMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const [portfolioInput, setPortfolioInput] = useState("");
   const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [identityOpen, setIdentityOpen] = useState(false);
+  const [identityMode, setIdentityMode] = useState("portfolio");
+  const [accountName, setAccountName] = useState("");
+  const [accountPassword, setAccountPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [identityMessage, setIdentityMessage] = useState("");
+  const [accountLoading, setAccountLoading] = useState(false);
   const router = useRouter();
 
   // ✅ NEW: hide Ballsville promo when tools are being used via Ballsville
@@ -178,13 +185,40 @@ export default function Navbar({ pageTitle }) {
     const target = portfolioInput.trim();
     if (!target) return;
     setPortfolioLoading(true);
+    setIdentityMessage("");
     clearPlayerStockSessionCache();
     try {
       await loadPortfolio(target, year || new Date().getFullYear());
       setPortfolioInput("");
+      setIdentityMessage(`Loaded @${target}.`);
+      setIdentityOpen(false);
+    } catch (error) {
+      setIdentityMessage(error?.message || `Sleeper manager @${target} was not found.`);
     } finally {
       setPortfolioLoading(false);
     }
+  };
+  const handleAccountLogin = async (event) => {
+    event.preventDefault();
+    if (!accountName.trim() || !accountPassword) return;
+    setAccountLoading(true);
+    setIdentityMessage("");
+    try {
+      await loginAccount(accountName.trim(), accountPassword);
+      setAccountPassword("");
+      setIdentityOpen(false);
+    } catch (error) {
+      setIdentityMessage(error?.message || "Arsenal sign-in failed.");
+    } finally {
+      setAccountLoading(false);
+    }
+  };
+  const openIdentity = (mode = "portfolio") => {
+    setIdentityMode(mode);
+    setIdentityMessage("");
+    setSidebarOpen(false);
+    setSidebarClosing(false);
+    setIdentityOpen(true);
   };
 
   return (
@@ -218,7 +252,10 @@ export default function Navbar({ pageTitle }) {
           )}
           {embedded ? <button type="button" onClick={openFullscreen} className="hidden rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-bold text-cyan-100 sm:block" title="Open this tool directly in The Fantasy Arsenal">Full screen ↗</button> : null}
 
-          {username ? <Link href="/account" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span><span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "My Arsenal" : `${year || ""} · Guest`}</small></span></Link> : null}
+          <button type="button" onClick={() => openIdentity(isConnected ? "account" : username ? "portfolio" : "account")} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]" aria-label="Open account and Sleeper portfolio access">
+            <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span>
+            <span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username || "Sign in"}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "Arsenal account" : username ? `${year || ""} · Sleeper view` : "Account or portfolio"}</small></span>
+          </button>
 
           {viewingAnotherPortfolio ? <span className="hidden max-w-32 truncate rounded-full border border-amber-300/15 bg-amber-300/[0.06] px-2.5 py-1 text-[10px] font-bold text-amber-100 min-[520px]:inline">Viewing @{username}</span> : null}
 
@@ -232,6 +269,50 @@ export default function Navbar({ pageTitle }) {
           )}
         </div>
       </nav>
+
+      {identityOpen ? (
+        <div className="fixed inset-0 z-[70] grid min-h-[100dvh] place-items-center overflow-y-auto bg-slate-950/78 p-3 backdrop-blur-xl sm:p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) setIdentityOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-label="Account and Sleeper portfolio access" className="my-auto w-full max-w-lg overflow-hidden rounded-[28px] border border-white/12 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
+              <div><div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/50">One place for both identities</div><h2 className="mt-1 text-xl font-black">Open The Fantasy Arsenal</h2><p className="mt-1 text-[10px] leading-4 text-white/35">View public Sleeper data without an account, or sign in to restore your private Arsenal workspace.</p></div>
+              <button type="button" onClick={() => setIdentityOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/55 hover:bg-white/5" aria-label="Close">×</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-b border-white/10 bg-black/15 p-2">
+              <button type="button" onClick={() => { setIdentityMode("portfolio"); setIdentityMessage(""); }} className={`min-h-11 rounded-xl px-2 text-xs font-black ${identityMode === "portfolio" ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/38"}`}>Sleeper Portfolio</button>
+              <button type="button" onClick={() => { setIdentityMode("account"); setIdentityMessage(""); }} className={`min-h-11 rounded-xl px-2 text-xs font-black ${identityMode === "account" ? "bg-violet-300/12 text-violet-100 ring-1 ring-violet-300/15" : "text-white/38"}`}>Arsenal Account</button>
+            </div>
+            <div className="p-5 sm:p-6">
+              {identityMode === "portfolio" ? (
+                <form onSubmit={handlePortfolioLookup}>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-cyan-100/55">No account required</div>
+                  <h3 className="mt-1 text-lg font-black">Load a Sleeper portfolio</h3>
+                  <p className="mt-1 text-xs leading-5 text-white/38">Enter any public Sleeper username. This changes the portfolio being viewed; it does not sign you into that person&apos;s account.</p>
+                  <label className="mt-4 block text-[10px] font-bold text-white/42">Sleeper username<input autoFocus value={portfolioInput} onChange={(event) => setPortfolioInput(event.target.value)} placeholder="Sleeper username" className="mt-1.5 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 text-sm outline-none focus:border-cyan-300/35" /></label>
+                  <button disabled={!portfolioInput.trim() || portfolioLoading} className="mt-3 min-h-12 w-full rounded-2xl bg-cyan-300/12 text-sm font-black text-cyan-100 disabled:opacity-35">{portfolioLoading ? "Loading portfolio…" : "Load Sleeper portfolio"}</button>
+                  {viewingAnotherPortfolio ? <button type="button" onClick={async () => { await handleReturnToAccount(); setIdentityOpen(false); }} disabled={portfolioLoading} className="mt-2 min-h-11 w-full rounded-xl border border-amber-300/15 bg-amber-300/[0.06] text-xs font-black text-amber-100">Return to my connected portfolio · @{account?.sleeperUsername}</button> : null}
+                  {username && !viewingAnotherPortfolio ? <p className="mt-3 rounded-xl bg-white/[0.035] p-3 text-xs text-white/40">Currently viewing <b className="text-white/70">@{username}</b> · {year}</p> : null}
+                </form>
+              ) : isConnected ? (
+                <div>
+                  <div className="flex items-center gap-3 rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4"><img src={accountAvatar(account)} alt="" className="h-12 w-12 rounded-xl object-contain"/><div className="min-w-0"><b className="block truncate">{account?.displayName}</b><small className="text-emerald-100/55">Signed into Arsenal · @{account?.sleeperUsername}</small></div></div>
+                  {viewingAnotherPortfolio ? <div className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.04] p-3 text-xs text-amber-100/70">You are temporarily viewing @{username}. Your Arsenal account remains signed in.</div> : null}
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2"><Link href="/account" onClick={() => setIdentityOpen(false)} className="rounded-xl bg-violet-300/10 px-4 py-3 text-center text-xs font-black text-violet-100">Open My Arsenal</Link><button type="button" onClick={async () => { await handleReturnToAccount(); setIdentityOpen(false); }} className="rounded-xl bg-cyan-300/10 px-4 py-3 text-xs font-black text-cyan-100">Load my portfolio</button></div>
+                  <button type="button" onClick={async () => { await disconnect(); setIdentityOpen(false); }} className="mt-3 w-full rounded-xl border border-white/10 px-4 py-3 text-xs font-bold text-white/42">Sign out of Arsenal on this device</button>
+                </div>
+              ) : (
+                <form onSubmit={handleAccountLogin}>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-violet-100/55">Private cloud workspace</div><h3 className="mt-1 text-lg font-black">Sign in to your Arsenal</h3><p className="mt-1 text-xs leading-5 text-white/38">Signing in restores your attached Sleeper portfolio, preferences, saved decisions, and profile.</p>
+                  <label className="mt-4 block text-[10px] font-bold text-white/42">Arsenal account name<input autoFocus autoComplete="username" value={accountName} onChange={(event) => setAccountName(event.target.value)} className="mt-1.5 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 text-sm outline-none focus:border-violet-300/35" /></label>
+                  <label className="mt-3 block text-[10px] font-bold text-white/42">Password<span className="relative mt-1.5 block"><input type={showPassword ? "text" : "password"} autoComplete="current-password" value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} className="min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950 py-3 pl-4 pr-20 text-sm outline-none focus:border-violet-300/35"/><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-1 right-1 rounded-xl px-3 text-[10px] font-bold text-violet-100/65">{showPassword ? "Hide" : "Show"}</button></span></label>
+                  <button disabled={!accountName.trim() || !accountPassword || accountLoading} className="mt-3 min-h-12 w-full rounded-2xl bg-violet-300/12 text-sm font-black text-violet-100 disabled:opacity-35">{accountLoading ? "Signing in…" : "Sign in to Arsenal"}</button>
+                  <Link href="/account?mode=create" onClick={() => setIdentityOpen(false)} className="mt-3 block rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-3 text-center text-xs font-black text-cyan-100">Create account</Link>
+                </form>
+              )}
+              {identityMessage ? <p className="mt-3 rounded-xl border border-rose-300/12 bg-rose-300/[0.05] p-3 text-xs text-rose-100">{identityMessage}</p> : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {/* Sidebar Overlay */}
       {(sidebarOpen || sidebarClosing) && (
@@ -277,33 +358,12 @@ export default function Navbar({ pageTitle }) {
 
             <div className="border-t border-white/10 pt-3" />
 
-            <form onSubmit={handlePortfolioLookup} className="mb-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
-              <label className="block text-[9px] font-bold uppercase tracking-[.16em] text-white/35">View a Sleeper portfolio</label>
-              <div className="mt-2 flex gap-2">
-                <input value={portfolioInput} onChange={(event)=>setPortfolioInput(event.target.value)} placeholder="Sleeper username" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-cyan-300/30" />
-                <button disabled={!portfolioInput.trim()||portfolioLoading} className="rounded-xl bg-cyan-300/10 px-3 text-xs font-bold text-cyan-100 disabled:opacity-35">{portfolioLoading ? "…" : "View"}</button>
-              </div>
-              {viewingAnotherPortfolio ? <button type="button" onClick={handleReturnToAccount} disabled={portfolioLoading} className="mt-2 w-full rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-xs font-bold text-amber-100">Return to @{account?.sleeperUsername}</button> : null}
-            </form>
-
-            {/* Account identity + viewed portfolio */}
-            {username ? (
-              <div className="shrink-0 rounded-2xl bg-slate-950/95 pt-1">
-                <Link href="/account" onClick={handleCloseSidebar} className="mb-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5"><span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-black/20"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-8 w-8 object-contain" /></span><span className="min-w-0"><b className="block truncate text-sm">{account?.displayName || username}</b><small className={isConnected ? "text-emerald-200/50" : "text-white/30"}>{isConnected ? "Arsenal account synced" : "Optional account available"}</small></span></Link>
-                <p className="mb-1 text-sm text-gray-400">
-                  Viewing <span className="font-bold">@{username}</span> ({year})
-                </p>
-                <button
-                  onClick={handleClearPortfolio}
-                  className={`w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded transition neon-button ${viewingAccountPortfolio ? "hidden" : ""}`}
-                >
-                  Clear viewed portfolio
-                </button>
-              </div>
-            ) : (
-              <p className="text-gray-400">Load a Sleeper portfolio above</p>
-            )}
-            {isConnected ? <button type="button" onClick={disconnect} className="mt-2 w-full rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/45">Sign out of Arsenal</button> : <Link href="/account" onClick={handleCloseSidebar} className="mt-2 block w-full rounded-xl border border-violet-300/15 bg-violet-300/[0.06] px-3 py-2 text-center text-xs font-semibold text-violet-100">Sign in to Arsenal</Link>}
+            <div className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+              <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-black/20"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-8 w-8 object-contain" /></span><span className="min-w-0"><b className="block truncate text-sm">{account?.displayName || username || "Guest access"}</b><small className={isConnected ? "text-emerald-200/50" : "text-white/30"}>{isConnected ? `Arsenal connected · @${account?.sleeperUsername}` : username ? `Viewing @${username} · no account` : "Choose an account or portfolio"}</small></span></div>
+              {viewingAnotherPortfolio ? <p className="mt-2 rounded-lg bg-amber-300/[0.05] p-2 text-[10px] text-amber-100/65">Temporarily viewing @{username}</p> : null}
+              <button type="button" onClick={() => openIdentity(isConnected ? "account" : username ? "portfolio" : "account")} className="mt-3 w-full rounded-xl bg-gradient-to-r from-cyan-300/10 to-violet-300/10 px-3 py-2.5 text-xs font-black text-white/75">Account &amp; portfolio access</button>
+              {username && !viewingAccountPortfolio ? <button type="button" onClick={handleClearPortfolio} className="mt-2 w-full rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold text-white/35">Clear viewed portfolio</button> : null}
+            </div>
           </div>
         </div>
       )}

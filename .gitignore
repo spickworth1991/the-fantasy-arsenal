@@ -32,4 +32,7 @@ backup.zip
 !/scripts/buildStatInsights.js
 !/scripts/buildStatProjectionModel.js
 !/scripts/evaluateStatProjectionModel.js
+!/scripts/auditProjectionPipeline.js
+!/scripts/capturePreKickoffSnapshot.js
+!/scripts/updateAdvancedStats.js
 /docs/

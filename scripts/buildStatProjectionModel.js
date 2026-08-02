@@ -12,8 +12,9 @@ const season =
       ?.split("=")[1],
   ) || new Date().getUTCFullYear();
 const archive = process.argv.includes("--archive");
-const MODEL_VERSION = "arsenal-stat-v2.3";
-const MODEL_SCHEMA = 8;
+const MODEL_VERSION = "arsenal-stat-v3.3";
+const MODEL_SCHEMA = 13;
+const FEATURE_VERSION = "arsenal-features-v3.1";
 const MODEL_BUILD_HASH = crypto
   .createHash("sha256")
   .update(fs.readFileSync(scriptFile))
@@ -41,6 +42,67 @@ const statFields = [
   "xpm",
   "xpa",
   "kick_pts",
+];
+const usageFields = [
+  "off_snp",
+  "tm_off_snp",
+  "pass_rz_att",
+  "rush_rz_att",
+  "rec_rz_tgt",
+  "rec_air_yd",
+];
+const opportunityFeatureNames = [
+  "target_share",
+  "target_share_trend",
+  "carry_share",
+  "carry_share_trend",
+  "weighted_opportunity_share",
+  "weighted_opportunity_trend",
+  "high_value_touch_rate",
+  "two_minute_opportunity_rate",
+  "third_down_opportunity_rate",
+  "opportunity_volatility",
+  "receiving_epa_per_target",
+  "rushing_epa_per_carry",
+  "ngs_cpoe",
+  "ngs_separation",
+  "ngs_yac_over_expected",
+  "ngs_ryoe_per_carry",
+  "ngs_box_eight_rate",
+];
+const advancedFeatureNames = [
+  "protection_pressure_rate",
+  "protection_sack_rate",
+  "opponent_pressure_rate",
+  "opponent_sack_rate",
+  "pressure_mismatch",
+  "opponent_blitz_rate",
+  "ol_stability",
+  "ol_continuity",
+  "time_to_throw",
+  "offense_motion_rate",
+  "offense_play_action_rate",
+  "offense_screen_rate",
+  "offense_rpo_rate",
+  "opponent_man_rate",
+  "opponent_zone_rate",
+  "offense_epa_per_play",
+  "offense_success_rate",
+  "offense_pass_rate",
+  "offense_red_zone_play_rate",
+  "opponent_epa_per_play_allowed",
+  "opponent_success_rate_allowed",
+  "opponent_pass_rate_faced",
+  "opponent_red_zone_play_rate_allowed",
+  "epa_matchup",
+  "success_matchup",
+  "offense_neutral_pass_rate",
+  "offense_two_minute_rate",
+  "offense_third_down_success_rate",
+  "offense_play_volume_delta",
+  "market_implied_points_delta",
+  "market_spread_scaled",
+  "advanced_reliability",
 ];
 const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const round = (value, places = 3) => Number(num(value).toFixed(places));
@@ -74,26 +136,25 @@ function buildCanonicalKeyResolver(players) {
   const exact = new Map(
     (players || []).map((player) => [playerKey(player), playerKey(player)]),
   );
-  const byTeamPositionSurname = new Map();
-  (players || []).forEach((player) => {
-    const normalized = normalizeName(player?.name);
-    const surname = normalized.split(" ").at(-1);
-    const position = String(player?.position || "").toUpperCase();
-    const team = normalizeTeam(player?.team);
-    if (!surname || !position || !team) return;
-    const key = `${team}|${position}|${surname}`;
-    const candidates = byTeamPositionSurname.get(key) || [];
-    candidates.push(playerKey(player));
-    byTeamPositionSurname.set(key, candidates);
-  });
+  const reviewedAliases = new Map();
+  const aliasConfig = readJson(
+    path.join(root, "data", "player-identity-aliases.json"),
+    { aliases: [] },
+  );
+  for (const group of aliasConfig.aliases || []) {
+    const position = String(group.position || "").toUpperCase();
+    const keys = (group.names || []).map(
+      (name) => `${normalizeName(name)}|${position}`,
+    );
+    const canonical = keys.find((key) => exact.has(key));
+    if (!canonical) continue;
+    keys.forEach((key) => reviewedAliases.set(key, canonical));
+  }
   return (row) => {
     const direct = exact.get(playerKey(row));
     if (direct) return direct;
-    const surname = normalizeName(row?.name).split(" ").at(-1);
-    const candidates = byTeamPositionSurname.get(
-      `${normalizeTeam(row?.team)}|${String(row?.position || "").toUpperCase()}|${surname}`,
-    );
-    return candidates?.length === 1 ? candidates[0] : playerKey(row);
+    const alias = reviewedAliases.get(playerKey(row));
+    return (alias && exact.get(alias)) || playerKey(row);
   };
 }
 const cleanLine = (line = {}) =>
@@ -115,6 +176,24 @@ const coherentLine = (line = {}) => {
   next.fgm = Math.min(next.fgm, next.fga);
   next.xpm = Math.min(next.xpm, next.xpa);
   return next;
+};
+const fingerprintFile = (file) => {
+  if (!fs.existsSync(file)) return null;
+  const raw = fs.readFileSync(file);
+  let updated = null;
+  if (path.extname(file).toLowerCase() === ".json") {
+    try {
+      const payload = JSON.parse(raw.toString("utf8"));
+      updated =
+        payload?.updated || payload?.updated_at || payload?.generated_at || null;
+    } catch {}
+  }
+  return {
+    path: path.relative(root, file).replace(/\\/g, "/"),
+    bytes: raw.length,
+    sha256: crypto.createHash("sha256").update(raw).digest("hex"),
+    updated,
+  };
 };
 
 async function enrichScheduleWeather(schedule, savedFile) {
@@ -249,16 +328,30 @@ async function loadSchedule() {
           week,
           games: (payload?.events || [])
             .map((event) => {
-              const competitors = event?.competitions?.[0]?.competitors || [];
+              const competition = event?.competitions?.[0] || {};
+              const competitors = competition.competitors || [];
               const home = competitors.find((team) => team.homeAway === "home")
                 ?.team?.abbreviation;
               const away = competitors.find((team) => team.homeAway === "away")
                 ?.team?.abbreviation;
+              const odds = competition.odds?.[0];
+              const rawSpread = Number(odds?.spread);
+              const total = Number(odds?.overUnder);
+              const homeFavorite = Boolean(odds?.homeTeamOdds?.favorite);
+              const market = Number.isFinite(rawSpread) && Number.isFinite(total)
+                ? {
+                    source: odds?.provider?.name || "ESPN odds feed",
+                    total,
+                    home_spread: (homeFavorite ? 1 : -1) * Math.abs(rawSpread),
+                    details: odds?.details || null,
+                  }
+                : null;
               return home && away
                 ? {
                     home: normalizeTeam(home),
                     away: normalizeTeam(away),
                     date: event.date || null,
+                    market,
                   }
                 : null;
             })
@@ -456,33 +549,53 @@ function projectionStatIndexes(resolveCanonicalKey) {
 }
 
 function weightedConsensus(values) {
+  return weightedConsensusDetails(values).value;
+}
+
+function weightedConsensusDetails(values) {
   const usable = values
     .filter((row) => row.present && Number.isFinite(Number(row.value)))
     .map((row) => ({ ...row, value: num(row.value) }))
     .sort((a, b) => a.value - b.value);
-  if (!usable.length) return 0;
+  if (!usable.length) return { value: 0, weights: {} };
   const middleIndex = Math.floor(usable.length / 2);
   const middle =
     usable.length % 2
       ? usable[middleIndex].value
       : (usable[middleIndex - 1].value + usable[middleIndex].value) / 2;
   if (middle === 0)
-    return (
-      usable.reduce((sum, row) => sum + row.value * row.weight, 0) /
-      Math.max(
-        0.01,
-        usable.reduce((sum, row) => sum + row.weight, 0),
-      )
-    );
+    {
+      const weight = usable.reduce((sum, row) => sum + row.weight, 0);
+      return {
+        value:
+          usable.reduce((sum, row) => sum + row.value * row.weight, 0) /
+          Math.max(0.01, weight),
+        weights: Object.fromEntries(
+          usable.map((row) => [row.source || "unknown", round(row.weight / Math.max(0.01, weight), 4)]),
+        ),
+      };
+    }
   const bounded = usable.map((row) => ({
     ...row,
     value: row.value === 0 ? 0 : clamp(row.value, middle * 0.65, middle * 1.35),
   }));
-  const weight = bounded.reduce((sum, row) => sum + row.weight, 0);
-  return (
-    bounded.reduce((sum, row) => sum + row.value * row.weight, 0) /
-    Math.max(0.01, weight)
-  );
+  const adaptive = bounded.map((row) => {
+    const distance = Math.abs(row.value - middle) / Math.max(1, Math.abs(middle));
+    const agreement = clamp(1 - distance * 1.5, 0.45, 1);
+    return { ...row, effectiveWeight: row.weight * agreement };
+  });
+  const weight = adaptive.reduce((sum, row) => sum + row.effectiveWeight, 0);
+  return {
+    value:
+      adaptive.reduce((sum, row) => sum + row.value * row.effectiveWeight, 0) /
+      Math.max(0.01, weight),
+    weights: Object.fromEntries(
+      adaptive.map((row) => [
+        row.source || "unknown",
+        round(row.effectiveWeight / Math.max(0.01, weight), 4),
+      ]),
+    ),
+  };
 }
 
 function externalStatPrior(player, sourceIndexes, history) {
@@ -507,14 +620,18 @@ function externalStatPrior(player, sourceIndexes, history) {
     })
     .filter(Boolean);
   const line = {};
+  const weights = {};
   ["games", ...statFields].forEach((field) => {
-    line[field] = weightedConsensus(
+    const consensus = weightedConsensusDetails(
       rows.map((row) => ({
+        source: row.source,
         value: row.line[field],
         weight: row.weight,
         present: row.presentFields.has(field),
       })),
     );
+    line[field] = consensus.value;
+    weights[field] = consensus.weights;
   });
   line.games = clamp(line.games || 17, 1, 17);
   return {
@@ -527,6 +644,10 @@ function externalStatPrior(player, sourceIndexes, history) {
           Object.prototype.hasOwnProperty.call(row.rawLine, field),
         ).length,
       ]),
+    ),
+    adaptive_weights: weights,
+    source_lines: Object.fromEntries(
+      rows.map((row) => [row.source, row.rawLine]),
     ),
   };
 }
@@ -558,35 +679,53 @@ function seasonEvidence(year) {
     path.join(root, "public", "stats", "history", String(year), "sleeper.json"),
     { players: [] },
   );
+  const advanced = readJson(
+    path.join(root, "public", "stats", "advanced", String(year), "context.json"),
+    { team_weeks: [], player_weeks: [], coverage: {} },
+  );
+  const advancedTeamWeeks = new Map(
+    (advanced.team_weeks || []).map((row) => [
+      `${Number(row.week)}:${normalizeTeam(row.team)}`,
+      row,
+    ]),
+  );
+  const advancedTeamHistory = new Map();
+  for (const row of advanced.team_weeks || []) {
+    const team = normalizeTeam(row.team);
+    const current = advancedTeamHistory.get(team) || [];
+    current.push(row);
+    advancedTeamHistory.set(team, current);
+  }
+  const advancedPlayerWeeks = new Map(
+    (advanced.player_weeks || []).map((row) => [
+      `${Number(row.week)}:${normalizeTeam(row.team)}:${normalizeName(row.name)}:${String(row.position || "").toUpperCase()}`,
+      row,
+    ]),
+  );
   const fantasyProsByName = new Map(
     (fantasyPros.players || []).map((row) => [playerKey(row), row]),
   );
-  const fantasyProsByPositionSurname = new Map();
-  (fantasyPros.players || []).forEach((row) => {
-    const surname = normalizeName(row.name).split(" ").at(-1);
-    const position = String(row.position || "").toUpperCase();
-    const key = `${position}|${surname}`;
-    const candidates = fantasyProsByPositionSurname.get(key) || [];
-    candidates.push(row);
-    fantasyProsByPositionSurname.set(key, candidates);
-  });
-  const historicalAliases = new Map([
-    ["marquise brown|WR", "hollywood brown|WR"],
-    ["kenny gainwell|RB", "kenneth gainwell|RB"],
-    ["chig okonkwo|TE", "chigoziem okonkwo|TE"],
-    ["andy borregales|K", "andres borregales|K"],
-  ]);
+  const historicalAliases = new Map();
+  const aliasConfig = readJson(
+    path.join(root, "data", "player-identity-aliases.json"),
+    { aliases: [] },
+  );
+  for (const group of aliasConfig.aliases || []) {
+    const position = String(group.position || "").toUpperCase();
+    const keys = (group.names || []).map(
+      (name) => `${normalizeName(name)}|${position}`,
+    );
+    const canonical = keys.find((key) => fantasyProsByName.has(key));
+    if (!canonical) continue;
+    keys.forEach((key) => historicalAliases.set(key, canonical));
+  }
   const findFantasyProsPlayer = (player) => {
     const exactKey = playerKey(player);
     const exact = fantasyProsByName.get(exactKey);
     if (exact) return exact;
     const aliased = fantasyProsByName.get(historicalAliases.get(exactKey));
     if (aliased) return aliased;
-    const surname = normalizeName(player.name).split(" ").at(-1);
-    const candidates = fantasyProsByPositionSurname.get(
-      `${String(player.position || "").toUpperCase()}|${surname}`,
-    );
-    return candidates?.length === 1 ? candidates[0] : null;
+    return null;
   };
   const opponent = new Map();
   (schedule.weeks || []).forEach(({ week, games }) =>
@@ -620,6 +759,10 @@ function seasonEvidence(year) {
       const weekly = Object.entries(player.weekly_stats || {})
         .map(([week, stats]) => {
           const position = String(player.position).toUpperCase();
+          const advancedSnap = advancedPlayerWeeks.get(
+            `${Number(week)}:${team}:${normalizeName(player.name)}:${position}`,
+          );
+          const advancedTeam = advancedTeamWeeks.get(`${Number(week)}:${team}`);
           const points = {
             ppr: num(player.weeks?.[String(week)]?.ppr),
             half: num(player.weeks?.[String(week)]?.half),
@@ -665,7 +808,23 @@ function seasonEvidence(year) {
             week: num(week),
             active: modelActive,
             game_day_active: num(stats?.gp) > 0 || num(stats?.gms_active) > 0,
-            stats: cleanLine(stats),
+            stats: {
+              ...cleanLine(stats),
+              ...Object.fromEntries(
+                usageFields.map((field) => [field, round(num(stats?.[field]))]),
+              ),
+              off_snp: round(
+                Math.max(num(stats?.off_snp), num(advancedSnap?.offense_snaps)),
+              ),
+              tm_off_snp: round(
+                Math.max(
+                  num(stats?.tm_off_snp),
+                  num(advancedTeam?.snaps?.team_offense_snaps),
+                ),
+              ),
+            },
+            advanced: advancedSnap || null,
+            advanced_team: advancedTeam || null,
             points,
             opponent: opponent.get(`${week}:${team}`) || null,
           };
@@ -676,7 +835,7 @@ function seasonEvidence(year) {
       if (!games) return;
       const totals = cleanLine(player.stats || {});
       playerHistory.set(key, { year, team, games, totals, weekly });
-      weekly.forEach(({ week, stats }) => {
+      weekly.forEach(({ week, stats, points }) => {
         const defenseTeam = opponent.get(`${week}:${team}`);
         if (!team || !defenseTeam) return;
         const defenseKey = `${defenseTeam}|${String(player.position).toUpperCase()}`;
@@ -685,10 +844,12 @@ function seasonEvidence(year) {
           position: String(player.position).toUpperCase(),
           weeks: new Set(),
           playerGames: 0,
+          pointsPpr: 0,
           stats: cleanLine(),
         };
         row.weeks.add(week);
         row.playerGames += 1;
+        row.pointsPpr += num(points?.ppr);
         statFields.forEach((field) => {
           row.stats[field] += num(stats[field]);
         });
@@ -699,17 +860,20 @@ function seasonEvidence(year) {
     ...row,
     games: row.weeks.size,
     perGame: Object.fromEntries(
-      statFields.map((field) => [
-        field,
-        num(row.stats[field]) / Math.max(1, row.weeks.size),
-      ]),
+      [
+        ...statFields.map((field) => [
+          field,
+          num(row.stats[field]) / Math.max(1, row.weeks.size),
+        ]),
+        ["points_ppr", num(row.pointsPpr) / Math.max(1, row.weeks.size)],
+      ],
     ),
   }));
   const baselines = {};
   positions.forEach((position) => {
     const rows = defenseRows.filter((row) => row.position === position);
     baselines[position] = Object.fromEntries(
-      statFields.map((field) => [
+      [...statFields, "points_ppr"].map((field) => [
         field,
         rows.reduce((sum, row) => sum + num(row.perGame[field]), 0) /
           Math.max(1, rows.length),
@@ -722,6 +886,9 @@ function seasonEvidence(year) {
     defense: defenseRows,
     baselines,
     playerHistory,
+    advancedTeamWeeks,
+    advancedTeamHistory,
+    advancedCoverage: advanced.coverage || {},
   };
 }
 
@@ -1064,6 +1231,7 @@ function defenseAdjustment(evidence, opponent, position, volatility) {
   const recency = evidenceWeights(evidence);
   const factors = {};
   const indices = {};
+  const rawIndices = {};
   const sample = evidence.reduce((sum, item) => {
     const row = item.defense.find(
       (candidate) =>
@@ -1071,8 +1239,9 @@ function defenseAdjustment(evidence, opponent, position, volatility) {
     );
     return sum + num(row?.games);
   }, 0);
-  statFields.forEach((field) => {
+  [...statFields, "points_ppr"].forEach((field) => {
     let weightedIndex = 0;
+    let weightedRawIndex = 0;
     let weightTotal = 0;
     evidence.forEach((item, index) => {
       const row = item.defense.find(
@@ -1084,27 +1253,33 @@ function defenseAdjustment(evidence, opponent, position, volatility) {
       if (!row?.games || !baseline) return;
       const reliability = row.games / (row.games + 8);
       const weight = recency[index] || 0.55;
-      const regressedIndex = 1 + (observed / baseline - 1) * reliability;
+      const rawIndex = observed / baseline;
+      const regressedIndex = 1 + (rawIndex - 1) * reliability;
       weightedIndex += regressedIndex * weight;
+      weightedRawIndex += rawIndex * weight;
       weightTotal += weight;
     });
     const index = weightTotal ? weightedIndex / weightTotal : 1;
+    rawIndices[field] = weightTotal ? weightedRawIndex / weightTotal : 1;
     const volume = ["pass_att", "rush_att", "rec_tgt", "fga", "xpa"].includes(
       field,
     );
     const sensitivity = num(volatility?.matchup_sensitivity) || 1;
     const strength = (volume ? 0.28 : 0.48) * sensitivity;
-    factors[field] = clamp(
-      1 + (index - 1) * strength,
-      volume ? 0.88 : 0.76,
-      volume ? 1.12 : 1.24,
-    );
+    if (field !== "points_ppr")
+      factors[field] = clamp(
+        1 + (index - 1) * strength,
+        volume ? 0.88 : 0.76,
+        volume ? 1.12 : 1.24,
+      );
     indices[field] = index;
   });
   return {
     factors,
     indices,
+    raw_indices: rawIndices,
     sample: Math.round(sample),
+    reliability: sample / (sample + 8),
   };
 }
 
@@ -1225,11 +1400,554 @@ function weatherRiskSignal(weather, position) {
   return clamp(signal, -0.16, 0.04);
 }
 
+function seededGenerator(seedText) {
+  let seed = 2166136261;
+  for (const character of String(seedText || "")) {
+    seed ^= character.charCodeAt(0);
+    seed = Math.imul(seed, 16777619);
+  }
+  return () => {
+    seed += 0x6d2b79f5;
+    let value = seed;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function standardNormal(random) {
+  const first = Math.max(1e-9, random());
+  const second = random();
+  return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second);
+}
+
+function correlatedOutcomeSimulation({
+  playerKeyValue,
+  team,
+  week,
+  mean,
+  volatility,
+  position,
+  market,
+}) {
+  const samples = 500;
+  const teamRandom = seededGenerator(`${season}|${week}|${team}|team`);
+  const playerRandom = seededGenerator(
+    `${season}|${week}|${team}|${playerKeyValue}|player`,
+  );
+  const correlation = position === "QB" ? 0.5 : position === "K" ? 0.42 : 0.34;
+  const cv = clamp(num(volatility?.cv) || 0.35, 0.16, 0.95);
+  const marketScale = market
+    ? clamp(num(market.implied_points) / 22.5, 0.72, 1.35)
+    : 1;
+  const sigma = clamp(cv * 0.68, 0.13, 0.72);
+  const values = [];
+  let booms = 0;
+  let busts = 0;
+  for (let index = 0; index < samples; index += 1) {
+    const teamZ = standardNormal(teamRandom);
+    const playerZ = standardNormal(playerRandom);
+    const combined = correlation * teamZ + Math.sqrt(1 - correlation ** 2) * playerZ;
+    const marketTilt = 1 + (marketScale - 1) * 0.35;
+    const value = Math.max(
+      0,
+      num(mean) * marketTilt * Math.exp(sigma * combined - (sigma ** 2) / 2),
+    );
+    values.push(value);
+    if (value >= num(mean) * 1.3) booms += 1;
+    if (value <= num(mean) * 0.7) busts += 1;
+  }
+  values.sort((left, right) => left - right);
+  const percentile = (value) =>
+    values[Math.min(values.length - 1, Math.max(0, Math.round((values.length - 1) * value)))];
+  return {
+    simulations: samples,
+    team_correlation: correlation,
+    p10: round(percentile(0.1)),
+    p25: round(percentile(0.25)),
+    median: round(percentile(0.5)),
+    p75: round(percentile(0.75)),
+    p90: round(percentile(0.9)),
+    mean: round(values.reduce((sum, value) => sum + value, 0) / values.length),
+    boom_probability: round(booms / samples, 4),
+    bust_probability: round(busts / samples, 4),
+    market_informed: Boolean(market),
+  };
+}
+
+function buildTeamUsageEvidence(evidence) {
+  const rows = new Map();
+  const paceSamples = [];
+  evidence.forEach((seasonRow) => {
+    seasonRow.playerHistory.forEach((history, key) => {
+      const position = key.split("|").at(-1);
+      history.weekly.forEach((game) => {
+        const mapKey = `${history.year}|${game.week}|${history.team}`;
+        const row = rows.get(mapKey) || {
+          plays: 0,
+          pass_att: 0,
+          rush_att: 0,
+          targets: 0,
+          red_zone: 0,
+          air_yards: 0,
+          two_minute_plays: 0,
+          third_down_plays: 0,
+        };
+        row.plays = Math.max(row.plays, num(game.stats?.tm_off_snp));
+        if (position === "QB") row.pass_att += num(game.stats?.pass_att);
+        row.rush_att += num(game.stats?.rush_att);
+        row.targets += num(game.stats?.rec_tgt);
+        row.red_zone +=
+          num(game.stats?.pass_rz_att) +
+          num(game.stats?.rush_rz_att) +
+          num(game.stats?.rec_rz_tgt);
+        row.air_yards += num(game.stats?.rec_air_yd);
+        row.two_minute_plays = Math.max(
+          row.two_minute_plays,
+          num(game.advanced_team?.offense?.samples?.two_minute),
+        );
+        row.third_down_plays = Math.max(
+          row.third_down_plays,
+          num(game.advanced_team?.offense?.samples?.third_down),
+        );
+        rows.set(mapKey, row);
+      });
+    });
+  });
+  rows.forEach((row) => {
+    if (row.plays > 0) paceSamples.push(row.plays);
+  });
+  return {
+    rows,
+    leaguePace:
+      paceSamples.reduce((sum, value) => sum + value, 0) /
+        Math.max(1, paceSamples.length) || 64,
+  };
+}
+
+function productionRoleFeatures(key, position, evidence, teamUsage) {
+  const games = evidence
+    .flatMap((seasonRow) => {
+      const history = seasonRow.playerHistory.get(key);
+      return (history?.weekly || []).map((game) => ({
+        ...game,
+        year: seasonRow.year,
+        team: history.team,
+      }));
+    })
+    .sort((left, right) => left.year - right.year || left.week - right.week);
+  const recent = games.slice(-3);
+  const earlier = games.slice(0, -3);
+  const average = (rows, accessor) => {
+    const values = rows.map(accessor).filter(Number.isFinite);
+    return values.length
+      ? values.reduce((sum, value) => sum + value, 0) / values.length
+      : null;
+  };
+  const teamRow = (game) =>
+    teamUsage.rows.get(`${game.year}|${game.week}|${game.team}`);
+  const snapShare = (game) => {
+    const snaps = num(game.stats?.tm_off_snp);
+    return snaps > 0 ? num(game.stats?.off_snp) / snaps : null;
+  };
+  const opportunityShare = (game) => {
+    const team = teamRow(game);
+    const playerOpportunity =
+      position === "QB"
+        ? num(game.stats?.pass_att) + num(game.stats?.rush_att)
+        : position === "K"
+          ? num(game.stats?.fga) + num(game.stats?.xpa)
+          : num(game.stats?.rush_att) + num(game.stats?.rec_tgt);
+    const teamOpportunity =
+      position === "QB"
+        ? num(team?.pass_att) + num(team?.rush_att)
+        : position === "K"
+          ? 0
+          : num(team?.rush_att) + num(team?.targets);
+    return teamOpportunity > 0 ? playerOpportunity / teamOpportunity : null;
+  };
+  const redZoneShare = (game) => {
+    const team = teamRow(game);
+    const value =
+      num(game.stats?.pass_rz_att) +
+      num(game.stats?.rush_rz_att) +
+      num(game.stats?.rec_rz_tgt);
+    return num(team?.red_zone) > 0 ? value / num(team.red_zone) : null;
+  };
+  const airYardShare = (game) => {
+    const team = teamRow(game);
+    return num(team?.air_yards) > 0
+      ? num(game.stats?.rec_air_yd) / num(team.air_yards)
+      : null;
+  };
+  const advancedValue = (field, nested) => (game) => {
+    const advanced = game.advanced;
+    const value = nested ? advanced?.[field]?.[nested] : advanced?.[field];
+    return value !== null && Number.isFinite(Number(value)) ? Number(value) : null;
+  };
+  const highValueTouchRate = (game) => {
+    const opportunities = num(game.advanced?.targets) + num(game.advanced?.carries);
+    return opportunities > 0
+      ? num(game.advanced?.high_value_touches) / opportunities
+      : null;
+  };
+  const situationalRate = (game, playerField, teamField) => {
+    const team = teamRow(game);
+    return num(team?.[teamField]) > 0
+      ? num(game.advanced?.[playerField]) / num(team[teamField])
+      : null;
+  };
+  const recentPoints = average(recent, (game) => num(game.points?.ppr));
+  const historicalPoints = average(games, (game) => num(game.points?.ppr));
+  const recentSnap = average(recent, snapShare);
+  const earlierSnap = average(earlier, snapShare);
+  const recentOpportunity = average(recent, opportunityShare);
+  const earlierOpportunity = average(earlier, opportunityShare);
+  const recentTargetShare = average(recent, advancedValue("target_share"));
+  const earlierTargetShare = average(earlier, advancedValue("target_share"));
+  const recentCarryShare = average(recent, advancedValue("carry_share"));
+  const earlierCarryShare = average(earlier, advancedValue("carry_share"));
+  const opportunityShares = games
+    .map(advancedValue("opportunity_share"))
+    .filter(Number.isFinite);
+  const opportunityMean = opportunityShares.length
+    ? opportunityShares.reduce((sum, value) => sum + value, 0) / opportunityShares.length
+    : null;
+  const opportunityVolatility = opportunityShares.length > 1
+    ? Math.sqrt(
+        opportunityShares.reduce(
+          (sum, value) => sum + (value - opportunityMean) ** 2,
+          0,
+        ) / opportunityShares.length,
+      )
+    : null;
+  const features = {
+    recent_form_delta:
+      Number.isFinite(recentPoints) && historicalPoints > 0
+        ? clamp(recentPoints / historicalPoints - 1, -0.75, 1)
+        : null,
+    snap_share: average(games, snapShare),
+    snap_trend:
+      Number.isFinite(recentSnap) && Number.isFinite(earlierSnap)
+        ? clamp(recentSnap - earlierSnap, -0.5, 0.5)
+        : null,
+    opportunity_share: average(games, opportunityShare),
+    opportunity_trend:
+      Number.isFinite(recentOpportunity) && Number.isFinite(earlierOpportunity)
+        ? clamp(recentOpportunity - earlierOpportunity, -0.5, 0.5)
+        : null,
+    red_zone_share: average(games, redZoneShare),
+    air_yard_share: average(games, airYardShare),
+    target_share: average(games, advancedValue("target_share")),
+    target_share_trend:
+      Number.isFinite(recentTargetShare) && Number.isFinite(earlierTargetShare)
+        ? clamp(recentTargetShare - earlierTargetShare, -0.5, 0.5)
+        : null,
+    carry_share: average(games, advancedValue("carry_share")),
+    carry_share_trend:
+      Number.isFinite(recentCarryShare) && Number.isFinite(earlierCarryShare)
+        ? clamp(recentCarryShare - earlierCarryShare, -0.5, 0.5)
+        : null,
+    weighted_opportunity_share: opportunityMean,
+    weighted_opportunity_trend:
+      Number.isFinite(recentOpportunity) && Number.isFinite(earlierOpportunity)
+        ? clamp(recentOpportunity - earlierOpportunity, -0.5, 0.5)
+        : null,
+    high_value_touch_rate: average(games, highValueTouchRate),
+    two_minute_opportunity_rate: average(
+      games,
+      (game) => situationalRate(game, "two_minute_opportunities", "two_minute_plays"),
+    ),
+    third_down_opportunity_rate: average(
+      games,
+      (game) => situationalRate(game, "third_down_opportunities", "third_down_plays"),
+    ),
+    opportunity_volatility: opportunityVolatility,
+    receiving_epa_per_target: average(games, advancedValue("receiving_epa_per_target")),
+    rushing_epa_per_carry: average(games, advancedValue("rushing_epa_per_carry")),
+    ngs_cpoe: average(games, advancedValue("ngs", "cpoe")),
+    ngs_separation: average(games, advancedValue("ngs", "separation")),
+    ngs_yac_over_expected: average(games, advancedValue("ngs", "yac_over_expected")),
+    ngs_ryoe_per_carry: average(games, advancedValue("ngs", "ryoe_per_carry")),
+    ngs_box_eight_rate: average(games, advancedValue("ngs", "box_eight_rate")),
+    team_pace_delta: average(games, (game) => {
+      const plays = num(teamRow(game)?.plays);
+      return plays > 0 ? plays / teamUsage.leaguePace - 1 : null;
+    }),
+    history_reliability: games.length / (games.length + 6),
+    games: games.length,
+  };
+  features.available_features = Object.entries(features).filter(
+    ([key, value]) => key !== "games" && value !== null && Number.isFinite(Number(value)),
+  ).length;
+  return features;
+}
+
+function advancedMatchupFeatures(evidence, offenseTeam, defenseTeam) {
+  const recency = evidenceWeights(evidence);
+  const averageSide = (team, side, field) => {
+    let weighted = 0;
+    let weightTotal = 0;
+    let samples = 0;
+    evidence.forEach((seasonRow, index) => {
+      const rows = seasonRow.advancedTeamHistory?.get(team) || [];
+      const values = rows
+        .map((row) => Number(row?.[side]?.[field]))
+        .filter(Number.isFinite);
+      if (!values.length) return;
+      const seasonAverage =
+        values.reduce((sum, value) => sum + value, 0) / values.length;
+      const weight = recency[index] || 0.55;
+      weighted += seasonAverage * weight;
+      weightTotal += weight;
+      samples += values.length;
+    });
+    return {
+      value: weightTotal ? weighted / weightTotal : null,
+      samples,
+    };
+  };
+  const offense = (field) => averageSide(offenseTeam, "offense", field);
+  const defense = (field) => averageSide(defenseTeam, "defense", field);
+  const snap = (field) => averageSide(offenseTeam, "snaps", field);
+  const protectionPressure = offense("pressure_rate");
+  const protectionSack = offense("sack_rate");
+  const opponentPressure = defense("pressure_rate");
+  const opponentSack = defense("sack_rate");
+  const offenseEpa = offense("epa_per_play");
+  const offenseSuccess = offense("success_rate");
+  const opponentEpa = defense("epa_per_play_allowed");
+  const opponentSuccess = defense("success_rate_allowed");
+  const offensePlayVolume = offense("play_volume");
+  const sample = Math.min(
+    protectionPressure.samples || 0,
+    opponentPressure.samples || 0,
+  );
+  const result = {
+    protection_pressure_rate: protectionPressure.value,
+    protection_sack_rate: protectionSack.value,
+    opponent_pressure_rate: opponentPressure.value,
+    opponent_sack_rate: opponentSack.value,
+    pressure_mismatch:
+      Number.isFinite(opponentPressure.value) &&
+      Number.isFinite(protectionPressure.value)
+        ? opponentPressure.value - protectionPressure.value
+        : null,
+    opponent_blitz_rate: defense("blitz_rate").value,
+    ol_stability: snap("ol_stability").value,
+    ol_continuity: snap("ol_continuity").value,
+    time_to_throw: offense("average_time_to_throw").value,
+    offense_motion_rate: offense("motion_rate").value,
+    offense_play_action_rate: offense("play_action_rate").value,
+    offense_screen_rate: offense("screen_rate").value,
+    offense_rpo_rate: offense("rpo_rate").value,
+    opponent_man_rate: defense("man_rate").value,
+    opponent_zone_rate: defense("zone_rate").value,
+    offense_epa_per_play: offenseEpa.value,
+    offense_success_rate: offenseSuccess.value,
+    offense_pass_rate: offense("pass_rate").value,
+    offense_red_zone_play_rate: offense("red_zone_play_rate").value,
+    opponent_epa_per_play_allowed: opponentEpa.value,
+    opponent_success_rate_allowed: opponentSuccess.value,
+    opponent_pass_rate_faced: defense("pass_rate_faced").value,
+    opponent_red_zone_play_rate_allowed: defense("red_zone_play_rate_allowed").value,
+    epa_matchup:
+      Number.isFinite(offenseEpa.value) && Number.isFinite(opponentEpa.value)
+        ? offenseEpa.value + opponentEpa.value
+        : null,
+    success_matchup:
+      Number.isFinite(offenseSuccess.value) && Number.isFinite(opponentSuccess.value)
+        ? offenseSuccess.value + opponentSuccess.value - 1
+        : null,
+    offense_neutral_pass_rate: offense("neutral_pass_rate").value,
+    offense_two_minute_rate: offense("two_minute_rate").value,
+    offense_third_down_success_rate: offense("third_down_success_rate").value,
+    offense_play_volume_delta: Number.isFinite(offensePlayVolume.value)
+      ? offensePlayVolume.value / 64 - 1
+      : null,
+    advanced_reliability: sample / (sample + 8),
+  };
+  result.available_features = advancedFeatureNames.filter(
+    (feature) =>
+      result[feature] !== null && Number.isFinite(Number(result[feature])),
+  ).length;
+  return result;
+}
+
+function trainedAdjustment(position, calibration, features) {
+  const positionModel = calibration?.by_position?.[position];
+  if (!positionModel || positionModel.holdout_mae_improvement <= 0)
+    return { factor: 1, raw_delta: 0, available: 0, model: null };
+  let available = 0;
+  const observedFeatures = new Set();
+  Object.entries(positionModel.features || {}).forEach(([feature]) => {
+    const raw = features?.[feature];
+    const observed = raw !== null && Number.isFinite(Number(raw));
+    if (observed) observedFeatures.add(feature);
+  });
+  available = observedFeatures.size;
+  let delta = num(positionModel.intercept);
+  if (positionModel.model_type === "boosted_stumps") {
+    (positionModel.trees || []).forEach((tree) => {
+      const settings = positionModel.features?.[tree.feature] || {};
+      const raw = features?.[tree.feature];
+      const observed = raw !== null && Number.isFinite(Number(raw));
+      const value = observed ? Number(raw) : num(settings.mean);
+      delta += value <= num(tree.threshold) ? num(tree.left) : num(tree.right);
+    });
+  } else {
+    Object.entries(positionModel.features || {}).forEach(([feature, settings]) => {
+      const raw = features?.[feature];
+      const observed = raw !== null && Number.isFinite(Number(raw));
+      const value = observed ? Number(raw) : num(settings.mean);
+      const normalized =
+        (value - num(settings.mean)) /
+        Math.max(0.000001, num(settings.scale) || 1);
+      delta += normalized * num(settings.coefficient);
+    });
+  }
+  const strength = num(positionModel.application_strength);
+  return {
+    factor: clamp(1 + clamp(delta, -0.35, 0.45) * strength, 0.65, 1.45),
+    raw_delta: round(delta, 5),
+    available,
+    model: positionModel,
+  };
+}
+
+function projectOpportunityLayer(position, baseline, role, environment, market) {
+  const historicalPlays = 64 * (1 + num(environment.offense_play_volume_delta));
+  const marketVolume = market
+    ? clamp(num(market.implied_points) / 22.5, 0.78, 1.28)
+    : 1;
+  const teamPlays = clamp(historicalPlays * (1 + (marketVolume - 1) * 0.28), 50, 78);
+  const passRate = clamp(
+    Number.isFinite(Number(environment.offense_neutral_pass_rate))
+      ? Number(environment.offense_neutral_pass_rate)
+      : 0.58,
+    0.42,
+    0.72,
+  );
+  const targetShare = clamp(
+    num(role.target_share) + num(role.target_share_trend) * 0.55,
+    0,
+    0.42,
+  );
+  const carryShare = clamp(
+    num(role.carry_share) + num(role.carry_share_trend) * 0.55,
+    0,
+    0.72,
+  );
+  const opportunityReliability = clamp(
+    num(role.games) / (num(role.games) + 6),
+    0,
+    0.82,
+  );
+  const modelTargets = teamPlays * passRate * targetShare;
+  const modelCarries = teamPlays * (1 - passRate) * carryShare;
+  const priorTargets = num(baseline.rec_tgt);
+  const priorCarries = num(baseline.rush_att);
+  const targets = ["RB", "WR", "TE"].includes(position)
+    ? priorTargets * (1 - opportunityReliability) + modelTargets * opportunityReliability
+    : 0;
+  const carries = ["QB", "RB", "WR", "TE"].includes(position)
+    ? priorCarries * (1 - opportunityReliability) + modelCarries * opportunityReliability
+    : 0;
+  const passAttempts = position === "QB"
+    ? num(baseline.pass_att) * (1 - opportunityReliability) +
+      teamPlays * passRate * opportunityReliability
+    : 0;
+  return {
+    team_plays: round(teamPlays, 2),
+    team_neutral_pass_rate: round(passRate, 4),
+    projected_pass_attempts: round(passAttempts, 2),
+    projected_targets: round(targets, 2),
+    projected_carries: round(carries, 2),
+    target_share: round(targetShare, 4),
+    carry_share: round(carryShare, 4),
+    reliability: round(opportunityReliability, 4),
+    market_informed: Boolean(market),
+  };
+}
+
+function publicOpportunityProjection(position, projection) {
+  if (!projection || position === "K") return null;
+  const common = {
+    team_plays: projection.team_plays,
+    team_neutral_pass_rate: projection.team_neutral_pass_rate,
+    reliability: projection.reliability,
+    market_informed: projection.market_informed,
+  };
+  if (position === "QB") {
+    return {
+      ...common,
+      projected_pass_attempts: projection.projected_pass_attempts,
+      projected_carries: projection.projected_carries,
+    };
+  }
+  if (["RB", "WR", "TE"].includes(position)) {
+    return {
+      ...common,
+      projected_targets: projection.projected_targets,
+      projected_carries: projection.projected_carries || undefined,
+      target_share: projection.target_share,
+      carry_share: projection.carry_share || undefined,
+    };
+  }
+  return common;
+}
+
+function publicAvailability(availability) {
+  if (!availability) return null;
+  const meaningful =
+    availability.applies_to_this_week ||
+    availability.status ||
+    num(availability.vacated_group_share) > 0;
+  return meaningful ? availability : null;
+}
+
+function calibratedOutcomeProfile(
+  baseProfile,
+  positionModel,
+  trainedFactor,
+  expectedPoints,
+) {
+  if (!positionModel) return baseProfile;
+  const tier = (positionModel.baseline_tiers || []).find(
+    (row) =>
+      expectedPoints >= num(row.minimum_baseline) &&
+      (row.maximum_baseline == null ||
+        expectedPoints <= num(row.maximum_baseline)),
+  );
+  const probabilityBins = tier?.probability_bins || positionModel.probability_bins || [];
+  const bin = probabilityBins.find(
+    (row) =>
+      trainedFactor >= num(row.minimum_factor) &&
+      trainedFactor <= num(row.maximum_factor),
+  );
+  const uncertainty = tier?.uncertainty || positionModel.uncertainty || {};
+  const floor = Math.max(0, expectedPoints * num(uncertainty.p10 || 0.45));
+  const ceiling = expectedPoints * num(uncertainty.p90 || 1.65);
+  return {
+    ...baseProfile,
+    boom_probability: round(num(bin?.boom_probability || baseProfile?.boom_probability), 4),
+    bust_probability: round(num(bin?.bust_probability || baseProfile?.bust_probability), 4),
+    floor: round(floor),
+    ceiling: round(ceiling),
+    median: round(expectedPoints * num(uncertainty.p50 || 1)),
+    p25: round(expectedPoints * num(uncertainty.p25 || 0.72)),
+    p75: round(expectedPoints * num(uncertainty.p75 || 1.3)),
+    calibration_sample: num(positionModel.final_sample),
+    calibration_tier: tier?.key || "all",
+    calibration_tier_sample: num(tier?.sample || positionModel.final_sample),
+    calibration_source: `${(positionModel.final_fit_seasons || [2023, 2024, 2025]).join("-")} leakage-safe player-games`,
+  };
+}
+
 function applyRiskyProjectionPath(weeks, baselineWeekly, volatility, position) {
   const active = weeks.filter((week) => !week.bye && !week.completed);
   if (!active.length) return weeks;
   const sensitivity = num(volatility?.matchup_sensitivity) || 1;
-  const amplification = clamp(1.55 + sensitivity * 1.25, 2.6, 3.4);
   const lensesByWeek = new Map(active.map((week) => [week.week, {}]));
 
   scoringKeys.forEach((scoring) => {
@@ -1251,8 +1969,33 @@ function applyRiskyProjectionPath(weeks, baselineWeekly, volatility, position) {
       const centeredMatchup = matchupFactor - weightedMeanFactor;
       const homeSignal = week.home ? 0.012 : -0.012;
       const weatherSignal = weatherRiskSignal(week.weather, position);
+      const directionSignal = centeredMatchup + homeSignal + weatherSignal;
+      const strongTail = Math.abs(directionSignal) >= 0.08;
+      const upper = num(
+        strongTail
+          ? week.outcome_profile?.ceiling
+          : week.outcome_profile?.p75,
+      );
+      const lower = num(
+        strongTail
+          ? week.outcome_profile?.floor
+          : week.outcome_profile?.p25,
+      );
+      const tailRatio =
+        directionSignal >= 0
+          ? upper > 0 && expected > 0
+            ? upper / expected
+            : 1
+          : lower >= 0 && expected > 0
+            ? lower / expected
+            : 1;
+      const scenarioWeight = clamp(
+        0.18 + Math.abs(directionSignal) * 4.5 * sensitivity,
+        0.18,
+        0.68,
+      );
       const riskyFactor = clamp(
-        1 + centeredMatchup * amplification + homeSignal + weatherSignal,
+        1 + (tailRatio - 1) * scenarioWeight,
         0.52,
         1.7,
       );
@@ -1548,6 +2291,17 @@ const evidenceYears = [
 ];
 const evidence = evidenceYears.map(seasonEvidence);
 const currentEvidence = evidence.find((item) => item.year === season) || null;
+const trainedCalibration = readJson(
+  path.join(
+    root,
+    "public",
+    "stats",
+    "projections",
+    "model-calibration.json",
+  ),
+  { by_position: {} },
+);
+const teamUsageEvidence = buildTeamUsageEvidence(evidence);
 const resolveCanonicalKey = buildCanonicalKeyResolver(base.rows);
 const sourceIndexes = projectionStatIndexes(resolveCanonicalKey);
 const sleeperIdIndex = new Map(
@@ -1568,6 +2322,14 @@ const opponentByWeek = new Map();
       date: game.date,
       weather: game.weather || null,
       venue: game.venue || null,
+      market: game.market
+        ? {
+            ...game.market,
+            team_spread: num(game.market.home_spread),
+            implied_points:
+              num(game.market.total) / 2 + num(game.market.home_spread) / 2,
+          }
+        : null,
     });
     opponentByWeek.set(`${week}:${normalizeTeam(game.away)}`, {
       opponent: normalizeTeam(game.home),
@@ -1575,12 +2337,45 @@ const opponentByWeek = new Map();
       date: game.date,
       weather: game.weather || null,
       venue: game.venue || null,
+      market: game.market
+        ? {
+            ...game.market,
+            team_spread: -num(game.market.home_spread),
+            implied_points:
+              num(game.market.total) / 2 - num(game.market.home_spread) / 2,
+          }
+        : null,
     });
   }),
 );
 const scheduledTeams = new Set(
   [...opponentByWeek.keys()].map((key) => key.split(":")[1]),
 );
+const availabilityGroup = (position) =>
+  position === "RB" ? "backfield" : ["WR", "TE"].includes(position) ? "targets" : position;
+const unavailableStatuses = new Set(["out", "ir", "pup", "suspended"]);
+const upcomingGame = [...opponentByWeek.entries()]
+  .map(([mapKey, matchup]) => ({
+    week: Number(mapKey.split(":")[0]),
+    kickoff: Date.parse(matchup.date),
+  }))
+  .filter((row) => Number.isFinite(row.kickoff) && row.kickoff >= Date.now())
+  .sort((left, right) => left.kickoff - right.kickoff)[0];
+const availabilityByTeam = new Map();
+for (const player of base.rows || []) {
+  const playerTeam = normalizeTeam(player.team);
+  const playerPosition = String(player.position || "").toUpperCase();
+  if (!playerTeam || !positions.has(playerPosition)) continue;
+  const group = availabilityGroup(playerPosition);
+  const key = `${playerTeam}|${group}`;
+  const row = availabilityByTeam.get(key) || { total: 0, unavailable: 0, players: [] };
+  const workload = Math.max(0, num(player.points_ppr ?? player.points));
+  const status = String(player.context?.injury_status || "").toLowerCase();
+  row.total += workload;
+  if (unavailableStatuses.has(status)) row.unavailable += workload;
+  row.players.push({ name: player.name, status, workload });
+  availabilityByTeam.set(key, row);
+}
 
 let statSourcePlayers = 0;
 let historyPlayers = 0;
@@ -1635,6 +2430,25 @@ const modeledPlayers = base.rows
     );
     const currentPlayerHistory = currentEvidence?.playerHistory.get(key);
     const volatility = playerVolatilityProfile(key, evidence);
+    const learnedRoleFeatures = productionRoleFeatures(
+      key,
+      position,
+      evidence,
+      teamUsageEvidence,
+    );
+    const availabilityStatus = String(
+      player.context?.injury_status || "",
+    ).toLowerCase();
+    const teamAvailability = availabilityByTeam.get(
+      `${team}|${availabilityGroup(position)}`,
+    ) || { total: 0, unavailable: 0, players: [] };
+    const playerUnavailable = unavailableStatuses.has(availabilityStatus);
+    const vacatedShare = teamAvailability.total > 0
+      ? teamAvailability.unavailable / teamAvailability.total
+      : 0;
+    const teammateOpportunityBoost = !playerUnavailable && !["QB", "K"].includes(position)
+      ? clamp(1 + vacatedShare * 0.22, 1, 1.1)
+      : 1;
     const actualByWeek = new Map(
       (currentPlayerHistory?.weekly || []).map((row) => [row.week, row]),
     );
@@ -1699,7 +2513,86 @@ const modeledPlayers = base.rows
         evidence,
         volatility,
       );
-      const defenseLine = applyDefense(baselineWeekly, defense, position);
+      const defenseFields =
+        position === "QB"
+          ? ["pass_att", "pass_yd", "pass_td", "rush_yd", "rush_td"]
+          : position === "RB"
+            ? ["rush_att", "rush_yd", "rush_td", "rec_tgt", "rec_yd"]
+            : position === "K"
+              ? ["fga", "fgm", "xpa", "xpm", "kick_pts"]
+              : ["rec_tgt", "rec_yd", "rec_td"];
+      const defenseValues = defenseFields
+        .map((field) => Number(defense.raw_indices?.[field]))
+        .filter(Number.isFinite);
+      const defensePointsIndex = Number(defense.raw_indices?.points_ppr);
+      const baselinePoints = scoreLine(baselineWeekly, 1, position);
+      const advancedFeatures = advancedMatchupFeatures(
+        evidence,
+        team,
+        matchup.opponent,
+      );
+      const weekFeatures = {
+        baseline_points: baselinePoints,
+        log_baseline: Math.log1p(Math.max(0, baselinePoints)),
+        week_fraction: week / 18,
+        early_season: week <= 4 ? 1 : 0,
+        ...learnedRoleFeatures,
+        ...advancedFeatures,
+        home: matchup.home ? 1 : 0,
+        defense_points_delta: Number.isFinite(defensePointsIndex)
+          ? defensePointsIndex - 1
+          : null,
+        defense_volume_delta: defenseValues.length
+          ? defenseValues.reduce((sum, value) => sum + value, 0) /
+              defenseValues.length -
+            1
+          : null,
+        personal_delta: num(personalHistory.factor) - 1,
+        defense_reliability: num(defense.reliability),
+        personal_reliability:
+          num(personalHistory.games) / (num(personalHistory.games) + 4),
+        market_implied_points_delta: matchup.market
+          ? num(matchup.market.implied_points) / 22.5 - 1
+          : null,
+        market_spread_scaled: matchup.market
+          ? clamp(num(matchup.market.team_spread) / 10, -1.5, 1.5)
+          : null,
+      };
+      const learned = trainedAdjustment(
+        position,
+        trainedCalibration,
+        weekFeatures,
+      );
+      const opportunityProjection = projectOpportunityLayer(
+        position,
+        baselineWeekly,
+        learnedRoleFeatures,
+        advancedFeatures,
+        matchup.market,
+      );
+      const kickoffDistance = Date.parse(matchup.date) - Date.now();
+      const availabilityApplies =
+        upcomingGame?.week === week &&
+        Number.isFinite(kickoffDistance) &&
+        kickoffDistance >= -60 * 60 * 1000 &&
+        kickoffDistance <= 8 * 86400000;
+      const ownAvailabilityFactor = availabilityApplies
+        ? playerUnavailable
+          ? 0
+          : availabilityStatus === "doubtful"
+            ? 0.35
+            : 1
+        : 1;
+      const availabilityFactor = ownAvailabilityFactor *
+        (availabilityApplies ? teammateOpportunityBoost : 1);
+      const defenseLine = learned.model
+        ? Object.fromEntries(
+            statFields.map((field) => [
+              field,
+              num(baselineWeekly[field]) * learned.factor,
+            ]),
+          )
+        : applyDefense(baselineWeekly, defense, position);
       return {
         week,
         bye: false,
@@ -1708,6 +2601,7 @@ const modeledPlayers = base.rows
         kickoff: matchup.date,
         weather: matchup.weather,
         venue: matchup.venue,
+        market: matchup.market || null,
         completed: false,
         stat_line: guardStatRates(
           {
@@ -1715,7 +2609,9 @@ const modeledPlayers = base.rows
             ...Object.fromEntries(
               statFields.map((field) => [
                 field,
-                num(defenseLine[field]) * personalHistory.factor,
+                num(defenseLine[field]) *
+                  (learned.model ? 1 : personalHistory.factor) *
+                  availabilityFactor,
               ]),
             ),
           },
@@ -1723,6 +2619,102 @@ const modeledPlayers = base.rows
         ),
         defense,
         personal_history: personalHistory,
+        opportunity_projection: opportunityProjection,
+        availability: {
+          status: availabilityStatus || null,
+          applies_to_this_week: availabilityApplies,
+          player_factor: round(ownAvailabilityFactor, 4),
+          teammate_opportunity_factor: round(
+            availabilityApplies ? teammateOpportunityBoost : 1,
+            4,
+          ),
+          vacated_group_share: round(vacatedShare, 4),
+        },
+        learned_adjustment: {
+          factor: round(learned.factor, 4),
+          available_features: learned.available,
+          signals: {
+            home: weekFeatures.home,
+            defense_points_delta: round(
+              weekFeatures.defense_points_delta,
+              5,
+            ),
+            defense_volume_delta: round(
+              weekFeatures.defense_volume_delta,
+              5,
+            ),
+            personal_delta: round(weekFeatures.personal_delta, 5),
+            pressure_mismatch: round(weekFeatures.pressure_mismatch, 5),
+            protection_pressure_rate: round(
+              weekFeatures.protection_pressure_rate,
+              5,
+            ),
+            opponent_pressure_rate: round(
+              weekFeatures.opponent_pressure_rate,
+              5,
+            ),
+            opponent_blitz_rate: round(
+              weekFeatures.opponent_blitz_rate,
+              5,
+            ),
+            ol_continuity: round(weekFeatures.ol_continuity, 5),
+            opponent_man_rate: round(weekFeatures.opponent_man_rate, 5),
+            opponent_zone_rate: round(weekFeatures.opponent_zone_rate, 5),
+            offense_epa_per_play: round(weekFeatures.offense_epa_per_play, 5),
+            offense_success_rate: round(weekFeatures.offense_success_rate, 5),
+            offense_pass_rate: round(weekFeatures.offense_pass_rate, 5),
+            offense_red_zone_play_rate: round(
+              weekFeatures.offense_red_zone_play_rate,
+              5,
+            ),
+            opponent_epa_per_play_allowed: round(
+              weekFeatures.opponent_epa_per_play_allowed,
+              5,
+            ),
+            opponent_success_rate_allowed: round(
+              weekFeatures.opponent_success_rate_allowed,
+              5,
+            ),
+            opponent_pass_rate_faced: round(
+              weekFeatures.opponent_pass_rate_faced,
+              5,
+            ),
+            opponent_red_zone_play_rate_allowed: round(
+              weekFeatures.opponent_red_zone_play_rate_allowed,
+              5,
+            ),
+            epa_matchup: round(weekFeatures.epa_matchup, 5),
+            success_matchup: round(weekFeatures.success_matchup, 5),
+            offense_neutral_pass_rate: round(
+              weekFeatures.offense_neutral_pass_rate,
+              5,
+            ),
+            offense_two_minute_rate: round(
+              weekFeatures.offense_two_minute_rate,
+              5,
+            ),
+            offense_third_down_success_rate: round(
+              weekFeatures.offense_third_down_success_rate,
+              5,
+            ),
+            offense_play_volume_delta: round(
+              weekFeatures.offense_play_volume_delta,
+              5,
+            ),
+            market_implied_points_delta: round(
+              weekFeatures.market_implied_points_delta,
+              5,
+            ),
+            market_spread_scaled: round(
+              weekFeatures.market_spread_scaled,
+              5,
+            ),
+            advanced_reliability: round(
+              weekFeatures.advanced_reliability,
+              5,
+            ),
+          },
+        },
       };
     });
     const expectedWeeks = normalizeWeeklyLines(
@@ -1753,17 +2745,36 @@ const modeledPlayers = base.rows
         ? projections.ppr / baselinePoints
         : 1;
       const matchupFactor = baselinePoints ? projections.ppr / baselinePoints : 1;
+      const baseOutcome = matchupOutcomeProfile(
+        volatility,
+        matchupFactor,
+        baselinePoints,
+      );
+      const calibratedOutcome = calibratedOutcomeProfile(
+        baseOutcome,
+        trainedCalibration?.by_position?.[position],
+        matchupFactor,
+        projections.ppr,
+      );
+      const simulation = correlatedOutcomeSimulation({
+        playerKeyValue: key,
+        team,
+        week: week.week,
+        mean: projections.ppr,
+        volatility,
+        position,
+        market: week.market,
+      });
       return {
         ...week,
         projections,
         matchup_factor: round(matchupFactor, 4),
         defense_index: round(defenseIndex, 4),
         defense_sample: num(week.defense?.sample),
-        outcome_profile: matchupOutcomeProfile(
-          volatility,
-          matchupFactor,
-          baselinePoints,
-        ),
+        outcome_profile: {
+          ...calibratedOutcome,
+          simulation,
+        },
       };
     });
     const normalizedWeeks = applyRiskyProjectionPath(
@@ -1834,13 +2845,38 @@ const modeledPlayers = base.rows
         ];
       }),
     );
+    const learnedPositionModel = trainedCalibration?.by_position?.[position];
+    const learnedWeeks = unnormalizedWeeks.filter(
+      (week) => !week.bye && !week.completed && week.learned_adjustment,
+    );
+    const trainedFeatureCount = Math.max(
+      1,
+      Object.keys(learnedPositionModel?.features || {}).length,
+    );
+    const trainedFeatureCoverage = learnedWeeks.length
+      ? learnedWeeks.reduce(
+          (sum, week) =>
+            sum + num(week.learned_adjustment?.available_features),
+          0,
+        ) /
+        (learnedWeeks.length * trainedFeatureCount)
+      : num(learnedRoleFeatures.available_features) / trainedFeatureCount;
+    const holdoutValidated =
+      num(learnedPositionModel?.holdout_mae_improvement) > 0;
+    const sourceCoverageScore = usedStatSources.length * 7;
+    const historyCoverageScore = Math.min(12, history.effectiveGames * 0.55);
+    const trainedCoverageScore = trainedFeatureCoverage * 8;
+    const validationScore = holdoutValidated ? 4 : -8;
+    const fallbackPenalty = usedStatSources.length ? 0 : 18;
     const confidence = Math.round(
       clamp(
         num(player.confidence) * 0.62 +
-          usedStatSources.length * 7 +
-          Math.min(12, history.effectiveGames * 0.55) +
+          sourceCoverageScore +
+          historyCoverageScore +
+          trainedCoverageScore +
+          validationScore +
           (evidenceYears.length / 3) * 6 -
-          (usedStatSources.length ? 0 : 18),
+          fallbackPenalty,
         20,
         98,
       ),
@@ -1851,6 +2887,14 @@ const modeledPlayers = base.rows
       team,
       position,
       confidence,
+      confidence_components: {
+        source_projection_confidence: round(num(player.confidence), 1),
+        projected_stat_sources: usedStatSources.length,
+        historical_effective_games: round(history.effectiveGames, 1),
+        trained_feature_coverage: round(trainedFeatureCoverage, 4),
+        holdout_validated: holdoutValidated,
+        bounded_fallback: usedStatSources.length === 0,
+      },
       source_count: num(player.source_count),
       disagreement: num(player.disagreement),
       model_version: MODEL_VERSION,
@@ -1861,6 +2905,7 @@ const modeledPlayers = base.rows
         ignored_sources:
           prior.sources.length && !scoreablePrior ? prior.sources : [],
         field_coverage: prior.coverage,
+        weighting: "adaptive field-level agreement weighting",
       },
       regression,
       volatility: {
@@ -1872,6 +2917,45 @@ const modeledPlayers = base.rows
         matchup_sensitivity: volatility.matchup_sensitivity,
       },
       role_calibration,
+      learned_role: {
+        calibration_version: trainedCalibration?.version || null,
+        features: learnedRoleFeatures,
+        advanced_feature_names: advancedFeatureNames,
+        advanced_features_enabled: advancedFeatureNames.filter((feature) =>
+          Object.prototype.hasOwnProperty.call(
+            trainedCalibration?.by_position?.[position]?.features || {},
+            feature,
+          ),
+        ),
+        opportunity_feature_names: opportunityFeatureNames,
+        opportunity_features_enabled: opportunityFeatureNames.filter((feature) =>
+          Object.prototype.hasOwnProperty.call(
+            trainedCalibration?.by_position?.[position]?.features || {},
+            feature,
+          ),
+        ),
+        available_features: round(
+          trainedFeatureCoverage * trainedFeatureCount,
+          2,
+        ),
+        feature_coverage: round(trainedFeatureCoverage, 4),
+        feature_count: Object.keys(
+          trainedCalibration?.by_position?.[position]?.features || {},
+        ).length,
+        holdout: trainedCalibration?.by_position?.[position]
+          ? {
+              sample:
+                trainedCalibration.by_position[position].validation_sample,
+              baseline_mae:
+                trainedCalibration.by_position[position].holdout_baseline?.mae,
+              trained_mae:
+                trainedCalibration.by_position[position].holdout_trained?.mae,
+              improvement:
+                trainedCalibration.by_position[position]
+                  .holdout_mae_improvement,
+            }
+          : null,
+      },
       projected_stat_line: sparseLine(seasonLine),
       projected_games: round(seasonLine.games, 1),
       completed_games: activeWeeks - remainingGames,
@@ -1892,9 +2976,31 @@ const modeledPlayers = base.rows
         defense_index: week.defense_index,
         defense_sample: week.defense_sample,
         personal_history: week.personal_history || null,
+        learned_adjustment: week.learned_adjustment || null,
+        opportunity_projection: publicOpportunityProjection(
+          player.position,
+          week.opportunity_projection,
+        ),
+        availability: publicAvailability(week.availability),
+        market: week.market || null,
         weather: week.weather || null,
         venue: week.venue || null,
-        outcome_profile: week.outcome_profile || null,
+        outcome_profile: week.outcome_profile
+          ? {
+              ...week.outcome_profile,
+              simulation: week.outcome_profile.simulation
+                ? {
+                    p10: week.outcome_profile.simulation.p10,
+                    median: week.outcome_profile.simulation.median,
+                    p90: week.outcome_profile.simulation.p90,
+                    boom_probability:
+                      week.outcome_profile.simulation.boom_probability,
+                    bust_probability:
+                      week.outcome_profile.simulation.bust_probability,
+                  }
+                : null,
+            }
+          : null,
         projection_lenses: week.projection_lenses || null,
         risky_factor: week.risky_factor ?? null,
       })),
@@ -1913,14 +3019,86 @@ modeledPlayers.forEach((player) => {
   modelPlayerIds.set(player.player_id, player.name);
 });
 
+const generatedAt = new Date().toISOString();
+const modelInputFiles = [
+  path.join(root, "public", `projections_thefantasyarsenal_${season}.json`),
+  path.join(root, "public", `projections_sleeper_${season}.json`),
+  path.join(root, "public", `projections_fantasypros_${season}.json`),
+  path.join(root, "public", `projections_draftsharks_${season}.json`),
+  path.join(root, "public", `projections_fantasysharks_${season}.json`),
+  path.join(
+    root,
+    "public",
+    "stats",
+    "projections",
+    String(season),
+    "schedule.json",
+  ),
+  path.join(root, "src", "data", "nfl-stadiums.json"),
+  path.join(root, "data", "player-identity-aliases.json"),
+  path.join(
+    root,
+    "public",
+    "stats",
+    "projections",
+    "model-calibration.json",
+  ),
+  ...evidenceYears.flatMap((year) =>
+    ["sleeper.json", "schedule.json", "fantasypros.json"].map((file) =>
+      path.join(root, "public", "stats", "history", String(year), file),
+    ),
+  ),
+  ...evidenceYears.map((year) =>
+    path.join(root, "public", "stats", "advanced", String(year), "context.json"),
+  ),
+];
+const inputManifest = {
+  captured_at: generatedAt,
+  feature_version: FEATURE_VERSION,
+  files: [...new Set(modelInputFiles)]
+    .map(fingerprintFile)
+    .filter(Boolean)
+    .sort((left, right) => left.path.localeCompare(right.path)),
+};
+inputManifest.bundle_sha256 = crypto
+  .createHash("sha256")
+  .update(
+    inputManifest.files
+      .map((file) => `${file.path}:${file.sha256}`)
+      .join("\n"),
+  )
+  .digest("hex");
+
 const output = {
   source: "The Fantasy Arsenal Stat Projection Model",
   season,
-  generated_at: new Date().toISOString(),
+  generated_at: generatedAt,
   model_version: MODEL_VERSION,
   model_build_id: MODEL_BUILD_ID,
   schema_version: MODEL_SCHEMA,
+  feature_version: FEATURE_VERSION,
+  input_manifest: inputManifest,
   status: "experimental",
+  trained_calibration: {
+    version: trainedCalibration?.version || null,
+    generated_at: trainedCalibration?.generated_at || null,
+    validation: trainedCalibration?.validation || null,
+    positions: Object.fromEntries(
+      Object.entries(trainedCalibration?.by_position || {}).map(
+        ([position, row]) => [
+          position,
+          {
+            training_sample: row.training_sample,
+            validation_sample: row.validation_sample,
+            application_strength: row.application_strength,
+            holdout_baseline_mae: row.holdout_baseline?.mae,
+            holdout_trained_mae: row.holdout_trained?.mae,
+            holdout_mae_improvement: row.holdout_mae_improvement,
+          },
+        ],
+      ),
+    ),
+  },
   evidence_seasons: evidenceYears,
   scoring_variants: scoringKeys,
   count: modeledPlayers.length,
@@ -1928,11 +3106,26 @@ const output = {
     projected_stat_source_players: statSourcePlayers,
     historical_raw_stat_players: historyPlayers,
     bounded_fallback_players: fallbackPlayers,
+    trained_adjustment_players: modeledPlayers.filter(
+      (player) => player.learned_role?.holdout?.improvement > 0,
+    ).length,
+    trained_adjustment_version: trainedCalibration?.version || null,
+    average_role_features: round(
+      modeledPlayers.reduce(
+        (sum, player) =>
+          sum + num(player.learned_role?.available_features),
+        0,
+      ) / Math.max(1, modeledPlayers.length),
+      2,
+    ),
     projected_stat_sources: sourceIndexes.map((source) => ({
       source: source.name,
       players: source.index.size,
       updated: source.updated,
     })),
+    advanced_context_seasons: evidence.filter(
+      (row) => num(row.advancedCoverage?.team_weeks) > 0,
+    ).map((row) => ({ year: row.year, ...row.advancedCoverage })),
   },
   scoring_rules: {
     pass_yard: 0.04,
@@ -1951,7 +3144,7 @@ const output = {
     baseline:
       "The model independently scores a coherent stat line. The existing Fantasy Arsenal consensus is retained as a bounded workload prior and comparison point, not a forced final answer.",
     projected_stats:
-      "Canonical projected stat lines combine FantasyPros, DraftSharks, and FantasySharks field-level projections with a 35% outlier guard.",
+      "Canonical projected stat lines combine FantasyPros, DraftSharks, and FantasySharks field-level projections with a 35% outlier guard and adaptive per-field agreement weights. Raw source contributions are retained for later accuracy learning.",
     regression: `Projected volume and efficiency are blended toward the player's recency-weighted ${completedEvidenceYears.join("–")} raw Sleeper production. Historical influence is sample-sized, capped at 22%, with volume bounded to +/-6% and efficiency to +/-5%.`,
     live_learning:
       finalWeeks.size > 0
@@ -1960,11 +3153,21 @@ const output = {
     role_calibration:
       "The Arsenal consensus supplies 18% of role calibration when three projected-stat sources agree, 28% with two sources, 42% with one, and 72% only for synthetic fallbacks. The remaining weight belongs to the independent stat model, and the transparent final scale factor is bounded between 55% and 135%.",
     matchup:
-      "Three years of defense-vs-position raw stats are weighted 15% / 30% / 55%, regressed by sample, then applied separately to volume and production fields. Player-specific volatility controls matchup sensitivity; volume can move up to 12% and other counting stats up to 24% before season-total normalization.",
+      "Weekly redistribution uses position-specific leakage-safe adjustments trained on role, snap, opportunity, red-zone, air-yard, pace, opponent, home, personal history, pass protection, defensive pressure, blitz, coverage, offensive-line continuity, motion, play action, screen, and RPO context. Every position must beat its untrained and incumbent 2025 holdout before a challenger is enabled.",
+    advanced_context:
+      "Compact nflverse archives add weekly PFR pressure and snaps, play-level team environment and player opportunities, FTN charting, and NFL Next Gen Stats. Features are calculated only from games available before the forecast target, are sample-weighted, and remain neutral unless their position-specific challenger clears the untouched holdout.",
+    opportunity_model:
+      "The two-stage layer first estimates team plays and pass rate, then allocates targets, carries, high-value touches, two-minute work, and third-down work by a player's recency-weighted role. Volume and per-opportunity efficiency are exposed separately; only holdout-validated position layers influence the expected projection.",
+    availability:
+      "Inside the final eight days before the next kickoff, OUT/IR/PUP/suspended players are removed from that week, doubtful players receive a conservative availability factor, and a capped teammate-vacancy factor can redistribute opportunity. Season totals are rebalanced across later active weeks rather than silently erased.",
+    simulation:
+      "Each active player-week includes 500 deterministic Monte Carlo outcomes with a shared team component and player-specific volatility. This produces correlated P10/P25/median/P75/P90 ranges without changing the validated expected mean.",
+    trained_features:
+      "The compact published calibration contains coefficients, feature means, missing-value fallbacks, sample sizes, regularization, shrinkage, and 2025 holdout results. Detailed player-game training rows remain local.",
     player_matchup_history:
       "When at least two recent meetings exist, each result is compared with that player's same-season average against every other opponent. The recency-weighted residual is sample-regressed, volatility-aware, and capped at +/-6%, so opponent history can create direction without overpowering role or projected stats.",
     outcomes:
-      "Safe / Expected is the calibrated most-likely weekly path. Risky amplifies only centered, evidence-backed matchup differences using the player's historical volatility, defense-by-stat tendencies, personal opponent history, home/away context, and real kickoff weather when it enters the 16-day forecast window. Risky is normalized back to the same remaining season expectation, and both paths are archived and graded separately.",
+      "Safe / Expected is the calibrated mean path. Floor, median, ceiling, and boom/bust probabilities use empirical residual distributions from 2023-2025 leakage-safe player-games. Risky follows the appropriate calibrated tail only when matchup, venue, personal-history, or weather evidence supplies direction, then remains season-total neutral.",
     schedule:
       "The saved ESPN NFL schedule supplies opponent, home/away, bye, and kickoff context.",
     normalization:
@@ -1990,49 +3193,107 @@ writeJson(path.join(root, "public", "stats", "projections", "manifest.json"), {
   current_season: season,
   model_path: `/stats/projections/${season}/current.json`,
   accuracy_path: `/stats/projections/${season}/accuracy.json`,
+  audit_path: `/stats/projections/${season}/audit.json`,
+  identity_path: `/stats/projections/${season}/identities.json`,
+  calibration_path: "/stats/projections/model-calibration.json",
   generated_at: output.generated_at,
   model_version: MODEL_VERSION,
   model_build_id: MODEL_BUILD_ID,
+  feature_version: FEATURE_VERSION,
+  input_bundle_sha256: inputManifest.bundle_sha256,
   status: output.status,
 });
 if (archive) {
   const now = Date.now();
-  const activeWeek =
-    (schedule.weeks || []).find(({ games }) =>
+  const activeWeekSchedule = (schedule.weeks || []).find(({ games }) =>
       (games || []).some((game) => Date.parse(game.date) >= now),
-    )?.week || 18;
+    );
+  const activeWeek = activeWeekSchedule?.week || 18;
+  const generatedAtMs = Date.parse(output.generated_at);
+  const candidatePlayers = modeledPlayers
+    .map((player) => ({
+      player_id: player.player_id,
+      name: player.name,
+      team: player.team,
+      position: player.position,
+      confidence: player.confidence,
+      disagreement: player.disagreement,
+      stat_sources: player.stat_prior.sources,
+      historical_games: player.regression.history_games,
+      role_calibration: player.role_calibration,
+      learned_role: player.learned_role,
+      consensus_anchors: Object.fromEntries(
+        scoringKeys.map((key) => [key, player.scoring[key].consensus_anchor]),
+      ),
+      forecast: player.weeks.find((row) => row.week === activeWeek) || null,
+    }))
+    .filter(
+      (player) =>
+        player.forecast && !player.forecast.bye && !player.forecast.completed,
+    );
+  const preKickoffPlayers = candidatePlayers.filter((player) => {
+    const kickoff = Date.parse(player.forecast?.kickoff);
+    return Number.isFinite(kickoff) && generatedAtMs < kickoff;
+  });
+  const upcomingKickoffs = preKickoffPlayers
+    .map((player) => Date.parse(player.forecast?.kickoff))
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right);
+  const hoursUntilNextKickoff = upcomingKickoffs.length
+    ? (upcomingKickoffs[0] - generatedAtMs) / 3600000
+    : null;
+  const snapshotClass =
+    hoursUntilNextKickoff === null
+      ? "no_upcoming_games"
+      : hoursUntilNextKickoff <= 3
+        ? "final_window"
+        : hoursUntilNextKickoff <= 24
+          ? "late_week"
+          : hoursUntilNextKickoff <= 72
+            ? "midweek"
+            : "early_week";
+  const snapshotId = crypto
+    .createHash("sha256")
+    .update(
+      [
+        season,
+        activeWeek,
+        output.generated_at,
+        MODEL_BUILD_ID,
+        inputManifest.bundle_sha256,
+      ].join("|"),
+    )
+    .digest("hex");
   const snapshot = {
+    snapshot_id: snapshotId,
     source: output.source,
     season,
     week: activeWeek,
     generated_at: output.generated_at,
+    data_cutoff_at: output.generated_at,
+    snapshot_class: snapshotClass,
     model_version: MODEL_VERSION,
     model_build_id: MODEL_BUILD_ID,
     schema_version: MODEL_SCHEMA,
+    feature_version: FEATURE_VERSION,
     status: output.status,
+    input_manifest: inputManifest,
+    capture: {
+      candidate_players: candidatePlayers.length,
+      pre_kickoff_players: preKickoffPlayers.length,
+      excluded_after_kickoff: candidatePlayers.length - preKickoffPlayers.length,
+      hours_until_next_kickoff: round(hoursUntilNextKickoff, 2),
+      earliest_kickoff: upcomingKickoffs.length
+        ? new Date(upcomingKickoffs[0]).toISOString()
+        : null,
+      latest_kickoff: upcomingKickoffs.length
+        ? new Date(upcomingKickoffs.at(-1)).toISOString()
+        : null,
+    },
     scoring_rules: output.scoring_rules,
     methodology: output.methodology,
     feature_coverage: output.feature_coverage,
-    players: modeledPlayers
-      .map((player) => ({
-        player_id: player.player_id,
-        name: player.name,
-        team: player.team,
-        position: player.position,
-        confidence: player.confidence,
-        disagreement: player.disagreement,
-        stat_sources: player.stat_prior.sources,
-        historical_games: player.regression.history_games,
-        role_calibration: player.role_calibration,
-        consensus_anchors: Object.fromEntries(
-          scoringKeys.map((key) => [key, player.scoring[key].consensus_anchor]),
-        ),
-        forecast: player.weeks.find((row) => row.week === activeWeek) || null,
-      }))
-      .filter(
-        (player) =>
-          player.forecast && !player.forecast.bye && !player.forecast.completed,
-      ),
+    players: preKickoffPlayers,
   };
   const timestamp = output.generated_at.replace(/:/g, "-");
   writeJson(

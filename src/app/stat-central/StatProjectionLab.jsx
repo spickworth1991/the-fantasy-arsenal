@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  leagueScoringLabel,
+  scoreSleeperStats,
+  sleeperScoringCoverage,
+} from "../../lib/sleeperScoring";
 
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const normalize = (value) =>
@@ -93,7 +98,7 @@ function Kpi({ label, value, detail, tone = "cyan" }) {
   );
 }
 
-function Filter({ label, value, onChange, children }) {
+function Filter({ label, value, onChange, children, preference }) {
   return (
     <label className="min-w-0">
       <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
@@ -102,6 +107,7 @@ function Filter({ label, value, onChange, children }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        data-account-preference={preference}
         className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
       >
         {children}
@@ -145,17 +151,48 @@ function recommendedWeek(model) {
   );
 }
 
-function projectionRow(player, week, scoring, lens) {
+function customWeekProjection(player, forecast, scoringSettings, lens) {
+  if (!forecast || !scoringSettings) return 0;
+  const expected = scoreSleeperStats(
+    forecast.stat_line || {},
+    scoringSettings,
+    player?.position,
+  );
+  return forecast.completed || lens === "safe_expected"
+    ? expected
+    : expected * number(forecast.risky_factor || 1);
+}
+
+function projectionRow(player, week, scoring, lens, scoringSettings = null) {
   if (!player) return null;
   const forecast = player.weeks?.find((row) => row.week === week);
-  const expectedProjection = number(forecast?.projections?.[scoring]);
-  const projection = forecast?.completed
-    ? expectedProjection
-    : number(
-        forecast?.projection_lenses?.[scoring]?.[lens] ?? expectedProjection,
-      );
-  const season = player.scoring?.[scoring] || {};
-  const remainingGames = number(player.remaining_games) || 17;
+  const customScoring = scoring === "league" && scoringSettings;
+  const expectedProjection = customScoring
+    ? customWeekProjection(player, forecast, scoringSettings, "safe_expected")
+    : number(forecast?.projections?.[scoring]);
+  const projection = customScoring
+    ? customWeekProjection(player, forecast, scoringSettings, lens)
+    : forecast?.completed
+      ? expectedProjection
+      : number(
+          forecast?.projection_lenses?.[scoring]?.[lens] ?? expectedProjection,
+        );
+  const customWeeks = customScoring
+    ? (player.weeks || []).filter((row) => !row.bye).map((row) => ({
+        completed: Boolean(row.completed),
+        points: customWeekProjection(player, row, scoringSettings, lens),
+      }))
+    : [];
+  const season = customScoring
+    ? {
+        season_points: customWeeks.reduce((sum, row) => sum + row.points, 0),
+        remaining_points: customWeeks.filter((row) => !row.completed).reduce((sum, row) => sum + row.points, 0),
+        custom: true,
+      }
+    : player.scoring?.[scoring] || {};
+  const remainingGames = customScoring
+    ? customWeeks.filter((row) => !row.completed).length || 1
+    : number(player.remaining_games) || 17;
   const baseline = forecast?.completed
     ? projection
     : number(season.remaining_points ?? season.season_points) / remainingGames;
@@ -169,7 +206,12 @@ function projectionRow(player, week, scoring, lens) {
   };
 }
 
-export default function StatProjectionLab({ model }) {
+export default function StatProjectionLab({
+  model,
+  leagues = [],
+  scoringLeagueId = "",
+  onScoringLeagueChange,
+}) {
   const [week, setWeek] = useState(() => recommendedWeek(model));
   const [scoring, setScoring] = useState("ppr");
   const [lens, setLens] = useState("safe_expected");
@@ -182,6 +224,13 @@ export default function StatProjectionLab({ model }) {
   const [accuracy, setAccuracy] = useState(null);
   const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
   const [view, setView] = useState("player");
+  const selectedScoringLeague = leagues.find(
+    (league) => String(league.league_id) === String(scoringLeagueId),
+  ) || null;
+  const leagueScoring = selectedScoringLeague?.scoring_settings || null;
+  const scoringLabel = scoring === "league"
+    ? leagueScoringLabel(selectedScoringLeague)
+    : scoring.toUpperCase();
   const teams = useMemo(
     () =>
       [
@@ -195,7 +244,9 @@ export default function StatProjectionLab({ model }) {
   const rows = useMemo(
     () =>
       (model?.players || [])
-        .map((player) => projectionRow(player, week, scoring, lens))
+        .map((player) =>
+          projectionRow(player, week, scoring, lens, leagueScoring),
+        )
         .filter((player) => !player.forecast?.bye && player.projection > 0)
         .filter((player) => position === "ALL" || player.position === position)
         .filter((player) => team === "ALL" || player.team === team)
@@ -212,7 +263,7 @@ export default function StatProjectionLab({ model }) {
                 ? b.disagreement - a.disagreement
                 : b.projection - a.projection,
         ),
-    [lens, model, position, query, scoring, sort, team, week],
+    [leagueScoring, lens, model, position, query, scoring, sort, team, week],
   );
   useEffect(() => setWeek(recommendedWeek(model)), [model]);
   useEffect(
@@ -241,18 +292,23 @@ export default function StatProjectionLab({ model }) {
     (player) => player.name === selectedName,
   );
   const selected =
-    projectionRow(pinnedPlayer, week, scoring, lens) || rows[0] || null;
+    projectionRow(pinnedPlayer, week, scoring, lens, leagueScoring) ||
+    rows[0] ||
+    null;
   const seasonSeries = selected
     ? (selected.weeks || [])
         .filter((row) => !row.bye)
         .map((row) => ({
           ...row,
-          projection: row.completed
-            ? number(row.projections?.[scoring])
-            : number(
-                row.projection_lenses?.[scoring]?.[lens] ??
-                  row.projections?.[scoring],
-              ),
+          projection:
+            scoring === "league"
+              ? customWeekProjection(selected, row, leagueScoring, lens)
+              : row.completed
+                ? number(row.projections?.[scoring])
+                : number(
+                    row.projection_lenses?.[scoring]?.[lens] ??
+                      row.projections?.[scoring],
+                  ),
         }))
     : [];
   const maxProjection = Math.max(
@@ -296,6 +352,7 @@ export default function StatProjectionLab({ model }) {
     number(selected?.role_calibration?.independent_stat_signal_weight) * 100;
   const regressionBlend = number(selected?.regression?.blend) * 100;
   const anchorAvailable =
+    scoring !== "league" &&
     selected?.season?.consensus_anchor != null &&
     selected?.season?.variance_from_anchor != null;
   const anchorVariance = anchorAvailable
@@ -303,9 +360,33 @@ export default function StatProjectionLab({ model }) {
     : null;
   const personalHistory = selected?.forecast?.personal_history || {};
   const outcomeProfile = selected?.forecast?.outcome_profile || {};
+  const learnedAdjustment = selected?.forecast?.learned_adjustment || {};
+  const advancedSignals = learnedAdjustment?.signals || {};
+  const enabledAdvancedFeatures =
+    selected?.learned_role?.advanced_features_enabled || [];
+  const learnedHoldout = selected?.learned_role?.holdout || null;
+  const advancedSeasons = coverage.advanced_context_seasons || [];
+  const advancedTeamWeeks = advancedSeasons.reduce(
+    (sum, row) => sum + number(row.team_weeks),
+    0,
+  );
   const weather = selected?.forecast?.weather || null;
+  const opportunity = selected?.forecast?.opportunity_projection || null;
+  const availability = selected?.forecast?.availability || null;
+  const market = selected?.forecast?.market || null;
+  const simulation = outcomeProfile?.simulation || null;
+  const customScoringCoverage =
+    scoring === "league" && selected?.forecast
+      ? sleeperScoringCoverage(
+          selected.forecast.stat_line || {},
+          leagueScoring || {},
+          selected.position,
+        )
+      : null;
   const modelAccuracy =
-    lens === "safe_expected"
+    scoring === "league"
+      ? null
+      : lens === "safe_expected"
       ? accuracy?.cumulative_by_model_version?.[
           model?.model_build_id || model?.model_version
         ]?.scoring?.[scoring] || null
@@ -330,11 +411,10 @@ export default function StatProjectionLab({ model }) {
               {model.season} Weekly Projection Lab
             </h2>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">
-              A stat line is built first from multiple projection sources,
-              regressed with three years of observed player production,
-              calibrated for expected role, and adjusted one field at a time for
-              the opponent. Fantasy points are calculated last for PPR,
-              Half-PPR, and Standard.
+              Team volume is projected first, opportunity is allocated to each
+              player, and efficiency is applied afterward. Adaptive source
+              weighting, three years of production, matchup context, availability,
+              and simulated outcomes are kept separate so every forecast can be audited.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -349,10 +429,16 @@ export default function StatProjectionLab({ model }) {
                 </option>
               ))}
             </Filter>
-            <Filter label="Scoring" value={scoring} onChange={setScoring}>
+            <Filter
+              label="Scoring"
+              value={scoring}
+              onChange={setScoring}
+              preference="stat-central-projection-scoring"
+            >
               <option value="ppr">PPR</option>
               <option value="half">Half PPR</option>
               <option value="std">Standard</option>
+              <option value="league">League scoring</option>
             </Filter>
             <Filter label="Projection lens" value={lens} onChange={setLens}>
               <option value="safe_expected">Safe / Expected</option>
@@ -381,10 +467,42 @@ export default function StatProjectionLab({ model }) {
               />
             </label>
           </div>
+          {scoring === "league" ? (
+            <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
+              {leagues.length ? (
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(250px,.7fr)] sm:items-end">
+                  <div>
+                    <div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/55">
+                      Exact Sleeper league scoring
+                    </div>
+                    <p className="mt-1 text-[10px] leading-5 text-white/40">
+                      The same projected stat line is converted with this league&apos;s scoring rules. Change leagues without rebuilding the projection model.
+                    </p>
+                  </div>
+                  <Filter
+                    label="Scoring league"
+                    value={scoringLeagueId}
+                    onChange={onScoringLeagueChange || (() => {})}
+                    preference="stat-central-scoring-league"
+                  >
+                    {leagues.map((league) => (
+                      <option key={league.league_id} value={league.league_id}>
+                        {league.name}
+                      </option>
+                    ))}
+                  </Filter>
+                </div>
+              ) : (
+                <p className="text-xs leading-5 text-amber-100/70">
+                  Load a Sleeper portfolio to use league scoring. PPR, Half PPR, and Standard remain available.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi
           label="Projected-stat coverage"
           value={`${number(coverage.projected_stat_source_players).toLocaleString()} players`}
@@ -399,8 +517,14 @@ export default function StatProjectionLab({ model }) {
         <Kpi
           label="Current board"
           value={`${rows.length} active`}
-          detail={`Week ${week} · ${rows.some((row) => row.forecast?.completed) ? "final results" : "forecast"} · ${scoring.toUpperCase()}`}
+          detail={`Week ${week} · ${rows.some((row) => row.forecast?.completed) ? "final results" : "forecast"} · ${scoringLabel}`}
           tone="violet"
+        />
+        <Kpi
+          label="Advanced matchup context"
+          value={`${advancedTeamWeeks.toLocaleString()} team-weeks`}
+          detail={`${advancedSeasons.map((row) => row.year).join(", ")} efficiency, pressure, coverage & snaps`}
+          tone="emerald"
         />
         <Kpi
           label="Frozen model version"
@@ -453,7 +577,7 @@ export default function StatProjectionLab({ model }) {
                     {selected.projection.toFixed(1)}
                   </div>
                   <div className="text-[9px] font-black uppercase tracking-wider text-white/30">
-                    Week {week} {lens === "safe_expected" ? "safe / expected " : "risky "}{scoring.toUpperCase()}{" "}
+                    Week {week} {lens === "safe_expected" ? "safe / expected " : "risky "}{scoringLabel}{" "}
                     {selected.forecast.completed ? "actual" : "points"}
                   </div>
                 </div>
@@ -617,6 +741,20 @@ export default function StatProjectionLab({ model }) {
             <Card className="p-5 sm:p-6">
               <h3 className="text-lg font-black">Why the model landed here</h3>
               <div className="mt-4 space-y-3">
+                {customScoringCoverage ? (
+                  <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                      <span className="text-emerald-100/65">{scoringLabel}</span>
+                      <b>{customScoringCoverage.percentage}% rule coverage</b>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-5 text-white/38">
+                      {customScoringCoverage.supported.length} of {customScoringCoverage.active} active scoring rules can be calculated from this projected stat line.
+                      {customScoringCoverage.unsupported.length
+                        ? ` Not projected for this player: ${customScoringCoverage.unsupported.join(", ")}. Those rules are disclosed and excluded rather than guessed.`
+                        : " Every active rule used by this player is represented."}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
                   <div className="flex justify-between gap-4 text-xs">
                     <span className="text-white/40">Boom / bust range</span>
@@ -626,10 +764,171 @@ export default function StatProjectionLab({ model }) {
                     </b>
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/30">
-                    Based on {number(outcomeProfile.sample)} prior active games
-                    and this matchup. Safe / Expected is the most likely path;
-                    Risky intentionally expresses evidence-backed spike and
-                    collapse weeks while preserving a realistic season total.
+                    Calibrated from{" "}
+                    {number(
+                      outcomeProfile.calibration_sample || outcomeProfile.sample,
+                    ).toLocaleString()} leakage-safe historical player-games.
+                    The median is {number(outcomeProfile.median).toFixed(1)} and
+                    the middle 50% range is{" "}
+                    {number(outcomeProfile.p25).toFixed(1)}–
+                    {number(outcomeProfile.p75).toFixed(1)}.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-white/40">Validated weekly signal</span>
+                    <b
+                      className={
+                        number(learnedAdjustment.factor) >= 1
+                          ? "text-emerald-100"
+                          : "text-rose-100"
+                      }
+                    >
+                      {number(learnedAdjustment.factor) >= 1 ? "+" : ""}
+                      {((number(learnedAdjustment.factor) - 1) * 100).toFixed(1)}%
+                    </b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/30">
+                    {number(selected?.learned_role?.available_features)} of{" "}
+                    {number(selected?.learned_role?.feature_count)} trained inputs are
+                    available. This {selected.position} layer lowered untouched
+                    2025 holdout MAE from{" "}
+                    {number(learnedHoldout?.baseline_mae).toFixed(2)} to{" "}
+                    {number(learnedHoldout?.trained_mae).toFixed(2)}. Missing
+                    inputs remain neutral instead of being invented.
+                  </p>
+                </div>
+                {opportunity ? (
+                  <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                      <span className="text-amber-100/65">Projected opportunity</span>
+                      <b>{(number(opportunity.reliability) * 100).toFixed(0)}% role confidence</b>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <Kpi label="Team plays" value={number(opportunity.team_plays).toFixed(1)} detail={`${(number(opportunity.team_neutral_pass_rate) * 100).toFixed(0)}% neutral pass rate`} tone="amber" />
+                      {number(opportunity.projected_pass_attempts) > 0 ? (
+                        <Kpi label="Pass attempts" value={number(opportunity.projected_pass_attempts).toFixed(1)} detail="Volume before efficiency" tone="cyan" />
+                      ) : null}
+                      {number(opportunity.projected_targets) > 0 ? (
+                        <Kpi label="Targets" value={number(opportunity.projected_targets).toFixed(1)} detail={`${(number(opportunity.target_share) * 100).toFixed(1)}% team target share`} tone="cyan" />
+                      ) : null}
+                      {number(opportunity.projected_carries) > 0 ? (
+                        <Kpi label="Carries" value={number(opportunity.projected_carries).toFixed(1)} detail={number(opportunity.carry_share) > 0 ? `${(number(opportunity.carry_share) * 100).toFixed(1)}% team carry share` : "Designed and scramble volume"} tone="emerald" />
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-[10px] leading-4 text-white/35">
+                      This is the workload layer, before yards, touchdowns, and fantasy scoring are applied. It blends the external stat prior with recency-weighted role evidence.
+                    </p>
+                  </div>
+                ) : null}
+                {simulation ? (
+                  <div className="rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                      <span className="text-violet-100/65">Correlated game simulation</span>
+                      <b>500 outcomes</b>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                      {[
+                        ["P10", simulation.p10, "Floor outcome"],
+                        ["Median", simulation.median, "Most typical"],
+                        ["P90", simulation.p90, "Ceiling outcome"],
+                      ].map(([label, value, detail]) => (
+                        <div key={label} className="min-w-0 rounded-xl border border-white/[0.06] bg-black/15 p-3">
+                          <div className="text-[8px] font-black uppercase tracking-wider text-white/30">{label}</div>
+                          <div className="mt-1 text-lg font-black text-violet-100 sm:text-xl">{number(value).toFixed(1)}</div>
+                          <div className="mt-1 hidden text-[9px] text-white/28 sm:block">{detail}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[10px] leading-4 text-white/35">
+                      Team outcomes move together, so a strong or weak offensive game affects correlated players. The simulation describes uncertainty; it does not replace the validated expected projection.
+                    </p>
+                  </div>
+                ) : null}
+                {availability ? (
+                  <div className="rounded-2xl border border-rose-300/10 bg-rose-300/[0.035] p-4">
+                    <div className="flex justify-between gap-3 text-xs">
+                      <span className="text-rose-100/65">Availability and vacated work</span>
+                      <b>{availability.status || "Role change"}</b>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-4 text-white/35">
+                      Player availability factor: {(number(availability.player_factor) * 100).toFixed(0)}%.
+                      {number(availability.vacated_group_share) > 0
+                        ? ` ${(number(availability.vacated_group_share) * 100).toFixed(1)}% of the position group's recent opportunity is currently vacated; redistribution is capped to avoid overreacting.`
+                        : " No teammate opportunity is being redistributed."}
+                    </p>
+                  </div>
+                ) : null}
+                {market ? (
+                  <div className="rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
+                    <div className="flex justify-between gap-3 text-xs">
+                      <span className="text-emerald-100/65">Pregame market context</span>
+                      <b>{number(market.implied_points).toFixed(1)} implied team points</b>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-4 text-white/35">
+                      Spread {number(market.spread) > 0 ? "+" : ""}{number(market.spread).toFixed(1)} and total {number(market.total).toFixed(1)}. Market inputs appear only when a saved pregame line is available.
+                    </p>
+                  </div>
+                ) : null}
+                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4">
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-cyan-100/60">Pass rush versus protection</span>
+                    <b
+                      className={
+                        number(advancedSignals.pressure_mismatch) <= 0
+                          ? "text-emerald-100"
+                          : "text-amber-100"
+                      }
+                    >
+                      {number(advancedSignals.pressure_mismatch) >= 0 ? "+" : ""}
+                      {(number(advancedSignals.pressure_mismatch) * 100).toFixed(1)} pts
+                    </b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/35">
+                    This offense&apos;s weighted pressure rate is{" "}
+                    {(number(advancedSignals.protection_pressure_rate) * 100).toFixed(1)}%
+                    versus a {(number(advancedSignals.opponent_pressure_rate) * 100).toFixed(1)}%
+                    opponent pressure rate. Blitz tendency is{" "}
+                    {(number(advancedSignals.opponent_blitz_rate) * 100).toFixed(1)}%.
+                    {enabledAdvancedFeatures.length
+                      ? ` ${enabledAdvancedFeatures.length} advanced inputs cleared this position's holdout gate.`
+                      : " This context is monitored, but remains neutral until it clears this position's holdout gate."}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4">
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-violet-100/60">Coverage & line continuity</span>
+                    <b>{(number(advancedSignals.advanced_reliability) * 100).toFixed(0)}% evidence</b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/35">
+                    Opponent coverage: {(number(advancedSignals.opponent_man_rate) * 100).toFixed(0)}%
+                    man / {(number(advancedSignals.opponent_zone_rate) * 100).toFixed(0)}% zone.
+                    The offense returns an estimated{" "}
+                    {(number(advancedSignals.ol_continuity) * 100).toFixed(0)}% of its
+                    recent primary line combination.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
+                  <div className="flex justify-between gap-4 text-xs">
+                    <span className="text-emerald-100/60">Efficiency matchup</span>
+                    <b
+                      className={
+                        number(advancedSignals.epa_matchup) >= 0
+                          ? "text-emerald-100"
+                          : "text-amber-100"
+                      }
+                    >
+                      {number(advancedSignals.epa_matchup) >= 0 ? "+" : ""}
+                      {number(advancedSignals.epa_matchup).toFixed(2)} EPA
+                    </b>
+                  </div>
+                  <p className="mt-2 text-[10px] leading-4 text-white/35">
+                    The offense has produced {number(advancedSignals.offense_epa_per_play).toFixed(2)}
+                    {" "}EPA per play with a {(number(advancedSignals.offense_success_rate) * 100).toFixed(0)}%
+                    {" "}success rate. This opponent has allowed {number(advancedSignals.opponent_epa_per_play_allowed).toFixed(2)}
+                    {" "}EPA per play and a {(number(advancedSignals.opponent_success_rate_allowed) * 100).toFixed(0)}%
+                    {" "}success rate. Pass tendency, red-zone usage, and opponent allowances are
+                    tested in the leakage-safe model; they remain neutral unless they improve an untouched holdout.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
@@ -905,7 +1204,50 @@ export default function StatProjectionLab({ model }) {
 
       {view === "model" ? (
       <Card className="p-5 sm:p-6">
-        <details>
+        <div className="rounded-3xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.06] via-violet-300/[0.035] to-transparent p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">
+                Holdout-validated intelligence
+              </div>
+              <h3 className="mt-1 text-xl font-black">Built to earn every adjustment</h3>
+              <p className="mt-2 max-w-3xl text-[10px] leading-5 text-white/40">
+                The role model trains on 2023–2024, selects regularization and
+                shrinkage against untouched 2025 games, then refits for 2026.
+                A position is automatically disabled unless it improves the
+                holdout baseline. Future information is never used.
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-100">
+              {model.trained_calibration?.version || "Calibration unavailable"}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            {Object.entries(model.trained_calibration?.positions || {}).map(
+              ([positionName, result]) => (
+                <div
+                  key={positionName}
+                  className="rounded-2xl border border-white/[0.07] bg-slate-950/55 p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <b className="text-sm">{positionName}</b>
+                    <span className="text-[9px] font-black text-emerald-100">
+                      {number(result.holdout_mae_improvement).toFixed(3)} better
+                    </span>
+                  </div>
+                  <div className="mt-2 text-lg font-black text-white">
+                    {number(result.holdout_baseline_mae).toFixed(2)} →{" "}
+                    {number(result.holdout_trained_mae).toFixed(2)}
+                  </div>
+                  <div className="mt-1 text-[9px] text-white/28">
+                    MAE · {number(result.validation_sample).toLocaleString()} held-out games
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+        <details className="mt-4">
           <summary className="cursor-pointer list-none text-lg font-black">
             How {model.model_version} works
           </summary>
@@ -951,7 +1293,11 @@ export default function StatProjectionLab({ model }) {
               </span>
             </div>
           </div>
-          {accuracyMetrics?.sample ? (
+          {scoring === "league" ? (
+            <p className="mt-3 text-[10px] leading-5 text-white/38">
+              This view is calculated live from {selectedScoringLeague?.name || "the selected league"}&apos;s rules. The frozen accuracy ledger remains separated by PPR, Half PPR, and Standard until league-scoring snapshots have enough completed games for an honest comparison.
+            </p>
+          ) : accuracyMetrics?.sample ? (
             <>
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Kpi

@@ -6,6 +6,11 @@ import BackgroundParticles from "../../components/BackgroundParticles";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
 import StatProjectionLab from "./StatProjectionLab";
+import AdvancedStatsLab from "./AdvancedStatsLab";
+import {
+  scoreSleeperStats,
+  sleeperScoringCoverage,
+} from "../../lib/sleeperScoring";
 
 const WORKSPACES = [
   {
@@ -14,6 +19,7 @@ const WORKSPACES = [
     detail: "Research, careers, and comparisons",
     tabs: [
       ["overview", "Player Research", "Production, consistency, and weekly evidence"],
+      ["advanced", "Advanced Stats", "Snaps, opportunity, leverage, EPA, and Next Gen data"],
       ["history", "Career History", "Season-over-season trends and raw statistics"],
       ["compare", "Compare Players", "Direct scoring and statistical comparison"],
     ],
@@ -52,6 +58,16 @@ const STAT_GUIDES = {
       "Weekly scoring and percentiles are observed results—not projections.",
       "Boom, bust, consistency, and volatility are measured against the player's own scoring profile.",
       "Underlying production separates volume from fantasy-point outcomes.",
+    ],
+  },
+  advanced: {
+    title: "What Advanced Stats answers",
+    summary:
+      "How large a player's real weekly role was, which opportunities carried the most value, and whether production was supported by repeatable usage.",
+    bullets: [
+      "Snap, target, carry, air-yard, red-zone, and situational shares are observed weekly evidence.",
+      "EPA and NFL Next Gen metrics separate opportunity volume from what the player did with it.",
+      "Route opportunities are explicitly estimated because exact routes run are not present in the saved public archive.",
     ],
   },
   history: {
@@ -120,6 +136,7 @@ const SCORING = [
   ["PPR", "PPR"],
   ["HALF", "Half PPR"],
   ["STD", "Standard"],
+  ["LEAGUE", "League scoring"],
 ];
 const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const normalize = (value) =>
@@ -210,7 +227,7 @@ function PlayerName({ player }) {
     </div>
   );
 }
-function Select({ label, value, onChange, children }) {
+function Select({ label, value, onChange, children, preference }) {
   const comparison = label === "Comparison player";
   return (
     <label
@@ -222,6 +239,7 @@ function Select({ label, value, onChange, children }) {
       </span>
       <select
         data-stat-season={label === "Season" ? "true" : undefined}
+        data-account-preference={preference}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
@@ -371,6 +389,7 @@ function mergeHistory(payload, playerDb) {
         ...row,
         key: `fp:${row.player_id || index}:${normalize(row.name)}`,
         sleeper_id: context?.sleeper_id || "",
+        gsis_id: context?.gsis_id || raw?.gsis_id || "",
         team: row.team || context?.team || "",
         position: row.position || context?.position || "",
         age: context?.age || null,
@@ -635,7 +654,13 @@ function playerStatGroups(player) {
   ];
 }
 
-async function loadSavedSeason(season, scoring, position, signal) {
+async function loadSavedSeason(
+  season,
+  scoring,
+  position,
+  signal,
+  leagueScoring = null,
+) {
   let fantasyPros = null;
   let sleeper = null;
   let schedule = null;
@@ -667,8 +692,11 @@ async function loadSavedSeason(season, scoring, position, signal) {
     if (failure?.name === "AbortError") throw failure;
   }
   const scoreKey = String(scoring || "PPR").toLowerCase();
+  const customScoring = scoring === "LEAGUE" && leagueScoring;
   const fantasyProsPlayers = (
-    Array.isArray(fantasyPros?.players) ? fantasyPros.players : []
+    customScoring || !Array.isArray(fantasyPros?.players)
+      ? []
+      : fantasyPros.players
   )
     .filter(
       (player) =>
@@ -695,12 +723,23 @@ async function loadSavedSeason(season, scoring, position, signal) {
   ).map((player) => {
     const field =
       scoring === "STD" ? "std" : scoring === "HALF" ? "half" : "ppr";
-    const weeks = Object.fromEntries(
-      Object.entries(player?.weeks || {}).map(([week, points]) => [
-        week,
-        num(points?.[field]),
-      ]),
-    );
+    const weekKeys = new Set([
+      ...Object.keys(player?.weeks || {}),
+      ...Object.keys(player?.weekly_stats || {}),
+    ]);
+    const weeks = Object.fromEntries([...weekKeys].map((week) => [
+      week,
+      customScoring
+        ? round(
+            scoreSleeperStats(
+              player?.weekly_stats?.[week] || {},
+              leagueScoring,
+              player.position,
+            ),
+            3,
+          )
+        : num(player?.weeks?.[week]?.[field]),
+    ]));
     const values = Object.values(weeks);
     const points = values.reduce((sum, value) => sum + value, 0);
     return {
@@ -720,9 +759,11 @@ async function loadSavedSeason(season, scoring, position, signal) {
     season: num(season),
     scoring,
     position,
-    source: sleeperPlayers.length
-      ? "Saved FantasyPros + Sleeper"
-      : "Saved FantasyPros",
+    source: customScoring
+      ? "Saved Sleeper statistics recalculated with league scoring"
+      : sleeperPlayers.length
+        ? "Saved FantasyPros + Sleeper"
+        : "Saved FantasyPros",
     fantasypros: {
       available: fantasyProsPlayers.length > 0,
       updated: fantasyPros?.updated || null,
@@ -1641,11 +1682,22 @@ function MatchupLab({ players, schedule, season, scoring }) {
           </table>
         </div>
       </Panel>
-      <HistoricalOpponentSplits
-        position={position}
-        defense={selectedDefense}
-        scoring={String(scoring || "PPR").toLowerCase()}
-      />
+      {scoring === "LEAGUE" ? (
+        <Panel className="border-emerald-300/10 p-5">
+          <div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/50">
+            League-scored matchup evidence
+          </div>
+          <p className="mt-2 text-xs leading-5 text-white/40">
+            The season defense tables, player games, and matchup grades above use the selected league&apos;s recalculated scoring. Multi-season opponent splits remain available under PPR, Half PPR, or Standard because those older aggregate files do not retain every raw scoring event needed to reproduce a custom league safely.
+          </p>
+        </Panel>
+      ) : (
+        <HistoricalOpponentSplits
+          position={position}
+          defense={selectedDefense}
+          scoring={String(scoring || "PPR").toLowerCase()}
+        />
+      )}
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel className="p-5">
           <h3 className="text-lg font-black">
@@ -2897,11 +2949,16 @@ function CareerStatTrends({ rows, position }) {
 }
 
 export default function StatCentralClient() {
-  const { players: playerDb = {} } = useSleeper();
+  const {
+    players: playerDb = {},
+    leagues = [],
+    activeLeague,
+  } = useSleeper();
   const completedSeason = new Date().getFullYear() - 1;
   const [tab, setTab] = useState("overview");
   const [season, setSeason] = useState(completedSeason);
   const [scoring, setScoring] = useState("PPR");
+  const [scoringLeagueId, setScoringLeagueId] = useState("");
   const [position, setPosition] = useState("ALL");
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
@@ -2917,6 +2974,25 @@ export default function StatCentralClient() {
   const [careerProgress, setCareerProgress] = useState(0);
   const [availableSeasons, setAvailableSeasons] = useState([completedSeason]);
   const [reloadToken, setReloadToken] = useState(0);
+  const selectedScoringLeague = useMemo(
+    () =>
+      leagues.find(
+        (league) => String(league.league_id) === String(scoringLeagueId),
+      ) || null,
+    [leagues, scoringLeagueId],
+  );
+
+  useEffect(() => {
+    if (!leagues.length || scoringLeagueId) return;
+    const preferredId =
+      typeof activeLeague === "object"
+        ? activeLeague?.league_id
+        : activeLeague;
+    const preferred = leagues.find(
+      (league) => String(league.league_id) === String(preferredId || ""),
+    );
+    setScoringLeagueId(String(preferred?.league_id || leagues[0]?.league_id || ""));
+  }, [activeLeague, leagues, scoringLeagueId]);
 
   useEffect(() => {
     document.documentElement.dataset.statTab = tab;
@@ -2950,9 +3026,25 @@ export default function StatCentralClient() {
   useEffect(() => {
     const controller = new AbortController();
     let live = true;
+    if (scoring === "LEAGUE" && !selectedScoringLeague) {
+      setLoading(false);
+      setData(null);
+      setError(
+        leagues.length
+          ? "Select a league to calculate its scoring."
+          : "Load a Sleeper portfolio to use league-specific scoring.",
+      );
+      return () => controller.abort();
+    }
     setLoading(true);
     setError("");
-    loadSavedSeason(season, scoring, position, controller.signal)
+    loadSavedSeason(
+      season,
+      scoring,
+      position,
+      controller.signal,
+      selectedScoringLeague?.scoring_settings || null,
+    )
       .then((payload) => {
         if (live) setData(payload);
       })
@@ -2969,7 +3061,15 @@ export default function StatCentralClient() {
       live = false;
       controller.abort();
     };
-  }, [season, scoring, position, reloadToken]);
+  }, [
+    season,
+    scoring,
+    position,
+    reloadToken,
+    selectedScoringLeague?.league_id,
+    selectedScoringLeague?.scoring_settings,
+    leagues.length,
+  ]);
   useEffect(() => {
     if (tab !== "projections" || projectionModel) return;
     let live = true;
@@ -3049,11 +3149,19 @@ export default function StatCentralClient() {
     (player) => player.position === selected?.position,
   );
   const metrics = playerMetrics(selected, positionPlayers);
+  const historicalScoringCoverage =
+    scoring === "LEAGUE" && selectedScoringLeague && selected
+      ? sleeperScoringCoverage(
+          selected.stats || {},
+          selectedScoringLeague.scoring_settings || {},
+          selected.position,
+        )
+      : null;
   const activeWorkspace =
     WORKSPACES.find((workspace) =>
       workspace.tabs.some(([key]) => key === tab),
     ) || WORKSPACES[0];
-  const playerWorkspace = ["overview", "history", "compare"].includes(tab);
+  const playerWorkspace = ["overview", "advanced", "history", "compare"].includes(tab);
   const historicalWorkspace = !["projections", "method"].includes(tab);
   const showPositionAndSearch = playerWorkspace || tab === "leaders";
 
@@ -3069,6 +3177,8 @@ export default function StatCentralClient() {
           year,
           scoring,
           selected.position || "ALL",
+          undefined,
+          selectedScoringLeague?.scoring_settings || null,
         );
         const candidates = mergeHistory(payload, playerDb);
         const match =
@@ -3103,8 +3213,8 @@ export default function StatCentralClient() {
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
             Research actual fantasy performance across seasons. Explore weekly
             results, career trends, positional finishes, floor and ceiling,
-            volatility, player archetypes, raw production, and direct start/sit
-            history.
+            volatility, player archetypes, advanced role and tracking data, raw
+            production, and direct start/sit history.
           </p>
           {tab === "projections" ? (
             <div className="mt-5 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4 text-xs leading-5 text-white/45">
@@ -3136,6 +3246,7 @@ export default function StatCentralClient() {
                 <Select
                   label="Scoring"
                   value={scoring}
+                  preference="stat-central-history-scoring"
                   onChange={(value) => {
                     setScoring(value);
                     setCareer([]);
@@ -3168,6 +3279,44 @@ export default function StatCentralClient() {
                   </>
                 ) : null}
               </div>
+              {scoring === "LEAGUE" ? (
+                <div className="mt-3 rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
+                  {leagues.length ? (
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,.7fr)] lg:items-end">
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/50">
+                          Sleeper league scoring
+                        </div>
+                        <p className="mt-1 text-[11px] leading-5 text-white/42">
+                          Historical weekly box scores and current projected stat lines are recalculated using this league&apos;s scoring settings. PPR, Half PPR, and Standard remain available above.
+                          {historicalScoringCoverage
+                            ? ` For ${selected?.name || "this player"}, ${historicalScoringCoverage.supported.length} of ${historicalScoringCoverage.active} active rules have matching saved stat fields${historicalScoringCoverage.unsupported.length ? `; unsupported rules (${historicalScoringCoverage.unsupported.join(", ")}) are excluded instead of guessed.` : "."}`
+                            : ""}
+                        </p>
+                      </div>
+                      <Select
+                        label="Scoring league"
+                        value={scoringLeagueId}
+                        preference="stat-central-scoring-league"
+                        onChange={(value) => {
+                          setScoringLeagueId(value);
+                          setCareer([]);
+                        }}
+                      >
+                        {leagues.map((league) => (
+                          <option key={league.league_id} value={league.league_id}>
+                            {league.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-5 text-amber-100/65">
+                      Load a Sleeper portfolio to select one of your leagues. Standard scoring presets still work without a portfolio.
+                    </p>
+                  )}
+                </div>
+              ) : null}
               {playerWorkspace ? (
                 <div className={`mt-4 grid gap-2 ${tab === "compare" ? "md:grid-cols-2" : "grid-cols-1"}`}>
                   <Select
@@ -3216,7 +3365,7 @@ export default function StatCentralClient() {
         </div>
         <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            <div className={`grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex lg:flex-col lg:p-3 ${activeWorkspace.tabs.length > 1 ? "min-[380px]:grid-cols-3" : ""}`}>
+            <div className={`grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex lg:flex-col lg:p-3 ${activeWorkspace.tabs.length === 4 ? "min-[380px]:grid-cols-2" : activeWorkspace.tabs.length > 1 ? "min-[380px]:grid-cols-3" : ""}`}>
               <div className="hidden px-2 pb-1 lg:block">
                 <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-200/40">
                   {activeWorkspace.label}
@@ -3259,6 +3408,20 @@ export default function StatCentralClient() {
                 positionPlayers={positionPlayers}
               />
             ) : null}
+            {tab === "advanced" ? (
+              <AdvancedStatsLab
+                selected={selected}
+                season={season}
+                onSelectPlayer={(advancedPlayer) => {
+                  const match = seasonPlayers.find(
+                    (player) =>
+                      normalize(player.name) === normalize(advancedPlayer.name) &&
+                      player.position === advancedPlayer.position,
+                  );
+                  if (match) setSelectedKey(match.key);
+                }}
+              />
+            ) : null}
             {tab === "compare" ? (
               <Compare
                 first={selected}
@@ -3280,7 +3443,12 @@ export default function StatCentralClient() {
               ) : projectionError ? (
                 <Panel className="p-6 text-rose-100">{projectionError}</Panel>
               ) : (
-                <StatProjectionLab model={projectionModel} />
+                <StatProjectionLab
+                  model={projectionModel}
+                  leagues={leagues}
+                  scoringLeagueId={scoringLeagueId}
+                  onScoringLeagueChange={setScoringLeagueId}
+                />
               )
             ) : null}
             {tab === "leaders" ? (

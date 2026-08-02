@@ -6,7 +6,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "update:stats": "node --no-warnings ./scripts/updateHistoricalStats.js && node --no-warnings ./scripts/buildStatInsights.js",
+    "update:stats": "node --no-warnings ./scripts/updateHistoricalStats.js && node --no-warnings ./scripts/updateAdvancedStats.js && node --no-warnings ./scripts/buildStatInsights.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -15,8 +15,11 @@
     "preview:cf": "next-on-pages",
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
-    "update:daily": "node --no-warnings ./scripts/updateValues.js --daily --archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
-    "update:stat-model": "node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
+    "update:daily": "node --no-warnings ./scripts/updateValues.js --daily --archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/updateAdvancedStats.js --current && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
+    "update:stat-model": "node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
+    "audit:stat-model": "node --no-warnings ./scripts/auditProjectionPipeline.js",
+    "capture:pre-kickoff": "node --no-warnings ./scripts/capturePreKickoffSnapshot.js",
+    "update:advanced": "node --no-warnings ./scripts/updateAdvancedStats.js",
     "evaluate:stat-model": "node --no-warnings ./scripts/evaluateStatProjectionModel.js",
     "build:stat-insights": "node --no-warnings ./scripts/buildStatInsights.js",
     "archive:values": "node ./scripts/updateValues.js --archive-only",
@@ -24,7 +27,7 @@
     "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
     "git": "git add . && git commit -m \"PlayerPopUp\" && git push origin main",
-    "sync": "node ./scripts/git-sync.mjs \"StatCentral\""
+    "sync": "node ./scripts/git-sync.mjs \"StatCentralUPDATE\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",
