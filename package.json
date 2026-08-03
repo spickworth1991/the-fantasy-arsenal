@@ -8,7 +8,7 @@
   "scripts": {
     "update:stats": "node --no-warnings ./scripts/updateHistoricalStats.js && node --no-warnings ./scripts/updateAdvancedStats.js && node --no-warnings ./scripts/buildStatInsights.js",
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --no-warnings ./scripts/checkPublicAssetSizes.js && next build",
     "start": "next start",
     "lint": "next lint",
     "build:cf": "next-on-pages",

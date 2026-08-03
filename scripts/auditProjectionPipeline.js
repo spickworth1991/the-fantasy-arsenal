@@ -70,6 +70,19 @@ const fingerprint = (file) => {
 };
 const relative = (file) => path.relative(root, file).replace(/\\/g, "/");
 const current = readJson(currentFile);
+if (
+  current &&
+  !current.players?.length &&
+  Array.isArray(current.player_shards)
+) {
+  current.players = current.player_shards.flatMap((shard) => {
+    const shardPath = String(shard?.path || "").replace(/^\/+/, "");
+    const payload = readJson(path.join(root, "public", shardPath), {
+      players: [],
+    });
+    return Array.isArray(payload?.players) ? payload.players : [];
+  });
+}
 if (!current?.players?.length)
   throw new Error(
     `Missing ${relative(currentFile)}. Build the stat model before auditing it.`,

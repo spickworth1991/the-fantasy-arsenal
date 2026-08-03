@@ -3095,7 +3095,30 @@ export default function StatCentralClient() {
           throw new Error(
             `The ${manifest?.current_season || "current-season"} stat projection model has not been generated yet.`,
           );
-        return response.json();
+        const payload = await response.json();
+        if (
+          !payload?.players?.length &&
+          Array.isArray(payload?.player_shards) &&
+          payload.player_shards.length
+        ) {
+          const shards = await Promise.all(
+            payload.player_shards.map(async (shard) => {
+              const shardResponse = await fetch(shard.path, {
+                cache: "no-cache",
+                signal: controller.signal,
+              });
+              if (!shardResponse.ok)
+                throw new Error(
+                  `Projection Lab could not load the ${shard.position || "player"} model data.`,
+                );
+              return shardResponse.json();
+            }),
+          );
+          payload.players = shards.flatMap((shard) =>
+            Array.isArray(shard?.players) ? shard.players : [],
+          );
+        }
+        return payload;
       })
       .then((payload) => {
         if (live) setProjectionModel(payload);

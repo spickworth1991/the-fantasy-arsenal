@@ -35,4 +35,5 @@ backup.zip
 !/scripts/auditProjectionPipeline.js
 !/scripts/capturePreKickoffSnapshot.js
 !/scripts/updateAdvancedStats.js
+!/scripts/checkPublicAssetSizes.js
 /docs/

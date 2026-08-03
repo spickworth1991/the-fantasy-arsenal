@@ -3199,7 +3199,41 @@ const outputDirectory = path.join(
   "projections",
   String(season),
 );
-writeJson(path.join(outputDirectory, "current.json"), output);
+// Cloudflare Pages rejects individual static assets larger than 25 MiB. Keep
+// the stable current.json URL as a lightweight model manifest and publish the
+// detailed player research rows in position shards. Consumers can reconstruct
+// the exact former payload without any loss of model detail.
+const playerShardDescriptors = [...new Set(modeledPlayers.map((player) =>
+  String(player.position || "OTHER").toUpperCase(),
+))]
+  .sort()
+  .map((position) => {
+    const players = modeledPlayers.filter(
+      (player) => String(player.position || "OTHER").toUpperCase() === position,
+    );
+    const fileName = `current-${position.toLowerCase()}.json`;
+    writeJson(path.join(outputDirectory, fileName), {
+      season,
+      generated_at: output.generated_at,
+      model_version: MODEL_VERSION,
+      model_build_id: MODEL_BUILD_ID,
+      position,
+      count: players.length,
+      players,
+    });
+    return {
+      position,
+      count: players.length,
+      path: `/stats/projections/${season}/${fileName}`,
+    };
+  });
+const currentIndex = {
+  ...output,
+  players: [],
+  player_count: modeledPlayers.length,
+  player_shards: playerShardDescriptors,
+};
+writeJson(path.join(outputDirectory, "current.json"), currentIndex);
 const modeledIdentities = new Set(
   modeledPlayers.flatMap((player) => [
     player.player_id ? `id:${player.player_id}` : "",
