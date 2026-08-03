@@ -102,7 +102,7 @@ function RecommendationCard({ item, state, update, compact=false }) {
 }
 
 export default function DecisionInbox({ full=false }) {
-  const { username, leagues=[], players, year, getPlayerValue, metricType, sourceKey } = useSleeper();
+  const { username, leagues=[], players, year, getPlayerValue, getWeeklyProjection, metricType, projectionSource, sourceKey } = useSleeper();
   const { isConnected, syncNow, accountRequest } = useArsenalAccount();
   const [items, setItems] = useState([]);
   const [actions, setActions] = useState({});
@@ -199,10 +199,15 @@ export default function DecisionInbox({ full=false }) {
         getJson(`/byes/${year || new Date().getFullYear()}.json`).catch(() => ({ by_team:{} })),
       ]);
       const week = Math.max(1, n(nflState.week) || 1);
+      const metricForWeek = (player) => {
+        if (metricType !== "projection") return n(getPlayerValue(player));
+        if (projectionSource === "ARSENAL_MODEL") return n(getWeeklyProjection?.(player, projectionSource, week));
+        return n(getPlayerValue(player)) / 17;
+      };
       const score = week === 1 ? scoreboard : await getJson(`/api/nfl-scoreboard?season=${nflState.season || year}&week=${week}`).catch(() => ({ games:[] }));
       const games = score.games || [];
       const gameByTeam = new Map(games.flatMap((game) => (game.teams || []).map((team) => [team, game])));
-      const rankedPlayers = Object.entries(players || {}).map(([id, player]) => ({ id, player, value:n(getPlayerValue(player)) })).filter((row) => row.value > 0 && ["QB","RB","WR","TE","K","DEF"].includes(pos(row.player))).sort((a,b) => b.value-a.value).slice(0, 220);
+      const rankedPlayers = Object.entries(players || {}).map(([id, player]) => ({ id, player, value:metricForWeek(player) })).filter((row) => row.value > 0 && ["QB","RB","WR","TE","K","DEF"].includes(pos(row.player))).sort((a,b) => b.value-a.value).slice(0, 220);
       const exposure = new Map();
 
       const scans = await concurrentMap(leagues, 8, async (league) => {
@@ -238,26 +243,26 @@ export default function DecisionInbox({ full=false }) {
             const player = players?.[starterId];
             const onBye = (byeData?.by_team?.[String(player?.team || "").toUpperCase()] || []).map(Number).includes(week);
             if (onBye) {
-              const byeReplacement = bench.map((id) => ({ id, player:players?.[id], value:n(getPlayerValue(players?.[id])) })).filter((row) => row.player && !unavailable(row.player) && pos(row.player) === pos(player) && !(byeData?.by_team?.[String(row.player?.team || "").toUpperCase()] || []).map(Number).includes(week)).sort((a,b) => b.value-a.value)[0];
+              const byeReplacement = bench.map((id) => ({ id, player:players?.[id], value:metricForWeek(players?.[id]) })).filter((row) => row.player && !unavailable(row.player) && pos(row.player) === pos(player) && !(byeData?.by_team?.[String(row.player?.team || "").toUpperCase()] || []).map(Number).includes(week)).sort((a,b) => b.value-a.value)[0];
               leagueItems.push({ ...base, id:`bye:${leagueId}:${week}:${starterId}`, category:"lineup", priority:96, tone:"critical", title:`${name(players, starterId)} is on bye`, impact:"Prevents a zero-point starter", confidence:100, deadline:null, why:byeReplacement?`${name(players, byeReplacement.id)} is the strongest same-position bench option not on bye.`:"No same-position bench replacement is available, so this roster needs waiver or trade depth.", href:byeReplacement?`/lineup?player=${starterId}&replacement=${byeReplacement.id}&reason=bye`:`/player-availability?player=${starterId}&need=${pos(player)}&reason=bye`, action:byeReplacement?"Set bye replacement":"Find bye-week help" });
             }
             if (!risk(player)) continue;
-            const replacements = bench.map((id) => ({ id, player:players?.[id], value:n(getPlayerValue(players?.[id])) })).filter((row) => row.player && !unavailable(row.player) && pos(row.player) === pos(player)).sort((a,b) => b.value-a.value);
+            const replacements = bench.map((id) => ({ id, player:players?.[id], value:metricForWeek(players?.[id]) })).filter((row) => row.player && !unavailable(row.player) && pos(row.player) === pos(player)).sort((a,b) => b.value-a.value);
             const replacement = replacements[0];
             const game = gameByTeam.get(player?.team);
-            const impact = replacement ? (metricType === "projection" ? `Protects ${(replacement.value / 17).toFixed(1)} expected weekly pts` : `Protects ${Math.round(replacement.value).toLocaleString()} market value`) : "Avoids inactive exposure";
+            const impact = replacement ? (metricType === "projection" ? `Protects ${replacement.value.toFixed(1)} expected Week ${week} pts` : `Protects ${Math.round(replacement.value).toLocaleString()} market value`) : "Avoids inactive exposure";
             leagueItems.push({ ...base, id:`injury:${leagueId}:${week}:${starterId}`, category:"lineup", priority:unavailable(player) ? 97 : 78, tone:tone(unavailable(player) ? 97 : 78), title:`${name(players, starterId)} is ${injury(player) || "inactive"}`, impact, confidence:replacement ? 88 : 75, deadline:game?.date || null, why:replacement ? `${name(players, replacement.id)} is the strongest healthy same-position bench alternative under the selected source.` : "No healthy same-position bench replacement was identified, so waiver or roster action may be required.", href:replacement?`/lineup?player=${starterId}&replacement=${replacement.id}`:`/player-availability?player=${starterId}&need=${pos(player)}&reason=injury`, action:replacement?"Compare replacement":"Find waiver or trade help" });
             if (game?.weather && !game?.venue?.indoor && (n(game.weather.windSpeed) >= 18 || n(game.weather.precipitationProbability) >= 65)) leagueItems.push({ ...base, id:`weather:${leagueId}:${week}:${starterId}`, category:"weather", priority:58, tone:"opportunity", title:`Weather watch · ${name(players, starterId)}`, impact:"Raises scoring volatility", confidence:72, deadline:game.date, why:`${game.weather.summary || "Outdoor conditions"} with ${n(game.weather.windSpeed)} mph wind and ${n(game.weather.precipitationProbability)}% precipitation probability deserves a final pre-kickoff check.`, href:"/game-center", action:"Review game context" });
           }
 
           if (opportunitiesAvailable) {
             const weakestByPos = new Map();
-            rosterIds.forEach((id) => { const player=players?.[id];const position=pos(player);const value=n(getPlayerValue(player));if(!weakestByPos.has(position)||value<weakestByPos.get(position).value)weakestByPos.set(position,{ id,value }); });
+            rosterIds.forEach((id) => { const player=players?.[id];const position=pos(player);const value=metricForWeek(player);if(!weakestByPos.has(position)||value<weakestByPos.get(position).value)weakestByPos.set(position,{ id,value }); });
             const waiver = rankedPlayers.find((row) => !rostered.has(row.id) && row.value > n(weakestByPos.get(pos(row.player))?.value) * 1.15);
             if (waiver) {
               const weakest = weakestByPos.get(pos(waiver.player));
               const waiverDelta = waiver.value - n(weakest?.value);
-              leagueItems.push({ ...base, id:`waiver:${leagueId}:${week}:${waiver.id}`, category:"waiver", priority:68, tone:"opportunity", title:`${name(players, waiver.id)} is available`, impact:metricType === "projection" ? `+${(waiverDelta / 17).toFixed(1)} expected weekly pts` : `+${Math.round(waiverDelta).toLocaleString()} market value`, confidence:80, deadline:null, why:`The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`, href:`/league-hub?player=${waiver.id}`, action:"Build waiver claim" });
+              leagueItems.push({ ...base, id:`waiver:${leagueId}:${week}:${waiver.id}`, category:"waiver", priority:68, tone:"opportunity", title:`${name(players, waiver.id)} is available`, impact:metricType === "projection" ? `+${waiverDelta.toFixed(1)} expected Week ${week} pts` : `+${Math.round(waiverDelta).toLocaleString()} market value`, confidence:80, deadline:null, why:`The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`, href:`/league-hub?player=${waiver.id}`, action:"Build waiver claim" });
             }
 
             const counts = rosterIds.reduce((map,id) => { const p=pos(players?.[id]);map[p]=(map[p]||0)+1;return map; },{});

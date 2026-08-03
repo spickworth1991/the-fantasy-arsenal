@@ -111,7 +111,7 @@ const PRODUCT_LABELS = {
 };
 
 function ProductLabel({ source }) {
-  const text = PRODUCT_LABELS[source?.logoKey];
+  const text = source?.productLabel || PRODUCT_LABELS[source?.logoKey];
   if (!text) return null;
   return (
     <div className="mt-0.5 whitespace-nowrap text-center text-[10px] font-bold tracking-wide text-cyan-100/75">
@@ -195,7 +195,8 @@ export const DEFAULT_SOURCES = [
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
   { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks", supports: { scoring: ["std", "half", "ppr", "tep"] } },
   { key: "proj:fantasypros", type: "projection", label: "FantasyPros Projections", logoKey: "FantasyProsProjections", supports: { scoring: ["std", "half", "ppr"] } },
-  { key: "proj:thefantasyarsenal", type: "projection", label: "The Fantasy Arsenal Projections", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
+  { key: "proj:thefantasyarsenal-model", type: "projection", label: "The Fantasy Arsenal Projections", productLabel: "Safe / Expected Model", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
+  { key: "proj:thefantasyarsenal", type: "projection", label: "Average of All Projections", productLabel: "All Projection Sources", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
 ];
 
 function clamp(n, min, max) {

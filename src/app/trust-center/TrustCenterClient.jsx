@@ -14,7 +14,8 @@ const SOURCES = [
   {key:"fantasysharks",freshnessKey:"fantasysharks_proj",label:"FantasySharks",kind:"Projection",file:`/projections_fantasysharks_${season}.json`},
   {key:"draftsharks",freshnessKey:"draftsharks_proj",label:"DraftSharks",kind:"Projection",file:`/projections_draftsharks_${season}.json`},
   {key:"fantasypros-projections",freshnessKey:"fantasypros_proj",label:"FantasyPros Projections",kind:"Projection",file:`/projections_fantasypros_${season}.json`},
-  {key:"arsenal",freshnessKey:"arsenal_proj",label:"The Fantasy Arsenal",kind:"Projection",file:`/projections_thefantasyarsenal_${season}.json`},
+  {key:"arsenal-model",freshnessKey:"arsenal_model_proj",label:"The Fantasy Arsenal Projections",kind:"Projection",derived:true,file:`/projections_thefantasyarsenal_model_${season}.json`},
+  {key:"arsenal-average",freshnessKey:"arsenal_proj",label:"Average of All Projections",kind:"Projection",derived:true,file:`/projections_thefantasyarsenal_${season}.json`},
   {key:"fantasycalc",freshnessKey:"fc",label:"FantasyCalc",kind:"Value",file:"/fantasycalc_cache.json"},
   {key:"dynastyprocess",freshnessKey:"dp",label:"DynastyProcess",kind:"Value",file:"/dynastyprocess_cache.json"},
   {key:"ktc",freshnessKey:"ktc",label:"KeepTradeCut",kind:"Value",file:"/ktc_cache.json"},
@@ -68,11 +69,17 @@ const SOURCE_METHODS = {
     use: "Scoring-specific season projections across Arsenal tools.",
     limits: "These are projections—not ECR ranks or trade values—and accuracy can only be graded against finalized results.",
   },
-  arsenal: {
-    origin: "Arsenal calculated projection consensus",
-    method: "Standard, Half PPR, and PPR totals use a coverage-weighted trimmed consensus. Source count and disagreement set confidence. Sleeper active, injury, and depth-chart context can make a bounded correction when coverage is thin or sources materially disagree.",
-    use: "A scoring-specific multi-source season projection with per-player confidence, disagreement, inputs, and contextual reasons.",
+  "arsenal-model": {
+    origin: "The Fantasy Arsenal stat projection model",
+    method: "Safe/Expected weekly outcomes combine prior production, role and usage, schedule, matchup, team environment, health, weather when available, and an external-only projection anchor. Weekly outputs are summed into Standard, Half PPR, and PPR season totals.",
+    use: "The official Arsenal projection for weekly decisions and season outlooks, with confidence and matchup-aware weekly rows.",
     limits: "Age and experience are evidence—not automatic point penalties—because publishers already price them into forecasts. The result still inherits uncertainty and missing-player risk from its inputs.",
+  },
+  "arsenal-average": {
+    origin: "Calculated average of all projection sources",
+    method: "Independent publisher projections and the Arsenal Safe/Expected model are blended with source weights, scoring-format support, duplicate-source protection, and outlier trimming.",
+    use: "A broad all-source season projection that reduces dependence on any single forecast.",
+    limits: "This derived ensemble is excluded from independent-source disagreement calculations so it cannot compare against itself.",
   },
   fantasycalc: {
     origin: "FantasyCalc published market data",
@@ -340,7 +347,7 @@ export default function TrustCenterClient(){
         return {...row,values:comparable,displayName:displayNames.get(row.name)||row.name,spread:mean?(high-low)/mean*100:0,high,low,sources:row.entries.length,unit:rankNormalize?"market percentile":"projected points",leaders:[...row.entries].sort((a,b)=>b.comparable-a.comparable)};
       }).sort((a,b)=>b.spread-a.spread);
     };
-    const disagreements=disagreement(projections);
+    const disagreements=disagreement(projections.filter((source)=>!source.derived));
     const valueDisagreements=disagreement(values,{rankNormalize:true});
     return {projections,values,fresh,disagreements,valueDisagreements,medianSpread:disagreements.length?disagreements[Math.floor(disagreements.length/2)].spread:0,valueMedianSpread:valueDisagreements.length?valueDisagreements[Math.floor(valueDisagreements.length/2)].spread:0,archives:archive?.archives?.length||0};
   },[archive,records]);

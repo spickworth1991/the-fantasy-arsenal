@@ -10,7 +10,7 @@ import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import { makeGetPlayerValue } from "../../lib/values";
-import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -404,6 +404,7 @@ export default function LineupTool() {
     qbType,
     fetchLeagueRostersSilent,
     projectionScoring,
+    getWeeklyProjection,
   } = useSleeper();
 
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -414,7 +415,7 @@ export default function LineupTool() {
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null, ARSENAL_MODEL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -499,7 +500,7 @@ export default function LineupTool() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal, arsenalModel] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
@@ -507,10 +508,11 @@ export default function LineupTool() {
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL, projectionScoring, qbLocal),
           fetchProjectionMap(PROJ_FANTASYPROS_JSON_URL, projectionScoring),
-          fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_JSON_URL, projectionScoring),
+          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL, projectionScoring),
         ]);
         if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null, ARSENAL_MODEL: null };
         if (csv.status === "fulfilled")  next.CSV  = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled")  next.CBS  = cbs.value;
@@ -519,9 +521,10 @@ export default function LineupTool() {
         if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
         if (fantasyPros.status === "fulfilled") next.FANTASYPROS = fantasyPros.value;
         if (arsenal.status === "fulfilled") next.ARSENAL = arsenal.value;
+        if (arsenalModel.status === "fulfilled") next.ARSENAL_MODEL = arsenalModel.value;
         setProjMaps(next);
 
-        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.FANTASYPROS && !next.ARSENAL) {
+        if (metricMode === "projections" && !next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.FANTASYPROS && !next.ARSENAL && !next.ARSENAL_MODEL) {
           setProjError("No projections available — using Values.");
           setSourceKey("val:thefantasyarsenal");
         } else {
@@ -533,6 +536,7 @@ export default function LineupTool() {
           if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS) setSourceKey(next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : "proj:espn");
           if (projectionSource === "FANTASYPROS" && !next.FANTASYPROS) setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
           if (projectionSource === "ARSENAL" && !next.ARSENAL) setSourceKey(next.CSV ? "proj:ffa" : "proj:espn");
+          if (projectionSource === "ARSENAL_MODEL" && !next.ARSENAL_MODEL) setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
         }
       } catch {
         if (!mounted) return;
@@ -632,6 +636,9 @@ export default function LineupTool() {
 
   const getWeeklyProj = useMemo(() => {
     if (metricMode !== "projections") return null;
+    if (projectionSource === "ARSENAL_MODEL") {
+      return (p) => getWeeklyProjection?.(p, "ARSENAL_MODEL", week) || 0;
+    }
     const chosen =
       projectionSource === "ESPN" ? projMaps.ESPN :
       projectionSource === "CBS"  ? projMaps.CBS  :
@@ -640,6 +647,7 @@ export default function LineupTool() {
       projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
       projectionSource === "FANTASYPROS" ? projMaps.FANTASYPROS :
       projectionSource === "ARSENAL" ? projMaps.ARSENAL :
+      projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL :
       projMaps.CSV;
     if (!chosen) return null;
 
@@ -650,7 +658,7 @@ export default function LineupTool() {
       const games = Math.max(1, REG_SEASON_WEEKS - byeWeeks.length);
       return seasonPts / games;
     };
-  }, [metricMode, projectionSource, projMaps, byeMap]);
+  }, [metricMode, projectionSource, projMaps, byeMap, getWeeklyProjection, week]);
 
   const getWeeklyMetric = useMemo(() => {
     if (metricMode === "projections") return getWeeklyProj ? getWeeklyProj : (() => 0);
@@ -901,7 +909,8 @@ export default function LineupTool() {
                         {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                         {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
                         {projMaps.FANTASYPROS && <option value="FANTASYPROS">FantasyPros</option>}
-                        {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
+                        {projMaps.ARSENAL_MODEL && <option value="ARSENAL_MODEL">The Fantasy Arsenal</option>}
+                        {projMaps.ARSENAL && <option value="ARSENAL">Average of All Projections</option>}
                       </select>
                     </>
                   )}

@@ -17,7 +17,7 @@ const BackgroundParticles = dynamic(
   { ssr: false }
 );
 
-import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 const REG_SEASON_WEEKS = 17;
 
 function clamp(n, min, max) {
@@ -444,6 +444,7 @@ export default function PlayoffOddsPage() {
     format,
     qbType,
     getProjection,
+    getWeeklyProjection,
     projectionScoring,
   } = useSleeper();
   const league = useMemo(
@@ -458,7 +459,7 @@ export default function PlayoffOddsPage() {
   const [userTouchedQB, setUserTouchedQB] = useState(false);
   const [metricMode, setMetricMode] = useState("projections");
   const [projectionSource, setProjectionSource] = useState("CSV");
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
   const [stateWeek, setStateWeek] = useState(1);
@@ -539,7 +540,7 @@ export default function PlayoffOddsPage() {
       setProjLoading(true);
       setProjError("");
       try {
-        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.allSettled([
+        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal, arsenalModel] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
@@ -547,9 +548,10 @@ export default function PlayoffOddsPage() {
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
         ]);
         if (!mounted) return;
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null };
         if (csv.status === "fulfilled") next.CSV = csv.value;
         if (espn.status === "fulfilled") next.ESPN = espn.value;
         if (cbs.status === "fulfilled") next.CBS = cbs.value;
@@ -557,9 +559,10 @@ export default function PlayoffOddsPage() {
         if (fantasySharks.status === "fulfilled") next.FANTASYSHARKS = fantasySharks.value;
         if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
         if (arsenal.status === "fulfilled") next.ARSENAL = arsenal.value;
+        if (arsenalModel.status === "fulfilled") next.ARSENAL_MODEL = arsenalModel.value;
         setProjMaps(next);
 
-        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL) {
+        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL && !next.ARSENAL_MODEL) {
           setProjError("Projection feeds are unavailable, so the model is using values.");
           setSourceKey("val:thefantasyarsenal");
         } else if (projectionSource === "CBS" && !next.CBS) {
@@ -576,6 +579,8 @@ export default function PlayoffOddsPage() {
           setSourceKey(next.ESPN ? "proj:espn" : next.CSV ? "proj:ffa" : "proj:cbs");
         } else if (projectionSource === "ARSENAL" && !next.ARSENAL) {
           setSourceKey(next.CSV ? "proj:ffa" : next.ESPN ? "proj:espn" : "proj:cbs");
+        } else if (projectionSource === "ARSENAL_MODEL" && !next.ARSENAL_MODEL) {
+          setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
         }
       } catch {
         if (!mounted) return;
@@ -690,13 +695,20 @@ export default function PlayoffOddsPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "ARSENAL_MODEL") return (player, currentWeek) =>
+        getWeeklyProjection?.(player, "ARSENAL_MODEL", currentWeek) || 0;
+      if (projectionSource === "ARSENAL") return (player, currentWeek, currentByeMap) => {
+        const team = String(player?.team || "").toUpperCase();
+        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
+        return byes.includes(currentWeek) ? 0 : (getProjection(player, "ARSENAL") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
+      };
       if (projectionSource === "FANTASYPROS") return (player, currentWeek, currentByeMap) => {
         if (!player) return 0;
         const team = String(player.team || "").toUpperCase();
         const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
         return byes.includes(currentWeek) ? 0 : (getProjection(player, "FANTASYPROS") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
       };
-      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
+      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
       if (!chosen) return () => 0;
       return (player, currentWeek, currentByeMap) => {
         if (!player) return 0;
@@ -715,7 +727,7 @@ export default function PlayoffOddsPage() {
       if (byes.includes(currentWeek)) return 0;
       return getValue(player) || 0;
     };
-  }, [getValue, getProjection, metricMode, projMaps, projectionSource]);
+  }, [getValue, getProjection, getWeeklyProjection, metricMode, projMaps, projectionSource]);
 
   const loadWeek = async (currentWeek) => {
     if (!activeLeague) return { groups: [], hasRealMatchups: false };

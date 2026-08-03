@@ -342,6 +342,7 @@ export default function LeagueHubContent() {
     projectionSource,
     getPlayerValue: getPlayerValue,
     getProjection,
+    getWeeklyProjection,
     projectionIndexes,
   } = useSleeper();
   const yrStr = String(year || new Date().getFullYear());
@@ -933,7 +934,9 @@ export default function LeagueHubContent() {
         const team = String(p.team || "").toUpperCase();
 
         const value = getValueForPlayer(p);
-        const proj = getProjection(p, projectionSource);
+        const proj = projectionSource === "ARSENAL_MODEL"
+          ? getWeeklyProjection(p, projectionSource, nflState.week)
+          : getProjection(p, projectionSource);
         const injuryTag = String(
           p.injury_status || p.status || p.practice_participation || ""
         ).trim();
@@ -971,7 +974,7 @@ export default function LeagueHubContent() {
     out.sort((a, b) => (metric(b) || 0) - (metric(a) || 0) || a.name.localeCompare(b.name));
 
     return out.slice(0, 40);
-  }, [visibleLeaguesList, playersMap, getValueForPlayer, getProjection, projectionSource, bestMetric]);
+  }, [visibleLeaguesList, playersMap, getValueForPlayer, getProjection, getWeeklyProjection, projectionSource, bestMetric, nflState.week]);
 
   const filteredInjuryRows = useMemo(() => injuryStatusFilter === "ALL"
     ? injuryRows
@@ -2203,7 +2206,7 @@ export default function LeagueHubContent() {
           !isInjuredOrLimited(candidate) &&
           !rostered.has(String(candidate.player_id))
         )
-        .map((candidate) => ({ candidate, score: bestMetric === "projection" ? getProjection(candidate, projectionSource) : getValueForPlayer(candidate) }))
+        .map((candidate) => ({ candidate, score: bestMetric === "projection" ? (projectionSource === "ARSENAL_MODEL" ? getWeeklyProjection(candidate, projectionSource, nflState.week) : getProjection(candidate, projectionSource)) : getValueForPlayer(candidate) }))
         .filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);

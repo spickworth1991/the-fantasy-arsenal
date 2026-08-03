@@ -285,7 +285,7 @@ function indexPickPlayers(playersMap) {
    PROJECTIONS (like SOS)
 =========================== */
 // Files in /public
-import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -394,7 +394,7 @@ export default function PowerRankingsPage() {
   // NEW: metric & projection source (default to projections like SOS)
   const [metricMode, setMetricMode] = useState("projections"); // "projections" | "values"
   const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -431,7 +431,7 @@ export default function PowerRankingsPage() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap] = await Promise.allSettled([
+        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap, arsenalModel] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
@@ -439,8 +439,9 @@ export default function PowerRankingsPage() {
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
         ]);
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null };
         if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
         if (espnMap.status === "fulfilled") next.ESPN = espnMap.value;
         if (cbsMap.status === "fulfilled") next.CBS = cbsMap.value;
@@ -448,6 +449,7 @@ export default function PowerRankingsPage() {
         if (fantasySharksMap.status === "fulfilled") next.FANTASYSHARKS = fantasySharksMap.value;
         if (draftSharksMap.status === "fulfilled") next.DRAFTSHARKS = draftSharksMap.value;
         if (arsenalMap.status === "fulfilled") next.ARSENAL = arsenalMap.value;
+        if (arsenalModel.status === "fulfilled") next.ARSENAL_MODEL = arsenalModel.value;
         if (!mounted) return;
         setProjMaps(next);
 
@@ -472,6 +474,9 @@ export default function PowerRankingsPage() {
         }
         if (projectionSource === "ARSENAL" && !next.ARSENAL) {
           setSourceKey(next.CSV ? "proj:ffa" : (next.ESPN ? "proj:espn" : "proj:cbs"));
+        }
+        if (projectionSource === "ARSENAL_MODEL" && !next.ARSENAL_MODEL) {
+          setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
         }
 
         if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL) {
@@ -513,13 +518,14 @@ export default function PowerRankingsPage() {
 
   const getMetricRaw = useMemo(() => {
     if (metricMode === "projections") {
-      if (projectionSource === "FANTASYPROS") return (p) => getProjection(p, "FANTASYPROS") || 0;
+      if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projectionSource)) return (p) => getProjection(p, projectionSource) || 0;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
         projectionSource === "CBS"  ? projMaps.CBS  :
         projectionSource === "SLEEPER" ? projMaps.SLEEPER :
         projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
         projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+        projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL :
         projectionSource === "ARSENAL" ? projMaps.ARSENAL :
         projMaps.CSV;
       if (chosen) {
@@ -960,7 +966,8 @@ export default function PowerRankingsPage() {
                         {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                         {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
                         <option value="FANTASYPROS">FantasyPros</option>
-                        {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
+                        {projMaps.ARSENAL_MODEL && <option value="ARSENAL_MODEL">The Fantasy Arsenal</option>}
+                        {projMaps.ARSENAL && <option value="ARSENAL">Average of All Projections</option>}
                       </select>
                     </div>
                   )}

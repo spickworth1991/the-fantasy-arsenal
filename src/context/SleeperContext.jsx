@@ -3,7 +3,7 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
-import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
+import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
   getPickDisplayLastName,
@@ -464,7 +464,7 @@ function getSleeperPosForProj(p) {
 function createProjectionIndex(seedByName) {
   const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
 
-  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf }) {
+  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf, weeks, confidence, projectionBasis }) {
     const nn = keyName(name);
     if (!nn) return;
 
@@ -480,6 +480,9 @@ function createProjectionIndex(seedByName) {
       pointsHalfSf: safeNum(pointsHalfSf),
       pointsPprSf: safeNum(pointsPprSf),
       pointsTepSf: safeNum(pointsTepSf),
+      weeks: Array.isArray(weeks) ? weeks : [],
+      confidence: safeNum(confidence),
+      projectionBasis: String(projectionBasis || ""),
     };
     if (!(cand.pts > 0)) return;
 
@@ -553,6 +556,9 @@ function buildProjectionIndexFromJSON(json) {
       pointsHalfSf: r.points_half_sf ?? r.pointsHalfSf,
       pointsPprSf: r.points_ppr_sf ?? r.pointsPprSf,
       pointsTepSf: r.points_tep_sf ?? r.pointsTepSf,
+      weeks: r.weeks,
+      confidence: r.confidence,
+      projectionBasis: r.projection_basis,
     });
   });
 
@@ -605,6 +611,7 @@ export const SleeperProvider = ({ children }) => {
     FANTASYSHARKS: null,
     DRAFTSHARKS: null,
     ARSENAL: null,
+    ARSENAL_MODEL: null,
     FANTASYPROS: null,
   });
 
@@ -698,8 +705,9 @@ export const SleeperProvider = ({ children }) => {
       "proj:sleeper": "SLEEPER",
       "proj:fantasysharks": "FANTASYSHARKS",
       "proj:draftsharks": "DRAFTSHARKS",
-      "proj:fantasypros": "FANTASYPROS",
-      "proj:thefantasyarsenal": "ARSENAL",
+        "proj:fantasypros": "FANTASYPROS",
+        "proj:thefantasyarsenal-model": "ARSENAL_MODEL",
+        "proj:thefantasyarsenal": "ARSENAL",
     };
     return map[String(k || "")] || "FFA";
   };
@@ -771,14 +779,14 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
-    setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null, ARSENAL_MODEL: null });
     setActiveLeague(null);
     preloadCalled.current = false;
   };
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-  const PROJ_CACHE_KEY = `projIndex_v1.110:${PROJECTION_DATA_SEASON}`;
+    const PROJ_CACHE_KEY = `projIndex_v1.111:${PROJECTION_DATA_SEASON}`;
 
   const preloadProjections = async () => {
     try {
@@ -805,11 +813,12 @@ export const SleeperProvider = ({ children }) => {
         const hasSleeper = cached?.SLEEPER && typeof cached.SLEEPER === "object" && Object.keys(cached.SLEEPER).length > 0;
         const hasFantasySharks = cached?.FANTASYSHARKS && typeof cached.FANTASYSHARKS === "object" && Object.keys(cached.FANTASYSHARKS).length > 0;
         const hasDraftSharks = cached?.DRAFTSHARKS && typeof cached.DRAFTSHARKS === "object" && Object.keys(cached.DRAFTSHARKS).length > 0;
-        const hasArsenal = cached?.ARSENAL && typeof cached.ARSENAL === "object" && Object.keys(cached.ARSENAL).length > 0;
+          const hasArsenal = cached?.ARSENAL && typeof cached.ARSENAL === "object" && Object.keys(cached.ARSENAL).length > 0;
+          const hasArsenalModel = cached?.ARSENAL_MODEL && typeof cached.ARSENAL_MODEL === "object" && Object.keys(cached.ARSENAL_MODEL).length > 0;
         const hasFantasyPros = cached?.FANTASYPROS && typeof cached.FANTASYPROS === "object" && Object.keys(cached.FANTASYPROS).length > 0;
 
         // ✅ Only early-return if we actually have at least one non-empty index cached
-        if (hasFFA && hasESPN && hasCBS && hasSleeper && hasFantasySharks && hasDraftSharks && hasArsenal && hasFantasyPros) {
+          if (hasFFA && hasESPN && hasCBS && hasSleeper && hasFantasySharks && hasDraftSharks && hasArsenal && hasArsenalModel && hasFantasyPros) {
           setProjectionIndexes({
             FFA: hydrate(cached?.FFA) || null,
             ESPN: hydrate(cached?.ESPN) || null,
@@ -817,14 +826,15 @@ export const SleeperProvider = ({ children }) => {
             SLEEPER: hydrate(cached?.SLEEPER) || null,
             FANTASYSHARKS: hydrate(cached?.FANTASYSHARKS) || null,
             DRAFTSHARKS: hydrate(cached?.DRAFTSHARKS) || null,
-            ARSENAL: hydrate(cached?.ARSENAL) || null,
+              ARSENAL: hydrate(cached?.ARSENAL) || null,
+              ARSENAL_MODEL: hydrate(cached?.ARSENAL_MODEL) || null,
             FANTASYPROS: hydrate(cached?.FANTASYPROS) || null,
           });
           return;
         }
       }
 
-      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal] = await Promise.all([
+      const [ffa, espn, cbs, sleeper, fantasySharks, draftSharks, fantasyPros, arsenal, arsenalModel] = await Promise.all([
         fetchProjectionIndex(PROJ_JSON_URL),        // ✅ FFA
         fetchProjectionIndex(PROJ_ESPN_JSON_URL),
         fetchProjectionIndex(PROJ_CBS_JSON_URL),
@@ -833,6 +843,7 @@ export const SleeperProvider = ({ children }) => {
         fetchProjectionIndex(PROJ_DRAFTSHARKS_JSON_URL),
         fetchProjectionIndex(PROJ_FANTASYPROS_JSON_URL),
         fetchProjectionIndex(PROJ_ARSENAL_JSON_URL),
+        fetchProjectionIndex(PROJ_ARSENAL_MODEL_JSON_URL),
       ]);
 
       const payloadRaw = {
@@ -843,6 +854,7 @@ export const SleeperProvider = ({ children }) => {
         FANTASYSHARKS: fantasySharks?.raw || null,
         DRAFTSHARKS: draftSharks?.raw || null,
         ARSENAL: arsenal?.raw || null,
+        ARSENAL_MODEL: arsenalModel?.raw || null,
         FANTASYPROS: fantasyPros?.raw || null,
       };
 
@@ -856,11 +868,12 @@ export const SleeperProvider = ({ children }) => {
         FANTASYSHARKS: hydrate(payloadRaw.FANTASYSHARKS),
         DRAFTSHARKS: hydrate(payloadRaw.DRAFTSHARKS),
         ARSENAL: hydrate(payloadRaw.ARSENAL),
+        ARSENAL_MODEL: hydrate(payloadRaw.ARSENAL_MODEL),
         FANTASYPROS: hydrate(payloadRaw.FANTASYPROS),
       });
     } catch (e) {
       console.error("❌ Projection preload error:", e);
-      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, FANTASYPROS: null });
+      setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null, FANTASYPROS: null });
     }
   };
 
@@ -870,7 +883,7 @@ export const SleeperProvider = ({ children }) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
 
-    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL"].includes(src)) src = "FFA";
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL"].includes(src)) src = "FFA";
     if (!p) return 0;
 
     const idx =
@@ -888,6 +901,8 @@ export const SleeperProvider = ({ children }) => {
         ? projectionIndexes.FANTASYPROS
         : src === "ARSENAL"
         ? projectionIndexes.ARSENAL
+        : src === "ARSENAL_MODEL"
+        ? projectionIndexes.ARSENAL_MODEL
         : projectionIndexes.FFA;
 
     if (!idx) return 0;
@@ -901,7 +916,7 @@ export const SleeperProvider = ({ children }) => {
     const team = getSleeperTeamForProj(p);
 
     const best = idx.pickBest({ name: fullName, pos, team });
-    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL") {
+    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL" || src === "ARSENAL_MODEL") {
       const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
       if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) || best?.pts);
       if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) || best?.pts);
@@ -911,6 +926,24 @@ export const SleeperProvider = ({ children }) => {
     return safeNum(best?.pts);
   };
 
+  const getWeeklyProjection = (p, source = "FFA", week = null) => {
+    let src = String(source || "FFA");
+    if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
+    if (src !== "ARSENAL_MODEL" || !Number.isFinite(Number(week))) return getProjection(p, src);
+
+    const fullName = p?.full_name || p?.search_full_name || `${p?.first_name || ""} ${p?.last_name || ""}`.trim();
+    const best = projectionIndexes.ARSENAL_MODEL?.pickBest({
+      name: fullName,
+      pos: getSleeperPosForProj(p),
+      team: getSleeperTeamForProj(p),
+    });
+    const row = best?.weeks?.find((item) => Number(item?.week) === Number(week));
+    if (!row || row.bye) return row?.bye ? 0 : getProjection(p, src) / 17;
+    if (projectionScoring === "std") return safeNum(row.points_std ?? row.pointsStd);
+    if (projectionScoring === "half") return safeNum(row.points_half ?? row.pointsHalf);
+    return safeNum(row.points_ppr ?? row.pointsPpr ?? row.points);
+  };
+
   // Auto-recover if storage/IDB gets cleared while UI still has a username.
   useEffect(() => {
     if (!storageReady) return;
@@ -918,7 +951,7 @@ export const SleeperProvider = ({ children }) => {
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
     const missingProjs =
-      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.FANTASYPROS && !projectionIndexes?.ARSENAL;
+      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.FANTASYPROS && !projectionIndexes?.ARSENAL && !projectionIndexes?.ARSENAL_MODEL;
 
     if (!hasUsername) return;
     if (loading) return;
@@ -1595,6 +1628,7 @@ export const SleeperProvider = ({ children }) => {
       setProjectionScoring,
       preloadProjections,
       getProjection,
+      getWeeklyProjection,
 
       // ✅ Back-compat: single getter that returns the "active metric"
       // - if proj:* => returns projection points

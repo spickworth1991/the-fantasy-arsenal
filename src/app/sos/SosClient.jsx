@@ -16,7 +16,7 @@ import {
 } from "../../lib/sourceSelection";
 
 /** ===== Projections (JSON) ===== */
-import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 const REG_SEASON_WEEKS = 17;
 
 /** ===== Visual ===== */
@@ -327,7 +327,7 @@ function SOSIntelligence({ heatData, rows, league, lineups, matchupMeta, preferr
 }
 
 export default function SOSPage() {
-  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType, getProjection, projectionScoring } = useSleeper();
+  const { username, leagues = [], activeLeague, setActiveLeague, fetchLeagueRostersSilent, players, format, qbType, getProjection, getWeeklyProjection, projectionScoring } = useSleeper();
   const contextLeague = useMemo(() => leagues.find((l) => l.league_id === activeLeague) || null, [leagues, activeLeague]);
   const routeHandoffApplied=useRef(false);
   useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
@@ -397,7 +397,7 @@ export default function SOSPage() {
     [valueSource, formatLocal, qbLocal, projectionScoring]
   );
 
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
 
@@ -407,7 +407,7 @@ export default function SOSPage() {
       setProjError("");
       setProjLoading(true);
       try {
-        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap] = await Promise.allSettled([
+        const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap, arsenalModel] = await Promise.allSettled([
           fetchProjectionMap(PROJ_JSON_URL),
           fetchProjectionMap(PROJ_ESPN_JSON_URL),
           fetchProjectionMap(PROJ_CBS_JSON_URL),
@@ -415,9 +415,10 @@ export default function SOSPage() {
           fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
           fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
+          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
         ]);
 
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null };
+        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null };
         if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
         if (espnMap.status === "fulfilled") next.ESPN = espnMap.value;
         if (cbsMap.status === "fulfilled") next.CBS = cbsMap.value;
@@ -425,6 +426,7 @@ export default function SOSPage() {
         if (fantasySharksMap.status === "fulfilled") next.FANTASYSHARKS = fantasySharksMap.value;
         if (draftSharksMap.status === "fulfilled") next.DRAFTSHARKS = draftSharksMap.value;
         if (arsenalMap.status === "fulfilled") next.ARSENAL = arsenalMap.value;
+        if (arsenalModel.status === "fulfilled") next.ARSENAL_MODEL = arsenalModel.value;
         setProjMaps(next);
         if (mounted) {
                   setProjMaps(next);
@@ -450,7 +452,10 @@ export default function SOSPage() {
         if (projectionSource === "ARSENAL" && !next.ARSENAL) {
           setSourceKey(next.CSV ? "proj:ffa" : next.ESPN ? "proj:espn" : "proj:cbs");
         }
-        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL) {
+        if (projectionSource === "ARSENAL_MODEL" && !next.ARSENAL_MODEL) {
+          setSourceKey(next.ARSENAL ? "proj:thefantasyarsenal" : next.CSV ? "proj:ffa" : "proj:espn");
+        }
+        if (!next.CSV && !next.ESPN && !next.CBS && !next.SLEEPER && !next.FANTASYSHARKS && !next.DRAFTSHARKS && !next.ARSENAL && !next.ARSENAL_MODEL) {
           setProjError("No projections available — falling back to Values.");
           setSourceKey("val:thefantasyarsenal");
         }
@@ -458,7 +463,7 @@ export default function SOSPage() {
         }
       } catch (e) {
         if (mounted) {
-          setProjMaps({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+          setProjMaps({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
           setProjError("Projections unavailable — falling back to Values.");
           setSourceKey("val:thefantasyarsenal");
         }
@@ -473,6 +478,12 @@ export default function SOSPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
+      if (projectionSource === "ARSENAL_MODEL") return (p, currentWeek) => getWeeklyProjection?.(p, "ARSENAL_MODEL", currentWeek) || 0;
+      if (projectionSource === "ARSENAL") return (p, currentWeek, currentByeMap) => {
+        const team = String(p?.team || "").toUpperCase();
+        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
+        return byes.includes(currentWeek) ? 0 : (getProjection(p, "ARSENAL") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
+      };
       if (projectionSource === "FANTASYPROS") return (p) => (getProjection(p, "FANTASYPROS") || 0) / 17;
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
@@ -480,12 +491,13 @@ export default function SOSPage() {
         projectionSource === "SLEEPER" ? projMaps.SLEEPER :
         projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
         projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+        projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL :
         projectionSource === "ARSENAL" ? projMaps.ARSENAL :
         projMaps.CSV;
       if (chosen) return makeWeeklyProjectionGetter(chosen);
     }
     return wrapValuesAsWeekly(getValueRaw);
-  }, [metricMode, projectionSource, projMaps, getValueRaw, getProjection]);
+  }, [metricMode, projectionSource, projMaps, getValueRaw, getProjection, getWeeklyProjection]);
 
 
 
@@ -589,6 +601,7 @@ export default function SOSPage() {
       projectionSource === "SLEEPER" ? projMaps.SLEEPER :
       projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
       projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
+      projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL :
       projectionSource === "ARSENAL" ? projMaps.ARSENAL :
       projMaps.CSV;
     if (projLoading || !chosen) { setRows(null); setHeatData(null); return; }
@@ -888,7 +901,8 @@ export default function SOSPage() {
                   {projMaps.FANTASYSHARKS && <option value="FANTASYSHARKS">FantasySharks</option>}
                   {projMaps.DRAFTSHARKS && <option value="DRAFTSHARKS">DraftSharks</option>}
                   <option value="FANTASYPROS">FantasyPros</option>
-                  {projMaps.ARSENAL && <option value="ARSENAL">The Fantasy Arsenal</option>}
+                  {projMaps.ARSENAL_MODEL && <option value="ARSENAL_MODEL">The Fantasy Arsenal</option>}
+                  {projMaps.ARSENAL && <option value="ARSENAL">Average of All Projections</option>}
                 </select>
               </>
             )}

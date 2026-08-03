@@ -12,6 +12,19 @@ const season =
       ?.split("=")[1],
   ) || new Date().getUTCFullYear();
 const archive = process.argv.includes("--archive");
+const consensusAnchorFile = path.join(
+  root,
+  "public",
+  "stats",
+  "projections",
+  String(season),
+  "consensus-anchor.json",
+);
+const compactProjectionFile = path.join(
+  root,
+  "public",
+  `projections_thefantasyarsenal_model_${season}.json`,
+);
 const MODEL_VERSION = "arsenal-stat-v3.3";
 const MODEL_SCHEMA = 13;
 const FEATURE_VERSION = "arsenal-features-v3.1";
@@ -2236,12 +2249,10 @@ function normalizeWeeklyLines(weeks, seasonLine, position) {
 }
 
 const schedule = await loadSchedule();
-const base = readJson(
-  path.join(root, "public", `projections_thefantasyarsenal_${season}.json`),
-);
+const base = readJson(consensusAnchorFile);
 if (!base?.rows?.length)
   throw new Error(
-    `Missing projections_thefantasyarsenal_${season}.json. Run npm run update first.`,
+    `Missing stats/projections/${season}/consensus-anchor.json. Run the projection-anchor update before building the Arsenal model.`,
   );
 const completedEvidenceYears = [season - 3, season - 2, season - 1].filter(
   (year) =>
@@ -3021,7 +3032,7 @@ modeledPlayers.forEach((player) => {
 
 const generatedAt = new Date().toISOString();
 const modelInputFiles = [
-  path.join(root, "public", `projections_thefantasyarsenal_${season}.json`),
+  consensusAnchorFile,
   path.join(root, "public", `projections_sleeper_${season}.json`),
   path.join(root, "public", `projections_fantasypros_${season}.json`),
   path.join(root, "public", `projections_draftsharks_${season}.json`),
@@ -3189,9 +3200,121 @@ const outputDirectory = path.join(
   String(season),
 );
 writeJson(path.join(outputDirectory, "current.json"), output);
+const modeledIdentities = new Set(
+  modeledPlayers.flatMap((player) => [
+    player.player_id ? `id:${player.player_id}` : "",
+    `name:${normalizeName(player.name)}|${player.position}`,
+  ]).filter(Boolean),
+);
+const compactModelRows = modeledPlayers.map((player) => ({
+  player_id: String(player.player_id || ""),
+  name: player.name,
+  team: player.team,
+  position: player.position,
+  points: round(player.scoring?.ppr?.season_points),
+  points_ppr: round(player.scoring?.ppr?.season_points),
+  points_half: round(player.scoring?.half?.season_points),
+  points_std: round(player.scoring?.std?.season_points),
+  remaining_points_ppr: round(player.scoring?.ppr?.remaining_points),
+  remaining_points_half: round(player.scoring?.half?.remaining_points),
+  remaining_points_std: round(player.scoring?.std?.remaining_points),
+  actual_points_ppr: round(player.scoring?.ppr?.actual_points),
+  actual_points_half: round(player.scoring?.half?.actual_points),
+  actual_points_std: round(player.scoring?.std?.actual_points),
+  confidence: player.confidence,
+  projection_basis: "arsenal_safe_expected",
+  model_version: MODEL_VERSION,
+  model_build_id: MODEL_BUILD_ID,
+  weeks: (player.weeks || []).map((week) => ({
+    week: week.week,
+    opponent: week.opponent || null,
+    home: Boolean(week.home),
+    bye: Boolean(week.bye),
+    completed: Boolean(week.completed),
+    kickoff: week.kickoff || null,
+    points_ppr: round(week.projections?.ppr),
+    points_half: round(week.projections?.half),
+    points_std: round(week.projections?.std),
+    confidence: player.confidence,
+  })),
+}));
+const fallbackRows = (base.rows || [])
+  .filter((row) => {
+    const idKey = row.player_id ? `id:${row.player_id}` : "";
+    const nameKey = `name:${normalizeName(row.name)}|${String(row.position || "").toUpperCase()}`;
+    return !(idKey && modeledIdentities.has(idKey)) && !modeledIdentities.has(nameKey);
+  })
+  .map((row) => ({
+    player_id: String(row.player_id || ""),
+    name: row.name,
+    team: row.team || "",
+    position: String(row.position || "").toUpperCase(),
+    points: round(row.points_ppr ?? row.points),
+    points_ppr: round(row.points_ppr ?? row.points),
+    points_half: round(row.points_half ?? row.points),
+    points_std: round(row.points_std ?? row.points),
+    remaining_points_ppr: round(row.points_ppr ?? row.points),
+    remaining_points_half: round(row.points_half ?? row.points),
+    remaining_points_std: round(row.points_std ?? row.points),
+    actual_points_ppr: 0,
+    actual_points_half: 0,
+    actual_points_std: 0,
+    confidence: Math.min(70, Number(row.confidence) || 55),
+    projection_basis: "consensus_fallback",
+    fallback_reason: "Position is not yet modeled by the Arsenal stat engine.",
+    weeks: [],
+  }));
+const compactRows = [...compactModelRows, ...fallbackRows].sort(
+  (left, right) => Number(right.points) - Number(left.points),
+);
+const compactById = {};
+const compactByName = {};
+compactRows.forEach((row) => {
+  if (row.player_id) compactById[row.player_id] = row.points;
+  compactByName[normalizeName(row.name)] = row.points;
+});
+const compactOutput = {
+  updated: output.generated_at,
+  season,
+  source: "The Fantasy Arsenal Projections",
+  scoring: "STD/HALF/PPR",
+  scoring_variants: scoringKeys,
+  default_scoring: "ppr",
+  projection_lens: "safe_expected",
+  model_version: MODEL_VERSION,
+  model_build_id: MODEL_BUILD_ID,
+  status: output.status,
+  supported_model_positions: [...positions],
+  fallback_positions: [...new Set(fallbackRows.map((row) => row.position))].sort(),
+  count: compactRows.length,
+  modeled_count: compactModelRows.length,
+  fallback_count: fallbackRows.length,
+  rows: compactRows,
+  by_id: compactById,
+  by_name: compactByName,
+};
+writeJson(compactProjectionFile, compactOutput);
+
+const freshnessFile = path.join(root, "public", "source-freshness.json");
+const freshness = readJson(freshnessFile, { updated_at: null, sources: {} });
+freshness.updated_at = output.generated_at;
+freshness.sources = {
+  ...(freshness.sources || {}),
+  arsenal_model_proj: {
+    key: "arsenal_model_proj",
+    name: "The Fantasy Arsenal Projections",
+    status: "success",
+    last_attempt_at: output.generated_at,
+    last_success_at: output.generated_at,
+    last_error: "",
+  },
+};
+writeJson(freshnessFile, freshness);
 writeJson(path.join(root, "public", "stats", "projections", "manifest.json"), {
   current_season: season,
   model_path: `/stats/projections/${season}/current.json`,
+  source_path: `/projections_thefantasyarsenal_model_${season}.json`,
+  consensus_anchor_path: `/stats/projections/${season}/consensus-anchor.json`,
   accuracy_path: `/stats/projections/${season}/accuracy.json`,
   audit_path: `/stats/projections/${season}/audit.json`,
   identity_path: `/stats/projections/${season}/identities.json`,

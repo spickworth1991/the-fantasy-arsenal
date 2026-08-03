@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-02T04:07:02.537Z",
+  "updated_at": "2026-08-02T23:51:12.009Z",
   "sources": {
     "fc": {
       "key": "fc",
@@ -107,10 +107,10 @@
     },
     "arsenal_proj": {
       "key": "arsenal_proj",
-      "name": "The Fantasy Arsenal Projections",
+      "name": "Average of All Projections",
       "status": "success",
-      "last_attempt_at": "2026-08-02T04:07:02.537Z",
-      "last_success_at": "2026-08-02T04:07:02.537Z",
+      "last_attempt_at": "2026-08-02T23:51:12.009Z",
+      "last_success_at": "2026-08-02T23:51:12.009Z",
       "last_error": ""
     },
     "fp": {
@@ -135,6 +135,22 @@
       "status": "success",
       "last_attempt_at": "2026-08-02T04:06:40.285Z",
       "last_success_at": "2026-08-02T04:06:40.285Z",
+      "last_error": ""
+    },
+    "projection_anchor": {
+      "key": "projection_anchor",
+      "name": "Projection Model Input Anchor",
+      "status": "success",
+      "last_attempt_at": "2026-08-02T23:51:02.906Z",
+      "last_success_at": "2026-08-02T23:51:02.906Z",
+      "last_error": ""
+    },
+    "arsenal_model_proj": {
+      "key": "arsenal_model_proj",
+      "name": "The Fantasy Arsenal Projections",
+      "status": "success",
+      "last_attempt_at": "2026-08-02T23:51:09.201Z",
+      "last_success_at": "2026-08-02T23:51:09.201Z",
       "last_error": ""
     }
   }

@@ -76,12 +76,12 @@ if (!current?.players?.length)
   );
 const calibration = readJson(calibrationFile, { by_position: {} });
 
-const sourceSpecs = [
-  {
-    key: "arsenal_consensus",
-    name: "The Fantasy Arsenal consensus",
-    file: `projections_thefantasyarsenal_${season}.json`,
-  },
+  const sourceSpecs = [
+    {
+      key: "projection_anchor",
+      name: "Projection Source Average Anchor",
+      file: `stats/projections/${season}/consensus-anchor.json`,
+    },
   {
     key: "fantasypros",
     name: "FantasyPros",

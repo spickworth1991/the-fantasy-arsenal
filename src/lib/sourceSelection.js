@@ -10,6 +10,7 @@ export function projectionSourceFromKey(sourceKey) {
   if (key === "proj:fantasysharks") return "FANTASYSHARKS";
   if (key === "proj:draftsharks") return "DRAFTSHARKS";
   if (key === "proj:fantasypros") return "FANTASYPROS";
+  if (key === "proj:thefantasyarsenal-model") return "ARSENAL_MODEL";
   if (key === "proj:thefantasyarsenal") return "ARSENAL";
   return "CSV";
 }

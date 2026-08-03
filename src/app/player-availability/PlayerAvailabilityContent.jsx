@@ -165,7 +165,7 @@ function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., J
 // =====================
 // Projections (MATCH Trade Analyzer JSONs)
 // =====================
-import { PROJ_ARSENAL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -495,7 +495,7 @@ useEffect(() => {
   // Keep existing downstream logic (valueSource + projSource) but drive them from ONE selector.
   const [valueSource, setValueSource] = useState("TheFantasyArsenal");
   const [projSource, setProjSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
-  const [projectionMaps, setProjectionMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null });
+  const [projectionMaps, setProjectionMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
 
   // Drive legacy source state from the single selector
   useEffect(() => {
@@ -508,6 +508,7 @@ useEffect(() => {
         "proj:fantasysharks": "FANTASYSHARKS",
         "proj:draftsharks": "DRAFTSHARKS",
         "proj:thefantasyarsenal": "ARSENAL",
+        "proj:thefantasyarsenal-model": "ARSENAL_MODEL",
       };
       setProjSource(map[activeSource.key] || "CSV");
     } else {
@@ -608,9 +609,9 @@ useEffect(() => {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal] = await Promise.all([fetchProjectionMap(PROJ_JSON_URL), fetchProjectionMap(PROJ_ESPN_JSON_URL), fetchProjectionMap(PROJ_CBS_JSON_URL), fetchProjectionMap(PROJ_SLEEPER_JSON_URL), fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL), fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL), fetchProjectionMap(PROJ_ARSENAL_JSON_URL)]);
+      const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal, arsenalModel] = await Promise.all([fetchProjectionMap(PROJ_JSON_URL), fetchProjectionMap(PROJ_ESPN_JSON_URL), fetchProjectionMap(PROJ_CBS_JSON_URL), fetchProjectionMap(PROJ_SLEEPER_JSON_URL), fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL), fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL), fetchProjectionMap(PROJ_ARSENAL_JSON_URL), fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL)]);
       if (!alive) return;
-      setProjectionMaps({ CSV: csv, ESPN: espn, CBS: cbs, SLEEPER: sleeper, FANTASYSHARKS: fantasySharks, DRAFTSHARKS: draftSharks, ARSENAL: arsenal });
+      setProjectionMaps({ CSV: csv, ESPN: espn, CBS: cbs, SLEEPER: sleeper, FANTASYSHARKS: fantasySharks, DRAFTSHARKS: draftSharks, ARSENAL: arsenal, ARSENAL_MODEL: arsenalModel });
 
       if (projSource === "CBS" && !cbs) setProjSource(espn ? "ESPN" : "CSV");
       if (projSource === "ESPN" && !espn) setProjSource(csv ? "CSV" : "CBS");
@@ -619,6 +620,7 @@ useEffect(() => {
       if (projSource === "FANTASYSHARKS" && !fantasySharks) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
       if (projSource === "DRAFTSHARKS" && !draftSharks) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
       if (projSource === "ARSENAL" && !arsenal) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
+      if (projSource === "ARSENAL_MODEL" && !arsenalModel) setProjSource(arsenal ? "ARSENAL" : espn ? "ESPN" : "CSV");
     })();
     return () => {
       alive = false;
@@ -627,8 +629,8 @@ useEffect(() => {
   }, []);
 
   const activeProjMap = useMemo(() => {
-    if (projSource === "FANTASYPROS") return { fantasyProsGetter: getProjection };
-    return projSource === "ESPN" ? projectionMaps.ESPN : projSource === "CBS" ? projectionMaps.CBS : projSource === "SLEEPER" ? projectionMaps.SLEEPER : projSource === "FANTASYSHARKS" ? projectionMaps.FANTASYSHARKS : projSource === "DRAFTSHARKS" ? projectionMaps.DRAFTSHARKS : projSource === "ARSENAL" ? projectionMaps.ARSENAL : projectionMaps.CSV;
+    if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projSource)) return { fantasyProsGetter: (player) => getProjection(player, projSource) };
+    return projSource === "ESPN" ? projectionMaps.ESPN : projSource === "CBS" ? projectionMaps.CBS : projSource === "SLEEPER" ? projectionMaps.SLEEPER : projSource === "FANTASYSHARKS" ? projectionMaps.FANTASYSHARKS : projSource === "DRAFTSHARKS" ? projectionMaps.DRAFTSHARKS : projSource === "ARSENAL_MODEL" ? projectionMaps.ARSENAL_MODEL : projSource === "ARSENAL" ? projectionMaps.ARSENAL : projectionMaps.CSV;
   }, [projSource, projectionMaps, getProjection]);
 
   // ---------- Scan leagues with cache ----------

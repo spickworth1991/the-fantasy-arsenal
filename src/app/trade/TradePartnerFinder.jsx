@@ -139,7 +139,7 @@ function AssetPill({ asset }) {
   </div>;
 }
 
-export default function TradePartnerFinder({ league, players, getMetric, metricMode, username, onLoadPackage }) {
+export default function TradePartnerFinder({ league, players, getMetric, getWeeklyMetric, metricMode, username, onLoadPackage }) {
   const [userId, setUserId] = useState("");
   const [tradedPicks, setTradedPicks] = useState([]);
   const [completedDraftSeasons, setCompletedDraftSeasons] = useState(() => new Set());
@@ -150,6 +150,16 @@ export default function TradePartnerFinder({ league, players, getMetric, metricM
   const [showCount, setShowCount] = useState(8);
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(1);
+
+  useEffect(() => {
+    let active = true;
+    fetch("https://api.sleeper.app/v1/state/nfl")
+      .then((response) => response.ok ? response.json() : null)
+      .then((state) => { if (active) setCurrentWeek(Math.max(1, Number(state?.week) || 1)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -208,7 +218,7 @@ export default function TradePartnerFinder({ league, players, getMetric, metricM
         const value = Number(getMetric(player) || 0);
         const pos = normalizePosition(player.position);
         if (!value || pos === "PICK") return null;
-        return { kind: "player", id: String(id), name: playerName(player, id), pos, team: String(player.team || "").toUpperCase(), age: Number(player.age || 25), value, lineupValue: metricMode === "projections" ? value / 17 : Math.sqrt(value) };
+        return { kind: "player", id: String(id), name: playerName(player, id), pos, team: String(player.team || "").toUpperCase(), age: Number(player.age || 25), value, lineupValue: Number(getWeeklyMetric?.(player, currentWeek) ?? (metricMode === "projections" ? value / 17 : Math.sqrt(value))) };
       }).filter(Boolean);
       const pickAssets = [];
       futureSeasons.forEach((season, seasonOffset) => {
@@ -278,7 +288,7 @@ export default function TradePartnerFinder({ league, players, getMetric, metricM
     const seen = new Set();
     const suggestions = results.sort((a, b) => b.mutualScore - a.mutualScore || a.valueGapPct - b.valueGapPct).filter((row) => { const key = `${row.partner.rosterId}:${row.give.map(assetKey).sort().join("|")}:${row.receive.map(assetKey).sort().join("|")}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, 40);
     return { profiles, suggestions, mine };
-  }, [completedDraftSeasons, directionFilter, getMetric, league, metricMode, packageShape, players, selectedRosterId, targetAssetId, tradedPicks]);
+  }, [completedDraftSeasons, currentWeek, directionFilter, getMetric, getWeeklyMetric, league, metricMode, packageShape, players, selectedRosterId, targetAssetId, tradedPicks]);
 
   if (!league) return null;
   const targetOptions = analysis.mine?.assets?.filter((asset) => asset.value > 0).sort((a, b) => b.value - a.value) || [];

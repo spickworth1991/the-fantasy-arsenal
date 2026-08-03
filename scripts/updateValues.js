@@ -197,6 +197,14 @@ const ARSENAL_PROJ_OUT_PATH = path.join(
   __dirname,
   `../public/projections_thefantasyarsenal_${CURRENT_SEASON}.json`,
 );
+const ARSENAL_MODEL_PROJ_OUT_PATH = path.join(
+  __dirname,
+  `../public/projections_thefantasyarsenal_model_${CURRENT_SEASON}.json`,
+);
+const PROJECTION_CONSENSUS_ANCHOR_PATH = path.join(
+  __dirname,
+  `../public/stats/projections/${CURRENT_SEASON}/consensus-anchor.json`,
+);
 const ARCHIVE_DIR = path.join(__dirname, "../public/archive");
 const SOURCE_FRESHNESS_PATH = path.join(
   __dirname,
@@ -249,6 +257,8 @@ function archiveUpdatedValues(failures = []) {
     DRAFTSHARKS_PROJ_OUT_PATH,
     FANTASYPROS_PROJ_OUT_PATH,
     ARSENAL_PROJ_OUT_PATH,
+    ARSENAL_MODEL_PROJ_OUT_PATH,
+    PROJECTION_CONSENSUS_ANCHOR_PATH,
   ].filter((file) => fs.existsSync(file));
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   const archived = files.map((file) => {
@@ -3351,7 +3361,7 @@ async function updateFantasyProsProjections() {
   );
 }
 
-async function updateArsenalProjections() {
+async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
   const sourceFiles = [
     { key: "FFA", path: PROJ_OUT_PATH, weight: 1, formats: ["ppr"] },
     { key: "ESPN", path: ESPN_PROJ_OUT_PATH, weight: 1, formats: ["ppr"] },
@@ -3383,11 +3393,28 @@ async function updateArsenalProjections() {
       formats: ["ppr", "half", "std"],
     },
   ];
+  if (includeArsenalModel) {
+    sourceFiles.push({
+      key: "FantasyArsenal",
+      path: ARSENAL_MODEL_PROJ_OUT_PATH,
+      weight: 1,
+      formats: ["ppr", "half", "std"],
+      contextAdjusted: true,
+    });
+  }
   const available = sourceFiles.filter((source) => fs.existsSync(source.path));
   if (available.length < 2)
     throw new Error(
-      "At least two projection caches are required to calculate The Fantasy Arsenal Projections.",
+      "At least two projection caches are required to calculate the projection average.",
     );
+  if (
+    includeArsenalModel &&
+    !available.some((source) => source.key === "FantasyArsenal")
+  ) {
+    throw new Error(
+      `Missing projections_thefantasyarsenal_model_${CURRENT_SEASON}.json. Build the Arsenal stat model before publishing the final average.`,
+    );
+  }
 
   const sleeperPlayers = await fetchSleeperPlayersMap();
   const sleeperContext = new Map();
@@ -3428,6 +3455,11 @@ async function updateArsenalProjections() {
     const data = JSON.parse(fs.readFileSync(source.path, "utf8"));
     if (Number(data?.season) !== CURRENT_SEASON) return;
     (Array.isArray(data?.rows) ? data.rows : []).forEach((row) => {
+      if (
+        source.key === "FantasyArsenal" &&
+        row?.projection_basis === "consensus_fallback"
+      )
+        return;
       const name = String(row?.name || row?.full_name || "").trim();
       const position = normalizePos(row?.position || row?.pos || "");
       const points = Number(row?.points);
@@ -3451,9 +3483,10 @@ async function updateArsenalProjections() {
       const receptionInvariant = !["RB", "WR", "TE"].includes(position);
       const supports = (format) =>
         source.formats.includes(format) || receptionInvariant;
-      player.inputs.push({
+      const input = {
         source: source.key,
         weight: source.weight,
+        contextAdjusted: source.contextAdjusted === true,
         ppr: Number(row?.points_ppr ?? row?.pointsPpr ?? row?.points) || 0,
         half: supports("half")
           ? Number(
@@ -3471,31 +3504,20 @@ async function updateArsenalProjections() {
                 row?.points,
             ) || 0
           : null,
-      });
+      };
+      const priorInput = player.inputs.findIndex(
+        (candidate) => candidate.source === source.key,
+      );
+      if (priorInput >= 0) player.inputs[priorInput] = input;
+      else player.inputs.push(input);
     });
   });
 
   const rows = [...players.values()]
-    .filter((player) => player.inputs.length >= 2)
+    .filter(
+      (player) => new Set(player.inputs.map((input) => input.source)).size >= 2,
+    )
     .map((player) => {
-      const consensus = (field) => {
-        const inputs = player.inputs.filter(
-          (input) => Number.isFinite(input[field]) && input[field] > 0,
-        );
-        const ordered = [...inputs].sort((a, b) => a[field] - b[field]);
-        const trimmed = ordered.length >= 5 ? ordered.slice(1, -1) : ordered;
-        const totalWeight = trimmed.reduce(
-          (sum, input) => sum + input.weight,
-          0,
-        );
-        return (
-          trimmed.reduce((sum, input) => sum + input[field] * input.weight, 0) /
-          Math.max(0.01, totalWeight)
-        );
-      };
-      const pprBase = consensus("ppr");
-      const halfBase = consensus("half");
-      const stdBase = consensus("std");
       const context =
         player.context ||
         resolveSleeperContext(player.name, player.position, player.team) ||
@@ -3505,7 +3527,10 @@ async function updateArsenalProjections() {
       ).toLowerCase();
       const active = context?.active !== false;
       const depth = Number(context?.depth_chart_order) || null;
-      const sourcePoints = player.inputs
+      const externalInputs = player.inputs.filter(
+        (input) => !input.contextAdjusted,
+      );
+      const sourcePoints = externalInputs
         .map((input) => input.ppr)
         .filter((value) => value > 0);
       const average =
@@ -3534,7 +3559,7 @@ async function updateArsenalProjections() {
       }
       // Depth is only a small tie-breaker when source coverage is thin or the
       // sources disagree. This avoids double-counting a role already in forecasts.
-      if ((player.inputs.length < 4 || disagreement > 0.22) && depth) {
+      if ((externalInputs.length < 4 || disagreement > 0.22) && depth) {
         const roleAdjustment =
           depth === 1 ? 1.02 : depth === 2 ? 0.99 : depth >= 4 ? 0.96 : 0.98;
         contextMultiplier *= roleAdjustment;
@@ -3543,9 +3568,43 @@ async function updateArsenalProjections() {
         );
       }
       contextMultiplier = Math.max(0.3, Math.min(1.04, contextMultiplier));
-      const pointsPpr = pprBase * contextMultiplier;
-      const pointsHalf = halfBase * contextMultiplier;
-      const pointsStd = stdBase * contextMultiplier;
+      const consensusDetails = (field) => {
+        const inputs = player.inputs
+          .filter(
+            (input) => Number.isFinite(input[field]) && input[field] > 0,
+          )
+          .map((input) => ({
+            ...input,
+            adjustedValue: input.contextAdjusted
+              ? input[field]
+              : input[field] * contextMultiplier,
+          }));
+        const ordered = [...inputs].sort(
+          (a, b) => a.adjustedValue - b.adjustedValue,
+        );
+        const trimmed = ordered.length >= 5 ? ordered.slice(1, -1) : ordered;
+        const totalWeight = trimmed.reduce(
+          (sum, input) => sum + input.weight,
+          0,
+        );
+        return {
+          value:
+            trimmed.reduce(
+              (sum, input) => sum + input.adjustedValue * input.weight,
+              0,
+            ) / Math.max(0.01, totalWeight),
+          used: trimmed.map((input) => input.source),
+          trimmed: ordered
+            .filter((input) => !trimmed.includes(input))
+            .map((input) => input.source),
+        };
+      };
+      const pprConsensus = consensusDetails("ppr");
+      const halfConsensus = consensusDetails("half");
+      const stdConsensus = consensusDetails("std");
+      const pointsPpr = pprConsensus.value;
+      const pointsHalf = halfConsensus.value;
+      const pointsStd = stdConsensus.value;
       const confidence = Math.round(
         Math.max(
           20,
@@ -3581,6 +3640,16 @@ async function updateArsenalProjections() {
         },
         confidence,
         disagreement: Number(disagreement.toFixed(4)),
+        consensus_contributors: {
+          ppr: pprConsensus.used,
+          half: halfConsensus.used,
+          std: stdConsensus.used,
+        },
+        trimmed_sources: {
+          ppr: pprConsensus.trimmed,
+          half: halfConsensus.trimmed,
+          std: stdConsensus.trimmed,
+        },
         context: {
           age: Number(context?.age) || null,
           years_experience: Number(context?.years_exp) || 0,
@@ -3614,13 +3683,23 @@ async function updateArsenalProjections() {
       `Calculated projection coverage is incomplete (${coreCount} core offensive players). Existing cache was not overwritten.`,
     );
 
-  const output = projectionOutput("The Fantasy Arsenal", rows, {
+  const output = projectionOutput(
+    includeArsenalModel
+      ? "Average of All Projections"
+      : "Projection Source Average Anchor",
+    rows,
+    {
     method:
-      "format-aware coverage-weighted trimmed consensus with bounded Sleeper role/availability correction",
+      includeArsenalModel
+        ? "format-aware weighted trimmed average of all projection sources, including The Fantasy Arsenal Safe/Expected model"
+        : "external-source-only format-aware weighted trimmed consensus used as the Arsenal model prior",
     minimum_sources: 2,
     scoring_variants: ["std", "half", "ppr"],
     default_scoring: "ppr",
-    model_version: "arsenal-projections-2.1",
+    model_version: includeArsenalModel
+      ? "all-projection-average-3.0"
+      : "projection-anchor-3.0",
+    includes_arsenal_model: includeArsenalModel,
     format_policy: {
       note: "A PPR-only source is never relabeled as Half-PPR or Standard for RB, WR, or TE. Reception-invariant positions may reuse the same total across formats.",
       source_formats: Object.fromEntries(
@@ -3646,10 +3725,17 @@ async function updateArsenalProjections() {
     source_weights: Object.fromEntries(
       sourceFiles.map((source) => [source.key, source.weight]),
     ),
-  });
-  fs.writeFileSync(ARSENAL_PROJ_OUT_PATH, JSON.stringify(output, null, 2));
+    },
+  );
+  const outputPath = includeArsenalModel
+    ? ARSENAL_PROJ_OUT_PATH
+    : PROJECTION_CONSENSUS_ANCHOR_PATH;
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
   console.log(
-    `✅ projections_thefantasyarsenal_${CURRENT_SEASON}.json written (${rows.length} players from ${available.length} caches).`,
+    includeArsenalModel
+      ? `✅ projections_thefantasyarsenal_${CURRENT_SEASON}.json written as Average of All Projections (${rows.length} players from ${available.length} sources).`
+      : `✅ consensus-anchor.json written (${rows.length} players from ${available.length} external sources).`,
   );
 }
 
@@ -4455,7 +4541,7 @@ async function updateCBSProjections() {
       "fantasypros_proj",
       "espn_proj",
       "cbs_proj",
-      "arsenal_proj",
+      "projection_anchor",
     ];
     const requestedSources = process.argv.includes("--daily")
       ? dailySources
@@ -4508,7 +4594,11 @@ async function updateCBSProjections() {
                 value: "fantasypros_proj",
               },
               {
-                name: "The Fantasy Arsenal Projections (calculated average)",
+                name: "Projection model input anchor (external sources only)",
+                value: "projection_anchor",
+              },
+              {
+                name: "Average of All Projections (includes Arsenal Safe/Expected)",
                 value: "arsenal_proj",
               },
               { name: "ESPN Projections (scrape)", value: "espn_proj" },
@@ -4562,9 +4652,14 @@ async function updateCBSProjections() {
       { key: "espn_proj", name: "ESPN Projections", fn: updateESPNProjections },
       { key: "cbs_proj", name: "CBS Projections", fn: updateCBSProjections },
       {
+        key: "projection_anchor",
+        name: "Projection Model Input Anchor",
+        fn: () => updateProjectionConsensus({ includeArsenalModel: false }),
+      },
+      {
         key: "arsenal_proj",
-        name: "The Fantasy Arsenal Projections",
-        fn: updateArsenalProjections,
+        name: "Average of All Projections",
+        fn: () => updateProjectionConsensus({ includeArsenalModel: true }),
       },
     ];
 
@@ -4598,8 +4693,8 @@ async function updateCBSProjections() {
     writeValueCacheVersion();
     normalizeCalculatedPickSlots(sources);
     if (
-      process.argv.includes("--archive") ||
-      process.argv.includes("--daily")
+      !process.argv.includes("--defer-archive") &&
+      (process.argv.includes("--archive") || process.argv.includes("--daily"))
     ) {
       if (failed.length && !process.argv.includes("--daily")) {
         throw new Error(

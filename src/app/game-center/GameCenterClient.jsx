@@ -75,7 +75,7 @@ function matchupHref(leagueId) {
 }
 
 export default function GameCenterClient() {
-  const { username, year, leagues = [], players, getProjection, projectionSource } = useSleeper();
+  const { username, year, leagues = [], players, getProjection, getWeeklyProjection, projectionSource } = useSleeper();
   const [week, setWeek] = useState(1);
   const [rows, setRows] = useState([]);
   const [games, setGames] = useState([]);
@@ -193,7 +193,12 @@ export default function GameCenterClient() {
     };
   }, [liveMode, liveRefreshSeconds, scan]);
 
-  const weeklyProjection = useCallback((id) => n(getProjection?.(players?.[id], projectionSource)) / 17, [getProjection, players, projectionSource]);
+  const weeklyProjection = useCallback((id) => {
+    if (projectionSource === "ARSENAL_MODEL") {
+      return n(getWeeklyProjection?.(players?.[id], projectionSource, week));
+    }
+    return n(getProjection?.(players?.[id], projectionSource)) / 17;
+  }, [getProjection, getWeeklyProjection, players, projectionSource, week]);
 
   const matchupRows = useMemo(() => visibleRows.map((row) => {
     const myIds = (row.myMatch?.starters || []).map(String).filter((id) => id && id !== "0");
