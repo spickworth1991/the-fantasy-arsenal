@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-02T04:06:46.633Z",
+  "updated": "2026-08-03T04:06:43.352Z",
   "season": 2026,
   "pointsKey": "points",
-  "count": 499,
+  "count": 460,
   "rows": [
     {
       "player_id": "",
@@ -622,13 +622,6 @@
     },
     {
       "player_id": "",
-      "name": "Andrew Van Ginkel",
-      "team": "MIN",
-      "position": "DL",
-      "points": 75.4
-    },
-    {
-      "player_id": "",
       "name": "Sam LaPorta",
       "team": "DET",
       "position": "TE",
@@ -696,13 +689,6 @@
       "team": "BAL",
       "position": "DB",
       "points": 99.2
-    },
-    {
-      "player_id": "",
-      "name": "Brian Burns",
-      "team": "NYG",
-      "position": "DL",
-      "points": 71.8
     },
     {
       "player_id": "",
@@ -972,13 +958,6 @@
     },
     {
       "player_id": "",
-      "name": "Alex Highsmith",
-      "team": "PIT",
-      "position": "DL",
-      "points": 66.4
-    },
-    {
-      "player_id": "",
       "name": "Jamien Sherwood",
       "team": "NYJ",
       "position": "LB",
@@ -1021,13 +1000,6 @@
     },
     {
       "player_id": "",
-      "name": "T.J. Watt",
-      "team": "PIT",
-      "position": "DL",
-      "points": 65.8
-    },
-    {
-      "player_id": "",
       "name": "Tommy Togiai",
       "team": "HOU",
       "position": "DL",
@@ -1046,20 +1018,6 @@
       "team": "HOU",
       "position": "DL",
       "points": 65.6
-    },
-    {
-      "player_id": "",
-      "name": "Danielle Hunter",
-      "team": "HOU",
-      "position": "DL",
-      "points": 65.6
-    },
-    {
-      "player_id": "",
-      "name": "Jared Verse",
-      "team": "CLE",
-      "position": "DL",
-      "points": 65.5
     },
     {
       "player_id": "",
@@ -1102,13 +1060,6 @@
       "team": "HOU",
       "position": "DB",
       "points": 91.9
-    },
-    {
-      "player_id": "",
-      "name": "Tuli Tuipulotu",
-      "team": "LAC",
-      "position": "DL",
-      "points": 64.6
     },
     {
       "player_id": "",
@@ -1165,13 +1116,6 @@
       "team": "SEA",
       "position": "DB",
       "points": 90.3
-    },
-    {
-      "player_id": "",
-      "name": "Jonathan Greenard",
-      "team": "PHI",
-      "position": "DL",
-      "points": 63
     },
     {
       "player_id": "",
@@ -1322,13 +1266,6 @@
     },
     {
       "player_id": "",
-      "name": "Josh Allen",
-      "team": "JAC",
-      "position": "DL",
-      "points": 59.7
-    },
-    {
-      "player_id": "",
       "name": "Cooper DeJean",
       "team": "PHI",
       "position": "DB",
@@ -1338,27 +1275,6 @@
       "player_id": "",
       "name": "Alohi Gilman",
       "team": "KC",
-      "position": "DB",
-      "points": 86.3
-    },
-    {
-      "player_id": "",
-      "name": "Michael Jackson",
-      "team": "CAR",
-      "position": "DB",
-      "points": 86.3
-    },
-    {
-      "player_id": "",
-      "name": "Michael Jackson",
-      "team": "CAR",
-      "position": "DB",
-      "points": 86.3
-    },
-    {
-      "player_id": "",
-      "name": "Michael Jackson",
-      "team": "CAR",
       "position": "DB",
       "points": 86.3
     },
@@ -1455,13 +1371,6 @@
     },
     {
       "player_id": "",
-      "name": "Trey Hendrickson",
-      "team": "BAL",
-      "position": "DL",
-      "points": 57.8
-    },
-    {
-      "player_id": "",
       "name": "Laiatu Latu",
       "team": "IND",
       "position": "DL",
@@ -1504,13 +1413,6 @@
     },
     {
       "player_id": "",
-      "name": "Carl Granderson",
-      "team": "NO",
-      "position": "DL",
-      "points": 57.1
-    },
-    {
-      "player_id": "",
       "name": "Justin Reid",
       "team": "NO",
       "position": "DB",
@@ -1525,24 +1427,10 @@
     },
     {
       "player_id": "",
-      "name": "Nik Bonitto",
-      "team": "DEN",
-      "position": "DL",
-      "points": 56.7
-    },
-    {
-      "player_id": "",
       "name": "Jordan Mason",
       "team": "MIN",
       "position": "RB",
       "points": 118
-    },
-    {
-      "player_id": "",
-      "name": "Demarcus Lawrence",
-      "team": "SEA",
-      "position": "DL",
-      "points": 56.4
     },
     {
       "player_id": "",
@@ -1585,20 +1473,6 @@
       "team": "JAC",
       "position": "DL",
       "points": 55.5
-    },
-    {
-      "player_id": "",
-      "name": "Travon Walker",
-      "team": "JAC",
-      "position": "DL",
-      "points": 55.5
-    },
-    {
-      "player_id": "",
-      "name": "Dallas Turner",
-      "team": "MIN",
-      "position": "DL",
-      "points": 55.4
     },
     {
       "player_id": "",
@@ -1777,29 +1651,8 @@
     },
     {
       "player_id": "",
-      "name": "Gregory Rousseau",
-      "team": "BUF",
-      "position": "DL",
-      "points": 53.7
-    },
-    {
-      "player_id": "",
       "name": "YaYa Diaby",
       "team": "TB",
-      "position": "DL",
-      "points": 53.6
-    },
-    {
-      "player_id": "",
-      "name": "YaYa Diaby",
-      "team": "TB",
-      "position": "DL",
-      "points": 53.6
-    },
-    {
-      "player_id": "",
-      "name": "Harold Landry",
-      "team": "NE",
       "position": "DL",
       "points": 53.6
     },
@@ -2008,13 +1861,6 @@
     },
     {
       "player_id": "",
-      "name": "Micah Parsons",
-      "team": "GB",
-      "position": "DL",
-      "points": 51.1
-    },
-    {
-      "player_id": "",
       "name": "Romeo Doubs",
       "team": "NE",
       "position": "WR",
@@ -2026,13 +1872,6 @@
       "team": "PIT",
       "position": "WR",
       "points": 106
-    },
-    {
-      "player_id": "",
-      "name": "David Bailey",
-      "team": "NYJ",
-      "position": "DL",
-      "points": 51
     },
     {
       "player_id": "",
@@ -2106,24 +1945,10 @@
     },
     {
       "player_id": "",
-      "name": "Boye Mafe",
-      "team": "CIN",
-      "position": "DL",
-      "points": 49.6
-    },
-    {
-      "player_id": "",
       "name": "Zyon McCollum",
       "team": "TB",
       "position": "DB",
       "points": 76.6
-    },
-    {
-      "player_id": "",
-      "name": "Jalon Walker",
-      "team": "ATL",
-      "position": "DL",
-      "points": 49.5
     },
     {
       "player_id": "",
@@ -2183,20 +2008,6 @@
     },
     {
       "player_id": "",
-      "name": "Jaelan Phillips",
-      "team": "CAR",
-      "position": "DL",
-      "points": 49
-    },
-    {
-      "player_id": "",
-      "name": "Donovan Ezeiruaku",
-      "team": "DAL",
-      "position": "DL",
-      "points": 48.9
-    },
-    {
-      "player_id": "",
       "name": "Donovan Ezeiruaku",
       "team": "DAL",
       "position": "DL",
@@ -2239,13 +2050,6 @@
     },
     {
       "player_id": "",
-      "name": "James Pearce",
-      "team": "ATL",
-      "position": "DL",
-      "points": 48.6
-    },
-    {
-      "player_id": "",
       "name": "Devin Lloyd",
       "team": "CAR",
       "position": "LB",
@@ -2257,13 +2061,6 @@
       "team": "NE",
       "position": "LB",
       "points": 92.8
-    },
-    {
-      "player_id": "",
-      "name": "Jayson Oweh",
-      "team": "WAS",
-      "position": "DL",
-      "points": 48.5
     },
     {
       "player_id": "",
@@ -2292,13 +2089,6 @@
       "team": "NYJ",
       "position": "TE",
       "points": 82.7
-    },
-    {
-      "player_id": "",
-      "name": "Chop Robinson",
-      "team": "MIA",
-      "position": "DL",
-      "points": 48.3
     },
     {
       "player_id": "",
@@ -2400,20 +2190,6 @@
     },
     {
       "player_id": "",
-      "name": "Bradley Chubb",
-      "team": "BUF",
-      "position": "DL",
-      "points": 47.3
-    },
-    {
-      "player_id": "",
-      "name": "Abdul Carter",
-      "team": "NYG",
-      "position": "DL",
-      "points": 47.1
-    },
-    {
-      "player_id": "",
       "name": "Abdul Carter",
       "team": "NYG",
       "position": "DL",
@@ -2425,20 +2201,6 @@
       "team": "ATL",
       "position": "DB",
       "points": 74.1
-    },
-    {
-      "player_id": "",
-      "name": "A.J. Terrell",
-      "team": "ATL",
-      "position": "DB",
-      "points": 74.1
-    },
-    {
-      "player_id": "",
-      "name": "Austin Booker",
-      "team": "CHI",
-      "position": "DL",
-      "points": 47
     },
     {
       "player_id": "",
@@ -2484,24 +2246,10 @@
     },
     {
       "player_id": "",
-      "name": "Jonathon Cooper",
-      "team": "DEN",
-      "position": "DL",
-      "points": 46.1
-    },
-    {
-      "player_id": "",
       "name": "Terrel Bernard",
       "team": "BUF",
       "position": "LB",
       "points": 90.3
-    },
-    {
-      "player_id": "",
-      "name": "Khalil Mack",
-      "team": "LAC",
-      "position": "DL",
-      "points": 45.9
     },
     {
       "player_id": "",
@@ -2523,13 +2271,6 @@
       "team": "NO",
       "position": "LB",
       "points": 89.9
-    },
-    {
-      "player_id": "",
-      "name": "Jalyx Hunt",
-      "team": "PHI",
-      "position": "DL",
-      "points": 45.5
     },
     {
       "player_id": "",
@@ -2834,13 +2575,6 @@
     },
     {
       "player_id": "",
-      "name": "Jihaad Campbell",
-      "team": "PHI",
-      "position": "LB",
-      "points": 78.8
-    },
-    {
-      "player_id": "",
       "name": "David Njoku",
       "team": "LAC",
       "position": "TE",
@@ -2943,13 +2677,6 @@
       "team": "LAR",
       "position": "TE",
       "points": 65.3
-    },
-    {
-      "player_id": "",
-      "name": "Arvell Reese",
-      "team": "NYG",
-      "position": "LB",
-      "points": 74.7
     },
     {
       "player_id": "",
