@@ -286,7 +286,8 @@ export default function StatProjectionLab({
   }, [model?.season]);
   useEffect(() => {
     if (!rows.length) return;
-    if (!selectedName) setSelectedName(rows[0].name);
+    if (!selectedName || !rows.some((row) => row.name === selectedName))
+      setSelectedName(rows[0].name);
   }, [rows, selectedName]);
   const pinnedPlayer = (model?.players || []).find(
     (player) => player.name === selectedName,
@@ -467,6 +468,34 @@ export default function StatProjectionLab({
               />
             </label>
           </div>
+          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <Filter
+              label="Selected player"
+              value={selected?.name || rows[0]?.name || ""}
+              onChange={(value) => {
+                setSelectedName(value);
+                setView("player");
+              }}
+            >
+              {rows.map((player) => (
+                <option key={`${player.player_id || player.name}-${player.position}`} value={player.name}>
+                  {player.name} · {player.position} · {player.team} · {player.projection.toFixed(1)}
+                </option>
+              ))}
+            </Filter>
+            <button
+              type="button"
+              onClick={() => setView("board")}
+              className="min-h-10 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-cyan-100/75 transition hover:bg-cyan-300/[0.08] hover:text-cyan-100"
+            >
+              Browse weekly board
+            </button>
+          </div>
+          {!rows.length ? (
+            <div className="rounded-xl border border-amber-300/12 bg-amber-300/[0.04] px-3 py-2.5 text-xs text-amber-100/70">
+              No active players match these filters for Week {week}. Clear the player search or broaden the position and team filters.
+            </div>
+          ) : null}
           {scoring === "league" ? (
             <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
               {leagues.length ? (
