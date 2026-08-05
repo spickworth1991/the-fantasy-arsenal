@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-04T04:07:45.486Z",
+  "updated": "2026-08-05T04:06:50.925Z",
   "season": 2026,
   "source": "DraftSharks",
   "scoring": "STD/HALF/PPR/TEP",
@@ -2040,7 +2040,7 @@
       "team": "MIA",
       "position": "QB",
       "points": 308,
-      "source_rank": 129,
+      "source_rank": 128,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 308,
@@ -2110,7 +2110,7 @@
       "team": "IND",
       "position": "QB",
       "points": 308,
-      "source_rank": 131,
+      "source_rank": 130,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 308,
@@ -2320,7 +2320,7 @@
       "team": "HOU",
       "position": "QB",
       "points": 307,
-      "source_rank": 132,
+      "source_rank": 131,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 307,
@@ -2460,7 +2460,7 @@
       "team": "TEN",
       "position": "QB",
       "points": 298,
-      "source_rank": 150,
+      "source_rank": 149,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 298,
@@ -2530,7 +2530,7 @@
       "team": "SEA",
       "position": "QB",
       "points": 296,
-      "source_rank": 155,
+      "source_rank": 154,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 296,
@@ -2659,11 +2659,11 @@
       "name": "Saquon Barkley",
       "team": "PHI",
       "position": "RB",
-      "points": 290,
+      "points": 289,
       "source_rank": 17,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 290,
+        "weekly3dPts": 289,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
@@ -2713,8 +2713,8 @@
       },
       "points_std": 247,
       "points_half": 268,
-      "points_ppr": 290,
-      "points_tep": 290,
+      "points_ppr": 289,
+      "points_tep": 289,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -2865,82 +2865,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "13553",
-      "name": "Rashee Rice",
-      "team": "KC",
-      "position": "WR",
-      "points": 287,
-      "source_rank": 15,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 287,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": 4.76,
-        "rush_yds": 27.2,
-        "rush_tds": 0.34,
-        "receivingTotal": 285.14,
-        "rec_catch": 107.8,
-        "rec_yds": 1207.6,
-        "rec_tds": 9.43,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 62
-      },
-      "analysis": {
-        "player.bottom_line": "Rice has been one of the most efficient receivers in the NFL when on the field, dominating target shares and turning short passes into big gains at an elite level. The issue is staying on the field. He's missed significant time in each of the last two seasons. He's a fine risk in the third round of 12-team PPR drafts, but not worth reaching for if his ADP climbs into the second. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/rashee-rice/13553"
-      },
-      "points_std": 180,
-      "points_half": 234,
-      "points_ppr": 287,
-      "points_tep": 287,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Rice has been one of the most efficient receivers in the NFL when on the field, dominating target shares and turning short passes into big gains at an elite level. The issue is staying on the field. He's missed significant time in each of the last two seasons. He's a fine risk in the third round of 12-team PPR drafts, but not worth reaching for if his ADP climbs into the second. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/rashee-rice/13553"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "13540",
       "name": "Bryce Young",
       "team": "CAR",
       "position": "QB",
       "points": 287,
-      "source_rank": 176,
+      "source_rank": 175,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 287,
@@ -2995,9 +2925,9 @@
     },
     {
       "player_id": "",
-      "source_player_id": "13563",
-      "name": "De'Von Achane",
-      "team": "MIA",
+      "source_player_id": "12579",
+      "name": "Kenneth Walker III",
+      "team": "KC",
       "position": "RB",
       "points": 286,
       "source_rank": 18,
@@ -3010,13 +2940,13 @@
         "pass_yds": "0",
         "pass_tds": "0",
         "pass_int": "0",
-        "rushTotal": 151.13,
-        "rush_yds": 1157.7,
-        "rush_tds": 6.46,
-        "receivingTotal": 119,
-        "rec_catch": 59.5,
-        "rec_yds": 431.8,
-        "rec_tds": 2.72,
+        "rushTotal": 167.55,
+        "rush_yds": 1133.5,
+        "rush_tds": 9.6,
+        "receivingTotal": 100.65,
+        "rec_catch": 49.3,
+        "rec_yds": 391.1,
+        "rec_tds": 2.04,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -3046,20 +2976,20 @@
         "dsValue": 56
       },
       "analysis": {
-        "player.bottom_line": "Achane has finished top-5 in points per game for three straight seasons. His upside isn’t a mystery. But he enters Year 4 in a Miami offense loaded with downside risk. Achane’s setup looks worse than last year, with an inexperienced QB, a barren WR corps, and an O-line that still hasn’t fully stabilized. He remains an RB1, but expect his fantasy production to drop from 2025 levels. Read Full Profile > Customize Achane’s projection for your exact league settings inside the Draft War Room ."
+        "player.bottom_line": "Walker was the best player in the 2025 playoffs, capped by a Super Bowl MVP performance. Now he lands in a Chiefs offense that needs a legitimate running back. His workhorse upside and receiving ability make him a fine low-end RB1 worth targeting in the second round of 12-team drafts. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
       },
       "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/devon-achane/13563"
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/kenneth-walker-iii/12579"
       },
-      "points_std": 223,
-      "points_half": 254,
+      "points_std": 233,
+      "points_half": 260,
       "points_ppr": 286,
       "points_tep": 286,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
-          "text": "Achane has finished top-5 in points per game for three straight seasons. His upside isn’t a mystery. But he enters Year 4 in a Miami offense loaded with downside risk. Achane’s setup looks worse than last year, with an inexperienced QB, a barren WR corps, and an O-line that still hasn’t fully stabilized. He remains an RB1, but expect his fantasy production to drop from 2025 levels. Read Full Profile > Customize Achane’s projection for your exact league settings inside the Draft War Room .",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/devon-achane/13563"
+          "text": "Walker was the best player in the 2025 playoffs, capped by a Super Bowl MVP performance. Now he lands in a Chiefs offense that needs a legitimate running back. His workhorse upside and receiving ability make him a fine low-end RB1 worth targeting in the second round of 12-team drafts. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/kenneth-walker-iii/12579"
         }
       ]
     },
@@ -3070,7 +3000,7 @@
       "team": "HOU",
       "position": "WR",
       "points": 285,
-      "source_rank": 16,
+      "source_rank": 15,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 285,
@@ -3121,7 +3051,7 @@
       "analysis_links": {
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/nico-collins/10796"
       },
-      "points_std": 192,
+      "points_std": 191,
       "points_half": 238,
       "points_ppr": 285,
       "points_tep": 285,
@@ -3135,28 +3065,28 @@
     },
     {
       "player_id": "",
-      "source_player_id": "12579",
-      "name": "Kenneth Walker III",
-      "team": "KC",
+      "source_player_id": "13563",
+      "name": "De'Von Achane",
+      "team": "MIA",
       "position": "RB",
-      "points": 284,
-      "source_rank": 20,
+      "points": 285,
+      "source_rank": 19,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 284,
+        "weekly3dPts": 285,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
         "pass_yds": "0",
         "pass_tds": "0",
         "pass_int": "0",
-        "rushTotal": 165.99,
-        "rush_yds": 1123.3,
-        "rush_tds": 9.51,
-        "receivingTotal": 98.53,
-        "rec_catch": 48.5,
-        "rec_yds": 382.7,
-        "rec_tds": 1.96,
+        "rushTotal": 151.13,
+        "rush_yds": 1157.7,
+        "rush_tds": 6.46,
+        "receivingTotal": 119,
+        "rec_catch": 59.5,
+        "rec_yds": 431.8,
+        "rec_tds": 2.72,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -3183,23 +3113,93 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 55
+        "dsValue": 56
       },
       "analysis": {
-        "player.bottom_line": "Walker was the best player in the 2025 playoffs, capped by a Super Bowl MVP performance. Now he lands in a Chiefs offense that needs a legitimate running back. His workhorse upside and receiving ability make him a fine low-end RB1 worth targeting in the second round of 12-team drafts. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+        "player.bottom_line": "Achane has finished top-5 in points per game for three straight seasons. His upside isn’t a mystery. But he enters Year 4 in a Miami offense loaded with downside risk. Achane’s setup looks worse than last year, with an inexperienced QB, a barren WR corps, and an O-line that still hasn’t fully stabilized. He remains an RB1, but expect his fantasy production to drop from 2025 levels. Read Full Profile > Customize Achane’s projection for your exact league settings inside the Draft War Room ."
       },
       "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/kenneth-walker-iii/12579"
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/devon-achane/13563"
       },
-      "points_std": 232,
-      "points_half": 258,
+      "points_std": 222,
+      "points_half": 254,
+      "points_ppr": 285,
+      "points_tep": 285,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Achane has finished top-5 in points per game for three straight seasons. His upside isn’t a mystery. But he enters Year 4 in a Miami offense loaded with downside risk. Achane’s setup looks worse than last year, with an inexperienced QB, a barren WR corps, and an O-line that still hasn’t fully stabilized. He remains an RB1, but expect his fantasy production to drop from 2025 levels. Read Full Profile > Customize Achane’s projection for your exact league settings inside the Draft War Room .",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/devon-achane/13563"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "13553",
+      "name": "Rashee Rice",
+      "team": "KC",
+      "position": "WR",
+      "points": 284,
+      "source_rank": 16,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 284,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": 4.76,
+        "rush_yds": 27.2,
+        "rush_tds": 0.34,
+        "receivingTotal": 278.88,
+        "rec_catch": 105.7,
+        "rec_yds": 1178,
+        "rec_tds": 9.23,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 61
+      },
+      "analysis": {
+        "player.bottom_line": "Rice has been one of the most efficient receivers in the NFL when on the field, dominating target shares and turning short passes into big gains at an elite level. The issue is staying on the field. He's missed significant time in each of the last two seasons. He's a fine risk in the third round of 12-team PPR drafts, but not worth reaching for if his ADP climbs into the second. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/rashee-rice/13553"
+      },
+      "points_std": 178,
+      "points_half": 231,
       "points_ppr": 284,
       "points_tep": 284,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
-          "text": "Walker was the best player in the 2025 playoffs, capped by a Super Bowl MVP performance. Now he lands in a Chiefs offense that needs a legitimate running back. His workhorse upside and receiving ability make him a fine low-end RB1 worth targeting in the second round of 12-team drafts. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/kenneth-walker-iii/12579"
+          "text": "Rice has been one of the most efficient receivers in the NFL when on the field, dominating target shares and turning short passes into big gains at an elite level. The issue is staying on the field. He's missed significant time in each of the last two seasons. He's a fine risk in the third round of 12-team PPR drafts, but not worth reaching for if his ADP climbs into the second. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/rashee-rice/13553"
         }
       ]
     },
@@ -3280,7 +3280,7 @@
       "team": "LV",
       "position": "QB",
       "points": 282,
-      "source_rank": 194,
+      "source_rank": 193,
       "projections": {
         "games_played": 13,
         "weekly3dPts": 282,
@@ -3340,7 +3340,7 @@
       "team": "ARI",
       "position": "QB",
       "points": 282,
-      "source_rank": 198,
+      "source_rank": 197,
       "projections": {
         "games_played": 13,
         "weekly3dPts": 282,
@@ -3470,7 +3470,7 @@
       "team": "NYJ",
       "position": "QB",
       "points": 280,
-      "source_rank": 206,
+      "source_rank": 205,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 280,
@@ -3522,76 +3522,6 @@
       "points_ppr": 280,
       "points_tep": 280,
       "analysis_articles": []
-    },
-    {
-      "player_id": "",
-      "source_player_id": "12599",
-      "name": "George Pickens",
-      "team": "DAL",
-      "position": "WR",
-      "points": 275,
-      "source_rank": 19,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 275,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 261.74,
-        "rec_catch": 84.9,
-        "rec_yds": 1278.8,
-        "rec_tds": 8.16,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 55
-      },
-      "analysis": {
-        "player.bottom_line": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
-      },
-      "points_std": 186,
-      "points_half": 230,
-      "points_ppr": 275,
-      "points_tep": 275,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
-        }
-      ]
     },
     {
       "player_id": "",
@@ -3660,6 +3590,76 @@
           "key": "player.bottom_line",
           "text": "Henry has finished RB4 and RB7 in PPR points per game in two seasons with the Ravens. He’ll be a workhorse again in 2026. There are some risk factors, though: A new coaching staff, remade interior offensive line, and age (32). That makes the floor a little scary, especially considering Henry doesn’t do much in the passing game. But he still looks like a solid pick anywhere outside the top 10 RBs. Read Full Profile > Customize Henry’s projection for your exact league settings inside the Draft War Room .",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/derrick-henry/7461"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "12599",
+      "name": "George Pickens",
+      "team": "DAL",
+      "position": "WR",
+      "points": 274,
+      "source_rank": 20,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 274,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 261.74,
+        "rec_catch": 84.9,
+        "rec_yds": 1278.8,
+        "rec_tds": 8.16,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 55
+      },
+      "analysis": {
+        "player.bottom_line": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
+      },
+      "points_std": 185,
+      "points_half": 230,
+      "points_ppr": 274,
+      "points_tep": 274,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Pickens broke out in 2025, finishing as a top-6 fantasy WR in a strong passing environment. He proved he can produce alongside CeeDee Lamb, but his weekly ceiling jumps significantly when operating as the primary option. He’s best viewed as a volatile WR2 with spike-week upside tied to Dallas’ high-powered offense. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/george-pickens/12599"
         }
       ]
     },
@@ -4510,7 +4510,7 @@
       "team": "NO",
       "position": "RB",
       "points": 249,
-      "source_rank": 40,
+      "source_rank": 41,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 249,
@@ -4860,7 +4860,7 @@
       "team": "LAR",
       "position": "WR",
       "points": 239,
-      "source_rank": 41,
+      "source_rank": 40,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 239,
@@ -5976,7 +5976,7 @@
       "team": "PHI",
       "position": "LB",
       "points": 225,
-      "source_rank": 110,
+      "source_rank": 109,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 225,
@@ -6735,82 +6735,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "35947",
-      "name": "Jordyn Tyson",
-      "team": "NO",
-      "position": "WR",
-      "points": 212,
-      "source_rank": 89,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 212,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 194.82,
-        "rec_catch": 68,
-        "rec_yds": 931.6,
-        "rec_tds": 5.61,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 21
-      },
-      "analysis": {
-        "player.bottom_line": "Tyson looks positioned for good immediate usage after landing in a shallow WR room with a pass-friendly staff. And there’s contingent upside in Chris Olave’s concussion history. Tyson will need to stay healthy, though, after missing 34% of his games over the past four college seasons. Overall, he’s a decent target on the border of WR3-4 territory. Just beware of chasing him much earlier. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/jordyn-tyson/35947"
-      },
-      "points_std": 138,
-      "points_half": 175,
-      "points_ppr": 212,
-      "points_tep": 212,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Tyson looks positioned for good immediate usage after landing in a shallow WR room with a pass-friendly staff. And there’s contingent upside in Chris Olave’s concussion history. Tyson will need to stay healthy, though, after missing 34% of his games over the past four college seasons. Overall, he’s a decent target on the border of WR3-4 territory. Just beware of chasing him much earlier. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/jordyn-tyson/35947"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "10584",
       "name": "Michael Pittman Jr.",
       "team": "PIT",
       "position": "WR",
       "points": 212,
-      "source_rank": 91,
+      "source_rank": 89,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 212,
@@ -6870,6 +6800,76 @@
           "key": "player.bottom_line",
           "text": "Pittman looks like a solid bet for WR3-level returns in PPR, with upside into low-WR2 range if he grabs a clear target edge over DK Metcalf. But the veteran’s short-range game, limited after-catch juice, and just-OK offensive surroundings make him unexciting. Consider Pittman a decent “floor” pick in WR4 range if you’ve taken some risks at the position earlier. Just don’t expect him to alter your season. Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/michael-pittman-jr/10584"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "35947",
+      "name": "Jordyn Tyson",
+      "team": "NO",
+      "position": "WR",
+      "points": 212,
+      "source_rank": 90,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 212,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 194.82,
+        "rec_catch": 68,
+        "rec_yds": 931.6,
+        "rec_tds": 5.61,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 21
+      },
+      "analysis": {
+        "player.bottom_line": "Tyson looks positioned for good immediate usage after landing in a shallow WR room with a pass-friendly staff. And there’s contingent upside in Chris Olave’s concussion history. Tyson will need to stay healthy, though, after missing 34% of his games over the past four college seasons. Overall, he’s a decent target on the border of WR3-4 territory. Just beware of chasing him much earlier. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/jordyn-tyson/35947"
+      },
+      "points_std": 138,
+      "points_half": 175,
+      "points_ppr": 212,
+      "points_tep": 212,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Tyson looks positioned for good immediate usage after landing in a shallow WR room with a pass-friendly staff. And there’s contingent upside in Chris Olave’s concussion history. Tyson will need to stay healthy, though, after missing 34% of his games over the past four college seasons. Overall, he’s a decent target on the border of WR3-4 territory. Just beware of chasing him much earlier. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/jordyn-tyson/35947"
         }
       ]
     },
@@ -7243,10 +7243,10 @@
         "rushTotal": "0",
         "rush_yds": "0",
         "rush_tds": "0",
-        "receivingTotal": 196.34,
-        "rec_catch": 61,
-        "rec_yds": 968.8,
-        "rec_tds": 6.41,
+        "receivingTotal": 195.74,
+        "rec_catch": 60.8,
+        "rec_yds": 966,
+        "rec_tds": 6.39,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -7282,7 +7282,7 @@
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/alec-pierce/12605"
       },
       "points_std": 145,
-      "points_half": 178,
+      "points_half": 177,
       "points_ppr": 210,
       "points_tep": 210,
       "analysis_articles": [
@@ -7650,7 +7650,7 @@
       "team": "NYJ",
       "position": "LB",
       "points": 208,
-      "source_rank": 149,
+      "source_rank": 148,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 208,
@@ -7713,82 +7713,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "13548",
-      "name": "Josh Downs",
-      "team": "IND",
-      "position": "WR",
-      "points": 205,
-      "source_rank": 107,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 205,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 189.37,
-        "rec_catch": 76.6,
-        "rec_yds": 841.5,
-        "rec_tds": 4.77,
-        "returningTotal": "0",
-        "pr_yds_total": 109.5,
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 18
-      },
-      "analysis": {
-        "player.bottom_line": "Downs gets a boost in available opportunity with Michael Pittman Jr. gone. But he needs to prove a down 2025 is behind him and needs QB Daniel Jones (Achilles) to prove he’s healthy. Downs gets a path to career-high usage but faces multiple risk factors. He’s appropriately priced in WR4 range and has showed there’s upside at least into mid-WR3 range if things to his way. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/josh-downs/13548"
-      },
-      "points_std": 122,
-      "points_half": 164,
-      "points_ppr": 205,
-      "points_tep": 205,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Downs gets a boost in available opportunity with Michael Pittman Jr. gone. But he needs to prove a down 2025 is behind him and needs QB Daniel Jones (Achilles) to prove he’s healthy. Downs gets a path to career-high usage but faces multiple risk factors. He’s appropriately priced in WR4 range and has showed there’s upside at least into mid-WR3 range if things to his way. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/josh-downs/13548"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "13545",
       "name": "Quentin Johnston",
       "team": "LAC",
       "position": "WR",
       "points": 205,
-      "source_rank": 109,
+      "source_rank": 107,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 205,
@@ -7848,6 +7778,76 @@
           "key": "player.bottom_line",
           "text": "Johnston remains a boom-bust fantasy bet. The TD production has carried him for two straight seasons, while he lagged in yards per route and yards per target. The good news? Keenan Allen’s 122 vacated targets and OC Mike McDaniel’s arrival create a real opportunity for Year 4 growth. Treat Johnston as a volatile WR4 with WR3 upside if the targets increase. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/quentin-johnston/13545"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "13548",
+      "name": "Josh Downs",
+      "team": "IND",
+      "position": "WR",
+      "points": 204,
+      "source_rank": 110,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 204,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 188.01,
+        "rec_catch": 74.9,
+        "rec_yds": 855.1,
+        "rec_tds": 4.6,
+        "returningTotal": "0",
+        "pr_yds_total": 109.5,
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 17
+      },
+      "analysis": {
+        "player.bottom_line": "Downs gets a boost in available opportunity with Michael Pittman Jr. gone. But he needs to prove a down 2025 is behind him and needs QB Daniel Jones (Achilles) to prove he’s healthy. Downs gets a path to career-high usage but faces multiple risk factors. He’s appropriately priced in WR4 range and has showed there’s upside at least into mid-WR3 range if things to his way. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/josh-downs/13548"
+      },
+      "points_std": 123,
+      "points_half": 164,
+      "points_ppr": 204,
+      "points_tep": 204,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Downs gets a boost in available opportunity with Michael Pittman Jr. gone. But he needs to prove a down 2025 is behind him and needs QB Daniel Jones (Achilles) to prove he’s healthy. Downs gets a path to career-high usage but faces multiple risk factors. He’s appropriately priced in WR4 range and has showed there’s upside at least into mid-WR3 range if things to his way. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/josh-downs/13548"
         }
       ]
     },
@@ -8132,7 +8132,7 @@
       "team": "MIN",
       "position": "LB",
       "points": 203,
-      "source_rank": 175,
+      "source_rank": 174,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 203,
@@ -8270,7 +8270,7 @@
       "team": "BAL",
       "position": "LB",
       "points": 202,
-      "source_rank": 181,
+      "source_rank": 180,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 202,
@@ -8408,7 +8408,7 @@
       "team": "CAR",
       "position": "RB",
       "points": 201,
-      "source_rank": 86,
+      "source_rank": 87,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 201,
@@ -8451,7 +8451,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 22
+        "dsValue": 21
       },
       "analysis": {
         "player.bottom_line": "Hubbard heads to training camp atop Carolina’s depth chart. Hanging on to that spot would give him a good shot at RB2 production. But he’ll need to play much better than he did last year to hold off the talented and now seemingly healthy Jonathon Brooks. Consider Hubbard a risk/reward RB3 target in fantasy drafts. Read Full Profile > Customize his projection for your exact league settings inside the Draft War Room ."
@@ -8548,7 +8548,7 @@
       "team": "SEA",
       "position": "RB",
       "points": 200,
-      "source_rank": 90,
+      "source_rank": 91,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 200,
@@ -8618,7 +8618,7 @@
       "team": "ATL",
       "position": "TE",
       "points": 198,
-      "source_rank": 87,
+      "source_rank": 86,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 198,
@@ -8688,7 +8688,7 @@
       "team": "JAC",
       "position": "LB",
       "points": 198,
-      "source_rank": 225,
+      "source_rank": 223,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 198,
@@ -8756,7 +8756,7 @@
       "team": "NE",
       "position": "LB",
       "points": 197,
-      "source_rank": 229,
+      "source_rank": 228,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 197,
@@ -8824,7 +8824,7 @@
       "team": "PHI",
       "position": "WR",
       "points": 196,
-      "source_rank": 130,
+      "source_rank": 129,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 196,
@@ -8894,7 +8894,7 @@
       "team": "CAR",
       "position": "LB",
       "points": 196,
-      "source_rank": 240,
+      "source_rank": 239,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 196,
@@ -9168,7 +9168,7 @@
       "team": "NE",
       "position": "WR",
       "points": 194,
-      "source_rank": 133,
+      "source_rank": 132,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 194,
@@ -9238,7 +9238,7 @@
       "team": "UNS",
       "position": "WR",
       "points": 194,
-      "source_rank": 135,
+      "source_rank": 134,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 194,
@@ -9376,7 +9376,7 @@
       "team": "HOU",
       "position": "WR",
       "points": 193,
-      "source_rank": 136,
+      "source_rank": 135,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 193,
@@ -9419,7 +9419,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 11
+        "dsValue": 12
       },
       "analysis": {
         "player.bottom_line": "Higgins showed genuine promise as a rookie, but the Texans will remain a balanced offense that targets Nico Collins heavily. Higgins’ path to a breakout in Year 2 runs through a larger snap and target share. He's a fine dart throw anywhere in WR5 range (or later). Customize Higgins’ projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -9446,7 +9446,7 @@
       "team": "SF",
       "position": "WR",
       "points": 192,
-      "source_rank": 137,
+      "source_rank": 136,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 192,
@@ -9584,7 +9584,7 @@
       "team": "CLE",
       "position": "WR",
       "points": 191,
-      "source_rank": 141,
+      "source_rank": 140,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 191,
@@ -9654,7 +9654,7 @@
       "team": "ARI",
       "position": "WR",
       "points": 191,
-      "source_rank": 142,
+      "source_rank": 141,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 191,
@@ -9724,7 +9724,7 @@
       "team": "GB",
       "position": "WR",
       "points": 191,
-      "source_rank": 144,
+      "source_rank": 142,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 191,
@@ -10004,7 +10004,7 @@
       "team": "BUF",
       "position": "WR",
       "points": 187,
-      "source_rank": 152,
+      "source_rank": 151,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 187,
@@ -10144,7 +10144,7 @@
       "team": "SEA",
       "position": "WR",
       "points": 181,
-      "source_rank": 173,
+      "source_rank": 172,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 181,
@@ -10354,7 +10354,7 @@
       "team": "KC",
       "position": "DB",
       "points": 179,
-      "source_rank": 151,
+      "source_rank": 150,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 179,
@@ -10422,7 +10422,7 @@
       "team": "TB",
       "position": "WR",
       "points": 178,
-      "source_rank": 186,
+      "source_rank": 185,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 178,
@@ -10560,7 +10560,7 @@
       "team": "CAR",
       "position": "WR",
       "points": 177,
-      "source_rank": 195,
+      "source_rank": 194,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 177,
@@ -10630,7 +10630,7 @@
       "team": "UNS",
       "position": "DB",
       "points": 176,
-      "source_rank": 192,
+      "source_rank": 191,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 176,
@@ -10768,7 +10768,7 @@
       "team": "NYJ",
       "position": "WR",
       "points": 175,
-      "source_rank": 207,
+      "source_rank": 206,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 175,
@@ -10974,7 +10974,7 @@
       "team": "CLE",
       "position": "WR",
       "points": 174,
-      "source_rank": 215,
+      "source_rank": 214,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 174,
@@ -11184,7 +11184,7 @@
       "team": "DAL",
       "position": "TE",
       "points": 172,
-      "source_rank": 162,
+      "source_rank": 161,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 172,
@@ -11227,7 +11227,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 6
+        "dsValue": 7
       },
       "analysis": {
         "player.bottom_line": "Ferguson finished as a top-10 fantasy TE in 2025, but the profile was shakier than it looked. His production leaned heavily on TDs, while his efficiency metrics ranked near the bottom of the position. His weekly output also dropped alongside both George Pickens and CeeDee Lamb, making him more of a mid-range TE2 than a true difference-maker. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -11254,7 +11254,7 @@
       "team": "BUF",
       "position": "TE",
       "points": 172,
-      "source_rank": 163,
+      "source_rank": 162,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 172,
@@ -11297,7 +11297,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 6
+        "dsValue": 7
       },
       "analysis": {
         "player.bottom_line": "Kincaid is on plenty of “do not draft” lists after an injury-riddled 2025. But a deeper dive reveals elite per-route production. If Kincaid can stay healthy and get on the field more in 2026, he could return a big profit at his depressed price tag. He’s an upside target in the double-digit rounds of fantasy drafts. Customize Kincaid’s projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -11394,7 +11394,7 @@
       "team": "NYJ",
       "position": "WR",
       "points": 171,
-      "source_rank": 232,
+      "source_rank": 231,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 171,
@@ -11464,7 +11464,7 @@
       "team": "LAC",
       "position": "K",
       "points": 170,
-      "source_rank": 140,
+      "source_rank": 139,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -11532,7 +11532,7 @@
       "team": "NYJ",
       "position": "DB",
       "points": 170,
-      "source_rank": 190,
+      "source_rank": 189,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -11600,7 +11600,7 @@
       "team": "LV",
       "position": "WR",
       "points": 170,
-      "source_rank": 239,
+      "source_rank": 238,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -11740,7 +11740,7 @@
       "team": "BAL",
       "position": "DB",
       "points": 169,
-      "source_rank": 199,
+      "source_rank": 198,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 169,
@@ -11808,7 +11808,7 @@
       "team": "CLE",
       "position": "DB",
       "points": 169,
-      "source_rank": 201,
+      "source_rank": 199,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 169,
@@ -11842,9 +11842,9 @@
         "def_int": "0",
         "def_fum_rec": "0",
         "def_tds": "0",
-        "idpTotal": 157.72,
-        "idp_solo": 29.13,
-        "idp_assist": 37.3,
+        "idpTotal": 157.84,
+        "idp_solo": 29.06,
+        "idp_assist": 37.4,
         "idp_sack": 1.7,
         "idp_pass_def": 4.2,
         "idp_int": 1.7,
@@ -11876,7 +11876,7 @@
       "team": "UNS",
       "position": "WR",
       "points": 169,
-      "source_rank": 245,
+      "source_rank": 242,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 169,
@@ -11936,7 +11936,7 @@
       "team": "JAC",
       "position": "TE",
       "points": 168,
-      "source_rank": 185,
+      "source_rank": 184,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 168,
@@ -12214,7 +12214,7 @@
       "team": "WAS",
       "position": "DB",
       "points": 167,
-      "source_rank": 209,
+      "source_rank": 208,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 167,
@@ -12282,7 +12282,7 @@
       "team": "TB",
       "position": "DB",
       "points": 167,
-      "source_rank": 211,
+      "source_rank": 210,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 167,
@@ -12350,7 +12350,7 @@
       "team": "SEA",
       "position": "DB",
       "points": 167,
-      "source_rank": 212,
+      "source_rank": 211,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 167,
@@ -12418,7 +12418,7 @@
       "team": "NYG",
       "position": "DB",
       "points": 167,
-      "source_rank": 217,
+      "source_rank": 216,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 167,
@@ -12486,7 +12486,7 @@
       "team": "LAR",
       "position": "DB",
       "points": 165,
-      "source_rank": 230,
+      "source_rank": 229,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 165,
@@ -12544,6 +12544,76 @@
           "key": "player.bottom_line",
           "text": "",
           "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "12589",
+      "name": "Isaiah Likely",
+      "team": "NYG",
+      "position": "TE",
+      "points": 164,
+      "source_rank": 212,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 164,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 152.41,
+        "rec_catch": 58.4,
+        "rec_yds": 651.5,
+        "rec_tds": 4.81,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 2
+      },
+      "analysis": {
+        "player.bottom_line": "Likely’s 2025 numbers were ugly, but the Ravens’ low-volume passing game and Mark Andrews’ presence shrank his opportunity. The Giants supply a lead TE role, a thin WR room, and a young QB with room to grow. Likely’s not a weekly TE1, but he has a path to useful streaming value. He’s fairly priced with a Round 11 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/isaiah-likely/12589"
+      },
+      "points_std": 101,
+      "points_half": 133,
+      "points_ppr": 164,
+      "points_tep": 196,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Likely’s 2025 numbers were ugly, but the Ravens’ low-volume passing game and Mark Andrews’ presence shrank his opportunity. The Giants supply a lead TE role, a thin WR room, and a young QB with room to grow. Likely’s not a weekly TE1, but he has a path to useful streaming value. He’s fairly priced with a Round 11 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/isaiah-likely/12589"
         }
       ]
     },
@@ -12614,76 +12684,6 @@
           "key": "player.bottom_line",
           "text": "Henry's role as the lead TE remains safe, but the fantasy ceiling looks lower. His 2025 value leaned on strong red-zone usage and 7 TDs, both of which become harder to repeat after the additions of A.J. Brown and Romeo Doubs. Drake Maye’s expected efficiency regression only adds another concern. Henry can still help as a streamer, but the limited ceiling makes him an unexciting pick at TE18 in ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/hunter-henry/7470"
-        }
-      ]
-    },
-    {
-      "player_id": "",
-      "source_player_id": "12589",
-      "name": "Isaiah Likely",
-      "team": "NYG",
-      "position": "TE",
-      "points": 164,
-      "source_rank": 214,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 164,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 152.41,
-        "rec_catch": 58.4,
-        "rec_yds": 651.5,
-        "rec_tds": 4.81,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 2
-      },
-      "analysis": {
-        "player.bottom_line": "Likely’s 2025 numbers were ugly, but the Ravens’ low-volume passing game and Mark Andrews’ presence shrank his opportunity. The Giants supply a lead TE role, a thin WR room, and a young QB with room to grow. Likely’s not a weekly TE1, but he has a path to useful streaming value. He’s fairly priced with a Round 11 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/isaiah-likely/12589"
-      },
-      "points_std": 101,
-      "points_half": 132,
-      "points_ppr": 164,
-      "points_tep": 195,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Likely’s 2025 numbers were ugly, but the Ravens’ low-volume passing game and Mark Andrews’ presence shrank his opportunity. The Giants supply a lead TE role, a thin WR room, and a young QB with room to grow. Likely’s not a weekly TE1, but he has a path to useful streaming value. He’s fairly priced with a Round 11 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/isaiah-likely/12589"
         }
       ]
     },
@@ -12761,11 +12761,11 @@
       "name": "Kenyon Sadiq",
       "team": "NYJ",
       "position": "TE",
-      "points": 163,
-      "source_rank": 219,
+      "points": 162,
+      "source_rank": 227,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 163,
+        "weekly3dPts": 162,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
@@ -12775,10 +12775,10 @@
         "rushTotal": "0",
         "rush_yds": "0",
         "rush_tds": "0",
-        "receivingTotal": 149.6,
-        "rec_catch": 59.5,
-        "rec_yds": 646,
-        "rec_tds": 4.25,
+        "receivingTotal": 147.84,
+        "rec_catch": 58.7,
+        "rec_yds": 638.8,
+        "rec_tds": 4.21,
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -12805,7 +12805,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 1
+        "dsValue": "0"
       },
       "analysis": {
         "player.bottom_line": "Sadiq’s a high-upside athlete who’ll be interesting to watch over the long term. But he fell short of converting that to exciting production in college, and there’s little about his pro situation to suggest he’ll pop right away with the Jets. The rookie looks appropriately priced as a mid-to-low TE2 for redraft leagues. Don’t treat him as more than a fantasy reserve heading into 2026. Read Full Profile >"
@@ -12814,9 +12814,9 @@
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/kenyon-sadiq/35973"
       },
       "points_std": 98,
-      "points_half": 131,
-      "points_ppr": 163,
-      "points_tep": 196,
+      "points_half": 130,
+      "points_ppr": 162,
+      "points_tep": 194,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -12832,7 +12832,7 @@
       "team": "SEA",
       "position": "RB",
       "points": 161,
-      "source_rank": 134,
+      "source_rank": 133,
       "projections": {
         "games_played": 8,
         "weekly3dPts": 161,
@@ -12902,7 +12902,7 @@
       "team": "NO",
       "position": "TE",
       "points": 161,
-      "source_rank": 237,
+      "source_rank": 236,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 161,
@@ -13035,12 +13035,82 @@
     },
     {
       "player_id": "",
+      "source_player_id": "12711",
+      "name": "Chigoziem Okonkwo",
+      "team": "WAS",
+      "position": "TE",
+      "points": 159,
+      "source_rank": 246,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 159,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 144.33,
+        "rec_catch": 57.8,
+        "rec_yds": 620.5,
+        "rec_tds": 4.08,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": -1
+      },
+      "analysis": {
+        "player.bottom_line": "Okonkwo gets a fresh start in Washington after four underwhelming fantasy seasons in Tennessee. The target competition behind Terry McLaurin is weak, and Jayden Daniels will give him the best QB play of his young career. New OC David Blough also plans to leverage Okonkwo’s after-catch ability. He has the ingredients to become a useful streamer or TE2 with an ADP in Round 13. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/chigoziem-okonkwo/12711"
+      },
+      "points_std": 95,
+      "points_half": 127,
+      "points_ppr": 159,
+      "points_tep": 191,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Okonkwo gets a fresh start in Washington after four underwhelming fantasy seasons in Tennessee. The target competition behind Terry McLaurin is weak, and Jayden Daniels will give him the best QB play of his young career. New OC David Blough also plans to leverage Okonkwo’s after-catch ability. He has the ingredients to become a useful streamer or TE2 with an ADP in Round 13. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/chigoziem-okonkwo/12711"
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "35591",
       "name": "Tyler Loop",
       "team": "BAL",
       "position": "K",
       "points": 158,
-      "source_rank": 177,
+      "source_rank": 176,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13108,7 +13178,7 @@
       "team": "CHI",
       "position": "K",
       "points": 158,
-      "source_rank": 182,
+      "source_rank": 181,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13176,7 +13246,7 @@
       "team": "SF",
       "position": "K",
       "points": 158,
-      "source_rank": 183,
+      "source_rank": 182,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13244,7 +13314,7 @@
       "team": "JAC",
       "position": "K",
       "points": 158,
-      "source_rank": 184,
+      "source_rank": 183,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13312,7 +13382,7 @@
       "team": "GB",
       "position": "K",
       "points": 156,
-      "source_rank": 193,
+      "source_rank": 192,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -13380,7 +13450,7 @@
       "team": "DET",
       "position": "K",
       "points": 156,
-      "source_rank": 196,
+      "source_rank": 195,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -13448,7 +13518,7 @@
       "team": "LAR",
       "position": "K",
       "points": 156,
-      "source_rank": 202,
+      "source_rank": 201,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -13516,7 +13586,7 @@
       "team": "HOU",
       "position": "RB",
       "points": 155,
-      "source_rank": 139,
+      "source_rank": 138,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 155,
@@ -13586,7 +13656,7 @@
       "team": "DEN",
       "position": "K",
       "points": 154,
-      "source_rank": 222,
+      "source_rank": 220,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 154,
@@ -13646,7 +13716,7 @@
       "team": "KC",
       "position": "K",
       "points": 154,
-      "source_rank": 227,
+      "source_rank": 225,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 154,
@@ -13706,7 +13776,7 @@
       "team": "NO",
       "position": "K",
       "points": 153,
-      "source_rank": 231,
+      "source_rank": 230,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 153,
@@ -13766,7 +13836,7 @@
       "team": "CLE",
       "position": "RB",
       "points": 152,
-      "source_rank": 145,
+      "source_rank": 144,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 152,
@@ -13836,7 +13906,7 @@
       "team": "DET",
       "position": "RB",
       "points": 151,
-      "source_rank": 146,
+      "source_rank": 145,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 151,
@@ -13974,7 +14044,7 @@
       "team": "JAC",
       "position": "RB",
       "points": 146,
-      "source_rank": 153,
+      "source_rank": 152,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 146,
@@ -14112,7 +14182,7 @@
       "team": "NYG",
       "position": "RB",
       "points": 145,
-      "source_rank": 154,
+      "source_rank": 153,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 145,
@@ -14182,7 +14252,7 @@
       "team": "DET",
       "position": "DL",
       "points": 144,
-      "source_rank": 128,
+      "source_rank": 127,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 144,
@@ -14249,11 +14319,11 @@
       "name": "Alvin Kamara",
       "team": "NO",
       "position": "RB",
-      "points": 143,
-      "source_rank": 156,
+      "points": 142,
+      "source_rank": 155,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 143,
+        "weekly3dPts": 142,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
@@ -14301,10 +14371,10 @@
       "analysis_links": {
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/alvin-kamara/7751"
       },
-      "points_std": 102,
+      "points_std": 101,
       "points_half": 122,
-      "points_ppr": 143,
-      "points_tep": 143,
+      "points_ppr": 142,
+      "points_tep": 142,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -14315,12 +14385,82 @@
     },
     {
       "player_id": "",
+      "source_player_id": "13674",
+      "name": "Keaton Mitchell",
+      "team": "LAC",
+      "position": "RB",
+      "points": 142,
+      "source_rank": 156,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 142,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": 57.46,
+        "rush_yds": 421.6,
+        "rush_tds": 2.55,
+        "receivingTotal": 49.64,
+        "rec_catch": 23.8,
+        "rec_yds": 197.2,
+        "rec_tds": 1.02,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": 992.7,
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 8
+      },
+      "analysis": {
+        "player.bottom_line": "Mitchell brings the type of speed new OC Mike McDaniel can deploy creatively, but we shouldn’t overstate the role. Omarion Hampton will lead work, probably by a wide margin. And Kimani Vidal would likely stay involved even if Hampton misses time. It would take an injury for Mitchell to even approach RB2 value, making him just a late-round stash in leagues of 12+ teams. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/keaton-mitchell/13674"
+      },
+      "points_std": 111,
+      "points_half": 127,
+      "points_ppr": 142,
+      "points_tep": 142,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Mitchell brings the type of speed new OC Mike McDaniel can deploy creatively, but we shouldn’t overstate the role. Omarion Hampton will lead work, probably by a wide margin. And Kimani Vidal would likely stay involved even if Hampton misses time. It would take an injury for Mitchell to even approach RB2 value, making him just a late-round stash in leagues of 12+ teams. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/keaton-mitchell/13674"
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "10242",
       "name": "Brian Burns",
       "team": "NYG",
       "position": "DL",
       "points": 139,
-      "source_rank": 138,
+      "source_rank": 137,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 139,
@@ -14388,7 +14528,7 @@
       "team": "MIN",
       "position": "DL",
       "points": 136,
-      "source_rank": 147,
+      "source_rank": 146,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 136,
@@ -14456,7 +14596,7 @@
       "team": "LAR",
       "position": "DL",
       "points": 136,
-      "source_rank": 148,
+      "source_rank": 147,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 136,
@@ -14519,82 +14659,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "13674",
-      "name": "Keaton Mitchell",
-      "team": "LAC",
-      "position": "RB",
-      "points": 133,
-      "source_rank": 172,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 133,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": 57.46,
-        "rush_yds": 421.6,
-        "rush_tds": 2.55,
-        "receivingTotal": 42.16,
-        "rec_catch": 20.4,
-        "rec_yds": 166.6,
-        "rec_tds": 0.85,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": 992.7,
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 6
-      },
-      "analysis": {
-        "player.bottom_line": "Mitchell brings the type of speed new OC Mike McDaniel can deploy creatively, but we shouldn’t overstate the role. Omarion Hampton will lead work, probably by a wide margin. And Kimani Vidal would likely stay involved even if Hampton misses time. It would take an injury for Mitchell to even approach RB2 value, making him just a late-round stash in leagues of 12+ teams. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/keaton-mitchell/13674"
-      },
-      "points_std": 105,
-      "points_half": 119,
-      "points_ppr": 133,
-      "points_tep": 133,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Mitchell brings the type of speed new OC Mike McDaniel can deploy creatively, but we shouldn’t overstate the role. Omarion Hampton will lead work, probably by a wide margin. And Kimani Vidal would likely stay involved even if Hampton misses time. It would take an injury for Mitchell to even approach RB2 value, making him just a late-round stash in leagues of 12+ teams. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/keaton-mitchell/13674"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "7509",
       "name": "A'Shawn Robinson",
       "team": "UNS",
       "position": "DL",
       "points": 133,
-      "source_rank": 187,
+      "source_rank": 186,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 133,
@@ -14730,7 +14800,7 @@
       "team": "ARI",
       "position": "RB",
       "points": 130,
-      "source_rank": 174,
+      "source_rank": 173,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 130,
@@ -14800,7 +14870,7 @@
       "team": "DAL",
       "position": "RB",
       "points": 129,
-      "source_rank": 178,
+      "source_rank": 177,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 129,
@@ -14860,7 +14930,7 @@
       "team": "ATL",
       "position": "RB",
       "points": 128,
-      "source_rank": 179,
+      "source_rank": 178,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 128,
@@ -14930,7 +15000,7 @@
       "team": "GB",
       "position": "RB",
       "points": 128,
-      "source_rank": 180,
+      "source_rank": 179,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 128,
@@ -14998,7 +15068,7 @@
       "team": "PIT",
       "position": "DL",
       "points": 127,
-      "source_rank": 203,
+      "source_rank": 202,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 127,
@@ -15134,7 +15204,7 @@
       "team": "HOU",
       "position": "DL",
       "points": 125,
-      "source_rank": 220,
+      "source_rank": 218,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 125,
@@ -15202,7 +15272,7 @@
       "team": "LAC",
       "position": "DL",
       "points": 124,
-      "source_rank": 226,
+      "source_rank": 224,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 124,
@@ -15270,7 +15340,7 @@
       "team": "PIT",
       "position": "DL",
       "points": 124,
-      "source_rank": 233,
+      "source_rank": 232,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 124,
@@ -15338,7 +15408,7 @@
       "team": "CLE",
       "position": "DL",
       "points": 123,
-      "source_rank": 242,
+      "source_rank": 241,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 123,
@@ -15474,7 +15544,7 @@
       "team": "SEA",
       "position": "DEF",
       "points": 122,
-      "source_rank": 161,
+      "source_rank": 163,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 122,
@@ -15610,7 +15680,7 @@
       "team": "DEN",
       "position": "RB",
       "points": 122,
-      "source_rank": 197,
+      "source_rank": 196,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 122,
@@ -15670,7 +15740,7 @@
       "team": "BAL",
       "position": "RB",
       "points": 120,
-      "source_rank": 204,
+      "source_rank": 203,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 120,
@@ -15730,7 +15800,7 @@
       "team": "WAS",
       "position": "RB",
       "points": 120,
-      "source_rank": 205,
+      "source_rank": 204,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 120,
@@ -15800,7 +15870,7 @@
       "team": "BAL",
       "position": "DEF",
       "points": 117,
-      "source_rank": 188,
+      "source_rank": 187,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 117,
@@ -15868,7 +15938,7 @@
       "team": "NE",
       "position": "DEF",
       "points": 117,
-      "source_rank": 189,
+      "source_rank": 188,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 117,
@@ -15936,7 +16006,7 @@
       "team": "PIT",
       "position": "DEF",
       "points": 116,
-      "source_rank": 191,
+      "source_rank": 190,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 116,
@@ -16004,7 +16074,7 @@
       "team": "KC",
       "position": "RB",
       "points": 115,
-      "source_rank": 216,
+      "source_rank": 215,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 115,
@@ -16064,7 +16134,7 @@
       "team": "GB",
       "position": "DEF",
       "points": 114,
-      "source_rank": 208,
+      "source_rank": 207,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 114,
@@ -16132,7 +16202,7 @@
       "team": "LAR",
       "position": "DEF",
       "points": 114,
-      "source_rank": 210,
+      "source_rank": 209,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 114,
@@ -16200,7 +16270,7 @@
       "team": "MIN",
       "position": "DEF",
       "points": 113,
-      "source_rank": 218,
+      "source_rank": 217,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 113,
@@ -16260,7 +16330,7 @@
       "team": "BUF",
       "position": "DEF",
       "points": 112,
-      "source_rank": 221,
+      "source_rank": 219,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -16320,7 +16390,7 @@
       "team": "JAC",
       "position": "DEF",
       "points": 112,
-      "source_rank": 223,
+      "source_rank": 221,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -16380,7 +16450,7 @@
       "team": "LAC",
       "position": "DEF",
       "points": 112,
-      "source_rank": 228,
+      "source_rank": 226,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -16440,7 +16510,7 @@
       "team": "PHI",
       "position": "DEF",
       "points": 112,
-      "source_rank": 234,
+      "source_rank": 233,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -16500,7 +16570,7 @@
       "team": "TEN",
       "position": "RB",
       "points": 111,
-      "source_rank": 224,
+      "source_rank": 222,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 111,
@@ -16560,7 +16630,7 @@
       "team": "NYG",
       "position": "DEF",
       "points": 111,
-      "source_rank": 241,
+      "source_rank": 240,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 111,
@@ -16620,7 +16690,7 @@
       "team": "SF",
       "position": "DEF",
       "points": 111,
-      "source_rank": 246,
+      "source_rank": 245,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 111,
@@ -16800,7 +16870,7 @@
       "team": "NYJ",
       "position": "RB",
       "points": 108,
-      "source_rank": 235,
+      "source_rank": 234,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 108,
@@ -16860,7 +16930,7 @@
       "team": "ARI",
       "position": "RB",
       "points": 107,
-      "source_rank": 236,
+      "source_rank": 235,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 107,
@@ -16920,7 +16990,7 @@
       "team": "LV",
       "position": "RB",
       "points": 107,
-      "source_rank": 238,
+      "source_rank": 237,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 107,
@@ -16972,74 +17042,6 @@
       "points_ppr": 107,
       "points_tep": 107,
       "analysis_articles": []
-    },
-    {
-      "player_id": "",
-      "source_player_id": "13578",
-      "name": "Kenny McIntosh",
-      "team": "UNS",
-      "position": "RB",
-      "points": 104,
-      "source_rank": 127,
-      "projections": {
-        "games_played": 16,
-        "weekly3dPts": 104,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": 31.77,
-        "rush_yds": 220.5,
-        "rush_tds": 1.62,
-        "receivingTotal": 55.15,
-        "rec_catch": 28.4,
-        "rec_yds": 207.5,
-        "rec_tds": 1,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 14
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 70,
-      "points_half": 87,
-      "points_ppr": 104,
-      "points_tep": 104,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
     },
     {
       "player_id": "",
@@ -17180,22 +17182,22 @@
     "samdarnold": 296,
     "aaron rodgers": 292,
     "aaronrodgers": 292,
-    "saquon barkley": 290,
-    "saquonbarkley": 290,
+    "saquon barkley": 289,
+    "saquonbarkley": 289,
     "drake london": 288,
     "drakelondon": 288,
     "aj brown": 288,
     "a.j.brown": 288,
-    "rashee rice": 287,
-    "rasheerice": 287,
     "bryce young": 287,
     "bryceyoung": 287,
-    "devon achane": 286,
-    "de'vonachane": 286,
+    "kenneth walker": 286,
+    "kennethwalkeriii": 286,
     "nico collins": 285,
     "nicocollins": 285,
-    "kenneth walker": 284,
-    "kennethwalkeriii": 284,
+    "devon achane": 285,
+    "de'vonachane": 285,
+    "rashee rice": 284,
+    "rasheerice": 284,
     "chase brown": 282,
     "chasebrown": 282,
     "fernando mendoza": 282,
@@ -17206,10 +17208,10 @@
     "omarionhampton": 281,
     "geno smith": 280,
     "genosmith": 280,
-    "george pickens": 275,
-    "georgepickens": 275,
     "derrick henry": 275,
     "derrickhenry": 275,
+    "george pickens": 274,
+    "georgepickens": 274,
     "brock bowers": 270,
     "brockbowers": 270,
     "jeremiyah love": 269,
@@ -17298,10 +17300,10 @@
     "carnelltate": 214,
     "marvin harrison": 213,
     "marvinharrisonjr.": 213,
-    "jordyn tyson": 212,
-    "jordyntyson": 212,
     "michael pittman": 212,
     "michaelpittmanjr.": 212,
+    "jordyn tyson": 212,
+    "jordyntyson": 212,
     "courtland sutton": 212,
     "courtlandsutton": 212,
     "tucker kraft": 211,
@@ -17326,10 +17328,10 @@
     "samlaporta": 208,
     "jamien sherwood": 208,
     "jamiensherwood": 208,
-    "josh downs": 205,
-    "joshdowns": 205,
     "quentin johnston": 205,
     "quentinjohnston": 205,
+    "josh downs": 204,
+    "joshdowns": 204,
     "chris godwin": 204,
     "chrisgodwin": 204,
     "quay walker": 204,
@@ -17466,20 +17468,22 @@
     "paulsonadebo": 167,
     "quentin lake": 165,
     "quentinlake": 165,
-    "hunter henry": 164,
-    "hunterhenry": 164,
     "isaiah likely": 164,
     "isaiahlikely": 164,
+    "hunter henry": 164,
+    "hunterhenry": 164,
     "kaimi fairbairn": 163,
     "ka'imifairbairn": 163,
-    "kenyon sadiq": 163,
-    "kenyonsadiq": 163,
+    "kenyon sadiq": 162,
+    "kenyonsadiq": 162,
     "zach charbonnet": 161,
     "zachcharbonnet": 161,
     "juwan johnson": 161,
     "juwanjohnson": 161,
     "myles garrett": 159,
     "mylesgarrett": 159,
+    "chigoziem okonkwo": 159,
+    "chigoziemokonkwo": 159,
     "tyler loop": 158,
     "tylerloop": 158,
     "cairo santos": 158,
@@ -17516,16 +17520,16 @@
     "tyronetracyjr.": 145,
     "aidan hutchinson": 144,
     "aidanhutchinson": 144,
-    "alvin kamara": 143,
-    "alvinkamara": 143,
+    "alvin kamara": 142,
+    "alvinkamara": 142,
+    "keaton mitchell": 142,
+    "keatonmitchell": 142,
     "brian burns": 139,
     "brianburns": 139,
     "andrew van ginkel": 136,
     "andrewvanginkel": 136,
     "byron young": 136,
     "byronyoung": 136,
-    "keaton mitchell": 133,
-    "keatonmitchell": 133,
     "ashawn robinson": 133,
     "a'shawnrobinson": 133,
     "nik bonitto": 131,
@@ -17600,8 +17604,6 @@
     "jamesconner": 107,
     "mike washington": 107,
     "mikewashingtonjr.": 107,
-    "kenny mcintosh": 104,
-    "kennymcintosh": 104,
     "sean tucker": 103,
     "seantucker": 103
   },
