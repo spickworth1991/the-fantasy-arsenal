@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-07T02:19:45.610Z",
+  "updated": "2026-08-07T04:07:09.046Z",
   "season": 2026,
   "source": "Projection Source Average Anchor",
   "scoring": "PPR",
@@ -23288,7 +23288,7 @@
         "age": 25,
         "years_experience": 2,
         "depth_chart_order": 4,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -31784,7 +31784,7 @@
         "age": 21,
         "years_experience": 0,
         "depth_chart_order": 1,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1.02,
         "reasons": [
@@ -34746,7 +34746,7 @@
         "age": 23,
         "years_experience": 2,
         "depth_chart_order": 1,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -37402,7 +37402,7 @@
         "age": 23,
         "years_experience": 2,
         "depth_chart_order": 1,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1.02,
         "reasons": [
@@ -41024,6 +41024,85 @@
       }
     },
     {
+      "player_id": "13337",
+      "name": "Emmett Johnson",
+      "team": "KC",
+      "position": "RB",
+      "points": 51.405,
+      "points_ppr": 51.405,
+      "points_half": 34.958,
+      "points_std": 31.347,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 46,
+      "disagreement": 0.4398,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 0,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 46.345,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 56.26,
+          "half": 49.2,
+          "std": 42.12
+        },
+        "FantasySharks": {
+          "ppr": 59.8,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 114,
+          "half": 0,
+          "std": 0
+        },
+        "FantasyPros": {
+          "ppr": 34.54,
+          "half": 31.94,
+          "std": 29.34
+        }
+      }
+    },
+    {
       "player_id": "3202",
       "name": "Austin Hooper",
       "team": "ATL",
@@ -43379,91 +43458,6 @@
           "ppr": 47.58,
           "half": 37.91,
           "std": 28.23
-        }
-      }
-    },
-    {
-      "player_id": "13337",
-      "name": "Emmett Johnson",
-      "team": "KC",
-      "position": "RB",
-      "points": 45.958,
-      "points_ppr": 45.958,
-      "points_half": 34.958,
-      "points_std": 31.347,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 49,
-      "disagreement": 0.5129,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "ESPN",
-          "Sleeper",
-          "FantasySharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "CBS",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 0,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 46.345,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 24.4,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 56.26,
-          "half": 49.2,
-          "std": 42.12
-        },
-        "FantasySharks": {
-          "ppr": 59.8,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 114,
-          "half": 0,
-          "std": 0
-        },
-        "FantasyPros": {
-          "ppr": 34.54,
-          "half": 31.94,
-          "std": 29.34
         }
       }
     },
@@ -56634,6 +56628,72 @@
       }
     },
     {
+      "player_id": "12515",
+      "name": "Donovan Edwards",
+      "team": "MIA",
+      "position": "RB",
+      "points": 19.444,
+      "points_ppr": 19.444,
+      "points_half": 15.785,
+      "points_std": 15.074,
+      "source_count": 3,
+      "format_source_count": {
+        "ppr": 3,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 20,
+      "disagreement": 0.6707,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 1,
+        "depth_chart_order": 5,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 5 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 24.4,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 0.85,
+          "half": 0.85,
+          "std": 0.85
+        },
+        "FantasyPros": {
+          "ppr": 22.9,
+          "half": 21.9,
+          "std": 20.9
+        }
+      }
+    },
+    {
       "player_id": "2359",
       "name": "Ameer Abdullah",
       "team": "JAC",
@@ -57987,66 +58047,6 @@
           "ppr": 10.97,
           "half": 8.95,
           "std": 6.94
-        }
-      }
-    },
-    {
-      "player_id": "12515",
-      "name": "Donovan Edwards",
-      "team": "MIA",
-      "position": "RB",
-      "points": 16.496,
-      "points_ppr": 16.496,
-      "points_half": 15.785,
-      "points_std": 15.074,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 20,
-      "disagreement": 0.9284,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 1,
-        "depth_chart_order": 5,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 5 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "Sleeper": {
-          "ppr": 0.85,
-          "half": 0.85,
-          "std": 0.85
-        },
-        "FantasyPros": {
-          "ppr": 22.9,
-          "half": 21.9,
-          "std": 20.9
         }
       }
     },
@@ -65079,7 +65079,7 @@
         "age": 31,
         "years_experience": 10,
         "depth_chart_order": 7,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 0.96,
         "reasons": [
@@ -69067,6 +69067,8 @@
     "montezsweat": 51.75,
     "dru phillips": 51.419,
     "druphillips": 51.419,
+    "emmett johnson": 51.405,
+    "emmettjohnson": 51.405,
     "austin hooper": 51.087,
     "austinhooper": 51.087,
     "david bailey": 50.8,
@@ -69135,8 +69137,6 @@
     "georgekarlaftis": 46.205,
     "adam trautman": 46.205,
     "adamtrautman": 46.205,
-    "emmett johnson": 45.958,
-    "emmettjohnson": 45.958,
     "renardo green": 45.903,
     "renardogreen": 45.903,
     "kobie turner": 45.9,
@@ -69533,6 +69533,8 @@
     "sethmcgowan": 19.768,
     "xavier smith": 19.665,
     "xaviersmith": 19.665,
+    "donovan edwards": 19.444,
+    "donovanedwards": 19.444,
     "ameer abdullah": 19.292,
     "ameerabdullah": 19.292,
     "jam miller": 19.108,
@@ -69573,8 +69575,6 @@
     "isaacguerendo": 16.974,
     "tyrell shavers": 16.918,
     "tyrellshavers": 16.918,
-    "donovan edwards": 16.496,
-    "donovanedwards": 16.496,
     "bo melton": 16.412,
     "bomelton": 16.412,
     "quinn ewers": 16.355,
