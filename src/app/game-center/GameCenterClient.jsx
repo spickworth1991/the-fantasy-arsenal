@@ -148,6 +148,7 @@ export default function GameCenterClient() {
       const rootPromise = username ? getJson(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`) : Promise.resolve(null);
       const [schedule, root] = await Promise.all([schedulePromise, rootPromise]);
       setGames(schedule.games || []);
+      if (schedule.error) setError("The NFL schedule feed is temporarily unavailable. Portfolio players are shown without kickoff grouping until it reconnects.");
       const scanned = root ? await concurrentMap(leagues, 12, async (league) => {
         try {
           const [rosters, users, matchups] = await Promise.all([
@@ -248,7 +249,7 @@ export default function GameCenterClient() {
   const matchupRows = useMemo(() => preseasonMode ? [] : visibleRows.map((row) => {
     const myIds = (row.myMatch?.starters || []).map(String).filter((id) => id && id !== "0");
     const opponentIds = (row.opponentMatch?.starters || []).map(String).filter((id) => id && id !== "0");
-    const remaining = (ids) => ids.filter((id) => !isFinal(gameByTeam.get(players?.[id]?.team)));
+    const remaining = (ids) => ids.filter((id) => !isFinal(gameByTeam.get(normalizeTeam(players?.[id]?.team))));
     const myRemaining = remaining(myIds);
     const opponentRemaining = remaining(opponentIds);
     const myRemainingProjection = myRemaining.reduce((sum, id) => sum + weeklyProjection(id), 0);
@@ -264,11 +265,11 @@ export default function GameCenterClient() {
     const benchIds = (row.mine?.players || []).map(String).filter((id) => !startedSet.has(id));
     const lateSwap = riskyStarters.map((starterId) => {
       const starter = players?.[starterId];
-      const starterGame = gameByTeam.get(starter?.team);
+      const starterGame = gameByTeam.get(normalizeTeam(starter?.team));
       const replacement = benchIds
         .filter((id) => position(players?.[id]) === position(starter) && !isUnavailable(players?.[id]))
         .filter((id) => {
-          const game = gameByTeam.get(players?.[id]?.team);
+          const game = gameByTeam.get(normalizeTeam(players?.[id]?.team));
           return game && !isFinal(game) && new Date(game.date).getTime() >= new Date(starterGame?.date || 0).getTime();
         })
         .sort((a, b) => weeklyProjection(b) - weeklyProjection(a))[0];
@@ -312,7 +313,7 @@ export default function GameCenterClient() {
         ...row,
         player,
         name:playerName(players, row.id),
-        game:gameByTeam.get(player?.team),
+        game:gameByTeam.get(normalizeTeam(player?.team)),
         conflict:row.for.length > 0 && row.against.length > 0,
         impact:row.for.length + row.against.length,
         projection:weeklyProjection(row.id),
@@ -398,6 +399,7 @@ export default function GameCenterClient() {
   const gameGroups = [...games].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
   const timelinePlayerRows = preseasonMode ? preseasonPlayerRows : playerRows;
   const filteredPlayers = timelinePlayerRows.filter((row) => !query.trim() || `${row.name} ${row.player?.team} ${row.player?.position}`.toLowerCase().includes(query.toLowerCase()));
+  const timelineFallbackPlayers = gameGroups.length ? filteredPlayers.filter((row) => !row.game?.id) : filteredPlayers;
   const filteredMatchups = matchupRows.filter((row) => filter === "all" || (filter === "close" ? row.margin <= 10 && row.status !== "completed" : filter === "not-started" ? row.actual === 0 && row.opponentActual === 0 : row.status === filter));
 
   const shellClass = liveMode
@@ -488,6 +490,8 @@ export default function GameCenterClient() {
             if (!involved.length && !preseasonMode) return null;
             return <Panel key={game.id} className="overflow-hidden"><div className="border-b border-white/10 bg-white/[0.025] p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="font-black">{(game.teams || []).join(" vs ")}</h3><div className="mt-1 text-xs text-white/38">{game.date ? new Date(game.date).toLocaleString([], { weekday:"short", hour:"numeric", minute:"2-digit" }) : "Kickoff unavailable"} · {game.status}</div><div className="mt-2 flex flex-wrap gap-2">{(game.competitors || []).map((team) => <span key={`${game.id}-${team.team}`} className="rounded-lg bg-white/[0.05] px-2 py-1 text-xs"><b>{team.team}</b> {team.score}</span>)}</div></div><div className="text-[10px] text-cyan-100/55 sm:max-w-md sm:text-right">{weatherLine(game)}</div></div></div><div className="grid gap-px bg-white/[0.05] sm:grid-cols-2 xl:grid-cols-3">{involved.map((row) => <div key={row.id} className="flex items-center gap-3 bg-slate-950/90 p-3"><AvatarImage name={row.name} playerId={row.id} size={40} className="rounded-xl" alt="" /><div className="min-w-0 flex-1"><div className="truncate font-semibold">{row.name}</div><div className="text-[10px] text-white/32">{row.player?.position} · {preseasonMode ? `${row.impact} roster exposure${row.impact === 1 ? "" : "s"}` : `${row.for.length} for · ${row.against.length} against${row.conflict ? " · CONFLICT" : ""}`}</div></div><div className="text-right"><b>{preseasonMode ? row.impact : row.points.toFixed(1)}</b><small className="block text-[8px] text-white/25">{preseasonMode ? "leagues" : "fantasy pts"}</small></div></div>)}{preseasonMode && !involved.length ? <div className="bg-slate-950/90 p-4 text-xs text-white/32 sm:col-span-2 xl:col-span-3">No players from the loaded portfolio are attached to this game.</div> : null}</div></Panel>;
           })}
+          {timelineFallbackPlayers.length ? <Panel className="overflow-hidden"><div className="border-b border-amber-300/10 bg-amber-300/[0.025] p-4"><h3 className="font-black">{gameGroups.length ? "Players awaiting schedule matching" : "Portfolio players"}</h3><p className="mt-1 text-xs leading-5 text-white/38">{gameGroups.length ? "These players remain visible while their NFL team or kickoff is reconciled with the schedule feed." : "Kickoff grouping is temporarily unavailable, but the regular-season player timeline remains accessible."}</p></div><div className="grid gap-px bg-white/[0.05] sm:grid-cols-2 xl:grid-cols-3">{timelineFallbackPlayers.map((row) => <div key={`fallback-${row.id}`} className="flex items-center gap-3 bg-slate-950/90 p-3"><AvatarImage name={row.name} playerId={row.id} size={40} className="rounded-xl" alt="" /><div className="min-w-0 flex-1"><div className="truncate font-semibold">{row.name}</div><div className="text-[10px] text-white/32">{row.player?.position || "—"} · {row.player?.team || "Team pending"} · {preseasonMode ? `${row.impact} exposure${row.impact === 1 ? "" : "s"}` : `${row.for.length} for · ${row.against.length} against`}</div></div><div className="text-right"><b>{preseasonMode ? row.impact : row.points.toFixed(1)}</b><small className="block text-[8px] text-white/25">{preseasonMode ? "leagues" : "fantasy pts"}</small></div></div>)}</div></Panel> : null}
+          {!loading && !filteredPlayers.length ? <Panel className="p-6 text-center"><h3 className="font-black">No player appearances found</h3><p className="mt-2 text-xs leading-5 text-white/38">{query.trim() ? "No timeline players match this search." : preseasonMode ? "No rostered portfolio players are attached to this preseason week." : "Sleeper has not returned a starting-lineup appearance for the selected regular-season week and filters."}</p></Panel> : null}
         </div> : null}
 
         {tab === "matchups" && !preseasonMode ? <div className="mt-4">

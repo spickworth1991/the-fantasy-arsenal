@@ -84,6 +84,37 @@ async function addForecasts(games) {
   }
 }
 
+async function fetchEspnScoreboard({ season, seasonTypeCode, week }) {
+  const query = `limit=100&dates=${encodeURIComponent(season)}&seasontype=${seasonTypeCode}&week=${encodeURIComponent(week)}`;
+  const endpoints = [
+    ["espn-site-web", `https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?${query}`],
+    ["espn-site", `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?${query}`],
+    ["espn-cdn", `https://cdn.espn.com/core/nfl/scoreboard?xhr=1&${query}`],
+  ];
+  let emptyPayload = null;
+  let lastStatus = 0;
+  for (const [source, url] of endpoints) {
+    try {
+      const response = await fetch(url, {
+        cache:"no-store",
+        headers:{ accept:"application/json" },
+      });
+      lastStatus = response.status;
+      if (!response.ok) continue;
+      const rawPayload = await response.json();
+      const events = Array.isArray(rawPayload?.events)
+        ? rawPayload.events
+        : rawPayload?.content?.sbData?.events;
+      if (!Array.isArray(events)) continue;
+      const payload = events === rawPayload.events ? rawPayload : { ...rawPayload, events };
+      if (events.length) return { payload, source };
+      emptyPayload = { payload, source };
+    } catch {}
+  }
+  if (emptyPayload) return emptyPayload;
+  throw new Error(`ESPN scoreboard unavailable${lastStatus ? ` (HTTP ${lastStatus})` : ""}`);
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const season = searchParams.get("season") || String(new Date().getFullYear());
@@ -96,9 +127,7 @@ export async function GET(request) {
       : 2;
   const seasonType = seasonTypeCode === 1 ? "preseason" : seasonTypeCode === 3 ? "postseason" : "regular";
   try {
-    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${encodeURIComponent(season)}&seasontype=${seasonTypeCode}&week=${encodeURIComponent(week)}`, { next:{ revalidate:300 } });
-    if (!response.ok) throw new Error();
-    const payload = await response.json();
+    const { payload, source } = await fetchEspnScoreboard({ season, seasonTypeCode, week });
     const games = (payload.events || []).map((event) => {
       const competition = event.competitions?.[0] || {};
       const competitors = competition.competitors || [];
@@ -141,8 +170,14 @@ export async function GET(request) {
         } : null,
       };
     });
-    return NextResponse.json({ season:Number(season), week:Number(week), seasonType, seasonTypeCode, games:await addForecasts(games) });
-  } catch {
-    return NextResponse.json({ season:Number(season), week:Number(week), seasonType, seasonTypeCode, games:[] }, { status:200 });
+    return NextResponse.json(
+      { season:Number(season), week:Number(week), seasonType, seasonTypeCode, source, games:await addForecasts(games) },
+      { headers:{ "Cache-Control":"no-store, max-age=0" } },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { season:Number(season), week:Number(week), seasonType, seasonTypeCode, source:"unavailable", error:error?.message || "NFL scoreboard unavailable", games:[] },
+      { status:200, headers:{ "Cache-Control":"no-store, max-age=0" } },
+    );
   }
 }
