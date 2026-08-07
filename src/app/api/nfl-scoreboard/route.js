@@ -88,15 +88,23 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const season = searchParams.get("season") || String(new Date().getFullYear());
   const week = searchParams.get("week") || "1";
+  const requestedSeasonType = String(searchParams.get("seasonType") || "regular").toLowerCase();
+  const seasonTypeCode = requestedSeasonType === "preseason" || requestedSeasonType === "pre" || requestedSeasonType === "1"
+    ? 1
+    : requestedSeasonType === "postseason" || requestedSeasonType === "post" || requestedSeasonType === "3"
+      ? 3
+      : 2;
+  const seasonType = seasonTypeCode === 1 ? "preseason" : seasonTypeCode === 3 ? "postseason" : "regular";
   try {
-    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${encodeURIComponent(season)}&seasontype=2&week=${encodeURIComponent(week)}`, { next:{ revalidate:300 } });
+    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${encodeURIComponent(season)}&seasontype=${seasonTypeCode}&week=${encodeURIComponent(week)}`, { next:{ revalidate:300 } });
     if (!response.ok) throw new Error();
     const payload = await response.json();
     const games = (payload.events || []).map((event) => {
       const competition = event.competitions?.[0] || {};
+      const competitors = competition.competitors || [];
       const weather = competition.weather || null;
       const venue = competition.venue || {};
-      const homeTeam = (competition.competitors || []).find((row) => row.homeAway === "home")?.team?.abbreviation;
+      const homeTeam = competitors.find((row) => row.homeAway === "home")?.team?.abbreviation;
       const stadium = stadiumByTeam.get(homeTeam) || null;
       const venueName = venue.fullName || stadium?.name || "";
       const regularHomeVenue = !venue.fullName || !stadium || venue.fullName.toLowerCase() === stadium.name.toLowerCase();
@@ -106,7 +114,17 @@ export async function GET(request) {
         date:event.date,
         name:event.name,
         status:event.status?.type?.shortDetail || event.status?.type?.description || "Scheduled",
-        teams:(competition.competitors || []).map((row) => row.team?.abbreviation).filter(Boolean),
+        statusState:event.status?.type?.state || "pre",
+        period:Number(event.status?.period || 0),
+        clock:event.status?.displayClock || "",
+        teams:competitors.map((row) => row.team?.abbreviation).filter(Boolean),
+        competitors:competitors.map((row) => ({
+          team:row.team?.abbreviation || "",
+          name:row.team?.displayName || row.team?.shortDisplayName || "",
+          homeAway:row.homeAway || "",
+          score:Number(row.score || 0),
+          winner:Boolean(row.winner),
+        })),
         venue:{
           name:venueName,
           city:venue.address?.city || activeStadium?.city || "",
@@ -123,8 +141,8 @@ export async function GET(request) {
         } : null,
       };
     });
-    return NextResponse.json({ games:await addForecasts(games) });
+    return NextResponse.json({ season:Number(season), week:Number(week), seasonType, seasonTypeCode, games:await addForecasts(games) });
   } catch {
-    return NextResponse.json({ games:[] }, { status:200 });
+    return NextResponse.json({ season:Number(season), week:Number(week), seasonType, seasonTypeCode, games:[] }, { status:200 });
   }
 }
