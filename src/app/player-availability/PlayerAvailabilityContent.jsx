@@ -29,6 +29,20 @@ const sleeperLeagueUrl = (leagueId) =>
 // Real player avatars come directly from Sleeper; local files are defaults only.
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
 const isPickPos = (pos) => String(pos || "").toUpperCase() === "PICK";
+const leagueAllowsPosition = (league, position) => {
+  const slots = new Set(
+    (league?.roster_positions || []).map((slot) => String(slot).toUpperCase()),
+  );
+  const pos = String(position || "").toUpperCase();
+  if (!slots.size || slots.has(pos)) return true;
+  if (pos === "QB") return slots.has("SUPER_FLEX");
+  if (["RB", "WR", "TE"].includes(pos)) {
+    if (slots.has("FLEX") || slots.has("SUPER_FLEX")) return true;
+    if (["WR", "TE"].includes(pos) && slots.has("REC_FLEX")) return true;
+    if (["RB", "WR"].includes(pos) && slots.has("WRRB_FLEX")) return true;
+  }
+  return false;
+};
 
 function localPlayerAvatarUrl(player) {
   const pid =
@@ -475,6 +489,7 @@ function PlayerOpenLeaguesModal({
   acquisitionRows = [],
   acquisitionLoading = false,
   acquisitionProgress = "",
+  sourceLabel = "Selected source",
 }) {
   if (!open) return null;
   const title = player?.name ? player.name : "Player";
@@ -605,6 +620,33 @@ function PlayerOpenLeaguesModal({
                         : ""}
                       {path.concentration}
                     </div>
+                    {path.path === "Waiver" ? (
+                      <div className="mt-2 rounded-xl border border-emerald-300/10 bg-emerald-300/[0.045] p-2.5">
+                        <div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-200/55">
+                          Recommended move
+                        </div>
+                        {path.drop ? (
+                          <>
+                            <div className="mt-1 text-xs font-bold text-white/85">
+                              Add {title} · Drop {path.drop.name}
+                            </div>
+                            <div className="mt-1 text-[10px] leading-4 text-white/42">
+                              {path.drop.isBench
+                                ? "Bench-first replacement"
+                                : "Lowest-rated same-position roster option"}
+                              {path.gain > 0
+                                ? ` · +${path.gainLabel} by ${sourceLabel}`
+                                : " · Review before submitting"}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="mt-1 text-xs text-white/60">
+                            Add {title}. No responsible drop recommendation was
+                            identified.
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="ml-auto text-xs text-cyan-300">Open →</div>
                 </a>
@@ -775,10 +817,18 @@ export default function PlayerAvailabilityContent() {
       ? new URLSearchParams(window.location.search).get("player") || ""
       : "",
   );
+  const requestedDropId = useRef(
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("drop") || ""
+      : "",
+  );
   const requestedPlayerApplied = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setRequestedLeagueId(params.get("league") || "");
+    const requestedSource = params.get("source") || "";
+    if (DEFAULT_SOURCES.some((source) => source.key === requestedSource))
+      setSourceKey(requestedSource);
     const need = String(params.get("need") || "").toUpperCase();
     if (["QB", "RB", "WR", "TE", "K", "DEF"].includes(need)) setBestPos(need);
   }, []);
@@ -1413,8 +1463,6 @@ export default function PlayerAvailabilityContent() {
     if (!haveAnyRoster) return [];
 
     const posFilter = bestPos === "ALL" ? null : bestPos;
-    const includedCount = leagues.length;
-
     const metricFor = (p) => {
       if (!p || p.player_id == null) return 0;
       if (bestMetric === "projection")
@@ -1441,9 +1489,13 @@ export default function PlayerAvailabilityContent() {
 
     for (const { p, score } of candidates) {
       const pid = String(p.player_id);
+      const position = String(p.position || "").toUpperCase();
+      const eligibleLeagues = leagues.filter((league) =>
+        leagueAllowsPosition(league, position),
+      );
       const availableLeagues = [];
 
-      for (const lg of leagues) {
+      for (const lg of eligibleLeagues) {
         const set = rosterSetsRef.current.get(lg.id);
         if (!set || set.size === 0) continue;
         if (!set.has(pid)) availableLeagues.push(lg);
@@ -1452,8 +1504,8 @@ export default function PlayerAvailabilityContent() {
       if (availableLeagues.length === 0) continue;
       if (availableLeagues.length < minOpenSlots) continue;
 
-      const openPct = includedCount
-        ? Math.round((availableLeagues.length / includedCount) * 100)
+      const openPct = eligibleLeagues.length
+        ? Math.round((availableLeagues.length / eligibleLeagues.length) * 100)
         : 0;
       if (openPct < bestMinOpenPct) continue;
 
@@ -1529,7 +1581,7 @@ export default function PlayerAvailabilityContent() {
     setModalLeagues(openLeagues || []);
     setModalOpen(true);
     setAcquisitionRows([]);
-    const acquisitionKey = `tfa:acquisition:${cacheKey}:${player?.id}`;
+    const acquisitionKey = `tfa:acquisition:v2:${cacheKey}:${activeSource.key}:${mode}:${qb}:${player?.id}`;
     try {
       const cached = JSON.parse(
         sessionStorage.getItem(acquisitionKey) || "null",
@@ -1544,12 +1596,17 @@ export default function PlayerAvailabilityContent() {
       }
     } catch {}
     setAcquisitionLoading(true);
-    const leagueRows = includedLeaguesList.slice();
+    const targetPlayer = playersMap?.[String(player?.id)];
+    const targetPosition = String(
+      targetPlayer?.position || player?.pos || "",
+    ).toUpperCase();
+    const leagueRows = includedLeaguesList.filter((league) =>
+      leagueAllowsPosition(league, targetPosition),
+    );
     const output = new Array(leagueRows.length);
     let cursor = 0;
     let completed = 0;
     let exposure = 0;
-    const targetPlayer = playersMap?.[String(player?.id)];
     const targetMetric = targetPlayer
       ? Number(
           bestMetric === "projection"
@@ -1557,6 +1614,16 @@ export default function PlayerAvailabilityContent() {
             : getPlayerValue(targetPlayer),
         ) || 0
       : 0;
+    const nflState = await fetch("https://api.sleeper.app/v1/state/nfl")
+      .then((response) => (response.ok ? response.json() : {}))
+      .catch(() => ({}));
+    const currentWeek = Math.max(1, Number(nflState?.week || 1));
+    const metricFor = (candidate) =>
+      Number(
+        bestMetric === "projection"
+          ? getSeasonPointsForPlayer(activeProjMap, candidate)
+          : getPlayerValue(candidate),
+      ) || 0;
     const workers = Array.from(
       { length: Math.min(12, leagueRows.length) },
       async () => {
@@ -1567,14 +1634,102 @@ export default function PlayerAvailabilityContent() {
             .get(league.id)
             ?.has(String(player?.id));
           if (!rostered) {
-            output[index] = {
-              league,
-              path: "Waiver",
-              owner: "",
-              ownerNeeds: [],
-              package: "",
-              ownedByUser: false,
-            };
+            try {
+              const [rostersResponse, usersResponse, matchupsResponse] =
+                await Promise.all([
+                  fetch(
+                    `https://api.sleeper.app/v1/league/${league.id}/rosters`,
+                  ),
+                  fetch(`https://api.sleeper.app/v1/league/${league.id}/users`),
+                  fetch(
+                    `https://api.sleeper.app/v1/league/${league.id}/matchups/${currentWeek}`,
+                  ),
+                ]);
+              const rosters = rostersResponse.ok
+                ? await rostersResponse.json()
+                : [];
+              const users = usersResponse.ok ? await usersResponse.json() : [];
+              const matchups = matchupsResponse.ok
+                ? await matchupsResponse.json()
+                : [];
+              const me = users.find((user) =>
+                [user.username, user.display_name].some(
+                  (value) =>
+                    String(value || "").toLowerCase() ===
+                    String(username || "").toLowerCase(),
+                ),
+              );
+              const myRoster = rosters.find(
+                (roster) => String(roster.owner_id) === String(me?.user_id),
+              );
+              const myMatchup = matchups.find(
+                (row) => String(row.roster_id) === String(myRoster?.roster_id),
+              );
+              const starters = new Set(
+                (myMatchup?.starters || [])
+                  .map(String)
+                  .filter((id) => id && id !== "0"),
+              );
+              const targetPosition = String(
+                targetPlayer?.position || player?.pos || "",
+              ).toUpperCase();
+              const candidates = (myRoster?.players || [])
+                .map((id) => ({ id: String(id), player: playersMap?.[id] }))
+                .filter((row) => row.player && row.id !== String(player?.id))
+                .map((row) => ({
+                  ...row,
+                  position: String(row.player.position || "").toUpperCase(),
+                  metric: metricFor(row.player),
+                  isBench: !starters.has(row.id),
+                }))
+                .filter((row) => row.position === targetPosition)
+                .sort(
+                  (a, b) =>
+                    Number(b.id === requestedDropId.current) -
+                      Number(a.id === requestedDropId.current) ||
+                    Number(b.isBench) - Number(a.isBench) ||
+                    a.metric - b.metric,
+                );
+              const drop = candidates[0];
+              const gain = drop ? targetMetric - drop.metric : 0;
+              output[index] = {
+                league,
+                path: "Waiver",
+                owner: "",
+                ownerNeeds: [],
+                package: "",
+                ownedByUser: false,
+                drop: drop
+                  ? {
+                      id: drop.id,
+                      name:
+                        drop.player.full_name ||
+                        drop.player.search_full_name ||
+                        drop.id,
+                      position: drop.position,
+                      metric: drop.metric,
+                      isBench: drop.isBench,
+                    }
+                  : null,
+                gain,
+                gainLabel:
+                  bestMetric === "projection"
+                    ? `${gain.toFixed(1)} projected pts`
+                    : `${Math.round(gain).toLocaleString()} value`,
+              };
+            } catch {
+              output[index] = {
+                league,
+                path: "Waiver",
+                owner: "",
+                ownerNeeds: [],
+                package: "",
+                ownedByUser: false,
+                drop: null,
+                gain: 0,
+                gainLabel: "",
+              };
+            }
           } else {
             try {
               const [rostersResponse, usersResponse] = await Promise.all([
@@ -2835,6 +2990,7 @@ export default function PlayerAvailabilityContent() {
         acquisitionRows={acquisitionRows}
         acquisitionLoading={acquisitionLoading}
         acquisitionProgress={acquisitionProgress}
+        sourceLabel={activeSource.label}
       />
 
       {/* Included leagues modal */}

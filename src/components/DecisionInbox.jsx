@@ -791,7 +791,7 @@ export default function DecisionInbox({ full = false }) {
                   playerPosition: pos(waiver.player),
                   deadline: null,
                   why: `The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`,
-                  href: `/player-availability?player=${waiver.id}&need=${pos(waiver.player)}`,
+                  href: `/player-availability?player=${waiver.id}&drop=${weakest?.id || ""}&need=${pos(waiver.player)}&source=${encodeURIComponent(sourceKey || "")}`,
                   action: "Build waiver claim",
                 });
               }
