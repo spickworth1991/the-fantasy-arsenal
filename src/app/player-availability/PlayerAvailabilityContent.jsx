@@ -4,18 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
 const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
-const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
+const BackgroundParticles = dynamic(
+  () => import("../../components/BackgroundParticles"),
+  { ssr: false },
+);
 
 import LoadingScreen from "../../components/LoadingScreen";
 import AvatarImage from "../../components/AvatarImage";
 import ExportButtons from "../../components/ExportButtons";
-import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
+import SourceSelector, {
+  DEFAULT_SOURCES,
+} from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 
 /** Helpers for league avatars (matches Player Stock) */
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
-const leagueAvatarUrl = (avatarId) => (avatarId ? `https://sleepercdn.com/avatars/thumbs/${avatarId}` : DEFAULT_LEAGUE_IMG);
-const sleeperLeagueUrl = (leagueId) => `https://sleeper.com/leagues/${leagueId}`;
+const leagueAvatarUrl = (avatarId) =>
+  avatarId
+    ? `https://sleepercdn.com/avatars/thumbs/${avatarId}`
+    : DEFAULT_LEAGUE_IMG;
+const sleeperLeagueUrl = (leagueId) =>
+  `https://sleeper.com/leagues/${leagueId}`;
 
 // Real player avatars come directly from Sleeper; local files are defaults only.
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
@@ -26,13 +35,12 @@ function localPlayerAvatarUrl(player) {
     player?.player_id != null && /^\d+$/.test(String(player.player_id))
       ? String(player.player_id)
       : player?.id != null && /^\d+$/.test(String(player.id))
-      ? String(player.id)
-      : "";
+        ? String(player.id)
+        : "";
   if (pid) return `https://sleepercdn.com/content/nfl/players/thumb/${pid}.jpg`;
 
   return DEFAULT_PLAYER_IMG;
 }
-
 
 function cleanNorm(s = "") {
   return String(s)
@@ -62,7 +70,12 @@ function extractRosterIds(rosters) {
 }
 
 /** One-input inline name picker with disambiguation */
-function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., Josh Allen)", className = "" }) {
+function NameSelect({
+  nameIndex,
+  onPick,
+  placeholder = "Search a player (e.g., Josh Allen)",
+  className = "",
+}) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -121,11 +134,14 @@ function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., J
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (!open && (e.key === "ArrowDown" || e.key === "Enter")) setOpen(true);
+          if (!open && (e.key === "ArrowDown" || e.key === "Enter"))
+            setOpen(true);
           if (!open) return;
           if (e.key === "ArrowDown") {
             e.preventDefault();
-            setHighlight((h) => Math.min(h + 1, Math.max(suggestions.length - 1, 0)));
+            setHighlight((h) =>
+              Math.min(h + 1, Math.max(suggestions.length - 1, 0)),
+            );
           }
           if (e.key === "ArrowUp") {
             e.preventDefault();
@@ -165,7 +181,16 @@ function NameSelect({ nameIndex, onPick, placeholder = "Search a player (e.g., J
 // =====================
 // Projections (MATCH Trade Analyzer JSONs)
 // =====================
-import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
+import {
+  PROJ_ARSENAL_JSON_URL,
+  PROJ_ARSENAL_MODEL_JSON_URL,
+  PROJ_CBS_JSON_URL,
+  PROJ_DRAFTSHARKS_JSON_URL,
+  PROJ_ESPN_JSON_URL,
+  PROJ_FANTASYSHARKS_JSON_URL,
+  PROJ_JSON_URL,
+  PROJ_SLEEPER_JSON_URL,
+} from "../../lib/projectionSeason";
 
 function normNameForMap(name) {
   return String(name || "")
@@ -176,12 +201,24 @@ function normNameForMap(name) {
     .trim();
 }
 function normalizeTeamAbbr(x) {
-  const s = String(x || "").toUpperCase().trim();
-  const map = { JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV", WFT: "WAS", WSH: "WAS" };
+  const s = String(x || "")
+    .toUpperCase()
+    .trim();
+  const map = {
+    JAX: "JAC",
+    LA: "LAR",
+    STL: "LAR",
+    SD: "LAC",
+    OAK: "LV",
+    WFT: "WAS",
+    WSH: "WAS",
+  };
   return map[s] || s;
 }
 function normalizePos(x) {
-  const p = String(x || "").toUpperCase().trim();
+  const p = String(x || "")
+    .toUpperCase()
+    .trim();
   if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
   if (p === "PK") return "K";
   return p;
@@ -196,9 +233,11 @@ function buildProjectionMapFromJSON(json) {
   rows.forEach((r) => {
     const pid = r.player_id != null ? String(r.player_id) : "";
     const name = r.name || r.player || r.full_name || "";
-    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
+    const seasonPts =
+      Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
 
-    const rawTeam = r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
+    const rawTeam =
+      r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team;
     const team = normalizeTeamAbbr(rawTeam);
     const rawPos = r.pos ?? r.position ?? r.player_position;
     const pos = normalizePos(rawPos);
@@ -227,19 +266,29 @@ async function fetchProjectionMap(url) {
 }
 function getSeasonPointsForPlayer(map, p) {
   if (!map || !p) return 0;
-  if (map.fantasyProsGetter) return map.fantasyProsGetter(p, "FANTASYPROS") || 0;
+  if (map.fantasyProsGetter)
+    return map.fantasyProsGetter(p, "FANTASYPROS") || 0;
 
   const hit = map.byId?.[String(p.player_id)];
   if (hit != null) return hit;
 
-  const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim());
+  const nn = normNameForMap(
+    p.full_name ||
+      p.search_full_name ||
+      `${p.first_name || ""} ${p.last_name || ""}`.trim(),
+  );
   const team = normalizeTeamAbbr(p.team);
   // Some Sleeper entries (rare dupes) can have an empty `position` but still have fantasy_positions.
   // Use a primary position fallback so we don't accidentally match a different player with the same name.
-  const pos = normalizePos(p.position || (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : ""));
+  const pos = normalizePos(
+    p.position ||
+      (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : ""),
+  );
 
-  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
-  if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] !=null) return map.byNamePos[`${nn}|${pos}`];
+  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null)
+    return map.byNameTeam[`${nn}|${team}`];
+  if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] != null)
+    return map.byNamePos[`${nn}|${pos}`];
   if (team || pos) return 0;
   if (nn && map.byName?.[nn] != null) return map.byName[nn];
 
@@ -251,14 +300,38 @@ function getSeasonPointsForPlayer(map, p) {
 // Values (MATCH Trade Analyzer player fields / JSON pipeline)
 // =====================
 const VALUE_SOURCES = {
-  FantasyCalc: { label: "FantasyCalc", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  DynastyProcess: { label: "DynastyProcess", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  KeepTradeCut: { label: "KeepTradeCut", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  FantasyNavigator: { label: "FantasyNavigator", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  FantasyPros: { label: "FantasyPros Trade Values", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  FantasyProsECR: { label: "FantasyPros ECR Rank Score", supports: { dynasty: true, redraft: true, qbToggle: true } },
-  IDynastyP: { label: "IDynastyP", supports: { dynasty: true, redraft: false, qbToggle: true } },
-  TheFantasyArsenal: { label: "TheFantasyArsenal", supports: { dynasty: true, redraft: true, qbToggle: true } },
+  FantasyCalc: {
+    label: "FantasyCalc",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
+  DynastyProcess: {
+    label: "DynastyProcess",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  KeepTradeCut: {
+    label: "KeepTradeCut",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  FantasyNavigator: {
+    label: "FantasyNavigator",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
+  FantasyPros: {
+    label: "FantasyPros Trade Values",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  FantasyProsECR: {
+    label: "FantasyPros ECR Rank Score",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
+  IDynastyP: {
+    label: "IDynastyP",
+    supports: { dynasty: true, redraft: false, qbToggle: true },
+  },
+  TheFantasyArsenal: {
+    label: "TheFantasyArsenal",
+    supports: { dynasty: true, redraft: true, qbToggle: true },
+  },
 };
 
 function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
@@ -268,33 +341,79 @@ function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
     const qb = (qbType || "sf").toLowerCase(); // sf | 1qb
 
     if (valueSource === "FantasyCalc") {
-      const base=`${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}`;
-      const profile=["std","half","ppr","std-tep","half-tep","ppr-tep","std-tep-plus","half-tep-plus","ppr-tep-plus"].includes(String(scoring).toLowerCase())?String(scoring).toLowerCase():"ppr";
-      return Number(p.fc_values?.[`${base}__${profile}`] || p.fc_values?.[base] || 0);
+      const base = `${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}`;
+      const profile = [
+        "std",
+        "half",
+        "ppr",
+        "std-tep",
+        "half-tep",
+        "ppr-tep",
+        "std-tep-plus",
+        "half-tep-plus",
+        "ppr-tep-plus",
+      ].includes(String(scoring).toLowerCase())
+        ? String(scoring).toLowerCase()
+        : "ppr";
+      return Number(
+        p.fc_values?.[`${base}__${profile}`] || p.fc_values?.[base] || 0,
+      );
     }
-    if (valueSource === "DynastyProcess") return qb === "sf" ? Number(p.dp_values?.superflex || 0) : Number(p.dp_values?.one_qb || 0);
-    if (valueSource === "KeepTradeCut") return qb === "sf" ? Number(p.ktc_values?.superflex || 0) : Number(p.ktc_values?.one_qb || 0);
+    if (valueSource === "DynastyProcess")
+      return qb === "sf"
+        ? Number(p.dp_values?.superflex || 0)
+        : Number(p.dp_values?.one_qb || 0);
+    if (valueSource === "KeepTradeCut")
+      return qb === "sf"
+        ? Number(p.ktc_values?.superflex || 0)
+        : Number(p.ktc_values?.one_qb || 0);
     if (valueSource === "FantasyNavigator") {
-      if (fmt === "dynasty") return qb === "sf" ? Number(p.fn_values?.dynasty_sf || 0) : Number(p.fn_values?.dynasty_1qb || 0);
-      return qb === "sf" ? Number(p.fn_values?.redraft_sf || 0) : Number(p.fn_values?.redraft_1qb || 0);
+      if (fmt === "dynasty")
+        return qb === "sf"
+          ? Number(p.fn_values?.dynasty_sf || 0)
+          : Number(p.fn_values?.dynasty_1qb || 0);
+      return qb === "sf"
+        ? Number(p.fn_values?.redraft_sf || 0)
+        : Number(p.fn_values?.redraft_1qb || 0);
     }
     if (valueSource === "FantasyPros") {
       if (fmt !== "dynasty") return 0;
-      if (String(scoring).toLowerCase() === "tep") return qb === "sf" ? Number(p.fp_values?.dynasty_sf_tep || p.fp_values?.dynasty_sf || 0) : Number(p.fp_values?.dynasty_1qb_tep || p.fp_values?.dynasty_1qb || 0);
-      return qb === "sf" ? Number(p.fp_values?.dynasty_sf || 0) : Number(p.fp_values?.dynasty_1qb || 0);
+      if (String(scoring).toLowerCase() === "tep")
+        return qb === "sf"
+          ? Number(p.fp_values?.dynasty_sf_tep || p.fp_values?.dynasty_sf || 0)
+          : Number(
+              p.fp_values?.dynasty_1qb_tep || p.fp_values?.dynasty_1qb || 0,
+            );
+      return qb === "sf"
+        ? Number(p.fp_values?.dynasty_sf || 0)
+        : Number(p.fp_values?.dynasty_1qb || 0);
     }
     if (valueSource === "FantasyProsECR") {
-      const score=["std","half","ppr"].includes(String(scoring).toLowerCase())?String(scoring).toLowerCase():"ppr";
-      const key=`${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}_${score}`;
-      return Number(p.fpecr_values?.[key]||0);
+      const score = ["std", "half", "ppr"].includes(
+        String(scoring).toLowerCase(),
+      )
+        ? String(scoring).toLowerCase()
+        : "ppr";
+      const key = `${fmt === "dynasty" ? "dynasty" : "redraft"}_${qb === "sf" ? "sf" : "1qb"}_${score}`;
+      return Number(p.fpecr_values?.[key] || 0);
     }
     if (valueSource === "IDynastyP") {
-      if (String(scoring).toLowerCase() === "tep") return qb === "sf" ? Number(p.idp_values?.superflex_tep || p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb_tep || p.idp_values?.one_qb || 0);
-      return qb === "sf" ? Number(p.idp_values?.superflex || 0) : Number(p.idp_values?.one_qb || 0);
+      if (String(scoring).toLowerCase() === "tep")
+        return qb === "sf"
+          ? Number(p.idp_values?.superflex_tep || p.idp_values?.superflex || 0)
+          : Number(p.idp_values?.one_qb_tep || p.idp_values?.one_qb || 0);
+      return qb === "sf"
+        ? Number(p.idp_values?.superflex || 0)
+        : Number(p.idp_values?.one_qb || 0);
     }
     if (valueSource === "TheFantasyArsenal") {
-      if (fmt === "dynasty") return qb === "sf" ? Number(p.sp_values?.dynasty_sf || 0) : Number(p.sp_values?.dynasty_1qb || 0);
-      return qb === "sf" ? Number(p.sp_values?.redraft_sf || 0) : Number(p.sp_values?.redraft_1qb || 0);
+      if (fmt === "dynasty")
+        return qb === "sf"
+          ? Number(p.sp_values?.dynasty_sf || 0)
+          : Number(p.sp_values?.dynasty_1qb || 0);
+      return qb === "sf"
+        ? Number(p.sp_values?.redraft_sf || 0)
+        : Number(p.sp_values?.redraft_1qb || 0);
     }
     return 0;
   };
@@ -305,7 +424,9 @@ function makeGetPlayerValue(valueSource, format, qbType, scoring = "ppr") {
 // =====================
 function Segmented({ value, onChange, options = [], className = "" }) {
   return (
-    <div className={`inline-flex rounded-xl border border-white/10 bg-black/20 p-1 backdrop-blur ${className}`}>
+    <div
+      className={`inline-flex rounded-xl border border-white/10 bg-black/20 p-1 backdrop-blur ${className}`}
+    >
       {options.map((opt) => {
         const active = String(value) === String(opt.value);
         return (
@@ -315,7 +436,9 @@ function Segmented({ value, onChange, options = [], className = "" }) {
             onClick={() => onChange?.(opt.value)}
             className={[
               "px-3 py-2 text-xs md:text-sm rounded-lg transition whitespace-nowrap",
-              active ? "bg-cyan-500/20 text-cyan-100 border border-cyan-400/30" : "text-white/70 hover:text-white hover:bg-white/5",
+              active
+                ? "bg-cyan-500/20 text-cyan-100 border border-cyan-400/30"
+                : "text-white/70 hover:text-white hover:bg-white/5",
             ].join(" ")}
           >
             {opt.label}
@@ -344,27 +467,49 @@ function StatPill({ label, value, onClick, title }) {
   );
 }
 
-function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisitionRows = [], acquisitionLoading = false, acquisitionProgress = "" }) {
+function PlayerOpenLeaguesModal({
+  open,
+  onClose,
+  player,
+  leagues = [],
+  acquisitionRows = [],
+  acquisitionLoading = false,
+  acquisitionProgress = "",
+}) {
   if (!open) return null;
   const title = player?.name ? player.name : "Player";
-  const sub = acquisitionRows.length ? `${acquisitionRows.length} acquisition paths` : leagues.length ? `${leagues.length} league(s) open` : "No open leagues";
+  const sub = acquisitionRows.length
+    ? `${acquisitionRows.length} acquisition paths`
+    : leagues.length
+      ? `${leagues.length} league(s) open`
+      : "No open leagues";
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-[0_30px_120px_rgba(0,0,0,0.65)] p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-[0_30px_120px_rgba(0,0,0,0.65)] p-4 sm:p-5 border border-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-             <AvatarImage
-              src={localPlayerAvatarUrl({ player_id: player?.id, full_name: player?.name })}
-              fallbackSrc={DEFAULT_PLAYER_IMG}
-              alt={title}
-              className="w-10 h-10 rounded-full"
-            />
-
+              <AvatarImage
+                src={localPlayerAvatarUrl({
+                  player_id: player?.id,
+                  full_name: player?.name,
+                })}
+                fallbackSrc={DEFAULT_PLAYER_IMG}
+                alt={title}
+                className="w-10 h-10 rounded-full"
+              />
 
               <div className="min-w-0">
-                <div className="text-xl font-bold text-white truncate">{title}</div>
+                <div className="text-xl font-bold text-white truncate">
+                  {title}
+                </div>
                 <div className="text-sm text-white/60 truncate">
                   {player?.pos ? player.pos : "—"}
                   {player?.team ? ` • ${player.team}` : ""}
@@ -374,20 +519,45 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisiti
               </div>
             </div>
           </div>
-          <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10 text-white/80" onClick={onClose}>
+          <button
+            className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10 text-white/80"
+            onClick={onClose}
+          >
             ✕
           </button>
         </div>
 
         <div className="mt-4 rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-3">
-          <div className="flex items-center justify-between gap-3"><div><div className="text-[10px] font-semibold uppercase tracking-[.18em] text-violet-200/55">Player Acquisition Finder</div><div className="mt-1 text-xs text-white/40">Waiver, trade, and draft paths across every included league.</div></div>{acquisitionLoading ? <span className="text-[10px] text-violet-100">{acquisitionProgress || "Scanning…"}</span> : <span className="text-[10px] text-white/30">{acquisitionRows.length} paths</span>}</div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[.18em] text-violet-200/55">
+                Player Acquisition Finder
+              </div>
+              <div className="mt-1 text-xs text-white/40">
+                Waiver, trade, and draft paths across every included league.
+              </div>
+            </div>
+            {acquisitionLoading ? (
+              <span className="text-[10px] text-violet-100">
+                {acquisitionProgress || "Scanning…"}
+              </span>
+            ) : (
+              <span className="text-[10px] text-white/30">
+                {acquisitionRows.length} paths
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="mt-3 max-h-[65vh] overflow-auto pr-1 space-y-2">
-          {!acquisitionLoading && acquisitionRows.length === 0 && leagues.length === 0 ? (
-            <div className="text-white/70 text-sm py-6">No leagues available for this player with your current filters.</div>
-          ) : (
-            acquisitionRows.length ? acquisitionRows.map((path) => {
+          {!acquisitionLoading &&
+          acquisitionRows.length === 0 &&
+          leagues.length === 0 ? (
+            <div className="text-white/70 text-sm py-6">
+              No leagues available for this player with your current filters.
+            </div>
+          ) : acquisitionRows.length ? (
+            acquisitionRows.map((path) => {
               const lg = path.league;
               return (
                 <a
@@ -407,27 +577,74 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisiti
                     }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="text-white font-semibold truncate">{lg.name}</div>
+                    <div className="text-white font-semibold truncate">
+                      {lg.name}
+                    </div>
                     <div className="text-xs text-white/60 truncate">
                       {lg.isBestBall ? "Best Ball" : "Standard"}
-                      {lg.status ? ` • ${lg.status}` : ""} • <span className={path.path === "Waiver" ? "text-emerald-100" : path.path === "Draft / trade" ? "text-amber-100" : "text-violet-100"}>{path.path}</span>
+                      {lg.status ? ` • ${lg.status}` : ""} •{" "}
+                      <span
+                        className={
+                          path.path === "Waiver"
+                            ? "text-emerald-100"
+                            : path.path === "Draft / trade"
+                              ? "text-amber-100"
+                              : "text-violet-100"
+                        }
+                      >
+                        {path.path}
+                      </span>
                     </div>
-                    <div className="mt-1 text-[10px] leading-4 text-white/38">{path.owner ? `Current owner: ${path.owner}. ` : ""}{path.ownerNeeds?.length ? `Owner needs ${path.ownerNeeds.join(" / ")}. ` : ""}{path.package ? `Reasonable opening concept: ${path.package}. ` : ""}{path.concentration}</div>
+                    <div className="mt-1 text-[10px] leading-4 text-white/38">
+                      {path.owner ? `Current owner: ${path.owner}. ` : ""}
+                      {path.ownerNeeds?.length
+                        ? `Owner needs ${path.ownerNeeds.join(" / ")}. `
+                        : ""}
+                      {path.package
+                        ? `Reasonable opening concept: ${path.package}. `
+                        : ""}
+                      {path.concentration}
+                    </div>
                   </div>
                   <div className="ml-auto text-xs text-cyan-300">Open →</div>
                 </a>
               );
-            }) : leagues
+            })
+          ) : (
+            leagues
               .slice()
               .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
               .map((lg) => (
-                <a key={lg.id} href={sleeperLeagueUrl(lg.id)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition"><img src={leagueAvatarUrl(lg.avatar || undefined)} alt="" className="w-9 h-9 rounded-xl object-cover bg-gray-700" /><div className="min-w-0 flex-1"><div className="text-white font-semibold truncate">{lg.name}</div><div className="text-xs text-emerald-100">Available · waiver path</div></div><span className="text-xs text-cyan-300">Open →</span></a>
+                <a
+                  key={lg.id}
+                  href={sleeperLeagueUrl(lg.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+                >
+                  <img
+                    src={leagueAvatarUrl(lg.avatar || undefined)}
+                    alt=""
+                    className="w-9 h-9 rounded-xl object-cover bg-gray-700"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-white font-semibold truncate">
+                      {lg.name}
+                    </div>
+                    <div className="text-xs text-emerald-100">
+                      Available · waiver path
+                    </div>
+                  </div>
+                  <span className="text-xs text-cyan-300">Open →</span>
+                </a>
               ))
           )}
         </div>
 
         <div className="mt-4 text-[11px] text-white/45">
-          Availability and ownership come from Sleeper’s read-only league data. Package concepts are selected-source estimates and should be negotiated in Sleeper.
+          Availability and ownership come from Sleeper’s read-only league data.
+          Package concepts are selected-source estimates and should be
+          negotiated in Sleeper.
         </div>
       </div>
     </div>
@@ -438,21 +655,28 @@ function PlayerOpenLeaguesModal({ open, onClose, player, leagues = [], acquisiti
 // Page
 // =====================
 export default function PlayerAvailabilityContent() {
-  const { username, players, year, format, qbType, getProjection, projectionScoring } = useSleeper();
+  const {
+    username,
+    players,
+    year,
+    format,
+    qbType,
+    getProjection,
+    projectionScoring,
+  } = useSleeper();
 
-// local overrides (so you can toggle without mutating global context)
-const [mode, setMode] = useState((format || "dynasty").toLowerCase()); // dynasty | redraft
-const [qb, setQb] = useState((qbType || "sf").toLowerCase()); // sf | 1qb
+  // local overrides (so you can toggle without mutating global context)
+  const [mode, setMode] = useState((format || "dynasty").toLowerCase()); // dynasty | redraft
+  const [qb, setQb] = useState((qbType || "sf").toLowerCase()); // sf | 1qb
 
-// keep local defaults in sync if the context changes (login, league change, etc.)
-useEffect(() => {
-  setMode((format || "dynasty").toLowerCase());
-}, [format]);
+  // keep local defaults in sync if the context changes (login, league change, etc.)
+  useEffect(() => {
+    setMode((format || "dynasty").toLowerCase());
+  }, [format]);
 
-useEffect(() => {
-  setQb((qbType || "sf").toLowerCase());
-}, [qbType]);
-
+  useEffect(() => {
+    setQb((qbType || "sf").toLowerCase());
+  }, [qbType]);
 
   // Page init loading + Scan loading
   const [initLoading, setInitLoading] = useState(true);
@@ -488,14 +712,24 @@ useEffect(() => {
   // Values + Projections sources (match Trade Analyzer)
   const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
   const activeSource = useMemo(
-    () => DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
-    [sourceKey]
+    () =>
+      DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
+    [sourceKey],
   );
 
   // Keep existing downstream logic (valueSource + projSource) but drive them from ONE selector.
   const [valueSource, setValueSource] = useState("TheFantasyArsenal");
   const [projSource, setProjSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
-  const [projectionMaps, setProjectionMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
+  const [projectionMaps, setProjectionMaps] = useState({
+    CSV: null,
+    ESPN: null,
+    CBS: null,
+    SLEEPER: null,
+    FANTASYSHARKS: null,
+    DRAFTSHARKS: null,
+    ARSENAL: null,
+    ARSENAL_MODEL: null,
+  });
 
   // Drive legacy source state from the single selector
   useEffect(() => {
@@ -528,15 +762,26 @@ useEffect(() => {
   }, [activeSource]);
 
   // Best Available controls
-  const bestMetric = activeSource.type === "projection" ? "projection" : "value"; // derived
+  const bestMetric =
+    activeSource.type === "projection" ? "projection" : "value"; // derived
   const [bestPos, setBestPos] = useState("ALL");
   const [bestSort, setBestSort] = useState("metric"); // metric | availability | position | name
   const [bestLimit, setBestLimit] = useState(25);
   const [bestMinOpenPct, setBestMinOpenPct] = useState(0);
   const [minOpenSlots, setMinOpenSlots] = useState(1);
-  const [requestedLeagueId,setRequestedLeagueId]=useState("");
-  useEffect(()=>{const params=new URLSearchParams(window.location.search);setRequestedLeagueId(params.get("league")||"");const need=String(params.get("need")||"").toUpperCase();if(["QB","RB","WR","TE","K","DEF"].includes(need))setBestPos(need);},[]);
-
+  const [requestedLeagueId, setRequestedLeagueId] = useState("");
+  const requestedPlayerId = useRef(
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("player") || ""
+      : "",
+  );
+  const requestedPlayerApplied = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRequestedLeagueId(params.get("league") || "");
+    const need = String(params.get("need") || "").toUpperCase();
+    if (["QB", "RB", "WR", "TE", "K", "DEF"].includes(need)) setBestPos(need);
+  }, []);
 
   // Filters modal (desktop + mobile)
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -563,7 +808,8 @@ useEffect(() => {
     const idx = new Map();
     for (const [rawId, p] of Object.entries(playersMap)) {
       const id = String(p.player_id ?? rawId);
-      const full = p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
+      const full =
+        p.full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
       if (!full) continue;
       const pos = (p.position || "").toUpperCase();
       if (isPickPos(pos)) continue;
@@ -574,14 +820,16 @@ useEffect(() => {
         variants.add(`${p.first_name} ${p.last_name}`);
         variants.add(`${p.last_name}, ${p.first_name}`);
       }
-      if (Array.isArray(p.aliases)) p.aliases.forEach((n) => n && variants.add(n));
+      if (Array.isArray(p.aliases))
+        p.aliases.forEach((n) => n && variants.add(n));
 
       variants.forEach((n) => {
         const key = cleanNorm(n);
         if (!key) return;
         if (!idx.has(key)) idx.set(key, []);
         const arr = idx.get(key);
-        if (!arr.some((x) => x.id === id)) arr.push({ id, name: full, pos, team });
+        if (!arr.some((x) => x.id === id))
+          arr.push({ id, name: full, pos, team });
       });
     }
     return idx;
@@ -597,7 +845,9 @@ useEffect(() => {
       return;
     }
     if (!playersMap || Object.keys(playersMap).length === 0) {
-      setError("Player database not loaded yet. Please wait a moment or re-login.");
+      setError(
+        "Player database not loaded yet. Please wait a moment or re-login.",
+      );
       setInitLoading(false);
       return;
     }
@@ -609,18 +859,50 @@ useEffect(() => {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal, arsenalModel] = await Promise.all([fetchProjectionMap(PROJ_JSON_URL), fetchProjectionMap(PROJ_ESPN_JSON_URL), fetchProjectionMap(PROJ_CBS_JSON_URL), fetchProjectionMap(PROJ_SLEEPER_JSON_URL), fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL), fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL), fetchProjectionMap(PROJ_ARSENAL_JSON_URL), fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL)]);
+      const [
+        csv,
+        espn,
+        cbs,
+        sleeper,
+        fantasySharks,
+        draftSharks,
+        arsenal,
+        arsenalModel,
+      ] = await Promise.all([
+        fetchProjectionMap(PROJ_JSON_URL),
+        fetchProjectionMap(PROJ_ESPN_JSON_URL),
+        fetchProjectionMap(PROJ_CBS_JSON_URL),
+        fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
+        fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
+        fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
+        fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
+        fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
+      ]);
       if (!alive) return;
-      setProjectionMaps({ CSV: csv, ESPN: espn, CBS: cbs, SLEEPER: sleeper, FANTASYSHARKS: fantasySharks, DRAFTSHARKS: draftSharks, ARSENAL: arsenal, ARSENAL_MODEL: arsenalModel });
+      setProjectionMaps({
+        CSV: csv,
+        ESPN: espn,
+        CBS: cbs,
+        SLEEPER: sleeper,
+        FANTASYSHARKS: fantasySharks,
+        DRAFTSHARKS: draftSharks,
+        ARSENAL: arsenal,
+        ARSENAL_MODEL: arsenalModel,
+      });
 
       if (projSource === "CBS" && !cbs) setProjSource(espn ? "ESPN" : "CSV");
       if (projSource === "ESPN" && !espn) setProjSource(csv ? "CSV" : "CBS");
       if (projSource === "CSV" && !csv) setProjSource(espn ? "ESPN" : "CBS");
-      if (projSource === "SLEEPER" && !sleeper) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
-      if (projSource === "FANTASYSHARKS" && !fantasySharks) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
-      if (projSource === "DRAFTSHARKS" && !draftSharks) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
-      if (projSource === "ARSENAL" && !arsenal) setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
-      if (projSource === "ARSENAL_MODEL" && !arsenalModel) setProjSource(arsenal ? "ARSENAL" : espn ? "ESPN" : "CSV");
+      if (projSource === "SLEEPER" && !sleeper)
+        setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
+      if (projSource === "FANTASYSHARKS" && !fantasySharks)
+        setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
+      if (projSource === "DRAFTSHARKS" && !draftSharks)
+        setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
+      if (projSource === "ARSENAL" && !arsenal)
+        setProjSource(espn ? "ESPN" : csv ? "CSV" : "CBS");
+      if (projSource === "ARSENAL_MODEL" && !arsenalModel)
+        setProjSource(arsenal ? "ARSENAL" : espn ? "ESPN" : "CSV");
     })();
     return () => {
       alive = false;
@@ -629,8 +911,33 @@ useEffect(() => {
   }, []);
 
   const activeProjMap = useMemo(() => {
-    if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projSource)) return { fantasyProsGetter: (player) => getProjection(player, projSource) };
-    return projSource === "ESPN" ? projectionMaps.ESPN : projSource === "CBS" ? projectionMaps.CBS : projSource === "SLEEPER" ? projectionMaps.SLEEPER : projSource === "FANTASYSHARKS" ? projectionMaps.FANTASYSHARKS : projSource === "DRAFTSHARKS" ? projectionMaps.DRAFTSHARKS : projSource === "ARSENAL_MODEL" ? projectionMaps.ARSENAL_MODEL : projSource === "ARSENAL" ? projectionMaps.ARSENAL : projectionMaps.CSV;
+    if (
+      [
+        "FANTASYPROS",
+        "SLEEPER",
+        "DRAFTSHARKS",
+        "ARSENAL",
+        "ARSENAL_MODEL",
+      ].includes(projSource)
+    )
+      return {
+        fantasyProsGetter: (player) => getProjection(player, projSource),
+      };
+    return projSource === "ESPN"
+      ? projectionMaps.ESPN
+      : projSource === "CBS"
+        ? projectionMaps.CBS
+        : projSource === "SLEEPER"
+          ? projectionMaps.SLEEPER
+          : projSource === "FANTASYSHARKS"
+            ? projectionMaps.FANTASYSHARKS
+            : projSource === "DRAFTSHARKS"
+              ? projectionMaps.DRAFTSHARKS
+              : projSource === "ARSENAL_MODEL"
+                ? projectionMaps.ARSENAL_MODEL
+                : projSource === "ARSENAL"
+                  ? projectionMaps.ARSENAL
+                  : projectionMaps.CSV;
   }, [projSource, projectionMaps, getProjection]);
 
   // ---------- Scan leagues with cache ----------
@@ -642,15 +949,22 @@ useEffect(() => {
       try {
         const raw = sessionStorage.getItem(cacheKey);
         if (!raw) return false;
-        const { leagues: cachedLeagues, rosterSets: cachedSets, ts } = JSON.parse(raw) || {};
+        const {
+          leagues: cachedLeagues,
+          rosterSets: cachedSets,
+          ts,
+        } = JSON.parse(raw) || {};
         if (!Array.isArray(cachedLeagues) || !cachedSets) return false;
 
         const m = new Map();
         for (const [lid, idsArr] of Object.entries(cachedSets)) {
-          if (Array.isArray(idsArr) && idsArr.length > 0) m.set(String(lid), new Set(idsArr.map(String)));
+          if (Array.isArray(idsArr) && idsArr.length > 0)
+            m.set(String(lid), new Set(idsArr.map(String)));
         }
 
-        const kept = (cachedLeagues || []).filter((lg) => m.get(String(lg.id))?.size > 0);
+        const kept = (cachedLeagues || []).filter(
+          (lg) => m.get(String(lg.id))?.size > 0,
+        );
         if (kept.length === 0) return false;
 
         rosterSetsRef.current = m;
@@ -668,7 +982,11 @@ useEffect(() => {
       try {
         const obj = {};
         setsMap.forEach((set, lid) => (obj[String(lid)] = Array.from(set)));
-        const payload = { leagues: leaguesKept, rosterSets: obj, ts: Date.now() };
+        const payload = {
+          leagues: leaguesKept,
+          rosterSets: obj,
+          ts: Date.now(),
+        };
         sessionStorage.setItem(cacheKey, JSON.stringify(payload));
       } catch {}
     };
@@ -689,7 +1007,9 @@ useEffect(() => {
 
         setScanProgressText("Fetching leagues…");
         setScanProgressPct(12);
-        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`);
+        const lRes = await fetch(
+          `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`,
+        );
         const leagues = (await lRes.json()) || [];
         if (cancelled) return;
 
@@ -699,37 +1019,57 @@ useEffect(() => {
         let completed = 0;
         const results = new Array(leagues.length);
         let cursor = 0;
-        const workers = Array.from({ length: Math.min(8, leagues.length) }, async () => {
-          while (!cancelled) {
-            const index = cursor++;
-            if (index >= leagues.length) break;
-            const lg = leagues[index];
-            try {
-              const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-              const rosters = rRes.ok ? await rRes.json() : [];
-              const mine = Array.isArray(rosters)
-                ? rosters.find((r) => r && String(r.owner_id) === String(user.user_id))
-                : null;
-              const set = mine?.players?.length ? extractRosterIds(rosters) : new Set();
-              if (set.size) {
-                const lid = String(lg.league_id);
-                results[index] = { lid, set, league: {
-                  id: lid,
-                  name: lg.name || "Unnamed League",
-                  avatar: lg.avatar || null,
-                  isBestBall: lg?.settings?.best_ball === 1,
-                  status: lg?.status || "",
-                  roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
-                }};
+        const workers = Array.from(
+          { length: Math.min(8, leagues.length) },
+          async () => {
+            while (!cancelled) {
+              const index = cursor++;
+              if (index >= leagues.length) break;
+              const lg = leagues[index];
+              try {
+                const rRes = await fetch(
+                  `https://api.sleeper.app/v1/league/${lg.league_id}/rosters`,
+                );
+                const rosters = rRes.ok ? await rRes.json() : [];
+                const mine = Array.isArray(rosters)
+                  ? rosters.find(
+                      (r) => r && String(r.owner_id) === String(user.user_id),
+                    )
+                  : null;
+                const set = mine?.players?.length
+                  ? extractRosterIds(rosters)
+                  : new Set();
+                if (set.size) {
+                  const lid = String(lg.league_id);
+                  results[index] = {
+                    lid,
+                    set,
+                    league: {
+                      id: lid,
+                      name: lg.name || "Unnamed League",
+                      avatar: lg.avatar || null,
+                      isBestBall: lg?.settings?.best_ball === 1,
+                      status: lg?.status || "",
+                      roster_positions: Array.isArray(lg?.roster_positions)
+                        ? lg.roster_positions
+                        : [],
+                    },
+                  };
+                }
+              } catch {}
+              completed += 1;
+              if (!cancelled) {
+                setScanProgressText(
+                  `Scanning leagues… (${completed}/${leagues.length})`,
+                );
+                setScanProgressPct(
+                  12 +
+                    Math.round((completed / Math.max(leagues.length, 1)) * 88),
+                );
               }
-            } catch {}
-            completed += 1;
-            if (!cancelled) {
-              setScanProgressText(`Scanning leagues… (${completed}/${leagues.length})`);
-              setScanProgressPct(12 + Math.round((completed / Math.max(leagues.length, 1)) * 88));
             }
-          }
-        });
+          },
+        );
         await Promise.all(workers);
         if (cancelled) return;
         for (const result of results) {
@@ -781,11 +1121,17 @@ useEffect(() => {
   }, [scanLeagues, onlyBestBall, excludeBestBall, includeDrafting]);
 
   const visibleLeagueCount = visibleLeagueIds.size || 0;
-  const visibleLeaguesList = useMemo(() => scanLeagues.filter((lg) => visibleLeagueIds.has(lg.id)), [scanLeagues, visibleLeagueIds]);
+  const visibleLeaguesList = useMemo(
+    () => scanLeagues.filter((lg) => visibleLeagueIds.has(lg.id)),
+    [scanLeagues, visibleLeagueIds],
+  );
 
   // ---------- Included leagues for "Best Available" list ----------
-  const includeKey = cacheKey ? `availabilityIncludedLeagues:${cacheKey}` : null;
-  const [showIncludedLeaguesModal, setShowIncludedLeaguesModal] = useState(false);
+  const includeKey = cacheKey
+    ? `availabilityIncludedLeagues:${cacheKey}`
+    : null;
+  const [showIncludedLeaguesModal, setShowIncludedLeaguesModal] =
+    useState(false);
 
   const [includedLeagueIds, setIncludedLeagueIds] = useState(() => {
     if (!includeKey) return new Set();
@@ -818,11 +1164,17 @@ useEffect(() => {
   useEffect(() => {
     if (!includeKey) return;
     try {
-      sessionStorage.setItem(includeKey, JSON.stringify([...includedLeagueIds]));
+      sessionStorage.setItem(
+        includeKey,
+        JSON.stringify([...includedLeagueIds]),
+      );
     } catch {}
   }, [includeKey, includedLeagueIds]);
 
-  const includedLeaguesList = useMemo(() => visibleLeaguesList.filter((lg) => includedLeagueIds.has(lg.id)), [visibleLeaguesList, includedLeagueIds]);
+  const includedLeaguesList = useMemo(
+    () => visibleLeaguesList.filter((lg) => includedLeagueIds.has(lg.id)),
+    [visibleLeaguesList, includedLeagueIds],
+  );
 
   // ---------- Restore last player selection ----------
   useEffect(() => {
@@ -833,7 +1185,10 @@ useEffect(() => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const filtered = parsed.filter((p) => !isPickPos(p?.pos));
           setSelectedPlayers(filtered);
-          sessionStorage.setItem("availabilitySelectedPlayers", JSON.stringify(filtered));
+          sessionStorage.setItem(
+            "availabilitySelectedPlayers",
+            JSON.stringify(filtered),
+          );
         }
       } catch {}
     }
@@ -848,19 +1203,32 @@ useEffect(() => {
     setSelectedPlayers((prev) => {
       if (prev.find((p) => p.id === t.id)) return prev;
       const next = [...prev, t];
-      sessionStorage.setItem("availabilitySelectedPlayers", JSON.stringify(next));
+      sessionStorage.setItem(
+        "availabilitySelectedPlayers",
+        JSON.stringify(next),
+      );
       return next;
     });
     setTimeout(() => computeAvailability([t], { merge: true }), 0);
     if (scrollToMatrix) {
-      setTimeout(() => computeAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      setTimeout(
+        () =>
+          computeAnchorRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        50,
+      );
     }
   };
 
   const removeSelected = (playerId) => {
     setSelectedPlayers((prev) => {
       const next = prev.filter((p) => p.id !== playerId);
-      sessionStorage.setItem("availabilitySelectedPlayers", JSON.stringify(next));
+      sessionStorage.setItem(
+        "availabilitySelectedPlayers",
+        JSON.stringify(next),
+      );
       return next;
     });
     setResults((prev) => {
@@ -893,7 +1261,9 @@ useEffect(() => {
 
         setScanProgressText("Fetching leagues…");
         setScanProgressPct(10);
-        const lRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`);
+        const lRes = await fetch(
+          `https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${yrStr}`,
+        );
         const leagues = (await lRes.json()) || [];
 
         const kept = [];
@@ -901,35 +1271,54 @@ useEffect(() => {
         let completed = 0;
         const results = new Array(leagues.length);
         let cursor = 0;
-        const workers = Array.from({ length: Math.min(8, leagues.length) }, async () => {
-          while (true) {
-            const index = cursor++;
-            if (index >= leagues.length) break;
-            const lg = leagues[index];
-            try {
-              const rRes = await fetch(`https://api.sleeper.app/v1/league/${lg.league_id}/rosters`);
-              const rosters = rRes.ok ? await rRes.json() : [];
-              const mine = Array.isArray(rosters)
-                ? rosters.find((r) => r && String(r.owner_id) === String(user.user_id))
-                : null;
-              const set = mine?.players?.length ? extractRosterIds(rosters) : new Set();
-              if (set.size) {
-                const lid = String(lg.league_id);
-                results[index] = { lid, set, league: {
-                  id: lid,
-                  name: lg.name || "Unnamed League",
-                  avatar: lg.avatar || null,
-                  isBestBall: lg?.settings?.best_ball === 1,
-                  status: lg?.status || "",
-                  roster_positions: Array.isArray(lg?.roster_positions) ? lg.roster_positions : [],
-                }};
-              }
-            } catch {}
-            completed += 1;
-            setScanProgressText(`Scanning leagues… (${completed}/${leagues.length})`);
-            setScanProgressPct(10 + Math.round((completed / Math.max(leagues.length, 1)) * 88));
-          }
-        });
+        const workers = Array.from(
+          { length: Math.min(8, leagues.length) },
+          async () => {
+            while (true) {
+              const index = cursor++;
+              if (index >= leagues.length) break;
+              const lg = leagues[index];
+              try {
+                const rRes = await fetch(
+                  `https://api.sleeper.app/v1/league/${lg.league_id}/rosters`,
+                );
+                const rosters = rRes.ok ? await rRes.json() : [];
+                const mine = Array.isArray(rosters)
+                  ? rosters.find(
+                      (r) => r && String(r.owner_id) === String(user.user_id),
+                    )
+                  : null;
+                const set = mine?.players?.length
+                  ? extractRosterIds(rosters)
+                  : new Set();
+                if (set.size) {
+                  const lid = String(lg.league_id);
+                  results[index] = {
+                    lid,
+                    set,
+                    league: {
+                      id: lid,
+                      name: lg.name || "Unnamed League",
+                      avatar: lg.avatar || null,
+                      isBestBall: lg?.settings?.best_ball === 1,
+                      status: lg?.status || "",
+                      roster_positions: Array.isArray(lg?.roster_positions)
+                        ? lg.roster_positions
+                        : [],
+                    },
+                  };
+                }
+              } catch {}
+              completed += 1;
+              setScanProgressText(
+                `Scanning leagues… (${completed}/${leagues.length})`,
+              );
+              setScanProgressPct(
+                10 + Math.round((completed / Math.max(leagues.length, 1)) * 88),
+              );
+            }
+          },
+        );
         await Promise.all(workers);
         for (const result of results) {
           if (!result) continue;
@@ -945,7 +1334,10 @@ useEffect(() => {
         try {
           const obj = {};
           setsMap.forEach((set, lid) => (obj[String(lid)] = Array.from(set)));
-          sessionStorage.setItem(cacheKey, JSON.stringify({ leagues: kept, rosterSets: obj, ts: Date.now() }));
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({ leagues: kept, rosterSets: obj, ts: Date.now() }),
+          );
         } catch {}
 
         setScanProgressText("Done!");
@@ -955,14 +1347,21 @@ useEffect(() => {
         setScanningError("Failed to refresh leagues.");
       } finally {
         setTimeout(() => setScanLoading(false), 90);
-        if (selectedPlayers.length) computeAvailability(selectedPlayers, { merge: false });
+        if (selectedPlayers.length)
+          computeAvailability(selectedPlayers, { merge: false });
       }
     })();
   };
 
   // ---------- Compute availability over *visible* leagues only (NO rostered output) ----------
-  async function computeAvailability(playersToCheck = selectedPlayers, { merge = false } = {}) {
-    const list = Array.isArray(playersToCheck) && playersToCheck.length ? playersToCheck : selectedPlayers;
+  async function computeAvailability(
+    playersToCheck = selectedPlayers,
+    { merge = false } = {},
+  ) {
+    const list =
+      Array.isArray(playersToCheck) && playersToCheck.length
+        ? playersToCheck
+        : selectedPlayers;
     if (!list || list.length === 0) return;
 
     const out = {};
@@ -989,11 +1388,14 @@ useEffect(() => {
 
   // ---------- Best Available Players ----------
   const playerList = useMemo(
-    () => Object.values(playersMap || {}).filter((p) => !isPickPos(p?.position)),
-    [playersMap]
+    () =>
+      Object.values(playersMap || {}).filter((p) => !isPickPos(p?.position)),
+    [playersMap],
   );
-  const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, mode, qb, projectionScoring), [valueSource, mode, qb, projectionScoring]);
-
+  const getPlayerValue = useMemo(
+    () => makeGetPlayerValue(valueSource, mode, qb, projectionScoring),
+    [valueSource, mode, qb, projectionScoring],
+  );
 
   const bestAvailablePlayers = useMemo(() => {
     const leagues = includedLeaguesList;
@@ -1015,7 +1417,8 @@ useEffect(() => {
 
     const metricFor = (p) => {
       if (!p || p.player_id == null) return 0;
-      if (bestMetric === "projection") return getSeasonPointsForPlayer(activeProjMap, p);
+      if (bestMetric === "projection")
+        return getSeasonPointsForPlayer(activeProjMap, p);
       if (bestMetric === "value") return getPlayerValue(p);
       return 0;
     };
@@ -1049,13 +1452,17 @@ useEffect(() => {
       if (availableLeagues.length === 0) continue;
       if (availableLeagues.length < minOpenSlots) continue;
 
-
-      const openPct = includedCount ? Math.round((availableLeagues.length / includedCount) * 100) : 0;
+      const openPct = includedCount
+        ? Math.round((availableLeagues.length / includedCount) * 100)
+        : 0;
       if (openPct < bestMinOpenPct) continue;
 
       const pos = String(p.position || "").toUpperCase();
       const team = String(p.team || "").toUpperCase();
-      const fullName = p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
+      const fullName =
+        p.full_name ||
+        p.search_full_name ||
+        `${p.first_name || ""} ${p.last_name || ""}`.trim();
 
       const proj = getSeasonPointsForPlayer(activeProjMap, p);
       const value = getPlayerValue(p);
@@ -1103,7 +1510,7 @@ useEffect(() => {
     }
 
     return out;
-    }, [
+  }, [
     includedLeaguesList,
     playerList,
     bestMetric,
@@ -1116,7 +1523,6 @@ useEffect(() => {
     getPlayerValue,
   ]);
 
-
   // ---------- Row click → open leagues modal ----------
   const openPlayerModal = async (player, openLeagues) => {
     setModalPlayer(player);
@@ -1125,8 +1531,14 @@ useEffect(() => {
     setAcquisitionRows([]);
     const acquisitionKey = `tfa:acquisition:${cacheKey}:${player?.id}`;
     try {
-      const cached = JSON.parse(sessionStorage.getItem(acquisitionKey) || "null");
-      if (cached?.at && Date.now() - cached.at < 5 * 60 * 1000 && Array.isArray(cached.rows)) {
+      const cached = JSON.parse(
+        sessionStorage.getItem(acquisitionKey) || "null",
+      );
+      if (
+        cached?.at &&
+        Date.now() - cached.at < 5 * 60 * 1000 &&
+        Array.isArray(cached.rows)
+      ) {
         setAcquisitionRows(cached.rows);
         return;
       }
@@ -1138,63 +1550,193 @@ useEffect(() => {
     let completed = 0;
     let exposure = 0;
     const targetPlayer = playersMap?.[String(player?.id)];
-    const targetMetric = targetPlayer ? Number(bestMetric === "projection" ? getSeasonPointsForPlayer(activeProjMap, targetPlayer) : getPlayerValue(targetPlayer)) || 0 : 0;
-    const workers = Array.from({ length:Math.min(12, leagueRows.length) }, async () => {
-      while (cursor < leagueRows.length) {
-        const index = cursor++;
-        const league = leagueRows[index];
-        const rostered = rosterSetsRef.current.get(league.id)?.has(String(player?.id));
-        if (!rostered) {
-          output[index] = { league, path:"Waiver", owner:"", ownerNeeds:[], package:"", ownedByUser:false };
-        } else {
-          try {
-            const [rostersResponse, usersResponse] = await Promise.all([
-              fetch(`https://api.sleeper.app/v1/league/${league.id}/rosters`),
-              fetch(`https://api.sleeper.app/v1/league/${league.id}/users`),
-            ]);
-            const rosters = rostersResponse.ok ? await rostersResponse.json() : [];
-            const users = usersResponse.ok ? await usersResponse.json() : [];
-            const ownerRoster = rosters.find((roster) => (roster.players || []).map(String).includes(String(player?.id)));
-            const ownerUser = users.find((user) => String(user.user_id) === String(ownerRoster?.owner_id));
-            const me = users.find((user) => [user.username, user.display_name].some((value) => String(value || "").toLowerCase() === String(username || "").toLowerCase()));
-            const myRoster = rosters.find((roster) => String(roster.owner_id) === String(me?.user_id));
-            const ownedByUser = String(ownerRoster?.owner_id) === String(me?.user_id);
-            if (ownedByUser) exposure += 1;
-            const counts = (ownerRoster?.players || []).reduce((map, id) => {
-              const pos = String(playersMap?.[id]?.position || "").toUpperCase();
-              if (pos) map[pos] = (map[pos] || 0) + 1;
-              return map;
-            }, {});
-            const targets = { QB:2, RB:5, WR:7, TE:3 };
-            const ownerNeeds = Object.entries(targets).map(([pos, target]) => ({ pos, gap:target - Number(counts[pos] || 0) })).filter((row) => row.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 2).map((row) => row.pos);
-            const giveCandidates = (myRoster?.players || []).map((id) => playersMap?.[id]).filter(Boolean).filter((candidate) => ownerNeeds.includes(String(candidate.position || "").toUpperCase()) && String(candidate.player_id) !== String(player?.id)).map((candidate) => ({ candidate, metric:Number(bestMetric === "projection" ? getSeasonPointsForPlayer(activeProjMap, candidate) : getPlayerValue(candidate)) || 0 })).filter((row) => row.metric > 0).sort((a, b) => Math.abs(a.metric - targetMetric) - Math.abs(b.metric - targetMetric));
+    const targetMetric = targetPlayer
+      ? Number(
+          bestMetric === "projection"
+            ? getSeasonPointsForPlayer(activeProjMap, targetPlayer)
+            : getPlayerValue(targetPlayer),
+        ) || 0
+      : 0;
+    const workers = Array.from(
+      { length: Math.min(12, leagueRows.length) },
+      async () => {
+        while (cursor < leagueRows.length) {
+          const index = cursor++;
+          const league = leagueRows[index];
+          const rostered = rosterSetsRef.current
+            .get(league.id)
+            ?.has(String(player?.id));
+          if (!rostered) {
             output[index] = {
               league,
-              path:String(league.status || "").toLowerCase() === "drafting" ? "Draft / trade" : ownedByUser ? "Already rostered" : "Trade",
-              owner:ownerUser?.metadata?.team_name || ownerUser?.display_name || ownerUser?.username || `Roster ${ownerRoster?.roster_id || "—"}`,
-              ownerNeeds,
-              package:ownedByUser ? "" : giveCandidates[0] ? `${giveCandidates[0].candidate.full_name || giveCandidates[0].candidate.search_full_name}${Math.abs(giveCandidates[0].metric - targetMetric) / Math.max(1, targetMetric) > .25 ? " plus a secondary asset" : ""}` : "Use Trade Partner Finder for a roster-aware package",
-              ownedByUser,
+              path: "Waiver",
+              owner: "",
+              ownerNeeds: [],
+              package: "",
+              ownedByUser: false,
             };
-          } catch {
-            output[index] = { league, path:"Trade", owner:"Owner unavailable", ownerNeeds:[], package:"Open league for roster context", ownedByUser:false };
+          } else {
+            try {
+              const [rostersResponse, usersResponse] = await Promise.all([
+                fetch(`https://api.sleeper.app/v1/league/${league.id}/rosters`),
+                fetch(`https://api.sleeper.app/v1/league/${league.id}/users`),
+              ]);
+              const rosters = rostersResponse.ok
+                ? await rostersResponse.json()
+                : [];
+              const users = usersResponse.ok ? await usersResponse.json() : [];
+              const ownerRoster = rosters.find((roster) =>
+                (roster.players || []).map(String).includes(String(player?.id)),
+              );
+              const ownerUser = users.find(
+                (user) =>
+                  String(user.user_id) === String(ownerRoster?.owner_id),
+              );
+              const me = users.find((user) =>
+                [user.username, user.display_name].some(
+                  (value) =>
+                    String(value || "").toLowerCase() ===
+                    String(username || "").toLowerCase(),
+                ),
+              );
+              const myRoster = rosters.find(
+                (roster) => String(roster.owner_id) === String(me?.user_id),
+              );
+              const ownedByUser =
+                String(ownerRoster?.owner_id) === String(me?.user_id);
+              if (ownedByUser) exposure += 1;
+              const counts = (ownerRoster?.players || []).reduce((map, id) => {
+                const pos = String(
+                  playersMap?.[id]?.position || "",
+                ).toUpperCase();
+                if (pos) map[pos] = (map[pos] || 0) + 1;
+                return map;
+              }, {});
+              const targets = { QB: 2, RB: 5, WR: 7, TE: 3 };
+              const ownerNeeds = Object.entries(targets)
+                .map(([pos, target]) => ({
+                  pos,
+                  gap: target - Number(counts[pos] || 0),
+                }))
+                .filter((row) => row.gap > 0)
+                .sort((a, b) => b.gap - a.gap)
+                .slice(0, 2)
+                .map((row) => row.pos);
+              const giveCandidates = (myRoster?.players || [])
+                .map((id) => playersMap?.[id])
+                .filter(Boolean)
+                .filter(
+                  (candidate) =>
+                    ownerNeeds.includes(
+                      String(candidate.position || "").toUpperCase(),
+                    ) && String(candidate.player_id) !== String(player?.id),
+                )
+                .map((candidate) => ({
+                  candidate,
+                  metric:
+                    Number(
+                      bestMetric === "projection"
+                        ? getSeasonPointsForPlayer(activeProjMap, candidate)
+                        : getPlayerValue(candidate),
+                    ) || 0,
+                }))
+                .filter((row) => row.metric > 0)
+                .sort(
+                  (a, b) =>
+                    Math.abs(a.metric - targetMetric) -
+                    Math.abs(b.metric - targetMetric),
+                );
+              output[index] = {
+                league,
+                path:
+                  String(league.status || "").toLowerCase() === "drafting"
+                    ? "Draft / trade"
+                    : ownedByUser
+                      ? "Already rostered"
+                      : "Trade",
+                owner:
+                  ownerUser?.metadata?.team_name ||
+                  ownerUser?.display_name ||
+                  ownerUser?.username ||
+                  `Roster ${ownerRoster?.roster_id || "—"}`,
+                ownerNeeds,
+                package: ownedByUser
+                  ? ""
+                  : giveCandidates[0]
+                    ? `${giveCandidates[0].candidate.full_name || giveCandidates[0].candidate.search_full_name}${Math.abs(giveCandidates[0].metric - targetMetric) / Math.max(1, targetMetric) > 0.25 ? " plus a secondary asset" : ""}`
+                    : "Use Trade Partner Finder for a roster-aware package",
+                ownedByUser,
+              };
+            } catch {
+              output[index] = {
+                league,
+                path: "Trade",
+                owner: "Owner unavailable",
+                ownerNeeds: [],
+                package: "Open league for roster context",
+                ownedByUser: false,
+              };
+            }
           }
+          completed += 1;
+          setAcquisitionProgress(`${completed}/${leagueRows.length}`);
         }
-        completed += 1;
-        setAcquisitionProgress(`${completed}/${leagueRows.length}`);
-      }
-    });
+      },
+    );
     await Promise.all(workers);
-    const concentrationPct = leagueRows.length ? Math.round((exposure / leagueRows.length) * 100) : 0;
-    const rows = output.filter(Boolean).map((row) => ({ ...row, concentration:row.ownedByUser ? `Already part of your ${concentrationPct}% portfolio exposure.` : concentrationPct >= 40 ? `Acquiring here increases already-high ${concentrationPct}% exposure.` : `Acquiring here moves exposure from ${concentrationPct}% to about ${Math.round(((exposure + 1) / Math.max(1, leagueRows.length)) * 100)}%.` })).sort((a, b) => {
-      const priority = { Waiver:0, "Draft / trade":1, Trade:2, "Already rostered":3 };
-      return Number(priority[a.path] ?? 9) - Number(priority[b.path] ?? 9) || String(a.league.name).localeCompare(String(b.league.name));
-    });
+    const concentrationPct = leagueRows.length
+      ? Math.round((exposure / leagueRows.length) * 100)
+      : 0;
+    const rows = output
+      .filter(Boolean)
+      .map((row) => ({
+        ...row,
+        concentration: row.ownedByUser
+          ? `Already part of your ${concentrationPct}% portfolio exposure.`
+          : concentrationPct >= 40
+            ? `Acquiring here increases already-high ${concentrationPct}% exposure.`
+            : `Acquiring here moves exposure from ${concentrationPct}% to about ${Math.round(((exposure + 1) / Math.max(1, leagueRows.length)) * 100)}%.`,
+      }))
+      .sort((a, b) => {
+        const priority = {
+          Waiver: 0,
+          "Draft / trade": 1,
+          Trade: 2,
+          "Already rostered": 3,
+        };
+        return (
+          Number(priority[a.path] ?? 9) - Number(priority[b.path] ?? 9) ||
+          String(a.league.name).localeCompare(String(b.league.name))
+        );
+      });
     setAcquisitionRows(rows);
-    try { sessionStorage.setItem(acquisitionKey, JSON.stringify({ at:Date.now(), rows })); } catch {}
+    try {
+      sessionStorage.setItem(
+        acquisitionKey,
+        JSON.stringify({ at: Date.now(), rows }),
+      );
+    } catch {}
     setAcquisitionLoading(false);
     setAcquisitionProgress("");
   };
+
+  useEffect(() => {
+    if (
+      requestedPlayerApplied.current ||
+      !requestedPlayerId.current ||
+      !bestAvailablePlayers.length
+    )
+      return;
+    const row = bestAvailablePlayers.find(
+      (item) => String(item.id) === String(requestedPlayerId.current),
+    );
+    if (!row) return;
+    requestedPlayerApplied.current = true;
+    openPlayerModal(
+      { id: row.id, name: row.name, pos: row.pos, team: row.team },
+      row.availableLeagues,
+    );
+  }, [bestAvailablePlayers]);
 
   // ---------- Trending (Sleeper Hot/Cold) ----------
   useEffect(() => {
@@ -1219,7 +1761,10 @@ useEffect(() => {
         const p = playersMap?.[pid];
         if (!p) continue;
 
-        const name = p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
+        const name =
+          p.full_name ||
+          p.search_full_name ||
+          `${p.first_name || ""} ${p.last_name || ""}`.trim();
         const pos = String(p.position || "").toUpperCase();
         const team = String(p.team || "").toUpperCase();
 
@@ -1227,7 +1772,9 @@ useEffect(() => {
         const value = getPlayerValue(p);
 
         const openCount = includedCount ? getOpenCount(pid) : 0;
-        const openPct = includedCount ? Math.round((openCount / includedCount) * 100) : 0;
+        const openPct = includedCount
+          ? Math.round((openCount / includedCount) * 100)
+          : 0;
 
         out.push({
           id: pid,
@@ -1284,7 +1831,17 @@ useEffect(() => {
     return () => {
       alive = false;
     };
-  }, [username, playersMap, includedLeaguesList, scanLoading, leagueCount, trendHours, trendLimit, activeProjMap, getPlayerValue]);
+  }, [
+    username,
+    playersMap,
+    includedLeaguesList,
+    scanLoading,
+    leagueCount,
+    trendHours,
+    trendLimit,
+    activeProjMap,
+    getPlayerValue,
+  ]);
 
   // ---------- Availability Matrix league ordering ----------
   const leaguesAvailableSorted = useMemo(() => {
@@ -1294,14 +1851,17 @@ useEffect(() => {
     for (const lg of visibleLeaguesList) {
       let availableCount = 0;
       for (const p of selectedPlayers) {
-        const isAvailableHere = results[p.id]?.availableLeagues?.some((L) => L.id === lg.id);
+        const isAvailableHere = results[p.id]?.availableLeagues?.some(
+          (L) => L.id === lg.id,
+        );
         if (isAvailableHere) availableCount++;
       }
       if (availableCount > 0) scored.push({ lg, availableCount });
     }
 
     scored.sort((a, b) => {
-      if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
+      if (b.availableCount !== a.availableCount)
+        return b.availableCount - a.availableCount;
       return (a.lg.name || "").localeCompare(b.lg.name || "");
     });
 
@@ -1322,7 +1882,7 @@ useEffect(() => {
         openPercent: row.openPct,
         availableIn: (row.availableLeagues || []).map((league) => league.name),
       })),
-    [bestAvailablePlayers, bestMetric, includedLeaguesList.length]
+    [bestAvailablePlayers, bestMetric, includedLeaguesList.length],
   );
 
   const availabilityExportColumns = [
@@ -1331,7 +1891,10 @@ useEffect(() => {
     { key: "player", label: "Player" },
     { key: "position", label: "Position" },
     { key: "team", label: "NFL Team" },
-    { key: "metric", label: bestMetric === "projection" ? "Projection" : "Value" },
+    {
+      key: "metric",
+      label: bestMetric === "projection" ? "Projection" : "Value",
+    },
     { key: "openLeagues", label: "Open Leagues" },
     { key: "leaguesScanned", label: "Leagues Scanned" },
     { key: "openPercent", label: "Open Percent" },
@@ -1347,21 +1910,37 @@ useEffect(() => {
       <BackgroundParticles />
 
       {showLoadingScreen ? (
-        <LoadingScreen progress={scanLoading ? scanProgressPct : undefined} text={scanLoading ? scanProgressText : undefined} />
+        <LoadingScreen
+          progress={scanLoading ? scanProgressPct : undefined}
+          text={scanLoading ? scanProgressText : undefined}
+        />
       ) : (
         <div className="max-w-6xl mx-auto px-4 pb-12 pt-20">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">Player Availability</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Player Availability
+            </h1>
             <p className="text-white/70 mt-1">
-              Find the best available players across all of your Sleeper leagues.
+              Find the best available players across all of your Sleeper
+              leagues.
             </p>
           </div>
 
           {/* Scan summary */}
           <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <StatPill label="Scanned" value={leagueCount} onClick={() => setShowLeaguesModal(true)} title="All leagues included in this scan" />
-              <StatPill label="Showing" value={visibleLeagueCount} onClick={() => setShowVisibleLeaguesModal(true)} title="Leagues currently visible by filters" />
+              <StatPill
+                label="Scanned"
+                value={leagueCount}
+                onClick={() => setShowLeaguesModal(true)}
+                title="All leagues included in this scan"
+              />
+              <StatPill
+                label="Showing"
+                value={visibleLeagueCount}
+                onClick={() => setShowVisibleLeaguesModal(true)}
+                title="Leagues currently visible by filters"
+              />
               <StatPill
                 label="Best Available"
                 value={includedLeaguesList.length}
@@ -1370,13 +1949,18 @@ useEffect(() => {
               />
 
               {lastUpdated && (
-                <div className="ml-1 text-xs text-white/45" suppressHydrationWarning>
+                <div
+                  className="ml-1 text-xs text-white/45"
+                  suppressHydrationWarning
+                >
                   Last scan: {lastUpdated.toLocaleTimeString()}
                 </div>
               )}
 
               <div className="ml-auto flex items-center gap-2">
-                {scanningError ? <span className="text-sm text-red-400">{scanningError}</span> : null}
+                {scanningError ? (
+                  <span className="text-sm text-red-400">{scanningError}</span>
+                ) : null}
                 <button
                   className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
                   onClick={refreshScan}
@@ -1388,122 +1972,184 @@ useEffect(() => {
             </div>
 
             <details className="premium-disclosure mt-4">
-              <summary>League Scope <span className="ml-auto text-xs font-normal text-white/45">{onlyBestBall ? "Best Ball only" : excludeBestBall ? "No Best Ball" : "All leagues"}</span></summary>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                <input
-                  type="checkbox"
-                  className="accent-cyan-400"
-                  checked={onlyBestBall}
-                  onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))}
-                />
-                Only Best Ball
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                <input
-                  type="checkbox"
-                  className="accent-cyan-400"
-                  checked={excludeBestBall}
-                  onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))}
-                />
-                Exclude Best Ball
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                <input type="checkbox" className="accent-cyan-400" checked={includeDrafting} onChange={() => setIncludeDrafting((v) => !v)} />
-                Include drafting
-              </label>
-            </div>
+              <summary>
+                League Scope{" "}
+                <span className="ml-auto text-xs font-normal text-white/45">
+                  {onlyBestBall
+                    ? "Best Ball only"
+                    : excludeBestBall
+                      ? "No Best Ball"
+                      : "All leagues"}
+                </span>
+              </summary>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
+                  <input
+                    type="checkbox"
+                    className="accent-cyan-400"
+                    checked={onlyBestBall}
+                    onChange={() =>
+                      setOnlyBestBall((v) => (excludeBestBall ? true : !v))
+                    }
+                  />
+                  Only Best Ball
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
+                  <input
+                    type="checkbox"
+                    className="accent-cyan-400"
+                    checked={excludeBestBall}
+                    onChange={() =>
+                      setExcludeBestBall((v) => (onlyBestBall ? true : !v))
+                    }
+                  />
+                  Exclude Best Ball
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
+                  <input
+                    type="checkbox"
+                    className="accent-cyan-400"
+                    checked={includeDrafting}
+                    onChange={() => setIncludeDrafting((v) => !v)}
+                  />
+                  Include drafting
+                </label>
+              </div>
             </details>
           </div>
 
           {!username ? (
             <p className="text-red-400">Please log in on the Home page.</p>
           ) : Object.keys(playersMap).length === 0 ? (
-            <p className="text-red-400">Player database not ready yet. One moment…</p>
+            <p className="text-red-400">
+              Player database not ready yet. One moment…
+            </p>
           ) : leagueCount === 0 ? (
-            <p className="text-red-400">No leagues matched the scan rules for your account.</p>
+            <p className="text-red-400">
+              No leagues matched the scan rules for your account.
+            </p>
           ) : (
             <>
               {/* Premium Controls */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
                 <details className="premium-disclosure mb-4">
-                  <summary>Ranking Settings <span className="ml-auto text-xs font-normal text-white/45">{bestMetric === "projection" ? "Projections" : "Values"}</span></summary>
-                <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
-                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">Availability Lens</div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <div className="relative z-[80] min-w-0 sm:min-w-[280px] flex-1">
-                      <SourceSelector
-                        sources={DEFAULT_SOURCES}
-                        value={sourceKey}
-                        onChange={setSourceKey}
-                        className="w-full"
-                        mode={mode}
-                        qbType={qb}
-                        onModeChange={setMode}
-                        onQbTypeChange={setQb}
-                        layout="inline"
-                      />
+                  <summary>
+                    Ranking Settings{" "}
+                    <span className="ml-auto text-xs font-normal text-white/45">
+                      {bestMetric === "projection" ? "Projections" : "Values"}
+                    </span>
+                  </summary>
+                  <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
+                      Availability Lens
                     </div>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
-                      onClick={() => setFiltersOpen(true)}
-                    >
-                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">⚙</span>
-                      Filters
-                      {(bestPos !== "ALL" || bestSort !== "metric" || minOpenSlots !== 1 || bestLimit !== 25 || bestMinOpenPct !== 0) ? (
-                        <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">Active</span>
-                      ) : null}
-                    </button>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="relative z-[80] min-w-0 sm:min-w-[280px] flex-1">
+                        <SourceSelector
+                          sources={DEFAULT_SOURCES}
+                          value={sourceKey}
+                          onChange={setSourceKey}
+                          className="w-full"
+                          mode={mode}
+                          qbType={qb}
+                          onModeChange={setMode}
+                          onQbTypeChange={setQb}
+                          layout="inline"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                        onClick={() => setFiltersOpen(true)}
+                      >
+                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">
+                          ⚙
+                        </span>
+                        Filters
+                        {bestPos !== "ALL" ||
+                        bestSort !== "metric" ||
+                        minOpenSlots !== 1 ||
+                        bestLimit !== 25 ||
+                        bestMinOpenPct !== 0 ? (
+                          <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
+                            Active
+                          </span>
+                        ) : null}
+                      </button>
 
-                    <button
-                      type="button"
-                      className="px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
-                      onClick={() => setShowIncludedLeaguesModal(true)}
-                    >
-                      Included Leagues ({includedLeaguesList.length})
-                    </button>
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                        onClick={() => setShowIncludedLeaguesModal(true)}
+                      >
+                        Included Leagues ({includedLeaguesList.length})
+                      </button>
+                    </div>
+                    <div className="mt-2 text-[11px] text-white/45">
+                      Best Available uses{" "}
+                      <span className="text-white/70 font-semibold">
+                        {includedLeaguesList.length}
+                      </span>{" "}
+                      league(s). Click a player row to see open leagues.
+                    </div>
                   </div>
-                  <div className="mt-2 text-[11px] text-white/45">
-                    Best Available uses <span className="text-white/70 font-semibold">{includedLeaguesList.length}</span> league(s). Click a player row to see open leagues.
-                  </div>
-                </div>
                 </details>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm font-semibold text-white/80 mb-2">Search & Add Player</div>
-                    <NameSelect nameIndex={nameIndex} onPick={(p) => addResolved(p, { scrollToMatrix: true })} />
+                    <div className="text-sm font-semibold text-white/80 mb-2">
+                      Search & Add Player
+                    </div>
+                    <NameSelect
+                      nameIndex={nameIndex}
+                      onPick={(p) => addResolved(p, { scrollToMatrix: true })}
+                    />
                     {selectedPlayers.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {selectedPlayers.map((p) => (
-                          <span key={p.id} className="inline-flex items-center gap-2 text-sm bg-white/5 border border-white/10 rounded-full px-3 py-1">
+                          <span
+                            key={p.id}
+                            className="inline-flex items-center gap-2 text-sm bg-white/5 border border-white/10 rounded-full px-3 py-1"
+                          >
                             {p.name}
                             <span className="text-white/50">
                               ({p.pos}
                               {p.team ? ` • ${p.team}` : ""})
                             </span>
-                            <button className="ml-1 text-red-300 hover:text-red-200" onClick={() => removeSelected(p.id)} title="Remove">
+                            <button
+                              className="ml-1 text-red-300 hover:text-red-200"
+                              onClick={() => removeSelected(p.id)}
+                              title="Remove"
+                            >
                               ×
                             </button>
                           </span>
                         ))}
-                        <button onClick={clearAll} className="text-xs underline text-white/60 hover:text-white ml-1">
+                        <button
+                          onClick={clearAll}
+                          className="text-xs underline text-white/60 hover:text-white ml-1"
+                        >
                           Clear all
                         </button>
                       </div>
                     ) : (
-                      <p className="text-xs text-white/50 mt-3">No players added yet.</p>
+                      <p className="text-xs text-white/50 mt-3">
+                        No players added yet.
+                      </p>
                     )}
                   </div>
 
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
-                        onClick={() => computeAvailability(selectedPlayers, { merge: false })}
+                        onClick={() =>
+                          computeAvailability(selectedPlayers, { merge: false })
+                        }
                         className="px-4 py-2 rounded-2xl bg-cyan-500 hover:bg-cyan-600 transition font-semibold disabled:opacity-40 disabled:hover:bg-cyan-500"
                         disabled={!anySelected}
-                        title={anySelected ? "Re-check all" : "Add a player first"}
+                        title={
+                          anySelected ? "Re-check all" : "Add a player first"
+                        }
                       >
                         Check
                       </button>
@@ -1533,37 +2179,52 @@ useEffect(() => {
                       </button>
 
                       <div className="ml-auto text-xs text-white/60">
-                        Selected: <span className="text-white font-semibold">{selectedPlayers.length}</span> • Visible leagues:{" "}
-                        <span className="text-white font-semibold">{visibleLeagueCount}</span>
+                        Selected:{" "}
+                        <span className="text-white font-semibold">
+                          {selectedPlayers.length}
+                        </span>{" "}
+                        • Visible leagues:{" "}
+                        <span className="text-white font-semibold">
+                          {visibleLeagueCount}
+                        </span>
                       </div>
                     </div>
 
                     <div className="hidden rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <div className="text-xs text-white/60 mb-2">Best Available ranking</div>
+                      <div className="text-xs text-white/60 mb-2">
+                        Best Available ranking
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="relative z-[1000] flex flex-wrap items-center gap-2 w-full">
                           <div className="relative z-[80] min-w-[240px]">
                             <SourceSelector
-  sources={DEFAULT_SOURCES}
-  value={sourceKey}
-  onChange={setSourceKey}
-  className="w-full"
-  mode={mode}
-  qbType={qb}
-  onModeChange={setMode}
-  onQbTypeChange={setQb}
-/>
-
+                              sources={DEFAULT_SOURCES}
+                              value={sourceKey}
+                              onChange={setSourceKey}
+                              className="w-full"
+                              mode={mode}
+                              qbType={qb}
+                              onModeChange={setMode}
+                              onQbTypeChange={setQb}
+                            />
                           </div>
                           <button
                             type="button"
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
                             onClick={() => setFiltersOpen(true)}
                           >
-                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">⚙</span>
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">
+                              ⚙
+                            </span>
                             Filters
-                            {(bestPos !== "ALL" || bestSort !== "metric" || minOpenSlots !== 1 || bestLimit !== 25 || bestMinOpenPct !== 0) ? (
-                              <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">Active</span>
+                            {bestPos !== "ALL" ||
+                            bestSort !== "metric" ||
+                            minOpenSlots !== 1 ||
+                            bestLimit !== 25 ||
+                            bestMinOpenPct !== 0 ? (
+                              <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
+                                Active
+                              </span>
                             ) : null}
                           </button>
 
@@ -1578,7 +2239,11 @@ useEffect(() => {
                       </div>
 
                       <div className="mt-2 text-[11px] text-white/45">
-                        Best Available uses <span className="text-white/70 font-semibold">{includedLeaguesList.length}</span> league(s). Click a player row to see open leagues.
+                        Best Available uses{" "}
+                        <span className="text-white/70 font-semibold">
+                          {includedLeaguesList.length}
+                        </span>{" "}
+                        league(s). Click a player row to see open leagues.
                       </div>
                     </div>
                   </div>
@@ -1587,31 +2252,51 @@ useEffect(() => {
 
               {/* Availability Matrix */}
               {anySelected && (
-                <div ref={computeAnchorRef} className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
-                  <h3 className="text-lg font-semibold mb-3">Availability by League</h3>
+                <div
+                  ref={computeAnchorRef}
+                  className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6"
+                >
+                  <h3 className="text-lg font-semibold mb-3">
+                    Availability by League
+                  </h3>
                   {leaguesAvailableSorted.length === 0 ? (
-                    <p className="text-white/60">No leagues where any selected player is available with these filters.</p>
+                    <p className="text-white/60">
+                      No leagues where any selected player is available with
+                      these filters.
+                    </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full border-separate border-spacing-y-1">
                         <thead>
                           <tr>
-                            <th className="text-left text-sm text-white/70 font-medium px-3 py-2 sticky left-0 bg-gray-950/70 backdrop-blur z-10">League</th>
+                            <th className="text-left text-sm text-white/70 font-medium px-3 py-2 sticky left-0 bg-gray-950/70 backdrop-blur z-10">
+                              League
+                            </th>
                             {selectedPlayers.map((p) => (
-                              <th key={p.id} className="text-sm text-white/70 font-medium px-3 py-2 whitespace-nowrap">
+                              <th
+                                key={p.id}
+                                className="text-sm text-white/70 font-medium px-3 py-2 whitespace-nowrap"
+                              >
                                 {p.name}
                               </th>
                             ))}
-                            <th className="text-sm text-white/70 font-medium px-3 py-2">Open</th>
+                            <th className="text-sm text-white/70 font-medium px-3 py-2">
+                              Open
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {leaguesAvailableSorted.map((lg) => (
-                            <tr key={lg.id} className="bg-white/5 hover:bg-white/10">
+                            <tr
+                              key={lg.id}
+                              className="bg-white/5 hover:bg-white/10"
+                            >
                               <td className="px-3 py-2 sticky left-0 bg-gray-950/65 backdrop-blur z-10">
                                 <div className="flex items-center gap-2">
                                   <img
-                                    src={leagueAvatarUrl(lg.avatar || undefined)}
+                                    src={leagueAvatarUrl(
+                                      lg.avatar || undefined,
+                                    )}
                                     alt=""
                                     className="w-7 h-7 rounded-xl object-cover bg-gray-700"
                                     onError={(e) => {
@@ -1619,7 +2304,9 @@ useEffect(() => {
                                     }}
                                   />
                                   <div className="flex flex-col min-w-0">
-                                    <span className="text-white truncate">{lg.name}</span>
+                                    <span className="text-white truncate">
+                                      {lg.name}
+                                    </span>
                                     <span className="text-xs text-white/60">
                                       {lg.isBestBall ? "Best Ball" : "Standard"}
                                       {lg.status ? ` • ${lg.status}` : ""}
@@ -1629,17 +2316,29 @@ useEffect(() => {
                               </td>
 
                               {selectedPlayers.map((p) => {
-                                const available = results[p.id]?.availableLeagues?.some((L) => L.id === lg.id);
+                                const available = results[
+                                  p.id
+                                ]?.availableLeagues?.some(
+                                  (L) => L.id === lg.id,
+                                );
                                 const cell = available ? "✅" : "—";
                                 return (
-                                  <td key={`${lg.id}-${p.id}`} className="px-3 py-2 text-center text-lg">
+                                  <td
+                                    key={`${lg.id}-${p.id}`}
+                                    className="px-3 py-2 text-center text-lg"
+                                  >
                                     {cell}
                                   </td>
                                 );
                               })}
 
                               <td className="px-3 py-2 text-center">
-                                <a href={sleeperLeagueUrl(lg.id)} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">
+                                <a
+                                  href={sleeperLeagueUrl(lg.id)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-cyan-300 hover:underline"
+                                >
                                   Open
                                 </a>
                               </td>
@@ -1663,13 +2362,19 @@ useEffect(() => {
                 <div className="relative order-2 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-lg font-semibold text-white">🔥 Hot Adds</div>
-                      <div className="text-xs text-white/50">Sleeper add trends • click a row for open leagues</div>
+                      <div className="text-lg font-semibold text-white">
+                        🔥 Hot Adds
+                      </div>
+                      <div className="text-xs text-white/50">
+                        Sleeper add trends • click a row for open leagues
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <select
                         value={String(trendHours)}
-                        onChange={(e) => setTrendHours(Number(e.target.value) || 24)}
+                        onChange={(e) =>
+                          setTrendHours(Number(e.target.value) || 24)
+                        }
                         className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/80"
                         title="Lookback"
                       >
@@ -1681,7 +2386,9 @@ useEffect(() => {
                       </select>
                       <select
                         value={String(trendLimit)}
-                        onChange={(e) => setTrendLimit(Number(e.target.value) || 12)}
+                        onChange={(e) =>
+                          setTrendLimit(Number(e.target.value) || 12)
+                        }
                         className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs text-white/80"
                         title="Show"
                       >
@@ -1713,26 +2420,41 @@ useEffect(() => {
                                 key={`add-${r.id}`}
                                 className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
                                 onClick={() => {
-                                  const openLeagues = includedLeaguesList.filter((lg) => {
-                                    const set = rosterSetsRef.current.get(lg.id);
-                                    if (!set || !set.size) return false;
-                                    return !set.has(String(r.id));
-                                  });
-                                  openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
+                                  const openLeagues =
+                                    includedLeaguesList.filter((lg) => {
+                                      const set = rosterSetsRef.current.get(
+                                        lg.id,
+                                      );
+                                      if (!set || !set.size) return false;
+                                      return !set.has(String(r.id));
+                                    });
+                                  openPlayerModal(
+                                    {
+                                      id: r.id,
+                                      name: r.name,
+                                      pos: r.pos,
+                                      team: r.team,
+                                    },
+                                    openLeagues,
+                                  );
                                 }}
                               >
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
+                                      src={localPlayerAvatarUrl({
+                                        player_id: r.id,
+                                        full_name: r.name,
+                                      })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
                                       className="w-10 h-10 rounded-full border object-cover bg-gray-800"
                                     />
 
-
                                     <div className="min-w-0">
-                                      <div className="text-white font-semibold truncate">{r.name}</div>
+                                      <div className="text-white font-semibold truncate">
+                                        {r.name}
+                                      </div>
                                       <div className="text-[11px] text-white/55">
                                         {r.pos}
                                         {r.team ? ` • ${r.team}` : ""}
@@ -1740,8 +2462,14 @@ useEffect(() => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
-                                <td className="py-2 pr-2 text-white/80 tabular-nums">{includedLeaguesList.length ? `${r.openPct}%` : "—"}</td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">
+                                  {r.count}
+                                </td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">
+                                  {includedLeaguesList.length
+                                    ? `${r.openPct}%`
+                                    : "—"}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1755,9 +2483,16 @@ useEffect(() => {
                 <div className="relative order-1 lg:col-span-12 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-bold text-white">Best Available Players</h2>
-                      <div className="text-sm text-white/70 mt-1">Click a row to see open leagues.</div>
-                      <div className="text-xs text-white/50 mt-1">Scanning {includedLeaguesList.length} league(s) in this list.</div>
+                      <h2 className="text-xl font-bold text-white">
+                        Best Available Players
+                      </h2>
+                      <div className="text-sm text-white/70 mt-1">
+                        Click a row to see open leagues.
+                      </div>
+                      <div className="text-xs text-white/50 mt-1">
+                        Scanning {includedLeaguesList.length} league(s) in this
+                        list.
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <ExportButtons
@@ -1777,7 +2512,10 @@ useEffect(() => {
 
                   <div className="mt-4 overflow-x-auto">
                     {bestAvailablePlayers.length === 0 ? (
-                      <div className="text-white/70 text-sm">No players found (try loosening filters, changing position, or switching source).</div>
+                      <div className="text-white/70 text-sm">
+                        No players found (try loosening filters, changing
+                        position, or switching source).
+                      </div>
                     ) : (
                       <table className="w-full text-sm">
                         <thead>
@@ -1785,45 +2523,80 @@ useEffect(() => {
                             <th className="py-2 pr-2">Player</th>
                             <th className="py-2 pr-2">Pos</th>
                             <th className="py-2 pr-2">Team</th>
-                            <th className="py-2 pr-2">{bestMetric === "projection" ? "Proj" : "Value"}</th>
+                            <th className="py-2 pr-2">
+                              {bestMetric === "projection" ? "Proj" : "Value"}
+                            </th>
                             <th className="py-2 pr-2">Open</th>
                           </tr>
                         </thead>
                         <tbody>
                           {bestAvailablePlayers.map((row) => {
-                            const openLabel = includedLeaguesList.length ? `${row.openCount}/${includedLeaguesList.length} (${row.openPct}%)` : `${row.openCount}`;
-                            const metricVal = bestMetric === "projection" ? row.proj : row.value;
+                            const openLabel = includedLeaguesList.length
+                              ? `${row.openCount}/${includedLeaguesList.length} (${row.openPct}%)`
+                              : `${row.openCount}`;
+                            const metricVal =
+                              bestMetric === "projection"
+                                ? row.proj
+                                : row.value;
                             return (
                               <tr
                                 key={row.id}
                                 className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
-                                onClick={() => openPlayerModal({ id: row.id, name: row.name, pos: row.pos, team: row.team }, row.availableLeagues)}
+                                onClick={() =>
+                                  openPlayerModal(
+                                    {
+                                      id: row.id,
+                                      name: row.name,
+                                      pos: row.pos,
+                                      team: row.team,
+                                    },
+                                    row.availableLeagues,
+                                  )
+                                }
                                 title="Click to view open leagues"
                               >
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={localPlayerAvatarUrl({ player_id: row.id, full_name: row.name })}
+                                      src={localPlayerAvatarUrl({
+                                        player_id: row.id,
+                                        full_name: row.name,
+                                      })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={row.name}
                                       className="w-12 h-12 rounded-full border object-cover bg-gray-800"
                                     />
 
                                     <div className="min-w-0">
-                                      <div className="text-white font-semibold truncate">{row.name}</div>
-                                      <div className="text-xs text-white/60 truncate">Click to view open leagues</div>
+                                      <div className="text-white font-semibold truncate">
+                                        {row.name}
+                                      </div>
+                                      <div className="text-xs text-white/60 truncate">
+                                        Click to view open leagues
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-2 pr-2 text-white/80">{row.pos}</td>
-                                <td className="py-2 pr-2 text-white/80">{row.team || "—"}</td>
-                                <td className="py-2 pr-2 text-white/80">{metricVal > 0 ? metricVal.toFixed(1) : "–"}</td>
+                                <td className="py-2 pr-2 text-white/80">
+                                  {row.pos}
+                                </td>
+                                <td className="py-2 pr-2 text-white/80">
+                                  {row.team || "—"}
+                                </td>
+                                <td className="py-2 pr-2 text-white/80">
+                                  {metricVal > 0 ? metricVal.toFixed(1) : "–"}
+                                </td>
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
-                                      <div className="h-full bg-cyan-400/70" style={{ width: `${row.openPct}%` }} />
+                                      <div
+                                        className="h-full bg-cyan-400/70"
+                                        style={{ width: `${row.openPct}%` }}
+                                      />
                                     </div>
-                                    <span className="text-white/80 tabular-nums">{openLabel}</span>
+                                    <span className="text-white/80 tabular-nums">
+                                      {openLabel}
+                                    </span>
                                   </div>
                                 </td>
                               </tr>
@@ -1839,8 +2612,12 @@ useEffect(() => {
                 <div className="relative order-3 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-lg font-semibold text-white">❄️ Cold Drops</div>
-                      <div className="text-xs text-white/50">Sleeper drop trends • click a row for open leagues</div>
+                      <div className="text-lg font-semibold text-white">
+                        ❄️ Cold Drops
+                      </div>
+                      <div className="text-xs text-white/50">
+                        Sleeper drop trends • click a row for open leagues
+                      </div>
                     </div>
                     <div className="text-xs text-white/50">{trendHours}h</div>
                   </div>
@@ -1866,25 +2643,41 @@ useEffect(() => {
                                 key={`drop-${r.id}`}
                                 className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
                                 onClick={() => {
-                                  const openLeagues = includedLeaguesList.filter((lg) => {
-                                    const set = rosterSetsRef.current.get(lg.id);
-                                    if (!set || !set.size) return false;
-                                    return !set.has(String(r.id));
-                                  });
-                                  openPlayerModal({ id: r.id, name: r.name, pos: r.pos, team: r.team }, openLeagues);
+                                  const openLeagues =
+                                    includedLeaguesList.filter((lg) => {
+                                      const set = rosterSetsRef.current.get(
+                                        lg.id,
+                                      );
+                                      if (!set || !set.size) return false;
+                                      return !set.has(String(r.id));
+                                    });
+                                  openPlayerModal(
+                                    {
+                                      id: r.id,
+                                      name: r.name,
+                                      pos: r.pos,
+                                      team: r.team,
+                                    },
+                                    openLeagues,
+                                  );
                                 }}
                               >
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
-                                      src={localPlayerAvatarUrl({ player_id: r.id, full_name: r.name })}
+                                      src={localPlayerAvatarUrl({
+                                        player_id: r.id,
+                                        full_name: r.name,
+                                      })}
                                       fallbackSrc={DEFAULT_PLAYER_IMG}
                                       alt={r.name}
                                       className="w-10 h-10 rounded-full border object-cover bg-gray-800"
                                     />
 
                                     <div className="min-w-0">
-                                      <div className="text-white font-semibold truncate">{r.name}</div>
+                                      <div className="text-white font-semibold truncate">
+                                        {r.name}
+                                      </div>
                                       <div className="text-[11px] text-white/55">
                                         {r.pos}
                                         {r.team ? ` • ${r.team}` : ""}
@@ -1892,8 +2685,14 @@ useEffect(() => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-2 pr-2 text-white/80 tabular-nums">{r.count}</td>
-                                <td className="py-2 pr-2 text-white/80 tabular-nums">{includedLeaguesList.length ? `${r.openPct}%` : "—"}</td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">
+                                  {r.count}
+                                </td>
+                                <td className="py-2 pr-2 text-white/80 tabular-nums">
+                                  {includedLeaguesList.length
+                                    ? `${r.openPct}%`
+                                    : "—"}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1903,8 +2702,6 @@ useEffect(() => {
                   )}
                 </div>
               </div>
-
-              
             </>
           )}
         </div>
@@ -1923,7 +2720,9 @@ useEffect(() => {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="text-xl font-bold">Filters</div>
-                <div className="text-sm text-white/70">Applies to the Best Available list.</div>
+                <div className="text-sm text-white/70">
+                  Applies to the Best Available list.
+                </div>
               </div>
               <button
                 className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
@@ -1964,7 +2763,6 @@ useEffect(() => {
                     <option value="position">Position</option>
                     <option value="name">Name</option>
                   </select>
-
                 </label>
               </div>
 
@@ -1974,7 +2772,9 @@ useEffect(() => {
                   <select
                     className="w-full bg-black/30 border border-white/10 rounded-2xl px-3 py-2"
                     value={minOpenSlots}
-                    onChange={(e) => setMinOpenSlots(parseInt(e.target.value, 10))}
+                    onChange={(e) =>
+                      setMinOpenSlots(parseInt(e.target.value, 10))
+                    }
                   >
                     <option value={1}>1+</option>
                     <option value={2}>2+</option>
@@ -2010,7 +2810,6 @@ useEffect(() => {
                   setBestSort("metric");
                   setMinOpenSlots(1);
                   setBestLimit(25);
-
                 }}
               >
                 Clear all
@@ -2040,14 +2839,26 @@ useEffect(() => {
 
       {/* Included leagues modal */}
       {showIncludedLeaguesModal && (
-        <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowIncludedLeaguesModal(false)}>
-          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowIncludedLeaguesModal(false)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="text-xl font-bold">Included Leagues</div>
-                <div className="text-sm text-white/70">This only affects the Best Available list (scan filters still apply).</div>
+                <div className="text-sm text-white/70">
+                  This only affects the Best Available list (scan filters still
+                  apply).
+                </div>
               </div>
-              <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10" onClick={() => setShowIncludedLeaguesModal(false)}>
+              <button
+                className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
+                onClick={() => setShowIncludedLeaguesModal(false)}
+              >
                 ✕
               </button>
             </div>
@@ -2056,7 +2867,11 @@ useEffect(() => {
               <button
                 type="button"
                 className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
-                onClick={() => setIncludedLeagueIds(new Set(visibleLeaguesList.map((l) => l.id)))}
+                onClick={() =>
+                  setIncludedLeagueIds(
+                    new Set(visibleLeaguesList.map((l) => l.id)),
+                  )
+                }
               >
                 Select all
               </button>
@@ -2076,7 +2891,10 @@ useEffect(() => {
               {visibleLeaguesList.map((lg) => {
                 const checked = includedLeagueIds.has(lg.id);
                 return (
-                  <label key={lg.id} className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 hover:bg-white/5 cursor-pointer">
+                  <label
+                    key={lg.id}
+                    className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 hover:bg-white/5 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={checked}
@@ -2099,7 +2917,9 @@ useEffect(() => {
                       }}
                     />
                     <div className="min-w-0">
-                      <div className="text-white font-semibold truncate">{lg.name}</div>
+                      <div className="text-white font-semibold truncate">
+                        {lg.name}
+                      </div>
                       <div className="text-xs text-white/60 truncate">
                         {lg.isBestBall ? "Best Ball" : "Standard"}
                         {lg.status ? ` • ${lg.status}` : ""}
@@ -2125,11 +2945,20 @@ useEffect(() => {
 
       {/* Scanned leagues modal */}
       {showLeaguesModal && (
-        <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowLeaguesModal(false)}>
-          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowLeaguesModal(false)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between mb-2">
               <div className="text-xl font-bold">Leagues in this scan</div>
-              <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10" onClick={() => setShowLeaguesModal(false)}>
+              <button
+                className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
+                onClick={() => setShowLeaguesModal(false)}
+              >
                 ✕
               </button>
             </div>
@@ -2146,7 +2975,9 @@ useEffect(() => {
                   <div
                     key={lg.id}
                     className={`flex items-center gap-3 text-sm px-3 py-2 rounded-2xl border ${
-                      visibleLeagueIds.has(lg.id) ? "bg-white/5 border-white/10" : "bg-white/3 border-white/5 opacity-70"
+                      visibleLeagueIds.has(lg.id)
+                        ? "bg-white/5 border-white/10"
+                        : "bg-white/3 border-white/5 opacity-70"
                     }`}
                     title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
                   >
@@ -2172,11 +3003,20 @@ useEffect(() => {
 
       {/* Visible leagues modal */}
       {showVisibleLeaguesModal && (
-        <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowVisibleLeaguesModal(false)}>
-          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowVisibleLeaguesModal(false)}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90dvh] overflow-y-auto bg-gray-950 rounded-3xl shadow-xl p-4 sm:p-5 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between mb-2">
               <div className="text-xl font-bold">Leagues being shown</div>
-              <button className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10" onClick={() => setShowVisibleLeaguesModal(false)}>
+              <button
+                className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
+                onClick={() => setShowVisibleLeaguesModal(false)}
+              >
                 ✕
               </button>
             </div>
@@ -2205,7 +3045,11 @@ useEffect(() => {
                     </span>
                   </div>
                 ))}
-              {visibleLeagueCount === 0 && <div className="text-sm text-white/60">No leagues match the current filters.</div>}
+              {visibleLeagueCount === 0 && (
+                <div className="text-sm text-white/60">
+                  No leagues match the current filters.
+                </div>
+              )}
             </div>
           </div>
         </div>

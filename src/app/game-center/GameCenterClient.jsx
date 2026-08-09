@@ -128,6 +128,13 @@ export default function GameCenterClient() {
   const scanRunning = useRef(false);
 
   useEffect(() => {
+    const requestedLeague = new URLSearchParams(window.location.search).get("league");
+    if (!requestedLeague) return;
+    const league = leagues.find((row) => String(row.league_id) === String(requestedLeague));
+    if (league) setQuery(league.name || String(requestedLeague));
+  }, [leagues]);
+
+  useEffect(() => {
     getJson("https://api.sleeper.app/v1/state/nfl")
       .then((state) => {
         const nextSeasonType = sleeperSeasonType(state.season_type);

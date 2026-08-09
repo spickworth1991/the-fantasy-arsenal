@@ -550,6 +550,17 @@ export default function CommissionerDashboardClient() {
     setLeagueQuery("");
     if (leagueId) fetchLeagueRostersSilent(leagueId).catch(() => {});
   };
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedLeague = params.get("league");
+    const requestedTab = params.get("tab");
+    if (requestedLeague && leagues.some((row) => String(row.league_id) === String(requestedLeague))) {
+      setActiveLeague(requestedLeague);
+      setData(null);
+      if (requestedLeague) fetchLeagueRostersSilent(requestedLeague).catch(() => {});
+    }
+    if (["overview", "activity", "orphan", "review", "command"].includes(requestedTab)) setTab(requestedTab);
+  }, [fetchLeagueRostersSilent, leagues, setActiveLeague]);
   const commissionerSourceKey = sourceKey || "val:thefantasyarsenal";
   const commissionerMetricType = String(commissionerSourceKey).startsWith("proj:") ? "projection" : "value";
   const selectedValueSource = DEFAULT_SOURCES.find((source) => source.key === commissionerSourceKey) || DEFAULT_SOURCES[0];
