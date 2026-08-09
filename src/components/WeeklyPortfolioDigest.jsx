@@ -92,22 +92,22 @@ export default function WeeklyPortfolioDigest() {
     window.addEventListener("tfa:cloud-sync-applied", restore);
     return () => window.removeEventListener("tfa:cloud-sync-applied", restore);
   }, []);
-  const eligibleLeagues = useMemo(
+  const defaultLeagueIds = useMemo(
     () =>
-      leagues.filter(
-        (league) =>
-          includeBestBall || !classifyLeagueFormat(league).flags.bestBall,
-      ),
-    [includeBestBall, leagues],
+      leagues
+        .filter((league) => !classifyLeagueFormat(league).flags.bestBall)
+        .map((league) => String(league.league_id)),
+    [leagues],
   );
   const digestLeagues = useMemo(() => {
     const selected = new Set(digestLeagueIds.map(String));
     return selected.size
-      ? eligibleLeagues.filter((league) =>
-          selected.has(String(league.league_id)),
-        )
-      : eligibleLeagues;
-  }, [digestLeagueIds, eligibleLeagues]);
+      ? leagues.filter((league) => selected.has(String(league.league_id)))
+      : leagues.filter(
+          (league) =>
+            includeBestBall || !classifyLeagueFormat(league).flags.bestBall,
+        );
+  }, [digestLeagueIds, includeBestBall, leagues]);
   useEffect(() => {
     if (!username || !leagues.length) return;
     let live = true;
@@ -514,28 +514,39 @@ export default function WeeklyPortfolioDigest() {
           <summary className="cursor-pointer text-xs font-black">
             League delivery scope · {digestLeagues.length} of {leagues.length}
           </summary>
-          <label className="mt-3 flex items-center justify-between rounded-xl bg-white/[0.035] p-3 text-xs">
-            <span>
-              Include Best Ball leagues{" "}
-              <small className="text-white/30">Off by default</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={includeBestBall}
-              onChange={(event) => {
-                setIncludeBestBall(event.target.checked);
+          <p className="mt-2 text-[10px] text-white/32">
+            Standard leagues are included by default. Add only the Best Ball
+            leagues you want, or customize any league individually.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIncludeBestBall(false);
                 setDigestLeagueIds([]);
               }}
-            />
-          </label>
-          <p className="mt-2 text-[10px] text-white/32">
-            Leave every league unchecked to use all eligible leagues, or choose
-            specific leagues.
-          </p>
+              className="rounded-lg bg-white/[0.05] px-3 py-2 text-[10px]"
+            >
+              Standard only
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIncludeBestBall(true);
+                setDigestLeagueIds([]);
+              }}
+              className="rounded-lg bg-white/[0.05] px-3 py-2 text-[10px]"
+            >
+              All leagues
+            </button>
+          </div>
           <div className="mt-2 grid max-h-52 gap-2 overflow-y-auto sm:grid-cols-2">
-            {eligibleLeagues.map((league) => {
+            {leagues.map((league) => {
               const id = String(league.league_id);
-              const checked = digestLeagueIds.includes(id);
+              const checked = digestLeagueIds.length
+                ? digestLeagueIds.includes(id)
+                : includeBestBall || defaultLeagueIds.includes(id);
+              const bestBall = classifyLeagueFormat(league).flags.bestBall;
               return (
                 <label
                   key={id}
@@ -544,15 +555,23 @@ export default function WeeklyPortfolioDigest() {
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={() =>
-                      setDigestLeagueIds((current) =>
-                        checked
-                          ? current.filter((item) => item !== id)
-                          : [...current, id],
-                      )
-                    }
+                    onChange={() => {
+                      const ids = new Set(
+                        digestLeagueIds.length
+                          ? digestLeagueIds
+                          : digestLeagues.map((item) => String(item.league_id)),
+                      );
+                      checked ? ids.delete(id) : ids.add(id);
+                      setIncludeBestBall(true);
+                      setDigestLeagueIds([...ids]);
+                    }}
                   />
-                  <span className="truncate">{league.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{league.name}</span>
+                  {bestBall ? (
+                    <small className="shrink-0 text-[8px] font-black uppercase text-violet-200/55">
+                      Best Ball
+                    </small>
+                  ) : null}
                 </label>
               );
             })}
@@ -560,10 +579,13 @@ export default function WeeklyPortfolioDigest() {
           {digestLeagueIds.length ? (
             <button
               type="button"
-              onClick={() => setDigestLeagueIds([])}
+              onClick={() => {
+                setIncludeBestBall(false);
+                setDigestLeagueIds([]);
+              }}
               className="mt-2 rounded-lg bg-white/[0.05] px-3 py-2 text-[10px]"
             >
-              Use all eligible leagues
+              Reset to standard leagues
             </button>
           ) : null}
         </details>

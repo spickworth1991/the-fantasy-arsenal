@@ -369,23 +369,23 @@ export default function DecisionInbox({ full = false }) {
     } catch {}
   }, [cacheKey]);
 
-  const eligibleLeagues = useMemo(
+  const defaultLeagueIds = useMemo(
     () =>
-      leagues.filter(
-        (league) =>
-          leagueScope.includeBestBall ||
-          !classifyLeagueFormat(league).flags.bestBall,
-      ),
-    [leagueScope.includeBestBall, leagues],
+      leagues
+        .filter((league) => !classifyLeagueFormat(league).flags.bestBall)
+        .map((league) => String(league.league_id)),
+    [leagues],
   );
   const targetLeagues = useMemo(() => {
     const selected = new Set((leagueScope.leagueIds || []).map(String));
     return selected.size
-      ? eligibleLeagues.filter((league) =>
-          selected.has(String(league.league_id)),
-        )
-      : eligibleLeagues;
-  }, [eligibleLeagues, leagueScope.leagueIds]);
+      ? leagues.filter((league) => selected.has(String(league.league_id)))
+      : leagues.filter(
+          (league) =>
+            leagueScope.includeBestBall ||
+            !classifyLeagueFormat(league).flags.bestBall,
+        );
+  }, [leagueScope.includeBestBall, leagueScope.leagueIds, leagues]);
   const targetLeagueIds = useMemo(
     () => targetLeagues.map((league) => String(league.league_id)),
     [targetLeagues],
@@ -1424,33 +1424,39 @@ export default function DecisionInbox({ full = false }) {
             League scope · {targetLeagues.length} of {leagues.length} leagues
           </summary>
           <div className="mt-3 space-y-3">
-            <label className="flex items-center justify-between rounded-xl bg-white/[0.035] px-3 py-2 text-xs text-white/60">
-              <span>
-                Include Best Ball leagues{" "}
-                <small className="ml-1 text-white/30">Off by default</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={leagueScope.includeBestBall}
-                onChange={(event) =>
-                  saveLeagueScope({
-                    ...leagueScope,
-                    includeBestBall: event.target.checked,
-                    leagueIds: [],
-                  })
-                }
-              />
-            </label>
             <div className="text-[10px] text-white/35">
-              Leave every box unchecked to scan all eligible leagues, or select
-              only the leagues you want.
+              Standard leagues are included by default. Add only the Best Ball
+              leagues you want, or customize any league individually.
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  saveLeagueScope({ includeBestBall: false, leagueIds: [] })
+                }
+                className="rounded-xl bg-white/[0.05] px-3 py-2 text-[10px] font-bold text-white/55"
+              >
+                Standard only
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  saveLeagueScope({ includeBestBall: true, leagueIds: [] })
+                }
+                className="rounded-xl bg-white/[0.05] px-3 py-2 text-[10px] font-bold text-white/55"
+              >
+                All leagues
+              </button>
             </div>
             <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
-              {eligibleLeagues.map((league) => {
+              {leagues.map((league) => {
                 const id = String(league.league_id);
-                const selected = (leagueScope.leagueIds || [])
-                  .map(String)
-                  .includes(id);
+                const explicitIds = (leagueScope.leagueIds || []).map(String);
+                const selected = explicitIds.length
+                  ? explicitIds.includes(id)
+                  : leagueScope.includeBestBall ||
+                    defaultLeagueIds.includes(id);
+                const bestBall = classifyLeagueFormat(league).flags.bestBall;
                 return (
                   <label
                     key={id}
@@ -1461,16 +1467,23 @@ export default function DecisionInbox({ full = false }) {
                       checked={selected}
                       onChange={() => {
                         const ids = new Set(
-                          (leagueScope.leagueIds || []).map(String),
+                          explicitIds.length ? explicitIds : targetLeagueIds,
                         );
                         selected ? ids.delete(id) : ids.add(id);
                         saveLeagueScope({
-                          ...leagueScope,
+                          includeBestBall: true,
                           leagueIds: [...ids],
                         });
                       }}
                     />
-                    <span className="truncate">{league.name}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {league.name}
+                    </span>
+                    {bestBall ? (
+                      <small className="shrink-0 text-[8px] font-black uppercase text-violet-200/55">
+                        Best Ball
+                      </small>
+                    ) : null}
                   </label>
                 );
               })}
@@ -1479,11 +1492,11 @@ export default function DecisionInbox({ full = false }) {
               <button
                 type="button"
                 onClick={() =>
-                  saveLeagueScope({ ...leagueScope, leagueIds: [] })
+                  saveLeagueScope({ includeBestBall: false, leagueIds: [] })
                 }
                 className="rounded-xl bg-white/[0.05] px-3 py-2 text-[10px] font-bold text-white/55"
               >
-                Use all eligible leagues
+                Reset to standard leagues
               </button>
             ) : null}
           </div>
