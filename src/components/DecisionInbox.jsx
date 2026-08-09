@@ -20,6 +20,20 @@ const pos = (player) =>
   String(
     player?.position || player?.fantasy_positions?.[0] || "",
   ).toUpperCase();
+const rosterAllowsPosition = (league, position) => {
+  const slots = new Set(
+    (league?.roster_positions || []).map((slot) => String(slot).toUpperCase()),
+  );
+  if (!slots.size) return true;
+  if (slots.has(position)) return true;
+  if (position === "QB") return slots.has("SUPER_FLEX");
+  if (["RB", "WR", "TE"].includes(position)) {
+    if (slots.has("SUPER_FLEX") || slots.has("FLEX")) return true;
+    if (["WR", "TE"].includes(position) && slots.has("REC_FLEX")) return true;
+    if (["RB", "WR"].includes(position) && slots.has("WRRB_FLEX")) return true;
+  }
+  return false;
+};
 const injury = (player) => String(player?.injury_status || "").toUpperCase();
 const unavailable = (player) =>
   ["OUT", "DOUBTFUL", "IR", "PUP", "SUSPENDED"].includes(injury(player)) ||
@@ -753,6 +767,7 @@ export default function DecisionInbox({ full = false }) {
               });
               const waiver = rankedPlayers.find(
                 (row) =>
+                  rosterAllowsPosition(league, pos(row.player)) &&
                   !rostered.has(row.id) &&
                   row.value >
                     n(weakestByPos.get(pos(row.player))?.value) * 1.15,
@@ -772,6 +787,8 @@ export default function DecisionInbox({ full = false }) {
                       ? `+${waiverDelta.toFixed(1)} expected Week ${week} pts`
                       : `+${Math.round(waiverDelta).toLocaleString()} market value`,
                   confidence: 80,
+                  playerId: waiver.id,
+                  playerPosition: pos(waiver.player),
                   deadline: null,
                   why: `The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`,
                   href: `/player-availability?player=${waiver.id}&need=${pos(waiver.player)}`,
