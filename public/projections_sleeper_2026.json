@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-10T04:06:49.391Z",
+  "updated": "2026-08-11T04:06:58.603Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -5809,104 +5809,6 @@
       "position": "RB"
     },
     {
-      "player_id": "12519",
-      "points": 245.16,
-      "points_ppr": 245.16,
-      "points_half_ppr": 200.46,
-      "points_standard": 155.75,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 14.52,
-          "half_ppr": 11.88,
-          "standard": 9.23
-        },
-        "2": {
-          "ppr": 14.34,
-          "half_ppr": 11.71,
-          "standard": 9.08
-        },
-        "3": {
-          "ppr": 14.3,
-          "half_ppr": 11.69,
-          "standard": 9.08
-        },
-        "4": {
-          "ppr": 14.42,
-          "half_ppr": 11.8,
-          "standard": 9.18
-        },
-        "5": {
-          "ppr": 14.44,
-          "half_ppr": 11.8,
-          "standard": 9.17
-        },
-        "6": {
-          "ppr": 14.52,
-          "half_ppr": 11.88,
-          "standard": 9.24
-        },
-        "7": {
-          "ppr": 14.36,
-          "half_ppr": 11.73,
-          "standard": 9.11
-        },
-        "8": {
-          "ppr": 14.28,
-          "half_ppr": 11.67,
-          "standard": 9.06
-        },
-        "9": {
-          "ppr": 14.55,
-          "half_ppr": 11.91,
-          "standard": 9.26
-        },
-        "11": {
-          "ppr": 14.36,
-          "half_ppr": 11.75,
-          "standard": 9.14
-        },
-        "12": {
-          "ppr": 14.46,
-          "half_ppr": 11.82,
-          "standard": 9.18
-        },
-        "13": {
-          "ppr": 14.43,
-          "half_ppr": 11.8,
-          "standard": 9.17
-        },
-        "14": {
-          "ppr": 14.62,
-          "half_ppr": 11.98,
-          "standard": 9.33
-        },
-        "15": {
-          "ppr": 14.32,
-          "half_ppr": 11.71,
-          "standard": 9.09
-        },
-        "16": {
-          "ppr": 14.44,
-          "half_ppr": 11.8,
-          "standard": 9.17
-        },
-        "17": {
-          "ppr": 14.46,
-          "half_ppr": 11.82,
-          "standard": 9.18
-        },
-        "18": {
-          "ppr": 14.34,
-          "half_ppr": 11.71,
-          "standard": 9.08
-        }
-      },
-      "name": "Luther Burden",
-      "team": "CHI",
-      "position": "WR"
-    },
-    {
       "player_id": "12481",
       "points": 244.95,
       "points_ppr": 244.95,
@@ -6199,6 +6101,104 @@
       "name": "Geno Smith",
       "team": "NYJ",
       "position": "QB"
+    },
+    {
+      "player_id": "12519",
+      "points": 242.81,
+      "points_ppr": 242.81,
+      "points_half_ppr": 198.53,
+      "points_standard": 154.27,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 12.17,
+          "half_ppr": 9.96,
+          "standard": 7.75
+        },
+        "2": {
+          "ppr": 14.34,
+          "half_ppr": 11.71,
+          "standard": 9.08
+        },
+        "3": {
+          "ppr": 14.3,
+          "half_ppr": 11.69,
+          "standard": 9.08
+        },
+        "4": {
+          "ppr": 14.42,
+          "half_ppr": 11.8,
+          "standard": 9.18
+        },
+        "5": {
+          "ppr": 14.44,
+          "half_ppr": 11.8,
+          "standard": 9.17
+        },
+        "6": {
+          "ppr": 14.52,
+          "half_ppr": 11.88,
+          "standard": 9.24
+        },
+        "7": {
+          "ppr": 14.36,
+          "half_ppr": 11.73,
+          "standard": 9.11
+        },
+        "8": {
+          "ppr": 14.28,
+          "half_ppr": 11.67,
+          "standard": 9.06
+        },
+        "9": {
+          "ppr": 14.55,
+          "half_ppr": 11.9,
+          "standard": 9.26
+        },
+        "11": {
+          "ppr": 14.36,
+          "half_ppr": 11.75,
+          "standard": 9.14
+        },
+        "12": {
+          "ppr": 14.46,
+          "half_ppr": 11.82,
+          "standard": 9.18
+        },
+        "13": {
+          "ppr": 14.43,
+          "half_ppr": 11.8,
+          "standard": 9.17
+        },
+        "14": {
+          "ppr": 14.62,
+          "half_ppr": 11.98,
+          "standard": 9.33
+        },
+        "15": {
+          "ppr": 14.32,
+          "half_ppr": 11.71,
+          "standard": 9.09
+        },
+        "16": {
+          "ppr": 14.44,
+          "half_ppr": 11.8,
+          "standard": 9.17
+        },
+        "17": {
+          "ppr": 14.46,
+          "half_ppr": 11.82,
+          "standard": 9.18
+        },
+        "18": {
+          "ppr": 14.34,
+          "half_ppr": 11.71,
+          "standard": 9.08
+        }
+      },
+      "name": "Luther Burden",
+      "team": "CHI",
+      "position": "WR"
     },
     {
       "player_id": "12526",
@@ -16590,16 +16590,16 @@
     },
     {
       "player_id": "11539",
-      "points": 127.51,
-      "points_ppr": 127.51,
-      "points_half_ppr": 127.51,
-      "points_standard": 127.51,
+      "points": 127.54,
+      "points_ppr": 127.54,
+      "points_half_ppr": 127.54,
+      "points_standard": 127.54,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 8.03,
-          "half_ppr": 8.03,
-          "standard": 8.03
+          "ppr": 8.06,
+          "half_ppr": 8.06,
+          "standard": 8.06
         },
         "2": {
           "ppr": 6.98,
@@ -18550,16 +18550,16 @@
     },
     {
       "player_id": "DET",
-      "points": 120.98,
-      "points_ppr": 120.98,
-      "points_half_ppr": 120.98,
-      "points_standard": 120.98,
+      "points": 121.02,
+      "points_ppr": 121.02,
+      "points_half_ppr": 121.02,
+      "points_standard": 121.02,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.77,
-          "half_ppr": 7.77,
-          "standard": 7.77
+          "ppr": 7.81,
+          "half_ppr": 7.81,
+          "standard": 7.81
         },
         "2": {
           "ppr": 6.41,
@@ -23842,16 +23842,16 @@
     },
     {
       "player_id": "NO",
-      "points": 92.29,
-      "points_ppr": 92.29,
-      "points_half_ppr": 92.29,
-      "points_standard": 92.29,
+      "points": 92.31,
+      "points_ppr": 92.31,
+      "points_half_ppr": 92.31,
+      "points_standard": 92.31,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 4.77,
-          "half_ppr": 4.77,
-          "standard": 4.77
+          "ppr": 4.79,
+          "half_ppr": 4.79,
+          "standard": 4.79
         },
         "2": {
           "ppr": 5.47,
@@ -44412,7 +44412,7 @@
         }
       },
       "name": "Teddy Bridgewater",
-      "team": "DET",
+      "team": "",
       "position": "QB"
     },
     {
@@ -83405,6 +83405,398 @@
       "position": "WR"
     },
     {
+      "player_id": "5372",
+      "points": 2.91,
+      "points_ppr": 2.91,
+      "points_half_ppr": 2.91,
+      "points_standard": 2.91,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.19,
+          "half_ppr": 0.19,
+          "standard": 0.19
+        },
+        "2": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "3": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "4": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "5": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "7": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "8": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "9": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "10": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "11": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "12": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "13": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "14": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "15": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "16": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "17": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "18": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        }
+      },
+      "name": "D.J. Reed",
+      "team": "DET",
+      "position": "CB"
+    },
+    {
+      "player_id": "7679",
+      "points": 2.91,
+      "points_ppr": 2.91,
+      "points_half_ppr": 2.91,
+      "points_standard": 2.91,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.19,
+          "half_ppr": 0.19,
+          "standard": 0.19
+        },
+        "2": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "3": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "4": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "5": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "7": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "8": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "9": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "10": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "11": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "12": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "13": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "14": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "15": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "16": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "17": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "18": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        }
+      },
+      "name": "Alim McNeill",
+      "team": "DET",
+      "position": "NT"
+    },
+    {
+      "player_id": "8334",
+      "points": 2.91,
+      "points_ppr": 2.91,
+      "points_half_ppr": 2.91,
+      "points_standard": 2.91,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.19,
+          "half_ppr": 0.19,
+          "standard": 0.19
+        },
+        "2": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "3": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "4": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "5": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "7": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "8": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "9": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "10": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "11": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "12": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "13": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "14": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "15": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "16": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "17": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "18": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        }
+      },
+      "name": "Malcolm Rodriguez",
+      "team": "DET",
+      "position": "LB"
+    },
+    {
+      "player_id": "11427",
+      "points": 2.91,
+      "points_ppr": 2.91,
+      "points_half_ppr": 2.91,
+      "points_standard": 2.91,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.19,
+          "half_ppr": 0.19,
+          "standard": 0.19
+        },
+        "2": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "3": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "4": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "5": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "7": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "8": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "9": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "10": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "11": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "12": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "13": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "14": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "15": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "16": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "17": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "18": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        }
+      },
+      "name": "Christian Izien",
+      "team": "DET",
+      "position": "DB"
+    },
+    {
       "player_id": "11779",
       "points": 2.91,
       "points_ppr": 2.91,
@@ -83601,104 +83993,6 @@
       "position": "CB"
     },
     {
-      "player_id": "5372",
-      "points": 2.9,
-      "points_ppr": 2.9,
-      "points_half_ppr": 2.9,
-      "points_standard": 2.9,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.18,
-          "half_ppr": 0.18,
-          "standard": 0.18
-        },
-        "2": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "3": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "4": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "5": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "7": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "8": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "9": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "10": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "11": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "12": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "13": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "14": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "15": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "16": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "17": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "18": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        }
-      },
-      "name": "D.J. Reed",
-      "team": "DET",
-      "position": "CB"
-    },
-    {
       "player_id": "6872",
       "points": 2.9,
       "points_ppr": 2.9,
@@ -83794,300 +84088,6 @@
       },
       "name": "Kyle Dugger",
       "team": "CIN",
-      "position": "DB"
-    },
-    {
-      "player_id": "7679",
-      "points": 2.9,
-      "points_ppr": 2.9,
-      "points_half_ppr": 2.9,
-      "points_standard": 2.9,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.18,
-          "half_ppr": 0.18,
-          "standard": 0.18
-        },
-        "2": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "3": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "4": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "5": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "7": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "8": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "9": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "10": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "11": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "12": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "13": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "14": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "15": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "16": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "17": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "18": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        }
-      },
-      "name": "Alim McNeill",
-      "team": "DET",
-      "position": "NT"
-    },
-    {
-      "player_id": "8334",
-      "points": 2.9,
-      "points_ppr": 2.9,
-      "points_half_ppr": 2.9,
-      "points_standard": 2.9,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.18,
-          "half_ppr": 0.18,
-          "standard": 0.18
-        },
-        "2": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "3": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "4": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "5": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "7": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "8": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "9": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "10": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "11": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "12": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "13": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "14": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "15": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "16": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "17": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "18": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        }
-      },
-      "name": "Malcolm Rodriguez",
-      "team": "DET",
-      "position": "LB"
-    },
-    {
-      "player_id": "11427",
-      "points": 2.9,
-      "points_ppr": 2.9,
-      "points_half_ppr": 2.9,
-      "points_standard": 2.9,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.18,
-          "half_ppr": 0.18,
-          "standard": 0.18
-        },
-        "2": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "3": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "4": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "5": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "7": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "8": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "9": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "10": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "11": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "12": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "13": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "14": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "15": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "16": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "17": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "18": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        }
-      },
-      "name": "Christian Izien",
-      "team": "DET",
       "position": "DB"
     },
     {
@@ -99141,7 +99141,7 @@
     "5341": 2.89,
     "5346": 5.43,
     "5351": 1.87,
-    "5372": 2.9,
+    "5372": 2.91,
     "5409": 10.95,
     "5466": 5.43,
     "5493": 1.87,
@@ -99338,7 +99338,7 @@
     "7676": 5.43,
     "7677": 5.76,
     "7678": 4.74,
-    "7679": 2.9,
+    "7679": 2.91,
     "7687": 8.63,
     "7694": 37,
     "7695": 4.42,
@@ -99443,7 +99443,7 @@
     "8330": 2.89,
     "8331": 0.51,
     "8333": 6.28,
-    "8334": 2.9,
+    "8334": 2.91,
     "8339": 7.67,
     "8341": 1.76,
     "8343": 9.57,
@@ -99598,14 +99598,14 @@
     "11352": 3.88,
     "11370": 37.93,
     "11377": 13.23,
-    "11427": 2.9,
+    "11427": 2.91,
     "11433": 5.66,
     "11435": 42.62,
     "11439": 14.52,
     "11470": 5.79,
     "11510": 30.45,
     "11533": 131.88,
-    "11539": 127.51,
+    "11539": 127.54,
     "11557": 12.09,
     "11559": 111.8,
     "11560": 347.02,
@@ -99759,7 +99759,7 @@
     "12516": 4.11,
     "12517": 256.04,
     "12518": 226.3,
-    "12519": 245.16,
+    "12519": 242.81,
     "12520": 7.21,
     "12521": 66.74,
     "12522": 264.15,
@@ -99970,7 +99970,7 @@
     "MIN": 123.64,
     "NE": 123.44,
     "JAX": 123.16,
-    "DET": 120.98,
+    "DET": 121.02,
     "KC": 118.96,
     "GB": 117.32,
     "PIT": 112.55,
@@ -99986,7 +99986,7 @@
     "LAC": 102.62,
     "CLE": 98.3,
     "CIN": 95.49,
-    "NO": 92.29,
+    "NO": 92.31,
     "WAS": 89.56,
     "TEN": 85.54,
     "LV": 82.33,
@@ -100113,14 +100113,14 @@
     "aaronrodgers": 248.9,
     "ashton jeanty": 245.64,
     "ashtonjeanty": 245.64,
-    "luther burden": 245.16,
-    "lutherburden": 245.16,
     "cam skattebo": 244.95,
     "camskattebo": 244.95,
     "david montgomery": 244.34,
     "davidmontgomery": 244.34,
     "geno smith": 243.04,
     "genosmith": 243.04,
+    "luther burden": 242.81,
+    "lutherburden": 242.81,
     "tetairoa mcmillan": 241.73,
     "tetairoamcmillan": 241.73,
     "josh jacobs": 241.09,
@@ -100333,8 +100333,8 @@
     "evanmcpherson": 128.36,
     "baltimore ravens": 127.75,
     "baltimoreravens": 127.75,
-    "jake bates": 127.51,
-    "jakebates": 127.51,
+    "jake bates": 127.54,
+    "jakebates": 127.54,
     "will reichard": 126.24,
     "willreichard": 126.24,
     "tyjae spears": 126.03,
@@ -100373,8 +100373,8 @@
     "nickfolk": 121.93,
     "wil lutz": 121.85,
     "willutz": 121.85,
-    "detroit lions": 120.98,
-    "detroitlions": 120.98,
+    "detroit lions": 121.02,
+    "detroitlions": 121.02,
     "jonathon brooks": 120.5,
     "jonathonbrooks": 120.5,
     "trey smack": 119.02,
@@ -100481,8 +100481,8 @@
     "colbyparkinson": 92.99,
     "dominic zvada": 92.5,
     "dominiczvada": 92.5,
-    "new orleans saints": 92.29,
-    "neworleanssaints": 92.29,
+    "new orleans saints": 92.31,
+    "neworleanssaints": 92.31,
     "zachariah branch": 92.03,
     "zachariahbranch": 92.03,
     "chris bell": 91.12,
@@ -101695,20 +101695,20 @@
     "jarquezhunter": 3.06,
     "charlie jones": 2.97,
     "charliejones": 2.97,
+    "dj reed": 2.91,
+    "d.j.reed": 2.91,
+    "alim mcneill": 2.91,
+    "alimmcneill": 2.91,
+    "malcolm rodriguez": 2.91,
+    "malcolmrodriguez": 2.91,
+    "christian izien": 2.91,
+    "christianizien": 2.91,
     "tarheeb still": 2.91,
     "tarheebstill": 2.91,
     "chidobe awuzie": 2.9,
     "chidobeawuzie": 2.9,
-    "dj reed": 2.9,
-    "d.j.reed": 2.9,
     "kyle dugger": 2.9,
     "kyledugger": 2.9,
-    "alim mcneill": 2.9,
-    "alimmcneill": 2.9,
-    "malcolm rodriguez": 2.9,
-    "malcolmrodriguez": 2.9,
-    "christian izien": 2.9,
-    "christianizien": 2.9,
     "cameron heyward": 2.89,
     "cameronheyward": 2.89,
     "grady jarrett": 2.89,
