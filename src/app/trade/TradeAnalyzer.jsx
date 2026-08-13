@@ -94,6 +94,15 @@ function getSeasonPointsForPlayer(map, p) {
   return compact && map.byName?.[compact] != null ? map.byName[compact] : 0;
 }
 
+function escapePrintHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function hasSeasonPointsForPlayer(map, p) {
   if (!map || !p) return false;
   if (Object.prototype.hasOwnProperty.call(map.byId || {}, String(p.player_id))) return true;
@@ -598,14 +607,43 @@ export default function TradeAnalyzer() {
       ownerB:selectedOwnerB,
       sideA:sideA.map((player) => String(player.player_id)),
       sideB:sideB.map((player) => String(player.player_id)),
+      sideASnapshots:sideA,
+      sideBSnapshots:sideB,
       valueA:tradeValueA,
       valueB:tradeValueB,
       sourceKey,
       outcome:"Open",
     };
     localStorage.setItem(key, JSON.stringify([item, ...current].slice(0, 30)));
+    window.dispatchEvent(new CustomEvent("tfa:trade-workspaces-updated", { detail:{ key } }));
     await syncNow({ quiet:true }).catch(() => {});
     setSaveMessage("Trade saved to your Arsenal account.");
+  };
+
+  const printTradeSummary = () => {
+    if (!sideA.length && !sideB.length) {
+      setSaveMessage("Add at least one asset before printing the trade.");
+      return;
+    }
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    if (!printWindow) {
+      setSaveMessage("Your browser blocked the print window. Allow pop-ups and try again.");
+      return;
+    }
+    printWindow.opener = null;
+    const valueText = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+    const assetRows = (assets) => assets.map((player) => {
+      const name = player.full_name || player.search_full_name || player.player_id || "Unknown asset";
+      const detail = [player.position, player.team].filter(Boolean).join(" · ");
+      return `<div class="asset"><div><b>${escapePrintHtml(name)}</b>${detail ? `<small>${escapePrintHtml(detail)}</small>` : ""}</div><strong>${escapePrintHtml(valueText(getMetric(player)))}</strong></div>`;
+    }).join("") || '<div class="empty">No assets</div>';
+    const titleA = getSideTitle("A");
+    const titleB = getSideTitle("B");
+    const verdict = favoredSide === "EVEN" ? "Even trade" : `${getSideTitle(favoredSide)} favored`;
+    printWindow.document.write(`<!doctype html><html><head><title>Trade Summary · The Fantasy Arsenal</title><style>
+      @page{size:auto;margin:14mm}*{box-sizing:border-box}body{margin:0;color:#172033;font-family:Inter,Arial,sans-serif;background:#fff;font-size:12px}header{border-bottom:4px solid #16a9bd;padding-bottom:16px;margin-bottom:20px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#168ca0}h1{font-size:29px;margin:5px 0 3px}header p{margin:0;color:#667085}.sides{display:grid;grid-template-columns:1fr 1fr;gap:16px}.side{border:1px solid #d8e1ea;border-radius:14px;overflow:hidden;break-inside:avoid}.side h2{margin:0;padding:13px 15px;background:#f1f7fa;font-size:17px}.side-b h2{background:#f9f1f4}.assets{padding:4px 15px}.asset{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:11px 0;border-bottom:1px solid #e8edf2}.asset:last-child{border-bottom:0}.asset b{display:block;font-size:13px}.asset small{display:block;margin-top:3px;color:#7a8797;font-size:9px}.asset strong{font-size:14px}.empty{padding:18px 0;color:#8793a2}.total{display:flex;justify-content:space-between;padding:13px 15px;border-top:2px solid #cdd9e3;background:#fafcfd;font-size:16px}.balance{margin-top:20px;padding:17px;border:1px solid #d8e1ea;border-radius:14px;break-inside:avoid}.balance-top{display:flex;justify-content:space-between;align-items:end;gap:20px}.balance h2{margin:3px 0 0;font-size:19px}.source{color:#667085;font-size:10px}.labels{display:flex;justify-content:space-between;margin-top:17px;font-weight:800}.bar{position:relative;height:42px;margin-top:8px;border:2px solid #263648;border-radius:10px;overflow:visible;background:linear-gradient(90deg,#20b8cb 0%,#126c81 var(--marker),#6d3fa0 var(--marker),#be4161 100%)}.bar:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.75)}.football{position:absolute;z-index:2;left:var(--marker);top:50%;width:36px;height:36px;display:grid;place-items:center;transform:translate(-50%,-50%);border:2px solid #f2c66d;border-radius:50%;background:#172033;font-size:21px;color:#fff}.footer{margin-top:22px;padding-top:10px;border-top:1px solid #d8e1ea;color:#7a8797;font-size:9px}@media(max-width:650px){.sides{grid-template-columns:1fr}}@media print{.side,.balance{break-inside:avoid}}
+    </style></head><body><header><div class="eyebrow">The Fantasy Arsenal · Trade Analyzer</div><h1>Trade Summary</h1><p>${escapePrintHtml(selectedSourceLabel)}${league?.name ? ` · ${escapePrintHtml(league.name)}` : ""}</p></header><main><div class="sides"><section class="side"><h2>${escapePrintHtml(titleA)}</h2><div class="assets">${assetRows(sideA)}</div><div class="total"><b>Total value</b><strong>${escapePrintHtml(valueText(tradeValueA))}</strong></div></section><section class="side side-b"><h2>${escapePrintHtml(titleB)}</h2><div class="assets">${assetRows(sideB)}</div><div class="total"><b>Total value</b><strong>${escapePrintHtml(valueText(tradeValueB))}</strong></div></section></div><section class="balance" style="--marker:${footballPosition}%"><div class="balance-top"><div><div class="eyebrow">Trade balance meter</div><h2>${escapePrintHtml(verdict)} · ${escapePrintHtml(favoredPercentage.toFixed(1))}%</h2></div><div class="source">Based on ${escapePrintHtml(selectedSourceLabel)}</div></div><div class="labels"><span>${escapePrintHtml(titleA)} · ${sideAPercentage.toFixed(1)}%</span><span>${(100-sideAPercentage).toFixed(1)}% · ${escapePrintHtml(titleB)}</span></div><div class="bar"><div class="football">&#127944;</div></div></section></main><div class="footer">Generated by The Fantasy Arsenal. Values reflect the selected source and league settings at the time of printing.</div><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script></body></html>`);
+    printWindow.document.close();
   };
 
   return (
@@ -703,7 +741,7 @@ export default function TradeAnalyzer() {
               </div>
             </div>
 
-            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["finder","Partner Finder"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
+            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["workspace","Saved Trades"],["finder","Partner Finder"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
 
             <div className={tradeTab !== "analyzer" ? "block" : "hidden"}><TradeWorkspaceSuite
               league={league}
@@ -716,11 +754,13 @@ export default function TradeAnalyzer() {
               sideB={sideB}
               selectedOwnerA={selectedOwnerA}
               selectedOwnerB={selectedOwnerB}
-              onLoadPackage={(nextA, nextB, ownerA, ownerB) => {
+              sourceKey={sourceKey}
+              onLoadPackage={(nextA, nextB, ownerA, ownerB, savedSourceKey) => {
                 setSideA(nextA || []);
                 setSideB(nextB || []);
                 setSelectedOwnerA(ownerA || "");
                 setSelectedOwnerB(ownerB || "");
+                if (savedSourceKey) setSourceKey(savedSourceKey);
                 setTradeTab("analyzer");
               }}
               initialTab={tradeTab === "analyzer" ? "finder" : tradeTab}
@@ -794,7 +834,7 @@ export default function TradeAnalyzer() {
             </section>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <button type="button" onClick={saveCurrentTrade} className="rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-black text-cyan-100">Save trade</button>
-              <button type="button" onClick={() => window.print()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white/65">Print / save PDF</button>
+              <button type="button" onClick={printTradeSummary} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white/65">Print / save PDF</button>
               {saveMessage ? <span className="text-xs text-white/45">{saveMessage}</span> : null}
             </div>
 
