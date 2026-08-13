@@ -94,6 +94,20 @@ function getSeasonPointsForPlayer(map, p) {
   return compact && map.byName?.[compact] != null ? map.byName[compact] : 0;
 }
 
+function hasSeasonPointsForPlayer(map, p) {
+  if (!map || !p) return false;
+  if (Object.prototype.hasOwnProperty.call(map.byId || {}, String(p.player_id))) return true;
+  const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`);
+  const team = normalizeTeamAbbr(p.team);
+  const pos = normalizePos(p.position);
+  if (nn && team && Object.prototype.hasOwnProperty.call(map.byNameTeam || {}, `${nn}|${team}`)) return true;
+  if (nn && pos && Object.prototype.hasOwnProperty.call(map.byNamePos || {}, `${nn}|${pos}`)) return true;
+  if (team || pos) return false;
+  if (nn && Object.prototype.hasOwnProperty.call(map.byName || {}, nn)) return true;
+  const compact = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
+  return Boolean(compact && Object.prototype.hasOwnProperty.call(map.byName || {}, compact));
+}
+
 export default function TradeAnalyzer() {
   const { isConnected, syncNow } = useArsenalAccount();
   const {
@@ -109,6 +123,7 @@ export default function TradeAnalyzer() {
     sourceKey,
     setSourceKey,
     getProjection,
+    hasProjection,
     getWeeklyProjection,
     projectionScoring,
   } = useSleeper();
@@ -335,6 +350,41 @@ export default function TradeAnalyzer() {
     DEFAULT_SOURCES.find((source) => source.key === sourceKey)?.label ||
     sourceKey ||
     "Selected source";
+  const isPlayerRanked = (player) => {
+    if (metricMode === "projections") {
+      if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projectionSource)) {
+        return hasProjection?.(player, projectionSource) ?? getMetric(player) > 0;
+      }
+      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projMaps.CSV;
+      return hasSeasonPointsForPlayer(chosen, player);
+    }
+    const formatKey = `${format === "dynasty" ? "dynasty" : "redraft"}_${qbType === "sf" ? "sf" : "1qb"}`;
+    const scoring = String(projectionScoring || "ppr").toLowerCase();
+    if (valueSource !== "FantasyCalc") {
+      const sourcePresence = player?.source_presence?.[valueSource];
+      let keys;
+      if (["DynastyProcess", "KeepTradeCut", "IDPShow"].includes(valueSource)) keys = [qbType === "sf" ? "superflex" : "one_qb"];
+      else if (valueSource === "IDynastyP") keys = scoring === "tep"
+        ? [qbType === "sf" ? "superflex_tep" : "one_qb_tep", qbType === "sf" ? "superflex" : "one_qb"]
+        : [qbType === "sf" ? "superflex" : "one_qb"];
+      else if (valueSource === "FantasyProsECR") keys = [`${formatKey}_${["std", "half", "ppr"].includes(scoring) ? scoring : "ppr"}`];
+      else if (valueSource === "FantasyPros") keys = format !== "dynasty" ? [] : scoring === "tep"
+        ? [`${formatKey}_tep`, formatKey]
+        : [formatKey];
+      else keys = [formatKey];
+      if (!sourcePresence) return getMetric(player) > 0;
+      return keys.some((key) => sourcePresence[key]);
+    }
+    const base = formatKey;
+    const profile = [
+      "std", "half", "ppr", "std-tep", "half-tep", "ppr-tep",
+      "std-tep-plus", "half-tep-plus", "ppr-tep-plus",
+    ].includes(scoring) ? scoring : "ppr";
+    const presence =
+      player?.fc_presence?.[`${base}__${profile}`] ??
+      player?.fc_presence?.[base];
+    return presence == null ? getMetric(player) > 0 : Boolean(presence);
+  };
   const playerGapEquivalent = useMemo(() => {
     const gap = Math.abs(tradeValueA - tradeValueB);
     if (!gap || !sideA.length || !sideB.length) return null;
@@ -771,6 +821,8 @@ export default function TradeAnalyzer() {
                       players={filteredPlayers("A")}
                       onSelect={(p) => addPlayer("A", p)}
                       getPlayerValue={getMetric}
+                      isPlayerRanked={isPlayerRanked}
+                      sourceLabel={selectedSourceLabel}
                     />
                   }
                 />
@@ -805,6 +857,8 @@ export default function TradeAnalyzer() {
                       players={filteredPlayers("B")}
                       onSelect={(p) => addPlayer("B", p)}
                       getPlayerValue={getMetric}
+                      isPlayerRanked={isPlayerRanked}
+                      sourceLabel={selectedSourceLabel}
                     />
                   }
                 />

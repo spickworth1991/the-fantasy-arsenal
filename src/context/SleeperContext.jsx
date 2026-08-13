@@ -926,6 +926,20 @@ export const SleeperProvider = ({ children }) => {
     return safeNum(best?.pts);
   };
 
+  const hasProjection = (p, source = "FFA") => {
+    let src = String(source || "FFA");
+    if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL"].includes(src) || !p) return false;
+    const idx = projectionIndexes[src];
+    if (!idx) return false;
+    const fullName = p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
+    return Boolean(idx.pickBest({
+      name: fullName,
+      pos: getSleeperPosForProj(p),
+      team: getSleeperTeamForProj(p),
+    }));
+  };
+
   const getWeeklyProjection = (p, source = "FFA", week = null) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
@@ -1043,7 +1057,7 @@ export const SleeperProvider = ({ children }) => {
    * - iDynastyP: candidate-based; requires Sleeper pos (no pos => null)
    */
   // ✅ Bump cache version so your fn_values aliases actually get written.
-    const CACHE_KEY = "playerDB_v1.479";
+    const CACHE_KEY = "playerDB_v1.481";
 
   const preloadPlayers = async () => {
     try {
@@ -1086,6 +1100,8 @@ export const SleeperProvider = ({ children }) => {
               team: normTeam(live.team),
               // These fields exist only in the locally enriched player records.
               fc_values: cached.fc_values,
+              fc_presence: cached.fc_presence,
+              source_presence: cached.source_presence,
               dp_values: cached.dp_values,
               ktc_values: cached.ktc_values,
               fn_values: cached.fn_values,
@@ -1397,6 +1413,28 @@ export const SleeperProvider = ({ children }) => {
         };
       };
 
+      const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
+      const get2WayPresence = (index, fullName, pos0, team0) => {
+        const cand = index?.pickBest(fullName, pos0, team0);
+        return {
+          one_qb: hasOwn(cand, "one_qb"),
+          superflex: hasOwn(cand, "superflex"),
+          one_qb_tep: hasOwn(cand, "one_qb_tep"),
+          superflex_tep: hasOwn(cand, "superflex_tep"),
+        };
+      };
+      const get4WayPresence = (index, fullName, pos0, team0) => {
+        const values = index?.pickBest(fullName, pos0, team0)?.values;
+        return Object.fromEntries([
+          "dynasty_sf", "dynasty_1qb", "redraft_sf", "redraft_1qb",
+          "dynasty_sf_tep", "dynasty_1qb_tep",
+        ].map((key) => [key, hasOwn(values, key)]));
+      };
+      const getEcrPresence = (index, fullName, pos0, team0) => {
+        const values = index?.pickBest(fullName, pos0, team0)?.values;
+        return Object.fromEntries(ECR_VALUE_KEYS.map((key) => [key, hasOwn(values, key)]));
+      };
+
       const finalPlayers = {};
 
       Object.keys(playersData || {}).forEach((id) => {
@@ -1417,6 +1455,18 @@ export const SleeperProvider = ({ children }) => {
             Object.entries(fantasyCalcVariantMaps).map(([bucket, values]) => [
               bucket.toLowerCase(),
               safeNum(values[id]),
+            ]),
+          ),
+        };
+        const fc_presence = {
+          dynasty_sf: Object.prototype.hasOwnProperty.call(dynastySFMap, id),
+          dynasty_1qb: Object.prototype.hasOwnProperty.call(dynasty1QBMap, id),
+          redraft_sf: Object.prototype.hasOwnProperty.call(redraftSFMap, id),
+          redraft_1qb: Object.prototype.hasOwnProperty.call(redraft1QBMap, id),
+          ...Object.fromEntries(
+            Object.entries(fantasyCalcVariantMaps).map(([bucket, values]) => [
+              bucket.toLowerCase(),
+              Object.prototype.hasOwnProperty.call(values, id),
             ]),
           ),
         };
@@ -1449,6 +1499,17 @@ export const SleeperProvider = ({ children }) => {
           ? getIDP2FromIndex(idpShowIndex, fullName, pos, team)
           : { one_qb: 0, superflex: 0 };
 
+        const source_presence = fantasyRelevant ? {
+          DynastyProcess: get2WayPresence(dpIndex, fullName, pos, team),
+          KeepTradeCut: get2WayPresence(ktcIndex, fullName, pos, team),
+          FantasyNavigator: get4WayPresence(fnIndex, fullName, pos, team),
+          FantasyPros: get4WayPresence(fpIndex, fullName, pos, team),
+          FantasyProsECR: getEcrPresence(fpEcrIndex, fullName, pos, team),
+          TheFantasyArsenal: get4WayPresence(spIndex, fullName, pos, team),
+          IDynastyP: get2WayPresence(idpIndex, fullName, pos, team),
+          IDPShow: get2WayPresence(idpShowIndex, fullName, pos, team),
+        } : {};
+
         const hasPos = !!pos;
 
         const hasAnySignal =
@@ -1470,6 +1531,8 @@ export const SleeperProvider = ({ children }) => {
             position: pos,
             team,
             fc_values,
+            fc_presence,
+            source_presence,
             dp_values,
             ktc_values,
             fn_values,
@@ -1491,6 +1554,7 @@ export const SleeperProvider = ({ children }) => {
         const team = "";
 
         const fc_values = get4WayFromIndex(fcPickIndex, fullName, pos, team);
+        const fc_presence = get4WayPresence(fcPickIndex, fullName, pos, team);
 
         const dp_values = get2WayFromIndex(dpIndex, fullName, pos, team);
         const ktc_values = get2WayFromIndex(ktcIndex, fullName, pos, team);
@@ -1498,6 +1562,14 @@ export const SleeperProvider = ({ children }) => {
         const sp_values = get4WayFromIndex(spIndex, fullName, pos, team);
         const idp_values = getIDP2FromIndex(idpIndex, fullName, pos, team);
         const idpshow_values = getIDP2FromIndex(idpShowIndex, fullName, pos, team);
+        const source_presence = {
+          DynastyProcess: get2WayPresence(dpIndex, fullName, pos, team),
+          KeepTradeCut: get2WayPresence(ktcIndex, fullName, pos, team),
+          FantasyNavigator: get4WayPresence(fnIndex, fullName, pos, team),
+          TheFantasyArsenal: get4WayPresence(spIndex, fullName, pos, team),
+          IDynastyP: get2WayPresence(idpIndex, fullName, pos, team),
+          IDPShow: get2WayPresence(idpShowIndex, fullName, pos, team),
+        };
 
         const hasAnySignal =
           Object.values(fc_values).some((v) => v > 0) ||
@@ -1521,6 +1593,8 @@ export const SleeperProvider = ({ children }) => {
           age: null,
           years_exp: 0,
           fc_values,
+          fc_presence,
+          source_presence,
           dp_values,
           ktc_values,
           fn_values,
@@ -1628,6 +1702,7 @@ export const SleeperProvider = ({ children }) => {
       setProjectionScoring,
       preloadProjections,
       getProjection,
+      hasProjection,
       getWeeklyProjection,
 
       // ✅ Back-compat: single getter that returns the "active metric"
