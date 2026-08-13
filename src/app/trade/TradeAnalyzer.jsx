@@ -388,7 +388,10 @@ export default function TradeAnalyzer() {
   const playerGapEquivalent = useMemo(() => {
     const gap = Math.abs(tradeValueA - tradeValueB);
     if (!gap || !sideA.length || !sideB.length) return null;
-    const candidates = Object.values(players || {})
+    const favoredAssets = tradeValueA > tradeValueB ? sideA : sideB;
+    const favoredSide = tradeValueA > tradeValueB ? getSideTitle("A") : getSideTitle("B");
+    const shortSide = tradeValueA < tradeValueB ? getSideTitle("A") : getSideTitle("B");
+    const candidates = favoredAssets
       .filter((player) =>
         ["QB", "RB", "WR", "TE"].includes(
           String(player?.position || "").toUpperCase(),
@@ -398,23 +401,27 @@ export default function TradeAnalyzer() {
       .filter((row) => row.value > 0)
       .sort((a, b) => Math.abs(a.value - gap) - Math.abs(b.value - gap));
     const closest = candidates[0];
-    if (!closest || Math.abs(closest.value - gap) / gap > 0.18) return null;
+    if (!closest || Math.abs(closest.value - gap) / gap > 0.25) return null;
     const name =
       closest.player.full_name ||
       closest.player.search_full_name ||
       "premium starter";
-    const shortSide = tradeValueA < tradeValueB ? getSideTitle("A") : getSideTitle("B");
     const templates = [
-      `${shortSide} is off by roughly one ${name}.`,
-      `That gap is basically a whole ${name}.`,
-      `${shortSide} needs about one ${name} to bring this back to midfield.`,
-      `Think of the difference as one ${name}-sized asset.`,
-      `The missing piece is approximately one ${name}.`,
+      `${favoredSide} is ahead by roughly the entire value of ${name} — and ${name} is already in this trade.`,
+      `This is basically ${name} being included for free on the ${favoredSide} side.`,
+      `Take ${name} out of the ${favoredSide} package and this gets much closer to even.`,
+      `The advantage is about one whole ${name}, who is part of the deal itself.`,
+      `${shortSide} is effectively giving up an extra ${name}-sized piece in this very trade.`,
+      `${name} is not just a throw-in here — their value is roughly the entire gap.`,
+      `The imbalance is nearly the value of ${name}, one of the players actually changing hands.`,
+      `In practical terms, the ${favoredSide} side is winning by about the included ${name}.`,
+      `You could almost remove ${name} from ${favoredSide} and land near midfield.`,
+      `That margin is a whole real asset from this deal: approximately ${name}.`,
     ];
-    const seed = `${closest.player.player_id || name}:${Math.round(gap)}`;
-    const index = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0) % templates.length;
+    const seed = `${sourceKey}:${favoredAssets.map((asset) => asset.player_id || asset.full_name).join("|")}:${Math.round(gap)}`;
+    const index = [...seed].reduce((hash, char) => ((hash * 31) + char.charCodeAt(0)) >>> 0, 7) % templates.length;
     return { text: templates[index], name, value: closest.value };
-  }, [getMetric, players, sideA.length, sideB.length, tradeValueA, tradeValueB]);
+  }, [getMetric, sideA, sideB, sourceKey, tradeValueA, tradeValueB]);
   const getWeeklyMetric = useMemo(() => {
     if (metricMode !== "projections") return (p) => Math.sqrt(Math.max(0, getMetric(p)));
     if (projectionSource === "ARSENAL_MODEL") return (p, currentWeek) => getWeeklyProjection?.(p, projectionSource, currentWeek) || 0;

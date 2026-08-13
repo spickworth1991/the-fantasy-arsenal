@@ -961,6 +961,27 @@ async function updateFantasyCalc() {
         current.variant_values[profile.key] = Number(row?.value) || 0;
         if (profile.key === "ppr") current.value = Number(row?.value) || 0;
         compact[key].set(identity, current);
+
+        // FantasyCalc can omit zero-value players from its standalone redraft
+        // boards while still explicitly publishing their redraftValue on the
+        // dynasty row. Preserve that distinction so zero means "ranked at 0"
+        // rather than "missing from FantasyCalc."
+        if (isDynasty && Number.isFinite(Number(row?.redraftValue))) {
+          const redraftKey = numQbs === 2 ? "Redraft_SF" : "Redraft_1QB";
+          const redraftValue = Number(row.redraftValue);
+          const redraftCurrent = compact[redraftKey].get(identity) || {
+            ...row,
+            value: 0,
+            variant_values: {},
+          };
+          if (!Object.prototype.hasOwnProperty.call(redraftCurrent.variant_values, profile.key)) {
+            redraftCurrent.variant_values[profile.key] = redraftValue;
+          }
+          if (profile.key === "ppr" && !compact[redraftKey].has(identity)) {
+            redraftCurrent.value = redraftValue;
+          }
+          compact[redraftKey].set(identity, redraftCurrent);
+        }
       });
     } catch (error) {
       console.error(`  ❌ Failed to fetch FantasyCalc ${key}:`, error.message);
