@@ -27,7 +27,7 @@
     "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
     "git": "git add . && git commit -m \"PlayerPopUp\" && git push origin main",
-    "sync": "node ./scripts/git-sync.mjs \"StatCentralUPDATE\""
+    "sync": "node ./scripts/git-sync.mjs \"TradeAnalyzer\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

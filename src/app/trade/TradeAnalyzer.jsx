@@ -11,6 +11,7 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { makeGetPlayerValue } from "../../lib/values";
+import { parsePickLabel, roundToOrdinal } from "../../lib/picks";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -99,7 +100,6 @@ export default function TradeAnalyzer() {
     username,
     leagues,
     players,
-    activeLeague,
     setActiveLeague,
     fetchLeagueRostersSilent,
     format,
@@ -128,21 +128,28 @@ export default function TradeAnalyzer() {
   const [tradeTab, setTradeTab] = useState("analyzer");
   const [saveMessage, setSaveMessage] = useState("");
   const [offerBufferPct, setOfferBufferPct] = useState(0);
+  const [leaguePickAssets, setLeaguePickAssets] = useState({});
+  const [tradeLeagueId, setTradeLeagueId] = useState("");
   const routeHandoffApplied = useRef(false);
 
   useEffect(() => {
-    if (routeHandoffApplied.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const requestedLeague = params.get("league");
-    const requestedTab = params.get("tab");
-    if (requestedLeague && leagues.some((item) => String(item.league_id) === String(requestedLeague))) {
-      routeHandoffApplied.current = true;
-      handleLeagueChange(requestedLeague);
-    }
-    if (["analyzer","finder","block","history","market"].includes(requestedTab)) setTradeTab(requestedTab);
-    // URL handoff is intentionally applied when the loaded portfolio changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leagues]);
+    const resetLeagueContext = () => {
+      setTradeLeagueId("");
+      setActiveLeague(null);
+      setSideA([]);
+      setSideB([]);
+      setSelectedOwnerA("");
+      setSelectedOwnerB("");
+      setLeaguePickAssets({});
+    };
+    resetLeagueContext();
+    window.addEventListener("pageshow", resetLeagueContext);
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (["analyzer", "finder", "block", "history", "market"].includes(requestedTab))
+      setTradeTab(requestedTab);
+    routeHandoffApplied.current = true;
+    return () => window.removeEventListener("pageshow", resetLeagueContext);
+  }, [setActiveLeague]);
 
   useEffect(() => {
     let mounted = true;
@@ -204,18 +211,76 @@ export default function TradeAnalyzer() {
   }, []);
 
   const handleLeagueChange = async (leagueId) => {
-    setActiveLeague(leagueId);
+    setTradeLeagueId(leagueId || "");
+    setActiveLeague(leagueId || null);
     setSideA([]);
     setSideB([]);
     setSelectedOwnerA("");
     setSelectedOwnerB("");
-    if (leagueId) await fetchLeagueRostersSilent(leagueId);
+    setLeaguePickAssets({});
+    if (leagueId) {
+      const loaded = await fetchLeagueRostersSilent(leagueId);
+      const selectedLeague = {
+        ...(leagues.find((item) => String(item.league_id) === String(leagueId)) || {}),
+        ...(loaded || {}),
+      };
+      const [tradedPicks, drafts] = await Promise.all([
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`)
+          .then((response) => (response.ok ? response.json() : []))
+          .catch(() => []),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`)
+          .then((response) => (response.ok ? response.json() : []))
+          .catch(() => []),
+      ]);
+      const rosters = selectedLeague?.rosters || [];
+      const season = Number(selectedLeague?.season || new Date().getFullYear());
+      const completed = new Set(
+        (drafts || [])
+          .filter((draft) => String(draft.status) === "complete")
+          .map((draft) => String(draft.season)),
+      );
+      const tradedOwner = new Map(
+        (tradedPicks || []).map((pick) => [
+          `${pick.season}-${pick.round}-${pick.roster_id}`,
+          String(pick.owner_id),
+        ]),
+      );
+      const genericPicks = Object.values(players || {}).filter(
+        (player) => String(player?.position || "").toUpperCase() === "PICK",
+      );
+      const next = {};
+      [season, season + 1, season + 2].forEach((pickSeason) => {
+        if (completed.has(String(pickSeason))) return;
+        const rounds = Math.max(1, Number(selectedLeague?.settings?.draft_rounds || 4));
+        for (let round = 1; round <= rounds; round += 1) {
+          const template = genericPicks.find((player) => {
+            const meta = parsePickLabel(player.full_name);
+            return meta?.year === pickSeason && meta?.round === round && meta.kind === "generic";
+          });
+          if (!template) continue;
+          rosters.forEach((originalRoster) => {
+            const key = `${pickSeason}-${round}-${originalRoster.roster_id}`;
+            const ownerRosterId = tradedOwner.get(key) || String(originalRoster.roster_id);
+            next[`LEAGUE_PICK_${key}`] = {
+              ...template,
+              player_id: `LEAGUE_PICK_${key}`,
+              full_name: `${pickSeason} ${roundToOrdinal(round)} · original roster ${originalRoster.roster_id}`,
+              league_pick_owner_roster_id: ownerRosterId,
+            };
+          });
+        }
+      });
+      setLeaguePickAssets(next);
+    }
   };
 
-  const league = leagues.find((lg) => lg.league_id === activeLeague);
+  const league = leagues.find(
+    (lg) => String(lg.league_id) === String(tradeLeagueId),
+  );
   const allOwners = league
     ? (league.rosters || []).map((roster) => ({
-        user_id: roster.owner_id,
+      user_id: roster.owner_id,
+        roster_id: String(roster.roster_id),
         display_name: league.users?.find((u) => u.user_id === roster.owner_id)?.display_name || "Unknown",
         team_name: league.users?.find((u) => u.user_id === roster.owner_id)?.metadata?.team_name || null,
         players: roster.players || [],
@@ -249,6 +314,57 @@ export default function TradeAnalyzer() {
 
   const tradeValueA = sideA.reduce((sum, p) => sum + getMetric(p), 0);
   const tradeValueB = sideB.reduce((sum, p) => sum + getMetric(p), 0);
+  const totalTradeValue = tradeValueA + tradeValueB;
+  const sideAPercentage = totalTradeValue
+    ? (tradeValueA / totalTradeValue) * 100
+    : 50;
+  const footballPosition = Math.max(3, Math.min(97, 100 - sideAPercentage));
+  const favoredSide =
+    !totalTradeValue || Math.abs(tradeValueA - tradeValueB) < 0.5
+      ? "EVEN"
+      : tradeValueA > tradeValueB
+        ? "A"
+        : "B";
+  const favoredPercentage =
+    favoredSide === "A"
+      ? sideAPercentage
+      : favoredSide === "B"
+        ? 100 - sideAPercentage
+        : 50;
+  const selectedSourceLabel =
+    DEFAULT_SOURCES.find((source) => source.key === sourceKey)?.label ||
+    sourceKey ||
+    "Selected source";
+  const playerGapEquivalent = useMemo(() => {
+    const gap = Math.abs(tradeValueA - tradeValueB);
+    if (!gap || !sideA.length || !sideB.length) return null;
+    const candidates = Object.values(players || {})
+      .filter((player) =>
+        ["QB", "RB", "WR", "TE"].includes(
+          String(player?.position || "").toUpperCase(),
+        ),
+      )
+      .map((player) => ({ player, value: Number(getMetric(player) || 0) }))
+      .filter((row) => row.value > 0)
+      .sort((a, b) => Math.abs(a.value - gap) - Math.abs(b.value - gap));
+    const closest = candidates[0];
+    if (!closest || Math.abs(closest.value - gap) / gap > 0.18) return null;
+    const name =
+      closest.player.full_name ||
+      closest.player.search_full_name ||
+      "premium starter";
+    const shortSide = tradeValueA < tradeValueB ? getSideTitle("A") : getSideTitle("B");
+    const templates = [
+      `${shortSide} is off by roughly one ${name}.`,
+      `That gap is basically a whole ${name}.`,
+      `${shortSide} needs about one ${name} to bring this back to midfield.`,
+      `Think of the difference as one ${name}-sized asset.`,
+      `The missing piece is approximately one ${name}.`,
+    ];
+    const seed = `${closest.player.player_id || name}:${Math.round(gap)}`;
+    const index = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0) % templates.length;
+    return { text: templates[index], name, value: closest.value };
+  }, [getMetric, players, sideA.length, sideB.length, tradeValueA, tradeValueB]);
   const getWeeklyMetric = useMemo(() => {
     if (metricMode !== "projections") return (p) => Math.sqrt(Math.max(0, getMetric(p)));
     if (projectionSource === "ARSENAL_MODEL") return (p, currentWeek) => getWeeklyProjection?.(p, projectionSource, currentWeek) || 0;
@@ -265,9 +381,9 @@ export default function TradeAnalyzer() {
   // Keep the current package available to league-aware tools. This is a local
   // handoff only; it never writes anything to Sleeper.
   useEffect(() => {
-    if (!activeLeague || (!sideA.length && !sideB.length)) return;
+    if (!tradeLeagueId || (!sideA.length && !sideB.length)) return;
     const payload = {
-      leagueId: String(activeLeague),
+      leagueId: String(tradeLeagueId),
       ownerA: String(selectedOwnerA || ""),
       ownerB: String(selectedOwnerB || ""),
       sideA: sideA.map((player) => String(player.player_id)),
@@ -276,32 +392,52 @@ export default function TradeAnalyzer() {
       updatedAt: Date.now(),
     };
     try {
-      localStorage.setItem(`tfa:trade-handoff:${activeLeague}`, JSON.stringify(payload));
+      localStorage.setItem(`tfa:trade-handoff:${tradeLeagueId}`, JSON.stringify(payload));
       localStorage.setItem("tfa:trade-handoff:latest", JSON.stringify(payload));
     } catch {}
-  }, [activeLeague, selectedOwnerA, selectedOwnerB, sideA, sideB, sourceKey]);
+  }, [tradeLeagueId, selectedOwnerA, selectedOwnerB, sideA, sideB, sourceKey]);
 
   const addPlayer = (side, player) => {
     if (!player) return;
     if ((side === "A" && sideA.includes(player)) || (side === "B" && sideB.includes(player))) return;
+    const isDraftPick = String(player.position || "").toUpperCase() === "PICK";
 
     const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
     const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
 
-    if (activeLeague) {
+    if (tradeLeagueId) {
       if (ownerA && ownerB) {
-        const allowedPlayers = side === "A" ? ownerB.players : ownerA.players;
-        if (!allowedPlayers.includes(player.player_id)) return;
-      } else if (ownerA && !ownerB && side === "A" && ownerA.players.includes(player.player_id)) {
-        return;
-      } else if (ownerB && !ownerA && side === "B" && ownerB.players.includes(player.player_id)) {
-        return;
+        const allowedOwner = side === "A" ? ownerB : ownerA;
+        if (isDraftPick) {
+          if (String(player.league_pick_owner_roster_id || "") !== allowedOwner.roster_id) return;
+        } else if (!allowedOwner.players.includes(player.player_id)) return;
+      } else if (ownerA && !ownerB) {
+        const ownedByA = isDraftPick
+          ? String(player.league_pick_owner_roster_id || "") === ownerA.roster_id
+          : ownerA.players.includes(player.player_id);
+        if ((side === "B" && !ownedByA) || (side === "A" && ownedByA)) return;
+      } else if (ownerB && !ownerA) {
+        const ownedByB = isDraftPick
+          ? String(player.league_pick_owner_roster_id || "") === ownerB.roster_id
+          : ownerB.players.includes(player.player_id);
+        if ((side === "A" && !ownedByB) || (side === "B" && ownedByB)) return;
       }
 
-      const playerOwner = league?.rosters?.find((r) => r.players.includes(player.player_id));
+      const playerOwner = !isDraftPick
+        ? league?.rosters?.find((r) => r.players.includes(player.player_id))
+        : null;
       if (playerOwner) {
         if (side === "B" && !selectedOwnerA) setSelectedOwnerA(playerOwner.owner_id);
         if (side === "A" && !selectedOwnerB) setSelectedOwnerB(playerOwner.owner_id);
+      }
+      if (isDraftPick) {
+        const pickOwner = allOwners.find(
+          (owner) => owner.roster_id === String(player.league_pick_owner_roster_id || ""),
+        );
+        if (pickOwner) {
+          if (side === "B" && !selectedOwnerA) setSelectedOwnerA(pickOwner.user_id);
+          if (side === "A" && !selectedOwnerB) setSelectedOwnerB(pickOwner.user_id);
+        }
       }
     }
 
@@ -318,7 +454,7 @@ export default function TradeAnalyzer() {
   const recSide = Math.abs(diff) >= 50 ? (diff > 0 ? "B" : "A") : null;
 
   let candidatePool = Object.values(players || {});
-  if (activeLeague) {
+  if (tradeLeagueId) {
     const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
     const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
     if (ownerA && ownerB) {
@@ -340,33 +476,46 @@ export default function TradeAnalyzer() {
     : [];
 
   const filteredPlayers = (side) => {
-    if (!activeLeague) return players;
+    if (!tradeLeagueId) return players;
+    const picksFor = (owner) =>
+      Object.entries(leaguePickAssets).filter(
+        ([, pick]) =>
+          !owner ||
+          String(pick.league_pick_owner_roster_id) === String(owner.roster_id),
+      );
+    const withPicks = (map, owner) =>
+      Object.fromEntries([...Object.entries(map), ...picksFor(owner)]);
     const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
     const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
     if (ownerA && ownerB) {
       const source = side === "A" ? ownerB : ownerA;
-      return (source.players || []).reduce((map, pid) => {
+      return withPicks((source.players || []).reduce((map, pid) => {
         if (players[pid]) map[pid] = players[pid];
         return map;
-      }, {});
+      }, {}), source);
     }
     if (ownerA && !ownerB) {
       return side === "B"
-        ? (ownerA.players || []).reduce((m, pid) => {
+        ? withPicks((ownerA.players || []).reduce((m, pid) => {
             if (players[pid]) m[pid] = players[pid];
             return m;
-          }, {})
-        : Object.fromEntries(Object.entries(players).filter(([pid]) => !(ownerA.players || []).includes(pid)));
+          }, {}), ownerA)
+        : Object.fromEntries([...Object.entries(players).filter(([pid, player]) => !(ownerA.players || []).includes(pid) && String(player?.position || "").toUpperCase() !== "PICK"), ...picksFor(null)]);
     }
     if (ownerB && !ownerA) {
       return side === "A"
-        ? (ownerB.players || []).reduce((m, pid) => {
+        ? withPicks((ownerB.players || []).reduce((m, pid) => {
             if (players[pid]) m[pid] = players[pid];
             return m;
-          }, {})
-        : Object.fromEntries(Object.entries(players).filter(([pid]) => !(ownerB.players || []).includes(pid)));
+          }, {}), ownerB)
+        : Object.fromEntries([...Object.entries(players).filter(([pid, player]) => !(ownerB.players || []).includes(pid) && String(player?.position || "").toUpperCase() !== "PICK"), ...picksFor(null)]);
     }
-    return players;
+    return Object.fromEntries([
+      ...Object.entries(players || {}).filter(
+        ([, player]) => String(player?.position || "").toUpperCase() !== "PICK",
+      ),
+      ...picksFor(null),
+    ]);
   };
 
   const topRecommendations = Object.values(players || {})
@@ -382,7 +531,7 @@ export default function TradeAnalyzer() {
       setSaveMessage("Add at least one asset before saving.");
       return;
     }
-    const key = `tfa:trade-workspaces:${String(activeLeague || "global")}`;
+    const key = `tfa:trade-workspaces:${String(tradeLeagueId || "global")}`;
     let current = [];
     try { current = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
     const item = {
@@ -440,6 +589,26 @@ export default function TradeAnalyzer() {
                     ? "Comparing sides with season projection totals."
                     : "Comparing sides with the selected trade market."}
                 </div>
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-violet-300/15 bg-violet-300/[0.045] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-black text-violet-100">
+                      Negotiation cushion
+                    </div>
+                    <p className="mt-1 text-xs text-white/40">
+                      Recommend an add that leaves the receiving side slightly ahead, creating room for a counter.
+                    </p>
+                  </div>
+                  <select
+                    value={offerBufferPct}
+                    onChange={(event) => setOfferBufferPct(Number(event.target.value))}
+                    className="min-h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"
+                  >
+                    <option value="0">Exact balance</option>
+                    <option value="3">3% cushion</option>
+                    <option value="5">5% cushion</option>
+                    <option value="10">10% cushion</option>
+                  </select>
+                </div>
               </div>
               </details>
 
@@ -449,8 +618,10 @@ export default function TradeAnalyzer() {
                   <div className="min-w-0 flex-1">
                     <label className="mb-1 block text-xs text-white/55">Choose a league for roster-aware trading</label>
                     <select
-                      value={activeLeague || ""}
+                      value={tradeLeagueId}
                       onChange={(e) => handleLeagueChange(e.target.value)}
+                      data-account-persist="off"
+                      aria-label="Trade Analyzer league"
                       className="w-full rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
                     >
                       <option value="">Choose a League</option>
@@ -461,14 +632,10 @@ export default function TradeAnalyzer() {
                       ))}
                     </select>
                   </div>
-                  {activeLeague ? (
+                  {tradeLeagueId ? (
                     <button
                       onClick={() => {
-                        setActiveLeague(null);
-                        setSideA([]);
-                        setSideB([]);
-                        setSelectedOwnerA("");
-                        setSelectedOwnerB("");
+                        handleLeagueChange("");
                       }}
                       className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
                     >
@@ -517,7 +684,57 @@ export default function TradeAnalyzer() {
                 <div className="mt-1 text-lg font-semibold text-white">{recommendation}</div>
               </div>
             </div>
-            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-300/15 bg-violet-300/[0.045] p-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-black text-violet-100">Negotiation cushion</div><p className="mt-1 text-xs text-white/40">Optionally recommend an add that leaves the receiving side slightly ahead, creating room for a counter without immediately falling below the current package value.</p></div><select value={offerBufferPct} onChange={(event)=>setOfferBufferPct(Number(event.target.value))} className="min-h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="0">Exact balance</option><option value="3">3% cushion</option><option value="5">5% cushion</option><option value="10">10% cushion</option></select></div>
+            <section className="relative mb-4 overflow-hidden rounded-3xl border border-cyan-300/15 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,.12),transparent_46%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-4 shadow-[0_28px_80px_-55px_rgba(34,211,238,.85)] sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[.24em] text-cyan-200/55">
+                    Trade balance meter
+                  </div>
+                  <div className="mt-1 text-xl font-black text-white">
+                    {!totalTradeValue
+                      ? "Add assets to compare the trade"
+                      : favoredSide === "EVEN"
+                        ? "Dead even · 50% / 50%"
+                        : `${getSideTitle(favoredSide)} favored · ${favoredPercentage.toFixed(1)}%`}
+                  </div>
+                </div>
+                <div className="text-[10px] text-white/38">
+                  Based on {selectedSourceLabel}
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between text-xs font-black uppercase tracking-[.14em]">
+                <span className={favoredSide === "A" ? "text-cyan-100" : "text-white/45"}>
+                  {getSideTitle("A")} · {sideAPercentage.toFixed(1)}%
+                </span>
+                <span className={favoredSide === "B" ? "text-rose-100" : "text-white/45"}>
+                  {(100 - sideAPercentage).toFixed(1)}% · {getSideTitle("B")}
+                </span>
+              </div>
+
+              <div className="relative mt-3 h-12 rounded-xl border-2 border-white/15 bg-slate-950 p-1 shadow-[inset_0_0_18px_rgba(0,0,0,.85)]">
+                <div className="absolute inset-1 overflow-hidden rounded-lg">
+                  <div className="absolute inset-y-0 left-0 bg-[repeating-linear-gradient(90deg,rgba(34,211,238,.78)_0,rgba(34,211,238,.78)_12px,rgba(8,47,73,.8)_12px,rgba(8,47,73,.8)_16px)] transition-[width] duration-500 ease-out" style={{ width: `${footballPosition}%` }} />
+                  <div className="absolute inset-y-0 right-0 bg-[repeating-linear-gradient(90deg,rgba(76,29,149,.85)_0,rgba(76,29,149,.85)_12px,rgba(225,29,72,.7)_12px,rgba(225,29,72,.7)_16px)] transition-[width] duration-500 ease-out" style={{ width: `${100 - footballPosition}%` }} />
+                  <div className="absolute inset-y-0 left-1/2 w-px bg-white/45" />
+                </div>
+                <div
+                  className="absolute top-1/2 z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-amber-200/40 bg-slate-950 text-[22px] shadow-[0_0_20px_rgba(251,191,36,.5)] transition-[left] duration-500 ease-out"
+                  style={{ left: `${footballPosition}%` }}
+                  aria-label={`Trade balance marker: ${favoredSide === "EVEN" ? "even" : `${getSideTitle(favoredSide)} favored`}`}
+                >
+                  🏈
+                </div>
+              </div>
+              <div className="mt-2 text-center text-[10px] text-white/30">
+                The football moves toward the side receiving more total value from the active source.
+              </div>
+              {playerGapEquivalent ? (
+                <div className="mt-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.055] px-3 py-2.5 text-center text-xs font-bold text-amber-100/85 shadow-[inset_0_0_18px_rgba(251,191,36,.035)]">
+                  🏟️ {playerGapEquivalent.text}
+                </div>
+              ) : null}
+            </section>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <button type="button" onClick={saveCurrentTrade} className="rounded-xl bg-cyan-300/10 px-4 py-2.5 text-xs font-black text-cyan-100">Save trade</button>
               <button type="button" onClick={() => window.print()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white/65">Print / save PDF</button>
@@ -526,10 +743,12 @@ export default function TradeAnalyzer() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                {activeLeague ? (
+                {tradeLeagueId ? (
                   <select
                     value={selectedOwnerA}
                     onChange={(e) => setSelectedOwnerA(e.target.value)}
+                    data-account-persist="off"
+                    aria-label="Trade Analyzer Side A owner"
                     className="bg-gray-800 text-white p-2 rounded mb-4 w-full"
                   >
                     <option value="">Select Owner</option>
@@ -558,10 +777,12 @@ export default function TradeAnalyzer() {
               </div>
 
               <div>
-                {activeLeague ? (
+                {tradeLeagueId ? (
                   <select
                     value={selectedOwnerB}
                     onChange={(e) => setSelectedOwnerB(e.target.value)}
+                    data-account-persist="off"
+                    aria-label="Trade Analyzer Side B owner"
                     className="bg-gray-800 text-white p-2 rounded mb-4 w-full"
                   >
                     <option value="">Select Owner</option>
