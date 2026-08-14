@@ -905,12 +905,12 @@ export default function GlobalPlayerSourceDrawer() {
                   <div className="mt-2 text-lg font-black">
                     {portfolioExposure.loading
                       ? `Scanning ${leagues.length} leagues…`
-                      : `${portfolioExposure.count} of ${portfolioExposure.scanned || leagues.length} leagues`}
+                      : `Rostered in ${portfolioExposure.count} league${portfolioExposure.count === 1 ? "" : "s"}`}
                   </div>
                   <p className="mt-2 text-xs leading-5 text-white/42">
-                    Player ownership across the attached Sleeper portfolio. The
-                    modal loads missing rosters as needed instead of relying on
-                    previously visited leagues.
+                    {portfolioExposure.loading
+                      ? "Loading ownership across your attached Sleeper portfolio."
+                      : `${portfolioExposure.scanned ? Math.round((portfolioExposure.count / portfolioExposure.scanned) * 100) : 0}% exposure across ${portfolioExposure.scanned || leagues.length} scanned leagues.`}
                   </p>
                 </div>
               </div>
