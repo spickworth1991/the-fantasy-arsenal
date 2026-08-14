@@ -33,6 +33,10 @@ const statLine = (stats = {}) => {
     parts.push(`${n(stats.idp_tkl)} tkl · ${n(stats.idp_sack)} sack`);
   return parts.join(" · ");
 };
+const pointsFromStats = (statsByPlayer, id) => {
+  const stats = statsByPlayer?.[String(id)] || {};
+  return n(stats.pts_ppr ?? stats.pts_half_ppr ?? stats.pts_std);
+};
 const injury = (player) => String(player?.injury_status || "").toUpperCase();
 const isRisk = (player) =>
   ["OUT", "DOUBTFUL", "QUESTIONABLE", "IR", "PUP", "SUSPENDED"].includes(
@@ -740,7 +744,7 @@ export default function GameCenterClient() {
         const game = gameByTeam.get(normalizeTeam(player?.team));
         if (!player || !game) return;
         const stats = weeklyStats?.[id] || {};
-        const points = n(stats.pts_ppr ?? stats.pts_half_ppr ?? stats.pts_std);
+        const points = pointsFromStats(weeklyStats, id);
         const current = map.get(id) || {
           id,
           player,
@@ -1052,9 +1056,12 @@ export default function GameCenterClient() {
                 <Stat
                   label="Fantasy points"
                   value={preseasonPlayerRows
-                    .reduce((sum, row) => sum + row.points, 0)
+                    .reduce(
+                      (sum, row) => sum + pointsFromStats(weeklyStats, row.id),
+                      0,
+                    )
                     .toFixed(1)}
-                  detail={`${preseasonPlayerRows.filter((row) => row.points > 0).length} scoring portfolio players`}
+                  detail={`${preseasonPlayerRows.filter((row) => pointsFromStats(weeklyStats, row.id) !== 0).length} scoring portfolio players`}
                 />
                 <Stat
                   label="Portfolio players"
@@ -1450,7 +1457,14 @@ export default function GameCenterClient() {
                               </div>
                             ) : null}
                             <div className="text-right">
-                              <b>{row.points.toFixed(1)}</b>
+                              <b>
+                                {preseasonMode
+                                  ? pointsFromStats(
+                                      weeklyStats,
+                                      row.id,
+                                    ).toFixed(1)
+                                  : row.points.toFixed(1)}
+                              </b>
                               <small className="block text-[8px] text-white/25">
                                 fantasy pts
                               </small>
@@ -1509,11 +1523,13 @@ export default function GameCenterClient() {
                           <div className="text-right">
                             <b>
                               {preseasonMode
-                                ? row.impact
+                                ? pointsFromStats(weeklyStats, row.id).toFixed(
+                                    1,
+                                  )
                                 : row.points.toFixed(1)}
                             </b>
                             <small className="block text-[8px] text-white/25">
-                              {preseasonMode ? "leagues" : "fantasy pts"}
+                              fantasy pts
                             </small>
                           </div>
                         </div>
