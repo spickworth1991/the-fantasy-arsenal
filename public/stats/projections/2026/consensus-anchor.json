@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-13T21:53:56.391Z",
+  "updated": "2026-08-14T04:07:09.432Z",
   "season": 2026,
   "source": "Projection Source Average Anchor",
   "scoring": "PPR",
@@ -5242,7 +5242,7 @@
         "age": 21,
         "years_experience": 0,
         "depth_chart_order": 1,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -54021,62 +54021,6 @@
       }
     },
     {
-      "player_id": "7528",
-      "name": "Najee Harris",
-      "team": "LAC",
-      "position": "RB",
-      "points": 23.1,
-      "points_ppr": 23.1,
-      "points_half": 20.8,
-      "points_std": 19.8,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 1,
-        "std": 1
-      },
-      "confidence": 54,
-      "disagreement": 0.0563,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "CBS"
-        ],
-        "half": [
-          "FantasyPros"
-        ],
-        "std": [
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 27,
-        "years_experience": 5,
-        "depth_chart_order": null,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "CBS": {
-          "ppr": 24.4,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 21.8,
-          "half": 20.8,
-          "std": 19.8
-        }
-      }
-    },
-    {
       "player_id": "11573",
       "name": "Frank Gore",
       "team": "BUF",
@@ -54213,6 +54157,64 @@
           "ppr": 10.54,
           "half": 10.54,
           "std": 10.54
+        }
+      }
+    },
+    {
+      "player_id": "11186",
+      "name": "Carlos Washington",
+      "team": "MIA",
+      "position": "RB",
+      "points": 22.704,
+      "points_ppr": 22.704,
+      "points_half": 21.024,
+      "points_std": 20.064,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 51,
+      "disagreement": 0.0317,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 27,
+        "years_experience": 3,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 24.4,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 22.9,
+          "half": 21.9,
+          "std": 20.9
         }
       }
     },
@@ -63732,7 +63734,7 @@
         "std": []
       },
       "context": {
-        "age": 22,
+        "age": 23,
         "years_experience": 1,
         "depth_chart_order": 4,
         "injury_status": null,
@@ -69413,12 +69415,12 @@
     "kyledugger": 23.404,
     "liljordan humphrey": 23.153,
     "lil'jordanhumphrey": 23.153,
-    "najee harris": 23.1,
-    "najeeharris": 23.1,
     "frank gore": 23.072,
     "frankgore": 23.072,
     "mac jones": 22.86,
     "macjones": 22.86,
+    "carlos washington": 22.704,
+    "carloswashington": 22.704,
     "mykel williams": 22.607,
     "mykelwilliams": 22.607,
     "audric estime": 22.569,

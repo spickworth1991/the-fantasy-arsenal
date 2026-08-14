@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-13T21:54:11.962Z",
+  "updated": "2026-08-14T04:07:23.434Z",
   "season": 2026,
   "source": "Average of All Projections",
   "scoring": "PPR",
@@ -5677,7 +5677,7 @@
         "age": 21,
         "years_experience": 0,
         "depth_chart_order": 1,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -57434,70 +57434,6 @@
       }
     },
     {
-      "player_id": "7528",
-      "name": "Najee Harris",
-      "team": "LAC",
-      "position": "RB",
-      "points": 22.834,
-      "points_ppr": 22.834,
-      "points_half": 21.037,
-      "points_std": 20.023,
-      "source_count": 3,
-      "format_source_count": {
-        "ppr": 3,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 62,
-      "disagreement": 0.0563,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "FantasyArsenal",
-          "CBS"
-        ],
-        "half": [
-          "FantasyPros",
-          "FantasyArsenal"
-        ],
-        "std": [
-          "FantasyPros",
-          "FantasyArsenal"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 27,
-        "years_experience": 5,
-        "depth_chart_order": null,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "CBS": {
-          "ppr": 24.4,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 21.8,
-          "half": 20.8,
-          "std": 19.8
-        },
-        "FantasyArsenal": {
-          "ppr": 22.301,
-          "half": 21.273,
-          "std": 20.246
-        }
-      }
-    },
-    {
       "player_id": "11579",
       "name": "Audric Estime",
       "team": "NO",
@@ -57568,6 +57504,72 @@
           "ppr": 23.171,
           "half": 21.697,
           "std": 20.223
+        }
+      }
+    },
+    {
+      "player_id": "11186",
+      "name": "Carlos Washington",
+      "team": "MIA",
+      "position": "RB",
+      "points": 22.742,
+      "points_ppr": 22.742,
+      "points_half": 21.422,
+      "points_std": 20.444,
+      "source_count": 3,
+      "format_source_count": {
+        "ppr": 3,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 59,
+      "disagreement": 0.0317,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "FantasyArsenal",
+          "CBS"
+        ],
+        "half": [
+          "FantasyPros",
+          "FantasyArsenal"
+        ],
+        "std": [
+          "FantasyPros",
+          "FantasyArsenal"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 27,
+        "years_experience": 3,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 24.4,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 22.9,
+          "half": 21.9,
+          "std": 20.9
+        },
+        "FantasyArsenal": {
+          "ppr": 22.819,
+          "half": 21.821,
+          "std": 20.825
         }
       }
     },
@@ -67491,7 +67493,7 @@
         "std": []
       },
       "context": {
-        "age": 22,
+        "age": 23,
         "years_experience": 1,
         "depth_chart_order": 4,
         "injury_status": null,
@@ -74255,10 +74257,10 @@
     "jimmyhorn": 23.212,
     "demond claiborne": 23.162,
     "demondclaiborne": 23.162,
-    "najee harris": 22.834,
-    "najeeharris": 22.834,
     "audric estime": 22.749,
     "audricestime": 22.749,
+    "carlos washington": 22.742,
+    "carloswashington": 22.742,
     "mykel williams": 22.607,
     "mykelwilliams": 22.607,
     "josh whyle": 22.505,
