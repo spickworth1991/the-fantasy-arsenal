@@ -246,6 +246,7 @@ export default function GlobalPlayerSourceDrawer() {
     players,
     leagues = [],
     activeLeague,
+    setActiveLeague,
     fetchLeagueRostersSilent,
     getPlayerValue,
     sourceKey,
@@ -264,6 +265,11 @@ export default function GlobalPlayerSourceDrawer() {
   const [archive, setArchive] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [portfolioExposure, setPortfolioExposure] = useState({
+    loading: false,
+    count: 0,
+    scanned: 0,
+  });
   const [liveGame, setLiveGame] = useState({
     loading: false,
     season: null,
@@ -363,6 +369,44 @@ export default function GlobalPlayerSourceDrawer() {
       active = false;
     };
   }, [activeLeague, playerId, league?.rosters, league?.users]);
+
+  useEffect(() => {
+    if (!playerId || !leagues.length) {
+      setPortfolioExposure({ loading: false, count: 0, scanned: 0 });
+      return undefined;
+    }
+    let active = true;
+    setPortfolioExposure((current) => ({ ...current, loading: true }));
+    const run = async () => {
+      let count = 0;
+      let scanned = 0;
+      const queue = [...leagues];
+      await Promise.all(
+        Array.from({ length: Math.min(8, queue.length) }, async () => {
+          while (queue.length) {
+            const leagueRow = queue.shift();
+            let rosters = leagueRow?.rosters;
+            if (!Array.isArray(rosters)) {
+              const loaded = await fetchLeagueRostersSilent(
+                leagueRow.league_id,
+              ).catch(() => null);
+              rosters = loaded?.rosters;
+            }
+            if (Array.isArray(rosters)) {
+              scanned += 1;
+              if (rosters.some((roster) => playerIds(roster).has(playerId)))
+                count += 1;
+            }
+          }
+        }),
+      );
+      if (active) setPortfolioExposure({ loading: false, count, scanned });
+    };
+    run();
+    return () => {
+      active = false;
+    };
+  }, [playerId, leagues.length, fetchLeagueRostersSilent]);
 
   useEffect(() => {
     let active = true;
@@ -665,10 +709,6 @@ export default function GlobalPlayerSourceDrawer() {
     (position) => positionFamily(position) === positionFamily(player?.position),
   ).length;
   const need = Math.max(0, requiredAtPosition - myPositionCount);
-  const hydratedLeagues = leagues.filter((row) => Array.isArray(row.rosters));
-  const exposureCount = hydratedLeagues.filter((row) =>
-    row.rosters.some((roster) => playerIds(roster).has(playerId)),
-  ).length;
   const age = n(player?.age);
   const timeline =
     age && age <= 25
@@ -772,6 +812,35 @@ export default function GlobalPlayerSourceDrawer() {
           </div>
         </div>
         <div className="min-h-0 flex-1 touch-pan-y space-y-4 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 [-webkit-overflow-scrolling:touch] sm:space-y-5 sm:p-5">
+          {["overview", "league", "live", "market"].includes(tab) ? (
+            <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3">
+              <label
+                htmlFor="player-modal-league"
+                className="text-[9px] font-semibold uppercase tracking-[.18em] text-cyan-100/50"
+              >
+                League context
+              </label>
+              <select
+                id="player-modal-league"
+                value={activeLeague || ""}
+                onChange={(event) =>
+                  setActiveLeague(event.target.value || null)
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white"
+              >
+                <option value="">Select a league</option>
+                {leagues.map((leagueRow) => (
+                  <option key={leagueRow.league_id} value={leagueRow.league_id}>
+                    {leagueRow.name || leagueRow.league_id}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-[10px] leading-4 text-white/30">
+                Controls ownership, roster fit, and exact live scoring
+                throughout this player window.
+              </p>
+            </div>
+          ) : null}
           {tab === "overview" ? (
             <>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -834,15 +903,14 @@ export default function GlobalPlayerSourceDrawer() {
                     Portfolio exposure
                   </div>
                   <div className="mt-2 text-lg font-black">
-                    {hydratedLeagues.length
-                      ? `${exposureCount} of ${hydratedLeagues.length} loaded leagues`
-                      : "No portfolio rosters loaded"}
+                    {portfolioExposure.loading
+                      ? `Scanning ${leagues.length} leagues…`
+                      : `${portfolioExposure.count} of ${portfolioExposure.scanned || leagues.length} leagues`}
                   </div>
                   <p className="mt-2 text-xs leading-5 text-white/42">
-                    Exposure is calculated only from rosters already loaded by
-                    your current session, avoiding an expensive scan across
-                    hundreds of leagues. Manager Intelligence remains the full
-                    portfolio scanner.
+                    Player ownership across the attached Sleeper portfolio. The
+                    modal loads missing rosters as needed instead of relying on
+                    previously visited leagues.
                   </p>
                 </div>
               </div>
