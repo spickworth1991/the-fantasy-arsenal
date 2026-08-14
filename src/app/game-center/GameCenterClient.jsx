@@ -376,28 +376,16 @@ export default function GameCenterClient() {
         const schedulePromise = getJson(
           `/api/nfl-scoreboard?season=${liveSeason}&week=${week}&seasonType=${seasonType}`,
         ).catch(() => ({ games: [] }));
-        const statsPromise = getJson(
-          `https://api.sleeper.app/v1/stats/nfl/${seasonType === "preseason" ? "pre" : "regular"}/${liveSeason}/${week}`,
-        ).catch(() => ({}));
         const rootPromise = username
           ? getJson(
               `https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`,
             )
           : Promise.resolve(null);
-        const [schedule, stats, root] = await Promise.all([
+        const [schedule, root] = await Promise.all([
           schedulePromise,
-          statsPromise,
           rootPromise,
         ]);
         setGames(schedule.games || []);
-        setWeeklyStats(stats || {});
-        window.__TFA_LIVE_PLAYER_STATS__ = {
-          season: liveSeason,
-          week,
-          seasonType: seasonType === "preseason" ? "pre" : "regular",
-          stats: stats || {},
-          updatedAt: new Date(),
-        };
         if (schedule.error)
           setError(
             "The NFL schedule feed is temporarily unavailable. Portfolio players are shown without kickoff grouping until it reconnects.",
@@ -493,6 +481,36 @@ export default function GameCenterClient() {
     )
       scan(false);
   }, [username, week, seasonType, nflStateReady, leagues.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!nflStateReady || !nflSeason) return undefined;
+    let active = true;
+    const statType = seasonType === "preseason" ? "pre" : "regular";
+    const loadStats = () =>
+      getJson(
+        `https://api.sleeper.app/v1/stats/nfl/${statType}/${nflSeason}/${week}`,
+      )
+        .then((stats) => {
+          if (!active) return;
+          setWeeklyStats(stats || {});
+          window.__TFA_LIVE_PLAYER_STATS__ = {
+            season: nflSeason,
+            week,
+            seasonType: statType,
+            stats: stats || {},
+            updatedAt: new Date(),
+          };
+        })
+        .catch(() => {
+          if (active) setWeeklyStats({});
+        });
+    loadStats();
+    const timer = liveMode ? window.setInterval(loadStats, 10000) : null;
+    return () => {
+      active = false;
+      if (timer) window.clearInterval(timer);
+    };
+  }, [nflStateReady, nflSeason, seasonType, week, liveMode]);
 
   useEffect(() => {
     if (seasonType === "preseason" && week > 4) setWeek(1);
@@ -1036,7 +1054,7 @@ export default function GameCenterClient() {
                   value={preseasonPlayerRows
                     .reduce((sum, row) => sum + row.points, 0)
                     .toFixed(1)}
-                  detail="Unique portfolio players"
+                  detail={`${preseasonPlayerRows.filter((row) => row.points > 0).length} scoring portfolio players`}
                 />
                 <Stat
                   label="Portfolio players"
