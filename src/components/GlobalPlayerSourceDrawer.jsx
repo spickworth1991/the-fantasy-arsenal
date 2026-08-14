@@ -13,7 +13,6 @@ import {
 const TABS = [
   ["overview", "Overview"],
   ["sources", "All sources"],
-  ["league", "League fit"],
   ["live", "Live Game"],
   ["production", "Production"],
   ["market", "Market"],
@@ -843,7 +842,7 @@ export default function GlobalPlayerSourceDrawer() {
           </div>
         </div>
         <div className="min-h-0 flex-1 touch-pan-y space-y-4 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 [-webkit-overflow-scrolling:touch] sm:space-y-5 sm:p-5">
-          {["overview", "league", "live", "market"].includes(tab) ? (
+          {["overview", "live", "market"].includes(tab) ? (
             <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3">
               <label
                 htmlFor="player-modal-league"

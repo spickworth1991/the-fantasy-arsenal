@@ -322,6 +322,7 @@ export default function GameCenterClient() {
   } = useSleeper();
   const [week, setWeek] = useState(1);
   const [seasonType, setSeasonType] = useState("regular");
+  const [nflSeason, setNflSeason] = useState(null);
   const [nflStateReady, setNflStateReady] = useState(false);
   const [rows, setRows] = useState([]);
   const [games, setGames] = useState([]);
@@ -356,6 +357,7 @@ export default function GameCenterClient() {
     getJson("https://api.sleeper.app/v1/state/nfl")
       .then((state) => {
         const nextSeasonType = sleeperSeasonType(state.season_type);
+        setNflSeason(n(state.season) || new Date().getFullYear());
         setSeasonType(nextSeasonType);
         setWeek(Math.max(1, n(state.week) || 1));
       })
@@ -370,11 +372,12 @@ export default function GameCenterClient() {
       if (!quiet) setLoading(true);
       setError("");
       try {
+        const liveSeason = nflSeason || year || new Date().getFullYear();
         const schedulePromise = getJson(
-          `/api/nfl-scoreboard?season=${year || new Date().getFullYear()}&week=${week}&seasonType=${seasonType}`,
+          `/api/nfl-scoreboard?season=${liveSeason}&week=${week}&seasonType=${seasonType}`,
         ).catch(() => ({ games: [] }));
         const statsPromise = getJson(
-          `https://api.sleeper.app/v1/stats/nfl/${seasonType === "preseason" ? "pre" : "regular"}/${year || new Date().getFullYear()}/${week}`,
+          `https://api.sleeper.app/v1/stats/nfl/${seasonType === "preseason" ? "pre" : "regular"}/${liveSeason}/${week}`,
         ).catch(() => ({}));
         const rootPromise = username
           ? getJson(
@@ -389,7 +392,7 @@ export default function GameCenterClient() {
         setGames(schedule.games || []);
         setWeeklyStats(stats || {});
         window.__TFA_LIVE_PLAYER_STATS__ = {
-          season: year || new Date().getFullYear(),
+          season: liveSeason,
           week,
           seasonType: seasonType === "preseason" ? "pre" : "regular",
           stats: stats || {},
@@ -480,7 +483,7 @@ export default function GameCenterClient() {
         setProgress("");
       }
     },
-    [username, leagues, week, year, seasonType],
+    [username, leagues, week, year, nflSeason, seasonType],
   );
 
   useEffect(() => {
