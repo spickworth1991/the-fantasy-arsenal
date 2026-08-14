@@ -380,6 +380,16 @@ export default function GlobalPlayerSourceDrawer() {
     const run = async () => {
       let count = 0;
       let scanned = 0;
+      const root = await fetch(
+        `https://api.sleeper.app/v1/user/${encodeURIComponent(username || "")}`,
+      )
+        .then((response) => (response.ok ? response.json() : null))
+        .catch(() => null);
+      if (!root?.user_id) {
+        if (active)
+          setPortfolioExposure({ loading: false, count: 0, scanned: 0 });
+        return;
+      }
       const queue = [...leagues];
       await Promise.all(
         Array.from({ length: Math.min(8, queue.length) }, async () => {
@@ -394,8 +404,10 @@ export default function GlobalPlayerSourceDrawer() {
             }
             if (Array.isArray(rosters)) {
               scanned += 1;
-              if (rosters.some((roster) => playerIds(roster).has(playerId)))
-                count += 1;
+              const myRoster = rosters.find(
+                (roster) => String(roster.owner_id) === String(root.user_id),
+              );
+              if (myRoster && playerIds(myRoster).has(playerId)) count += 1;
             }
           }
         }),
@@ -406,7 +418,7 @@ export default function GlobalPlayerSourceDrawer() {
     return () => {
       active = false;
     };
-  }, [playerId, leagues.length, fetchLeagueRostersSilent]);
+  }, [playerId, username, leagues.length, fetchLeagueRostersSilent]);
 
   useEffect(() => {
     let active = true;
@@ -540,6 +552,18 @@ export default function GlobalPlayerSourceDrawer() {
     let active = true;
     let timer;
     const load = async () => {
+      const shared = window.__TFA_LIVE_PLAYER_STATS__;
+      if (shared?.stats?.[playerId] && active) {
+        setLiveGame({
+          loading: false,
+          season: shared.season,
+          week: shared.week,
+          seasonType: shared.seasonType,
+          stats: shared.stats[playerId],
+          updatedAt: shared.updatedAt || new Date(),
+          error: "",
+        });
+      }
       if (active)
         setLiveGame((current) => ({
           ...current,
@@ -568,6 +592,13 @@ export default function GlobalPlayerSourceDrawer() {
         if (!statsResponse.ok)
           throw new Error(`Live stats HTTP ${statsResponse.status}`);
         const payload = await statsResponse.json();
+        window.__TFA_LIVE_PLAYER_STATS__ = {
+          season,
+          week,
+          seasonType,
+          stats: payload || {},
+          updatedAt: new Date(),
+        };
         if (active)
           setLiveGame({
             loading: false,

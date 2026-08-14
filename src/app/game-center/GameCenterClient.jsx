@@ -388,6 +388,13 @@ export default function GameCenterClient() {
         ]);
         setGames(schedule.games || []);
         setWeeklyStats(stats || {});
+        window.__TFA_LIVE_PLAYER_STATS__ = {
+          season: year || new Date().getFullYear(),
+          week,
+          seasonType: seasonType === "preseason" ? "pre" : "regular",
+          stats: stats || {},
+          updatedAt: new Date(),
+        };
         if (schedule.error)
           setError(
             "The NFL schedule feed is temporarily unavailable. Portfolio players are shown without kickoff grouping until it reconnects.",
