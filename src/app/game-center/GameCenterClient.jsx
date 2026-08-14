@@ -363,7 +363,11 @@ export default function GameCenterClient() {
         const nextSeasonType = sleeperSeasonType(state.season_type);
         setNflSeason(n(state.season) || new Date().getFullYear());
         setSeasonType(nextSeasonType);
-        setWeek(Math.max(1, n(state.week) || 1));
+        setWeek(
+          nextSeasonType === "preseason"
+            ? Math.max(1, (n(state.week) || 1) + 1)
+            : Math.max(1, n(state.week) || 1),
+        );
       })
       .catch(() => {})
       .finally(() => setNflStateReady(true));
@@ -490,16 +494,17 @@ export default function GameCenterClient() {
     if (!nflStateReady || !nflSeason) return undefined;
     let active = true;
     const statType = seasonType === "preseason" ? "pre" : "regular";
+    const statsWeek = seasonType === "preseason" ? Math.max(0, week - 1) : week;
     const loadStats = () =>
       getJson(
-        `https://api.sleeper.app/v1/stats/nfl/${statType}/${nflSeason}/${week}`,
+        `https://api.sleeper.app/v1/stats/nfl/${statType}/${nflSeason}/${statsWeek}`,
       )
         .then((stats) => {
           if (!active) return;
           setWeeklyStats(stats || {});
           window.__TFA_LIVE_PLAYER_STATS__ = {
             season: nflSeason,
-            week,
+            week: statsWeek,
             seasonType: statType,
             stats: stats || {},
             updatedAt: new Date(),
@@ -993,7 +998,11 @@ export default function GameCenterClient() {
                 (_, index) => index + 1,
               ).map((value) => (
                 <option key={value} value={value}>
-                  Week {value}
+                  {preseasonMode
+                    ? value === 1
+                      ? "Hall of Fame"
+                      : `Preseason Week ${value - 1}`
+                    : `Week ${value}`}
                 </option>
               ))}
             </select>
