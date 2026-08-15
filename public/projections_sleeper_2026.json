@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-14T04:06:56.705Z",
+  "updated": "2026-08-15T04:06:55.695Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -15110,16 +15110,16 @@
     },
     {
       "player_id": "PHI",
-      "points": 138.2,
-      "points_ppr": 138.2,
-      "points_half_ppr": 138.2,
-      "points_standard": 138.2,
+      "points": 138.16,
+      "points_ppr": 138.16,
+      "points_half_ppr": 138.16,
+      "points_standard": 138.16,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 8.12,
-          "half_ppr": 8.12,
-          "standard": 8.12
+          "ppr": 8.08,
+          "half_ppr": 8.08,
+          "standard": 8.08
         },
         "2": {
           "ppr": 8.28,
@@ -19912,16 +19912,16 @@
     },
     {
       "player_id": "10937",
-      "points": 114.57,
-      "points_ppr": 114.57,
-      "points_half_ppr": 114.57,
-      "points_standard": 114.57,
+      "points": 114.54,
+      "points_ppr": 114.54,
+      "points_half_ppr": 114.54,
+      "points_standard": 114.54,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.57,
-          "half_ppr": 6.57,
-          "standard": 6.57
+          "ppr": 6.54,
+          "half_ppr": 6.54,
+          "standard": 6.54
         },
         "2": {
           "ppr": 6.75,
@@ -20108,16 +20108,16 @@
     },
     {
       "player_id": "4195",
-      "points": 114,
-      "points_ppr": 114,
-      "points_half_ppr": 114,
-      "points_standard": 114,
+      "points": 113.97,
+      "points_ppr": 113.97,
+      "points_half_ppr": 113.97,
+      "points_standard": 113.97,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.83,
-          "half_ppr": 6.83,
-          "standard": 6.83
+          "ppr": 6.8,
+          "half_ppr": 6.8,
+          "standard": 6.8
         },
         "2": {
           "ppr": 6.82,
@@ -24028,16 +24028,16 @@
     },
     {
       "player_id": "WAS",
-      "points": 89.54,
-      "points_ppr": 89.54,
-      "points_half_ppr": 89.54,
-      "points_standard": 89.54,
+      "points": 89.51,
+      "points_ppr": 89.51,
+      "points_half_ppr": 89.51,
+      "points_standard": 89.51,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 4.9,
-          "half_ppr": 4.9,
-          "standard": 4.9
+          "ppr": 4.87,
+          "half_ppr": 4.87,
+          "standard": 4.87
         },
         "2": {
           "ppr": 5.29,
@@ -61172,104 +61172,6 @@
       "position": "DB"
     },
     {
-      "player_id": "8374",
-      "points": 5.8,
-      "points_ppr": 5.8,
-      "points_half_ppr": 5.8,
-      "points_standard": 5.8,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.36,
-          "half_ppr": 0.36,
-          "standard": 0.36
-        },
-        "2": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "3": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "4": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "5": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "6": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "7": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "8": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "9": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "11": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "12": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "13": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "14": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "15": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "16": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "17": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "18": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        }
-      },
-      "name": "Riq Woolen",
-      "team": "PHI",
-      "position": "DB"
-    },
-    {
       "player_id": "8400",
       "points": 5.8,
       "points_ppr": 5.8,
@@ -62052,6 +61954,104 @@
       "name": "D'Marco Jackson",
       "team": "CHI",
       "position": "LB"
+    },
+    {
+      "player_id": "8374",
+      "points": 5.79,
+      "points_ppr": 5.79,
+      "points_half_ppr": 5.79,
+      "points_standard": 5.79,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.35,
+          "half_ppr": 0.35,
+          "standard": 0.35
+        },
+        "2": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "3": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "4": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "5": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "6": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "7": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "8": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "9": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "11": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "12": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "13": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "14": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "15": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "16": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "17": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "18": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        }
+      },
+      "name": "Riq Woolen",
+      "team": "PHI",
+      "position": "DB"
     },
     {
       "player_id": "8381",
@@ -95283,7 +95283,7 @@
     "4170": 6.61,
     "4177": 39.64,
     "4189": 8.16,
-    "4195": 114,
+    "4195": 113.97,
     "4199": 141.52,
     "4217": 178.55,
     "4219": 16.41,
@@ -95662,7 +95662,7 @@
     "8365": 5.79,
     "8367": 5.79,
     "8373": 2.89,
-    "8374": 5.8,
+    "8374": 5.79,
     "8376": 4.73,
     "8381": 5.79,
     "8384": 5.78,
@@ -95773,7 +95773,7 @@
     "10934": 5.76,
     "10935": 4.44,
     "10936": 5.44,
-    "10937": 114.57,
+    "10937": 114.54,
     "10940": 13.43,
     "10943": 3.38,
     "10944": 3.41,
@@ -96164,7 +96164,7 @@
     "LAR": 150.64,
     "SEA": 148.8,
     "HOU": 148.57,
-    "PHI": 138.2,
+    "PHI": 138.16,
     "DEN": 133.69,
     "BAL": 127.75,
     "MIN": 123.64,
@@ -96187,7 +96187,7 @@
     "CLE": 98.3,
     "CIN": 95.49,
     "NO": 92.29,
-    "WAS": 89.54,
+    "WAS": 89.51,
     "TEN": 85.54,
     "LV": 82.33,
     "NYJ": 81.28,
@@ -96503,8 +96503,8 @@
     "brentonstrange": 140.55,
     "kyle monangai": 138.46,
     "kylemonangai": 138.46,
-    "philadelphia eagles": 138.2,
-    "philadelphiaeagles": 138.2,
+    "philadelphia eagles": 138.16,
+    "philadelphiaeagles": 138.16,
     "tre tucker": 136.81,
     "tretucker": 136.81,
     "jk dobbins": 136.6,
@@ -96601,12 +96601,12 @@
     "charliesmyth": 116.71,
     "ryan fitzgerald": 115.62,
     "ryanfitzgerald": 115.62,
-    "jake moody": 114.57,
-    "jakemoody": 114.57,
+    "jake moody": 114.54,
+    "jakemoody": 114.54,
     "ryan flournoy": 114.01,
     "ryanflournoy": 114.01,
-    "jake elliott": 114,
-    "jakeelliott": 114,
+    "jake elliott": 113.97,
+    "jakeelliott": 113.97,
     "malik washington": 113.71,
     "malikwashington": 113.71,
     "calvin ridley": 113.28,
@@ -96685,8 +96685,8 @@
     "chrisbell": 91.12,
     "germie bernard": 90.13,
     "germiebernard": 90.13,
-    "washington commanders": 89.54,
-    "washingtoncommanders": 89.54,
+    "washington commanders": 89.51,
+    "washingtoncommanders": 89.51,
     "isaiah davis": 88.5,
     "isaiahdavis": 88.5,
     "tory horton": 88.42,
@@ -97445,8 +97445,6 @@
     "djwonnum": 5.81,
     "kerby joseph": 5.81,
     "kerbyjoseph": 5.81,
-    "riq woolen": 5.8,
-    "riqwoolen": 5.8,
     "travis jones": 5.8,
     "travisjones": 5.8,
     "nate wiggins": 5.8,
@@ -97463,6 +97461,8 @@
     "kylergordon": 5.79,
     "dmarco jackson": 5.79,
     "d'marcojackson": 5.79,
+    "riq woolen": 5.79,
+    "riqwoolen": 5.79,
     "cobie durant": 5.79,
     "cobiedurant": 5.79,
     "drake thomas": 5.79,
