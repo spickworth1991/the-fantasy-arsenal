@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-17T04:06:45.877Z",
+  "updated": "2026-08-18T04:06:48.178Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -24,7 +24,7 @@
     17,
     18
   ],
-  "count": 1000,
+  "count": 999,
   "rows": [
     {
       "player_id": "4984",
@@ -2772,16 +2772,16 @@
     },
     {
       "player_id": "4046",
-      "points": 301.96,
-      "points_ppr": 301.96,
-      "points_half_ppr": 301.96,
-      "points_standard": 301.96,
+      "points": 301.97,
+      "points_ppr": 301.97,
+      "points_half_ppr": 301.97,
+      "points_standard": 301.97,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 17.56,
-          "half_ppr": 17.56,
-          "standard": 17.56
+          "ppr": 17.57,
+          "half_ppr": 17.57,
+          "standard": 17.57
         },
         "2": {
           "ppr": 1.93,
@@ -5712,10 +5712,10 @@
     },
     {
       "player_id": "12527",
-      "points": 243.9,
-      "points_ppr": 243.9,
-      "points_half_ppr": 216.66,
-      "points_standard": 189.43,
+      "points": 243.93,
+      "points_ppr": 243.93,
+      "points_half_ppr": 216.68,
+      "points_standard": 189.44,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -5740,13 +5740,13 @@
         },
         "5": {
           "ppr": 14.05,
-          "half_ppr": 12.44,
+          "half_ppr": 12.45,
           "standard": 10.84
         },
         "6": {
           "ppr": 14.75,
           "half_ppr": 13.15,
-          "standard": 11.54
+          "standard": 11.55
         },
         "7": {
           "ppr": 14.08,
@@ -5759,7 +5759,7 @@
           "standard": 10.99
         },
         "9": {
-          "ppr": 14.25,
+          "ppr": 14.26,
           "half_ppr": 12.64,
           "standard": 11.03
         },
@@ -5789,12 +5789,12 @@
           "standard": 10.93
         },
         "16": {
-          "ppr": 14.19,
-          "half_ppr": 12.57,
+          "ppr": 14.2,
+          "half_ppr": 12.58,
           "standard": 10.95
         },
         "17": {
-          "ppr": 14.57,
+          "ppr": 14.58,
           "half_ppr": 12.96,
           "standard": 11.35
         },
@@ -8165,13 +8165,13 @@
       "points": 208.99,
       "points_ppr": 208.99,
       "points_half_ppr": 190.1,
-      "points_standard": 171.22,
+      "points_standard": 171.21,
       "projected_weeks": 17,
       "weekly": {
         "1": {
           "ppr": 12.71,
           "half_ppr": 11.59,
-          "standard": 10.48
+          "standard": 10.47
         },
         "2": {
           "ppr": 12.09,
@@ -15502,16 +15502,16 @@
     },
     {
       "player_id": "8259",
-      "points": 135.31,
-      "points_ppr": 135.31,
-      "points_half_ppr": 135.31,
-      "points_standard": 135.31,
+      "points": 135.34,
+      "points_ppr": 135.34,
+      "points_half_ppr": 135.34,
+      "points_standard": 135.34,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 8.27,
-          "half_ppr": 8.27,
-          "standard": 8.27
+          "ppr": 8.3,
+          "half_ppr": 8.3,
+          "standard": 8.3
         },
         "2": {
           "ppr": 7.94,
@@ -15796,16 +15796,16 @@
     },
     {
       "player_id": "DEN",
-      "points": 133.69,
-      "points_ppr": 133.69,
-      "points_half_ppr": 133.69,
-      "points_standard": 133.69,
+      "points": 133.73,
+      "points_ppr": 133.73,
+      "points_half_ppr": 133.73,
+      "points_standard": 133.73,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.52,
-          "half_ppr": 7.52,
-          "standard": 7.52
+          "ppr": 7.56,
+          "half_ppr": 7.56,
+          "standard": 7.56
         },
         "2": {
           "ppr": 7.07,
@@ -18050,16 +18050,16 @@
     },
     {
       "player_id": "4227",
-      "points": 122.44,
-      "points_ppr": 122.44,
-      "points_half_ppr": 122.44,
-      "points_standard": 122.44,
+      "points": 122.41,
+      "points_ppr": 122.41,
+      "points_half_ppr": 122.41,
+      "points_standard": 122.41,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.19,
-          "half_ppr": 7.19,
-          "standard": 7.19
+          "ppr": 7.16,
+          "half_ppr": 7.16,
+          "standard": 7.16
         },
         "2": {
           "ppr": 7.4,
@@ -18148,16 +18148,16 @@
     },
     {
       "player_id": "2020",
-      "points": 122.27,
-      "points_ppr": 122.27,
-      "points_half_ppr": 122.27,
-      "points_standard": 122.27,
+      "points": 122.36,
+      "points_ppr": 122.36,
+      "points_half_ppr": 122.36,
+      "points_standard": 122.36,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.23,
-          "half_ppr": 7.23,
-          "standard": 7.23
+          "ppr": 7.32,
+          "half_ppr": 7.32,
+          "standard": 7.32
         },
         "2": {
           "ppr": 7.19,
@@ -18638,16 +18638,16 @@
     },
     {
       "player_id": "3678",
-      "points": 121.85,
-      "points_ppr": 121.85,
-      "points_half_ppr": 121.85,
-      "points_standard": 121.85,
+      "points": 121.88,
+      "points_ppr": 121.88,
+      "points_half_ppr": 121.88,
+      "points_standard": 121.88,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.81,
-          "half_ppr": 6.81,
-          "standard": 6.81
+          "ppr": 6.84,
+          "half_ppr": 6.84,
+          "standard": 6.84
         },
         "2": {
           "ppr": 7.19,
@@ -19128,16 +19128,16 @@
     },
     {
       "player_id": "KC",
-      "points": 118.96,
-      "points_ppr": 118.96,
-      "points_half_ppr": 118.96,
-      "points_standard": 118.96,
+      "points": 118.92,
+      "points_ppr": 118.92,
+      "points_half_ppr": 118.92,
+      "points_standard": 118.92,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.64,
-          "half_ppr": 7.64,
-          "standard": 7.64
+          "ppr": 7.6,
+          "half_ppr": 7.6,
+          "standard": 7.6
         },
         "2": {
           "ppr": 7.22,
@@ -20206,14 +20206,14 @@
     },
     {
       "player_id": "11610",
-      "points": 113.71,
-      "points_ppr": 113.71,
+      "points": 113.72,
+      "points_ppr": 113.72,
       "points_half_ppr": 91.5,
       "points_standard": 69.27,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.67,
+          "ppr": 6.68,
           "half_ppr": 5.38,
           "standard": 4.08
         },
@@ -20500,16 +20500,16 @@
     },
     {
       "player_id": "10955",
-      "points": 112.12,
-      "points_ppr": 112.12,
-      "points_half_ppr": 112.12,
-      "points_standard": 112.12,
+      "points": 112.15,
+      "points_ppr": 112.15,
+      "points_half_ppr": 112.15,
+      "points_standard": 112.15,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.04,
-          "half_ppr": 6.04,
-          "standard": 6.04
+          "ppr": 6.07,
+          "half_ppr": 6.07,
+          "standard": 6.07
         },
         "2": {
           "ppr": 6.63,
@@ -20696,16 +20696,16 @@
     },
     {
       "player_id": "CHI",
-      "points": 109.4,
-      "points_ppr": 109.4,
-      "points_half_ppr": 109.4,
-      "points_standard": 109.4,
+      "points": 109.49,
+      "points_ppr": 109.49,
+      "points_half_ppr": 109.49,
+      "points_standard": 109.49,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 6.58,
-          "half_ppr": 6.58,
-          "standard": 6.58
+          "ppr": 6.67,
+          "half_ppr": 6.67,
+          "standard": 6.67
         },
         "2": {
           "ppr": 6.67,
@@ -22264,16 +22264,16 @@
     },
     {
       "player_id": "CAR",
-      "points": 103.51,
-      "points_ppr": 103.51,
-      "points_half_ppr": 103.51,
-      "points_standard": 103.51,
+      "points": 103.59,
+      "points_ppr": 103.59,
+      "points_half_ppr": 103.59,
+      "points_standard": 103.59,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 5.95,
-          "half_ppr": 5.95,
-          "standard": 5.95
+          "ppr": 6.03,
+          "half_ppr": 6.03,
+          "standard": 6.03
         },
         "2": {
           "ppr": 6.66,
@@ -22460,16 +22460,16 @@
     },
     {
       "player_id": "LAC",
-      "points": 102.62,
-      "points_ppr": 102.62,
-      "points_half_ppr": 102.62,
-      "points_standard": 102.62,
+      "points": 102.65,
+      "points_ppr": 102.65,
+      "points_half_ppr": 102.65,
+      "points_standard": 102.65,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 7.42,
-          "half_ppr": 7.42,
-          "standard": 7.42
+          "ppr": 7.45,
+          "half_ppr": 7.45,
+          "standard": 7.45
         },
         "2": {
           "ppr": 7,
@@ -24619,7 +24619,7 @@
       "points": 86.48,
       "points_ppr": 86.48,
       "points_half_ppr": 70.91,
-      "points_standard": 55.36,
+      "points_standard": 55.35,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -24640,7 +24640,7 @@
         "4": {
           "ppr": 5.08,
           "half_ppr": 4.16,
-          "standard": 3.25
+          "standard": 3.24
         },
         "5": {
           "ppr": 5.07,
@@ -25498,16 +25498,16 @@
     },
     {
       "player_id": "ARI",
-      "points": 80.75,
-      "points_ppr": 80.75,
-      "points_half_ppr": 80.75,
-      "points_standard": 80.75,
+      "points": 80.77,
+      "points_ppr": 80.77,
+      "points_half_ppr": 80.77,
+      "points_standard": 80.77,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 4.35,
-          "half_ppr": 4.35,
-          "standard": 4.35
+          "ppr": 4.37,
+          "half_ppr": 4.37,
+          "standard": 4.37
         },
         "2": {
           "ppr": 5,
@@ -29911,7 +29911,7 @@
       "points": 57.36,
       "points_ppr": 57.36,
       "points_half_ppr": 49.56,
-      "points_standard": 41.76,
+      "points_standard": 41.73,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -29937,7 +29937,7 @@
         "5": {
           "ppr": 3.33,
           "half_ppr": 2.87,
-          "standard": 2.41
+          "standard": 2.4
         },
         "6": {
           "ppr": 3.44,
@@ -29952,7 +29952,7 @@
         "8": {
           "ppr": 3.35,
           "half_ppr": 2.89,
-          "standard": 2.44
+          "standard": 2.43
         },
         "9": {
           "ppr": 3.36,
@@ -29962,7 +29962,7 @@
         "10": {
           "ppr": 3.33,
           "half_ppr": 2.87,
-          "standard": 2.42
+          "standard": 2.41
         },
         "11": {
           "ppr": 3.33,
@@ -33627,8 +33627,8 @@
     },
     {
       "player_id": "11435",
-      "points": 42.33,
-      "points_ppr": 42.33,
+      "points": 42.35,
+      "points_ppr": 42.35,
       "points_half_ppr": 39.84,
       "points_standard": 37.35,
       "projected_weeks": 17,
@@ -33639,7 +33639,7 @@
           "standard": 2.13
         },
         "2": {
-          "ppr": 2.51,
+          "ppr": 2.52,
           "half_ppr": 2.37,
           "standard": 2.22
         },
@@ -33674,7 +33674,7 @@
           "standard": 2.23
         },
         "9": {
-          "ppr": 2.51,
+          "ppr": 2.52,
           "half_ppr": 2.37,
           "standard": 2.22
         },
@@ -45111,16 +45111,16 @@
     },
     {
       "player_id": "8280",
-      "points": 13.39,
-      "points_ppr": 13.39,
-      "points_half_ppr": 13.39,
-      "points_standard": 13.39,
+      "points": 13.4,
+      "points_ppr": 13.4,
+      "points_half_ppr": 13.4,
+      "points_standard": 13.4,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 0.75,
-          "half_ppr": 0.75,
-          "standard": 0.75
+          "ppr": 0.76,
+          "half_ppr": 0.76,
+          "standard": 0.76
         },
         "2": {
           "ppr": 0.79,
@@ -45310,7 +45310,7 @@
       "points": 13.23,
       "points_ppr": 13.23,
       "points_half_ppr": 10.93,
-      "points_standard": 8.64,
+      "points_standard": 8.65,
       "projected_weeks": 17,
       "weekly": {
         "1": {
@@ -45326,7 +45326,7 @@
         "3": {
           "ppr": 0.77,
           "half_ppr": 0.64,
-          "standard": 0.5
+          "standard": 0.51
         },
         "4": {
           "ppr": 0.77,
@@ -48051,16 +48051,16 @@
     },
     {
       "player_id": "7635",
-      "points": 9.85,
-      "points_ppr": 9.85,
-      "points_half_ppr": 9.85,
-      "points_standard": 9.85,
+      "points": 9.86,
+      "points_ppr": 9.86,
+      "points_half_ppr": 9.86,
+      "points_standard": 9.86,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 0.57,
-          "half_ppr": 0.57,
-          "standard": 0.57
+          "ppr": 0.58,
+          "half_ppr": 0.58,
+          "standard": 0.58
         },
         "2": {
           "ppr": 0.58,
@@ -48834,6 +48834,104 @@
       "position": "DE"
     },
     {
+      "player_id": "8329",
+      "points": 9.52,
+      "points_ppr": 9.52,
+      "points_half_ppr": 9.52,
+      "points_standard": 9.52,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "2": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "3": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "4": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "6": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "7": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "8": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "9": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "10": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "11": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "12": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "13": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "14": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "15": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "16": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "17": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        },
+        "18": {
+          "ppr": 0.56,
+          "half_ppr": 0.56,
+          "standard": 0.56
+        }
+      },
+      "name": "Devin Lloyd",
+      "team": "CAR",
+      "position": "LB"
+    },
+    {
       "player_id": "8487",
       "points": 9.52,
       "points_ppr": 9.52,
@@ -49125,104 +49223,6 @@
       },
       "name": "K'Lavon Chaisson",
       "team": "WAS",
-      "position": "LB"
-    },
-    {
-      "player_id": "8329",
-      "points": 9.51,
-      "points_ppr": 9.51,
-      "points_half_ppr": 9.51,
-      "points_standard": 9.51,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.55,
-          "half_ppr": 0.55,
-          "standard": 0.55
-        },
-        "2": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "3": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "4": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "6": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "7": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "8": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "9": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "10": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "11": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "12": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "13": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "14": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "15": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "16": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "17": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        },
-        "18": {
-          "ppr": 0.56,
-          "half_ppr": 0.56,
-          "standard": 0.56
-        }
-      },
-      "name": "Devin Lloyd",
-      "team": "CAR",
       "position": "LB"
     },
     {
@@ -49908,16 +49908,16 @@
     },
     {
       "player_id": "6124",
-      "points": 9.02,
-      "points_ppr": 9.02,
-      "points_half_ppr": 9.02,
-      "points_standard": 9.02,
+      "points": 9.03,
+      "points_ppr": 9.03,
+      "points_half_ppr": 9.03,
+      "points_standard": 9.03,
       "projected_weeks": 17,
       "weekly": {
         "1": {
-          "ppr": 0.54,
-          "half_ppr": 0.54,
-          "standard": 0.54
+          "ppr": 0.55,
+          "half_ppr": 0.55,
+          "standard": 0.55
         },
         "2": {
           "ppr": 0.53,
@@ -51083,104 +51083,6 @@
       "position": "DB"
     },
     {
-      "player_id": "7069",
-      "points": 8.67,
-      "points_ppr": 8.67,
-      "points_half_ppr": 8.67,
-      "points_standard": 8.67,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "2": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "3": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "4": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "6": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "7": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "8": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "9": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "10": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "11": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "12": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "13": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "14": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "15": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "16": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "17": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        },
-        "18": {
-          "ppr": 0.51,
-          "half_ppr": 0.51,
-          "standard": 0.51
-        }
-      },
-      "name": "Alohi Gilman",
-      "team": "KC",
-      "position": "DB"
-    },
-    {
       "player_id": "8311",
       "points": 8.67,
       "points_ppr": 8.67,
@@ -51375,6 +51277,104 @@
       "name": "Nate Landman",
       "team": "LAR",
       "position": "LB"
+    },
+    {
+      "player_id": "7069",
+      "points": 8.66,
+      "points_ppr": 8.66,
+      "points_half_ppr": 8.66,
+      "points_standard": 8.66,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.5,
+          "half_ppr": 0.5,
+          "standard": 0.5
+        },
+        "2": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "3": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "4": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "6": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "7": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "8": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "9": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "10": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "11": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "12": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "13": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "14": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "15": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "16": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "17": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        },
+        "18": {
+          "ppr": 0.51,
+          "half_ppr": 0.51,
+          "standard": 0.51
+        }
+      },
+      "name": "Alohi Gilman",
+      "team": "KC",
+      "position": "DB"
     },
     {
       "player_id": "7687",
@@ -53920,6 +53920,104 @@
       "position": "LB"
     },
     {
+      "player_id": "10897",
+      "points": 7.67,
+      "points_ppr": 7.67,
+      "points_half_ppr": 7.67,
+      "points_standard": 7.67,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.47,
+          "half_ppr": 0.47,
+          "standard": 0.47
+        },
+        "2": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "3": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "4": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "5": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "6": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "7": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "8": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "9": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "11": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "12": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "13": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "14": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "15": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "16": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "17": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        },
+        "18": {
+          "ppr": 0.45,
+          "half_ppr": 0.45,
+          "standard": 0.45
+        }
+      },
+      "name": "Tyrique Stevenson",
+      "team": "CHI",
+      "position": "CB"
+    },
+    {
       "player_id": "5876",
       "points": 7.66,
       "points_ppr": 7.66,
@@ -54114,104 +54212,6 @@
       "name": "Travon Walker",
       "team": "JAX",
       "position": "LB"
-    },
-    {
-      "player_id": "10897",
-      "points": 7.66,
-      "points_ppr": 7.66,
-      "points_half_ppr": 7.66,
-      "points_standard": 7.66,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.46,
-          "half_ppr": 0.46,
-          "standard": 0.46
-        },
-        "2": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "3": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "4": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "5": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "6": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "7": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "8": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "9": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "11": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "12": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "13": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "14": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "15": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "16": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "17": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        },
-        "18": {
-          "ppr": 0.45,
-          "half_ppr": 0.45,
-          "standard": 0.45
-        }
-      },
-      "name": "Tyrique Stevenson",
-      "team": "CHI",
-      "position": "CB"
     },
     {
       "player_id": "5041",
@@ -57644,6 +57644,104 @@
       "position": "DL"
     },
     {
+      "player_id": "10899",
+      "points": 6.65,
+      "points_ppr": 6.65,
+      "points_half_ppr": 6.65,
+      "points_standard": 6.65,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.41,
+          "half_ppr": 0.41,
+          "standard": 0.41
+        },
+        "2": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "3": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "4": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "5": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "6": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "7": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "8": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "9": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "11": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "12": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "13": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "14": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "15": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "16": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "17": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        },
+        "18": {
+          "ppr": 0.39,
+          "half_ppr": 0.39,
+          "standard": 0.39
+        }
+      },
+      "name": "Gervon Dexter",
+      "team": "CHI",
+      "position": "DL"
+    },
+    {
       "player_id": "11678",
       "points": 6.65,
       "points_ppr": 6.65,
@@ -58034,104 +58132,6 @@
       "name": "Byron Murphy",
       "team": "MIN",
       "position": "CB"
-    },
-    {
-      "player_id": "10899",
-      "points": 6.64,
-      "points_ppr": 6.64,
-      "points_half_ppr": 6.64,
-      "points_standard": 6.64,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.4,
-          "half_ppr": 0.4,
-          "standard": 0.4
-        },
-        "2": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "3": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "4": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "5": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "6": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "7": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "8": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "9": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "11": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "12": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "13": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "14": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "15": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "16": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "17": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        },
-        "18": {
-          "ppr": 0.39,
-          "half_ppr": 0.39,
-          "standard": 0.39
-        }
-      },
-      "name": "Gervon Dexter",
-      "team": "CHI",
-      "position": "DL"
     },
     {
       "player_id": "11328",
@@ -62539,6 +62539,104 @@
       "position": "DB"
     },
     {
+      "player_id": "7642",
+      "points": 5.78,
+      "points_ppr": 5.78,
+      "points_half_ppr": 5.78,
+      "points_standard": 5.78,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "2": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "3": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "4": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "6": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "7": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "8": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "9": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "10": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "11": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "12": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "13": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "14": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "15": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "16": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "17": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        },
+        "18": {
+          "ppr": 0.34,
+          "half_ppr": 0.34,
+          "standard": 0.34
+        }
+      },
+      "name": "Jaycee Horn",
+      "team": "CAR",
+      "position": "CB"
+    },
+    {
       "player_id": "8384",
       "points": 5.78,
       "points_ppr": 5.78,
@@ -62733,104 +62831,6 @@
       "name": "Chamarri Conner",
       "team": "KC",
       "position": "DB"
-    },
-    {
-      "player_id": "7642",
-      "points": 5.77,
-      "points_ppr": 5.77,
-      "points_half_ppr": 5.77,
-      "points_standard": 5.77,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.33,
-          "half_ppr": 0.33,
-          "standard": 0.33
-        },
-        "2": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "3": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "4": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "6": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "7": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "8": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "9": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "10": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "11": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "12": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "13": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "14": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "15": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "16": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "17": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        },
-        "18": {
-          "ppr": 0.34,
-          "half_ppr": 0.34,
-          "standard": 0.34
-        }
-      },
-      "name": "Jaycee Horn",
-      "team": "CAR",
-      "position": "CB"
     },
     {
       "player_id": "8406",
@@ -64009,6 +64009,104 @@
       "position": "LB"
     },
     {
+      "player_id": "6025",
+      "points": 5.44,
+      "points_ppr": 5.44,
+      "points_half_ppr": 5.44,
+      "points_standard": 5.44,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "2": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "3": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "4": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "6": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "7": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "8": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "9": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "10": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "11": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "12": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "13": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "14": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "15": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "16": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "17": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        },
+        "18": {
+          "ppr": 0.32,
+          "half_ppr": 0.32,
+          "standard": 0.32
+        }
+      },
+      "name": "Mike Jackson",
+      "team": "CAR",
+      "position": "CB"
+    },
+    {
       "player_id": "6807",
       "points": 5.44,
       "points_ppr": 5.44,
@@ -64791,104 +64889,6 @@
       "name": "John Franklin-Myers",
       "team": "TEN",
       "position": "DT"
-    },
-    {
-      "player_id": "6025",
-      "points": 5.43,
-      "points_ppr": 5.43,
-      "points_half_ppr": 5.43,
-      "points_standard": 5.43,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.31,
-          "half_ppr": 0.31,
-          "standard": 0.31
-        },
-        "2": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "3": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "4": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "6": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "7": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "8": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "9": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "10": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "11": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "12": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "13": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "14": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "15": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "16": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "17": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        },
-        "18": {
-          "ppr": 0.32,
-          "half_ppr": 0.32,
-          "standard": 0.32
-        }
-      },
-      "name": "Mike Jackson",
-      "team": "CAR",
-      "position": "CB"
     },
     {
       "player_id": "7676",
@@ -79292,6 +79292,104 @@
       "position": "DB"
     },
     {
+      "player_id": "2592",
+      "points": 2.9,
+      "points_ppr": 2.9,
+      "points_half_ppr": 2.9,
+      "points_standard": 2.9,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.18,
+          "half_ppr": 0.18,
+          "standard": 0.18
+        },
+        "2": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "3": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "4": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "5": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "6": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "7": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "8": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "9": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "11": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "12": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "13": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "14": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "15": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "16": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "17": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "18": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        }
+      },
+      "name": "Grady Jarrett",
+      "team": "CHI",
+      "position": "DT"
+    },
+    {
       "player_id": "4107",
       "points": 2.9,
       "points_ppr": 2.9,
@@ -79975,104 +80073,6 @@
       },
       "name": "Cameron Heyward",
       "team": "PIT",
-      "position": "DT"
-    },
-    {
-      "player_id": "2592",
-      "points": 2.89,
-      "points_ppr": 2.89,
-      "points_half_ppr": 2.89,
-      "points_standard": 2.89,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "2": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "3": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "4": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "5": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "6": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "7": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "8": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "9": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "11": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "12": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "13": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "14": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "15": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "16": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "17": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        },
-        "18": {
-          "ppr": 0.17,
-          "half_ppr": 0.17,
-          "standard": 0.17
-        }
-      },
-      "name": "Grady Jarrett",
-      "team": "CHI",
       "position": "DT"
     },
     {
@@ -82722,6 +82722,104 @@
       "position": "LB"
     },
     {
+      "player_id": "6314",
+      "points": 2.73,
+      "points_ppr": 2.73,
+      "points_half_ppr": 2.73,
+      "points_standard": 2.73,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.17,
+          "half_ppr": 0.17,
+          "standard": 0.17
+        },
+        "2": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "3": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "4": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "5": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "6": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "7": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "8": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "9": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "11": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "12": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "13": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "14": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "15": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "16": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "17": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        },
+        "18": {
+          "ppr": 0.16,
+          "half_ppr": 0.16,
+          "standard": 0.16
+        }
+      },
+      "name": "Cam Lewis",
+      "team": "CHI",
+      "position": "CB"
+    },
+    {
       "player_id": "8269",
       "points": 2.73,
       "points_ppr": 2.73,
@@ -83210,104 +83308,6 @@
       "name": "Eric Wilson",
       "team": "MIN",
       "position": "LB"
-    },
-    {
-      "player_id": "6314",
-      "points": 2.72,
-      "points_ppr": 2.72,
-      "points_half_ppr": 2.72,
-      "points_standard": 2.72,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "2": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "3": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "4": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "5": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "6": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "7": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "8": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "9": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "11": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "12": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "13": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "14": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "15": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "16": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "17": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        },
-        "18": {
-          "ppr": 0.16,
-          "half_ppr": 0.16,
-          "standard": 0.16
-        }
-      },
-      "name": "Cam Lewis",
-      "team": "CHI",
-      "position": "CB"
     },
     {
       "player_id": "6784",
@@ -91965,104 +91965,6 @@
       "position": "LB"
     },
     {
-      "player_id": "6999",
-      "points": 1.02,
-      "points_ppr": 1.02,
-      "points_half_ppr": 1.02,
-      "points_standard": 1.02,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "2": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "3": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "4": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "5": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "6": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "7": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "8": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "9": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "10": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "11": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "12": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "14": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "15": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "16": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "17": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        },
-        "18": {
-          "ppr": 0.06,
-          "half_ppr": 0.06,
-          "standard": 0.06
-        }
-      },
-      "name": "Benito Jones",
-      "team": "LV",
-      "position": "DT"
-    },
-    {
       "player_id": "7122",
       "points": 1.02,
       "points_ppr": 1.02,
@@ -95202,7 +95104,7 @@
     "1466": 214.59,
     "1553": 0.86,
     "1945": 118.72,
-    "2020": 122.27,
+    "2020": 122.36,
     "2033": 2.38,
     "2036": 6.67,
     "2064": 9.53,
@@ -95219,7 +95121,7 @@
     "2393": 13.42,
     "2449": 191.59,
     "2505": 133.47,
-    "2592": 2.89,
+    "2592": 2.9,
     "2617": 2.88,
     "2747": 131.92,
     "3048": 5.81,
@@ -95249,7 +95151,7 @@
     "3451": 133.78,
     "3558": 8.16,
     "3634": 57.56,
-    "3678": 121.85,
+    "3678": 121.88,
     "3973": 17.17,
     "3976": 0.78,
     "4017": 131.09,
@@ -95260,7 +95162,7 @@
     "4037": 185.3,
     "4039": 103.61,
     "4040": 19.64,
-    "4046": 301.96,
+    "4046": 301.97,
     "4054": 21.29,
     "4066": 67.78,
     "4070": 17.17,
@@ -95283,7 +95185,7 @@
     "4217": 178.55,
     "4219": 16.41,
     "4224": 1.02,
-    "4227": 122.44,
+    "4227": 122.41,
     "4233": 51.04,
     "4274": 0.74,
     "4278": 1.87,
@@ -95387,7 +95289,7 @@
     "5991": 10.53,
     "5995": 64.72,
     "6001": 35.72,
-    "6025": 5.43,
+    "6025": 5.44,
     "6039": 68.12,
     "6056": 2.38,
     "6060": 4.74,
@@ -95396,7 +95298,7 @@
     "6109": 11.17,
     "6111": 0.03,
     "6118": 7.16,
-    "6124": 9.02,
+    "6124": 9.03,
     "6125": 9.51,
     "6130": 20.55,
     "6131": 6.6,
@@ -95411,7 +95313,7 @@
     "6220": 1.87,
     "6271": 68.29,
     "6301": 3.9,
-    "6314": 2.72,
+    "6314": 2.73,
     "6315": 7.62,
     "6333": 6.28,
     "6416": 1.86,
@@ -95467,7 +95369,6 @@
     "6960": 3.52,
     "6972": 0.85,
     "6977": 2.71,
-    "6999": 1.02,
     "7002": 168.02,
     "7016": 4.76,
     "7018": 1.87,
@@ -95476,7 +95377,7 @@
     "7042": 122.25,
     "7049": 161.37,
     "7058": 3.92,
-    "7069": 8.67,
+    "7069": 8.66,
     "7075": 14.06,
     "7083": 0.81,
     "7090": 97.33,
@@ -95520,11 +95421,11 @@
     "7627": 8.16,
     "7630": 1.87,
     "7633": 5.27,
-    "7635": 9.85,
+    "7635": 9.86,
     "7637": 5.41,
     "7640": 10.53,
     "7641": 3.89,
-    "7642": 5.77,
+    "7642": 5.78,
     "7648": 4.76,
     "7649": 10.05,
     "7659": 3.57,
@@ -95618,7 +95519,7 @@
     "8249": 7.48,
     "8254": 4.94,
     "8258": 23.35,
-    "8259": 135.31,
+    "8259": 135.34,
     "8265": 7.66,
     "8266": 2.89,
     "8267": 6.63,
@@ -95626,7 +95527,7 @@
     "8270": 7.64,
     "8275": 2.89,
     "8278": 1.87,
-    "8280": 13.39,
+    "8280": 13.4,
     "8286": 1.87,
     "8289": 21.71,
     "8290": 1.87,
@@ -95640,7 +95541,7 @@
     "8314": 4.76,
     "8316": 2.38,
     "8323": 3.91,
-    "8329": 9.51,
+    "8329": 9.52,
     "8330": 2.89,
     "8331": 0.51,
     "8333": 6.28,
@@ -95749,9 +95650,9 @@
     "10891": 3.91,
     "10892": 13.92,
     "10894": 8.71,
-    "10897": 7.66,
+    "10897": 7.67,
     "10898": 14.53,
-    "10899": 6.64,
+    "10899": 6.65,
     "10901": 5.44,
     "10903": 2.88,
     "10905": 3.93,
@@ -95774,7 +95675,7 @@
     "10944": 3.41,
     "10947": 3.91,
     "10949": 5.78,
-    "10955": 112.12,
+    "10955": 112.15,
     "10958": 1.02,
     "10970": 6.28,
     "10974": 4.43,
@@ -95801,7 +95702,7 @@
     "11377": 13.23,
     "11427": 2.9,
     "11433": 5.66,
-    "11435": 42.33,
+    "11435": 42.35,
     "11439": 14.52,
     "11470": 5.79,
     "11510": 29.74,
@@ -95837,7 +95738,7 @@
     "11603": 170.08,
     "11604": 275.77,
     "11608": 27.78,
-    "11610": 113.71,
+    "11610": 113.72,
     "11616": 0.34,
     "11617": 13.85,
     "11618": 123.88,
@@ -95964,7 +95865,7 @@
     "12522": 270.48,
     "12523": 34.76,
     "12526": 241.73,
-    "12527": 243.9,
+    "12527": 243.93,
     "12529": 209.51,
     "12530": 74.55,
     "12531": 23.32,
@@ -96160,16 +96061,16 @@
     "SEA": 148.8,
     "HOU": 148.57,
     "PHI": 138.16,
-    "DEN": 133.69,
+    "DEN": 133.73,
     "BAL": 127.75,
     "MIN": 123.64,
     "NE": 123.44,
     "JAX": 123.16,
     "DET": 120.98,
-    "KC": 118.96,
+    "KC": 118.92,
     "GB": 117.32,
     "PIT": 112.62,
-    "CHI": 109.4,
+    "CHI": 109.49,
     "DAL": 108.26,
     "BUF": 107.98,
     "ATL": 107.23,
@@ -96177,8 +96078,8 @@
     "IND": 105.94,
     "NYG": 105.75,
     "TB": 105.08,
-    "CAR": 103.51,
-    "LAC": 102.62,
+    "CAR": 103.59,
+    "LAC": 102.65,
     "CLE": 98.3,
     "CIN": 95.49,
     "NO": 92.29,
@@ -96186,7 +96087,7 @@
     "TEN": 85.57,
     "LV": 82.33,
     "NYJ": 81.31,
-    "ARI": 80.75,
+    "ARI": 80.77,
     "MIA": 78.77
   },
   "by_name": {
@@ -96246,8 +96147,8 @@
     "danieljones": 305.34,
     "cj stroud": 303.92,
     "c.j.stroud": 303.92,
-    "patrick mahomes": 301.96,
-    "patrickmahomes": 301.96,
+    "patrick mahomes": 301.97,
+    "patrickmahomes": 301.97,
     "james cook": 296.65,
     "jamescook": 296.65,
     "tyler shough": 296.64,
@@ -96306,8 +96207,8 @@
     "jaylenwaddle": 252.02,
     "chris olave": 251.98,
     "chrisolave": 251.98,
-    "ashton jeanty": 243.9,
-    "ashtonjeanty": 243.9,
+    "ashton jeanty": 243.93,
+    "ashtonjeanty": 243.93,
     "tetairoa mcmillan": 241.73,
     "tetairoamcmillan": 241.73,
     "josh jacobs": 241.41,
@@ -96506,14 +96407,14 @@
     "j.k.dobbins": 136.6,
     "gunnar helm": 135.47,
     "gunnarhelm": 135.47,
-    "cameron dicker": 135.31,
-    "camerondicker": 135.31,
+    "cameron dicker": 135.34,
+    "camerondicker": 135.34,
     "chris rodriguez": 134.4,
     "chrisrodriguez": 134.4,
     "kaimi fairbairn": 133.78,
     "ka'imifairbairn": 133.78,
-    "denver broncos": 133.69,
-    "denverbroncos": 133.69,
+    "denver broncos": 133.73,
+    "denverbroncos": 133.73,
     "darren waller": 133.47,
     "darrenwaller": 133.47,
     "jason myers": 131.92,
@@ -96558,10 +96459,10 @@
     "patfreiermuth": 122.77,
     "andy borregales": 122.62,
     "andyborregales": 122.62,
-    "harrison butker": 122.44,
-    "harrisonbutker": 122.44,
-    "cairo santos": 122.27,
-    "cairosantos": 122.27,
+    "harrison butker": 122.41,
+    "harrisonbutker": 122.41,
+    "cairo santos": 122.36,
+    "cairosantos": 122.36,
     "tyler bass": 122.25,
     "tylerbass": 122.25,
     "chase mclaughlin": 122.24,
@@ -96570,8 +96471,8 @@
     "de'zhaunstribling": 122.02,
     "nick folk": 121.99,
     "nickfolk": 121.99,
-    "wil lutz": 121.85,
-    "willutz": 121.85,
+    "wil lutz": 121.88,
+    "willutz": 121.88,
     "detroit lions": 120.98,
     "detroitlions": 120.98,
     "dylan sampson": 120.5,
@@ -96580,8 +96481,8 @@
     "jonathonbrooks": 119.31,
     "trey smack": 119.02,
     "treysmack": 119.02,
-    "kansas city chiefs": 118.96,
-    "kansascitychiefs": 118.96,
+    "kansas city chiefs": 118.92,
+    "kansascitychiefs": 118.92,
     "matt gay": 118.91,
     "mattgay": 118.91,
     "chris boswell": 118.72,
@@ -96602,18 +96503,18 @@
     "ryanflournoy": 114.01,
     "jake elliott": 113.97,
     "jakeelliott": 113.97,
-    "malik washington": 113.71,
-    "malikwashington": 113.71,
+    "malik washington": 113.72,
+    "malikwashington": 113.72,
     "calvin ridley": 113.28,
     "calvinridley": 113.28,
     "pittsburgh steelers": 112.62,
     "pittsburghsteelers": 112.62,
-    "chad ryland": 112.12,
-    "chadryland": 112.12,
+    "chad ryland": 112.15,
+    "chadryland": 112.15,
     "greg dulcich": 110.05,
     "gregdulcich": 110.05,
-    "chicago bears": 109.4,
-    "chicagobears": 109.4,
+    "chicago bears": 109.49,
+    "chicagobears": 109.49,
     "kenyon sadiq": 108.49,
     "kenyonsadiq": 108.49,
     "mike gesicki": 108.38,
@@ -96644,12 +96545,12 @@
     "woodymarks": 105.04,
     "cooper kupp": 103.61,
     "cooperkupp": 103.61,
-    "carolina panthers": 103.51,
-    "carolinapanthers": 103.51,
+    "carolina panthers": 103.59,
+    "carolinapanthers": 103.59,
     "jerry jeudy": 102.71,
     "jerryjeudy": 102.71,
-    "los angeles chargers": 102.62,
-    "losangeleschargers": 102.62,
+    "los angeles chargers": 102.65,
+    "losangeleschargers": 102.65,
     "tyquan thornton": 102.06,
     "tyquanthornton": 102.06,
     "andre szmyt": 100.33,
@@ -96710,8 +96611,8 @@
     "xavierlegette": 81.61,
     "new york jets": 81.31,
     "newyorkjets": 81.31,
-    "arizona cardinals": 80.75,
-    "arizonacardinals": 80.75,
+    "arizona cardinals": 80.77,
+    "arizonacardinals": 80.77,
     "jack bech": 80.19,
     "jackbech": 80.19,
     "alvin kamara": 80.03,
@@ -96876,8 +96777,8 @@
     "keoncoleman": 43.33,
     "caleb douglas": 43.03,
     "calebdouglas": 43.03,
-    "emanuel wilson": 42.33,
-    "emanuelwilson": 42.33,
+    "emanuel wilson": 42.35,
+    "emanuelwilson": 42.35,
     "josh oliver": 42.03,
     "josholiver": 42.03,
     "tahj brooks": 41.03,
@@ -97112,8 +97013,8 @@
     "nickherbig": 13.43,
     "danielle hunter": 13.42,
     "daniellehunter": 13.42,
-    "nik bonitto": 13.39,
-    "nikbonitto": 13.39,
+    "nik bonitto": 13.4,
+    "nikbonitto": 13.4,
     "josh sweat": 13.36,
     "joshsweat": 13.36,
     "tyrell shavers": 13.23,
@@ -97172,8 +97073,8 @@
     "jammiller": 10.09,
     "dayo odeyingbo": 10.05,
     "dayoodeyingbo": 10.05,
-    "jaelan phillips": 9.85,
-    "jaelanphillips": 9.85,
+    "jaelan phillips": 9.86,
+    "jaelanphillips": 9.86,
     "calen bullock": 9.85,
     "calenbullock": 9.85,
     "jmari taylor": 9.74,
@@ -97188,14 +97089,14 @@
     "demarcuslawrence": 9.53,
     "josh hinesallen": 9.53,
     "joshhines-allen": 9.53,
+    "devin lloyd": 9.52,
+    "devinlloyd": 9.52,
     "christian benford": 9.52,
     "christianbenford": 9.52,
     "jeffery simmons": 9.51,
     "jefferysimmons": 9.51,
     "klavon chaisson": 9.51,
     "k'lavonchaisson": 9.51,
-    "devin lloyd": 9.51,
-    "devinlloyd": 9.51,
     "sonny styles": 9.51,
     "sonnystyles": 9.51,
     "luke mccaffrey": 9.51,
@@ -97210,8 +97111,8 @@
     "demetriusknight": 9.05,
     "tylan wallace": 9.04,
     "tylanwallace": 9.04,
-    "montez sweat": 9.02,
-    "montezsweat": 9.02,
+    "montez sweat": 9.03,
+    "montezsweat": 9.03,
     "george karlaftis": 9.01,
     "georgekarlaftis": 9.01,
     "kobie turner": 9.01,
@@ -97234,12 +97135,12 @@
     "uchennanwosu": 8.68,
     "antoine winfield": 8.68,
     "antoinewinfield": 8.68,
-    "alohi gilman": 8.67,
-    "alohigilman": 8.67,
     "terrel bernard": 8.67,
     "terrelbernard": 8.67,
     "nate landman": 8.67,
     "natelandman": 8.67,
+    "alohi gilman": 8.66,
+    "alohigilman": 8.66,
     "nahshon wright": 8.63,
     "nahshonwright": 8.63,
     "tyler goodson": 8.57,
@@ -97292,12 +97193,12 @@
     "kylehamilton": 7.67,
     "nolan smith": 7.67,
     "nolansmith": 7.67,
+    "tyrique stevenson": 7.67,
+    "tyriquestevenson": 7.67,
     "julian love": 7.66,
     "julianlove": 7.66,
     "travon walker": 7.66,
     "travonwalker": 7.66,
-    "tyrique stevenson": 7.66,
-    "tyriquestevenson": 7.66,
     "fred warner": 7.65,
     "fredwarner": 7.65,
     "braden fiske": 7.65,
@@ -97368,6 +97269,8 @@
     "derrickmoore": 6.67,
     "jalen carter": 6.65,
     "jalencarter": 6.65,
+    "gervon dexter": 6.65,
+    "gervondexter": 6.65,
     "cooper dejean": 6.65,
     "cooperdejean": 6.65,
     "donovan ezeiruaku": 6.65,
@@ -97376,8 +97279,6 @@
     "jihaadcampbell": 6.65,
     "byron murphy": 5.28,
     "byronmurphy": 5.28,
-    "gervon dexter": 6.64,
-    "gervondexter": 6.64,
     "jalen redmond": 6.64,
     "jalenredmond": 6.64,
     "deshon elliott": 6.63,
@@ -97468,12 +97369,12 @@
     "druetranquill": 5.78,
     "kam curl": 5.78,
     "kamcurl": 5.78,
+    "jaycee horn": 5.78,
+    "jayceehorn": 5.78,
     "zyon mccollum": 5.78,
     "zyonmccollum": 5.78,
     "chamarri conner": 5.78,
     "chamarriconner": 5.78,
-    "jaycee horn": 5.77,
-    "jayceehorn": 5.77,
     "reed blankenship": 5.77,
     "reedblankenship": 5.77,
     "lukas van ness": 5.77,
@@ -97498,6 +97399,8 @@
     "jalenramsey": 5.44,
     "foyesade oluokun": 5.44,
     "foyesadeoluokun": 5.44,
+    "mike jackson": 5.44,
+    "mikejackson": 5.44,
     "patrick queen": 5.44,
     "patrickqueen": 5.44,
     "felix anudikeuzomah": 5.44,
@@ -97514,8 +97417,6 @@
     "zairefranklin": 5.43,
     "john franklinmyers": 5.43,
     "johnfranklin-myers": 5.43,
-    "mike jackson": 5.43,
-    "mikejackson": 5.43,
     "malcolm koonce": 5.43,
     "malcolmkoonce": 5.43,
     "ameer abdullah": 5.42,
@@ -97808,6 +97709,8 @@
     "charliejones": 2.97,
     "tarheeb still": 2.91,
     "tarheebstill": 2.91,
+    "grady jarrett": 2.9,
+    "gradyjarrett": 2.9,
     "chidobe awuzie": 2.9,
     "chidobeawuzie": 2.9,
     "dj reed": 2.9,
@@ -97822,8 +97725,6 @@
     "christianizien": 2.9,
     "cameron heyward": 2.89,
     "cameronheyward": 2.89,
-    "grady jarrett": 2.89,
-    "gradyjarrett": 2.89,
     "tyler davis": 2.89,
     "tylerdavis": 2.89,
     "taron johnson": 2.89,
@@ -97876,6 +97777,8 @@
     "garrettwilliams": 2.87,
     "oren burks": 2.73,
     "orenburks": 2.73,
+    "cam lewis": 2.73,
+    "camlewis": 2.73,
     "jordan davis": 2.73,
     "jordandavis": 2.73,
     "jordan battle": 2.73,
@@ -97886,8 +97789,6 @@
     "a'shawnrobinson": 2.72,
     "eric wilson": 2.72,
     "ericwilson": 2.72,
-    "cam lewis": 2.72,
-    "camlewis": 2.72,
     "derrick brown": 2.72,
     "derrickbrown": 2.72,
     "isaiah polamao": 2.72,
@@ -98068,8 +97969,6 @@
     "chuckclark": 1.02,
     "ej speed": 1.02,
     "e.j.speed": 1.02,
-    "benito jones": 1.02,
-    "benitojones": 1.02,
     "broderick washington": 1.02,
     "broderickwashington": 1.02,
     "khyiris tonga": 1.02,
