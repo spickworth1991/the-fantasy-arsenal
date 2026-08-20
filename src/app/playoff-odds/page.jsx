@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useSleeper } from "../../context/SleeperContext";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { makeGetPlayerValue } from "../../lib/values";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -153,13 +154,11 @@ function parseLeagueSlots(league) {
 }
 
 function inferQbTypeFromLeague(league) {
-  const rp = (league?.roster_positions || []).map((x) => String(x || "").toUpperCase());
-  return rp.includes("SUPER_FLEX") || rp.includes("SUPERFLEX") || rp.includes("Q/W/R/T") ? "sf" : "1qb";
+  return classifyQbFormat(league).key;
 }
 
 function inferFormatFromLeague(league) {
-  const name = String(league?.name || "").toLowerCase();
-  return name.includes("dynasty") || name.includes("keeper") || !!league?.previous_league_id ? "dynasty" : "redraft";
+  return classifyLeagueFormat(league).key === "dynasty" ? "dynasty" : "redraft";
 }
 
 function teamStrength({ roster, players, getMetricWeekly, slots, week, byeMap }) {

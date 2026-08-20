@@ -6,6 +6,7 @@ import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 import { getMarketPickValue } from "../../lib/pickValues";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 
 const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
@@ -528,6 +529,11 @@ export default function CommissionerDashboardClient() {
   const [copied, setCopied] = useState(false);
   const [recruiting, setRecruiting] = useState(RECRUITING_DEFAULTS);
   const league = useMemo(() => leagues.find((row) => row.league_id === activeLeague) || null, [activeLeague, leagues]);
+  useEffect(() => {
+    if (!league) return;
+    setFormat(classifyLeagueFormat(league).key === "dynasty" ? "dynasty" : "redraft");
+    setQbType(classifyQbFormat(league).key);
+  }, [league?.league_id, setFormat, setQbType]);
   const matchingLeagues = useMemo(() => {
     const query = leagueQuery.trim().toLowerCase();
     if (!query) return [];

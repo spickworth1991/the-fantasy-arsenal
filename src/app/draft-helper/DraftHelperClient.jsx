@@ -9,6 +9,8 @@ import { useSleeper } from "../../context/SleeperContext";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 import PlayerResearchPanel from "../../components/PlayerResearchPanel";
 import DraftStrategySuite from "./DraftStrategySuite";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import { aggregateBallsvilleAdp, ballsvilleAdpProxyUrl, resolveBallsvilleAdp } from "../../lib/ballsvilleAdp";
 
 const OFFENSE = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
 const FLEX = new Set(["RB", "WR", "TE"]);
@@ -47,6 +49,17 @@ function effectivePosition(player) {
   return pos;
 }
 
+function injuryContext(player, valueFormat) {
+  const label = String(player?.injury_status || player?.status || "").trim();
+  const status = upper(label);
+  if (!status || ["ACTIVE", "CLEAR", "HEALTHY"].includes(status)) return { label:"Clear", multiplier:1, severity:"clear" };
+  const dynasty = valueFormat === "dynasty";
+  if (["IR", "PUP", "NFI", "SUSPENDED"].some((token) => status.includes(token))) return { label, multiplier:dynasty ? 0.88 : 0.68, severity:"major" };
+  if (["OUT", "DOUBTFUL"].some((token) => status.includes(token))) return { label, multiplier:dynasty ? 0.91 : 0.76, severity:"major" };
+  if (["QUESTIONABLE", "LIMITED"].some((token) => status.includes(token))) return { label, multiplier:dynasty ? 0.98 : 0.93, severity:"minor" };
+  return { label, multiplier:dynasty ? 0.96 : 0.9, severity:"unknown" };
+}
+
 function buildNeeds(roster, players, league, draftedPlayerIds = []) {
   const counts = {};
   const baseIds = (roster?.players || []).map(String);
@@ -74,7 +87,8 @@ function buildNeeds(roster, players, league, draftedPlayerIds = []) {
     const count = counts[pos] || 0;
     const gap = Math.max(0, target - count);
     const depth = count - target;
-    const urgency = gap > 0 ? 1 + Math.min(0.55, gap * 0.28) : depth < 1 ? 1.12 : depth < 2 ? 1.04 : 0.94;
+    const coveredStarters = count >= Math.ceil(target);
+    const urgency = gap > 0 ? 1 + Math.min(0.55, gap * 0.28) : !coveredStarters ? 1.06 : depth < 1 ? 0.96 : depth < 2 ? 0.86 : 0.74;
     return { pos, count, drafted: draftedCounts[pos] || 0, target, gap, depth, urgency };
   });
   return rows.sort((a, b) => b.urgency - a.urgency || a.pos.localeCompare(b.pos));
@@ -83,7 +97,7 @@ function buildNeeds(roster, players, league, draftedPlayerIds = []) {
 function RecommendationCard({ label, item, tone, onWatch, watched, onInspect }) {
   if (!item) return <Panel className="p-5 text-sm text-white/35">No eligible recommendation is available.</Panel>;
   const color = tone === "violet" ? "border-violet-300/15 text-violet-100/60" : tone === "amber" ? "border-amber-300/15 text-amber-100/60" : "border-cyan-300/15 text-cyan-100/60";
-  return <Panel className={`overflow-hidden ${color.split(" ")[0]}`}><div className="p-4"><div className={`text-[10px] font-semibold uppercase tracking-[.2em] ${color.split(" ")[1]}`}>{label}</div><div className="mt-3 flex items-center gap-3"><AvatarImage name={item.name} playerId={item.id} size={48} className="rounded-2xl" alt="" /><div className="min-w-0 flex-1"><button type="button" onClick={()=>onInspect?.(item)} className="block max-w-full truncate text-left text-lg font-black hover:text-cyan-100">{item.name}</button><div className="text-xs text-white/38">{item.pos} · {item.team || "FA"} · age {item.age || "—"}</div></div><div className="text-right"><div className="text-xl font-black text-cyan-100">{Math.round(item.value).toLocaleString()}</div><div className="text-[9px] uppercase text-white/25">market value</div></div></div><p className="mt-4 text-xs leading-5 text-white/52">{item.reason}</p><button onClick={() => onWatch(item.id)} className={`mt-4 rounded-xl px-3 py-2 text-xs font-semibold ${watched ? "bg-amber-300/10 text-amber-100" : "bg-white/[0.05] text-white/55"}`}>{watched ? "On watchlist" : "+ Watch player"}</button><button type="button" onClick={()=>onInspect?.(item)} className="ml-2 mt-4 rounded-xl bg-cyan-300/[0.07] px-3 py-2 text-xs font-semibold text-cyan-100">Player intelligence</button></div></Panel>;
+  return <Panel className={`overflow-hidden ${color.split(" ")[0]}`}><div className="p-4"><div className={`text-[10px] font-semibold uppercase tracking-[.2em] ${color.split(" ")[1]}`}>{label}</div><div className="mt-3 flex items-center gap-3"><AvatarImage name={item.name} playerId={item.id} size={48} className="rounded-2xl" alt="" /><div className="min-w-0 flex-1"><button type="button" onClick={()=>onInspect?.(item)} className="block max-w-full truncate text-left text-lg font-black hover:text-cyan-100">{item.name}</button><div className="text-xs text-white/38">{item.pos} · {item.team || "FA"} · age {item.age || "—"}</div></div><div className="text-right"><div className="text-xl font-black text-cyan-100">{Math.round(item.value).toLocaleString()}</div><div className="text-[9px] uppercase text-white/25">market value</div></div></div><div className="mt-3 flex flex-wrap gap-2 text-[9px]"><span className="rounded-full bg-white/[0.05] px-2.5 py-1 text-white/50">ADP {item.adp ? item.adp.toFixed(1) : "unavailable"}</span>{item.byeWeek ? <span className="rounded-full bg-white/[0.05] px-2.5 py-1 text-white/50">Bye {item.byeWeek}</span> : null}{item.injury?.severity !== "clear" ? <span className="rounded-full bg-rose-300/[0.09] px-2.5 py-1 text-rose-100/75">{item.injury.label}</span> : null}{item.likelyAvailableLater ? <span className="rounded-full bg-amber-300/[0.08] px-2.5 py-1 text-amber-100/70">Likely wait candidate</span> : item.fallingValue ? <span className="rounded-full bg-emerald-300/[0.08] px-2.5 py-1 text-emerald-100/70">Falling value</span> : null}</div><p className="mt-3 text-xs leading-5 text-white/52">{item.reason}</p><button onClick={() => onWatch(item.id)} className={`mt-4 rounded-xl px-3 py-2 text-xs font-semibold ${watched ? "bg-amber-300/10 text-amber-100" : "bg-white/[0.05] text-white/55"}`}>{watched ? "On watchlist" : "+ Watch player"}</button><button type="button" onClick={()=>onInspect?.(item)} className="ml-2 mt-4 rounded-xl bg-cyan-300/[0.07] px-3 py-2 text-xs font-semibold text-cyan-100">Player intelligence</button></div></Panel>;
 }
 
 function PlayerSourceDrawer({ item, valueFormat, qbType, getPlayerValue, sourceKey, onClose }) {
@@ -189,6 +203,7 @@ export default function DraftHelperClient() {
   const [lastRefreshAt, setLastRefreshAt] = useState(0);
   const [refreshCountdown, setRefreshCountdown] = useState(0);
   const [byeWeeks, setByeWeeks] = useState({});
+  const [adpMap, setAdpMap] = useState(new Map());
   const routeLeagueId = useRef(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("league") || "" : "");
   const routeHandoffApplied = useRef(false);
   const [requestedDraftId,setRequestedDraftId]=useState(() => typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("draft") || "" : "");
@@ -380,6 +395,15 @@ export default function DraftHelperClient() {
   }, [draft?.metadata?.description, draft?.metadata?.name, draft?.season, picks, players]);
   const playerPool = poolOverride === "auto" ? inferredPool : poolOverride;
   const rookieOnly = playerPool === "rookies";
+  const adpMode = rookieOnly ? "dynasty-rookie" : valueFormat === "dynasty" ? "dynasty-startup" : "redraft";
+  useEffect(() => {
+    let active = true;
+    fetch(ballsvilleAdpProxyUrl(`data/draft-compare/drafts_2026_${adpMode}.json`))
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload) => { if (active) setAdpMap(aggregateBallsvilleAdp(payload)); })
+      .catch(() => { if (active) setAdpMap(new Map()); });
+    return () => { active = false; };
+  }, [adpMode]);
   const rosterSlots = useMemo(() => (league?.roster_positions || []).map(upper), [league?.roster_positions]);
   const allowsKicker = rosterSlots.includes("K");
   const allowsTeamDefense = rosterSlots.some((slot) => ["DEF", "DST", "D/ST"].includes(slot));
@@ -394,7 +418,10 @@ export default function DraftHelperClient() {
     if (rookieOnly && !(n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     if (playerPool === "veterans" && (n(player?.years_exp) === 0 || n(player?.rookie_year) >= n(draft?.season))) return false;
     return true;
-  }).map(({ id, player, pos }) => ({ id, player, pos, name:playerName(player, id), team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })) })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [allowsIdp, allowsKicker, allowsTeamDefense, draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
+  }).map(({ id, player, pos }) => {
+    const name = playerName(player, id);
+    return { id, player, pos, name, team:player.team, age:n(player.age), value:n(getPlayerValue(player, { format:valueFormat, qbType })), adp:n(resolveBallsvilleAdp(adpMap, name, pos)?.avgOverallPick), injury:injuryContext(player, valueFormat) };
+  }).filter((item) => item.value > 0).sort((a, b) => b.value - a.value), [adpMap, allowsIdp, allowsKicker, allowsTeamDefense, draft?.season, getPlayerValue, pickedIds, playerPool, players, qbType, rookieOnly, rosteredIds, valueFormat]);
 
   const draftedByRoster = useMemo(() => {
     const map = new Map();
@@ -410,17 +437,72 @@ export default function DraftHelperClient() {
   const focusDraftedIds = draftedByRoster.get(String(focusRosterId)) || [];
   const needs = useMemo(() => buildNeeds(focusRoster, players, league, focusDraftedIds), [focusDraftedIds, focusRoster, league, players]);
   const needMap = useMemo(() => new Map(needs.map((need) => [need.pos, need])), [needs]);
+  const ownerForCell = (round, slot) => {
+    const original = String(slotMap[slot] || "");
+    const traded = [...tradedPicks].reverse().find((item) => n(item.round) === round && String(item.roster_id) === original);
+    return String(traded?.owner_id || original);
+  };
+  const remainingOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
+    const round = Math.ceil(pickNo / Math.max(1, teams));
+    const slot = getSlotForPick(pickNo, teams, draft?.type || "snake");
+    return ownerForCell(round, slot) === String(signedInRosterId || focusRosterId);
+  });
+  const nextMyPick = remainingOwnedPicks[0] || null;
+  const picksAway = nextMyPick ? Math.max(0, nextMyPick - nextPickNo) : null;
+  const focusOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
+    const round = Math.ceil(pickNo / Math.max(1, teams));
+    const slot = getSlotForPick(pickNo, teams, draft?.type || "snake");
+    return ownerForCell(round, slot) === String(focusRosterId);
+  });
+  const focusCurrentPick = focusOwnedPicks[0] || nextPickNo;
+  const followingMyPick = focusOwnedPicks.find((pickNo) => pickNo > focusCurrentPick) || focusCurrentPick + teams;
+  const focusRosterIds = [...new Set([...(focusRoster?.players || []).map(String), ...focusDraftedIds.map(String)])];
+  const focusByeCounts = focusRosterIds.reduce((map, id) => {
+    const week = byeWeeks[upper(players?.[id]?.team)];
+    const pos = effectivePosition(players?.[id]);
+    if (week) {
+      map.all[week] = (map.all[week] || 0) + 1;
+      if (!map.byPosition[pos]) map.byPosition[pos] = {};
+      map.byPosition[pos][week] = (map.byPosition[pos][week] || 0) + 1;
+    }
+    return map;
+  }, { all:{}, byPosition:{} });
   const ranked = useMemo(() => eligible.slice(0, 160).map((item, index, list) => {
     const need = needMap.get(item.pos) || { urgency:1, count:0, gap:0 };
     const samePositionAhead = list.slice(0, index).filter((row) => row.pos === item.pos).length;
     const scarcity = Math.max(0, 1 - samePositionAhead / 12);
     const age=item.age||27;const presetMultiplier=draftStrategy==="win-now"?(age>=25?1.08:.98):draftStrategy==="productive-struggle"?(age<=24?1.13:.92):draftStrategy==="zero-rb"?(item.pos==="RB"?.82:1.07):draftStrategy==="best-ball"?(["WR","QB","TE"].includes(item.pos)?1.06:1):1;
-    return { ...item, need, fitScore:item.value * need.urgency, strategyScore:item.value * (0.9 + need.urgency * 0.14 + scarcity * 0.08) * presetMultiplier };
-  }), [draftStrategy, eligible, needMap]);
-  const bestValue = ranked[0];
-  const bestFit = [...ranked].sort((a, b) => b.fitScore - a.fitScore)[0];
-  const bestStrategy = [...ranked].sort((a, b) => b.strategyScore - a.strategyScore)[0];
-  const recommendation = (item, mode) => item ? { ...item, reason:mode === "value" ? `${item.name} is the highest-valued eligible player in the selected ${valueFormat} market. The recommendation intentionally does not force positional need over a meaningful value tier.` : mode === "fit" ? `${item.pos} is ${item.need.gap > 0 ? `short by about ${item.need.gap.toFixed(1)} starter slots` : `one of this roster's thinner positions`}. This selection balances market value with the actual lineup and current depth.` : `${item.name} combines strong value with ${item.need.urgency > 1.1 ? "an urgent roster need" : "positional scarcity"}. The strategy score avoids a large reach while accounting for what may be harder to replace later.` } : null;
+    const valueRatio = item.value / Math.max(1, list[0]?.value || item.value);
+    const adpKnown = item.adp > 0;
+    const adpDelta = adpKnown ? item.adp - focusCurrentPick : 0;
+    const likelyAvailableLater = adpKnown && item.adp > followingMyPick + 4;
+    const fallingValue = adpKnown && item.adp < focusCurrentPick - 5;
+    const timing = !adpKnown ? 0.88 : likelyAvailableLater ? Math.max(0.58, 1 - (item.adp - followingMyPick) / Math.max(45, teams * 5)) : fallingValue ? 1.12 : 1;
+    const byeWeek = byeWeeks[upper(item.team)] || 0;
+    const sameBye = byeWeek ? n(focusByeCounts.all[byeWeek]) : 0;
+    const samePositionBye = byeWeek ? n(focusByeCounts.byPosition[item.pos]?.[byeWeek]) : 0;
+    const byeMultiplier = !byeWeek ? 1 : Math.max(0.88, 1 - Math.max(0, sameBye - 2) * 0.025 - samePositionBye * 0.035);
+    const surplusPenalty = need.gap <= 0 ? need.urgency : 1;
+    const availabilityMultiplier = item.injury.multiplier * byeMultiplier;
+    const marketScore = item.value * (0.74 + valueRatio * 0.14 + timing * 0.12) * (likelyAvailableLater ? 0.78 : 1) * availabilityMultiplier;
+    return { ...item, need, adpDelta, likelyAvailableLater, fallingValue, timing, byeWeek, sameBye, samePositionBye, byeMultiplier, availabilityMultiplier, marketScore, fitScore:marketScore * (0.82 + need.urgency * 0.18) * surplusPenalty, strategyScore:marketScore * (0.82 + need.urgency * 0.1 + scarcity * 0.08) * surplusPenalty * presetMultiplier };
+  }), [byeWeeks, draftStrategy, eligible, focusByeCounts, focusCurrentPick, followingMyPick, needMap, teams]);
+  const takeDistinct = (rows, used) => rows.find((item) => !used.has(item.id)) || rows[0];
+  const valueRows = [...ranked].sort((a, b) => b.marketScore - a.marketScore);
+  const fitRows = [...ranked].sort((a, b) => b.fitScore - a.fitScore);
+  const strategyRows = [...ranked].sort((a, b) => b.strategyScore - a.strategyScore);
+  const usedRecommendations = new Set();
+  const bestValue = takeDistinct(valueRows, usedRecommendations); if (bestValue) usedRecommendations.add(bestValue.id);
+  const bestFit = takeDistinct(fitRows, usedRecommendations); if (bestFit) usedRecommendations.add(bestFit.id);
+  const bestStrategy = takeDistinct(strategyRows, usedRecommendations);
+  const timingReason = (item) => item?.adp ? item.likelyAvailableLater ? `ADP ${item.adp.toFixed(1)} says this player may last beyond your next turn, which lowers the urgency.` : item.fallingValue ? `ADP ${item.adp.toFixed(1)} makes this a meaningful slide at pick ${focusCurrentPick}.` : `ADP ${item.adp.toFixed(1)} is appropriate for the current pick window.` : "No reliable ADP match was available, so the model reduced its confidence.";
+  const availabilityReason = (item) => {
+    const notes = [];
+    if (item?.injury?.severity !== "clear") notes.push(`${item.injury.label} carries a ${valueFormat === "dynasty" ? "long-term-adjusted" : "current-season"} injury discount`);
+    if (item?.byeWeek && item.sameBye >= 3) notes.push(`Week ${item.byeWeek} would become a ${item.sameBye + 1}-player bye cluster`);
+    return notes.length ? `${notes.join("; ")}.` : "No material injury or bye-week penalty was detected.";
+  };
+  const recommendation = (item, mode) => item ? { ...item, reason:mode === "value" ? `${item.name} offers the strongest blend of ${valueFormat} market value and draft-slot cost. ${timingReason(item)} ${availabilityReason(item)}` : mode === "fit" ? `${item.pos} is ${item.need.gap > 0 ? `short by about ${item.need.gap.toFixed(1)} starter slots` : "already covered, so depth received a smaller boost"}. ${timingReason(item)} ${availabilityReason(item)}` : `${item.name} balances value, roster construction, positional scarcity, availability, and the chance the player reaches your next pick. ${timingReason(item)} ${availabilityReason(item)}` } : null;
   const recommendations = [recommendation(bestValue, "value"), recommendation(bestFit, "fit"), recommendation(bestStrategy, "strategy")];
   const byeSummary = useMemo(() => {
     const ids = [...new Set([...(focusRoster?.players || []).map(String), ...focusDraftedIds.map(String)])];
@@ -438,18 +520,6 @@ export default function DraftHelperClient() {
     return top ? { ...top, teams:[...top.teams] } : null;
   }, [byeWeeks, focusDraftedIds, focusRoster?.players, players]);
 
-  const ownerForCell = (round, slot) => {
-    const original = String(slotMap[slot] || "");
-    const traded = [...tradedPicks].reverse().find((item) => n(item.round) === round && String(item.roster_id) === original);
-    return String(traded?.owner_id || original);
-  };
-  const remainingOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
-    const round = Math.ceil(pickNo / Math.max(1, teams));
-    const slot = getSlotForPick(pickNo, teams, draft?.type || "snake");
-    return ownerForCell(round, slot) === String(signedInRosterId || focusRosterId);
-  });
-  const nextMyPick = remainingOwnedPicks[0] || null;
-  const picksAway = nextMyPick ? Math.max(0, nextMyPick - nextPickNo) : null;
   const recentPositionCounts = [...picks].slice(-12).reduce((map, pick) => { const pos=effectivePosition(players?.[pick.player_id]) || "Other"; map[pos]=(map[pos]||0)+1; return map; }, {});
   const recentRun = Object.entries(recentPositionCounts).map(([pos,count]) => ({ pos,count,sample:Math.min(12,picks.length) })).sort((a,b) => b.count-a.count)[0] || null;
   const draftedCounts = Object.entries(picks.reduce((map, pick) => { const pos=effectivePosition(players?.[pick.player_id]) || "Other"; map[pos]=(map[pos]||0)+1; return map; }, {})).map(([pos,count]) => ({pos,count})).sort((a,b) => b.count-a.count);
@@ -466,7 +536,7 @@ export default function DraftHelperClient() {
   },[players]);
 
   return <main className="min-h-screen text-white"><BackgroundParticles /><Navbar pageTitle="Draft Command Center" /><div className="mx-auto max-w-[1500px] px-4 pb-20 pt-20">
-    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.22),transparent_35%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.17),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-7"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/60">League-aware draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Command Center</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/55 sm:text-base">Live Sleeper draftboard, traded-pick ownership, roster needs, and recommendations built for this league's actual settings.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.55fr)_auto]"><select data-account-persist="off" value={activeLeague || ""} onChange={(event) => selectLeague(event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a league</option>{(leagues || []).map((item) => <option key={item.league_id} value={item.league_id}>{item.name}</option>)}</select><select data-account-persist="off" key={activeLeague || "no-league"} value={draftId} onChange={(event) => { setRequestedDraftId(""); setDraftId(event.target.value); }} disabled={!drafts.length} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((item) => <option key={item.draft_id} value={item.draft_id}>{item.season} · {item.status} · {item.settings?.rounds || "—"} rounds</option>)}</select><button onClick={() => refreshDraft()} disabled={!draftId || loading} className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100">{loading ? "Loading..." : "Refresh live draft"}</button></div></header>
+    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.22),transparent_35%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.17),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-7"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/60">League-aware draft intelligence</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Draft Command Center</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/55 sm:text-base">Live Sleeper draftboard, traded-pick ownership, roster needs, and recommendations built for this league's actual settings.</p><div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(250px,.55fr)_auto]"><LeagueSearchSelect leagues={leagues || []} value={activeLeague || ""} onChange={selectLeague} /><select data-account-persist="off" key={activeLeague || "no-league"} value={draftId} onChange={(event) => { setRequestedDraftId(""); setDraftId(event.target.value); }} disabled={!drafts.length} className="rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm"><option value="">Choose a draft</option>{drafts.map((item) => <option key={item.draft_id} value={item.draft_id}>{item.season} · {item.status} · {item.settings?.rounds || "—"} rounds</option>)}</select><button onClick={() => refreshDraft()} disabled={!draftId || loading} className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100">{loading ? "Loading..." : "Refresh live draft"}</button></div></header>
 
     {username && draftingLeagues.length ? <Panel className="mt-5 overflow-hidden"><div className="flex flex-col gap-1 border-b border-white/10 p-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-emerald-200/55">Drafting now</div><h2 className="mt-1 text-xl font-black">Jump into a live league</h2></div><div className="text-xs text-white/35">{draftingLeagues.length} active draft{draftingLeagues.length === 1 ? "" : "s"}</div></div><div className="flex gap-2 overflow-x-auto p-3">{draftingLeagues.map((item) => <button type="button" key={item.league_id} onClick={() => selectLeague(item.league_id)} className={`min-w-[220px] rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${String(item.league_id) === String(activeLeague) ? "border-emerald-300/30 bg-emerald-300/[0.09]" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}><div className="truncate text-sm font-bold">{item.name}</div><div className="mt-1 flex items-center justify-between text-[10px] text-white/35"><span>{item.season || "Current season"}</span><span className="font-semibold text-emerald-100/70">Open →</span></div></button>)}</div></Panel> : null}
     {!username ? <Panel className="mt-5 p-8 text-center text-white/55">Load a Sleeper portfolio to open its leagues and live drafts.</Panel> : null}

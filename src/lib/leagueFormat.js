@@ -17,6 +17,8 @@ export function classifyLeagueFormat(league = {}, drafts = []) {
   const rosterPositions = Array.isArray(league?.roster_positions) ? league.roster_positions : [];
 
   const bestBall = safeNum(settings?.best_ball) === 1;
+  const explicitType = safeNum(settings?.type);
+  const hasExplicitType = [0, 1, 2].includes(explicitType) && settings?.type != null;
 
   const taxiSlots = Math.max(
     safeNum(settings?.taxi_slots),
@@ -109,7 +111,22 @@ export function classifyLeagueFormat(league = {}, drafts = []) {
   const reasons = [];
   let confidence = "medium";
 
-  if (bestBall) {
+  if (explicitType === 2) {
+    key = "dynasty";
+    label = bestBall ? "Dynasty Best Ball" : "Dynasty";
+    reasons.push("Sleeper league type: dynasty");
+    confidence = "high";
+  } else if (explicitType === 1) {
+    key = "keeper";
+    label = bestBall ? "Keeper Best Ball" : "Keeper";
+    reasons.push("Sleeper league type: keeper");
+    confidence = "high";
+  } else if (explicitType === 0 && !bestBall) {
+    key = "redraft";
+    label = "Redraft";
+    reasons.push("Sleeper league type: redraft");
+    confidence = "high";
+  } else if (bestBall) {
     key = "bestball";
     label = "Best Ball";
     reasons.push("best_ball flag");
@@ -171,6 +188,22 @@ export function classifyLeagueFormat(league = {}, drafts = []) {
       strongDynastySignal,
       dynastyScore,
       keeperScore,
+      explicitType,
+      hasExplicitType,
     },
+  };
+}
+
+export function classifyQbFormat(league = {}) {
+  const slots = (Array.isArray(league?.roster_positions) ? league.roster_positions : [])
+    .map((slot) => cleanString(slot).toUpperCase());
+  const qbStarters = slots.filter((slot) => slot === "QB").length;
+  const superflex = slots.some((slot) => ["SUPER_FLEX", "SUPERFLEX", "SF", "OP", "Q/W/R/T", "Q/W/R/T/FLEX"].includes(slot));
+  return {
+    key: superflex || qbStarters >= 2 ? "sf" : "1qb",
+    label: superflex ? "Superflex" : qbStarters >= 2 ? "2QB" : "1QB",
+    confidence: slots.length ? "high" : "low",
+    reasons: superflex ? ["Superflex-capable starter slot"] : qbStarters >= 2 ? [`${qbStarters} starting QB slots`] : ["One starting QB slot"],
+    flags: { superflex, qbStarters },
   };
 }

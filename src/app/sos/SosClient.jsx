@@ -8,7 +8,9 @@ import { useSleeper } from "../../context/SleeperContext";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { makeGetPlayerValue } from "../../lib/values";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -62,15 +64,10 @@ function isChoppedBySchedule(byWeek) {
 
 /** ===== Auto-guess scoring ===== */
 function guessQbType(league) {
-  const rp = (league?.roster_positions || []).map((x) => String(x || "").toUpperCase());
-  return (rp.includes("SUPER_FLEX") || rp.includes("SUPERFLEX") || rp.includes("Q/W/R/T")) ? "sf" : "1qb";
+  return classifyQbFormat(league).key;
 }
 function guessFormat(league) {
-  const name = String(league?.name || "").toLowerCase();
-  if (/dynasty|keeper/.test(name)) return "dynasty";
-  const hasTaxi = (league?.roster_positions || []).some((p) => String(p).toUpperCase() === "TAXI");
-  if (hasTaxi) return "dynasty";
-  return "redraft";
+  return classifyLeagueFormat(league).key === "dynasty" ? "dynasty" : "redraft";
 }
 
 /** ===== Heatmap scaling ===== */
@@ -842,22 +839,17 @@ export default function SOSPage() {
 
           <div className="flex flex-wrap items-end gap-4">
             <span className="font-semibold">League:</span>
-            <select
-              className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+            <LeagueSearchSelect
+              className="w-full sm:w-80"
+              leagues={leagues}
               value={activeLeague || ""}
-              onChange={(e) => {
-                const id = e.target.value;
+              onChange={(id) => {
                 setActiveLeague(id);
                 if (id) fetchLeagueRostersSilent(id).catch(() => {});
                 setUserTouchedFormat(false);
                 setUserTouchedQB(false);
               }}
-            >
-              <option value="">Choose a League</option>
-              {leagues.map((lg) => (
-                <option key={lg.league_id} value={lg.league_id}>{lg.name}</option>
-              ))}
-            </select>
+            />
 
             {false && (
               <>

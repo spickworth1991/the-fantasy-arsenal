@@ -10,6 +10,8 @@ import TradeWorkspaceSuite from "./TradeWorkspaceSuite";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import { makeGetPlayerValue } from "../../lib/values";
 import { parsePickLabel, roundToOrdinal } from "../../lib/picks";
 import {
@@ -248,6 +250,8 @@ export default function TradeAnalyzer() {
         ...(leagues.find((item) => String(item.league_id) === String(leagueId)) || {}),
         ...(loaded || {}),
       };
+      setFormat(classifyLeagueFormat(selectedLeague).key === "dynasty" ? "dynasty" : "redraft");
+      setQbType(classifyQbFormat(selectedLeague).key);
       const [tradedPicks, drafts] = await Promise.all([
         fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`)
           .then((response) => (response.ok ? response.json() : []))
@@ -712,20 +716,7 @@ export default function TradeAnalyzer() {
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1">
                     <label className="mb-1 block text-xs text-white/55">Choose a league for roster-aware trading</label>
-                    <select
-                      value={tradeLeagueId}
-                      onChange={(e) => handleLeagueChange(e.target.value)}
-                      data-account-persist="off"
-                      aria-label="Trade Analyzer league"
-                      className="w-full rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
-                    >
-                      <option value="">Choose a League</option>
-                      {leagues.map((lg) => (
-                        <option key={lg.league_id} value={lg.league_id}>
-                          {lg.name}
-                        </option>
-                      ))}
-                    </select>
+                    <LeagueSearchSelect leagues={leagues} value={tradeLeagueId} onChange={handleLeagueChange} />
                   </div>
                   {tradeLeagueId ? (
                     <button

@@ -7,6 +7,7 @@ import AvatarImage from "../../components/AvatarImage";
 import SourceSelector, {
   DEFAULT_SOURCES,
 } from "../../components/SourceSelector";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { useSleeper } from "../../context/SleeperContext";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 import {
@@ -1087,21 +1088,14 @@ export default function DraftGradesClient() {
             opportunity cost, and finished roster construction.
           </p>
           <div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,.65fr)_auto]">
-            <select
+            <LeagueSearchSelect
+              leagues={leagues}
               value={activeLeague || ""}
-              onChange={(event) => {
-                setActiveLeague(event.target.value);
+              onChange={(leagueId) => {
+                setActiveLeague(leagueId);
                 setDraftId("");
               }}
-              className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm"
-            >
-              <option value="">Choose a league</option>
-              {leagues.map((row) => (
-                <option key={row.league_id} value={row.league_id}>
-                  {row.name}
-                </option>
-              ))}
-            </select>
+            />
             <select
               value={draftId}
               onChange={(event) => setDraftId(event.target.value)}

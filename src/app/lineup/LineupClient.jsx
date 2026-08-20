@@ -14,7 +14,9 @@ import SourceSelector, {
 } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { makeGetPlayerValue } from "../../lib/values";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
   PROJ_ARSENAL_JSON_URL,
   PROJ_ARSENAL_MODEL_JSON_URL,
@@ -235,25 +237,10 @@ function parseLeagueSlots(league) {
 
 /* ---------- Helpers ---------- */
 function inferQbTypeFromLeague(league) {
-  const rp = (league?.roster_positions || []).map((x) =>
-    String(x || "").toUpperCase(),
-  );
-  return rp.includes("SUPER_FLEX") ||
-    rp.includes("SUPERFLEX") ||
-    rp.includes("Q/W/R/T")
-    ? "sf"
-    : "1qb";
+  return classifyQbFormat(league).key;
 }
 function inferFormatFromLeague(league) {
-  const type = Number(league?.settings?.type);
-  if (type === 2 || type === 1) return "dynasty";
-  if (type === 0) return "redraft";
-  const name = String(league?.name || "").toLowerCase();
-  return name.includes("dynasty") ||
-    name.includes("keeper") ||
-    !!league?.previous_league_id
-    ? "dynasty"
-    : "redraft";
+  return classifyLeagueFormat(league).key === "dynasty" ? "dynasty" : "redraft";
 }
 
 /* ---------- Optimal lineup (bye-aware) ---------- */
@@ -1759,11 +1746,11 @@ export default function LineupTool() {
 
               <div className="flex flex-wrap items-end gap-4">
                 <span className="font-semibold">League:</span>
-                <select
-                  className="rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
+                <LeagueSearchSelect
+                  className="w-full sm:w-80"
+                  leagues={leagues || []}
                   value={activeLeague || ""}
-                  onChange={(e) => {
-                    const id = e.target.value;
+                  onChange={(id) => {
                     setActiveLeague(id);
                     if (id) fetchLeagueRostersSilent(id).catch(() => {});
                     setOwnerA("");
@@ -1771,14 +1758,7 @@ export default function LineupTool() {
                     setUserTouchedFormat(false);
                     setUserTouchedQB(false);
                   }}
-                >
-                  <option value="">Choose a League</option>
-                  {(leagues || []).map((lg) => (
-                    <option key={lg.league_id} value={lg.league_id}>
-                      {lg.name}
-                    </option>
-                  ))}
-                </select>
+                />
 
                 {false && (
                   <>

@@ -7,7 +7,9 @@ import BackgroundParticles from "../../components/BackgroundParticles";
 import ExportButtons from "../../components/ExportButtons";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
+import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { parsePickLabel } from "../../lib/picks";
+import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -500,6 +502,13 @@ export default function PowerRankingsPage() {
     () => leagues.find((lg) => lg.league_id === activeLeague),
     [leagues, activeLeague]
   );
+  const detectedLeagueFormat = useMemo(() => classifyLeagueFormat(league || {}), [league]);
+  const detectedQbFormat = useMemo(() => classifyQbFormat(league || {}), [league]);
+  useEffect(() => {
+    if (!league) return;
+    setFormat(detectedLeagueFormat.key === "dynasty" ? "dynasty" : "redraft");
+    setQbType(detectedQbFormat.key);
+  }, [detectedLeagueFormat.key, detectedQbFormat.key, league?.league_id]);
   const routeHandoffApplied=useRef(false);
   useEffect(()=>{if(routeHandoffApplied.current)return;const requested=new URLSearchParams(window.location.search).get("league");if(requested&&leagues.some((row)=>String(row.league_id)===String(requested))){routeHandoffApplied.current=true;setActiveLeague(requested);}},[leagues,setActiveLeague]);
 
@@ -912,19 +921,9 @@ export default function PowerRankingsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
                   <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                     <span className="shrink-0 font-semibold">League:</span>
-                    <select
-                      value={activeLeague || ""}
-                      onChange={(e) => setActiveLeague(e.target.value)}
-                      className="w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white sm:w-auto"
-                    >
-                      <option value="">Choose a League</option>
-                      {leagues.map((lg) => (
-                        <option key={lg.league_id} value={lg.league_id}>
-                          {lg.name}
-                        </option>
-                      ))}
-                    </select>
+                    <LeagueSearchSelect leagues={leagues} value={activeLeague || ""} onChange={setActiveLeague} className="w-full sm:w-80" />
                   </div>
+                  {league ? <div className="flex flex-wrap gap-2 text-[10px]"><span className="rounded-full bg-cyan-300/[0.07] px-2.5 py-1 text-cyan-100">Auto: {detectedLeagueFormat.label}</span><span className="rounded-full bg-violet-300/[0.07] px-2.5 py-1 text-violet-100">Auto: {detectedQbFormat.label}</span></div> : null}
 
                   {false && (
                     <>
