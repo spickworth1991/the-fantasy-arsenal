@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "season": 2026,
   "previousSeason": 2025,
-  "generatedAt": "2026-08-22T13:00:02.909Z",
+  "generatedAt": "2026-08-22T15:35:08.276Z",
   "source": {
     "ballsville": "Published draft-compare mode boards",
     "sleeper": "League users, rosters, and draft picks"
@@ -97,7 +97,7 @@
       "drafts": 10,
       "owners": 70,
       "seats": 180,
-      "picks": 2080,
+      "picks": 2081,
       "players": 252
     }
   ],
@@ -443873,6 +443873,427 @@
       "returning": false
     },
     {
+      "key": "malik davis|||RB",
+      "playerId": "8800",
+      "name": "Malik Davis",
+      "position": "RB",
+      "team": "DAL",
+      "drafts": 59,
+      "owners": 20,
+      "ownerKeysByMode": {
+        "dynasty-startup": [
+          "5bc0b18aeb989f34",
+          "191fd01d01205398",
+          "10d61fe22a7a24d6",
+          "7b605a233ab70ab4",
+          "8402f65d5086de3f",
+          "a62cc003adeb78ca",
+          "bc6adabd8c5e1a97"
+        ],
+        "mini-leagues": [
+          "972c434df13afa98",
+          "5bc0b18aeb989f34",
+          "2c14d8889296475b",
+          "b64a2d7a0cf8dbab",
+          "08254022a7f03749",
+          "3521486d88a4f33d",
+          "541ae3ae5b59bc41",
+          "21ef4997a8fb94e2",
+          "7b605a233ab70ab4",
+          "b3b0a9ea6e623a3d"
+        ],
+        "big-game": [
+          "955f9013d87adcb4",
+          "3521486d88a4f33d",
+          "0edf0b4633b30476",
+          "1adf1ca3526bd33a",
+          "fc0c564e09d68eca",
+          "c9990a9dde682fcb"
+        ],
+        "gauntlet": [
+          "5bc0b18aeb989f34"
+        ],
+        "guillotine": [
+          "5bc0b18aeb989f34"
+        ]
+      },
+      "modes": {
+        "dynasty-startup": 10,
+        "mini-leagues": 16,
+        "big-game": 27,
+        "gauntlet": 4,
+        "guillotine": 2
+      },
+      "modeDetails": {
+        "dynasty-startup": {
+          "drafts": 10,
+          "pickSum": 2761,
+          "bestPick": 209,
+          "worstPick": 311,
+          "rounds": {
+            "18": 1,
+            "21": 1,
+            "22": 1,
+            "23": 2,
+            "24": 1,
+            "25": 1,
+            "26": 3
+          },
+          "adp": 276.1
+        },
+        "mini-leagues": {
+          "drafts": 16,
+          "pickSum": 4523,
+          "bestPick": 212,
+          "worstPick": 312,
+          "rounds": {
+            "18": 1,
+            "20": 1,
+            "21": 1,
+            "22": 2,
+            "23": 1,
+            "25": 3,
+            "26": 7
+          },
+          "adp": 282.6875
+        },
+        "big-game": {
+          "drafts": 27,
+          "pickSum": 6104,
+          "bestPick": 78,
+          "worstPick": 260,
+          "rounds": {
+            "8": 1,
+            "18": 1,
+            "21": 2,
+            "22": 3,
+            "23": 7,
+            "24": 4,
+            "25": 3,
+            "26": 6
+          },
+          "adp": 226.07407407407408
+        },
+        "gauntlet": {
+          "drafts": 4,
+          "pickSum": 893,
+          "bestPick": 201,
+          "worstPick": 237,
+          "rounds": {
+            "15": 1,
+            "16": 1,
+            "17": 2
+          },
+          "adp": 223.25
+        },
+        "guillotine": {
+          "drafts": 2,
+          "pickSum": 419,
+          "bestPick": 203,
+          "worstPick": 216,
+          "rounds": {
+            "12": 2
+          },
+          "adp": 209.5
+        }
+      },
+      "draftersByMode": {
+        "dynasty-startup": [
+          {
+            "key": "5bc0b18aeb989f34",
+            "name": "pressy03",
+            "username": "",
+            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
+            "count": 4,
+            "pickSum": 1016,
+            "bestPick": 209,
+            "worstPick": 286,
+            "adp": 254
+          },
+          {
+            "key": "191fd01d01205398",
+            "name": "HairyApes",
+            "username": "",
+            "avatar": "15d7cf259bc30eab8f6120f45f652fb6",
+            "count": 1,
+            "pickSum": 255,
+            "bestPick": 255,
+            "worstPick": 255,
+            "adp": 255
+          },
+          {
+            "key": "bc6adabd8c5e1a97",
+            "name": "Modowaki",
+            "username": "",
+            "avatar": "ffc197efd666332b5e5992a4ecd05fe0",
+            "count": 1,
+            "pickSum": 273,
+            "bestPick": 273,
+            "worstPick": 273,
+            "adp": 273
+          },
+          {
+            "key": "8402f65d5086de3f",
+            "name": "MattPotts",
+            "username": "",
+            "avatar": "0eb2045f33723b8eba982d1e2bab0513",
+            "count": 1,
+            "pickSum": 296,
+            "bestPick": 296,
+            "worstPick": 296,
+            "adp": 296
+          },
+          {
+            "key": "7b605a233ab70ab4",
+            "name": "csimms52",
+            "username": "",
+            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
+            "count": 1,
+            "pickSum": 304,
+            "bestPick": 304,
+            "worstPick": 304,
+            "adp": 304
+          },
+          {
+            "key": "a62cc003adeb78ca",
+            "name": "metaphalanges",
+            "username": "",
+            "avatar": "be9171c20e0dc2b18fe157d90ad4b2cb",
+            "count": 1,
+            "pickSum": 306,
+            "bestPick": 306,
+            "worstPick": 306,
+            "adp": 306
+          },
+          {
+            "key": "10d61fe22a7a24d6",
+            "name": "Tmill85",
+            "username": "",
+            "avatar": "c424f38305ecc3b9835dc30909b61594",
+            "count": 1,
+            "pickSum": 311,
+            "bestPick": 311,
+            "worstPick": 311,
+            "adp": 311
+          }
+        ],
+        "mini-leagues": [
+          {
+            "key": "5bc0b18aeb989f34",
+            "name": "pressy03",
+            "username": "",
+            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
+            "count": 6,
+            "pickSum": 1733,
+            "bestPick": 259,
+            "worstPick": 308,
+            "adp": 288.8333333333333
+          },
+          {
+            "key": "972c434df13afa98",
+            "name": "SaraM21",
+            "username": "",
+            "avatar": "df1f9211e57755b23b2dc97d87ea2dff",
+            "count": 2,
+            "pickSum": 613,
+            "bestPick": 303,
+            "worstPick": 310,
+            "adp": 306.5
+          },
+          {
+            "key": "08254022a7f03749",
+            "name": "DegenEthan",
+            "username": "",
+            "avatar": "c78bb2eb11c533b25001e78c56da9a93",
+            "count": 1,
+            "pickSum": 212,
+            "bestPick": 212,
+            "worstPick": 212,
+            "adp": 212
+          },
+          {
+            "key": "b64a2d7a0cf8dbab",
+            "name": "Lizzarddemon",
+            "username": "",
+            "avatar": "2e51fe0b2530964a105ca9a29d0ad822",
+            "count": 1,
+            "pickSum": 232,
+            "bestPick": 232,
+            "worstPick": 232,
+            "adp": 232
+          },
+          {
+            "key": "541ae3ae5b59bc41",
+            "name": "Joe__Joe_",
+            "username": "",
+            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
+            "count": 1,
+            "pickSum": 251,
+            "bestPick": 251,
+            "worstPick": 251,
+            "adp": 251
+          },
+          {
+            "key": "21ef4997a8fb94e2",
+            "name": "Zubicus",
+            "username": "",
+            "avatar": "0877a1979ac9f71a060044fea47af74d",
+            "count": 1,
+            "pickSum": 276,
+            "bestPick": 276,
+            "worstPick": 276,
+            "adp": 276
+          },
+          {
+            "key": "2c14d8889296475b",
+            "name": "JMorris410",
+            "username": "",
+            "avatar": "946d14613556bd9088079f3302a12e03",
+            "count": 1,
+            "pickSum": 294,
+            "bestPick": 294,
+            "worstPick": 294,
+            "adp": 294
+          },
+          {
+            "key": "b3b0a9ea6e623a3d",
+            "name": "BarleyLiterati",
+            "username": "",
+            "avatar": "6d740f51d458c2617aea6164b27bb67f",
+            "count": 1,
+            "pickSum": 297,
+            "bestPick": 297,
+            "worstPick": 297,
+            "adp": 297
+          },
+          {
+            "key": "3521486d88a4f33d",
+            "name": "NotRonDeSantis",
+            "username": "",
+            "avatar": "c9b1159ccb31a0bdd0207753346d6a3f",
+            "count": 1,
+            "pickSum": 303,
+            "bestPick": 303,
+            "worstPick": 303,
+            "adp": 303
+          },
+          {
+            "key": "7b605a233ab70ab4",
+            "name": "csimms52",
+            "username": "",
+            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
+            "count": 1,
+            "pickSum": 312,
+            "bestPick": 312,
+            "worstPick": 312,
+            "adp": 312
+          }
+        ],
+        "big-game": [
+          {
+            "key": "955f9013d87adcb4",
+            "name": "Pruble",
+            "username": "",
+            "avatar": "8f2f1985ec83c80af2295170ea85ac08",
+            "count": 14,
+            "pickSum": 3107,
+            "bestPick": 78,
+            "worstPick": 260,
+            "adp": 221.92857142857142
+          },
+          {
+            "key": "0edf0b4633b30476",
+            "name": "chickenboi87",
+            "username": "",
+            "avatar": "3dd5a49b6e8b46b474e36af0acaf7914",
+            "count": 7,
+            "pickSum": 1588,
+            "bestPick": 206,
+            "worstPick": 245,
+            "adp": 226.85714285714286
+          },
+          {
+            "key": "fc0c564e09d68eca",
+            "name": "OctaviusRex",
+            "username": "",
+            "avatar": "1caca721d9ed21fafb82cc2afca665dd",
+            "count": 3,
+            "pickSum": 672,
+            "bestPick": 178,
+            "worstPick": 251,
+            "adp": 224
+          },
+          {
+            "key": "c9990a9dde682fcb",
+            "name": "Aerozone",
+            "username": "",
+            "avatar": "425f048da91a7fc8cec945e883ee6526",
+            "count": 1,
+            "pickSum": 228,
+            "bestPick": 228,
+            "worstPick": 228,
+            "adp": 228
+          },
+          {
+            "key": "3521486d88a4f33d",
+            "name": "NotRonDeSantis",
+            "username": "",
+            "avatar": "c9b1159ccb31a0bdd0207753346d6a3f",
+            "count": 1,
+            "pickSum": 253,
+            "bestPick": 253,
+            "worstPick": 253,
+            "adp": 253
+          },
+          {
+            "key": "1adf1ca3526bd33a",
+            "name": "rarity",
+            "username": "",
+            "avatar": "b207734f81a145a9c5d10c9e9b9f54b5",
+            "count": 1,
+            "pickSum": 256,
+            "bestPick": 256,
+            "worstPick": 256,
+            "adp": 256
+          }
+        ],
+        "gauntlet": [
+          {
+            "key": "5bc0b18aeb989f34",
+            "name": "pressy03",
+            "username": "",
+            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
+            "count": 4,
+            "pickSum": 893,
+            "bestPick": 201,
+            "worstPick": 237,
+            "adp": 223.25
+          }
+        ],
+        "guillotine": [
+          {
+            "key": "5bc0b18aeb989f34",
+            "name": "pressy03",
+            "username": "",
+            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
+            "count": 2,
+            "pickSum": 419,
+            "bestPick": 203,
+            "worstPick": 216,
+            "adp": 209.5
+          }
+        ]
+      },
+      "modeCount": 5,
+      "adp": 249.15254237288136,
+      "bestPick": 78,
+      "worstPick": 312,
+      "previousDrafts": 0,
+      "previousAdp": 0,
+      "adpChange": null,
+      "returning": false
+    },
+    {
       "key": "derek carr|||QB",
       "playerId": "2028",
       "name": "Derek Carr",
@@ -444645,427 +445066,6 @@
       "adp": 267.1864406779661,
       "bestPick": 201,
       "worstPick": 310,
-      "previousDrafts": 0,
-      "previousAdp": 0,
-      "adpChange": null,
-      "returning": false
-    },
-    {
-      "key": "malik davis|||RB",
-      "playerId": "8800",
-      "name": "Malik Davis",
-      "position": "RB",
-      "team": "DAL",
-      "drafts": 58,
-      "owners": 20,
-      "ownerKeysByMode": {
-        "dynasty-startup": [
-          "5bc0b18aeb989f34",
-          "191fd01d01205398",
-          "10d61fe22a7a24d6",
-          "7b605a233ab70ab4",
-          "8402f65d5086de3f",
-          "a62cc003adeb78ca",
-          "bc6adabd8c5e1a97"
-        ],
-        "mini-leagues": [
-          "972c434df13afa98",
-          "5bc0b18aeb989f34",
-          "2c14d8889296475b",
-          "b64a2d7a0cf8dbab",
-          "08254022a7f03749",
-          "3521486d88a4f33d",
-          "541ae3ae5b59bc41",
-          "21ef4997a8fb94e2",
-          "7b605a233ab70ab4",
-          "b3b0a9ea6e623a3d"
-        ],
-        "big-game": [
-          "955f9013d87adcb4",
-          "3521486d88a4f33d",
-          "0edf0b4633b30476",
-          "1adf1ca3526bd33a",
-          "fc0c564e09d68eca",
-          "c9990a9dde682fcb"
-        ],
-        "gauntlet": [
-          "5bc0b18aeb989f34"
-        ],
-        "guillotine": [
-          "5bc0b18aeb989f34"
-        ]
-      },
-      "modes": {
-        "dynasty-startup": 10,
-        "mini-leagues": 16,
-        "big-game": 27,
-        "gauntlet": 4,
-        "guillotine": 1
-      },
-      "modeDetails": {
-        "dynasty-startup": {
-          "drafts": 10,
-          "pickSum": 2761,
-          "bestPick": 209,
-          "worstPick": 311,
-          "rounds": {
-            "18": 1,
-            "21": 1,
-            "22": 1,
-            "23": 2,
-            "24": 1,
-            "25": 1,
-            "26": 3
-          },
-          "adp": 276.1
-        },
-        "mini-leagues": {
-          "drafts": 16,
-          "pickSum": 4523,
-          "bestPick": 212,
-          "worstPick": 312,
-          "rounds": {
-            "18": 1,
-            "20": 1,
-            "21": 1,
-            "22": 2,
-            "23": 1,
-            "25": 3,
-            "26": 7
-          },
-          "adp": 282.6875
-        },
-        "big-game": {
-          "drafts": 27,
-          "pickSum": 6104,
-          "bestPick": 78,
-          "worstPick": 260,
-          "rounds": {
-            "8": 1,
-            "18": 1,
-            "21": 2,
-            "22": 3,
-            "23": 7,
-            "24": 4,
-            "25": 3,
-            "26": 6
-          },
-          "adp": 226.07407407407408
-        },
-        "gauntlet": {
-          "drafts": 4,
-          "pickSum": 893,
-          "bestPick": 201,
-          "worstPick": 237,
-          "rounds": {
-            "15": 1,
-            "16": 1,
-            "17": 2
-          },
-          "adp": 223.25
-        },
-        "guillotine": {
-          "drafts": 1,
-          "pickSum": 203,
-          "bestPick": 203,
-          "worstPick": 203,
-          "rounds": {
-            "12": 1
-          },
-          "adp": 203
-        }
-      },
-      "draftersByMode": {
-        "dynasty-startup": [
-          {
-            "key": "5bc0b18aeb989f34",
-            "name": "pressy03",
-            "username": "",
-            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
-            "count": 4,
-            "pickSum": 1016,
-            "bestPick": 209,
-            "worstPick": 286,
-            "adp": 254
-          },
-          {
-            "key": "191fd01d01205398",
-            "name": "HairyApes",
-            "username": "",
-            "avatar": "15d7cf259bc30eab8f6120f45f652fb6",
-            "count": 1,
-            "pickSum": 255,
-            "bestPick": 255,
-            "worstPick": 255,
-            "adp": 255
-          },
-          {
-            "key": "bc6adabd8c5e1a97",
-            "name": "Modowaki",
-            "username": "",
-            "avatar": "ffc197efd666332b5e5992a4ecd05fe0",
-            "count": 1,
-            "pickSum": 273,
-            "bestPick": 273,
-            "worstPick": 273,
-            "adp": 273
-          },
-          {
-            "key": "8402f65d5086de3f",
-            "name": "MattPotts",
-            "username": "",
-            "avatar": "0eb2045f33723b8eba982d1e2bab0513",
-            "count": 1,
-            "pickSum": 296,
-            "bestPick": 296,
-            "worstPick": 296,
-            "adp": 296
-          },
-          {
-            "key": "7b605a233ab70ab4",
-            "name": "csimms52",
-            "username": "",
-            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
-            "count": 1,
-            "pickSum": 304,
-            "bestPick": 304,
-            "worstPick": 304,
-            "adp": 304
-          },
-          {
-            "key": "a62cc003adeb78ca",
-            "name": "metaphalanges",
-            "username": "",
-            "avatar": "be9171c20e0dc2b18fe157d90ad4b2cb",
-            "count": 1,
-            "pickSum": 306,
-            "bestPick": 306,
-            "worstPick": 306,
-            "adp": 306
-          },
-          {
-            "key": "10d61fe22a7a24d6",
-            "name": "Tmill85",
-            "username": "",
-            "avatar": "c424f38305ecc3b9835dc30909b61594",
-            "count": 1,
-            "pickSum": 311,
-            "bestPick": 311,
-            "worstPick": 311,
-            "adp": 311
-          }
-        ],
-        "mini-leagues": [
-          {
-            "key": "5bc0b18aeb989f34",
-            "name": "pressy03",
-            "username": "",
-            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
-            "count": 6,
-            "pickSum": 1733,
-            "bestPick": 259,
-            "worstPick": 308,
-            "adp": 288.8333333333333
-          },
-          {
-            "key": "972c434df13afa98",
-            "name": "SaraM21",
-            "username": "",
-            "avatar": "df1f9211e57755b23b2dc97d87ea2dff",
-            "count": 2,
-            "pickSum": 613,
-            "bestPick": 303,
-            "worstPick": 310,
-            "adp": 306.5
-          },
-          {
-            "key": "08254022a7f03749",
-            "name": "DegenEthan",
-            "username": "",
-            "avatar": "c78bb2eb11c533b25001e78c56da9a93",
-            "count": 1,
-            "pickSum": 212,
-            "bestPick": 212,
-            "worstPick": 212,
-            "adp": 212
-          },
-          {
-            "key": "b64a2d7a0cf8dbab",
-            "name": "Lizzarddemon",
-            "username": "",
-            "avatar": "2e51fe0b2530964a105ca9a29d0ad822",
-            "count": 1,
-            "pickSum": 232,
-            "bestPick": 232,
-            "worstPick": 232,
-            "adp": 232
-          },
-          {
-            "key": "541ae3ae5b59bc41",
-            "name": "Joe__Joe_",
-            "username": "",
-            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
-            "count": 1,
-            "pickSum": 251,
-            "bestPick": 251,
-            "worstPick": 251,
-            "adp": 251
-          },
-          {
-            "key": "21ef4997a8fb94e2",
-            "name": "Zubicus",
-            "username": "",
-            "avatar": "0877a1979ac9f71a060044fea47af74d",
-            "count": 1,
-            "pickSum": 276,
-            "bestPick": 276,
-            "worstPick": 276,
-            "adp": 276
-          },
-          {
-            "key": "2c14d8889296475b",
-            "name": "JMorris410",
-            "username": "",
-            "avatar": "946d14613556bd9088079f3302a12e03",
-            "count": 1,
-            "pickSum": 294,
-            "bestPick": 294,
-            "worstPick": 294,
-            "adp": 294
-          },
-          {
-            "key": "b3b0a9ea6e623a3d",
-            "name": "BarleyLiterati",
-            "username": "",
-            "avatar": "6d740f51d458c2617aea6164b27bb67f",
-            "count": 1,
-            "pickSum": 297,
-            "bestPick": 297,
-            "worstPick": 297,
-            "adp": 297
-          },
-          {
-            "key": "3521486d88a4f33d",
-            "name": "NotRonDeSantis",
-            "username": "",
-            "avatar": "c9b1159ccb31a0bdd0207753346d6a3f",
-            "count": 1,
-            "pickSum": 303,
-            "bestPick": 303,
-            "worstPick": 303,
-            "adp": 303
-          },
-          {
-            "key": "7b605a233ab70ab4",
-            "name": "csimms52",
-            "username": "",
-            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
-            "count": 1,
-            "pickSum": 312,
-            "bestPick": 312,
-            "worstPick": 312,
-            "adp": 312
-          }
-        ],
-        "big-game": [
-          {
-            "key": "955f9013d87adcb4",
-            "name": "Pruble",
-            "username": "",
-            "avatar": "8f2f1985ec83c80af2295170ea85ac08",
-            "count": 14,
-            "pickSum": 3107,
-            "bestPick": 78,
-            "worstPick": 260,
-            "adp": 221.92857142857142
-          },
-          {
-            "key": "0edf0b4633b30476",
-            "name": "chickenboi87",
-            "username": "",
-            "avatar": "3dd5a49b6e8b46b474e36af0acaf7914",
-            "count": 7,
-            "pickSum": 1588,
-            "bestPick": 206,
-            "worstPick": 245,
-            "adp": 226.85714285714286
-          },
-          {
-            "key": "fc0c564e09d68eca",
-            "name": "OctaviusRex",
-            "username": "",
-            "avatar": "1caca721d9ed21fafb82cc2afca665dd",
-            "count": 3,
-            "pickSum": 672,
-            "bestPick": 178,
-            "worstPick": 251,
-            "adp": 224
-          },
-          {
-            "key": "c9990a9dde682fcb",
-            "name": "Aerozone",
-            "username": "",
-            "avatar": "425f048da91a7fc8cec945e883ee6526",
-            "count": 1,
-            "pickSum": 228,
-            "bestPick": 228,
-            "worstPick": 228,
-            "adp": 228
-          },
-          {
-            "key": "3521486d88a4f33d",
-            "name": "NotRonDeSantis",
-            "username": "",
-            "avatar": "c9b1159ccb31a0bdd0207753346d6a3f",
-            "count": 1,
-            "pickSum": 253,
-            "bestPick": 253,
-            "worstPick": 253,
-            "adp": 253
-          },
-          {
-            "key": "1adf1ca3526bd33a",
-            "name": "rarity",
-            "username": "",
-            "avatar": "b207734f81a145a9c5d10c9e9b9f54b5",
-            "count": 1,
-            "pickSum": 256,
-            "bestPick": 256,
-            "worstPick": 256,
-            "adp": 256
-          }
-        ],
-        "gauntlet": [
-          {
-            "key": "5bc0b18aeb989f34",
-            "name": "pressy03",
-            "username": "",
-            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
-            "count": 4,
-            "pickSum": 893,
-            "bestPick": 201,
-            "worstPick": 237,
-            "adp": 223.25
-          }
-        ],
-        "guillotine": [
-          {
-            "key": "5bc0b18aeb989f34",
-            "name": "pressy03",
-            "username": "",
-            "avatar": "b0a3ad58399a803668c27ad5e1d9da15",
-            "count": 1,
-            "pickSum": 203,
-            "bestPick": 203,
-            "worstPick": 203,
-            "adp": 203
-          }
-        ]
-      },
-      "modeCount": 5,
-      "adp": 249.72413793103448,
-      "bestPick": 78,
-      "worstPick": 312,
       "previousDrafts": 0,
       "previousAdp": 0,
       "adpChange": null,
@@ -629562,7 +629562,20 @@
         "username": "",
         "avatar": "284c3f47d0cbe719f49c18a6a56bd016"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10219",
+        "11783",
+        "12502",
+        "12506",
+        "5967",
+        "6786",
+        "6801",
+        "7567",
+        "7569",
+        "8161",
+        "9225",
+        "96"
+      ],
       "starterCount": 7
     },
     {
@@ -629577,7 +629590,20 @@
         "username": "",
         "avatar": "48fd2797cf1fa36dc07060fb65d087c5"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10229",
+        "11575",
+        "13269",
+        "13305",
+        "4981",
+        "5850",
+        "5872",
+        "6770",
+        "6806",
+        "7553",
+        "8142",
+        "9488"
+      ],
       "starterCount": 7
     },
     {
@@ -629592,7 +629618,20 @@
         "username": "",
         "avatar": "c78bb2eb11c533b25001e78c56da9a93"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11584",
+        "12509",
+        "12518",
+        "13346",
+        "3198",
+        "4037",
+        "5849",
+        "6768",
+        "8134",
+        "8138",
+        "9484",
+        "9756"
+      ],
       "starterCount": 7
     },
     {
@@ -629607,7 +629646,20 @@
         "username": "",
         "avatar": "a3726238a80daa480f7762b8612e0b21"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10236",
+        "13330",
+        "4017",
+        "4137",
+        "421",
+        "4892",
+        "6794",
+        "7594",
+        "7611",
+        "8121",
+        "8146",
+        "9226"
+      ],
       "starterCount": 7
     },
     {
@@ -629622,7 +629674,20 @@
         "username": "",
         "avatar": "712105a5bab80482980a3f55d87fc612"
       },
-      "playerIds": [],
+      "playerIds": [
+        "12514",
+        "13281",
+        "13413",
+        "1466",
+        "1479",
+        "2216",
+        "2449",
+        "3214",
+        "4866",
+        "4984",
+        "8132",
+        "9504"
+      ],
       "starterCount": 7
     },
     {
@@ -629637,7 +629702,20 @@
         "username": "",
         "avatar": "b61d5d334d6f0f49a635b41c3dbe3658"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11604",
+        "11628",
+        "12474",
+        "12508",
+        "13286",
+        "4035",
+        "4881",
+        "5947",
+        "6783",
+        "7049",
+        "8126",
+        "8130"
+      ],
       "starterCount": 7
     },
     {
@@ -629652,7 +629730,20 @@
         "username": "",
         "avatar": "b0a3ad58399a803668c27ad5e1d9da15"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11618",
+        "11646",
+        "13279",
+        "3294",
+        "4993",
+        "5012",
+        "7525",
+        "7543",
+        "8800",
+        "9228",
+        "9508",
+        "9509"
+      ],
       "starterCount": 7
     },
     {
@@ -629667,7 +629758,20 @@
         "username": "",
         "avatar": "10f9557dc63782896a07388f35322172"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11834",
+        "12490",
+        "12545",
+        "13287",
+        "13296",
+        "6804",
+        "6819",
+        "8111",
+        "8148",
+        "8151",
+        "8172",
+        "9500"
+      ],
       "starterCount": 7
     },
     {
@@ -629682,7 +629786,20 @@
         "username": "",
         "avatar": "47596f7b6b88d3598a0c17f321b6a433"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11563",
+        "11635",
+        "12530",
+        "13293",
+        "13301",
+        "4034",
+        "4983",
+        "6797",
+        "8110",
+        "8150",
+        "8676",
+        "9753"
+      ],
       "starterCount": 7
     },
     {
@@ -629697,7 +629814,20 @@
         "username": "",
         "avatar": "707d3104d585485bad0ecdd020980f7f"
       },
-      "playerIds": [],
+      "playerIds": [
+        "12485",
+        "12519",
+        "12522",
+        "12534",
+        "5001",
+        "5045",
+        "5859",
+        "7528",
+        "7588",
+        "8136",
+        "8154",
+        "9480"
+      ],
       "starterCount": 7
     },
     {
@@ -629712,7 +629842,20 @@
         "username": "",
         "avatar": "7b16763462eb1efe366c9f697441627d"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11564",
+        "11586",
+        "11631",
+        "12497",
+        "12526",
+        "12533",
+        "13276",
+        "5846",
+        "8205",
+        "8210",
+        "9221",
+        "9758"
+      ],
       "starterCount": 7
     },
     {
@@ -629727,7 +629870,20 @@
         "username": "",
         "avatar": "eb0e6996972a10478364620ce0a989b9"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11632",
+        "11655",
+        "13288",
+        "13298",
+        "13405",
+        "2505",
+        "3257",
+        "4217",
+        "7523",
+        "7526",
+        "8167",
+        "9224"
+      ],
       "starterCount": 7
     },
     {
@@ -629742,7 +629898,20 @@
         "username": "",
         "avatar": "2d9e39de2721cf83bcac321320b8a17e"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10859",
+        "11566",
+        "11624",
+        "11637",
+        "11643",
+        "12481",
+        "13345",
+        "5870",
+        "5892",
+        "7564",
+        "7600",
+        "9754"
+      ],
       "starterCount": 7
     },
     {
@@ -629757,7 +629926,20 @@
         "username": "",
         "avatar": "819b149a6bc7d8614f7747e62257d51b"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11581",
+        "11610",
+        "12489",
+        "12493",
+        "12507",
+        "12536",
+        "4046",
+        "5022",
+        "5927",
+        "8112",
+        "8183",
+        "8228"
+      ],
       "starterCount": 7
     },
     {
@@ -629772,7 +629954,20 @@
         "username": "",
         "avatar": "11d266f9ffa03023acb02608409e6f52"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10213",
+        "10222",
+        "11620",
+        "12469",
+        "1373",
+        "3163",
+        "4199",
+        "5844",
+        "6790",
+        "7547",
+        "8144",
+        "9479"
+      ],
       "starterCount": 7
     },
     {
@@ -629787,7 +629982,20 @@
         "username": "",
         "avatar": "0877a1979ac9f71a060044fea47af74d"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11560",
+        "11576",
+        "11625",
+        "12484",
+        "12512",
+        "12527",
+        "13285",
+        "7002",
+        "8137",
+        "8180",
+        "8408",
+        "9487"
+      ],
       "starterCount": 7
     },
     {
@@ -629802,7 +630010,20 @@
         "username": "",
         "avatar": "1a7a891c0d931faeaab002d61125f3b2"
       },
-      "playerIds": [],
+      "playerIds": [
+        "11583",
+        "12487",
+        "12501",
+        "12517",
+        "13294",
+        "13337",
+        "6904",
+        "7021",
+        "9493",
+        "9506",
+        "9511",
+        "9997"
+      ],
       "starterCount": 7
     },
     {
@@ -629817,7 +630038,20 @@
         "username": "",
         "avatar": "aeabf6a01cc260ef665f031ce34b4292"
       },
-      "playerIds": [],
+      "playerIds": [
+        "10232",
+        "11559",
+        "11603",
+        "12529",
+        "13320",
+        "13417",
+        "2133",
+        "4943",
+        "6813",
+        "8131",
+        "8155",
+        "9502"
+      ],
       "starterCount": 7
     }
   ]
