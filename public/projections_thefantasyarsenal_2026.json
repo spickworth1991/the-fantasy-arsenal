@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T03:11:37.399Z",
+  "updated": "2026-08-22T04:08:04.369Z",
   "season": 2026,
   "source": "Average of All Projections",
   "scoring": "PPR",
@@ -62878,93 +62878,6 @@
       }
     },
     {
-      "player_id": "13408",
-      "name": "Tanner Koziol",
-      "team": "JAC",
-      "position": "TE",
-      "points": 13.976,
-      "points_ppr": 13.976,
-      "points_half": 12.887,
-      "points_std": 9.625,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 54,
-      "disagreement": 0.4414,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "FantasyArsenal",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyArsenal",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyArsenal",
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FantasySharks",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 0,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 9.224,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 26.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 21.39,
-          "half": 17.09,
-          "std": 12.83
-        },
-        "FantasySharks": {
-          "ppr": 7.3,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 18.15,
-          "half": 14.67,
-          "std": 11.19
-        },
-        "FantasyArsenal": {
-          "ppr": 13.354,
-          "half": 10.458,
-          "std": 7.566
-        }
-      }
-    },
-    {
       "player_id": "13400",
       "name": "Justin Joly",
       "team": "DEN",
@@ -63691,6 +63604,87 @@
           "ppr": 15.876,
           "half": 15.876,
           "std": 15.876
+        }
+      }
+    },
+    {
+      "player_id": "13408",
+      "name": "Tanner Koziol",
+      "team": "JAC",
+      "position": "TE",
+      "points": 13.019,
+      "points_ppr": 13.019,
+      "points_half": 12.698,
+      "points_std": 9.49,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 48,
+      "disagreement": 0.4214,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasyArsenal",
+          "FantasyPros"
+        ],
+        "half": [
+          "FantasyArsenal",
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyArsenal",
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FantasySharks",
+          "Sleeper"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 0,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 9.224,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 21.39,
+          "half": 17.09,
+          "std": 12.83
+        },
+        "FantasySharks": {
+          "ppr": 7.3,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 18.15,
+          "half": 14.67,
+          "std": 11.19
+        },
+        "FantasyArsenal": {
+          "ppr": 12.778,
+          "half": 10.016,
+          "std": 7.248
         }
       }
     },
@@ -72664,8 +72658,6 @@
     "jakebrowning": 14.156,
     "andy dalton": 14.116,
     "andydalton": 14.116,
-    "tanner koziol": 13.976,
-    "tannerkoziol": 13.976,
     "justin joly": 13.932,
     "justinjoly": 13.932,
     "trevor etienne": 13.88,
@@ -72684,6 +72676,8 @@
     "kylengranson": 13.101,
     "cade klubnik": 13.04,
     "cadeklubnik": 13.04,
+    "tanner koziol": 13.019,
+    "tannerkoziol": 13.019,
     "akheem mesidor": 12.945,
     "akheemmesidor": 12.945,
     "josh cuevas": 12.879,

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T03:11:20.501Z",
+  "updated": "2026-08-22T04:07:49.974Z",
   "season": 2026,
   "source": "Projection Source Average Anchor",
   "scoring": "PPR",
@@ -59357,85 +59357,6 @@
       }
     },
     {
-      "player_id": "13408",
-      "name": "Tanner Koziol",
-      "team": "JAC",
-      "position": "TE",
-      "points": 14.241,
-      "points_ppr": 14.241,
-      "points_half": 14.686,
-      "points_std": 11.151,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 46,
-      "disagreement": 0.4414,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FantasySharks",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 0,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 9.224,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 26.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 21.39,
-          "half": 17.09,
-          "std": 12.83
-        },
-        "FantasySharks": {
-          "ppr": 7.3,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 18.15,
-          "half": 14.67,
-          "std": 11.19
-        }
-      }
-    },
-    {
       "player_id": "11595",
       "name": "Jared Wiley",
       "team": "KC",
@@ -60637,6 +60558,78 @@
           "ppr": 16.16,
           "half": 13.32,
           "std": 10.49
+        }
+      }
+    },
+    {
+      "player_id": "13408",
+      "name": "Tanner Koziol",
+      "team": "JAC",
+      "position": "TE",
+      "points": 12.082,
+      "points_ppr": 12.082,
+      "points_half": 14.686,
+      "points_std": 11.151,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 40,
+      "disagreement": 0.4214,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "ESPN",
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 0,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 9.224,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 21.39,
+          "half": 17.09,
+          "std": 12.83
+        },
+        "FantasySharks": {
+          "ppr": 7.3,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 18.15,
+          "half": 14.67,
+          "std": 11.19
         }
       }
     },
@@ -67975,8 +67968,6 @@
     "lathanransom": 14.336,
     "andy dalton": 14.289,
     "andydalton": 14.289,
-    "tanner koziol": 14.241,
-    "tannerkoziol": 14.241,
     "jared wiley": 14.208,
     "jaredwiley": 14.208,
     "tyler conklin": 13.897,
@@ -68013,6 +68004,8 @@
     "kylengranson": 12.18,
     "josh cuevas": 12.166,
     "joshcuevas": 12.166,
+    "tanner koziol": 12.082,
+    "tannerkoziol": 12.082,
     "riley leonard": 11.998,
     "rileyleonard": 11.998,
     "jermod mccoy": 11.968,
