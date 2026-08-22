@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import LoadingScreen from "../../components/LoadingScreen";
+import { getDraftSlotForPick } from "../../lib/draftOrder";
 
 const nf0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const DRAFT_FETCH_CONCURRENCY = 4;
@@ -405,25 +406,11 @@ export default function DraftPickTrackerClient() {
     tradedOwnerMap,
     seasonStr,
     draftType,
+    reversalRound,
   }) {
     if (!pickNo || !teams) return null;
-    const idx0 = pickNo - 1;
-    const round = Math.floor(idx0 / teams) + 1;
-    const pickInRound0 = idx0 % teams;
-
-    const normalizedType = String(draftType || "snake").toLowerCase();
-    let slot;
-
-    if (normalizedType === "linear") {
-      slot = pickInRound0 + 1;
-    } else if (normalizedType === "snake") {
-      const isReverse = round % 2 === 0;
-      slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
-    } else {
-      // Fallback to snake for unknown types
-      const isReverse = round % 2 === 0;
-      slot = isReverse ? teams - pickInRound0 : pickInRound0 + 1;
-    }
+    const round = Math.floor((pickNo - 1) / teams) + 1;
+    const slot = getDraftSlotForPick(pickNo, teams, draftType, reversalRound);
 
     const origRosterId = rosterBySlot.get(slot) || null;
     if (!origRosterId) return null;
@@ -476,6 +463,7 @@ export default function DraftPickTrackerClient() {
     const slots = safeNum(draft?.settings?.teams);
     const timerSec = safeNum(draft?.settings?.pick_timer);
     const draftType = String(draft?.type || "snake").toLowerCase();
+    const reversalRound = safeNum(draft?.settings?.reversal_round);
 
     const currentPick = (picks?.length || 0) + 1;
 
@@ -502,6 +490,7 @@ export default function DraftPickTrackerClient() {
           tradedOwnerMap,
           seasonStr,
           draftType,
+          reversalRound,
         })
       : null;
 
@@ -523,6 +512,7 @@ export default function DraftPickTrackerClient() {
           tradedOwnerMap,
           seasonStr,
           draftType,
+          reversalRound,
         });
         if (String(rosterIdAtPick || "") === String(myRosterId)) {
           myNextPickOverall = pk;

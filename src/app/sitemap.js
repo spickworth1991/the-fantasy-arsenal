@@ -11,6 +11,7 @@ export default function sitemap() {
     "",
     "/trade",
     "/player-stock",
+    "/ballsville-stats",
     "/player-availability",
     "/power-rankings",
     "/sos",

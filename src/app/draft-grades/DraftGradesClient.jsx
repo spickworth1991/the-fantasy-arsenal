@@ -31,6 +31,13 @@ const playerName = (player, id) =>
   player?.search_full_name ||
   `${player?.first_name || ""} ${player?.last_name || ""}`.trim() ||
   id;
+const injurySeverity = (player) => {
+  const detail = [player?.injury_status, player?.status, player?.practice_participation, player?.injury_notes].filter(Boolean).join(" ").toLowerCase();
+  if (/injured.reserve|\bir\b|\bpup\b|\bnfi\b|out for (the )?season|season.?ending|inactive|suspend|\bout\b/.test(detail)) return 1;
+  if (/doubtful|miss (most|all)|surgery/.test(detail)) return 0.7;
+  if (/questionable|limited|day.to.day/.test(detail)) return 0.25;
+  return 0;
+};
 const grade = (score) =>
   score >= 97
     ? "A+"
@@ -181,6 +188,7 @@ function buildGrades({
   if (!draft || !picks.length) return null;
   const ordered = [...picks].sort((a, b) => n(a.pick_no) - n(b.pick_no));
   const rookieOnly = draftIsRookie(draft, ordered, players);
+  const redraftInjuryContext = classifyLeagueFormat(league).key !== "dynasty";
   const pickedIds = new Set(ordered.map((pick) => String(pick.player_id)));
   const draftSeason = n(draft?.season || draft?.metadata?.season);
   const currentSeason = new Date().getFullYear();
@@ -204,6 +212,9 @@ function buildGrades({
       row.id,
       n(getMarketRank?.(row.player, row.id)) || index + 1,
     ]),
+  );
+  const marketOrdinal = new Map(
+    eligible.map((row, index) => [row.id, index + 1]),
   );
   const requirements = starterRequirements(league);
   const draftPoolIds = new Set(ordered.map((pick) => String(pick.player_id)));
@@ -271,13 +282,14 @@ function buildGrades({
       marketRank.get(String(pick.player_id)) ||
       eligible.length + 1;
     const rank = Math.round(rawRank * 10) / 10;
+    const consensusRank = marketOrdinal.get(String(pick.player_id)) || eligible.length + 1;
     const delta = n(pick.pick_no) - rank;
     const adpScale =
       rank <= 24 ? 1.15 : rank <= 72 ? 0.72 : rank <= 144 ? 0.5 : 0.36;
     const valueScore =
       gradingKind === "adp"
-        ? clamp(95 + delta * adpScale, 45, 100)
-        : clamp(95 + delta * 0.45, 45, 100);
+        ? clamp(88 + delta * adpScale, 40, 100)
+        : clamp(88 + delta * 0.45, 40, 100);
     const bestAvailableRank = bestAvailable
       ? n(getMarketRank?.(bestAvailable.player, bestAvailable.id)) ||
         marketRank.get(bestAvailable.id)
@@ -288,7 +300,7 @@ function buildGrades({
     const opportunityScore =
       gradingKind === "adp"
         ? clamp(
-            99 -
+            94 -
               adpOpportunityGap * (rank <= 36 ? 1.25 : rank <= 100 ? 0.8 : 0.5),
             45,
             100,
@@ -305,7 +317,7 @@ function buildGrades({
       ? clamp(100 - Math.max(0, rank - nextTeamPick) * 1.15, 50, 100)
       : 85;
     const strategyScore = clamp(needScore * 0.7 + takeNowScore * 0.3, 45, 100);
-    const calculatedScore = Math.round(
+    const baseCalculatedScore = Math.round(
       clamp(
         gradingKind === "adp"
           ? valueScore * 0.7 + opportunityScore * 0.2 + strategyScore * 0.1
@@ -314,6 +326,17 @@ function buildGrades({
         100,
       ),
     );
+    // Elite chalk is still excellent process. Pure ADP delta cannot express
+    // that taking the consensus 1.01 at 1.01 is a successful selection.
+    const eliteFloor =
+      gradingKind === "adp" && consensusRank === 1 && n(pick.pick_no) <= 3 && rank <= 4
+        ? 97
+        : gradingKind === "adp" && consensusRank <= 3 && n(pick.pick_no) <= 5 && rank <= 6
+          ? 94
+          : gradingKind === "adp" && consensusRank <= 6 && n(pick.pick_no) <= 8 && rank <= 9
+            ? 91
+            : 0;
+    const calculatedScore = Math.max(baseCalculatedScore, eliteFloor);
     const score = covered ? calculatedScore : null;
     counts[pos] = n(counts[pos]) + 1;
     teamCounts.set(team.rosterId, counts);
@@ -346,6 +369,7 @@ function buildGrades({
       pos,
       value,
       rank,
+      consensusRank,
       delta,
       valueScore,
       opportunityScore,
@@ -421,10 +445,17 @@ function buildGrades({
       55,
       100,
     );
+    const values = team.picks.map((row) => row.value).filter(Boolean);
+    const injuryRiskRows = team.picks.map((row)=>({name:playerName(row.player,row.pick.player_id),severity:injurySeverity(row.player),value:n(row.value)})).filter(row=>row.severity>0);
+    const injuryRiskValue = injuryRiskRows.reduce((sum,row)=>sum+row.value*row.severity,0);
+    const injuryScore = redraftInjuryContext
+      ? clamp(100-(injuryRiskValue/Math.max(1,values.reduce((sum,value)=>sum+value,0)))*90,45,100)
+      : 100;
     const construction = rookieOnly
       ? lineupCompletion
-      : lineupCompletion * 0.7 + depthScore * 0.2 + byeScore * 0.1;
-    const values = team.picks.map((row) => row.value).filter(Boolean);
+      : redraftInjuryContext
+        ? lineupCompletion * 0.6 + depthScore * 0.15 + byeScore * 0.1 + injuryScore * 0.15
+        : lineupCompletion * 0.7 + depthScore * 0.2 + byeScore * 0.1;
     const balance =
       values.length > 1
         ? clamp(
@@ -443,6 +474,22 @@ function buildGrades({
     const reach = [...gradedPicks].sort((a, b) => a.delta - b.delta)[0];
     const identity = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
     const coverage = gradedPicks.length / Math.max(1, team.picks.length);
+    const strengths=[];const weaknesses=[];
+    if(avg>=91)strengths.push(`Excellent selection value (${avg.toFixed(0)} average pick score)`);else if(avg>=87)strengths.push(`Consistently solid draft value (${avg.toFixed(0)} average)`);
+    if(lineupCompletion>=90)strengths.push("Starting lineup requirements are well covered");
+    if(depthScore>=88)strengths.push("Strong depth behind the projected starters");
+    if(byeScore>=94)strengths.push("Bye weeks are distributed cleanly");
+    if(redraftInjuryContext&&injuryScore>=96)strengths.push("Minimal current injury exposure");
+    if(best?.delta>=8)strengths.push(`${playerName(best.player,best.pick.player_id)} delivered ${best.delta.toFixed(1)} slots of value`);
+    if(avg<82)weaknesses.push(`Selection value trailed the market (${avg.toFixed(0)} average pick score)`);
+    if(lineupCompletion<75)weaknesses.push("Core starting requirements remain thin");
+    if(depthScore<72)weaknesses.push("Limited usable depth behind the starters");
+    if(byeScore<85)weaknesses.push(`Concentrated bye-week exposure (${Math.round(maxByeShare*100)}% on one bye)`);
+    if(redraftInjuryContext&&injuryScore<90)weaknesses.push(`Redraft injury exposure: ${injuryRiskRows.slice(0,3).map(row=>row.name).join(", ")}`);
+    if(reach?.delta<=-8)weaknesses.push(`${playerName(reach.player,reach.pick.player_id)} was selected ${Math.abs(reach.delta).toFixed(1)} slots early`);
+    const requiredCore=core.filter(key=>n(requirements[key])>0&&n(counts[key])<Math.max(1,n(requirements[key])));if(requiredCore.length)weaknesses.push(`Thin at ${requiredCore.join("/")} versus league starter settings`);
+    if(!strengths.length)strengths.push("No single area dominates; the class is relatively balanced");
+    if(!weaknesses.length)weaknesses.push("No major structural weakness detected under this grading lens");
     return {
       ...team,
       processScore,
@@ -451,6 +498,11 @@ function buildGrades({
       lineupCompletion,
       depthScore,
       byeScore,
+      injuryScore,
+      injuryRiskRows,
+      redraftInjuryContext,
+      strengths:strengths.slice(0,5),
+      weaknesses:weaknesses.slice(0,5),
       balance,
       counts,
       totalValue: gradedPicks.reduce((sum, row) => sum + row.value, 0),
@@ -489,9 +541,12 @@ function buildGrades({
         relativeFloor,
         96,
       );
-      const score = Math.round(
-        clamp(team.processScore * 0.55 + leagueScore * 0.45, 35, 100),
+      const blendedScore = Math.round(
+        clamp(team.processScore * 0.75 + leagueScore * 0.25, 35, 100),
       );
+      const credibleChampionFloor =
+        better === 0 && team.processScore >= 84 && team.coverage >= 0.7 ? 90 : 0;
+      const score = Math.max(blendedScore, credibleChampionFloor);
       return { ...team, leagueScore, score, grade: grade(score) };
     })
     .sort(
@@ -638,6 +693,12 @@ function PrintReport({ analysis, league, draft, sourceLabel }) {
               <small>Coverage</small>
               <b>{Math.round(team.coverage * 100)}%</b>
             </div>
+          </div>
+          <div className="dg-metrics">
+            <div><small>Strengths</small><b>{team.strengths.join(" · ")}</b></div>
+            <div><small>Weaknesses</small><b>{team.weaknesses.join(" · ")}</b></div>
+            <div><small>Bye planning</small><b>{team.byeScore.toFixed(0)}</b></div>
+            <div><small>Health</small><b>{team.redraftInjuryContext ? team.injuryScore.toFixed(0) : "Not penalized · Dynasty"}</b></div>
           </div>
           <table>
             <thead>
@@ -1243,7 +1304,7 @@ export default function DraftGradesClient() {
                 }
                 detail={
                   analysis.steals[0]
-                    ? `Pick #${analysis.steals[0].pick.pick_no}`
+                    ? `Pick #${analysis.steals[0].pick.pick_no} · ${analysis.steals[0].team.name}`
                     : ""
                 }
                 tone="cyan"
@@ -1257,7 +1318,7 @@ export default function DraftGradesClient() {
                 }
                 detail={
                   analysis.reaches[0]
-                    ? `Pick #${analysis.reaches[0].pick.pick_no}`
+                    ? `Pick #${analysis.reaches[0].pick.pick_no} · ${analysis.reaches[0].team.name}`
                     : ""
                 }
                 tone="rose"
@@ -1517,6 +1578,16 @@ export default function DraftGradesClient() {
                       value={`${Math.round(selectedTeam.coverage * 100)}%`}
                       detail={`${selectedTeam.gradedCount}/${selectedTeam.picks.length} picks`}
                     />
+                    <Metric
+                      label="Bye planning"
+                      value={selectedTeam.byeScore.toFixed(0)}
+                      detail="Concentration penalty"
+                    />
+                    <Metric
+                      label="Health"
+                      value={selectedTeam.redraftInjuryContext ? selectedTeam.injuryScore.toFixed(0) : "N/A"}
+                      detail={selectedTeam.redraftInjuryContext ? "Redraft injury risk" : "Not penalized in dynasty"}
+                    />
                   </div>
                   <p className="mt-4 text-xs leading-5 text-white/42">
                     {!selectedTeam.gradedCount
@@ -1531,6 +1602,16 @@ export default function DraftGradesClient() {
                   </p>
                 </Panel>
                 <Panel className="overflow-hidden">
+                  <div className="grid gap-4 border-b border-white/10 p-4 md:grid-cols-2">
+                    <div className="rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
+                      <h3 className="font-black text-emerald-100">Team strengths</h3>
+                      <ul className="mt-3 space-y-2 text-xs leading-5 text-white/52">{selectedTeam.strengths.map((item,index)=><li key={`${item}-${index}`} className="flex gap-2"><span className="text-emerald-200/60">◆</span><span>{item}</span></li>)}</ul>
+                    </div>
+                    <div className="rounded-2xl border border-rose-300/10 bg-rose-300/[0.035] p-4">
+                      <h3 className="font-black text-rose-100">Team weaknesses</h3>
+                      <ul className="mt-3 space-y-2 text-xs leading-5 text-white/52">{selectedTeam.weaknesses.map((item,index)=><li key={`${item}-${index}`} className="flex gap-2"><span className="text-rose-200/60">◆</span><span>{item}</span></li>)}</ul>
+                    </div>
+                  </div>
                   <div className="border-b border-white/10 p-4">
                     <h3 className="text-xl font-black">
                       Pick-by-pick report card
@@ -1585,8 +1666,9 @@ export default function DraftGradesClient() {
                         className="flex items-center gap-3 rounded-xl bg-emerald-300/[0.035] p-3"
                       >
                         <b className="text-xs">#{index + 1}</b>
-                        <span className="min-w-0 flex-1 truncate font-semibold">
-                          {playerName(row.player)} · pick #{row.pick.pick_no}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold">{playerName(row.player)} · pick #{row.pick.pick_no}</span>
+                          <span className="mt-0.5 block truncate text-[10px] text-white/38">Drafted by {row.team.name}</span>
                         </span>
                         <span className="text-xs text-emerald-100">
                           {row.delta >= 0 ? "+" : ""}
@@ -1607,8 +1689,9 @@ export default function DraftGradesClient() {
                         className="flex items-center gap-3 rounded-xl bg-rose-300/[0.035] p-3"
                       >
                         <b className="text-xs">#{index + 1}</b>
-                        <span className="min-w-0 flex-1 truncate font-semibold">
-                          {playerName(row.player)} · pick #{row.pick.pick_no}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold">{playerName(row.player)} · pick #{row.pick.pick_no}</span>
+                          <span className="mt-0.5 block truncate text-[10px] text-white/38">Drafted by {row.team.name}</span>
                         </span>
                         <span className="text-xs text-rose-100">
                           {row.delta} slots
@@ -1653,7 +1736,7 @@ export default function DraftGradesClient() {
                     <p className="mt-2 text-xs leading-5 text-white/42">
                       {gradingLens === "source"
                         ? "Compares the selection’s current rank in the chosen value or projection source with its actual draft slot. An on-market elite pick begins in A territory."
-                        : "Compares the actual pick directly with Ballsville average draft position. Early picks receive tighter but reasonable slot tolerance, so selecting ADP 2 at pick 1 remains an excellent selection."}
+                        : "Compares the actual pick directly with Ballsville average draft position. Consensus top-six players receive an elite-chalk floor when selected in their proper opening range, because taking the clear 1.01 at pick 1 is excellent process even without a positive ADP delta."}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/[0.025] p-4">
@@ -1680,12 +1763,13 @@ export default function DraftGradesClient() {
                   <div className="rounded-2xl bg-white/[0.025] p-4">
                     <b>League-relative team grade</b>
                     <p className="mt-2 text-xs leading-5 text-white/42">
-                      The overall team grade is 55% absolute process quality and
-                      45% performance relative to the other teams in that draft.
+                      The overall team grade is 75% absolute process quality and
+                      25% performance relative to the other teams in that draft.
                       Process quality itself combines selection quality,
                       construction, and balance. Similar teams remain close
-                      rather than being separated by an artificial full letter
-                      grade.
+                      while first place in a weak draft cannot manufacture an A.
+                      A league winner with at least 70% coverage and sound
+                      84-plus absolute process receives an A− floor.
                     </p>
                   </div>
                 </div>
@@ -1694,7 +1778,10 @@ export default function DraftGradesClient() {
                   failing grades. Coverage affects relative ranking. ADP
                   confidence reflects sample size, while compatibility notices
                   identify historical, keeper, draft-pool, and format
-                  limitations.
+                  limitations. Bye-week clustering affects construction in all
+                  full drafts. Current injury severity affects redraft and
+                  redraft Best Ball construction only; dynasty injuries are
+                  reported as context without lowering the grade.
                 </div>
               </Panel>
             ) : null}

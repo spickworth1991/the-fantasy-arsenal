@@ -157,6 +157,7 @@ export default function TradeAnalyzer() {
   const [leaguePickAssets, setLeaguePickAssets] = useState({});
   const [tradeLeagueId, setTradeLeagueId] = useState("");
   const routeHandoffApplied = useRef(false);
+  const [handoffContext, setHandoffContext] = useState(null);
 
   useEffect(() => {
     const resetLeagueContext = () => {
@@ -173,7 +174,6 @@ export default function TradeAnalyzer() {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     if (["analyzer", "finder", "block", "history", "market"].includes(requestedTab))
       setTradeTab(requestedTab);
-    routeHandoffApplied.current = true;
     return () => window.removeEventListener("pageshow", resetLeagueContext);
   }, [setActiveLeague]);
 
@@ -301,6 +301,22 @@ export default function TradeAnalyzer() {
       setLeaguePickAssets(next);
     }
   };
+
+  useEffect(() => {
+    if (routeHandoffApplied.current || !leagues?.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedLeague = params.get("league") || "";
+    const surplus = String(params.get("surplus") || "").toUpperCase();
+    const need = String(params.get("need") || "").toUpperCase();
+    if (!requestedLeague && !surplus && !need) {
+      routeHandoffApplied.current = true;
+      return;
+    }
+    routeHandoffApplied.current = true;
+    if (surplus || need) setHandoffContext({ surplus, need });
+    if (requestedLeague && leagues.some((item) => String(item.league_id) === requestedLeague))
+      handleLeagueChange(requestedLeague);
+  }, [leagues]);
 
   const league = leagues.find(
     (lg) => String(lg.league_id) === String(tradeLeagueId),
@@ -755,6 +771,7 @@ export default function TradeAnalyzer() {
                 setTradeTab("analyzer");
               }}
               initialTab={tradeTab === "analyzer" ? "finder" : tradeTab}
+              handoffContext={handoffContext}
               hideNavigation
             /></div>
 

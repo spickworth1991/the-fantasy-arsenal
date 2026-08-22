@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-21T04:06:49.535Z",
+  "updated": "2026-08-22T03:10:53.264Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -59383,104 +59383,6 @@
       "position": "DB"
     },
     {
-      "player_id": "7946",
-      "points": 6.3,
-      "points_ppr": 6.3,
-      "points_half_ppr": 4.96,
-      "points_standard": 3.61,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.4,
-          "half_ppr": 0.32,
-          "standard": 0.23
-        },
-        "2": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "3": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "4": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "5": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "6": {
-          "ppr": 0.36,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "7": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "8": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "9": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "10": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "12": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "13": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.22
-        },
-        "14": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "15": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "16": {
-          "ppr": 0.36,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "17": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.21
-        },
-        "18": {
-          "ppr": 0.37,
-          "half_ppr": 0.29,
-          "standard": 0.22
-        }
-      },
-      "name": "Jack Stoll",
-      "team": "CLE",
-      "position": "TE"
-    },
-    {
       "player_id": "11726",
       "points": 6.29,
       "points_ppr": 6.29,
@@ -60459,6 +60361,99 @@
       "name": "Cody White",
       "team": "SEA",
       "position": "WR"
+    },
+    {
+      "player_id": "7946",
+      "points": 5.9,
+      "points_ppr": 5.9,
+      "points_half_ppr": 4.64,
+      "points_standard": 3.38,
+      "projected_weeks": 16,
+      "weekly": {
+        "2": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "3": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "4": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "5": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "6": {
+          "ppr": 0.36,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "7": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "8": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "9": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "10": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "12": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "13": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.22
+        },
+        "14": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "15": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "16": {
+          "ppr": 0.36,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "17": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.21
+        },
+        "18": {
+          "ppr": 0.37,
+          "half_ppr": 0.29,
+          "standard": 0.22
+        }
+      },
+      "name": "Jack Stoll",
+      "team": "CLE",
+      "position": "TE"
     },
     {
       "player_id": "3048",
@@ -94521,7 +94516,7 @@
     "7891": 45.14,
     "7921": 1.87,
     "7922": 59.24,
-    "7946": 6.3,
+    "7946": 5.9,
     "8041": 3.44,
     "8110": 167.83,
     "8111": 125.18,
@@ -96342,8 +96337,6 @@
     "joshwhyle": 6.34,
     "malaki starks": 6.31,
     "malakistarks": 6.31,
-    "jack stoll": 6.3,
-    "jackstoll": 6.3,
     "kamren kinchens": 6.29,
     "kamrenkinchens": 6.29,
     "mykel williams": 6.29,
@@ -96364,6 +96357,8 @@
     "ja'quanmcmillian": 6.27,
     "cody white": 5.96,
     "codywhite": 5.96,
+    "jack stoll": 5.9,
+    "jackstoll": 5.9,
     "chris manhertz": 5.81,
     "chrismanhertz": 5.81,
     "donte jackson": 5.81,

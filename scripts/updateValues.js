@@ -1342,10 +1342,48 @@ async function updateFantasyProsECR() {
     request_count: variants.length,
   };
 
-  for (let offset = 0; offset < variants.length; offset += 3) {
-    const batch = variants.slice(offset, offset + 3);
-    const results = await Promise.all(
-      batch.map(async (variant) => {
+  // FantasyPros applies a fairly strict rolling request limit. ECR requires
+  // eight distinct boards, so issuing even small concurrent batches can cause
+  // the final board to receive a 429. Pace these independently from the other
+  // FantasyPros jobs and honor the server's Retry-After response when present.
+  const minIntervalMs = Math.max(
+    1000,
+    Number(process.env.FANTASYPROS_MIN_INTERVAL_MS) || 7000,
+  );
+  const maxAttempts = 5;
+  let lastRequestAt = 0;
+
+  const fetchEcr = async (endpoint, variant) => {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const elapsed = Date.now() - lastRequestAt;
+      if (elapsed < minIntervalMs) await sleep(minIntervalMs - elapsed);
+      lastRequestAt = Date.now();
+
+      const response = await fetch(endpoint, {
+        headers: { "x-api-key": apiKey, Accept: "application/json" },
+      });
+      if (response.ok) return response;
+
+      if (response.status !== 429 || attempt === maxAttempts) {
+        throw new Error(
+          `FantasyPros ECR ${variant.key} ${variant.scoring.api} returned HTTP ${response.status}${attempt > 1 ? ` after ${attempt} attempts` : ""}.`,
+        );
+      }
+
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : minIntervalMs * attempt;
+      console.log(
+        `  FantasyPros ECR rate limit reached; waiting ${Math.ceil(waitMs / 1000)} seconds before retry ${attempt + 1}/${maxAttempts}.`,
+      );
+      await sleep(waitMs);
+    }
+    throw new Error("FantasyPros ECR retry loop ended unexpectedly.");
+  };
+
+  const results = [];
+  for (const variant of variants) {
         const params = new URLSearchParams({
           position: variant.position,
           scoring: variant.scoring.api,
@@ -1353,13 +1391,7 @@ async function updateFantasyProsECR() {
           experts: "show",
         });
         const endpoint = `https://api.fantasypros.com/public/v2/json/nfl/${CURRENT_SEASON}/consensus-rankings?${params}`;
-        const response = await fetch(endpoint, {
-          headers: { "x-api-key": apiKey, Accept: "application/json" },
-        });
-        if (!response.ok)
-          throw new Error(
-            `FantasyPros ECR ${variant.key} ${variant.scoring.api} returned HTTP ${response.status}.`,
-          );
+        const response = await fetchEcr(endpoint, variant);
         const payload = await response.json();
         const sourceRows = Array.isArray(payload?.players)
           ? payload.players
@@ -1409,7 +1441,7 @@ async function updateFantasyProsECR() {
           .filter((row) => row.name && row.rank_ecr > 0)
           .sort((a, b) => a.rank_ecr - b.rank_ecr);
         const expertNames = payload?.expert_names || payload?.expert_name || {};
-        return {
+        results.push({
           listKey,
           rows,
           experts: {
@@ -1425,14 +1457,12 @@ async function updateFantasyProsECR() {
             position: variant.position,
             scoring: variant.scoringSpecific ? variant.scoring.api : "NEUTRAL",
           },
-        };
-      }),
-    );
-    results.forEach(({ listKey, rows, experts }) => {
+        });
+  }
+  results.forEach(({ listKey, rows, experts }) => {
       output.formats[listKey] = rows;
       output.experts_by_format[listKey] = experts;
-    });
-  }
+  });
 
   const counts = Object.values(output.formats).map((rows) => rows.length);
   if (counts.length !== 8)

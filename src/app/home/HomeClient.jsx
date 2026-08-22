@@ -49,6 +49,7 @@ const TOOL_ICONS = {
   "Stat Central": "/icons/power-icon.webp",
   "My Arsenal": "/icons/manager-intelligence-icon.webp",
   "Manager Leaderboard": "/icons/manager-intelligence-icon.webp",
+  "Ballsville Stats": "/icons/power-icon.webp",
 };
 
 export default function HomeClient() {
@@ -205,12 +206,18 @@ export default function HomeClient() {
         "Compare verified Sleeper portfolio records and discover public Arsenal manager profiles.",
       badge: "NEW",
     },
+    {
+      name: "Ballsville Stats",
+      link: "/ballsville-stats",
+      description: "Explore Ballsville draft frequency, mode-specific ADP, top drafters, and player draft patterns.",
+      badge: "NEW",
+    },
     
   ];
   const toolGroups = [
     { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and review the complete league draft.", names:["Draft Command Center","Draft Monitor","Draft Grade Studio"] },
-    { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock"] },
+    { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock","Ballsville Stats"] },
     { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, player production, NFL opportunity, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","Stat Central","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
     { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
     { title:"Arsenal Community", eyebrow:"BUILD YOUR ARSENAL", description:"Manage your profile, compare verified records, and inspect the evidence and accuracy behind Arsenal intelligence.", names:["My Arsenal","Manager Leaderboard","Trust & Accuracy Center"] },
@@ -361,7 +368,7 @@ export default function HomeClient() {
             <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
               <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">Your fantasy operating system</div>
               <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[["/draft-helper","Draft Command Center","Live recommendations, board pressure, and team needs"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/account","My Arsenal","Profile, digest, identity, and saved workspace"],["/leaderboard","Manager Leaderboard","Compare verified Sleeper portfolio records"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[["/draft-helper","Draft Command Center","Live recommendations, board pressure, and team needs"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/power-rankings","Power Rankings","Rank every roster using the league’s detected format"],["/leaderboard","Manager Leaderboard","Compare verified Sleeper portfolio records"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
             </section>
             <Link href="/intelligence" className="group flex flex-col gap-4 rounded-[24px] border border-amber-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(251,191,36,.1),transparent_42%),linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.94))] p-4 transition hover:-translate-y-0.5 hover:border-amber-300/25 sm:flex-row sm:items-center">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-lg font-black text-amber-100">A</div>

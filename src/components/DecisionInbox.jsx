@@ -36,8 +36,15 @@ const rosterAllowsPosition = (league, position) => {
 };
 const injury = (player) => String(player?.injury_status || "").toUpperCase();
 const unavailable = (player) =>
-  ["OUT", "DOUBTFUL", "IR", "PUP", "SUSPENDED"].includes(injury(player)) ||
-  String(player?.status || "").toLowerCase() === "inactive";
+  ["OUT", "DOUBTFUL", "IR", "PUP", "NFI", "SUSPENDED"].includes(injury(player)) ||
+  /inactive|injured.reserve|physically.unable|non.football.injury|suspend/.test(String(player?.status || "").toLowerCase());
+const longTermUnavailable = (player) => {
+  const detail = [player?.injury_status, player?.status, player?.practice_participation, player?.injury_notes, player?.news_updated]
+    .filter(Boolean).join(" ").toLowerCase();
+  return unavailable(player) || /season.?ending|out for (the )?season|miss (most|all) of|injured.reserve|\bir\b|\bpup\b|physically.unable|non.football.injury|\bnfi\b/.test(detail);
+};
+const usableOpportunity = (player, leagueFormat) =>
+  leagueFormat?.key === "dynasty" || !longTermUnavailable(player);
 const risk = (player) =>
   unavailable(player) || injury(player) === "QUESTIONABLE";
 const deadlineText = (deadline) => {
@@ -768,6 +775,7 @@ export default function DecisionInbox({ full = false }) {
               const waiver = rankedPlayers.find(
                 (row) =>
                   rosterAllowsPosition(league, pos(row.player)) &&
+                  usableOpportunity(row.player, leagueFormat) &&
                   !rostered.has(row.id) &&
                   row.value >
                     n(weakestByPos.get(pos(row.player))?.value) * 1.15,
@@ -790,7 +798,7 @@ export default function DecisionInbox({ full = false }) {
                   playerId: waiver.id,
                   playerPosition: pos(waiver.player),
                   deadline: null,
-                  why: `The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, and the proposed drop before claiming.`,
+                  why: `${leagueFormat.key === "dynasty" && longTermUnavailable(waiver.player) ? "This is a dynasty stash rather than immediate lineup help. " : ""}The selected source grades this free agent at least 15% above your weakest ${pos(waiver.player)}. Confirm role, schedule, health, and the proposed drop before claiming.`,
                   href: `/player-availability?player=${waiver.id}&drop=${weakest?.id || ""}&need=${pos(waiver.player)}&source=${encodeURIComponent(sourceKey || "")}`,
                   action: "Build waiver claim",
                 });
@@ -823,7 +831,7 @@ export default function DecisionInbox({ full = false }) {
                   confidence: 65,
                   deadline: null,
                   why: `Your roster carries ${surplus[1]} ${surplus[0]}s while ${need} is the thinnest core position. Trade Partner Finder can identify a manager with the inverse need.`,
-                  href: "/trade",
+                  href: `/trade?tab=finder&surplus=${surplus[0]}&need=${need}`,
                   action: "Find a partner",
                 });
             }
@@ -1189,7 +1197,12 @@ export default function DecisionInbox({ full = false }) {
   const itemsForView = useMemo(() => {
     const targetIds = new Set(targetLeagueIds);
     const scoped = items.filter(
-      (item) => !item.leagueId || targetIds.has(String(item.leagueId)),
+      (item) => {
+        if (item.leagueId && !targetIds.has(String(item.leagueId))) return false;
+        if (item.category !== "waiver" || !item.playerId) return true;
+        const league = leagues.find((row) => String(row.league_id) === String(item.leagueId));
+        return usableOpportunity(players?.[item.playerId], classifyLeagueFormat(league || {}));
+      },
     );
     if (tab !== "history") return scoped;
     return mergeDecisionRows(
@@ -1201,7 +1214,7 @@ export default function DecisionInbox({ full = false }) {
             item && (!item.leagueId || targetIds.has(String(item.leagueId))),
         ),
     );
-  }, [actions, items, tab, targetLeagueIds]);
+  }, [actions, items, leagues, players, tab, targetLeagueIds]);
   const activeItems = useMemo(
     () =>
       itemsForView

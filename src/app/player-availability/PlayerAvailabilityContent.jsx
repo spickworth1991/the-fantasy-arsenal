@@ -1879,19 +1879,25 @@ export default function PlayerAvailabilityContent() {
     if (
       requestedPlayerApplied.current ||
       !requestedPlayerId.current ||
-      !bestAvailablePlayers.length
+      !Object.keys(playersMap || {}).length ||
+      scanLoading
     )
       return;
-    const row = bestAvailablePlayers.find(
-      (item) => String(item.id) === String(requestedPlayerId.current),
-    );
-    if (!row) return;
+    const id = String(requestedPlayerId.current);
+    const player = playersMap[id] || Object.values(playersMap).find((item) => String(item?.player_id) === id);
+    if (!player) return;
+    const row = { id, name:player.full_name || player.search_full_name || id, pos:String(player.position || player.fantasy_positions?.[0] || "").toUpperCase(), team:String(player.team || "").toUpperCase() };
     requestedPlayerApplied.current = true;
+    addResolved(row, { scrollToMatrix:true });
+    const availableLeagues = visibleLeaguesList.filter((league) => {
+      const rosterSet = rosterSetsRef.current.get(String(league.id));
+      return rosterSet?.size && !rosterSet.has(id);
+    });
     openPlayerModal(
-      { id: row.id, name: row.name, pos: row.pos, team: row.team },
-      row.availableLeagues,
+      row,
+      availableLeagues,
     );
-  }, [bestAvailablePlayers]);
+  }, [playersMap, scanLoading, visibleLeagueCount]);
 
   // ---------- Trending (Sleeper Hot/Cold) ----------
   useEffect(() => {

@@ -11,6 +11,7 @@ import PlayerResearchPanel from "../../components/PlayerResearchPanel";
 import DraftStrategySuite from "./DraftStrategySuite";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { aggregateBallsvilleAdp, ballsvilleAdpProxyUrl, resolveBallsvilleAdp } from "../../lib/ballsvilleAdp";
+import { getDraftSlotForPick } from "../../lib/draftOrder";
 
 const OFFENSE = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
 const FLEX = new Set(["RB", "WR", "TE"]);
@@ -34,12 +35,6 @@ function managerName(rosterId, rosterMap, userMap) {
   const roster = rosterMap.get(String(rosterId));
   const user = userMap.get(String(roster?.owner_id));
   return user?.metadata?.team_name || user?.display_name || user?.username || `Roster ${rosterId || "—"}`;
-}
-
-function getSlotForPick(pickNo, teams, type) {
-  const round = Math.ceil(pickNo / Math.max(1, teams));
-  const index = (pickNo - 1) % Math.max(1, teams);
-  return type === "snake" && round % 2 === 0 ? teams - index : index + 1;
 }
 
 function effectivePosition(player) {
@@ -351,7 +346,8 @@ export default function DraftHelperClient() {
   const rounds = n(draft?.settings?.rounds || 0);
   const totalPicks = teams * rounds;
   const nextPickNo = Math.min(totalPicks || picks.length + 1, picks.length + 1);
-  const nextSlot = getSlotForPick(nextPickNo, teams, draft?.type || "snake");
+  const reversalRound = n(draft?.settings?.reversal_round);
+  const nextSlot = getDraftSlotForPick(nextPickNo, teams, draft?.type || "snake", reversalRound);
   const nextRound = Math.ceil(nextPickNo / Math.max(1, teams));
   const nextOriginalRosterId = String(slotMap[nextSlot] || "");
   const nextTradedPick = [...tradedPicks].reverse().find((item) => n(item.round) === nextRound && String(item.roster_id) === nextOriginalRosterId);
@@ -444,14 +440,14 @@ export default function DraftHelperClient() {
   };
   const remainingOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
     const round = Math.ceil(pickNo / Math.max(1, teams));
-    const slot = getSlotForPick(pickNo, teams, draft?.type || "snake");
+    const slot = getDraftSlotForPick(pickNo, teams, draft?.type || "snake", reversalRound);
     return ownerForCell(round, slot) === String(signedInRosterId || focusRosterId);
   });
   const nextMyPick = remainingOwnedPicks[0] || null;
   const picksAway = nextMyPick ? Math.max(0, nextMyPick - nextPickNo) : null;
   const focusOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
     const round = Math.ceil(pickNo / Math.max(1, teams));
-    const slot = getSlotForPick(pickNo, teams, draft?.type || "snake");
+    const slot = getDraftSlotForPick(pickNo, teams, draft?.type || "snake", reversalRound);
     return ownerForCell(round, slot) === String(focusRosterId);
   });
   const focusCurrentPick = focusOwnedPicks[0] || nextPickNo;
@@ -467,6 +463,7 @@ export default function DraftHelperClient() {
     }
     return map;
   }, { all:{}, byPosition:{} });
+  const hasOpenSkillStarter = needs.some((need) => ["RB", "WR", "TE"].includes(need.pos) && need.gap > 0);
   const ranked = useMemo(() => eligible.slice(0, 160).map((item, index, list) => {
     const need = needMap.get(item.pos) || { urgency:1, count:0, gap:0 };
     const samePositionAhead = list.slice(0, index).filter((row) => row.pos === item.pos).length;
@@ -483,10 +480,12 @@ export default function DraftHelperClient() {
     const samePositionBye = byeWeek ? n(focusByeCounts.byPosition[item.pos]?.[byeWeek]) : 0;
     const byeMultiplier = !byeWeek ? 1 : Math.max(0.88, 1 - Math.max(0, sameBye - 2) * 0.025 - samePositionBye * 0.035);
     const surplusPenalty = need.gap <= 0 ? need.urgency : 1;
-    const availabilityMultiplier = item.injury.multiplier * byeMultiplier;
+    const qb3Deferred = qbType === "sf" && item.pos === "QB" && need.count >= 2 && hasOpenSkillStarter;
+    const qb3Multiplier = !qb3Deferred ? 1 : fallingValue ? 0.88 : likelyAvailableLater ? 0.58 : 0.7;
+    const availabilityMultiplier = item.injury.multiplier * byeMultiplier * qb3Multiplier;
     const marketScore = item.value * (0.74 + valueRatio * 0.14 + timing * 0.12) * (likelyAvailableLater ? 0.78 : 1) * availabilityMultiplier;
-    return { ...item, need, adpDelta, likelyAvailableLater, fallingValue, timing, byeWeek, sameBye, samePositionBye, byeMultiplier, availabilityMultiplier, marketScore, fitScore:marketScore * (0.82 + need.urgency * 0.18) * surplusPenalty, strategyScore:marketScore * (0.82 + need.urgency * 0.1 + scarcity * 0.08) * surplusPenalty * presetMultiplier };
-  }), [byeWeeks, draftStrategy, eligible, focusByeCounts, focusCurrentPick, followingMyPick, needMap, teams]);
+    return { ...item, need, adpDelta, likelyAvailableLater, fallingValue, timing, byeWeek, sameBye, samePositionBye, byeMultiplier, qb3Deferred, availabilityMultiplier, marketScore, fitScore:marketScore * (0.82 + need.urgency * 0.18) * surplusPenalty, strategyScore:marketScore * (0.82 + need.urgency * 0.1 + scarcity * 0.08) * surplusPenalty * presetMultiplier };
+  }), [byeWeeks, draftStrategy, eligible, focusByeCounts, focusCurrentPick, followingMyPick, hasOpenSkillStarter, needMap, qbType, teams]);
   const takeDistinct = (rows, used) => rows.find((item) => !used.has(item.id)) || rows[0];
   const valueRows = [...ranked].sort((a, b) => b.marketScore - a.marketScore);
   const fitRows = [...ranked].sort((a, b) => b.fitScore - a.fitScore);
@@ -500,6 +499,7 @@ export default function DraftHelperClient() {
     const notes = [];
     if (item?.injury?.severity !== "clear") notes.push(`${item.injury.label} carries a ${valueFormat === "dynasty" ? "long-term-adjusted" : "current-season"} injury discount`);
     if (item?.byeWeek && item.sameBye >= 3) notes.push(`Week ${item.byeWeek} would become a ${item.sameBye + 1}-player bye cluster`);
+    if (item?.qb3Deferred) notes.push("QB3 is deferred while an RB, WR, or TE starter remains open unless the quarterback is a major falling value");
     return notes.length ? `${notes.join("; ")}.` : "No material injury or bye-week penalty was detected.";
   };
   const recommendation = (item, mode) => item ? { ...item, reason:mode === "value" ? `${item.name} offers the strongest blend of ${valueFormat} market value and draft-slot cost. ${timingReason(item)} ${availabilityReason(item)}` : mode === "fit" ? `${item.pos} is ${item.need.gap > 0 ? `short by about ${item.need.gap.toFixed(1)} starter slots` : "already covered, so depth received a smaller boost"}. ${timingReason(item)} ${availabilityReason(item)}` : `${item.name} balances value, roster construction, positional scarcity, availability, and the chance the player reaches your next pick. ${timingReason(item)} ${availabilityReason(item)}` } : null;
