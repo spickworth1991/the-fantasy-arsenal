@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T04:07:39.249Z",
+  "updated": "2026-08-23T04:07:36.039Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -24,7 +24,7 @@
     17,
     18
   ],
-  "count": 962,
+  "count": 963,
   "rows": [
     {
       "player_id": "4984",
@@ -49887,6 +49887,104 @@
       "position": "DT"
     },
     {
+      "player_id": "6782",
+      "points": 9,
+      "points_ppr": 9,
+      "points_half_ppr": 9,
+      "points_standard": 9,
+      "projected_weeks": 17,
+      "weekly": {
+        "1": {
+          "ppr": 0.52,
+          "half_ppr": 0.52,
+          "standard": 0.52
+        },
+        "2": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "3": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "4": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "5": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "6": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "7": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "9": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "10": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "11": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "12": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "13": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "14": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "15": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "16": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "17": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        },
+        "18": {
+          "ppr": 0.53,
+          "half_ppr": 0.53,
+          "standard": 0.53
+        }
+      },
+      "name": "Chase Young",
+      "team": "NO",
+      "position": "DE"
+    },
+    {
       "player_id": "5865",
       "points": 8.99,
       "points_ppr": 8.99,
@@ -94379,6 +94477,7 @@
     "6711": 4.77,
     "6768": 304.33,
     "6770": 344.52,
+    "6782": 9,
     "6783": 102.71,
     "6784": 2.72,
     "6786": 296.24,
@@ -96143,6 +96242,8 @@
     "georgekarlaftis": 9.01,
     "kobie turner": 9.01,
     "kobieturner": 9.01,
+    "chase young": 9,
+    "chaseyoung": 9,
     "dremont jones": 8.99,
     "dre'montjones": 8.99,
     "brandon dorlus": 8.99,
