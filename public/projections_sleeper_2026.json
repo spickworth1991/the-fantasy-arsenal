@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-23T04:07:36.039Z",
+  "updated": "2026-08-24T04:07:34.157Z",
   "season": 2026,
   "source": "Sleeper",
   "endpoint_status": "undocumented",
@@ -85441,104 +85441,6 @@
       "position": "DL"
     },
     {
-      "player_id": "10867",
-      "points": 2.03,
-      "points_ppr": 2.03,
-      "points_half_ppr": 1.54,
-      "points_standard": 1.19,
-      "projected_weeks": 17,
-      "weekly": {
-        "1": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "2": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "3": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "4": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "5": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "6": {
-          "ppr": 0.11,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "7": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "8": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "9": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "10": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "12": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "13": {
-          "ppr": 0.12,
-          "half_ppr": 0.1,
-          "standard": 0.07
-        },
-        "14": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "15": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "16": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "17": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        },
-        "18": {
-          "ppr": 0.12,
-          "half_ppr": 0.09,
-          "standard": 0.07
-        }
-      },
-      "name": "Jake Bobo",
-      "team": "SEA",
-      "position": "WR"
-    },
-    {
       "player_id": "12462",
       "points": 2.01,
       "points_ppr": 2.01,
@@ -85635,6 +85537,99 @@
       "name": "Damien Martinez",
       "team": "GB",
       "position": "RB"
+    },
+    {
+      "player_id": "10867",
+      "points": 1.91,
+      "points_ppr": 1.91,
+      "points_half_ppr": 1.45,
+      "points_standard": 1.12,
+      "projected_weeks": 16,
+      "weekly": {
+        "2": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "3": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "4": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "5": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "6": {
+          "ppr": 0.11,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "7": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "8": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "9": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "10": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "12": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "13": {
+          "ppr": 0.12,
+          "half_ppr": 0.1,
+          "standard": 0.07
+        },
+        "14": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "15": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "16": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "17": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        },
+        "18": {
+          "ppr": 0.12,
+          "half_ppr": 0.09,
+          "standard": 0.07
+        }
+      },
+      "name": "Jake Bobo",
+      "team": "SEA",
+      "position": "WR"
     },
     {
       "player_id": "4074",
@@ -94782,7 +94777,7 @@
     "10236": 155.78,
     "10444": 13.67,
     "10859": 206.28,
-    "10867": 2.03,
+    "10867": 1.91,
     "10871": 26.23,
     "10872": 5.44,
     "10873": 7.67,
@@ -96964,10 +96959,10 @@
     "jadenhicks": 2.21,
     "jonah laulu": 2.21,
     "jonahlaulu": 2.21,
-    "jake bobo": 2.03,
-    "jakebobo": 2.03,
     "damien martinez": 2.01,
     "damienmartinez": 2.01,
+    "jake bobo": 1.91,
+    "jakebobo": 1.91,
     "malik hooker": 1.88,
     "malikhooker": 1.88,
     "bj hill": 1.88,
