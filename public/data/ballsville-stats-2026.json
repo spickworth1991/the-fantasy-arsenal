@@ -2,7 +2,7 @@
   "schemaVersion": 4,
   "season": 2026,
   "previousSeason": 2025,
-  "generatedAt": "2026-08-24T10:03:12.825Z",
+  "generatedAt": "2026-08-24T13:12:57.637Z",
   "source": {
     "ballsville": "Published draft-compare mode boards",
     "sleeper": "League users, rosters, and draft picks",
@@ -103,7 +103,7 @@
       "drafts": 47,
       "owners": 168,
       "seats": 564,
-      "picks": 2147,
+      "picks": 2149,
       "players": 74
     },
     {
@@ -151,7 +151,7 @@
       "drafts": 10,
       "owners": 62,
       "seats": 180,
-      "picks": 2147,
+      "picks": 2148,
       "players": 254
     }
   ],
@@ -21984,7 +21984,7 @@
       "name": "Omar Cooper",
       "position": "WR",
       "team": "",
-      "drafts": 320,
+      "drafts": 321,
       "owners": 101,
       "ownerKeysByMode": {
         "mini-leagues": [
@@ -22030,6 +22030,7 @@
           "4983a105b59930b8",
           "3ad783fa72665582",
           "3decdf257472f745",
+          "28b8664f26e0c795",
           "75ae9969cefd9021",
           "9e2c518454b41136",
           "7acaf57e0b17a817",
@@ -22049,7 +22050,6 @@
           "2c14d8889296475b",
           "848144bf2de587d2",
           "c4ace34ec7bd0216",
-          "28b8664f26e0c795",
           "15953813907e1722"
         ],
         "big-game": [
@@ -22152,7 +22152,7 @@
       },
       "modes": {
         "mini-leagues": 80,
-        "dynasty-rookie": 44,
+        "dynasty-rookie": 45,
         "big-game": 152,
         "gauntlet": 24,
         "redraft": 10,
@@ -22182,15 +22182,15 @@
           "adp": 186.675
         },
         "dynasty-rookie": {
-          "drafts": 44,
-          "pickSum": 460,
+          "drafts": 45,
+          "pickSum": 484,
           "bestPick": 6,
-          "worstPick": 16,
+          "worstPick": 24,
           "rounds": {
             "1": 38,
-            "2": 6
+            "2": 7
           },
-          "adp": 10.454545454545455
+          "adp": 10.755555555555556
         },
         "big-game": {
           "drafts": 152,
@@ -22669,6 +22669,17 @@
             "adp": 12
           },
           {
+            "key": "28b8664f26e0c795",
+            "name": "bsilver88",
+            "username": "",
+            "avatar": "10f9557dc63782896a07388f35322172",
+            "count": 2,
+            "pickSum": 35,
+            "bestPick": 11,
+            "worstPick": 24,
+            "adp": 17.5
+          },
+          {
             "key": "75ae9969cefd9021",
             "name": "dbattery",
             "username": "",
@@ -22838,17 +22849,6 @@
             "name": "fieldtrip95",
             "username": "",
             "avatar": "856c12a7938414c43d875a87ebf497ec",
-            "count": 1,
-            "pickSum": 11,
-            "bestPick": 11,
-            "worstPick": 11,
-            "adp": 11
-          },
-          {
-            "key": "28b8664f26e0c795",
-            "name": "bsilver88",
-            "username": "",
-            "avatar": "10f9557dc63782896a07388f35322172",
             "count": 1,
             "pickSum": 11,
             "bestPick": 11,
@@ -23911,7 +23911,7 @@
         ]
       },
       "modeCount": 6,
-      "adp": 146.278125,
+      "adp": 145.89719626168224,
       "bestPick": 6,
       "worstPick": 278,
       "previousDrafts": 0,
@@ -37008,7 +37008,7 @@
       "name": "Malachi Fields",
       "position": "WR",
       "team": "",
-      "drafts": 309,
+      "drafts": 310,
       "owners": 108,
       "ownerKeysByMode": {
         "mini-leagues": [
@@ -37164,7 +37164,8 @@
           "5bfe25c26f7a72ee",
           "caa9cf0985f07f9d",
           "14ee327447872524",
-          "913963cef8ac0179"
+          "913963cef8ac0179",
+          "e33654beac043abd"
         ]
       },
       "modes": {
@@ -37173,7 +37174,7 @@
         "big-game": 149,
         "gauntlet": 23,
         "redraft": 10,
-        "guillotine": 6
+        "guillotine": 7
       },
       "modeDetails": {
         "mini-leagues": {
@@ -37254,15 +37255,15 @@
           "adp": 231.4
         },
         "guillotine": {
-          "drafts": 6,
-          "pickSum": 1218,
+          "drafts": 7,
+          "pickSum": 1422,
           "bestPick": 195,
           "worstPick": 213,
           "rounds": {
             "11": 2,
-            "12": 4
+            "12": 5
           },
-          "adp": 203
+          "adp": 203.14285714285714
         }
       },
       "draftersByMode": {
@@ -38840,6 +38841,17 @@
             "adp": 201
           },
           {
+            "key": "e33654beac043abd",
+            "name": "westLEX",
+            "username": "",
+            "avatar": "48fd2797cf1fa36dc07060fb65d087c5",
+            "count": 1,
+            "pickSum": 204,
+            "bestPick": 204,
+            "worstPick": 204,
+            "adp": 204
+          },
+          {
             "key": "913963cef8ac0179",
             "name": "Jd912",
             "username": "",
@@ -38853,7 +38865,7 @@
         ]
       },
       "modeCount": 6,
-      "adp": 203.88996763754045,
+      "adp": 203.89032258064515,
       "bestPick": 14,
       "worstPick": 312,
       "previousDrafts": 0,
@@ -449515,7 +449527,7 @@
       "name": "Caleb Douglas",
       "position": "WR",
       "team": "MIA",
-      "drafts": 57,
+      "drafts": 58,
       "owners": 33,
       "ownerKeysByMode": {
         "dynasty-rookie": [
@@ -449526,6 +449538,7 @@
           "b5c064b67324fe81",
           "52691711e01621b7",
           "a653856dd371d6c4",
+          "caa9cf0985f07f9d",
           "5eeb8a5e952c80ec",
           "4983a105b59930b8",
           "d680abe23f0b7bea",
@@ -449565,22 +449578,23 @@
         ]
       },
       "modes": {
-        "dynasty-rookie": 27,
+        "dynasty-rookie": 28,
         "big-game": 19,
         "redraft": 4,
         "guillotine": 7
       },
       "modeDetails": {
         "dynasty-rookie": {
-          "drafts": 27,
-          "pickSum": 1102,
-          "bestPick": 29,
+          "drafts": 28,
+          "pickSum": 1125,
+          "bestPick": 23,
           "worstPick": 48,
           "rounds": {
+            "2": 1,
             "3": 6,
             "4": 21
           },
-          "adp": 40.81481481481482
+          "adp": 40.17857142857143
         },
         "big-game": {
           "drafts": 19,
@@ -449666,6 +449680,17 @@
             "bestPick": 41,
             "worstPick": 48,
             "adp": 44.5
+          },
+          {
+            "key": "caa9cf0985f07f9d",
+            "name": "chiefslife13",
+            "username": "",
+            "avatar": "712105a5bab80482980a3f55d87fc612",
+            "count": 1,
+            "pickSum": 23,
+            "bestPick": 23,
+            "worstPick": 23,
+            "adp": 23
           },
           {
             "key": "4983a105b59930b8",
@@ -450039,8 +450064,8 @@
         ]
       },
       "modeCount": 4,
-      "adp": 138.01754385964912,
-      "bestPick": 29,
+      "adp": 136.0344827586207,
+      "bestPick": 23,
       "worstPick": 260,
       "previousDrafts": 0,
       "previousAdp": 0,
@@ -487137,7 +487162,6 @@
         "10229",
         "12476",
         "12502",
-        "12503",
         "12545",
         "13270",
         "13288",
@@ -550185,7 +550209,6 @@
         "10229",
         "12476",
         "12502",
-        "12503",
         "12545",
         "13270",
         "13288",
