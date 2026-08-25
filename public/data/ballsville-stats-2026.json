@@ -2,7 +2,7 @@
   "schemaVersion": 4,
   "season": 2026,
   "previousSeason": 2025,
-  "generatedAt": "2026-08-25T09:51:19.354Z",
+  "generatedAt": "2026-08-25T13:10:36.159Z",
   "source": {
     "ballsville": "Published draft-compare mode boards",
     "sleeper": "League users, rosters, and draft picks",
@@ -103,7 +103,7 @@
       "drafts": 47,
       "owners": 168,
       "seats": 564,
-      "picks": 2169,
+      "picks": 2170,
       "players": 74
     },
     {
@@ -455391,6 +455391,439 @@
       "returning": false
     },
     {
+      "key": "eli raridon|||TE",
+      "playerId": "13421",
+      "name": "Eli Raridon",
+      "position": "TE",
+      "team": "NE",
+      "drafts": 50,
+      "owners": 29,
+      "ownerKeysByMode": {
+        "dynasty-rookie": [
+          "74ec59bc1977b234",
+          "541ae3ae5b59bc41",
+          "2c734846cd0e4fb3",
+          "de3b26d5bbbcdac3",
+          "4983a105b59930b8",
+          "6f1f173e3eb284d6",
+          "6f1409020466c024",
+          "8a12637e90cd7a5c",
+          "eb5b7cffb8f539c8",
+          "be35104473c7ae4e",
+          "7b605a233ab70ab4",
+          "2c14d8889296475b",
+          "064ef30c9ff10e73",
+          "e9b2565a2d2a7eb5",
+          "042fbe4bc1b29036",
+          "c4f7d75e647e92bf",
+          "0edf0b4633b30476",
+          "848144bf2de587d2",
+          "30989770ca165839",
+          "d580e113ddb22193",
+          "8bd5b1535a69ee9a",
+          "fa6ab102badc4a3b",
+          "b3f2003e06513b24",
+          "8402f65d5086de3f"
+        ],
+        "big-game": [
+          "e33654beac043abd",
+          "17c67e13fb5996a8",
+          "541ae3ae5b59bc41",
+          "19478d6b9c3507b9",
+          "28b8664f26e0c795"
+        ],
+        "redraft": [
+          "1ee2ddfed31f0fa1"
+        ]
+      },
+      "modes": {
+        "dynasty-rookie": 44,
+        "big-game": 5,
+        "redraft": 1
+      },
+      "modeDetails": {
+        "dynasty-rookie": {
+          "drafts": 44,
+          "pickSum": 1711,
+          "bestPick": 30,
+          "worstPick": 48,
+          "rounds": {
+            "3": 12,
+            "4": 32
+          },
+          "adp": 38.88636363636363
+        },
+        "big-game": {
+          "drafts": 5,
+          "pickSum": 1222,
+          "bestPick": 229,
+          "worstPick": 255,
+          "rounds": {
+            "23": 1,
+            "25": 3,
+            "26": 1
+          },
+          "adp": 244.4
+        },
+        "redraft": {
+          "drafts": 1,
+          "pickSum": 235,
+          "bestPick": 235,
+          "worstPick": 235,
+          "rounds": {
+            "20": 1
+          },
+          "adp": 235
+        }
+      },
+      "draftersByMode": {
+        "dynasty-rookie": [
+          {
+            "key": "541ae3ae5b59bc41",
+            "name": "Joe__Joe_",
+            "username": "",
+            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
+            "count": 7,
+            "pickSum": 262,
+            "bestPick": 34,
+            "worstPick": 44,
+            "adp": 37.42857142857143
+          },
+          {
+            "key": "7b605a233ab70ab4",
+            "name": "csimms52",
+            "username": "",
+            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
+            "count": 6,
+            "pickSum": 245,
+            "bestPick": 35,
+            "worstPick": 48,
+            "adp": 40.833333333333336
+          },
+          {
+            "key": "be35104473c7ae4e",
+            "name": "glc20",
+            "username": "",
+            "avatar": "2ec20e8041ada224b29d1d0c7824fe20",
+            "count": 4,
+            "pickSum": 148,
+            "bestPick": 32,
+            "worstPick": 42,
+            "adp": 37
+          },
+          {
+            "key": "6f1409020466c024",
+            "name": "tb76",
+            "username": "",
+            "avatar": "47596f7b6b88d3598a0c17f321b6a433",
+            "count": 4,
+            "pickSum": 154,
+            "bestPick": 35,
+            "worstPick": 45,
+            "adp": 38.5
+          },
+          {
+            "key": "848144bf2de587d2",
+            "name": "pgrote31",
+            "username": "",
+            "avatar": "7208404e9332f4ba6bfe5fc9743d614d",
+            "count": 2,
+            "pickSum": 63,
+            "bestPick": 30,
+            "worstPick": 33,
+            "adp": 31.5
+          },
+          {
+            "key": "74ec59bc1977b234",
+            "name": "bradyd",
+            "username": "",
+            "avatar": "4cd377c306da19621012531d8c7b0066",
+            "count": 2,
+            "pickSum": 80,
+            "bestPick": 37,
+            "worstPick": 43,
+            "adp": 40
+          },
+          {
+            "key": "2c14d8889296475b",
+            "name": "JMorris410",
+            "username": "",
+            "avatar": "946d14613556bd9088079f3302a12e03",
+            "count": 2,
+            "pickSum": 82,
+            "bestPick": 37,
+            "worstPick": 45,
+            "adp": 41
+          },
+          {
+            "key": "2c734846cd0e4fb3",
+            "name": "SORRY4CUSSING",
+            "username": "",
+            "avatar": "284c3f47d0cbe719f49c18a6a56bd016",
+            "count": 1,
+            "pickSum": 33,
+            "bestPick": 33,
+            "worstPick": 33,
+            "adp": 33
+          },
+          {
+            "key": "e9b2565a2d2a7eb5",
+            "name": "seanymac24",
+            "username": "",
+            "avatar": "e638a8e5c9c8bf707ae35f2a7f57018b",
+            "count": 1,
+            "pickSum": 33,
+            "bestPick": 33,
+            "worstPick": 33,
+            "adp": 33
+          },
+          {
+            "key": "c4f7d75e647e92bf",
+            "name": "LukeMcA",
+            "username": "",
+            "avatar": "87d92631afa662ded63e236271922cb3",
+            "count": 1,
+            "pickSum": 37,
+            "bestPick": 37,
+            "worstPick": 37,
+            "adp": 37
+          },
+          {
+            "key": "b3f2003e06513b24",
+            "name": "Rcaro555",
+            "username": "",
+            "avatar": "c0a2fde7db309115d60d024a70db1424",
+            "count": 1,
+            "pickSum": 37,
+            "bestPick": 37,
+            "worstPick": 37,
+            "adp": 37
+          },
+          {
+            "key": "6f1f173e3eb284d6",
+            "name": "TheBeninator",
+            "username": "",
+            "avatar": "8b956764971a033b33a94db4017025e5",
+            "count": 1,
+            "pickSum": 38,
+            "bestPick": 38,
+            "worstPick": 38,
+            "adp": 38
+          },
+          {
+            "key": "de3b26d5bbbcdac3",
+            "name": "Ralphy58",
+            "username": "",
+            "avatar": "b3338675f635c2c1f42b469621d38ec6",
+            "count": 1,
+            "pickSum": 39,
+            "bestPick": 39,
+            "worstPick": 39,
+            "adp": 39
+          },
+          {
+            "key": "8a12637e90cd7a5c",
+            "name": "Whiteknight1988",
+            "username": "",
+            "avatar": "5ef84ea53a25eced9421d25bde2a9f26",
+            "count": 1,
+            "pickSum": 39,
+            "bestPick": 39,
+            "worstPick": 39,
+            "adp": 39
+          },
+          {
+            "key": "042fbe4bc1b29036",
+            "name": "flynch",
+            "username": "",
+            "avatar": "a7edf17a1956ebe79017732156625301",
+            "count": 1,
+            "pickSum": 39,
+            "bestPick": 39,
+            "worstPick": 39,
+            "adp": 39
+          },
+          {
+            "key": "0edf0b4633b30476",
+            "name": "chickenboi87",
+            "username": "",
+            "avatar": "3dd5a49b6e8b46b474e36af0acaf7914",
+            "count": 1,
+            "pickSum": 39,
+            "bestPick": 39,
+            "worstPick": 39,
+            "adp": 39
+          },
+          {
+            "key": "eb5b7cffb8f539c8",
+            "name": "sneakybull",
+            "username": "",
+            "avatar": "15d7cf259bc30eab8f6120f45f652fb6",
+            "count": 1,
+            "pickSum": 41,
+            "bestPick": 41,
+            "worstPick": 41,
+            "adp": 41
+          },
+          {
+            "key": "064ef30c9ff10e73",
+            "name": "CheekyHobson",
+            "username": "",
+            "avatar": "df2e0ab3c23a7a55167532c897bd988c",
+            "count": 1,
+            "pickSum": 42,
+            "bestPick": 42,
+            "worstPick": 42,
+            "adp": 42
+          },
+          {
+            "key": "30989770ca165839",
+            "name": "cesFFT",
+            "username": "",
+            "avatar": "44b556da180517c51d538290f2504f49",
+            "count": 1,
+            "pickSum": 42,
+            "bestPick": 42,
+            "worstPick": 42,
+            "adp": 42
+          },
+          {
+            "key": "d580e113ddb22193",
+            "name": "CVS1",
+            "username": "",
+            "avatar": "29a2dccbb47e15f5224ad0c2fb8bae6d",
+            "count": 1,
+            "pickSum": 42,
+            "bestPick": 42,
+            "worstPick": 42,
+            "adp": 42
+          },
+          {
+            "key": "fa6ab102badc4a3b",
+            "name": "mAylaa",
+            "username": "",
+            "avatar": "571cbfd33bccf517a22760566a561111",
+            "count": 1,
+            "pickSum": 42,
+            "bestPick": 42,
+            "worstPick": 42,
+            "adp": 42
+          },
+          {
+            "key": "4983a105b59930b8",
+            "name": "notgoudien",
+            "username": "",
+            "avatar": "14270b260253baee3917f59d8ceb978e",
+            "count": 1,
+            "pickSum": 44,
+            "bestPick": 44,
+            "worstPick": 44,
+            "adp": 44
+          },
+          {
+            "key": "8402f65d5086de3f",
+            "name": "MattPotts",
+            "username": "",
+            "avatar": "0eb2045f33723b8eba982d1e2bab0513",
+            "count": 1,
+            "pickSum": 44,
+            "bestPick": 44,
+            "worstPick": 44,
+            "adp": 44
+          },
+          {
+            "key": "8bd5b1535a69ee9a",
+            "name": "NorthOfZero",
+            "username": "",
+            "avatar": "3db0863bf6fa029cc933b26109270bfc",
+            "count": 1,
+            "pickSum": 46,
+            "bestPick": 46,
+            "worstPick": 46,
+            "adp": 46
+          }
+        ],
+        "big-game": [
+          {
+            "key": "28b8664f26e0c795",
+            "name": "bsilver88",
+            "username": "",
+            "avatar": "10f9557dc63782896a07388f35322172",
+            "count": 1,
+            "pickSum": 229,
+            "bestPick": 229,
+            "worstPick": 229,
+            "adp": 229
+          },
+          {
+            "key": "17c67e13fb5996a8",
+            "name": "MeanMachine922",
+            "username": "",
+            "avatar": "373a500ca89840ee43f4f5004b8ae014",
+            "count": 1,
+            "pickSum": 242,
+            "bestPick": 242,
+            "worstPick": 242,
+            "adp": 242
+          },
+          {
+            "key": "541ae3ae5b59bc41",
+            "name": "Joe__Joe_",
+            "username": "",
+            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
+            "count": 1,
+            "pickSum": 247,
+            "bestPick": 247,
+            "worstPick": 247,
+            "adp": 247
+          },
+          {
+            "key": "19478d6b9c3507b9",
+            "name": "TitleTown4LIFE",
+            "username": "",
+            "avatar": "a3726238a80daa480f7762b8612e0b21",
+            "count": 1,
+            "pickSum": 249,
+            "bestPick": 249,
+            "worstPick": 249,
+            "adp": 249
+          },
+          {
+            "key": "e33654beac043abd",
+            "name": "westLEX",
+            "username": "",
+            "avatar": "48fd2797cf1fa36dc07060fb65d087c5",
+            "count": 1,
+            "pickSum": 255,
+            "bestPick": 255,
+            "worstPick": 255,
+            "adp": 255
+          }
+        ],
+        "redraft": [
+          {
+            "key": "1ee2ddfed31f0fa1",
+            "name": "BigPoppaKD88",
+            "username": "",
+            "avatar": "81998f91cf83d463329bf7d1d9eb737e",
+            "count": 1,
+            "pickSum": 235,
+            "bestPick": 235,
+            "worstPick": 235,
+            "adp": 235
+          }
+        ]
+      },
+      "modeCount": 3,
+      "adp": 63.36,
+      "bestPick": 30,
+      "worstPick": 255,
+      "previousDrafts": 0,
+      "previousAdp": 0,
+      "adpChange": null,
+      "returning": false
+    },
+    {
       "key": "deion burks|||WR",
       "playerId": "13333",
       "name": "Deion Burks",
@@ -456095,439 +456528,6 @@
       "adp": 263.06,
       "bestPick": 155,
       "worstPick": 312,
-      "previousDrafts": 0,
-      "previousAdp": 0,
-      "adpChange": null,
-      "returning": false
-    },
-    {
-      "key": "eli raridon|||TE",
-      "playerId": "13421",
-      "name": "Eli Raridon",
-      "position": "TE",
-      "team": "NE",
-      "drafts": 49,
-      "owners": 29,
-      "ownerKeysByMode": {
-        "dynasty-rookie": [
-          "74ec59bc1977b234",
-          "541ae3ae5b59bc41",
-          "2c734846cd0e4fb3",
-          "de3b26d5bbbcdac3",
-          "4983a105b59930b8",
-          "6f1f173e3eb284d6",
-          "6f1409020466c024",
-          "8a12637e90cd7a5c",
-          "eb5b7cffb8f539c8",
-          "be35104473c7ae4e",
-          "2c14d8889296475b",
-          "064ef30c9ff10e73",
-          "e9b2565a2d2a7eb5",
-          "042fbe4bc1b29036",
-          "c4f7d75e647e92bf",
-          "7b605a233ab70ab4",
-          "0edf0b4633b30476",
-          "848144bf2de587d2",
-          "30989770ca165839",
-          "d580e113ddb22193",
-          "8bd5b1535a69ee9a",
-          "fa6ab102badc4a3b",
-          "b3f2003e06513b24",
-          "8402f65d5086de3f"
-        ],
-        "big-game": [
-          "e33654beac043abd",
-          "17c67e13fb5996a8",
-          "541ae3ae5b59bc41",
-          "19478d6b9c3507b9",
-          "28b8664f26e0c795"
-        ],
-        "redraft": [
-          "1ee2ddfed31f0fa1"
-        ]
-      },
-      "modes": {
-        "dynasty-rookie": 43,
-        "big-game": 5,
-        "redraft": 1
-      },
-      "modeDetails": {
-        "dynasty-rookie": {
-          "drafts": 43,
-          "pickSum": 1675,
-          "bestPick": 30,
-          "worstPick": 48,
-          "rounds": {
-            "3": 11,
-            "4": 32
-          },
-          "adp": 38.95348837209303
-        },
-        "big-game": {
-          "drafts": 5,
-          "pickSum": 1222,
-          "bestPick": 229,
-          "worstPick": 255,
-          "rounds": {
-            "23": 1,
-            "25": 3,
-            "26": 1
-          },
-          "adp": 244.4
-        },
-        "redraft": {
-          "drafts": 1,
-          "pickSum": 235,
-          "bestPick": 235,
-          "worstPick": 235,
-          "rounds": {
-            "20": 1
-          },
-          "adp": 235
-        }
-      },
-      "draftersByMode": {
-        "dynasty-rookie": [
-          {
-            "key": "541ae3ae5b59bc41",
-            "name": "Joe__Joe_",
-            "username": "",
-            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
-            "count": 7,
-            "pickSum": 262,
-            "bestPick": 34,
-            "worstPick": 44,
-            "adp": 37.42857142857143
-          },
-          {
-            "key": "7b605a233ab70ab4",
-            "name": "csimms52",
-            "username": "",
-            "avatar": "1f1c6c914ddecae4cbc4a5c25fc2cf8e",
-            "count": 5,
-            "pickSum": 209,
-            "bestPick": 35,
-            "worstPick": 48,
-            "adp": 41.8
-          },
-          {
-            "key": "be35104473c7ae4e",
-            "name": "glc20",
-            "username": "",
-            "avatar": "2ec20e8041ada224b29d1d0c7824fe20",
-            "count": 4,
-            "pickSum": 148,
-            "bestPick": 32,
-            "worstPick": 42,
-            "adp": 37
-          },
-          {
-            "key": "6f1409020466c024",
-            "name": "tb76",
-            "username": "",
-            "avatar": "47596f7b6b88d3598a0c17f321b6a433",
-            "count": 4,
-            "pickSum": 154,
-            "bestPick": 35,
-            "worstPick": 45,
-            "adp": 38.5
-          },
-          {
-            "key": "848144bf2de587d2",
-            "name": "pgrote31",
-            "username": "",
-            "avatar": "7208404e9332f4ba6bfe5fc9743d614d",
-            "count": 2,
-            "pickSum": 63,
-            "bestPick": 30,
-            "worstPick": 33,
-            "adp": 31.5
-          },
-          {
-            "key": "74ec59bc1977b234",
-            "name": "bradyd",
-            "username": "",
-            "avatar": "4cd377c306da19621012531d8c7b0066",
-            "count": 2,
-            "pickSum": 80,
-            "bestPick": 37,
-            "worstPick": 43,
-            "adp": 40
-          },
-          {
-            "key": "2c14d8889296475b",
-            "name": "JMorris410",
-            "username": "",
-            "avatar": "946d14613556bd9088079f3302a12e03",
-            "count": 2,
-            "pickSum": 82,
-            "bestPick": 37,
-            "worstPick": 45,
-            "adp": 41
-          },
-          {
-            "key": "2c734846cd0e4fb3",
-            "name": "SORRY4CUSSING",
-            "username": "",
-            "avatar": "284c3f47d0cbe719f49c18a6a56bd016",
-            "count": 1,
-            "pickSum": 33,
-            "bestPick": 33,
-            "worstPick": 33,
-            "adp": 33
-          },
-          {
-            "key": "e9b2565a2d2a7eb5",
-            "name": "seanymac24",
-            "username": "",
-            "avatar": "e638a8e5c9c8bf707ae35f2a7f57018b",
-            "count": 1,
-            "pickSum": 33,
-            "bestPick": 33,
-            "worstPick": 33,
-            "adp": 33
-          },
-          {
-            "key": "c4f7d75e647e92bf",
-            "name": "LukeMcA",
-            "username": "",
-            "avatar": "87d92631afa662ded63e236271922cb3",
-            "count": 1,
-            "pickSum": 37,
-            "bestPick": 37,
-            "worstPick": 37,
-            "adp": 37
-          },
-          {
-            "key": "b3f2003e06513b24",
-            "name": "Rcaro555",
-            "username": "",
-            "avatar": "c0a2fde7db309115d60d024a70db1424",
-            "count": 1,
-            "pickSum": 37,
-            "bestPick": 37,
-            "worstPick": 37,
-            "adp": 37
-          },
-          {
-            "key": "6f1f173e3eb284d6",
-            "name": "TheBeninator",
-            "username": "",
-            "avatar": "8b956764971a033b33a94db4017025e5",
-            "count": 1,
-            "pickSum": 38,
-            "bestPick": 38,
-            "worstPick": 38,
-            "adp": 38
-          },
-          {
-            "key": "de3b26d5bbbcdac3",
-            "name": "Ralphy58",
-            "username": "",
-            "avatar": "b3338675f635c2c1f42b469621d38ec6",
-            "count": 1,
-            "pickSum": 39,
-            "bestPick": 39,
-            "worstPick": 39,
-            "adp": 39
-          },
-          {
-            "key": "8a12637e90cd7a5c",
-            "name": "Whiteknight1988",
-            "username": "",
-            "avatar": "5ef84ea53a25eced9421d25bde2a9f26",
-            "count": 1,
-            "pickSum": 39,
-            "bestPick": 39,
-            "worstPick": 39,
-            "adp": 39
-          },
-          {
-            "key": "042fbe4bc1b29036",
-            "name": "flynch",
-            "username": "",
-            "avatar": "a7edf17a1956ebe79017732156625301",
-            "count": 1,
-            "pickSum": 39,
-            "bestPick": 39,
-            "worstPick": 39,
-            "adp": 39
-          },
-          {
-            "key": "0edf0b4633b30476",
-            "name": "chickenboi87",
-            "username": "",
-            "avatar": "3dd5a49b6e8b46b474e36af0acaf7914",
-            "count": 1,
-            "pickSum": 39,
-            "bestPick": 39,
-            "worstPick": 39,
-            "adp": 39
-          },
-          {
-            "key": "eb5b7cffb8f539c8",
-            "name": "sneakybull",
-            "username": "",
-            "avatar": "15d7cf259bc30eab8f6120f45f652fb6",
-            "count": 1,
-            "pickSum": 41,
-            "bestPick": 41,
-            "worstPick": 41,
-            "adp": 41
-          },
-          {
-            "key": "064ef30c9ff10e73",
-            "name": "CheekyHobson",
-            "username": "",
-            "avatar": "df2e0ab3c23a7a55167532c897bd988c",
-            "count": 1,
-            "pickSum": 42,
-            "bestPick": 42,
-            "worstPick": 42,
-            "adp": 42
-          },
-          {
-            "key": "30989770ca165839",
-            "name": "cesFFT",
-            "username": "",
-            "avatar": "44b556da180517c51d538290f2504f49",
-            "count": 1,
-            "pickSum": 42,
-            "bestPick": 42,
-            "worstPick": 42,
-            "adp": 42
-          },
-          {
-            "key": "d580e113ddb22193",
-            "name": "CVS1",
-            "username": "",
-            "avatar": "29a2dccbb47e15f5224ad0c2fb8bae6d",
-            "count": 1,
-            "pickSum": 42,
-            "bestPick": 42,
-            "worstPick": 42,
-            "adp": 42
-          },
-          {
-            "key": "fa6ab102badc4a3b",
-            "name": "mAylaa",
-            "username": "",
-            "avatar": "571cbfd33bccf517a22760566a561111",
-            "count": 1,
-            "pickSum": 42,
-            "bestPick": 42,
-            "worstPick": 42,
-            "adp": 42
-          },
-          {
-            "key": "4983a105b59930b8",
-            "name": "notgoudien",
-            "username": "",
-            "avatar": "14270b260253baee3917f59d8ceb978e",
-            "count": 1,
-            "pickSum": 44,
-            "bestPick": 44,
-            "worstPick": 44,
-            "adp": 44
-          },
-          {
-            "key": "8402f65d5086de3f",
-            "name": "MattPotts",
-            "username": "",
-            "avatar": "0eb2045f33723b8eba982d1e2bab0513",
-            "count": 1,
-            "pickSum": 44,
-            "bestPick": 44,
-            "worstPick": 44,
-            "adp": 44
-          },
-          {
-            "key": "8bd5b1535a69ee9a",
-            "name": "NorthOfZero",
-            "username": "",
-            "avatar": "3db0863bf6fa029cc933b26109270bfc",
-            "count": 1,
-            "pickSum": 46,
-            "bestPick": 46,
-            "worstPick": 46,
-            "adp": 46
-          }
-        ],
-        "big-game": [
-          {
-            "key": "28b8664f26e0c795",
-            "name": "bsilver88",
-            "username": "",
-            "avatar": "10f9557dc63782896a07388f35322172",
-            "count": 1,
-            "pickSum": 229,
-            "bestPick": 229,
-            "worstPick": 229,
-            "adp": 229
-          },
-          {
-            "key": "17c67e13fb5996a8",
-            "name": "MeanMachine922",
-            "username": "",
-            "avatar": "373a500ca89840ee43f4f5004b8ae014",
-            "count": 1,
-            "pickSum": 242,
-            "bestPick": 242,
-            "worstPick": 242,
-            "adp": 242
-          },
-          {
-            "key": "541ae3ae5b59bc41",
-            "name": "Joe__Joe_",
-            "username": "",
-            "avatar": "1a7a891c0d931faeaab002d61125f3b2",
-            "count": 1,
-            "pickSum": 247,
-            "bestPick": 247,
-            "worstPick": 247,
-            "adp": 247
-          },
-          {
-            "key": "19478d6b9c3507b9",
-            "name": "TitleTown4LIFE",
-            "username": "",
-            "avatar": "a3726238a80daa480f7762b8612e0b21",
-            "count": 1,
-            "pickSum": 249,
-            "bestPick": 249,
-            "worstPick": 249,
-            "adp": 249
-          },
-          {
-            "key": "e33654beac043abd",
-            "name": "westLEX",
-            "username": "",
-            "avatar": "48fd2797cf1fa36dc07060fb65d087c5",
-            "count": 1,
-            "pickSum": 255,
-            "bestPick": 255,
-            "worstPick": 255,
-            "adp": 255
-          }
-        ],
-        "redraft": [
-          {
-            "key": "1ee2ddfed31f0fa1",
-            "name": "BigPoppaKD88",
-            "username": "",
-            "avatar": "81998f91cf83d463329bf7d1d9eb737e",
-            "count": 1,
-            "pickSum": 235,
-            "bestPick": 235,
-            "worstPick": 235,
-            "adp": 235
-          }
-        ]
-      },
-      "modeCount": 3,
-      "adp": 63.91836734693877,
-      "bestPick": 30,
-      "worstPick": 255,
       "previousDrafts": 0,
       "previousAdp": 0,
       "adpChange": null,
