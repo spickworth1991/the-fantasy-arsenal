@@ -8,6 +8,7 @@ const BackgroundParticles = dynamic(
   { ssr: false },
 );
 import LoadingScreen from "../../components/LoadingScreen";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import { useSleeper } from "../../context/SleeperContext";
 import SourceSelector, {
   DEFAULT_SOURCES,
@@ -1314,7 +1315,7 @@ export default function LineupTool() {
         const res = await fetch("https://api.sleeper.app/v1/state/nfl");
         const data = await res.json();
         if (mounted) {
-          if (data?.week) setWeek(data.week);
+          setWeek(fantasyWeekFromNflState(data));
           if (data?.season) setSeason(Number(data.season));
         }
         const byeRes = await fetch(

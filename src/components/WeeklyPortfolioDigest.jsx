@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSleeper } from "../context/SleeperContext";
 import { useArsenalAccount } from "../context/ArsenalAccountContext";
 import { classifyLeagueFormat } from "../lib/leagueFormat";
+import { fantasyWeekFromNflState, nflWeekContext } from "../lib/nflSeasonState";
 
 const n = (v) => Number(v || 0);
 const DAYS = [
@@ -57,7 +58,21 @@ export default function WeeklyPortfolioDigest() {
   const [digestLeagueIds, setDigestLeagueIds] = useState([]);
   const [message, setMessage] = useState("");
   const season = new Date().getFullYear();
-  const week = Math.max(1, n(leagues[0]?.settings?.leg) || 1);
+  const [nflState, setNflState] = useState(null);
+  const week = nflState
+    ? fantasyWeekFromNflState(nflState)
+    : Math.max(1, n(leagues[0]?.settings?.leg) || 1);
+  const weekContext = nflState ? nflWeekContext(nflState) : null;
+  const weekLabel = weekContext?.seasonType === "preseason"
+    ? "Preseason · regular-season Week 1 preview"
+    : weekContext?.label || `Week ${week}`;
+  useEffect(() => {
+    let active = true;
+    get("https://api.sleeper.app/v1/state/nfl")
+      .then((state) => active && setNflState(state))
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     const restore = () => {
       try {
@@ -291,7 +306,7 @@ export default function WeeklyPortfolioDigest() {
     <Panel className="overflow-hidden">
       <div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.14),transparent_42%)] p-5">
         <div className="text-[10px] font-bold uppercase tracking-[.22em] text-cyan-200/55">
-          Week {week} · {season}
+          {weekLabel} · {season}
         </div>
         <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>

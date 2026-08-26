@@ -12,6 +12,7 @@ import DraftStrategySuite from "./DraftStrategySuite";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { aggregateBallsvilleAdp, ballsvilleAdpProxyUrl, resolveBallsvilleAdp } from "../../lib/ballsvilleAdp";
 import { getDraftSlotForPick } from "../../lib/draftOrder";
+import { nextOpenDraftPick, openDraftPickNumbers } from "../../lib/draftPickProgress";
 
 const OFFENSE = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
 const FLEX = new Set(["RB", "WR", "TE"]);
@@ -345,7 +346,8 @@ export default function DraftHelperClient() {
   const teams = n(draft?.settings?.teams || league?.total_rosters || rosters.length || 12);
   const rounds = n(draft?.settings?.rounds || 0);
   const totalPicks = teams * rounds;
-  const nextPickNo = Math.min(totalPicks || picks.length + 1, picks.length + 1);
+  const openPickNumbers = useMemo(() => openDraftPickNumbers(picks, totalPicks), [picks, totalPicks]);
+  const nextPickNo = nextOpenDraftPick(picks, totalPicks);
   const reversalRound = n(draft?.settings?.reversal_round);
   const nextSlot = getDraftSlotForPick(nextPickNo, teams, draft?.type || "snake", reversalRound);
   const nextRound = Math.ceil(nextPickNo / Math.max(1, teams));
@@ -438,14 +440,14 @@ export default function DraftHelperClient() {
     const traded = [...tradedPicks].reverse().find((item) => n(item.round) === round && String(item.roster_id) === original);
     return String(traded?.owner_id || original);
   };
-  const remainingOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
+  const remainingOwnedPicks = openPickNumbers.filter((pickNo) => {
     const round = Math.ceil(pickNo / Math.max(1, teams));
     const slot = getDraftSlotForPick(pickNo, teams, draft?.type || "snake", reversalRound);
     return ownerForCell(round, slot) === String(signedInRosterId || focusRosterId);
   });
   const nextMyPick = remainingOwnedPicks[0] || null;
-  const picksAway = nextMyPick ? Math.max(0, nextMyPick - nextPickNo) : null;
-  const focusOwnedPicks = Array.from({ length:Math.max(0, totalPicks - picks.length) }, (_, index) => picks.length + index + 1).filter((pickNo) => {
+  const picksAway = nextMyPick ? Math.max(0, openPickNumbers.indexOf(nextMyPick)) : null;
+  const focusOwnedPicks = openPickNumbers.filter((pickNo) => {
     const round = Math.ceil(pickNo / Math.max(1, teams));
     const slot = getDraftSlotForPick(pickNo, teams, draft?.type || "snake", reversalRound);
     return ownerForCell(round, slot) === String(focusRosterId);

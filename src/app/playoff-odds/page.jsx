@@ -6,6 +6,7 @@ import { useSleeper } from "../../context/SleeperContext";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { makeGetPlayerValue } from "../../lib/values";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -601,7 +602,7 @@ export default function PlayoffOddsPage() {
         const res = await fetch("https://api.sleeper.app/v1/state/nfl", { cache: "no-store" });
         const data = res.ok ? await res.json() : null;
         if (!mounted || !data) return;
-        setStateWeek(clamp(Number(data.week ?? data.leg ?? 1) || 1, 1, 18));
+        setStateWeek(fantasyWeekFromNflState(data));
         setStateSeason(Number(data.season) || new Date().getFullYear());
       } catch {}
     })();

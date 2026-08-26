@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { makeGetPlayerValue } from "../../lib/values";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import {
   metricModeFromSourceKey,
   projectionSourceFromKey,
@@ -200,7 +201,7 @@ export default function TradeFinder() {
         const res = await fetch("https://api.sleeper.app/v1/state/nfl");
         const data = await res.json();
         if (!mounted) return;
-        const w = data?.week || 1;
+        const w = fantasyWeekFromNflState(data);
         setNflWeek(w);
         setStartWeek(Math.max(1, w - 1));
         setEndWeek(w);

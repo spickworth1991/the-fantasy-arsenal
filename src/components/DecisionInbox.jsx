@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSleeper } from "../context/SleeperContext";
 import { useArsenalAccount } from "../context/ArsenalAccountContext";
 import { classifyLeagueFormat } from "../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../lib/nflSeasonState";
 
 const n = (value) => Number(value || 0);
 const CACHE_MS = 5 * 60 * 1000;
@@ -344,22 +345,10 @@ export default function DecisionInbox({ full = false }) {
   const [updatedAt, setUpdatedAt] = useState(null);
   const [tab, setTab] = useState("now");
   const [category, setCategory] = useState("all");
-  const [notificationRules, setNotificationRules] = useState({
-    critical: true,
-    lineup: true,
-    drafts: true,
-    commissioner: false,
-    minimumPriority: 70,
-  });
   const [leagueScope, setLeagueScope] = useState({
     includeBestBall: false,
     leagueIds: [],
   });
-  const [browserPermission, setBrowserPermission] = useState(() =>
-    typeof Notification === "undefined"
-      ? "unsupported"
-      : Notification.permission,
-  );
   const cacheKey = `tfa:intelligence-cache:v2:${String(username || "").toLowerCase()}:${year || new Date().getFullYear()}:${sourceKey || "default"}`;
 
   useEffect(() => {
@@ -368,11 +357,6 @@ export default function DecisionInbox({ full = false }) {
       const preferences = JSON.parse(
         localStorage.getItem("tfa:account-preferences") || "{}",
       );
-      if (preferences.intelligenceNotifications)
-        setNotificationRules((current) => ({
-          ...current,
-          ...preferences.intelligenceNotifications,
-        }));
       if (preferences.intelligenceLeagueScope)
         setLeagueScope((current) => ({
           ...current,
@@ -425,25 +409,6 @@ export default function DecisionInbox({ full = false }) {
     if (isConnected) window.setTimeout(() => syncNow({ quiet: true }), 100);
   };
 
-  const saveNotificationRules = (patch) => {
-    const next = { ...notificationRules, ...patch };
-    setNotificationRules(next);
-    try {
-      const preferences = JSON.parse(
-        localStorage.getItem("tfa:account-preferences") || "{}",
-      );
-      localStorage.setItem(
-        "tfa:account-preferences",
-        JSON.stringify({ ...preferences, intelligenceNotifications: next }),
-      );
-    } catch {}
-    if (isConnected) window.setTimeout(() => syncNow({ quiet: true }), 100);
-  };
-  const enableBrowserNotifications = async () => {
-    if (typeof Notification === "undefined") return;
-    const permission = await Notification.requestPermission();
-    setBrowserPermission(permission);
-  };
 
   useEffect(() => {
     if (!isConnected) return;
@@ -543,7 +508,7 @@ export default function DecisionInbox({ full = false }) {
           by_team: {},
         })),
       ]);
-      const week = Math.max(1, n(nflState.week) || 1);
+      const week = fantasyWeekFromNflState(nflState);
       const metricForWeek = (player) => {
         if (metricType !== "projection") return n(getPlayerValue(player));
         if (projectionSource === "ARSENAL_MODEL")
@@ -1160,30 +1125,6 @@ export default function DecisionInbox({ full = false }) {
       setItems(next);
       setUpdatedAt(new Date(at));
       localStorage.setItem(cacheKey, JSON.stringify({ at, items: next }));
-      if (
-        typeof Notification !== "undefined" &&
-        Notification.permission === "granted"
-      ) {
-        const eligible = next
-          .filter(
-            (item) =>
-              item.priority >= n(notificationRules.minimumPriority) &&
-              ((item.priority >= 90 && notificationRules.critical) ||
-                (item.category === "lineup" && notificationRules.lineup) ||
-                (item.category === "draft" && notificationRules.drafts) ||
-                (item.category === "commissioner" &&
-                  notificationRules.commissioner)),
-          )
-          .slice(0, 3);
-        eligible.forEach(
-          (item) =>
-            new Notification(item.title, {
-              body: `${item.leagueName || "Fantasy Arsenal"} · ${item.impact}`,
-              icon: "/icons/TFA.png",
-              tag: `tfa-intelligence:${item.id}`,
-            }),
-        );
-      }
     } catch (scanError) {
       setError(
         scanError?.message || "The intelligence scan could not be completed.",
@@ -1389,63 +1330,6 @@ export default function DecisionInbox({ full = false }) {
               ))}
             </select>
           </div>
-          <details className="mt-3 rounded-2xl border border-white/[0.06] bg-black/15 p-3">
-            <summary className="cursor-pointer text-xs font-bold text-white/50">
-              Notification eligibility and delivery status
-            </summary>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                ["critical", "Critical"],
-                ["lineup", "Lineups"],
-                ["drafts", "Active drafts"],
-                ["commissioner", "Commissioner"],
-              ].map(([key, label]) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between rounded-xl bg-white/[0.035] px-3 py-2 text-xs text-white/55"
-                >
-                  {label}
-                  <input
-                    type="checkbox"
-                    checked={!!notificationRules[key]}
-                    onChange={(event) =>
-                      saveNotificationRules({ [key]: event.target.checked })
-                    }
-                  />
-                </label>
-              ))}
-              <label className="rounded-xl bg-white/[0.035] px-3 py-2 text-[10px] text-white/40">
-                Minimum priority
-                <select
-                  value={notificationRules.minimumPriority}
-                  onChange={(event) =>
-                    saveNotificationRules({
-                      minimumPriority: Number(event.target.value),
-                    })
-                  }
-                  className="ml-2 rounded-lg bg-slate-950 px-2 py-1 text-white"
-                >
-                  <option value="90">Critical</option>
-                  <option value="70">High</option>
-                  <option value="45">Opportunity</option>
-                </select>
-              </label>
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-xl bg-white/[0.025] p-3 text-[10px] text-white/35">
-                <b className="block text-white/60">In-app</b>Updates whenever
-                Intelligence refreshes.
-              </div>
-              <div className="rounded-xl bg-white/[0.025] p-3 text-[10px] text-white/35">
-                <b className="block text-white/60">Daily email</b>Schedule
-                delivery and commissioner content from Profile & Preferences.
-              </div>
-              <div className="rounded-xl bg-white/[0.025] p-3 text-[10px] text-white/35">
-                <b className="block text-white/60">Browser push</b>Not yet
-                connected to this queue; draft alerts remain separate.
-              </div>
-            </div>
-          </details>
         </div>
       ) : null}
       {full ? (

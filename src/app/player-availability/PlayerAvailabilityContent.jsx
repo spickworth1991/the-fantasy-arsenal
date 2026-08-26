@@ -16,6 +16,7 @@ import SourceSelector, {
   DEFAULT_SOURCES,
 } from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 /** Helpers for league avatars (matches Player Stock) */
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
@@ -1617,7 +1618,7 @@ export default function PlayerAvailabilityContent() {
     const nflState = await fetch("https://api.sleeper.app/v1/state/nfl")
       .then((response) => (response.ok ? response.json() : {}))
       .catch(() => ({}));
-    const currentWeek = Math.max(1, Number(nflState?.week || 1));
+    const currentWeek = fantasyWeekFromNflState(nflState);
     const metricFor = (candidate) =>
       Number(
         bestMetric === "projection"

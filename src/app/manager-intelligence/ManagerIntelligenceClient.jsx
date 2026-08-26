@@ -5,6 +5,7 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
 import { useSleeper } from "../../context/SleeperContext";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 const seasonNow = new Date().getFullYear();
 const sleeperHistoryStart = 2017;
@@ -171,7 +172,7 @@ function WeeklyPortfolioReport({ user, leagues, season, players }) {
   const [report,setReport]=useState(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
-  useEffect(()=>{let active=true;getJson("https://api.sleeper.app/v1/state/nfl").then(state=>{if(active&&num(state?.season)===num(season)&&num(state?.week)>0)setWeek(Math.min(18,num(state.week)));}).catch(()=>{});return()=>{active=false;};},[season]);
+  useEffect(()=>{let active=true;getJson("https://api.sleeper.app/v1/state/nfl").then(state=>{if(active&&num(state?.season)===num(season))setWeek(fantasyWeekFromNflState(state));}).catch(()=>{});return()=>{active=false;};},[season]);
   const build=async()=>{
     if(!user?.user_id)return;
     setLoading(true);setError("");

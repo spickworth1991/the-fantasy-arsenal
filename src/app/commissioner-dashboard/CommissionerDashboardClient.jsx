@@ -7,6 +7,7 @@ import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector
 import { useSleeper } from "../../context/SleeperContext";
 import { getMarketPickValue } from "../../lib/pickValues";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
@@ -591,7 +592,7 @@ export default function CommissionerDashboardClient() {
         // Audit the user list and accept either ownership signal.
         const commissioned = leagues;
         const rows = await mapConcurrent(commissioned, 4, async (target) => {
-          const throughWeek = String(state.season) === String(target.season) ? clamp(number(state.week || 1) - 1, 0, 18) : 18;
+          const throughWeek = String(state.season) === String(target.season) ? clamp(fantasyWeekFromNflState(state) - 1, 0, 18) : 18;
           const weeks = Array.from({ length:throughWeek }, (_, index) => index + 1);
           const transactionWeeks = Array.from(new Set([0, ...weeks, Math.min(18, throughWeek + 1)]));
           const [rosters, users, matchupRows, transactionRows, tradedPicks] = await Promise.all([
@@ -642,7 +643,7 @@ export default function CommissionerDashboardClient() {
         setProgress("Reading NFL and league state…");
         const state = await getJson("https://api.sleeper.app/v1/state/nfl").catch(() => ({}));
         const sameSeason = String(state.season) === String(league.season);
-        const throughWeek = sameSeason ? clamp(number(state.week || 1) - 1, 0, 18) : 18;
+        const throughWeek = sameSeason ? clamp(fantasyWeekFromNflState(state) - 1, 0, 18) : 18;
         const weeks = Array.from({ length: throughWeek }, (_, index) => index + 1);
         setProgress(`Auditing ${weeks.length} completed week${weeks.length === 1 ? "" : "s"}…`);
         const matchupRows = await mapConcurrent(weeks, 6, async (week) => ({ week, rows: await getJson(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).catch(() => []) }), (done, total) => active && setProgress(`Auditing lineups · ${done}/${total}`));

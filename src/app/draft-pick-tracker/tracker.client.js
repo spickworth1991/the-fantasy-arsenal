@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import LoadingScreen from "../../components/LoadingScreen";
 import { getDraftSlotForPick } from "../../lib/draftOrder";
+import { isPreassignedDraftPick, nextOpenDraftPick, openDraftPickNumbers } from "../../lib/draftPickProgress";
 
 const nf0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const DRAFT_FETCH_CONCURRENCY = 4;
@@ -465,7 +466,12 @@ export default function DraftPickTrackerClient() {
     const draftType = String(draft?.type || "snake").toLowerCase();
     const reversalRound = safeNum(draft?.settings?.reversal_round);
 
-    const currentPick = (picks?.length || 0) + 1;
+    const totalPicks = rounds * slots;
+    const currentPick = nextOpenDraftPick(picks, totalPicks);
+    const openPicks = openDraftPickNumbers(picks, totalPicks);
+    const preassignedCount = (picks || []).filter((pick) =>
+      isPreassignedDraftPick(pick, currentPick, draftStatus),
+    ).length;
 
     const slotToRoster = draft?.slot_to_roster_id || {};
     const rosterBySlot = new Map();
@@ -503,8 +509,7 @@ export default function DraftPickTrackerClient() {
     // Find my next pick overall (account for traded ownership)
     let myNextPickOverall = null;
     if (myRosterId && teams > 0) {
-      const maxPk = rounds > 0 && teams > 0 ? rounds * teams : currentPick + 500;
-      for (let pk = currentPick; pk <= maxPk; pk++) {
+      for (const pk of openPicks) {
         const rosterIdAtPick = resolveRosterForPick({
           pickNo: pk,
           teams,
@@ -521,10 +526,9 @@ export default function DraftPickTrackerClient() {
       }
     }
 
-    const picksUntilMyPick =
-      myNextPickOverall != null
-        ? Math.max(0, myNextPickOverall - currentPick)
-        : null;
+    const picksUntilMyPick = myNextPickOverall != null
+      ? Math.max(0, openPicks.indexOf(myNextPickOverall))
+      : null;
 
     const onDeck = picksUntilMyPick === 1;
     const onClockIsMe = !!(
@@ -554,6 +558,8 @@ export default function DraftPickTrackerClient() {
 
     // Recent picks (last 10) — show pick_no + name
     const recent = (Array.isArray(picks) ? picks : [])
+      .filter((pick) => !isPreassignedDraftPick(pick, currentPick, draftStatus) && safeNum(pick?.pick_no) < currentPick)
+      .sort((a, b) => safeNum(a?.pick_no) - safeNum(b?.pick_no))
       .slice(-10)
       .reverse()
       .map((p) => ({
@@ -579,6 +585,7 @@ export default function DraftPickTrackerClient() {
       timerSec,
       teams,
       rounds,
+      preassignedCount,
       recent,
       computedAt: nowMs, // match baseline used in clock calc
     };

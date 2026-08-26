@@ -7,6 +7,7 @@ import {
   ensureArsenalSchema,
 } from "../../../../lib/arsenalAccountServer";
 import { classifyLeagueFormat } from "../../../../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../../../../lib/nflSeasonState";
 
 const CACHE_KEY = "tfa:intelligence-server";
 const CACHE_MS = 5 * 60 * 1000;
@@ -93,7 +94,7 @@ async function buildSnapshot(
 ) {
   const state = await sleeper("/state/nfl").catch(() => ({}));
   const season = number(state.season) || new Date().getFullYear();
-  const week = Math.max(1, number(state.week) || 1);
+  const week = fantasyWeekFromNflState(state);
   const user = await sleeper(
     `/user/${encodeURIComponent(account.sleeper_username)}`,
   );

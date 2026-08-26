@@ -15,6 +15,7 @@ import SourceSelector from "../../components/SourceSelector";
 import { useSleeper } from "../../context/SleeperContext";
 import { getTeamByeWeek } from "../../utils/nflByeWeeks";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 // League avatars (Sleeper)
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
@@ -438,7 +439,7 @@ export default function LeagueHubContent() {
       .then((response) => response.ok ? response.json() : null)
       .then((state) => {
         if (!alive || !state) return;
-        setNflState({ season: String(state.season || ""), week: Math.max(1, Number(state.week ?? state.leg ?? 1) || 1) });
+        setNflState({ season: String(state.season || ""), week: fantasyWeekFromNflState(state) });
       })
       .catch(() => {});
     return () => { alive = false; };

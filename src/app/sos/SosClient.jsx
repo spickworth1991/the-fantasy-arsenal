@@ -10,6 +10,7 @@ import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
 import { makeGetPlayerValue } from "../../lib/values";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
   metricModeFromSourceKey,
@@ -524,7 +525,9 @@ export default function SOSPage() {
       try {
         const res = await fetch("https://api.sleeper.app/v1/state/nfl");
         const data = await res.json();
-        if (data?.week) { setWeek(data.week); setToWeek(Math.max(data.week, 14)); }
+        const fantasyWeek = fantasyWeekFromNflState(data);
+        setWeek(fantasyWeek);
+        setToWeek(Math.max(fantasyWeek, 14));
         if (data?.season) setSeason(Number(data.season));
         const byeRes = await fetch(`/byes/${data?.season || new Date().getFullYear()}.json`);
         if (byeRes.ok) {

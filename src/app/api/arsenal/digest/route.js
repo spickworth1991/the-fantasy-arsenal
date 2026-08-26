@@ -8,6 +8,7 @@ import {
   ensureArsenalSchema,
 } from "../../../../lib/arsenalAccountServer";
 import { classifyLeagueFormat } from "../../../../lib/leagueFormat";
+import { fantasyWeekFromNflState } from "../../../../lib/nflSeasonState";
 
 const json = async (url) => {
   const r = await fetch(url);
@@ -953,7 +954,7 @@ export async function GET(request) {
     await ready(db);
     const state = await json("https://api.sleeper.app/v1/state/nfl");
     const season = num(state.season) || new Date().getUTCFullYear(),
-      week = Math.max(1, num(state.week) || 1);
+      week = fantasyWeekFromNflState(state);
     const testParam = new URL(request.url).searchParams.get("test") || "";
     const testMode =
       testParam === "1" || testParam === "digest" || testParam === "news";

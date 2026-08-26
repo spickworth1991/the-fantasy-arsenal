@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AvatarImage from "../../components/AvatarImage";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 const CORE_POSITIONS = ["QB", "RB", "WR", "TE"];
 const FLEX_POSITIONS = new Set(["RB", "WR", "TE"]);
@@ -156,7 +157,7 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
     let active = true;
     fetch("https://api.sleeper.app/v1/state/nfl")
       .then((response) => response.ok ? response.json() : null)
-      .then((state) => { if (active) setCurrentWeek(Math.max(1, Number(state?.week) || 1)); })
+      .then((state) => { if (active) setCurrentWeek(fantasyWeekFromNflState(state)); })
       .catch(() => {});
     return () => { active = false; };
   }, []);
