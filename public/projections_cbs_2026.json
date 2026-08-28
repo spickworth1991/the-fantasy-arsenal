@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-27T04:07:41.120Z",
+  "updated": "2026-08-28T04:07:40.052Z",
   "season": 2026,
   "source": "CBS",
   "count": 413,
@@ -170,7 +170,7 @@
       "name": "Jordan Love",
       "team": "GB",
       "position": "QB",
-      "points": 315.5
+      "points": 323.2
     },
     {
       "player_id": "",
@@ -300,8 +300,8 @@
     },
     {
       "player_id": "",
-      "name": "Jarrett Stidham",
-      "team": "DEN",
+      "name": "Shane Buechele",
+      "team": "BUF",
       "position": "QB",
       "points": 16.5
     },
@@ -314,17 +314,10 @@
     },
     {
       "player_id": "",
-      "name": "Shane Buechele",
-      "team": "BUF",
+      "name": "Jarrett Stidham",
+      "team": "DEN",
       "position": "QB",
       "points": 16.5
-    },
-    {
-      "player_id": "",
-      "name": "Tyson Bagent",
-      "team": "CHI",
-      "position": "QB",
-      "points": 15.9
     },
     {
       "player_id": "",
@@ -335,8 +328,8 @@
     },
     {
       "player_id": "",
-      "name": "Tyler Huntley",
-      "team": "BAL",
+      "name": "Tyson Bagent",
+      "team": "CHI",
       "position": "QB",
       "points": 15.9
     },
@@ -349,17 +342,10 @@
     },
     {
       "player_id": "",
-      "name": "Tanner McKee",
-      "team": "PHI",
+      "name": "Tyler Huntley",
+      "team": "BAL",
       "position": "QB",
-      "points": 14.9
-    },
-    {
-      "player_id": "",
-      "name": "Drew Lock",
-      "team": "SEA",
-      "position": "QB",
-      "points": 14.9
+      "points": 15.9
     },
     {
       "player_id": "",
@@ -372,6 +358,20 @@
       "player_id": "",
       "name": "Mac Jones",
       "team": "SF",
+      "position": "QB",
+      "points": 14.9
+    },
+    {
+      "player_id": "",
+      "name": "Tanner McKee",
+      "team": "PHI",
+      "position": "QB",
+      "points": 14.9
+    },
+    {
+      "player_id": "",
+      "name": "Drew Lock",
+      "team": "SEA",
       "position": "QB",
       "points": 14.9
     },
@@ -391,27 +391,6 @@
     },
     {
       "player_id": "",
-      "name": "Behren Morton",
-      "team": "NE",
-      "position": "QB",
-      "points": 14.5
-    },
-    {
-      "player_id": "",
-      "name": "Carson Beck",
-      "team": "ARI",
-      "position": "QB",
-      "points": 14.5
-    },
-    {
-      "player_id": "",
-      "name": "Trey Lance",
-      "team": "LAC",
-      "position": "QB",
-      "points": 14.5
-    },
-    {
-      "player_id": "",
       "name": "Andy Dalton",
       "team": "PHI",
       "position": "QB",
@@ -419,8 +398,15 @@
     },
     {
       "player_id": "",
-      "name": "Garrett Nussmeier",
+      "name": "Chris Oladokun",
       "team": "KC",
+      "position": "QB",
+      "points": 14.5
+    },
+    {
+      "player_id": "",
+      "name": "Carson Beck",
+      "team": "ARI",
       "position": "QB",
       "points": 14.5
     },
@@ -440,20 +426,6 @@
     },
     {
       "player_id": "",
-      "name": "Justin Fields",
-      "team": "KC",
-      "position": "QB",
-      "points": 14.5
-    },
-    {
-      "player_id": "",
-      "name": "Chris Oladokun",
-      "team": "KC",
-      "position": "QB",
-      "points": 14.5
-    },
-    {
-      "player_id": "",
       "name": "J.J. McCarthy",
       "team": "MIN",
       "position": "QB",
@@ -461,8 +433,15 @@
     },
     {
       "player_id": "",
-      "name": "Cole Payton",
-      "team": "PHI",
+      "name": "Garrett Nussmeier",
+      "team": "KC",
+      "position": "QB",
+      "points": 14.5
+    },
+    {
+      "player_id": "",
+      "name": "Trey Lance",
+      "team": "LAC",
       "position": "QB",
       "points": 14.5
     },
@@ -475,8 +454,29 @@
     },
     {
       "player_id": "",
-      "name": "Cade Klubnik",
-      "team": "NYJ",
+      "name": "Justin Fields",
+      "team": "KC",
+      "position": "QB",
+      "points": 14.5
+    },
+    {
+      "player_id": "",
+      "name": "Cole Payton",
+      "team": "PHI",
+      "position": "QB",
+      "points": 14.5
+    },
+    {
+      "player_id": "",
+      "name": "Behren Morton",
+      "team": "NE",
+      "position": "QB",
+      "points": 14.5
+    },
+    {
+      "player_id": "",
+      "name": "Jalen Milroe",
+      "team": "SEA",
       "position": "QB",
       "points": 14.1
     },
@@ -503,22 +503,22 @@
     },
     {
       "player_id": "",
-      "name": "Jalen Milroe",
-      "team": "SEA",
+      "name": "Cade Klubnik",
+      "team": "NYJ",
       "position": "QB",
       "points": 14.1
     },
     {
       "player_id": "",
-      "name": "Brady Cook",
-      "team": "NYJ",
+      "name": "Kenny Pickett",
+      "team": "CAR",
       "position": "QB",
       "points": 13.9
     },
     {
       "player_id": "",
-      "name": "Kenny Pickett",
-      "team": "CAR",
+      "name": "Brady Cook",
+      "team": "NYJ",
       "position": "QB",
       "points": 13.9
     },
@@ -608,13 +608,6 @@
     },
     {
       "player_id": "",
-      "name": "Josh Jacobs",
-      "team": "GB",
-      "position": "RB",
-      "points": 244.5
-    },
-    {
-      "player_id": "",
       "name": "Kenneth Walker III",
       "team": "KC",
       "position": "RB",
@@ -678,6 +671,13 @@
     },
     {
       "player_id": "",
+      "name": "Josh Jacobs",
+      "team": "GB",
+      "position": "RB",
+      "points": 226.1
+    },
+    {
+      "player_id": "",
       "name": "Breece Hall",
       "team": "NYJ",
       "position": "RB",
@@ -685,17 +685,17 @@
     },
     {
       "player_id": "",
+      "name": "Quinshon Judkins",
+      "team": "CLE",
+      "position": "RB",
+      "points": 215.7
+    },
+    {
+      "player_id": "",
       "name": "Javonte Williams",
       "team": "DAL",
       "position": "RB",
       "points": 213.5
-    },
-    {
-      "player_id": "",
-      "name": "Quinshon Judkins",
-      "team": "CLE",
-      "position": "RB",
-      "points": 211
     },
     {
       "player_id": "",
@@ -846,6 +846,20 @@
     },
     {
       "player_id": "",
+      "name": "MarShawn Lloyd",
+      "team": "GB",
+      "position": "RB",
+      "points": 133.7
+    },
+    {
+      "player_id": "",
+      "name": "Dylan Sampson",
+      "team": "CLE",
+      "position": "RB",
+      "points": 132.9
+    },
+    {
+      "player_id": "",
       "name": "Blake Corum",
       "team": "LAR",
       "position": "RB",
@@ -857,13 +871,6 @@
       "team": "HOU",
       "position": "RB",
       "points": 126.4
-    },
-    {
-      "player_id": "",
-      "name": "Dylan Sampson",
-      "team": "CLE",
-      "position": "RB",
-      "points": 126.2
     },
     {
       "player_id": "",
@@ -1000,13 +1007,6 @@
     },
     {
       "player_id": "",
-      "name": "Christopher Brooks",
-      "team": "GB",
-      "position": "RB",
-      "points": 90
-    },
-    {
-      "player_id": "",
       "name": "Brian Robinson Jr.",
       "team": "ATL",
       "position": "RB",
@@ -1053,6 +1053,13 @@
       "team": "MIA",
       "position": "RB",
       "points": 57.8
+    },
+    {
+      "player_id": "",
+      "name": "Christopher Brooks",
+      "team": "GB",
+      "position": "RB",
+      "points": 47.7
     },
     {
       "player_id": "",
@@ -1210,13 +1217,6 @@
     },
     {
       "player_id": "",
-      "name": "Audric Estime",
-      "team": "NO",
-      "position": "RB",
-      "points": 25.4
-    },
-    {
-      "player_id": "",
       "name": "Emmett Johnson",
       "team": "KC",
       "position": "RB",
@@ -1231,17 +1231,17 @@
     },
     {
       "player_id": "",
+      "name": "Audric Estime",
+      "team": "NO",
+      "position": "RB",
+      "points": 25.4
+    },
+    {
+      "player_id": "",
       "name": "Rasheen Ali",
       "team": "BAL",
       "position": "RB",
       "points": 25
-    },
-    {
-      "player_id": "",
-      "name": "George Holani",
-      "team": "SEA",
-      "position": "RB",
-      "points": 24.9
     },
     {
       "player_id": "",
@@ -1476,13 +1476,6 @@
     },
     {
       "player_id": "",
-      "name": "Christian Watson",
-      "team": "GB",
-      "position": "WR",
-      "points": 198.8
-    },
-    {
-      "player_id": "",
       "name": "Chris Godwin",
       "team": "TB",
       "position": "WR",
@@ -1494,6 +1487,13 @@
       "team": "PIT",
       "position": "WR",
       "points": 194.7
+    },
+    {
+      "player_id": "",
+      "name": "Christian Watson",
+      "team": "GB",
+      "position": "WR",
+      "points": 192.7
     },
     {
       "player_id": "",
@@ -1515,6 +1515,13 @@
       "team": "ARI",
       "position": "WR",
       "points": 188.6
+    },
+    {
+      "player_id": "",
+      "name": "KC Concepcion",
+      "team": "CLE",
+      "position": "WR",
+      "points": 187
     },
     {
       "player_id": "",
@@ -1546,10 +1553,10 @@
     },
     {
       "player_id": "",
-      "name": "Jayden Reed",
-      "team": "GB",
+      "name": "Denzel Boston",
+      "team": "CLE",
       "position": "WR",
-      "points": 175.2
+      "points": 175.6
     },
     {
       "player_id": "",
@@ -1581,6 +1588,20 @@
     },
     {
       "player_id": "",
+      "name": "Jerry Jeudy",
+      "team": "CLE",
+      "position": "WR",
+      "points": 172.9
+    },
+    {
+      "player_id": "",
+      "name": "Jayden Reed",
+      "team": "GB",
+      "position": "WR",
+      "points": 170.7
+    },
+    {
+      "player_id": "",
       "name": "Stefon Diggs",
       "team": "WAS",
       "position": "WR",
@@ -1588,24 +1609,10 @@
     },
     {
       "player_id": "",
-      "name": "KC Concepcion",
-      "team": "CLE",
-      "position": "WR",
-      "points": 168.9
-    },
-    {
-      "player_id": "",
       "name": "Jalen Coker",
       "team": "CAR",
       "position": "WR",
       "points": 167.1
-    },
-    {
-      "player_id": "",
-      "name": "Denzel Boston",
-      "team": "CLE",
-      "position": "WR",
-      "points": 165.2
     },
     {
       "player_id": "",
@@ -1627,13 +1634,6 @@
       "team": "IND",
       "position": "WR",
       "points": 158.3
-    },
-    {
-      "player_id": "",
-      "name": "Jerry Jeudy",
-      "team": "CLE",
-      "position": "WR",
-      "points": 157.5
     },
     {
       "player_id": "",
@@ -1693,13 +1693,6 @@
     },
     {
       "player_id": "",
-      "name": "Matthew Golden",
-      "team": "GB",
-      "position": "WR",
-      "points": 147.3
-    },
-    {
-      "player_id": "",
       "name": "Rashod Bateman",
       "team": "BAL",
       "position": "WR",
@@ -1711,6 +1704,13 @@
       "team": "HOU",
       "position": "WR",
       "points": 143.5
+    },
+    {
+      "player_id": "",
+      "name": "Matthew Golden",
+      "team": "GB",
+      "position": "WR",
+      "points": 142.9
     },
     {
       "player_id": "",
@@ -1889,13 +1889,6 @@
     },
     {
       "player_id": "",
-      "name": "Cedric Tillman",
-      "team": "CLE",
-      "position": "WR",
-      "points": 101.5
-    },
-    {
-      "player_id": "",
       "name": "Demarcus Robinson",
       "team": "SF",
       "position": "WR",
@@ -1945,6 +1938,13 @@
     },
     {
       "player_id": "",
+      "name": "Olamide Zaccheaus",
+      "team": "ATL",
+      "position": "WR",
+      "points": 94
+    },
+    {
+      "player_id": "",
       "name": "Trey McBride",
       "team": "ARI",
       "position": "TE",
@@ -1959,17 +1959,17 @@
     },
     {
       "player_id": "",
+      "name": "Harold Fannin Jr.",
+      "team": "CLE",
+      "position": "TE",
+      "points": 235
+    },
+    {
+      "player_id": "",
       "name": "Colston Loveland",
       "team": "CHI",
       "position": "TE",
       "points": 234
-    },
-    {
-      "player_id": "",
-      "name": "Harold Fannin Jr.",
-      "team": "CLE",
-      "position": "TE",
-      "points": 215.9
     },
     {
       "player_id": "",
@@ -1994,13 +1994,6 @@
     },
     {
       "player_id": "",
-      "name": "Tucker Kraft",
-      "team": "GB",
-      "position": "TE",
-      "points": 199.2
-    },
-    {
-      "player_id": "",
       "name": "Travis Kelce",
       "team": "KC",
       "position": "TE",
@@ -2019,6 +2012,13 @@
       "team": "NYG",
       "position": "TE",
       "points": 196.4
+    },
+    {
+      "player_id": "",
+      "name": "Tucker Kraft",
+      "team": "GB",
+      "position": "TE",
+      "points": 193.8
     },
     {
       "player_id": "",
@@ -2246,6 +2246,13 @@
     },
     {
       "player_id": "",
+      "name": "Jonnu Smith",
+      "team": "PIT",
+      "position": "TE",
+      "points": 82.4
+    },
+    {
+      "player_id": "",
       "name": "Charlie Kolar",
       "team": "LAC",
       "position": "TE",
@@ -2312,7 +2319,7 @@
       "name": "Luke Musgrave",
       "team": "GB",
       "position": "TE",
-      "points": 63.5
+      "points": 61.8
     },
     {
       "player_id": "",
@@ -2421,15 +2428,15 @@
     },
     {
       "player_id": "",
-      "name": "Ben Sinnott",
-      "team": "WAS",
+      "name": "Foster Moreau",
+      "team": "HOU",
       "position": "TE",
       "points": 35.1
     },
     {
       "player_id": "",
-      "name": "Foster Moreau",
-      "team": "HOU",
+      "name": "Ben Sinnott",
+      "team": "WAS",
       "position": "TE",
       "points": 35.1
     },
@@ -2512,14 +2519,28 @@
     },
     {
       "player_id": "",
-      "name": "Travis Vokolek",
-      "team": "ARI",
+      "name": "Hayden Rucci",
+      "team": "SF",
+      "position": "TE",
+      "points": 28.6
+    },
+    {
+      "player_id": "",
+      "name": "Anthony Firkser",
+      "team": "DET",
       "position": "TE",
       "points": 28.6
     },
     {
       "player_id": "",
       "name": "Rivaldo Fairweather",
+      "team": "ARI",
+      "position": "TE",
+      "points": 28.6
+    },
+    {
+      "player_id": "",
+      "name": "Travis Vokolek",
       "team": "ARI",
       "position": "TE",
       "points": 28.6
@@ -2540,15 +2561,8 @@
     },
     {
       "player_id": "",
-      "name": "Hayden Rucci",
-      "team": "SF",
-      "position": "TE",
-      "points": 28.6
-    },
-    {
-      "player_id": "",
-      "name": "Anthony Firkser",
-      "team": "DET",
+      "name": "Dallen Bentley",
+      "team": "DEN",
       "position": "TE",
       "points": 28.6
     },
@@ -2561,24 +2575,10 @@
     },
     {
       "player_id": "",
-      "name": "Dallen Bentley",
-      "team": "DEN",
-      "position": "TE",
-      "points": 28.6
-    },
-    {
-      "player_id": "",
       "name": "Cam Grandy",
       "team": "CIN",
       "position": "TE",
       "points": 28.2
-    },
-    {
-      "player_id": "",
-      "name": "Oscar Delp",
-      "team": "NO",
-      "position": "TE",
-      "points": 27.6
     },
     {
       "player_id": "",
@@ -2603,6 +2603,13 @@
     },
     {
       "player_id": "",
+      "name": "Oscar Delp",
+      "team": "NO",
+      "position": "TE",
+      "points": 27.6
+    },
+    {
+      "player_id": "",
       "name": "Lucas Krull",
       "team": "DEN",
       "position": "TE",
@@ -2617,8 +2624,8 @@
     },
     {
       "player_id": "",
-      "name": "Elijah Arroyo",
-      "team": "SEA",
+      "name": "Tanner Koziol",
+      "team": "JAC",
       "position": "TE",
       "points": 26.6
     },
@@ -2631,15 +2638,8 @@
     },
     {
       "player_id": "",
-      "name": "Sam Roush",
-      "team": "CHI",
-      "position": "TE",
-      "points": 26.6
-    },
-    {
-      "player_id": "",
-      "name": "Tanner Koziol",
-      "team": "JAC",
+      "name": "Elijah Arroyo",
+      "team": "SEA",
       "position": "TE",
       "points": 26.6
     },
@@ -2680,15 +2680,15 @@
     },
     {
       "player_id": "",
-      "name": "Cameron Dicker",
-      "team": "LAC",
+      "name": "Cairo Santos",
+      "team": "CHI",
       "position": "K",
       "points": 143
     },
     {
       "player_id": "",
-      "name": "Cairo Santos",
-      "team": "CHI",
+      "name": "Cameron Dicker",
+      "team": "LAC",
       "position": "K",
       "points": 143
     },
@@ -2799,15 +2799,15 @@
     },
     {
       "player_id": "",
-      "name": "Andres Borregales",
-      "team": "NE",
+      "name": "Drew Stevens",
+      "team": "WAS",
       "position": "K",
       "points": 120
     },
     {
       "player_id": "",
-      "name": "Drew Stevens",
-      "team": "WAS",
+      "name": "Andres Borregales",
+      "team": "NE",
       "position": "K",
       "points": 120
     },
@@ -2848,15 +2848,15 @@
     },
     {
       "player_id": "",
-      "name": "Andre Szmyt",
-      "team": "CLE",
+      "name": "Matt Gay",
+      "team": "LV",
       "position": "K",
       "points": 101
     },
     {
       "player_id": "",
-      "name": "Matt Gay",
-      "team": "LV",
+      "name": "Andre Szmyt",
+      "team": "CLE",
       "position": "K",
       "points": 101
     },
@@ -2876,8 +2876,8 @@
     },
     {
       "player_id": "",
-      "name": "Spencer Shrader",
-      "team": "IND",
+      "name": "Zane Gonzalez",
+      "team": "MIA",
       "position": "K",
       "points": 0
     },
@@ -2890,8 +2890,8 @@
     },
     {
       "player_id": "",
-      "name": "Zane Gonzalez",
-      "team": "MIA",
+      "name": "Spencer Shrader",
+      "team": "IND",
       "position": "K",
       "points": 0
     }
@@ -2944,8 +2944,8 @@
     "tyler shough": 324.1,
     "c.j.stroud": 323.6,
     "cj stroud": 323.6,
-    "jordanlove": 315.5,
-    "jordan love": 315.5,
+    "jordanlove": 323.2,
+    "jordan love": 323.2,
     "bryceyoung": 309.8,
     "bryce young": 309.8,
     "jacobybrissett": 295.1,
@@ -2982,70 +2982,70 @@
     "joshua dobbs": 16.7,
     "willlevis": 16.5,
     "will levis": 16.5,
-    "jarrettstidham": 16.5,
-    "jarrett stidham": 16.5,
-    "desmondridder": 16.5,
-    "desmond ridder": 16.5,
     "shanebuechele": 16.5,
     "shane buechele": 16.5,
-    "tysonbagent": 15.9,
-    "tyson bagent": 15.9,
+    "desmondridder": 16.5,
+    "desmond ridder": 16.5,
+    "jarrettstidham": 16.5,
+    "jarrett stidham": 16.5,
     "gardnerminshew": 15.9,
     "gardner minshew": 15.9,
-    "tylerhuntley": 15.9,
-    "tyler huntley": 15.9,
+    "tysonbagent": 15.9,
+    "tyson bagent": 15.9,
     "masonrudolph": 15.9,
     "mason rudolph": 15.9,
-    "tannermckee": 14.9,
-    "tanner mckee": 14.9,
-    "drewlock": 14.9,
-    "drew lock": 14.9,
+    "tylerhuntley": 15.9,
+    "tyler huntley": 15.9,
     "spencerrattler": 14.9,
     "spencer rattler": 14.9,
     "macjones": 14.9,
     "mac jones": 14.9,
+    "tannermckee": 14.9,
+    "tanner mckee": 14.9,
+    "drewlock": 14.9,
+    "drew lock": 14.9,
     "mitchtrubisky": 14.9,
     "mitch trubisky": 14.9,
     "rileyleonard": 14.9,
     "riley leonard": 14.9,
-    "behrenmorton": 14.5,
-    "behren morton": 14.5,
-    "carsonbeck": 14.5,
-    "carson beck": 14.5,
-    "treylance": 14.5,
-    "trey lance": 14.5,
     "andydalton": 14.5,
     "andy dalton": 14.5,
-    "garrettnussmeier": 14.5,
-    "garrett nussmeier": 14.5,
+    "chrisoladokun": 14.5,
+    "chris oladokun": 14.5,
+    "carsonbeck": 14.5,
+    "carson beck": 14.5,
     "adrianmartinez": 14.5,
     "adrian martinez": 14.5,
     "jakebrowning": 14.5,
     "jake browning": 14.5,
-    "justinfields": 14.5,
-    "justin fields": 14.5,
-    "chrisoladokun": 14.5,
-    "chris oladokun": 14.5,
     "j.j.mccarthy": 14.5,
     "jj mccarthy": 14.5,
-    "colepayton": 14.5,
-    "cole payton": 14.5,
+    "garrettnussmeier": 14.5,
+    "garrett nussmeier": 14.5,
+    "treylance": 14.5,
+    "trey lance": 14.5,
     "nickmullens": 14.5,
     "nick mullens": 14.5,
-    "cadeklubnik": 14.1,
-    "cade klubnik": 14.1,
+    "justinfields": 14.5,
+    "justin fields": 14.5,
+    "colepayton": 14.5,
+    "cole payton": 14.5,
+    "behrenmorton": 14.5,
+    "behren morton": 14.5,
+    "jalenmilroe": 14.1,
+    "jalen milroe": 14.1,
     "drewallar": 14.1,
     "drew allar": 14.1,
     "kyleallen": 14.1,
     "kyle allen": 14.1,
     "willhoward": 14.1,
     "will howard": 14.1,
-    "jalenmilroe": 14.1,
-    "jalen milroe": 14.1,
-    "bradycook": 13.9,
-    "brady cook": 13.9,
+    "cadeklubnik": 14.1,
+    "cade klubnik": 14.1,
     "kennypickett": 13.9,
     "kenny pickett": 13.9,
+    "bradycook": 13.9,
+    "brady cook": 13.9,
     "joeflacco": 12.7,
     "joe flacco": 12.7,
     "jameiswinston": 12.5,
@@ -3070,8 +3070,6 @@
     "james cook": 262,
     "saquonbarkley": 258.6,
     "saquon barkley": 258.6,
-    "joshjacobs": 244.5,
-    "josh jacobs": 244.5,
     "kennethwalkeriii": 244.3,
     "kenneth walker": 244.3,
     "kyrenwilliams": 242.3,
@@ -3090,12 +3088,14 @@
     "omarion hampton": 234.3,
     "jeremiyahlove": 233,
     "jeremiyah love": 233,
+    "joshjacobs": 226.1,
+    "josh jacobs": 226.1,
     "breecehall": 220,
     "breece hall": 220,
+    "quinshonjudkins": 215.7,
+    "quinshon judkins": 215.7,
     "javontewilliams": 213.5,
     "javonte williams": 213.5,
-    "quinshonjudkins": 211,
-    "quinshon judkins": 211,
     "davidmontgomery": 197.7,
     "david montgomery": 197.7,
     "bhayshultuten": 194.5,
@@ -3138,12 +3138,14 @@
     "tyrone tracy": 138.9,
     "mikewashingtonjr.": 136.3,
     "mike washington": 136.3,
+    "marshawnlloyd": 133.7,
+    "marshawn lloyd": 133.7,
+    "dylansampson": 132.9,
+    "dylan sampson": 132.9,
     "blakecorum": 127,
     "blake corum": 127,
     "woodymarks": 126.4,
     "woody marks": 126.4,
-    "dylansampson": 126.2,
-    "dylan sampson": 126.2,
     "zachcharbonnet": 124.6,
     "zach charbonnet": 124.6,
     "isiahpacheco": 124.5,
@@ -3182,8 +3184,6 @@
     "emanuel wilson": 91.9,
     "samajeperine": 91.3,
     "samaje perine": 91.3,
-    "christopherbrooks": 90,
-    "christopher brooks": 90,
     "brianrobinsonjr.": 83,
     "brian robinson": 83,
     "kimanividal": 80,
@@ -3198,6 +3198,8 @@
     "brashard smith": 63.7,
     "jaylenwright": 57.8,
     "jaylen wright": 57.8,
+    "christopherbrooks": 47.7,
+    "christopher brooks": 47.7,
     "lequintallen": 40.8,
     "lequint allen": 40.8,
     "devinneal": 39.4,
@@ -3242,16 +3244,14 @@
     "andrew beck": 25.7,
     "salvonahmed": 25.6,
     "salvon ahmed": 25.6,
-    "audricestime": 25.4,
-    "audric estime": 25.4,
     "emmettjohnson": 25.4,
     "emmett johnson": 25.4,
     "jonahcoleman": 25.4,
     "jonah coleman": 25.4,
+    "audricestime": 25.4,
+    "audric estime": 25.4,
     "rasheenali": 25,
     "rasheen ali": 25,
-    "georgeholani": 24.9,
-    "george holani": 24.9,
     "pukanacua": 371.9,
     "puka nacua": 371.9,
     "jaxonsmith-njigba": 347.9,
@@ -3318,18 +3318,20 @@
     "brian thomas": 200.8,
     "parkerwashington": 199.1,
     "parker washington": 199.1,
-    "christianwatson": 198.8,
-    "christian watson": 198.8,
     "chrisgodwin": 197.6,
     "chris godwin": 197.6,
     "dkmetcalf": 194.7,
     "dk metcalf": 194.7,
+    "christianwatson": 192.7,
+    "christian watson": 192.7,
     "quentinjohnston": 191.5,
     "quentin johnston": 191.5,
     "wan'dalerobinson": 189.5,
     "wandale robinson": 189.5,
     "michaelwilson": 188.6,
     "michael wilson": 188.6,
+    "kcconcepcion": 187,
+    "kc concepcion": 187,
     "jakobimeyers": 180.2,
     "jakobi meyers": 180.2,
     "michaelpittman": 179.3,
@@ -3338,8 +3340,8 @@
     "romeo doubs": 176.9,
     "deebosamuel": 176.2,
     "deebo samuel": 176.2,
-    "jaydenreed": 175.2,
-    "jayden reed": 175.2,
+    "denzelboston": 175.6,
+    "denzel boston": 175.6,
     "joshdowns": 175,
     "josh downs": 175,
     "de'zhaunstribling": 173.3,
@@ -3348,22 +3350,20 @@
     "rashid shaheed": 173.2,
     "jordanaddison": 173,
     "jordan addison": 173,
+    "jerryjeudy": 172.9,
+    "jerry jeudy": 172.9,
+    "jaydenreed": 170.7,
+    "jayden reed": 170.7,
     "stefondiggs": 170.1,
     "stefon diggs": 170.1,
-    "kcconcepcion": 168.9,
-    "kc concepcion": 168.9,
     "jalencoker": 167.1,
     "jalen coker": 167.1,
-    "denzelboston": 165.2,
-    "denzel boston": 165.2,
     "calvinridley": 161.6,
     "calvin ridley": 161.6,
     "xavierworthy": 159.6,
     "xavier worthy": 159.6,
     "keenanallen": 158.3,
     "keenan allen": 158.3,
-    "jerryjeudy": 157.5,
-    "jerry jeudy": 157.5,
     "khalilshakir": 156.9,
     "khalil shakir": 156.9,
     "carnelltate": 155.8,
@@ -3380,12 +3380,12 @@
     "makai lemon": 149.4,
     "tretucker": 148.1,
     "tre tucker": 148.1,
-    "matthewgolden": 147.3,
-    "matthew golden": 147.3,
     "rashodbateman": 145.8,
     "rashod bateman": 145.8,
     "tankdell": 143.5,
     "tank dell": 143.5,
+    "matthewgolden": 142.9,
+    "matthew golden": 142.9,
     "christiankirk": 141.9,
     "christian kirk": 141.9,
     "jalenmcmillan": 135.5,
@@ -3436,8 +3436,6 @@
     "ted hurst": 101.9,
     "adonaimitchell": 101.6,
     "adonai mitchell": 101.6,
-    "cedrictillman": 101.5,
-    "cedric tillman": 101.5,
     "demarcusrobinson": 99.2,
     "demarcus robinson": 99.2,
     "dontayvionwicks": 98.4,
@@ -3452,28 +3450,30 @@
     "zavion thomas": 95.5,
     "joshpalmer": 94.6,
     "josh palmer": 94.6,
+    "olamidezaccheaus": 94,
+    "olamide zaccheaus": 94,
     "treymcbride": 278.5,
     "trey mcbride": 278.5,
     "brockbowers": 242.2,
     "brock bowers": 242.2,
+    "haroldfanninjr.": 235,
+    "harold fannin": 235,
     "colstonloveland": 234,
     "colston loveland": 234,
-    "haroldfanninjr.": 215.9,
-    "harold fannin": 215.9,
     "dallasgoedert": 214.7,
     "dallas goedert": 214.7,
     "georgekittle": 213.4,
     "george kittle": 213.4,
     "tylerwarren": 209.4,
     "tyler warren": 209.4,
-    "tuckerkraft": 199.2,
-    "tucker kraft": 199.2,
     "traviskelce": 198.2,
     "travis kelce": 198.2,
     "samlaporta": 198.1,
     "sam laporta": 198.1,
     "isaiahlikely": 196.4,
     "isaiah likely": 196.4,
+    "tuckerkraft": 193.8,
+    "tucker kraft": 193.8,
     "kylepitts": 192.6,
     "kyle pitts": 192.6,
     "markandrews": 189.2,
@@ -3538,6 +3538,8 @@
     "will kacmarek": 83.3,
     "darnellwashington": 82.4,
     "darnell washington": 82.4,
+    "jonnusmith": 82.4,
+    "jonnu smith": 82.4,
     "charliekolar": 81.3,
     "charlie kolar": 81.3,
     "marlinklein": 79,
@@ -3556,8 +3558,8 @@
     "davis allen": 67.8,
     "adamtrautman": 66.2,
     "adam trautman": 66.2,
-    "lukemusgrave": 63.5,
-    "luke musgrave": 63.5,
+    "lukemusgrave": 61.8,
+    "luke musgrave": 61.8,
     "colekmet": 59.4,
     "cole kmet": 59.4,
     "jeremyruckert": 57.7,
@@ -3588,10 +3590,10 @@
     "nate adkins": 44.6,
     "cadestover": 37.4,
     "cade stover": 37.4,
-    "bensinnott": 35.1,
-    "ben sinnott": 35.1,
     "fostermoreau": 35.1,
     "foster moreau": 35.1,
+    "bensinnott": 35.1,
+    "ben sinnott": 35.1,
     "noahgray": 34.7,
     "noah gray": 34.7,
     "jacksonhawes": 34.1,
@@ -3614,44 +3616,42 @@
     "zack kuntz": 30.1,
     "willmallory": 29.1,
     "will mallory": 29.1,
-    "travisvokolek": 28.6,
-    "travis vokolek": 28.6,
-    "rivaldofairweather": 28.6,
-    "rivaldo fairweather": 28.6,
-    "jaketonges": 28.6,
-    "jake tonges": 28.6,
-    "teaganquitoriano": 28.6,
-    "teagan quitoriano": 28.6,
     "haydenrucci": 28.6,
     "hayden rucci": 28.6,
     "anthonyfirkser": 28.6,
     "anthony firkser": 28.6,
-    "justinjoly": 28.6,
-    "justin joly": 28.6,
+    "rivaldofairweather": 28.6,
+    "rivaldo fairweather": 28.6,
+    "travisvokolek": 28.6,
+    "travis vokolek": 28.6,
+    "jaketonges": 28.6,
+    "jake tonges": 28.6,
+    "teaganquitoriano": 28.6,
+    "teagan quitoriano": 28.6,
     "dallenbentley": 28.6,
     "dallen bentley": 28.6,
+    "justinjoly": 28.6,
+    "justin joly": 28.6,
     "camgrandy": 28.2,
     "cam grandy": 28.2,
-    "oscardelp": 27.6,
-    "oscar delp": 27.6,
     "brevynspann-ford": 27.6,
     "brevyn spannford": 27.6,
     "zairemitchell-paden": 27.6,
     "zaire mitchellpaden": 27.6,
     "bauersharp": 27.6,
     "bauer sharp": 27.6,
+    "oscardelp": 27.6,
+    "oscar delp": 27.6,
     "lucaskrull": 27.2,
     "lucas krull": 27.2,
     "tannermclachlan": 27,
     "tanner mclachlan": 27,
-    "elijaharroyo": 26.6,
-    "elijah arroyo": 26.6,
-    "tannerconner": 26.6,
-    "tanner conner": 26.6,
-    "samroush": 26.6,
-    "sam roush": 26.6,
     "tannerkoziol": 26.6,
     "tanner koziol": 26.6,
+    "tannerconner": 26.6,
+    "tanner conner": 26.6,
+    "elijaharroyo": 26.6,
+    "elijah arroyo": 26.6,
     "jasonmyers": 167,
     "jason myers": 167,
     "ka'imifairbairn": 156,
@@ -3662,10 +3662,10 @@
     "blake grupe": 153,
     "jakebates": 146,
     "jake bates": 146,
-    "camerondicker": 143,
-    "cameron dicker": 143,
     "cairosantos": 143,
     "cairo santos": 143,
+    "camerondicker": 143,
+    "cameron dicker": 143,
     "harrisonmevis": 142,
     "harrison mevis": 142,
     "willreichard": 141,
@@ -3696,10 +3696,10 @@
     "jason sanders": 122,
     "joeyslye": 121,
     "joey slye": 121,
-    "andresborregales": 120,
-    "andres borregales": 120,
     "drewstevens": 120,
     "drew stevens": 120,
+    "andresborregales": 120,
+    "andres borregales": 120,
     "jakeelliott": 119,
     "jake elliott": 119,
     "rileypatterson": 119,
@@ -3710,19 +3710,19 @@
     "chris boswell": 111,
     "ryanfitzgerald": 106,
     "ryan fitzgerald": 106,
-    "andreszmyt": 101,
-    "andre szmyt": 101,
     "mattgay": 101,
     "matt gay": 101,
+    "andreszmyt": 101,
+    "andre szmyt": 101,
     "bensauls": 85,
     "ben sauls": 85,
     "dominiczvada": 30,
     "dominic zvada": 30,
-    "spencershrader": 0,
-    "spencer shrader": 0,
+    "zanegonzalez": 0,
+    "zane gonzalez": 0,
     "mattprater": 0,
     "matt prater": 0,
-    "zanegonzalez": 0,
-    "zane gonzalez": 0
+    "spencershrader": 0,
+    "spencer shrader": 0
   }
 }
