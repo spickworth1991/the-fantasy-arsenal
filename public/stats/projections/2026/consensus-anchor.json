@@ -1,9 +1,9 @@
 {
-  "updated": "2026-08-28T04:07:40.380Z",
+  "updated": "2026-08-29T04:07:50.695Z",
   "season": 2026,
   "source": "Projection Source Average Anchor",
   "scoring": "PPR",
-  "count": 895,
+  "count": 896,
   "rows": [
     {
       "player_id": "4984",
@@ -2657,18 +2657,18 @@
       "name": "Jordan Love",
       "team": "GB",
       "position": "QB",
-      "points": 296.778,
-      "points_ppr": 296.778,
-      "points_half": 296.778,
-      "points_std": 296.778,
+      "points": 297.452,
+      "points_ppr": 297.452,
+      "points_half": 297.452,
+      "points_std": 297.452,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
         "half": 7,
         "std": 7
       },
-      "confidence": 89,
-      "disagreement": 0.1222,
+      "confidence": 90,
+      "disagreement": 0.1208,
       "consensus_contributors": {
         "ppr": [
           "ESPN",
@@ -2747,9 +2747,9 @@
           "std": 322
         },
         "FantasyPros": {
-          "ppr": 267.68,
-          "half": 267.68,
-          "std": 267.68
+          "ppr": 270.61,
+          "half": 270.61,
+          "std": 270.61
         }
       }
     },
@@ -3898,10 +3898,10 @@
       "name": "Ashton Jeanty",
       "team": "LV",
       "position": "RB",
-      "points": 261.484,
-      "points_ppr": 261.484,
-      "points_half": 237.51,
-      "points_std": 208.823,
+      "points": 261.254,
+      "points_ppr": 261.254,
+      "points_half": 236.659,
+      "points_std": 207.547,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -3909,7 +3909,7 @@
         "std": 3
       },
       "confidence": 92,
-      "disagreement": 0.0799,
+      "disagreement": 0.0794,
       "consensus_contributors": {
         "ppr": [
           "CBS",
@@ -3973,9 +3973,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 278,
-          "half": 249,
-          "std": 220
+          "ppr": 277,
+          "half": 247,
+          "std": 217
         },
         "FantasyPros": {
           "ppr": 260.81,
@@ -5567,97 +5567,6 @@
       }
     },
     {
-      "player_id": "5850",
-      "name": "Josh Jacobs",
-      "team": "GB",
-      "position": "RB",
-      "points": 237.723,
-      "points_ppr": 237.723,
-      "points_half": 230.009,
-      "points_std": 211.132,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 94,
-      "disagreement": 0.0611,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "CBS",
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "DraftSharks",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "ESPN"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 28,
-        "years_experience": 7,
-        "depth_chart_order": 1,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 219,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 259.103,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 226.1,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 240.58,
-          "half": 221.4,
-          "std": 202.26
-        },
-        "FantasySharks": {
-          "ppr": 223.1,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 252,
-          "half": 232,
-          "std": 212
-        },
-        "FantasyPros": {
-          "ppr": 248.69,
-          "half": 231.03,
-          "std": 213.37
-        }
-      }
-    },
-    {
       "player_id": "11632",
       "name": "Malik Nabers",
       "team": "NYG",
@@ -5846,7 +5755,7 @@
       "position": "RB",
       "points": 235.305,
       "points_ppr": 235.305,
-      "points_half": 215.992,
+      "points_half": 216.417,
       "points_std": 194.548,
       "source_count": 7,
       "format_source_count": {
@@ -5920,7 +5829,7 @@
         },
         "DraftSharks": {
           "ppr": 248,
-          "half": 226,
+          "half": 227,
           "std": 205
         },
         "FantasyPros": {
@@ -6109,6 +6018,97 @@
           "ppr": 236.87,
           "half": 192.95,
           "std": 149.02
+        }
+      }
+    },
+    {
+      "player_id": "5850",
+      "name": "Josh Jacobs",
+      "team": "GB",
+      "position": "RB",
+      "points": 233.814,
+      "points_ppr": 233.814,
+      "points_half": 222.987,
+      "points_std": 204.324,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 94,
+      "disagreement": 0.055,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "CBS",
+          "Sleeper",
+          "DraftSharks",
+          "FantasyPros"
+        ],
+        "half": [
+          "DraftSharks",
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "DraftSharks",
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "ESPN"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 28,
+        "years_experience": 7,
+        "depth_chart_order": 1,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 219,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 259.103,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 226.1,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 240.58,
+          "half": 221.4,
+          "std": 202.26
+        },
+        "FantasySharks": {
+          "ppr": 223.1,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 241,
+          "half": 221,
+          "std": 201
+        },
+        "FantasyPros": {
+          "ppr": 242.69,
+          "half": 225.53,
+          "std": 208.37
         }
       }
     },
@@ -7209,10 +7209,10 @@
       "name": "Quinshon Judkins",
       "team": "CLE",
       "position": "RB",
-      "points": 213.307,
-      "points_ppr": 213.307,
-      "points_half": 203.159,
-      "points_std": 187.689,
+      "points": 213.636,
+      "points_ppr": 213.636,
+      "points_half": 203.555,
+      "points_std": 187.872,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -7220,13 +7220,13 @@
         "std": 3
       },
       "confidence": 93,
-      "disagreement": 0.0675,
+      "disagreement": 0.0677,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
-          "FantasyPros",
           "CBS",
           "Sleeper",
+          "FantasyPros",
           "DraftSharks"
         ],
         "half": [
@@ -7289,9 +7289,9 @@
           "std": 193
         },
         "FantasyPros": {
-          "ppr": 215.16,
-          "half": 199.14,
-          "std": 183.12
+          "ppr": 216.59,
+          "half": 200.07,
+          "std": 183.55
         }
       }
     },
@@ -8206,113 +8206,22 @@
       }
     },
     {
-      "player_id": "8167",
-      "name": "Christian Watson",
-      "team": "GB",
-      "position": "WR",
-      "points": 194.669,
-      "points_ppr": 194.669,
-      "points_half": 187.17,
-      "points_std": 155.415,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 87,
-      "disagreement": 0.16,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "FantasySharks",
-          "CBS",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper",
-          "DraftSharks"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 27,
-        "years_experience": 4,
-        "depth_chart_order": 1,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 136,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 185.128,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 192.7,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 234.12,
-          "half": 200.8,
-          "std": 167.5
-        },
-        "FantasySharks": {
-          "ppr": 191.5,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 237,
-          "half": 203,
-          "std": 169
-        },
-        "FantasyPros": {
-          "ppr": 195.54,
-          "half": 166.57,
-          "std": 137.6
-        }
-      }
-    },
-    {
       "player_id": "12529",
       "name": "TreVeyon Henderson",
       "team": "NE",
       "position": "RB",
       "points": 194.467,
       "points_ppr": 194.467,
-      "points_half": 183.878,
-      "points_std": 165.181,
+      "points_half": 182.601,
+      "points_std": 163.905,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
         "half": 3,
         "std": 3
       },
-      "confidence": 93,
-      "disagreement": 0.0653,
+      "confidence": 94,
+      "disagreement": 0.062,
       "consensus_contributors": {
         "ppr": [
           "CBS",
@@ -8376,9 +8285,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 215,
-          "half": 195,
-          "std": 175
+          "ppr": 212,
+          "half": 192,
+          "std": 172
         },
         "FantasyPros": {
           "ppr": 191.46,
@@ -8479,14 +8388,105 @@
       }
     },
     {
+      "player_id": "8167",
+      "name": "Christian Watson",
+      "team": "GB",
+      "position": "WR",
+      "points": 194.271,
+      "points_ppr": 194.271,
+      "points_half": 186.502,
+      "points_std": 154.819,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 87,
+      "disagreement": 0.1602,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasySharks",
+          "CBS",
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper",
+          "DraftSharks"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 27,
+        "years_experience": 4,
+        "depth_chart_order": 1,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 136,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 185.128,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 192.7,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 234.12,
+          "half": 200.8,
+          "std": 167.5
+        },
+        "FantasySharks": {
+          "ppr": 191.5,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 237,
+          "half": 203,
+          "std": 169
+        },
+        "FantasyPros": {
+          "ppr": 193.81,
+          "half": 165,
+          "std": 136.2
+        }
+      }
+    },
+    {
       "player_id": "7611",
       "name": "Rhamondre Stevenson",
       "team": "NE",
       "position": "RB",
       "points": 193.606,
       "points_ppr": 193.606,
-      "points_half": 183.934,
-      "points_std": 164.323,
+      "points_half": 185.636,
+      "points_std": 166.451,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -8494,7 +8494,7 @@
         "std": 3
       },
       "confidence": 90,
-      "disagreement": 0.113,
+      "disagreement": 0.1179,
       "consensus_contributors": {
         "ppr": [
           "CBS",
@@ -8558,9 +8558,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 219,
-          "half": 199,
-          "std": 178
+          "ppr": 224,
+          "half": 203,
+          "std": 183
         },
         "FantasyPros": {
           "ppr": 192.77,
@@ -8942,6 +8942,97 @@
       }
     },
     {
+      "player_id": "12506",
+      "name": "Harold Fannin",
+      "team": "CLE",
+      "position": "TE",
+      "points": 189.274,
+      "points_ppr": 189.274,
+      "points_half": 159.755,
+      "points_std": 119.533,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 85,
+      "disagreement": 0.1884,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "Sleeper",
+          "ESPN",
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 1,
+        "depth_chart_order": 1,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 116,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 189.176,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 235,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 180.25,
+          "half": 145.3,
+          "std": 110.41
+        },
+        "FantasySharks": {
+          "ppr": 164.2,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 208,
+          "half": 167,
+          "std": 126
+        },
+        "FantasyPros": {
+          "ppr": 198.88,
+          "half": 157.57,
+          "std": 116.26
+        }
+      }
+    },
+    {
       "player_id": "7021",
       "name": "Rico Dowdle",
       "team": "PIT",
@@ -9029,97 +9120,6 @@
           "ppr": 180.26,
           "half": 164.39,
           "std": 148.51
-        }
-      }
-    },
-    {
-      "player_id": "12506",
-      "name": "Harold Fannin",
-      "team": "CLE",
-      "position": "TE",
-      "points": 187.84,
-      "points_ppr": 187.84,
-      "points_half": 157.67,
-      "points_std": 118.019,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 85,
-      "disagreement": 0.1876,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "Sleeper",
-          "ESPN",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 1,
-        "depth_chart_order": 1,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 116,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 189.176,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 235,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 180.25,
-          "half": 145.3,
-          "std": 110.41
-        },
-        "FantasySharks": {
-          "ppr": 164.2,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 208,
-          "half": 167,
-          "std": 126
-        },
-        "FantasyPros": {
-          "ppr": 192.64,
-          "half": 152.67,
-          "std": 112.7
         }
       }
     },
@@ -9488,97 +9488,6 @@
       }
     },
     {
-      "player_id": "9484",
-      "name": "Tucker Kraft",
-      "team": "GB",
-      "position": "TE",
-      "points": 184.052,
-      "points_ppr": 184.052,
-      "points_half": 161.56,
-      "points_std": 127.869,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 85,
-      "disagreement": 0.184,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "FantasyPros",
-          "ESPN",
-          "CBS",
-          "DraftSharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "DraftSharks",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "DraftSharks",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "Sleeper"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 25,
-        "years_experience": 3,
-        "depth_chart_order": 1,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 108,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 180.671,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 193.8,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 209.89,
-          "half": 174.3,
-          "std": 138.75
-        },
-        "FantasySharks": {
-          "ppr": 159.4,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 208,
-          "half": 171,
-          "std": 135
-        },
-        "FantasyPros": {
-          "ppr": 178.39,
-          "half": 147.66,
-          "std": 116.93
-        }
-      }
-    },
-    {
       "player_id": "5967",
       "name": "Tony Pollard",
       "team": "TEN",
@@ -9666,6 +9575,97 @@
           "ppr": 187.81,
           "half": 171.86,
           "std": 155.91
+        }
+      }
+    },
+    {
+      "player_id": "9484",
+      "name": "Tucker Kraft",
+      "team": "GB",
+      "position": "TE",
+      "points": 183.658,
+      "points_ppr": 183.658,
+      "points_half": 160.866,
+      "points_std": 127.316,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 85,
+      "disagreement": 0.1842,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros",
+          "ESPN",
+          "CBS",
+          "DraftSharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "DraftSharks",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "DraftSharks",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "Sleeper"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 25,
+        "years_experience": 3,
+        "depth_chart_order": 1,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 108,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 180.671,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 193.8,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 209.89,
+          "half": 174.3,
+          "std": 138.75
+        },
+        "FantasySharks": {
+          "ppr": 159.4,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 208,
+          "half": 171,
+          "std": 135
+        },
+        "FantasyPros": {
+          "ppr": 176.42,
+          "half": 146.03,
+          "std": 115.63
         }
       }
     },
@@ -11043,10 +11043,10 @@
       "name": "Jayden Reed",
       "team": "GB",
       "position": "WR",
-      "points": 168.016,
-      "points_ppr": 168.016,
-      "points_half": 162.315,
-      "points_std": 128.281,
+      "points": 167.843,
+      "points_ppr": 167.843,
+      "points_half": 162.02,
+      "points_std": 128.054,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -11054,7 +11054,7 @@
         "std": 3
       },
       "confidence": 77,
-      "disagreement": 0.2305,
+      "disagreement": 0.2306,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -11125,9 +11125,9 @@
           "std": 139
         },
         "FantasyPros": {
-          "ppr": 176.35,
-          "half": 144.79,
-          "std": 113.24
+          "ppr": 175.48,
+          "half": 144.09,
+          "std": 112.7
         }
       }
     },
@@ -11229,8 +11229,8 @@
       "position": "WR",
       "points": 166.771,
       "points_ppr": 166.771,
-      "points_half": 157.579,
-      "points_std": 127.83,
+      "points_half": 158.43,
+      "points_std": 128.255,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -11238,7 +11238,7 @@
         "std": 3
       },
       "confidence": 85,
-      "disagreement": 0.188,
+      "disagreement": 0.1908,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -11270,7 +11270,7 @@
         "age": 24,
         "years_experience": 3,
         "depth_chart_order": 2,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -11302,9 +11302,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 205,
-          "half": 172,
-          "std": 139
+          "ppr": 208,
+          "half": 174,
+          "std": 140
         },
         "FantasyPros": {
           "ppr": 169.93,
@@ -12190,7 +12190,7 @@
         "age": 23,
         "years_experience": 2,
         "depth_chart_order": 2,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -12521,10 +12521,10 @@
       "name": "Matthew Golden",
       "team": "GB",
       "position": "WR",
-      "points": 157.514,
-      "points_ppr": 157.514,
-      "points_half": 145.584,
-      "points_std": 115.412,
+      "points": 157.246,
+      "points_ppr": 157.246,
+      "points_half": 145.158,
+      "points_std": 115.054,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -12601,9 +12601,9 @@
           "std": 126
         },
         "FantasyPros": {
-          "ppr": 161.47,
-          "half": 133.52,
-          "std": 105.58
+          "ppr": 160.3,
+          "half": 132.52,
+          "std": 104.74
         }
       }
     },
@@ -13306,7 +13306,7 @@
         "age": 26,
         "years_experience": 4,
         "depth_chart_order": 1,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -13356,8 +13356,8 @@
       "position": "RB",
       "points": 150.689,
       "points_ppr": 150.689,
-      "points_half": 145.971,
-      "points_std": 124.139,
+      "points_half": 145.546,
+      "points_std": 123.714,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -13430,13 +13430,100 @@
         },
         "DraftSharks": {
           "ppr": 173,
-          "half": 149,
-          "std": 125
+          "half": 148,
+          "std": 124
         },
         "FantasyPros": {
           "ppr": 161.27,
           "half": 143.38,
           "std": 125.49
+        }
+      }
+    },
+    {
+      "player_id": "13346",
+      "name": "Denzel Boston",
+      "team": "CLE",
+      "position": "WR",
+      "points": 150.134,
+      "points_ppr": 150.134,
+      "points_half": 125.862,
+      "points_std": 97.305,
+      "source_count": 6,
+      "format_source_count": {
+        "ppr": 6,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 67,
+      "disagreement": 0.2635,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "ESPN",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FantasySharks",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 0,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 142.329,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 175.6,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 106.38,
+          "half": 88.18,
+          "std": 69.98
+        },
+        "FantasySharks": {
+          "ppr": 76.4,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 176,
+          "half": 144,
+          "std": 113
+        },
+        "FantasyPros": {
+          "ppr": 158.05,
+          "half": 126.95,
+          "std": 95.84
         }
       }
     },
@@ -13691,93 +13778,6 @@
       }
     },
     {
-      "player_id": "13346",
-      "name": "Denzel Boston",
-      "team": "CLE",
-      "position": "WR",
-      "points": 148.422,
-      "points_ppr": 148.422,
-      "points_half": 124.153,
-      "points_std": 96.325,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 67,
-      "disagreement": 0.2622,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "ESPN",
-          "FantasyPros",
-          "CBS"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FantasySharks",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 0,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 142.329,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 175.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 106.38,
-          "half": 88.18,
-          "std": 69.98
-        },
-        "FantasySharks": {
-          "ppr": 76.4,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 176,
-          "half": 144,
-          "std": 113
-        },
-        "FantasyPros": {
-          "ppr": 152.2,
-          "half": 122.85,
-          "std": 93.49
-        }
-      }
-    },
-    {
       "player_id": "12533",
       "name": "Jacory Croskey-Merritt",
       "team": "WAS",
@@ -13964,10 +13964,10 @@
       "name": "KC Concepcion",
       "team": "CLE",
       "position": "WR",
-      "points": 145.427,
-      "points_ppr": 145.427,
-      "points_half": 142.256,
-      "points_std": 110.583,
+      "points": 147.453,
+      "points_ppr": 147.453,
+      "points_half": 145.269,
+      "points_std": 112.857,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -13975,7 +13975,7 @@
         "std": 3
       },
       "confidence": 72,
-      "disagreement": 0.2993,
+      "disagreement": 0.3008,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -13990,8 +13990,8 @@
           "DraftSharks"
         ],
         "std": [
-          "FantasyPros",
           "Sleeper",
+          "FantasyPros",
           "DraftSharks"
         ]
       },
@@ -14046,9 +14046,92 @@
           "std": 127
         },
         "FantasyPros": {
-          "ppr": 161.47,
-          "half": 130.8,
-          "std": 100.13
+          "ppr": 170.37,
+          "half": 137.95,
+          "std": 105.53
+        }
+      }
+    },
+    {
+      "player_id": "6783",
+      "name": "Jerry Jeudy",
+      "team": "CLE",
+      "position": "WR",
+      "points": 145.413,
+      "points_ppr": 145.413,
+      "points_half": 115.237,
+      "points_std": 88.645,
+      "source_count": 6,
+      "format_source_count": {
+        "ppr": 6,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 75,
+      "disagreement": 0.2129,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "ESPN",
+          "FantasyPros",
+          "FantasySharks"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 27,
+        "years_experience": 6,
+        "depth_chart_order": 1,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 93.2,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 140.066,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 172.9,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 102.71,
+          "half": 84.37,
+          "std": 66.03
+        },
+        "FantasySharks": {
+          "ppr": 155.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 155.52,
+          "half": 126.04,
+          "std": 96.56
         }
       }
     },
@@ -14307,89 +14390,6 @@
           "ppr": 222,
           "half": 222,
           "std": 222
-        }
-      }
-    },
-    {
-      "player_id": "6783",
-      "name": "Jerry Jeudy",
-      "team": "CLE",
-      "position": "WR",
-      "points": 142.936,
-      "points_ppr": 142.936,
-      "points_half": 110.2,
-      "points_std": 84.719,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 75,
-      "disagreement": 0.2096,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "ESPN",
-          "FantasyPros",
-          "FantasySharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 27,
-        "years_experience": 6,
-        "depth_chart_order": 1,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 93.2,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 140.066,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 172.9,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 102.71,
-          "half": 84.37,
-          "std": 66.03
-        },
-        "FantasySharks": {
-          "ppr": 155.6,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 147.22,
-          "half": 119.24,
-          "std": 91.26
         }
       }
     },
@@ -15686,7 +15686,7 @@
         "std": 6
       },
       "confidence": 85,
-      "disagreement": 0.0679,
+      "disagreement": 0.068,
       "consensus_contributors": {
         "ppr": [
           "FantasyPros",
@@ -15747,9 +15747,9 @@
           "std": 141
         },
         "Sleeper": {
-          "ppr": 122.21,
-          "half": 122.21,
-          "std": 122.21
+          "ppr": 122.15,
+          "half": 122.15,
+          "std": 122.15
         },
         "FantasySharks": {
           "ppr": 132.9,
@@ -16013,10 +16013,10 @@
       "name": "Evan McPherson",
       "team": "CIN",
       "position": "K",
-      "points": 134.439,
-      "points_ppr": 134.439,
-      "points_half": 134.439,
-      "points_std": 134.439,
+      "points": 134.433,
+      "points_ppr": 134.433,
+      "points_half": 134.433,
+      "points_std": 134.433,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -16088,9 +16088,9 @@
           "std": 134
         },
         "Sleeper": {
-          "ppr": 128.4,
-          "half": 128.4,
-          "std": 128.4
+          "ppr": 128.33,
+          "half": 128.33,
+          "std": 128.33
         },
         "FantasySharks": {
           "ppr": 92.8,
@@ -17291,8 +17291,8 @@
       "position": "RB",
       "points": 127.065,
       "points_ppr": 127.065,
-      "points_half": 128.875,
-      "points_std": 113.812,
+      "points_half": 128.45,
+      "points_std": 113.387,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -17300,7 +17300,7 @@
         "std": 3
       },
       "confidence": 88,
-      "disagreement": 0.1498,
+      "disagreement": 0.1476,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -17364,9 +17364,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 171,
-          "half": 152,
-          "std": 133
+          "ppr": 170,
+          "half": 151,
+          "std": 132
         },
         "FantasyPros": {
           "ppr": 124.31,
@@ -21314,10 +21314,10 @@
       "name": "Antoine Winfield",
       "team": "TB",
       "position": "DB",
-      "points": 107.918,
-      "points_ppr": 107.918,
-      "points_half": 107.918,
-      "points_std": 107.918,
+      "points": 107.917,
+      "points_ppr": 107.917,
+      "points_half": 107.917,
+      "points_std": 107.917,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -21369,9 +21369,9 @@
           "std": 93.3
         },
         "Sleeper": {
-          "ppr": 8.68,
-          "half": 8.68,
-          "std": 8.68
+          "ppr": 8.67,
+          "half": 8.67,
+          "std": 8.67
         },
         "FantasySharks": {
           "ppr": 84.1,
@@ -21677,98 +21677,6 @@
       }
     },
     {
-      "player_id": "11655",
-      "name": "Tyrone Tracy",
-      "team": "NYG",
-      "position": "RB",
-      "points": 106.684,
-      "points_ppr": 106.684,
-      "points_half": 94.225,
-      "points_std": 72.191,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 2
-      },
-      "confidence": 72,
-      "disagreement": 0.2997,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FFA",
-          "FantasyPros",
-          "FantasySharks",
-          "DraftSharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper",
-          "DraftSharks"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "ESPN",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 2,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 91.9,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 40.878,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 138.9,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 91.18,
-          "half": 84.39,
-          "std": 77.52
-        },
-        "FantasySharks": {
-          "ppr": 123,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 127,
-          "half": 111,
-          "std": 0
-        },
-        "FantasyPros": {
-          "ppr": 94.95,
-          "half": 83.13,
-          "std": 71.31
-        }
-      }
-    },
-    {
       "player_id": "PIT",
       "name": "Pittsburgh Steelers",
       "team": "PIT",
@@ -21847,10 +21755,10 @@
       "name": "Tykee Smith",
       "team": "TB",
       "position": "DB",
-      "points": 106.463,
-      "points_ppr": 106.463,
-      "points_half": 106.463,
-      "points_std": 106.463,
+      "points": 106.462,
+      "points_ppr": 106.462,
+      "points_half": 106.462,
+      "points_std": 106.462,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -21858,7 +21766,7 @@
         "std": 4
       },
       "confidence": 25,
-      "disagreement": 0.6344,
+      "disagreement": 0.6345,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -21902,9 +21810,9 @@
           "std": 95.4
         },
         "Sleeper": {
-          "ppr": 8.17,
-          "half": 8.17,
-          "std": 8.17
+          "ppr": 8.16,
+          "half": 8.16,
+          "std": 8.16
         },
         "FantasySharks": {
           "ppr": 84.4,
@@ -23185,86 +23093,14 @@
       }
     },
     {
-      "player_id": "12530",
-      "name": "Travis Hunter",
-      "team": "JAC",
-      "position": "WR",
-      "points": 102.906,
-      "points_ppr": 102.906,
-      "points_half": 77.223,
-      "points_std": 59.647,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 53,
-      "disagreement": 0.2218,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros",
-          "FantasySharks",
-          "ESPN"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 1,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 113.106,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 61.44,
-          "half": 50.27,
-          "std": 39.08
-        },
-        "FantasySharks": {
-          "ppr": 112.7,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 111.79,
-          "half": 91,
-          "std": 70.2
-        }
-      }
-    },
-    {
       "player_id": "12469",
       "name": "Dylan Sampson",
       "team": "CLE",
       "position": "RB",
-      "points": 102.549,
-      "points_ppr": 102.549,
-      "points_half": 106.681,
-      "points_std": 86.984,
+      "points": 103.081,
+      "points_ppr": 103.081,
+      "points_half": 107.313,
+      "points_std": 87.267,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -23272,7 +23108,7 @@
         "std": 3
       },
       "confidence": 74,
-      "disagreement": 0.275,
+      "disagreement": 0.2746,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -23343,9 +23179,81 @@
           "std": 106
         },
         "FantasyPros": {
-          "ppr": 108.73,
-          "half": 90.59,
-          "std": 72.45
+          "ppr": 111.07,
+          "half": 92.09,
+          "std": 73.12
+        }
+      }
+    },
+    {
+      "player_id": "12530",
+      "name": "Travis Hunter",
+      "team": "JAC",
+      "position": "WR",
+      "points": 102.906,
+      "points_ppr": 102.906,
+      "points_half": 77.223,
+      "points_std": 59.647,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 53,
+      "disagreement": 0.2218,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FantasyPros",
+          "FantasySharks",
+          "ESPN"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 1,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 113.106,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 61.44,
+          "half": 50.27,
+          "std": 39.08
+        },
+        "FantasySharks": {
+          "ppr": 112.7,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 111.79,
+          "half": 91,
+          "std": 70.2
         }
       }
     },
@@ -23836,6 +23744,93 @@
           "ppr": 105.95,
           "half": 86.05,
           "std": 66.15
+        }
+      }
+    },
+    {
+      "player_id": "11581",
+      "name": "MarShawn Lloyd",
+      "team": "GB",
+      "position": "RB",
+      "points": 102.257,
+      "points_ppr": 102.257,
+      "points_half": 105.475,
+      "points_std": 94.42,
+      "source_count": 6,
+      "format_source_count": {
+        "ppr": 6,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 68,
+      "disagreement": 0.2456,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasySharks",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "Sleeper",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 25,
+        "years_experience": 2,
+        "depth_chart_order": 2,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 86.279,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 133.7,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 74.65,
+          "half": 66.37,
+          "std": 58.08
+        },
+        "FantasySharks": {
+          "ppr": 88.7,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 146,
+          "half": 130,
+          "std": 114
+        },
+        "FantasyPros": {
+          "ppr": 104.48,
+          "half": 97.14,
+          "std": 89.8
         }
       }
     },
@@ -24961,93 +24956,6 @@
       }
     },
     {
-      "player_id": "11581",
-      "name": "MarShawn Lloyd",
-      "team": "GB",
-      "position": "RB",
-      "points": 98.562,
-      "points_ppr": 98.562,
-      "points_half": 95.111,
-      "points_std": 84.618,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 68,
-      "disagreement": 0.2375,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "FantasySharks",
-          "FantasyPros",
-          "CBS"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "Sleeper",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 25,
-        "years_experience": 2,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 86.279,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 133.7,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 74.65,
-          "half": 66.37,
-          "std": 58.09
-        },
-        "FantasySharks": {
-          "ppr": 88.7,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 136,
-          "half": 121,
-          "std": 107
-        },
-        "FantasyPros": {
-          "ppr": 89.55,
-          "half": 81.54,
-          "std": 73.53
-        }
-      }
-    },
-    {
       "player_id": "13296",
       "name": "Caleb Douglas",
       "team": "MIA",
@@ -26002,6 +25910,99 @@
       }
     },
     {
+      "player_id": "11655",
+      "name": "Tyrone Tracy",
+      "team": "NYG",
+      "position": "RB",
+      "points": 93.882,
+      "points_ppr": 93.882,
+      "points_half": 82.918,
+      "points_std": 63.528,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 2
+      },
+      "confidence": 72,
+      "disagreement": 0.2997,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FFA",
+          "FantasyPros",
+          "FantasySharks",
+          "DraftSharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper",
+          "DraftSharks"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "ESPN",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 2,
+        "depth_chart_order": 2,
+        "injury_status": "Out",
+        "active": true,
+        "adjustment": 0.8712,
+        "reasons": [
+          "Sleeper availability: OUT",
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 91.9,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 40.878,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 138.9,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 91.18,
+          "half": 84.39,
+          "std": 77.52
+        },
+        "FantasySharks": {
+          "ppr": 123,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 127,
+          "half": 111,
+          "std": 0
+        },
+        "FantasyPros": {
+          "ppr": 94.95,
+          "half": 83.13,
+          "std": 71.31
+        }
+      }
+    },
+    {
       "player_id": "8289",
       "name": "Aidan Hutchinson",
       "team": "DET",
@@ -26502,10 +26503,10 @@
       "name": "Cincinnati Bengals",
       "team": "CIN",
       "position": "DEF",
-      "points": 91.069,
-      "points_ppr": 91.069,
-      "points_half": 91.069,
-      "points_std": 91.069,
+      "points": 91.061,
+      "points_ppr": 91.061,
+      "points_half": 91.061,
+      "points_std": 91.061,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -26513,7 +26514,7 @@
         "std": 3
       },
       "confidence": 60,
-      "disagreement": 0.0867,
+      "disagreement": 0.0866,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -26552,9 +26553,9 @@
           "std": 81
         },
         "Sleeper": {
-          "ppr": 95.52,
-          "half": 95.52,
-          "std": 95.52
+          "ppr": 95.47,
+          "half": 95.47,
+          "std": 95.47
         },
         "FantasyPros": {
           "ppr": 99.58,
@@ -26781,10 +26782,10 @@
       "name": "Tampa Bay Buccaneers",
       "team": "TB",
       "position": "DEF",
-      "points": 90.403,
-      "points_ppr": 90.403,
-      "points_half": 90.403,
-      "points_std": 90.403,
+      "points": 90.396,
+      "points_ppr": 90.396,
+      "points_half": 90.396,
+      "points_std": 90.396,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -26792,7 +26793,7 @@
         "std": 3
       },
       "confidence": 58,
-      "disagreement": 0.1196,
+      "disagreement": 0.1194,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -26831,9 +26832,9 @@
           "std": 78.4
         },
         "Sleeper": {
-          "ppr": 105.05,
-          "half": 105.05,
-          "std": 105.05
+          "ppr": 105,
+          "half": 105,
+          "std": 105
         },
         "FantasyPros": {
           "ppr": 97.28,
@@ -28045,6 +28046,99 @@
       }
     },
     {
+      "player_id": "13305",
+      "name": "Mike Washington",
+      "team": "LV",
+      "position": "RB",
+      "points": 86.373,
+      "points_ppr": 86.373,
+      "points_half": 101.695,
+      "points_std": 91.883,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 66,
+      "disagreement": 0.3858,
+      "consensus_contributors": {
+        "ppr": [
+          "FFA",
+          "ESPN",
+          "FantasySharks",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "Sleeper",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 0,
+        "depth_chart_order": 2,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 54.7,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 65.165,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 136.3,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 53.77,
+          "half": 46.79,
+          "std": 39.82
+        },
+        "FantasySharks": {
+          "ppr": 79.2,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 145,
+          "half": 133,
+          "std": 121
+        },
+        "FantasyPros": {
+          "ppr": 100.86,
+          "half": 92.02,
+          "std": 83.17
+        }
+      }
+    },
+    {
       "player_id": "13301",
       "name": "Antonio Williams",
       "team": "WAS",
@@ -28120,99 +28214,6 @@
           "ppr": 104.12,
           "half": 86.38,
           "std": 68.65
-        }
-      }
-    },
-    {
-      "player_id": "13305",
-      "name": "Mike Washington",
-      "team": "LV",
-      "position": "RB",
-      "points": 86.313,
-      "points_ppr": 86.313,
-      "points_half": 98.324,
-      "points_std": 89.356,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 67,
-      "disagreement": 0.3701,
-      "consensus_contributors": {
-        "ppr": [
-          "FFA",
-          "ESPN",
-          "FantasySharks",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "Sleeper",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 0,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 54.7,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 65.165,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 136.3,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 53.77,
-          "half": 46.79,
-          "std": 39.82
-        },
-        "FantasySharks": {
-          "ppr": 79.2,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 136,
-          "half": 125,
-          "std": 115
-        },
-        "FantasyPros": {
-          "ppr": 100.86,
-          "half": 92.02,
-          "std": 83.17
         }
       }
     },
@@ -31125,7 +31126,7 @@
       "points": 79.615,
       "points_ppr": 79.615,
       "points_half": 104.046,
-      "points_std": 92.057,
+      "points_std": 91.636,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -31201,7 +31202,7 @@
         "DraftSharks": {
           "ppr": 151,
           "half": 133,
-          "std": 116
+          "std": 115
         },
         "FantasyPros": {
           "ppr": 84.39,
@@ -32253,7 +32254,7 @@
         "age": 24,
         "years_experience": 3,
         "depth_chart_order": 5,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -34271,10 +34272,10 @@
       "name": "Bryan Cook",
       "team": "CIN",
       "position": "DB",
-      "points": 70.253,
-      "points_ppr": 70.253,
-      "points_half": 70.253,
-      "points_std": 70.253,
+      "points": 70.252,
+      "points_ppr": 70.252,
+      "points_half": 70.252,
+      "points_std": 70.252,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -34282,7 +34283,7 @@
         "std": 3
       },
       "confidence": 20,
-      "disagreement": 0.6829,
+      "disagreement": 0.6831,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -34323,9 +34324,9 @@
           "std": 79.3
         },
         "Sleeper": {
-          "ppr": 1.88,
-          "half": 1.88,
-          "std": 1.88
+          "ppr": 1.87,
+          "half": 1.87,
+          "std": 1.87
         },
         "FantasySharks": {
           "ppr": 81.9,
@@ -34483,10 +34484,10 @@
       "name": "Yaya Diaby",
       "team": "TB",
       "position": "DL",
-      "points": 68.761,
-      "points_ppr": 68.761,
-      "points_half": 68.761,
-      "points_std": 68.761,
+      "points": 68.76,
+      "points_ppr": 68.76,
+      "points_half": 68.76,
+      "points_std": 68.76,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -34494,7 +34495,7 @@
         "std": 4
       },
       "confidence": 26,
-      "disagreement": 0.6204,
+      "disagreement": 0.6205,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -34538,9 +34539,9 @@
           "std": 53.6
         },
         "Sleeper": {
-          "ppr": 10.38,
-          "half": 10.38,
-          "std": 10.38
+          "ppr": 10.37,
+          "half": 10.37,
+          "std": 10.37
         },
         "FantasySharks": {
           "ppr": 56.6,
@@ -35189,60 +35190,6 @@
           "ppr": 88.4,
           "half": 88.4,
           "std": 88.4
-        }
-      }
-    },
-    {
-      "player_id": "4144",
-      "name": "Jonnu Smith",
-      "team": "GB",
-      "position": "TE",
-      "points": 67.469,
-      "points_ppr": 67.469,
-      "points_half": 0,
-      "points_std": 0,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 0,
-        "std": 0
-      },
-      "confidence": 38,
-      "disagreement": 0.2091,
-      "consensus_contributors": {
-        "ppr": [
-          "FFA",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 31,
-        "years_experience": 9,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 53.9,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 82.4,
-          "half": null,
-          "std": null
         }
       }
     },
@@ -36125,6 +36072,78 @@
           "ppr": 84.5,
           "half": 84.5,
           "std": 84.5
+        }
+      }
+    },
+    {
+      "player_id": "4144",
+      "name": "Jonnu Smith",
+      "team": "GB",
+      "position": "TE",
+      "points": 64.461,
+      "points_ppr": 64.461,
+      "points_half": 48.053,
+      "points_std": 36.097,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 46,
+      "disagreement": 0.3302,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FFA",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 31,
+        "years_experience": 9,
+        "depth_chart_order": 2,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 53.9,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 82.4,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 30.36,
+          "half": 23.79,
+          "std": 17.21
+        },
+        "FantasyPros": {
+          "ppr": 71.2,
+          "half": 57.2,
+          "std": 43.2
         }
       }
     },
@@ -38270,10 +38289,10 @@
       "name": "Myles Murphy",
       "team": "CIN",
       "position": "DL",
-      "points": 57.982,
-      "points_ppr": 57.982,
-      "points_half": 57.982,
-      "points_std": 57.982,
+      "points": 57.981,
+      "points_ppr": 57.981,
+      "points_half": 57.981,
+      "points_std": 57.981,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -38281,7 +38300,7 @@
         "std": 3
       },
       "confidence": 20,
-      "disagreement": 0.7195,
+      "disagreement": 0.7196,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -38320,9 +38339,9 @@
           "std": 54.3
         },
         "Sleeper": {
-          "ppr": 1.88,
-          "half": 1.88,
-          "std": 1.88
+          "ppr": 1.87,
+          "half": 1.87,
+          "std": 1.87
         },
         "FantasySharks": {
           "ppr": 81.3,
@@ -41431,85 +41450,6 @@
       }
     },
     {
-      "player_id": "12521",
-      "name": "Elijah Arroyo",
-      "team": "SEA",
-      "position": "TE",
-      "points": 50.752,
-      "points_ppr": 50.752,
-      "points_half": 48.182,
-      "points_std": 36.417,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 55,
-      "disagreement": 0.3186,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "FantasyPros",
-          "ESPN"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "CBS",
-          "Sleeper"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 1,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 60.615,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 26.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 66.74,
-          "half": 54.55,
-          "std": 42.37
-        },
-        "FantasySharks": {
-          "ppr": 34.8,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 58.38,
-          "half": 46.61,
-          "std": 34.83
-        }
-      }
-    },
-    {
       "player_id": "8334",
       "name": "Malcolm Rodriguez",
       "team": "DET",
@@ -41566,91 +41506,6 @@
           "ppr": 66.1,
           "half": 66.1,
           "std": 66.1
-        }
-      }
-    },
-    {
-      "player_id": "13337",
-      "name": "Emmett Johnson",
-      "team": "KC",
-      "position": "RB",
-      "points": 50.62,
-      "points_ppr": 50.62,
-      "points_half": 43.511,
-      "points_std": 38.664,
-      "source_count": 6,
-      "format_source_count": {
-        "ppr": 6,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 52,
-      "disagreement": 0.4766,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "ESPN",
-          "Sleeper",
-          "FantasySharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "CBS",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 22,
-        "years_experience": 0,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 46.616,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 25.4,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 57.8,
-          "half": 50.74,
-          "std": 43.66
-        },
-        "FantasySharks": {
-          "ppr": 59.8,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 116,
-          "half": 0,
-          "std": 0
-        },
-        "FantasyPros": {
-          "ppr": 46.39,
-          "half": 42.18,
-          "std": 37.98
         }
       }
     },
@@ -42665,6 +42520,242 @@
       }
     },
     {
+      "player_id": "12521",
+      "name": "Elijah Arroyo",
+      "team": "SEA",
+      "position": "TE",
+      "points": 47.386,
+      "points_ppr": 47.386,
+      "points_half": 42.352,
+      "points_std": 32.244,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 55,
+      "disagreement": 0.3187,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros",
+          "ESPN"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "CBS",
+          "Sleeper"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 1,
+        "depth_chart_order": 2,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 60.615,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 26.6,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 66.74,
+          "half": 54.55,
+          "std": 42.37
+        },
+        "FantasySharks": {
+          "ppr": 34.8,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 48.18,
+          "half": 38.66,
+          "std": 29.14
+        }
+      }
+    },
+    {
+      "player_id": "13337",
+      "name": "Emmett Johnson",
+      "team": "KC",
+      "position": "RB",
+      "points": 47.329,
+      "points_ppr": 47.329,
+      "points_half": 36.332,
+      "points_std": 32.464,
+      "source_count": 6,
+      "format_source_count": {
+        "ppr": 6,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 49,
+      "disagreement": 0.512,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "ESPN",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "CBS",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 22,
+        "years_experience": 0,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 46.616,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 25.4,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 57.8,
+          "half": 50.74,
+          "std": 43.66
+        },
+        "FantasySharks": {
+          "ppr": 59.8,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 116,
+          "half": 0,
+          "std": 0
+        },
+        "FantasyPros": {
+          "ppr": 35.14,
+          "half": 32.29,
+          "std": 29.44
+        }
+      }
+    },
+    {
+      "player_id": "11629",
+      "name": "Devontez Walker",
+      "team": "BAL",
+      "position": "WR",
+      "points": 46.713,
+      "points_ppr": 46.713,
+      "points_half": 44.623,
+      "points_std": 36.871,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 53,
+      "disagreement": 0.2258,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "ESPN",
+          "FantasySharks",
+          "FantasyPros"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 25,
+        "years_experience": 2,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 43.959,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 32.97,
+          "half": 27.89,
+          "std": 22.8
+        },
+        "FantasySharks": {
+          "ppr": 45.4,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 62.11,
+          "half": 52.99,
+          "std": 43.87
+        }
+      }
+    },
+    {
       "player_id": "11779",
       "name": "Tarheeb Still",
       "team": "LAC",
@@ -42843,84 +42934,14 @@
       }
     },
     {
-      "player_id": "10444",
-      "name": "Cedric Tillman",
-      "team": "CLE",
-      "position": "WR",
-      "points": 46.602,
-      "points_ppr": 46.602,
-      "points_half": 66.02,
-      "points_std": 52.432,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 20,
-      "disagreement": 0.9136,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "Sleeper",
-          "FantasySharks",
-          "FantasyPros"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 3,
-        "depth_chart_order": null,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 7.432,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 13.67,
-          "half": 11.22,
-          "std": 8.81
-        },
-        "FantasySharks": {
-          "ppr": 41.2,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 102.7,
-          "half": 85.2,
-          "std": 67.7
-        }
-      }
-    },
-    {
       "player_id": "8286",
       "name": "Dax Hill",
       "team": "CIN",
       "position": "DB",
-      "points": 46.586,
-      "points_ppr": 46.586,
-      "points_half": 46.586,
-      "points_std": 46.586,
+      "points": 46.583,
+      "points_ppr": 46.583,
+      "points_half": 46.583,
+      "points_std": 46.583,
       "source_count": 2,
       "format_source_count": {
         "ppr": 2,
@@ -42928,7 +42949,7 @@
         "std": 2
       },
       "confidence": 20,
-      "disagreement": 0.9402,
+      "disagreement": 0.9405,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -42961,9 +42982,9 @@
       },
       "sources": {
         "Sleeper": {
-          "ppr": 1.88,
-          "half": 1.88,
-          "std": 1.88
+          "ppr": 1.87,
+          "half": 1.87,
+          "std": 1.87
         },
         "FantasySharks": {
           "ppr": 61,
@@ -43343,7 +43364,7 @@
         "age": 25,
         "years_experience": 3,
         "depth_chart_order": 2,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 1,
         "reasons": []
@@ -43551,6 +43572,70 @@
           "ppr": 18.6,
           "half": 18.6,
           "std": 18.6
+        }
+      }
+    },
+    {
+      "player_id": "7562",
+      "name": "Tutu Atwell",
+      "team": "LAR",
+      "position": "WR",
+      "points": 45.391,
+      "points_ppr": 45.391,
+      "points_half": 43.786,
+      "points_std": 33.457,
+      "source_count": 3,
+      "format_source_count": {
+        "ppr": 3,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 42,
+      "disagreement": 0.272,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros",
+          "ESPN"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 5,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 55.243,
+          "half": null,
+          "std": null
+        },
+        "FantasySharks": {
+          "ppr": 28.5,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 55.21,
+          "half": 44.68,
+          "std": 34.14
         }
       }
     },
@@ -44690,148 +44775,6 @@
       }
     },
     {
-      "player_id": "11629",
-      "name": "Devontez Walker",
-      "team": "BAL",
-      "position": "WR",
-      "points": 43.202,
-      "points_ppr": 43.202,
-      "points_half": 34.334,
-      "points_std": 27.644,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 66,
-      "disagreement": 0.12,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros",
-          "ESPN",
-          "FantasySharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 25,
-        "years_experience": 2,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 43.959,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 32.97,
-          "half": 27.89,
-          "std": 22.8
-        },
-        "FantasySharks": {
-          "ppr": 45.4,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 43.83,
-          "half": 36.59,
-          "std": 29.34
-        }
-      }
-    },
-    {
-      "player_id": "7562",
-      "name": "Tutu Atwell",
-      "team": "LAR",
-      "position": "WR",
-      "points": 42.839,
-      "points_ppr": 42.839,
-      "points_half": 36.952,
-      "points_std": 28.391,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 42,
-      "disagreement": 0.3829,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasySharks",
-          "FantasyPros",
-          "ESPN"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 5,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 55.243,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 21.39,
-          "half": 17.78,
-          "std": 14.2
-        },
-        "FantasySharks": {
-          "ppr": 28.5,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 55.21,
-          "half": 44.68,
-          "std": 34.14
-        }
-      }
-    },
-    {
       "player_id": "7782",
       "name": "Isaiah McDuffie",
       "team": "GB",
@@ -45643,85 +45586,6 @@
       }
     },
     {
-      "player_id": "11370",
-      "name": "Chris Brooks",
-      "team": "GB",
-      "position": "RB",
-      "points": 40.249,
-      "points_ppr": 40.249,
-      "points_half": 47.863,
-      "points_std": 41.724,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 59,
-      "disagreement": 0.254,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "FantasySharks",
-          "CBS"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 3,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 36.01,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 47.7,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 31.86,
-          "half": 26.84,
-          "std": 21.82
-        },
-        "FantasySharks": {
-          "ppr": 39.5,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 63.24,
-          "half": 56.54,
-          "std": 49.84
-        }
-      }
-    },
-    {
       "player_id": "8290",
       "name": "Sauce Gardner",
       "team": "IND",
@@ -46101,6 +45965,83 @@
       }
     },
     {
+      "player_id": "11370",
+      "name": "Chris Brooks",
+      "team": "GB",
+      "position": "RB",
+      "points": 39.217,
+      "points_ppr": 39.217,
+      "points_half": 34.136,
+      "points_std": 28.798,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 72,
+      "disagreement": 0.1364,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasySharks",
+          "FantasyPros"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "Sleeper",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 3,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 36.01,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 47.7,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 31.86,
+          "half": 26.84,
+          "std": 21.82
+        },
+        "FantasySharks": {
+          "ppr": 39.5,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 42.14,
+          "half": 36.69,
+          "std": 31.24
+        }
+      }
+    },
+    {
       "player_id": "13302",
       "name": "Adam Randall",
       "team": "BAL",
@@ -46144,7 +46085,7 @@
         "age": 22,
         "years_experience": 0,
         "depth_chart_order": 3,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 0.98,
         "reasons": [
@@ -46370,6 +46311,83 @@
           "ppr": 48.7,
           "half": 48.7,
           "std": 48.7
+        }
+      }
+    },
+    {
+      "player_id": "6001",
+      "name": "Drew Sample",
+      "team": "CIN",
+      "position": "TE",
+      "points": 38.314,
+      "points_ppr": 38.314,
+      "points_half": 29.515,
+      "points_std": 21.083,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 72,
+      "disagreement": 0.1399,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FantasyPros",
+          "ESPN"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "CBS",
+          "FantasySharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 30,
+        "years_experience": 7,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 38.816,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 31.5,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 35.72,
+          "half": 27.93,
+          "std": 20.15
+        },
+        "FantasySharks": {
+          "ppr": 47.9,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 38.72,
+          "half": 30.07,
+          "std": 21.41
         }
       }
     },
@@ -46955,79 +46973,81 @@
       }
     },
     {
-      "player_id": "6001",
-      "name": "Drew Sample",
-      "team": "CIN",
+      "player_id": "8698",
+      "name": "Jake Tonges",
+      "team": "SF",
       "position": "TE",
-      "points": 36.246,
-      "points_ppr": 36.246,
-      "points_half": 26.708,
-      "points_std": 19.083,
+      "points": 36.355,
+      "points_ppr": 36.355,
+      "points_half": 33.884,
+      "points_std": 25.461,
       "source_count": 5,
       "format_source_count": {
         "ppr": 5,
         "half": 2,
         "std": 2
       },
-      "confidence": 71,
-      "disagreement": 0.1517,
+      "confidence": 26,
+      "disagreement": 0.7294,
       "consensus_contributors": {
         "ppr": [
-          "FantasyPros",
+          "CBS",
           "Sleeper",
-          "ESPN"
+          "FantasyPros"
         ],
         "half": [
-          "FantasyPros",
-          "Sleeper"
+          "Sleeper",
+          "FantasyPros"
         ],
         "std": [
-          "FantasyPros",
-          "Sleeper"
+          "Sleeper",
+          "FantasyPros"
         ]
       },
       "trimmed_sources": {
         "ppr": [
-          "CBS",
+          "ESPN",
           "FantasySharks"
         ],
         "half": [],
         "std": []
       },
       "context": {
-        "age": 30,
-        "years_experience": 7,
-        "depth_chart_order": 3,
+        "age": 27,
+        "years_experience": 4,
+        "depth_chart_order": 2,
         "injury_status": null,
         "active": true,
-        "adjustment": 1,
-        "reasons": []
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
       },
       "sources": {
         "ESPN": {
-          "ppr": 38.816,
+          "ppr": 25.201,
           "half": null,
           "std": null
         },
         "CBS": {
-          "ppr": 31.5,
+          "ppr": 28.6,
           "half": null,
           "std": null
         },
         "Sleeper": {
-          "ppr": 35.72,
-          "half": 27.93,
-          "std": 20.15
+          "ppr": 38.45,
+          "half": 30.93,
+          "std": 23.4
         },
         "FantasySharks": {
-          "ppr": 47.9,
+          "ppr": 129.7,
           "half": null,
           "std": null
         },
         "FantasyPros": {
-          "ppr": 33.86,
-          "half": 26.28,
-          "std": 18.71
+          "ppr": 44.24,
+          "half": 35.38,
+          "std": 26.53
         }
       }
     },
@@ -48243,165 +48263,6 @@
       }
     },
     {
-      "player_id": "8698",
-      "name": "Jake Tonges",
-      "team": "SF",
-      "position": "TE",
-      "points": 34.11,
-      "points_ppr": 34.11,
-      "points_half": 30.679,
-      "points_std": 22.953,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 24,
-      "disagreement": 0.7501,
-      "consensus_contributors": {
-        "ppr": [
-          "CBS",
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "ESPN",
-          "FantasySharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 27,
-        "years_experience": 4,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 25.201,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 28.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 38.45,
-          "half": 30.93,
-          "std": 23.4
-        },
-        "FantasySharks": {
-          "ppr": 129.7,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 38.91,
-          "half": 31.01,
-          "std": 23.11
-        }
-      }
-    },
-    {
-      "player_id": "9481",
-      "name": "Luke Musgrave",
-      "team": "GB",
-      "position": "TE",
-      "points": 34.098,
-      "points_ppr": 34.098,
-      "points_half": 31.12,
-      "points_std": 22.493,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 50,
-      "disagreement": 0.3912,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "ESPN",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 25,
-        "years_experience": 3,
-        "depth_chart_order": 2,
-        "injury_status": "PUP",
-        "active": true,
-        "adjustment": 0.8712,
-        "reasons": [
-          "Sleeper availability: PUP",
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 16.211,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 61.8,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 50.65,
-          "half": 39.38,
-          "std": 28.07
-        },
-        "FantasySharks": {
-          "ppr": 30.4,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 43.85,
-          "half": 34.44,
-          "std": 25.03
-        }
-      }
-    },
-    {
       "player_id": "5893",
       "name": "C.J. Gardner-Johnson",
       "team": "BUF",
@@ -48578,6 +48439,86 @@
           "ppr": 43.5,
           "half": 43.5,
           "std": 43.5
+        }
+      }
+    },
+    {
+      "player_id": "9481",
+      "name": "Luke Musgrave",
+      "team": "GB",
+      "position": "TE",
+      "points": 33.567,
+      "points_ppr": 33.567,
+      "points_half": 30.345,
+      "points_std": 21.866,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 50,
+      "disagreement": 0.3889,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "ESPN",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 25,
+        "years_experience": 3,
+        "depth_chart_order": 2,
+        "injury_status": "PUP",
+        "active": true,
+        "adjustment": 0.8712,
+        "reasons": [
+          "Sleeper availability: PUP",
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 16.211,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 61.8,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 47.7,
+          "half": 37.09,
+          "std": 26.44
+        },
+        "FantasySharks": {
+          "ppr": 30.4,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 43.45,
+          "half": 34.04,
+          "std": 24.63
         }
       }
     },
@@ -49504,7 +49445,7 @@
         "age": 24,
         "years_experience": 1,
         "depth_chart_order": 5,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
@@ -51228,6 +51169,62 @@
       }
     },
     {
+      "player_id": "11381",
+      "name": "Travis Vokolek",
+      "team": "ARI",
+      "position": "TE",
+      "points": 28.75,
+      "points_ppr": 28.75,
+      "points_half": 22.9,
+      "points_std": 16.9,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 58,
+      "disagreement": 0.0052,
+      "consensus_contributors": {
+        "ppr": [
+          "CBS",
+          "FantasyPros"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 27,
+        "years_experience": 3,
+        "depth_chart_order": null,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 28.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 28.9,
+          "half": 22.9,
+          "std": 16.9
+        }
+      }
+    },
+    {
       "player_id": "4435",
       "name": "Anthony Firkser",
       "team": "DET",
@@ -51346,22 +51343,22 @@
       }
     },
     {
-      "player_id": "8227",
-      "name": "Teagan Quitoriano",
-      "team": "ARI",
+      "player_id": "12389",
+      "name": "Hayden Rucci",
+      "team": "SF",
       "position": "TE",
-      "points": 28.175,
-      "points_ppr": 28.175,
-      "points_half": 22.442,
-      "points_std": 16.562,
+      "points": 28.032,
+      "points_ppr": 28.032,
+      "points_half": 22.848,
+      "points_std": 17.088,
       "source_count": 2,
       "format_source_count": {
         "ppr": 2,
         "half": 1,
         "std": 1
       },
-      "confidence": 53,
-      "disagreement": 0.0052,
+      "confidence": 52,
+      "disagreement": 0.0205,
       "consensus_contributors": {
         "ppr": [
           "CBS",
@@ -51380,14 +51377,14 @@
         "std": []
       },
       "context": {
-        "age": 26,
-        "years_experience": 4,
-        "depth_chart_order": 3,
+        "age": 25,
+        "years_experience": 2,
+        "depth_chart_order": 5,
         "injury_status": null,
         "active": true,
-        "adjustment": 0.98,
+        "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
+          "Depth-chart order 5 used as a bounded correction"
         ]
       },
       "sources": {
@@ -51397,9 +51394,9 @@
           "std": null
         },
         "FantasyPros": {
-          "ppr": 28.9,
-          "half": 22.9,
-          "std": 16.9
+          "ppr": 29.8,
+          "half": 23.8,
+          "std": 17.8
         }
       }
     },
@@ -51460,6 +51457,122 @@
           "ppr": 35.8,
           "half": 35.8,
           "std": 35.8
+        }
+      }
+    },
+    {
+      "player_id": "8227",
+      "name": "Teagan Quitoriano",
+      "team": "ARI",
+      "position": "TE",
+      "points": 27.6,
+      "points_ppr": 27.6,
+      "points_half": 21.984,
+      "points_std": 16.224,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 53,
+      "disagreement": 0.0052,
+      "consensus_contributors": {
+        "ppr": [
+          "CBS",
+          "FantasyPros"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 4,
+        "depth_chart_order": 4,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 4 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 28.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 28.9,
+          "half": 22.9,
+          "std": 16.9
+        }
+      }
+    },
+    {
+      "player_id": "12851",
+      "name": "Rivaldo Fairweather",
+      "team": "ARI",
+      "position": "TE",
+      "points": 27.6,
+      "points_ppr": 27.6,
+      "points_half": 21.984,
+      "points_std": 16.224,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 53,
+      "disagreement": 0.0052,
+      "consensus_contributors": {
+        "ppr": [
+          "CBS",
+          "FantasyPros"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 24,
+        "years_experience": 1,
+        "depth_chart_order": 5,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.96,
+        "reasons": [
+          "Depth-chart order 5 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "CBS": {
+          "ppr": 28.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 28.9,
+          "half": 22.9,
+          "std": 16.9
         }
       }
     },
@@ -51726,64 +51839,6 @@
       }
     },
     {
-      "player_id": "12062",
-      "name": "Cam Grandy",
-      "team": "CIN",
-      "position": "TE",
-      "points": 27.456,
-      "points_ppr": 27.456,
-      "points_half": 21.6,
-      "points_std": 15.36,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 1,
-        "std": 1
-      },
-      "confidence": 52,
-      "disagreement": 0.014,
-      "consensus_contributors": {
-        "ppr": [
-          "CBS",
-          "FantasyPros"
-        ],
-        "half": [
-          "FantasyPros"
-        ],
-        "std": [
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 2,
-        "depth_chart_order": 6,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 6 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "CBS": {
-          "ppr": 28.2,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 29,
-          "half": 22.5,
-          "std": 16
-        }
-      }
-    },
-    {
       "player_id": "12552",
       "name": "Walter Nolen",
       "team": "ARI",
@@ -51840,64 +51895,6 @@
           "ppr": 33.8,
           "half": 33.8,
           "std": 33.8
-        }
-      }
-    },
-    {
-      "player_id": "13577",
-      "name": "Dallen Bentley",
-      "team": "DEN",
-      "position": "TE",
-      "points": 27.408,
-      "points_ppr": 27.408,
-      "points_half": 21.6,
-      "points_std": 15.84,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 1,
-        "std": 1
-      },
-      "confidence": 53,
-      "disagreement": 0.0018,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "CBS"
-        ],
-        "half": [
-          "FantasyPros"
-        ],
-        "std": [
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 25,
-        "years_experience": 0,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "CBS": {
-          "ppr": 28.6,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 28.5,
-          "half": 22.5,
-          "std": 16.5
         }
       }
     },
@@ -52762,12 +52759,12 @@
       "context": {
         "age": 22,
         "years_experience": 2,
-        "depth_chart_order": 7,
+        "depth_chart_order": 4,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 7 used as a bounded correction"
+          "Depth-chart order 4 used as a bounded correction"
         ]
       },
       "sources": {
@@ -52970,12 +52967,12 @@
       "context": {
         "age": 24,
         "years_experience": 3,
-        "depth_chart_order": 4,
+        "depth_chart_order": 5,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
+          "Depth-chart order 5 used as a bounded correction"
         ]
       },
       "sources": {
@@ -53233,7 +53230,7 @@
         "std": []
       },
       "context": {
-        "age": 23,
+        "age": 24,
         "years_experience": 2,
         "depth_chart_order": 3,
         "injury_status": null,
@@ -53544,6 +53541,58 @@
           "ppr": 23.51,
           "half": 18.6,
           "std": 13.68
+        }
+      }
+    },
+    {
+      "player_id": "10444",
+      "name": "Cedric Tillman",
+      "team": "CLE",
+      "position": "WR",
+      "points": 24.316,
+      "points_ppr": 24.316,
+      "points_half": 0,
+      "points_std": 0,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 0,
+        "std": 0
+      },
+      "confidence": 20,
+      "disagreement": 0.6944,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasySharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 3,
+        "depth_chart_order": null,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 7.432,
+          "half": null,
+          "std": null
+        },
+        "FantasySharks": {
+          "ppr": 41.2,
+          "half": null,
+          "std": null
         }
       }
     },
@@ -54543,6 +54592,141 @@
       }
     },
     {
+      "player_id": "13319",
+      "name": "Oscar Delp",
+      "team": "NO",
+      "position": "TE",
+      "points": 22.515,
+      "points_ppr": 22.515,
+      "points_half": 21.442,
+      "points_std": 15.827,
+      "source_count": 5,
+      "format_source_count": {
+        "ppr": 5,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 44,
+      "disagreement": 0.4653,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasyPros",
+          "CBS"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FantasySharks",
+          "Sleeper"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 0,
+        "depth_chart_order": 3,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 18.033,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 27.6,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 39.98,
+          "half": 31.28,
+          "std": 22.58
+        },
+        "FantasySharks": {
+          "ppr": 7.2,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 23.29,
+          "half": 18.59,
+          "std": 13.9
+        }
+      }
+    },
+    {
+      "player_id": "8500",
+      "name": "John FitzPatrick",
+      "team": "GB",
+      "position": "TE",
+      "points": 22.5,
+      "points_ppr": 22.5,
+      "points_half": 19.6,
+      "points_std": 14.6,
+      "source_count": 2,
+      "format_source_count": {
+        "ppr": 2,
+        "half": 1,
+        "std": 1
+      },
+      "confidence": 51,
+      "disagreement": 0.0933,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros"
+        ],
+        "half": [
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 25,
+        "years_experience": 4,
+        "depth_chart_order": null,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FantasySharks": {
+          "ppr": 20.4,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 24.6,
+          "half": 19.6,
+          "std": 14.6
+        }
+      }
+    },
+    {
       "player_id": "13405",
       "name": "Kaytron Allen",
       "team": "WAS",
@@ -55242,93 +55426,14 @@
       }
     },
     {
-      "player_id": "13319",
-      "name": "Oscar Delp",
-      "team": "NO",
-      "position": "TE",
-      "points": 20.78,
-      "points_ppr": 20.78,
-      "points_half": 18.176,
-      "points_std": 13.134,
-      "source_count": 5,
-      "format_source_count": {
-        "ppr": 5,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 42,
-      "disagreement": 0.4966,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "ESPN",
-          "CBS"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FantasySharks",
-          "Sleeper"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 0,
-        "depth_chart_order": 3,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 18.033,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 27.6,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 39.98,
-          "half": 31.28,
-          "std": 22.58
-        },
-        "FantasySharks": {
-          "ppr": 7.2,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 17.98,
-          "half": 14.09,
-          "std": 10.19
-        }
-      }
-    },
-    {
       "player_id": "13347",
       "name": "Demond Claiborne",
       "team": "MIN",
       "position": "RB",
-      "points": 20.725,
-      "points_ppr": 20.725,
-      "points_half": 22.645,
-      "points_std": 19.538,
+      "points": 20.695,
+      "points_ppr": 20.695,
+      "points_half": 22.572,
+      "points_std": 19.465,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -55336,7 +55441,7 @@
         "std": 2
       },
       "confidence": 38,
-      "disagreement": 0.4482,
+      "disagreement": 0.4445,
       "consensus_contributors": {
         "ppr": [
           "ESPN",
@@ -55376,9 +55481,9 @@
           "std": null
         },
         "Sleeper": {
-          "ppr": 44.08,
-          "half": 36.5,
-          "std": 28.9
+          "ppr": 43.79,
+          "half": 36.21,
+          "std": 28.61
         },
         "FantasySharks": {
           "ppr": 18.6,
@@ -56133,78 +56238,6 @@
       }
     },
     {
-      "player_id": "11201",
-      "name": "Blake Whiteheart",
-      "team": "CLE",
-      "position": "TE",
-      "points": 19.481,
-      "points_ppr": 19.481,
-      "points_half": 5.84,
-      "points_std": 4.157,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 20,
-      "disagreement": 0.988,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros",
-          "ESPN",
-          "FantasySharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 3,
-        "depth_chart_order": 2,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.99,
-        "reasons": [
-          "Depth-chart order 2 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 7.741,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 7.31,
-          "half": 5.81,
-          "std": 4.34
-        },
-        "FantasySharks": {
-          "ppr": 47.9,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 7.72,
-          "half": 5.93,
-          "std": 4.15
-        }
-      }
-    },
-    {
       "player_id": "13488",
       "name": "Kaleb Elarms-Orr",
       "team": "BUF",
@@ -56241,7 +56274,7 @@
         "std": []
       },
       "context": {
-        "age": 22,
+        "age": 23,
         "years_experience": 0,
         "depth_chart_order": 2,
         "injury_status": null,
@@ -56321,6 +56354,78 @@
           "ppr": 24.7,
           "half": 24.7,
           "std": 24.7
+        }
+      }
+    },
+    {
+      "player_id": "11201",
+      "name": "Blake Whiteheart",
+      "team": "CLE",
+      "position": "TE",
+      "points": 19.284,
+      "points_ppr": 19.284,
+      "points_half": 5.781,
+      "points_std": 4.115,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 20,
+      "disagreement": 0.988,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FantasyPros",
+          "ESPN",
+          "FantasySharks"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 3,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 7.741,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 7.31,
+          "half": 5.81,
+          "std": 4.34
+        },
+        "FantasySharks": {
+          "ppr": 47.9,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 7.72,
+          "half": 5.93,
+          "std": 4.15
         }
       }
     },
@@ -56489,12 +56594,12 @@
       "context": {
         "age": 33,
         "years_experience": 12,
-        "depth_chart_order": 6,
+        "depth_chart_order": 5,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 6 used as a bounded correction"
+          "Depth-chart order 5 used as a bounded correction"
         ]
       },
       "sources": {
@@ -56621,12 +56726,12 @@
       "context": {
         "age": 28,
         "years_experience": 4,
-        "depth_chart_order": 5,
+        "depth_chart_order": 6,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 5 used as a bounded correction"
+          "Depth-chart order 6 used as a bounded correction"
         ]
       },
       "sources": {
@@ -57144,66 +57249,6 @@
       }
     },
     {
-      "player_id": "11569",
-      "name": "Jarquez Hunter",
-      "team": "MIA",
-      "position": "RB",
-      "points": 16.794,
-      "points_ppr": 16.794,
-      "points_half": 16.416,
-      "points_std": 16.041,
-      "source_count": 2,
-      "format_source_count": {
-        "ppr": 2,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 20,
-      "disagreement": 0.9024,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 1,
-        "depth_chart_order": 5,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 5 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "Sleeper": {
-          "ppr": 1.19,
-          "half": 1.1,
-          "std": 1.02
-        },
-        "FantasyPros": {
-          "ppr": 23.2,
-          "half": 22.7,
-          "std": 22.2
-        }
-      }
-    },
-    {
       "player_id": "8316",
       "name": "Micheal Clemons",
       "team": "IND",
@@ -57304,12 +57349,12 @@
       "context": {
         "age": 23,
         "years_experience": 1,
-        "depth_chart_order": 4,
+        "depth_chart_order": 5,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
+          "Depth-chart order 5 used as a bounded correction"
         ]
       },
       "sources": {
@@ -57332,6 +57377,78 @@
           "ppr": 16.8,
           "half": 15.8,
           "std": 14.8
+        }
+      }
+    },
+    {
+      "player_id": "7842",
+      "name": "Luke Farrell",
+      "team": "SF",
+      "position": "TE",
+      "points": 16.581,
+      "points_ppr": 16.581,
+      "points_half": 7.516,
+      "points_std": 5.455,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 23,
+      "disagreement": 0.6571,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "ESPN",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 28,
+        "years_experience": 5,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 9.379,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 11.06,
+          "half": 8.64,
+          "std": 6.24
+        },
+        "FantasySharks": {
+          "ppr": 34.1,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 9.33,
+          "half": 7.33,
+          "std": 5.33
         }
       }
     },
@@ -57392,6 +57509,78 @@
           "ppr": 21.3,
           "half": 21.3,
           "std": 21.3
+        }
+      }
+    },
+    {
+      "player_id": "10212",
+      "name": "Josh Whyle",
+      "team": "GB",
+      "position": "TE",
+      "points": 16.477,
+      "points_ppr": 16.477,
+      "points_half": 11.147,
+      "points_std": 8.26,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 31,
+      "disagreement": 0.5365,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "ESPN",
+          "FantasyPros",
+          "FantasySharks"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasyPros"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasyPros"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 26,
+        "years_experience": 3,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 8.785,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 7.6,
+          "half": 5.93,
+          "std": 4.28
+        },
+        "FantasySharks": {
+          "ppr": 28.2,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 16.68,
+          "half": 13.28,
+          "std": 9.88
         }
       }
     },
@@ -57540,78 +57729,6 @@
       }
     },
     {
-      "player_id": "10212",
-      "name": "Josh Whyle",
-      "team": "GB",
-      "position": "TE",
-      "points": 16.348,
-      "points_ppr": 16.348,
-      "points_half": 10.898,
-      "points_std": 8.082,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 29,
-      "disagreement": 0.5683,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "ESPN",
-          "FantasyPros",
-          "FantasySharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 26,
-        "years_experience": 3,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 8.785,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 6.34,
-          "half": 4.95,
-          "std": 3.58
-        },
-        "FantasySharks": {
-          "ppr": 28.2,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 16.68,
-          "half": 13.28,
-          "std": 9.88
-        }
-      }
-    },
-    {
       "player_id": "13324",
       "name": "Matt Hibner",
       "team": "BAL",
@@ -57672,78 +57789,6 @@
           "ppr": 20,
           "half": null,
           "std": null
-        }
-      }
-    },
-    {
-      "player_id": "7842",
-      "name": "Luke Farrell",
-      "team": "SF",
-      "position": "TE",
-      "points": 16.243,
-      "points_ppr": 16.243,
-      "points_half": 7.363,
-      "points_std": 5.343,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 23,
-      "disagreement": 0.6571,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "ESPN",
-          "Sleeper",
-          "FantasySharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 28,
-        "years_experience": 5,
-        "depth_chart_order": 4,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.96,
-        "reasons": [
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 9.379,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 11.06,
-          "half": 8.64,
-          "std": 6.24
-        },
-        "FantasySharks": {
-          "ppr": 34.1,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 9.33,
-          "half": 7.33,
-          "std": 5.33
         }
       }
     },
@@ -57816,78 +57861,6 @@
           "ppr": 19.74,
           "half": 17.59,
           "std": 15.45
-        }
-      }
-    },
-    {
-      "player_id": "13435",
-      "name": "Joe Royer",
-      "team": "CLE",
-      "position": "TE",
-      "points": 16.094,
-      "points_ppr": 16.094,
-      "points_half": 20.012,
-      "points_std": 14.683,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 24,
-      "disagreement": 0.6408,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "ESPN",
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 24,
-        "years_experience": 0,
-        "depth_chart_order": 3,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 16.413,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 39.81,
-          "half": 31.42,
-          "std": 23.02
-        },
-        "FantasySharks": {
-          "ppr": 3.7,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 20.97,
-          "half": 16.57,
-          "std": 12.17
         }
       }
     },
@@ -58067,7 +58040,7 @@
         "age": 23,
         "years_experience": 0,
         "depth_chart_order": 2,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 0.99,
         "reasons": [
@@ -58188,12 +58161,12 @@
       "context": {
         "age": 22,
         "years_experience": 0,
-        "depth_chart_order": 6,
+        "depth_chart_order": 5,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 6 used as a bounded correction"
+          "Depth-chart order 5 used as a bounded correction"
         ]
       },
       "sources": {
@@ -58448,6 +58421,78 @@
           "ppr": 9.71,
           "half": 9.71,
           "std": 9.71
+        }
+      }
+    },
+    {
+      "player_id": "13435",
+      "name": "Joe Royer",
+      "team": "CLE",
+      "position": "TE",
+      "points": 14.893,
+      "points_ppr": 14.893,
+      "points_half": 17.26,
+      "points_std": 12.318,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 21,
+      "disagreement": 0.6842,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyPros",
+          "ESPN",
+          "Sleeper"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 24,
+        "years_experience": 0,
+        "depth_chart_order": 2,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 0.99,
+        "reasons": [
+          "Depth-chart order 2 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 16.413,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 39.81,
+          "half": 31.42,
+          "std": 23.02
+        },
+        "FantasySharks": {
+          "ppr": 3.7,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 16.35,
+          "half": 12.54,
+          "std": 8.74
         }
       }
     },
@@ -59311,7 +59356,7 @@
         "age": 22,
         "years_experience": 1,
         "depth_chart_order": 4,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 0.96,
         "reasons": [
@@ -59886,6 +59931,79 @@
       }
     },
     {
+      "player_id": "11716",
+      "name": "Tip Reiman",
+      "team": "ARI",
+      "position": "TE",
+      "points": 12.802,
+      "points_ppr": 12.802,
+      "points_half": 7.262,
+      "points_std": 5.108,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 34,
+      "disagreement": 0.4937,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "ESPN",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 24,
+        "years_experience": 2,
+        "depth_chart_order": 3,
+        "injury_status": "PUP",
+        "active": true,
+        "adjustment": 0.8624,
+        "reasons": [
+          "Sleeper availability: PUP",
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 8.411,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 18.02,
+          "half": 13.91,
+          "std": 9.76
+        },
+        "FantasySharks": {
+          "ppr": 26.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 8.41,
+          "half": 6.5,
+          "std": 4.58
+        }
+      }
+    },
+    {
       "player_id": "4995",
       "name": "Ian Thomas",
       "team": "LV",
@@ -60082,79 +60200,6 @@
           "ppr": 11.24,
           "half": 11.24,
           "std": 11.24
-        }
-      }
-    },
-    {
-      "player_id": "11716",
-      "name": "Tip Reiman",
-      "team": "ARI",
-      "position": "TE",
-      "points": 12.54,
-      "points_ppr": 12.54,
-      "points_half": 7.114,
-      "points_std": 5.004,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 34,
-      "disagreement": 0.4937,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "ESPN",
-          "Sleeper",
-          "FantasySharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 24,
-        "years_experience": 2,
-        "depth_chart_order": 4,
-        "injury_status": "PUP",
-        "active": true,
-        "adjustment": 0.8448,
-        "reasons": [
-          "Sleeper availability: PUP",
-          "Depth-chart order 4 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 8.411,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 18.02,
-          "half": 13.91,
-          "std": 9.76
-        },
-        "FantasySharks": {
-          "ppr": 26.6,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 8.41,
-          "half": 6.5,
-          "std": 4.58
         }
       }
     },
@@ -61608,12 +61653,12 @@
       "context": {
         "age": 27,
         "years_experience": 6,
-        "depth_chart_order": 9,
+        "depth_chart_order": 8,
         "injury_status": null,
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 9 used as a bounded correction"
+          "Depth-chart order 8 used as a bounded correction"
         ]
       },
       "sources": {
@@ -62134,78 +62179,6 @@
           "ppr": 3.86,
           "half": 2.97,
           "std": 2.08
-        }
-      }
-    },
-    {
-      "player_id": "3048",
-      "name": "Chris Manhertz",
-      "team": "NYG",
-      "position": "TE",
-      "points": 9.536,
-      "points_ppr": 9.536,
-      "points_half": 9.236,
-      "points_std": 6.961,
-      "source_count": 4,
-      "format_source_count": {
-        "ppr": 4,
-        "half": 2,
-        "std": 2
-      },
-      "confidence": 37,
-      "disagreement": 0.4598,
-      "consensus_contributors": {
-        "ppr": [
-          "ESPN",
-          "Sleeper",
-          "FantasySharks",
-          "FantasyPros"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasyPros"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasyPros"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 34,
-        "years_experience": 11,
-        "depth_chart_order": 3,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 0.98,
-        "reasons": [
-          "Depth-chart order 3 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "ESPN": {
-          "ppr": 4.144,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 5.81,
-          "half": 4.58,
-          "std": 3.37
-        },
-        "FantasySharks": {
-          "ppr": 12.6,
-          "half": null,
-          "std": null
-        },
-        "FantasyPros": {
-          "ppr": 13.82,
-          "half": 11.12,
-          "std": 8.41
         }
       }
     },
@@ -63806,6 +63779,78 @@
       }
     },
     {
+      "player_id": "3048",
+      "name": "Chris Manhertz",
+      "team": "NYG",
+      "position": "TE",
+      "points": 6.707,
+      "points_ppr": 6.707,
+      "points_half": 3.516,
+      "points_std": 2.548,
+      "source_count": 4,
+      "format_source_count": {
+        "ppr": 4,
+        "half": 2,
+        "std": 2
+      },
+      "confidence": 32,
+      "disagreement": 0.5223,
+      "consensus_contributors": {
+        "ppr": [
+          "ESPN",
+          "FantasyPros",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 34,
+        "years_experience": 11,
+        "depth_chart_order": 3,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 0.98,
+        "reasons": [
+          "Depth-chart order 3 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "ESPN": {
+          "ppr": 4.144,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 5.81,
+          "half": 4.58,
+          "std": 3.37
+        },
+        "FantasySharks": {
+          "ppr": 12.6,
+          "half": null,
+          "std": null
+        },
+        "FantasyPros": {
+          "ppr": 4.15,
+          "half": 3.24,
+          "std": 2.33
+        }
+      }
+    },
+    {
       "player_id": "11320",
       "name": "Nikko Remigio",
       "team": "KC",
@@ -64727,12 +64772,12 @@
       "context": {
         "age": 26,
         "years_experience": 2,
-        "depth_chart_order": 5,
+        "depth_chart_order": 4,
         "injury_status": "Questionable",
         "active": true,
         "adjustment": 0.96,
         "reasons": [
-          "Depth-chart order 5 used as a bounded correction"
+          "Depth-chart order 4 used as a bounded correction"
         ]
       },
       "sources": {
@@ -66162,8 +66207,8 @@
     "kylermurray": 304.818,
     "tyler shough": 302.355,
     "tylershough": 302.355,
-    "jordan love": 296.778,
-    "jordanlove": 296.778,
+    "jordan love": 297.452,
+    "jordanlove": 297.452,
     "sam darnold": 293.256,
     "samdarnold": 293.256,
     "daniel jones": 291.381,
@@ -66188,8 +66233,8 @@
     "derrickhenry": 268.431,
     "drake london": 268.05,
     "drakelondon": 268.05,
-    "ashton jeanty": 261.484,
-    "ashtonjeanty": 261.484,
+    "ashton jeanty": 261.254,
+    "ashtonjeanty": 261.254,
     "trey mcbride": 260.601,
     "treymcbride": 260.601,
     "cam ward": 260.286,
@@ -66224,8 +66269,6 @@
     "zayflowers": 241.214,
     "kyren williams": 238.571,
     "kyrenwilliams": 238.571,
-    "josh jacobs": 237.723,
-    "joshjacobs": 237.723,
     "malik nabers": 237.125,
     "maliknabers": 237.125,
     "breece hall": 236.112,
@@ -66236,6 +66279,8 @@
     "garrettwilson": 234.861,
     "devonta smith": 234.178,
     "devontasmith": 234.178,
+    "josh jacobs": 233.814,
+    "joshjacobs": 233.814,
     "tetairoa mcmillan": 232.316,
     "tetairoamcmillan": 232.316,
     "javonte williams": 230.334,
@@ -66260,8 +66305,8 @@
     "buckyirving": 215.939,
     "jaylen waddle": 215.714,
     "jaylenwaddle": 215.714,
-    "quinshon judkins": 213.307,
-    "quinshonjudkins": 213.307,
+    "quinshon judkins": 213.636,
+    "quinshonjudkins": 213.636,
     "colston loveland": 211.013,
     "colstonloveland": 211.013,
     "dj moore": 203.434,
@@ -66282,12 +66327,12 @@
     "courtlandsutton": 199.034,
     "jaylen warren": 198.003,
     "jaylenwarren": 198.003,
-    "christian watson": 194.669,
-    "christianwatson": 194.669,
     "treveyon henderson": 194.467,
     "treveyonhenderson": 194.467,
     "parker washington": 194.284,
     "parkerwashington": 194.284,
+    "christian watson": 194.271,
+    "christianwatson": 194.271,
     "rhamondre stevenson": 193.606,
     "rhamondrestevenson": 193.606,
     "fernando mendoza": 193.172,
@@ -66298,10 +66343,10 @@
     "marvinharrison": 191.347,
     "dk metcalf": 190.802,
     "dkmetcalf": 190.802,
+    "harold fannin": 189.274,
+    "haroldfannin": 189.274,
     "rico dowdle": 187.89,
     "ricodowdle": 187.89,
-    "harold fannin": 187.84,
-    "haroldfannin": 187.84,
     "brian thomas": 187.73,
     "brianthomas": 187.73,
     "kyle pitts": 187,
@@ -66310,10 +66355,10 @@
     "georgekittle": 185.847,
     "michael wilson": 185.709,
     "michaelwilson": 185.709,
-    "tucker kraft": 184.052,
-    "tuckerkraft": 184.052,
     "tony pollard": 183.666,
     "tonypollard": 183.666,
+    "tucker kraft": 183.658,
+    "tuckerkraft": 183.658,
     "travis kelce": 183.31,
     "traviskelce": 183.31,
     "chris godwin": 180.731,
@@ -66344,8 +66389,8 @@
     "deshaunwatson": 169.144,
     "stefon diggs": 168.41,
     "stefondiggs": 168.41,
-    "jayden reed": 168.016,
-    "jaydenreed": 168.016,
+    "jayden reed": 167.843,
+    "jaydenreed": 167.843,
     "mark andrews": 167.526,
     "markandrews": 167.526,
     "quentin johnston": 166.771,
@@ -66376,8 +66421,8 @@
     "jasonmyers": 157.703,
     "dalton kincaid": 157.683,
     "daltonkincaid": 157.683,
-    "matthew golden": 157.514,
-    "matthewgolden": 157.514,
+    "matthew golden": 157.246,
+    "matthewgolden": 157.246,
     "tua tagovailoa": 157.08,
     "tuatagovailoa": 157.08,
     "romeo doubs": 157.078,
@@ -66396,28 +66441,28 @@
     "camerondicker": 151.028,
     "rachaad white": 150.689,
     "rachaadwhite": 150.689,
+    "denzel boston": 150.134,
+    "denzelboston": 150.134,
     "dalton schultz": 149.941,
     "daltonschultz": 149.941,
     "brenton strange": 149.452,
     "brentonstrange": 149.452,
     "jordyn brooks": 149.084,
     "jordynbrooks": 149.084,
-    "denzel boston": 148.422,
-    "denzelboston": 148.422,
     "jacory croskeymerritt": 147.888,
     "jacorycroskey-merritt": 147.888,
     "makai lemon": 147.803,
     "makailemon": 147.803,
-    "kc concepcion": 145.427,
-    "kcconcepcion": 145.427,
+    "kc concepcion": 147.453,
+    "kcconcepcion": 147.453,
+    "jerry jeudy": 145.413,
+    "jerryjeudy": 145.413,
     "jordan mason": 144.705,
     "jordanmason": 144.705,
     "tyjae spears": 144.153,
     "tyjaespears": 144.153,
     "jack campbell": 144.046,
     "jackcampbell": 144.046,
-    "jerry jeudy": 142.936,
-    "jerryjeudy": 142.936,
     "rashid shaheed": 141.927,
     "rashidshaheed": 141.927,
     "harrison mevis": 141.238,
@@ -66454,8 +66499,8 @@
     "harrisonbutker": 136.058,
     "jamien sherwood": 134.503,
     "jamiensherwood": 134.503,
-    "evan mcpherson": 134.439,
-    "evanmcpherson": 134.439,
+    "evan mcpherson": 134.433,
+    "evanmcpherson": 134.433,
     "jalen mcmillan": 133.402,
     "jalenmcmillan": 133.402,
     "roquan smith": 132.737,
@@ -66582,8 +66627,8 @@
     "mattgay": 109.462,
     "maxx crosby": 108.9,
     "maxxcrosby": 108.9,
-    "antoine winfield": 107.918,
-    "antoinewinfield": 107.918,
+    "antoine winfield": 107.917,
+    "antoinewinfield": 107.917,
     "evan engram": 107.917,
     "evanengram": 107.917,
     "paulson adebo": 107.9,
@@ -66592,12 +66637,10 @@
     "minnesotavikings": 107.744,
     "los angeles rams": 107.3,
     "losangelesrams": 107.3,
-    "tyrone tracy": 106.684,
-    "tyronetracy": 106.684,
     "pittsburgh steelers": 106.632,
     "pittsburghsteelers": 106.632,
-    "tykee smith": 106.463,
-    "tykeesmith": 106.463,
+    "tykee smith": 106.462,
+    "tykeesmith": 106.462,
     "jessie bates": 106.048,
     "jessiebates": 106.048,
     "alvin kamara": 105.769,
@@ -66630,10 +66673,10 @@
     "shedeursanders": 103.478,
     "bub means": 103.152,
     "bubmeans": 103.152,
+    "dylan sampson": 103.081,
+    "dylansampson": 103.081,
     "travis hunter": 102.906,
     "travishunter": 102.906,
-    "dylan sampson": 102.549,
-    "dylansampson": 102.549,
     "justice hill": 102.533,
     "justicehill": 102.533,
     "tyler allgeier": 102.475,
@@ -66646,6 +66689,8 @@
     "newenglandpatriots": 102.306,
     "jaylin noel": 102.296,
     "jaylinnoel": 102.296,
+    "marshawn lloyd": 102.257,
+    "marshawnlloyd": 102.257,
     "myles garrett": 102.167,
     "mylesgarrett": 102.167,
     "jakobi lane": 102.13,
@@ -66676,8 +66721,6 @@
     "greenbaypackers": 99.786,
     "quentin lake": 99.325,
     "quentinlake": 99.325,
-    "marshawn lloyd": 98.562,
-    "marshawnlloyd": 98.562,
     "caleb douglas": 98.517,
     "calebdouglas": 98.517,
     "andrew van ginkel": 98.5,
@@ -66704,6 +66747,8 @@
     "chicagobears": 94.703,
     "joshua metellus": 94.408,
     "joshuametellus": 94.408,
+    "tyrone tracy": 93.882,
+    "tyronetracy": 93.882,
     "aidan hutchinson": 93.383,
     "aidanhutchinson": 93.383,
     "new orleans saints": 93.37,
@@ -66718,16 +66763,16 @@
     "joshhines-allen": 92.1,
     "tyquan thornton": 91.809,
     "tyquanthornton": 91.809,
-    "cincinnati bengals": 91.069,
-    "cincinnatibengals": 91.069,
+    "cincinnati bengals": 91.061,
+    "cincinnatibengals": 91.061,
     "byron young": 91.014,
     "byronyoung": 91.014,
     "omar cooper": 90.995,
     "omarcooper": 90.995,
     "kansas city chiefs": 90.581,
     "kansascitychiefs": 90.581,
-    "tampa bay buccaneers": 90.403,
-    "tampabaybuccaneers": 90.403,
+    "tampa bay buccaneers": 90.396,
+    "tampabaybuccaneers": 90.396,
     "danielle hunter": 90.2,
     "daniellehunter": 90.2,
     "marlon humphrey": 89.5,
@@ -66764,10 +66809,10 @@
     "patrickqueen": 86.897,
     "kaden elliss": 86.394,
     "kadenelliss": 86.394,
+    "mike washington": 86.373,
+    "mikewashington": 86.373,
     "antonio williams": 86.371,
     "antoniowilliams": 86.371,
-    "mike washington": 86.313,
-    "mikewashington": 86.313,
     "alohi gilman": 85.869,
     "alohigilman": 85.869,
     "cj allen": 85.809,
@@ -66942,14 +66987,14 @@
     "ericwilson": 70.554,
     "omar speights": 70.482,
     "omarspeights": 70.482,
-    "bryan cook": 70.253,
-    "bryancook": 70.253,
+    "bryan cook": 70.252,
+    "bryancook": 70.252,
     "amani hooker": 69.778,
     "amanihooker": 69.778,
     "ben sauls": 69.639,
     "bensauls": 69.639,
-    "yaya diaby": 68.761,
-    "yayadiaby": 68.761,
+    "yaya diaby": 68.76,
+    "yayadiaby": 68.76,
     "craig woodson": 68.471,
     "craigwoodson": 68.471,
     "quincy williams": 68.429,
@@ -66968,8 +67013,6 @@
     "najeeharris": 67.605,
     "isaiah polamao": 67.51,
     "isaiahpola-mao": 67.51,
-    "jonnu smith": 67.469,
-    "jonnusmith": 67.469,
     "christian gonzalez": 67.435,
     "christiangonzalez": 67.435,
     "harold landry": 67.333,
@@ -66996,6 +67039,8 @@
     "christianelliss": 64.696,
     "ty okada": 64.564,
     "tyokada": 64.564,
+    "jonnu smith": 64.461,
+    "jonnusmith": 64.461,
     "theo jackson": 64.248,
     "theojackson": 64.248,
     "mack hollins": 63.979,
@@ -67058,8 +67103,8 @@
     "laiatulatu": 58.517,
     "cameron heyward": 58.1,
     "cameronheyward": 58.1,
-    "myles murphy": 57.982,
-    "mylesmurphy": 57.982,
+    "myles murphy": 57.981,
+    "mylesmurphy": 57.981,
     "malik davis": 57.801,
     "malikdavis": 57.801,
     "kevin winston": 57.579,
@@ -67152,12 +67197,8 @@
     "jaydonblue": 51.144,
     "david bailey": 50.8,
     "davidbailey": 50.8,
-    "elijah arroyo": 50.752,
-    "elijaharroyo": 50.752,
     "malcolm rodriguez": 50.712,
     "malcolmrodriguez": 50.712,
-    "emmett johnson": 50.62,
-    "emmettjohnson": 50.62,
     "demarcus robinson": 50.355,
     "demarcusrobinson": 50.355,
     "brandon aiyuk": 50.209,
@@ -67186,16 +67227,20 @@
     "javonbullard": 48.016,
     "kirk cousins": 47.926,
     "kirkcousins": 47.926,
+    "elijah arroyo": 47.386,
+    "elijaharroyo": 47.386,
+    "emmett johnson": 47.329,
+    "emmettjohnson": 47.329,
+    "devontez walker": 46.713,
+    "devontezwalker": 46.713,
     "tarheeb still": 46.707,
     "tarheebstill": 46.707,
     "cody simon": 46.656,
     "codysimon": 46.656,
     "khalil mack": 46.65,
     "khalilmack": 46.65,
-    "cedric tillman": 46.602,
-    "cedrictillman": 46.602,
-    "dax hill": 46.586,
-    "daxhill": 46.586,
+    "dax hill": 46.583,
+    "daxhill": 46.583,
     "quan martin": 46.426,
     "quanmartin": 46.426,
     "adam trautman": 46.334,
@@ -67214,6 +67259,8 @@
     "kobieturner": 45.9,
     "avieon terrell": 45.886,
     "avieonterrell": 45.886,
+    "tutu atwell": 45.391,
+    "tutuatwell": 45.391,
     "jalyx hunt": 45.3,
     "jalyxhunt": 45.3,
     "jatavion sanders": 45.141,
@@ -67248,10 +67295,6 @@
     "renardogreen": 43.712,
     "dj turner": 43.708,
     "djturner": 43.708,
-    "devontez walker": 43.202,
-    "devontezwalker": 43.202,
-    "tutu atwell": 42.839,
-    "tutuatwell": 42.839,
     "isaiah mcduffie": 42.752,
     "isaiahmcduffie": 42.752,
     "jalen carter": 42.331,
@@ -67276,8 +67319,6 @@
     "abdulcarter": 40.766,
     "rueben bain": 40.561,
     "ruebenbain": 40.561,
-    "chris brooks": 40.249,
-    "chrisbrooks": 40.249,
     "sauce gardner": 40.237,
     "saucegardner": 40.237,
     "jaylen watson": 40.207,
@@ -67290,6 +67331,8 @@
     "benjaminmorrison": 39.449,
     "tatum bethune": 39.33,
     "tatumbethune": 39.33,
+    "chris brooks": 39.217,
+    "chrisbrooks": 39.217,
     "adam randall": 39.146,
     "adamrandall": 39.146,
     "austin ekeler": 38.633,
@@ -67298,6 +67341,8 @@
     "lukemccaffrey": 38.514,
     "cobie durant": 38.329,
     "cobiedurant": 38.329,
+    "drew sample": 38.314,
+    "drewsample": 38.314,
     "austin booker": 38.308,
     "austinbooker": 38.308,
     "john bates": 38.264,
@@ -67316,8 +67361,8 @@
     "romanwilson": 36.45,
     "justin strnad": 36.379,
     "justinstrnad": 36.379,
-    "drew sample": 36.246,
-    "drewsample": 36.246,
+    "jake tonges": 36.355,
+    "jaketonges": 36.355,
     "riq woolen": 35.909,
     "riqwoolen": 35.909,
     "james pearce": 35.615,
@@ -67354,16 +67399,14 @@
     "bradenfiske": 34.218,
     "spencer rattler": 34.178,
     "spencerrattler": 34.178,
-    "jake tonges": 34.11,
-    "jaketonges": 34.11,
-    "luke musgrave": 34.098,
-    "lukemusgrave": 34.098,
     "cj gardnerjohnson": 33.915,
     "c.j.gardner-johnson": 33.915,
     "gervon dexter": 33.643,
     "gervondexter": 33.643,
     "cordale flott": 33.628,
     "cor'daleflott": 33.628,
+    "luke musgrave": 33.567,
+    "lukemusgrave": 33.567,
     "byron murphy": 33.356,
     "byronmurphy": 33.356,
     "isaiah williams": 33.317,
@@ -67442,14 +67485,20 @@
     "lil'jordanhumphrey": 29.162,
     "lukas van ness": 28.877,
     "lukasvanness": 28.877,
+    "travis vokolek": 28.75,
+    "travisvokolek": 28.75,
     "anthony firkser": 28.45,
     "anthonyfirkser": 28.45,
     "hunter luepke": 28.408,
     "hunterluepke": 28.408,
-    "teagan quitoriano": 28.175,
-    "teaganquitoriano": 28.175,
+    "hayden rucci": 28.032,
+    "haydenrucci": 28.032,
     "garrett williams": 27.81,
     "garrettwilliams": 27.81,
+    "teagan quitoriano": 27.6,
+    "teaganquitoriano": 27.6,
+    "rivaldo fairweather": 27.6,
+    "rivaldofairweather": 27.6,
     "leo chenal": 27.548,
     "leochenal": 27.548,
     "jaylin lane": 27.517,
@@ -67458,12 +67507,8 @@
     "raheimsanders": 27.491,
     "greg dortch": 27.463,
     "gregdortch": 27.463,
-    "cam grandy": 27.456,
-    "camgrandy": 27.456,
     "walter nolen": 27.415,
     "walternolen": 27.415,
-    "dallen bentley": 27.408,
-    "dallenbentley": 27.408,
     "jd bertrand": 27.246,
     "jdbertrand": 27.246,
     "colbie young": 27.167,
@@ -67514,6 +67559,8 @@
     "kyledugger": 24.504,
     "durham smythe": 24.319,
     "durhamsmythe": 24.319,
+    "cedric tillman": 24.316,
+    "cedrictillman": 24.316,
     "nate adkins": 24.281,
     "nateadkins": 24.281,
     "jimmy horn": 24.192,
@@ -67544,6 +67591,10 @@
     "mykelwilliams": 22.607,
     "christian izien": 22.6,
     "christianizien": 22.6,
+    "oscar delp": 22.515,
+    "oscardelp": 22.515,
+    "john fitzpatrick": 22.5,
+    "johnfitzpatrick": 22.5,
     "kaytron allen": 22.38,
     "kaytronallen": 22.38,
     "jam miller": 22.277,
@@ -67564,10 +67615,8 @@
     "kayvonthibodeaux": 21.006,
     "charlie woerner": 20.781,
     "charliewoerner": 20.781,
-    "oscar delp": 20.78,
-    "oscardelp": 20.78,
-    "demond claiborne": 20.725,
-    "demondclaiborne": 20.725,
+    "demond claiborne": 20.695,
+    "demondclaiborne": 20.695,
     "roger mccreary": 20.457,
     "rogermccreary": 20.457,
     "will mallory": 20.417,
@@ -67590,12 +67639,12 @@
     "tyrellshavers": 19.844,
     "alfred collins": 19.723,
     "alfredcollins": 19.723,
-    "blake whiteheart": 19.481,
-    "blakewhiteheart": 19.481,
     "kaleb elarmsorr": 19.475,
     "kalebelarms-orr": 19.475,
     "tvondre sweat": 19.424,
     "t'vondresweat": 19.424,
+    "blake whiteheart": 19.284,
+    "blakewhiteheart": 19.284,
     "ameer abdullah": 19.28,
     "ameerabdullah": 19.28,
     "cole holcomb": 18.667,
@@ -67620,28 +67669,24 @@
     "isaacguerendo": 16.931,
     "tahj brooks": 16.909,
     "tahjbrooks": 16.909,
-    "jarquez hunter": 16.794,
-    "jarquezhunter": 16.794,
     "micheal clemons": 16.671,
     "michealclemons": 16.671,
     "phil mafah": 16.613,
     "philmafah": 16.613,
+    "luke farrell": 16.581,
+    "lukefarrell": 16.581,
     "princely umanmielen": 16.49,
     "princelyumanmielen": 16.49,
+    "josh whyle": 16.477,
+    "joshwhyle": 16.477,
     "bo melton": 16.401,
     "bomelton": 16.401,
     "donte thornton": 16.391,
     "dont'ethornton": 16.391,
-    "josh whyle": 16.348,
-    "joshwhyle": 16.348,
     "matt hibner": 16.27,
     "matthibner": 16.27,
-    "luke farrell": 16.243,
-    "lukefarrell": 16.243,
     "nicholas singleton": 16.17,
     "nicholassingleton": 16.17,
-    "joe royer": 16.094,
-    "joeroyer": 16.094,
     "jake browning": 15.868,
     "jakebrowning": 15.868,
     "jordan phillips": 15.659,
@@ -67658,6 +67703,8 @@
     "drewogletree": 15.156,
     "gardner minshew": 15.033,
     "gardnerminshew": 15.033,
+    "joe royer": 14.893,
+    "joeroyer": 14.893,
     "nick westbrookikhine": 14.751,
     "nickwestbrook-ikhine": 14.751,
     "keandre lambertsmith": 14.519,
@@ -67700,14 +67747,14 @@
     "treylance": 12.88,
     "marquez valdesscantling": 12.872,
     "marquezvaldes-scantling": 12.872,
+    "tip reiman": 12.802,
+    "tipreiman": 12.802,
     "ian thomas": 12.78,
     "ianthomas": 12.78,
     "r mason thomas": 12.654,
     "rmasonthomas": 12.654,
     "jarrett stidham": 12.599,
     "jarrettstidham": 12.599,
-    "tip reiman": 12.54,
-    "tipreiman": 12.54,
     "rasheen ali": 12.389,
     "rasheenali": 12.389,
     "alec ingold": 12.326,
@@ -67770,8 +67817,6 @@
     "maxbredeson": 9.613,
     "ben skowronek": 9.551,
     "benskowronek": 9.551,
-    "chris manhertz": 9.536,
-    "chrismanhertz": 9.536,
     "shane buechele": 9.517,
     "shanebuechele": 9.517,
     "nick mullens": 9.44,
@@ -67820,6 +67865,8 @@
     "kalebjohnson": 7.158,
     "ben yurosek": 7.089,
     "benyurosek": 7.089,
+    "chris manhertz": 6.707,
+    "chrismanhertz": 6.707,
     "nikko remigio": 6.365,
     "nikkoremigio": 6.365,
     "brady cook": 6.321,
