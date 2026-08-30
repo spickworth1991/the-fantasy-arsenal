@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-29T04:07:48.005Z",
+  "updated": "2026-08-30T04:07:41.123Z",
   "season": 2026,
   "source": "ESPN",
-  "count": 1027,
+  "count": 1028,
   "rows": [
     {
       "player_id": "",
@@ -3486,7 +3486,7 @@
     {
       "player_id": "",
       "name": "Quinn Ewers",
-      "team": "MIA",
+      "team": "JAC",
       "position": "QB",
       "points": 7.30353631
     },
@@ -3682,7 +3682,7 @@
     {
       "player_id": "",
       "name": "Chris Moore",
-      "team": "BAL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3801,7 +3801,7 @@
     {
       "player_id": "",
       "name": "Brett Rypien",
-      "team": "HOU",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -3822,7 +3822,7 @@
     {
       "player_id": "",
       "name": "Mecole Hardman Jr.",
-      "team": "BUF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3850,7 +3850,7 @@
     {
       "player_id": "",
       "name": "Dante Pettis",
-      "team": "BUF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4039,7 +4039,7 @@
     {
       "player_id": "",
       "name": "Dan Chisena",
-      "team": "CAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4193,7 +4193,7 @@
     {
       "player_id": "",
       "name": "Shane Zylstra",
-      "team": "BUF",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4242,7 +4242,7 @@
     {
       "player_id": "",
       "name": "Hassan Haskins",
-      "team": "NE",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4494,7 +4494,7 @@
     {
       "player_id": "",
       "name": "Deuce Vaughn",
-      "team": "HOU",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4753,7 +4753,7 @@
     {
       "player_id": "",
       "name": "Owen Wright",
-      "team": "HOU",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5215,21 +5215,21 @@
     {
       "player_id": "",
       "name": "Donovan Edwards",
-      "team": "MIA",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Corey Kiner",
-      "team": "ARI",
+      "team": "NE",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Theo Wease Jr.",
-      "team": "MIA",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5376,7 +5376,7 @@
     {
       "player_id": "",
       "name": "Quentin Skinner",
-      "team": "BUF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -7191,6 +7191,13 @@
       "name": "Ben Sauls",
       "team": "NYG",
       "position": "K",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Jack Strand",
+      "team": "ATL",
+      "position": "QB",
       "points": 0
     }
   ],
@@ -9247,6 +9254,8 @@
     "philiprivers": 0,
     "philip rivers": 0,
     "bensauls": 0,
-    "ben sauls": 0
+    "ben sauls": 0,
+    "jackstrand": 0,
+    "jack strand": 0
   }
 }
