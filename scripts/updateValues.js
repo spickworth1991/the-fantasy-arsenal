@@ -3805,7 +3805,7 @@ async function updateFantasySharksProjections() {
     });
     const segmentMatch = landing.match(
       new RegExp(
-        `<option value="(\\d+)"[^>]*selected[^>]*>${CURRENT_SEASON} NFL Season`,
+        `<option\\b[^>]*value=["']?(\\d+)["']?[^>]*>\\s*${CURRENT_SEASON}\\s+NFL\\s+Season\\s*</option>`,
         "i",
       ),
     );
@@ -3826,6 +3826,19 @@ async function updateFantasySharksProjections() {
     } catch {
       throw error;
     }
+  }
+  if (!segment) {
+    try {
+      const cached = JSON.parse(
+        fs.readFileSync(FANTASYSHARKS_PROJ_OUT_PATH, "utf8"),
+      );
+      if (Number(cached?.season) === CURRENT_SEASON && cached?.segment) {
+        segment = String(cached.segment);
+        console.warn(
+          `FantasySharks season menu was not recognized; retrying the last verified ${CURRENT_SEASON} segment (${segment}).`,
+        );
+      }
+    } catch {}
   }
   if (!segment)
     throw new Error(

@@ -1,8 +1,8 @@
 {
-  "updated": "2026-08-30T04:07:41.123Z",
+  "updated": "2026-08-31T02:17:47.073Z",
   "season": 2026,
   "source": "ESPN",
-  "count": 1028,
+  "count": 1030,
   "rows": [
     {
       "player_id": "",
@@ -216,13 +216,6 @@
     },
     {
       "player_id": "",
-      "name": "Josh Jacobs",
-      "team": "GB",
-      "position": "RB",
-      "points": 259.1031289
-    },
-    {
-      "player_id": "",
       "name": "Javonte Williams",
       "team": "DAL",
       "position": "RB",
@@ -412,6 +405,13 @@
     },
     {
       "player_id": "",
+      "name": "Josh Jacobs",
+      "team": "GB",
+      "position": "RB",
+      "points": 259.1031289
+    },
+    {
+      "player_id": "",
       "name": "Jadarian Price",
       "team": "SEA",
       "position": "RB",
@@ -591,6 +591,13 @@
       "team": "WAS",
       "position": "WR",
       "points": 163.9960847
+    },
+    {
+      "player_id": "",
+      "name": "MarShawn Lloyd",
+      "team": "GB",
+      "position": "RB",
+      "points": 86.27873299
     },
     {
       "player_id": "",
@@ -1102,13 +1109,6 @@
       "team": "TEN",
       "position": "WR",
       "points": 135.38042789
-    },
-    {
-      "player_id": "",
-      "name": "MarShawn Lloyd",
-      "team": "GB",
-      "position": "RB",
-      "points": 86.27873299
     },
     {
       "player_id": "",
@@ -1673,7 +1673,7 @@
     {
       "player_id": "",
       "name": "Jaydon Blue",
-      "team": "DAL",
+      "team": "",
       "position": "RB",
       "points": 55.01219385
     },
@@ -1750,7 +1750,7 @@
     {
       "player_id": "",
       "name": "Emari Demercado",
-      "team": "KC",
+      "team": "",
       "position": "RB",
       "points": 63.85728756
     },
@@ -1974,14 +1974,14 @@
     {
       "player_id": "",
       "name": "Jawhar Jordan",
-      "team": "HOU",
+      "team": "",
       "position": "RB",
       "points": 6.89970286
     },
     {
       "player_id": "",
       "name": "Kaleb Johnson",
-      "team": "PIT",
+      "team": "GB",
       "position": "RB",
       "points": 4.84860702
     },
@@ -2247,14 +2247,14 @@
     {
       "player_id": "",
       "name": "DeeJay Dallas",
-      "team": "JAC",
+      "team": "",
       "position": "RB",
       "points": 0.17887304
     },
     {
       "player_id": "",
       "name": "Josh Williams",
-      "team": "TB",
+      "team": "",
       "position": "RB",
       "points": 0.10920157
     },
@@ -2373,14 +2373,14 @@
     {
       "player_id": "",
       "name": "Nick Mullens",
-      "team": "JAC",
+      "team": "",
       "position": "QB",
       "points": 10.34098169
     },
     {
       "player_id": "",
       "name": "Jake Browning",
-      "team": "TB",
+      "team": "",
       "position": "QB",
       "points": 10.26227081
     },
@@ -2443,7 +2443,7 @@
     {
       "player_id": "",
       "name": "Blake Grupe",
-      "team": "IND",
+      "team": "",
       "position": "K",
       "points": 132.7924447
     },
@@ -3038,7 +3038,7 @@
     {
       "player_id": "",
       "name": "Nick Westbrook-Ikhine",
-      "team": "IND",
+      "team": "",
       "position": "WR",
       "points": 17.27003534
     },
@@ -3066,7 +3066,7 @@
     {
       "player_id": "",
       "name": "Greg Dortch",
-      "team": "DET",
+      "team": "",
       "position": "WR",
       "points": 16.01217342
     },
@@ -3115,7 +3115,7 @@
     {
       "player_id": "",
       "name": "Adam Prentice",
-      "team": "DEN",
+      "team": "",
       "position": "RB",
       "points": 10.50790109
     },
@@ -3150,7 +3150,7 @@
     {
       "player_id": "",
       "name": "Mitchell Tinsley",
-      "team": "CIN",
+      "team": "",
       "position": "WR",
       "points": 9.77313651
     },
@@ -3171,7 +3171,7 @@
     {
       "player_id": "",
       "name": "Justin Joly",
-      "team": "DEN",
+      "team": "",
       "position": "TE",
       "points": 9.58625365
     },
@@ -3227,7 +3227,7 @@
     {
       "player_id": "",
       "name": "CJ Dippre",
-      "team": "NE",
+      "team": "",
       "position": "TE",
       "points": 9.23776398
     },
@@ -3276,7 +3276,7 @@
     {
       "player_id": "",
       "name": "Tyler Conklin",
-      "team": "DET",
+      "team": "",
       "position": "TE",
       "points": 8.94491211
     },
@@ -3353,7 +3353,7 @@
     {
       "player_id": "",
       "name": "Justin Watson",
-      "team": "HOU",
+      "team": "",
       "position": "WR",
       "points": 8.52811633
     },
@@ -3535,14 +3535,14 @@
     {
       "player_id": "",
       "name": "Braxton Berrios",
-      "team": "NYG",
+      "team": "",
       "position": "WR",
       "points": 2.48868796
     },
     {
       "player_id": "",
       "name": "Charlie Jones",
-      "team": "CIN",
+      "team": "",
       "position": "WR",
       "points": 2.46587438
     },
@@ -3570,14 +3570,14 @@
     {
       "player_id": "",
       "name": "Jalen Reagor",
-      "team": "MIA",
+      "team": "",
       "position": "WR",
       "points": 1.74282755
     },
     {
       "player_id": "",
       "name": "Britain Covey",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 1.65974176
     },
@@ -3591,14 +3591,14 @@
     {
       "player_id": "",
       "name": "Anthony Gould",
-      "team": "IND",
+      "team": "",
       "position": "WR",
       "points": 1.42867998
     },
     {
       "player_id": "",
       "name": "Ihmir Smith-Marsette",
-      "team": "ARI",
+      "team": "",
       "position": "WR",
       "points": 1.26839657
     },
@@ -3626,7 +3626,7 @@
     {
       "player_id": "",
       "name": "Gage Larvadain",
-      "team": "CLE",
+      "team": "",
       "position": "WR",
       "points": 0.71052255
     },
@@ -3661,7 +3661,7 @@
     {
       "player_id": "",
       "name": "Michael Bandy",
-      "team": "DEN",
+      "team": "",
       "position": "WR",
       "points": 0.17957074
     },
@@ -3675,7 +3675,7 @@
     {
       "player_id": "",
       "name": "Mason Kinsey",
-      "team": "TEN",
+      "team": "",
       "position": "WR",
       "points": 0.06520126
     },
@@ -3696,7 +3696,7 @@
     {
       "player_id": "",
       "name": "Trent Sherfield",
-      "team": "BUF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3710,7 +3710,7 @@
     {
       "player_id": "",
       "name": "Nick Vannett",
-      "team": "SEA",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -3731,14 +3731,14 @@
     {
       "player_id": "",
       "name": "Malik Turner",
-      "team": "SF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Brandon Allen",
-      "team": "NYG",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -3752,7 +3752,7 @@
     {
       "player_id": "",
       "name": "Dare Ogunbowale",
-      "team": "LV",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -3773,21 +3773,21 @@
     {
       "player_id": "",
       "name": "KhaDarel Hodge",
-      "team": "SF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Phillip Dorsett II",
-      "team": "LV",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Trayveon Williams",
-      "team": "DET",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -3808,14 +3808,14 @@
     {
       "player_id": "",
       "name": "Scotty Miller",
-      "team": "CHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Easton Stick",
-      "team": "IND",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -3836,14 +3836,14 @@
     {
       "player_id": "",
       "name": "Travis Homer",
-      "team": "PIT",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "David Moore",
-      "team": "CAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3864,21 +3864,21 @@
     {
       "player_id": "",
       "name": "Zay Jones",
-      "team": "HOU",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Marquez Valdes-Scantling",
-      "team": "DAL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Sterling Shepard",
-      "team": "HOU",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3906,7 +3906,7 @@
     {
       "player_id": "",
       "name": "Josh Johnson",
-      "team": "CIN",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -3927,42 +3927,42 @@
     {
       "player_id": "",
       "name": "D'Ernest Johnson",
-      "team": "TEN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Stephen Carlson",
-      "team": "CHI",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Pharaoh Brown",
-      "team": "IND",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Craig Reynolds",
-      "team": "WAS",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Tom Kennedy",
-      "team": "DET",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Trenton Irwin",
-      "team": "SF",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -3983,35 +3983,35 @@
     {
       "player_id": "",
       "name": "Tyler Johnson",
-      "team": "DAL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Van Jefferson",
-      "team": "WAS",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Albert Okwuegbunam Jr.",
-      "team": "LV",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Quez Watkins",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "K.J. Osborn",
-      "team": "TEN",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4025,14 +4025,14 @@
     {
       "player_id": "",
       "name": "JaMycal Hasty",
-      "team": "NE",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Salvon Ahmed",
-      "team": "CHI",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4046,21 +4046,21 @@
     {
       "player_id": "",
       "name": "Jonathan Ward",
-      "team": "BAL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Lawrence Cager",
-      "team": "WAS",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Michael Carter",
-      "team": "TEN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4081,7 +4081,7 @@
     {
       "player_id": "",
       "name": "Terrace Marshall Jr.",
-      "team": "MIA",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4095,7 +4095,7 @@
     {
       "player_id": "",
       "name": "Kyle Trask",
-      "team": "CAR",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -4109,28 +4109,28 @@
     {
       "player_id": "",
       "name": "Hunter Long",
-      "team": "JAC",
+      "team": "ARI",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Gary Brightwell",
-      "team": "CIN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Khalil Herbert",
-      "team": "SF",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Brevin Jordan",
-      "team": "HOU",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4172,14 +4172,14 @@
     {
       "player_id": "",
       "name": "Jaret Patterson",
-      "team": "LAC",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Cody White",
-      "team": "SEA",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4228,14 +4228,14 @@
     {
       "player_id": "",
       "name": "Velus Jones Jr.",
-      "team": "SEA",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Dameon Pierce",
-      "team": "PHI",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4249,7 +4249,7 @@
     {
       "player_id": "",
       "name": "Zamir White",
-      "team": "NO",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4270,21 +4270,21 @@
     {
       "player_id": "",
       "name": "Danny Gray",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Erik Ezukanma",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Pierre Strong Jr.",
-      "team": "GB",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4298,7 +4298,7 @@
     {
       "player_id": "",
       "name": "Teagan Quitoriano",
-      "team": "ARI",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4319,28 +4319,28 @@
     {
       "player_id": "",
       "name": "Bailey Zappe",
-      "team": "NYJ",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Nick Muse",
-      "team": "ATL",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "James Mitchell",
-      "team": "CAR",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Samori Toure",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4368,14 +4368,14 @@
     {
       "player_id": "",
       "name": "Brandon Smith",
-      "team": "PIT",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Deven Thompkins",
-      "team": "LV",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4389,7 +4389,7 @@
     {
       "player_id": "",
       "name": "Tim Jones",
-      "team": "JAC",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4403,21 +4403,21 @@
     {
       "player_id": "",
       "name": "Tanner Conner",
-      "team": "NYG",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Shane Buechele",
-      "team": "BUF",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Kendric Pryor",
-      "team": "CIN",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4438,14 +4438,14 @@
     {
       "player_id": "",
       "name": "Austin Trammell",
-      "team": "JAC",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Lucas Krull",
-      "team": "DEN",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4459,7 +4459,7 @@
     {
       "player_id": "",
       "name": "Brandon Johnson",
-      "team": "LV",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4473,14 +4473,14 @@
     {
       "player_id": "",
       "name": "Stone Smartt",
-      "team": "PHI",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Maurice Alexander",
-      "team": "CHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4508,14 +4508,14 @@
     {
       "player_id": "",
       "name": "Will Levis",
-      "team": "TEN",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Hendon Hooker",
-      "team": "TEN",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -4529,21 +4529,21 @@
     {
       "player_id": "",
       "name": "Jalin Hyatt",
-      "team": "NYG",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Cameron Latu",
-      "team": "PHI",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Sean Clifford",
-      "team": "CIN",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -4557,35 +4557,35 @@
     {
       "player_id": "",
       "name": "Evan Hull",
-      "team": "ARI",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Israel Abanikanda",
-      "team": "DAL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Eric Gray",
-      "team": "NYG",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Lew Nichols",
-      "team": "PIT",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Tyler Scott",
-      "team": "LAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4599,7 +4599,7 @@
     {
       "player_id": "",
       "name": "Zack Kuntz",
-      "team": "DAL",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4613,14 +4613,14 @@
     {
       "player_id": "",
       "name": "Jake Haener",
-      "team": "NYG",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Ronnie Bell",
-      "team": "NO",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4634,7 +4634,7 @@
     {
       "player_id": "",
       "name": "Trey Palmer",
-      "team": "NO",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4648,21 +4648,21 @@
     {
       "player_id": "",
       "name": "Jason Brownlee",
-      "team": "KC",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Jaleel McLaughlin",
-      "team": "DEN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Malik Cunningham",
-      "team": "DET",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4676,7 +4676,7 @@
     {
       "player_id": "",
       "name": "Xavier Gipson",
-      "team": "NYG",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4690,7 +4690,7 @@
     {
       "player_id": "",
       "name": "Elijah Cooks",
-      "team": "CAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4704,7 +4704,7 @@
     {
       "player_id": "",
       "name": "Ben VanSumeren",
-      "team": "BUF",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4718,7 +4718,7 @@
     {
       "player_id": "",
       "name": "Shedrick Jackson",
-      "team": "LV",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4739,14 +4739,14 @@
     {
       "player_id": "",
       "name": "Tyler Goodson",
-      "team": "ATL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Jordan Mims",
-      "team": "PHI",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4767,7 +4767,7 @@
     {
       "player_id": "",
       "name": "Dylan Drummond",
-      "team": "ATL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4802,21 +4802,21 @@
     {
       "player_id": "",
       "name": "Bub Means",
-      "team": "NO",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Casey Washington",
-      "team": "CAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Cornelius Johnson",
-      "team": "BAL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4830,7 +4830,7 @@
     {
       "player_id": "",
       "name": "Devin Culp",
-      "team": "TB",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4844,14 +4844,14 @@
     {
       "player_id": "",
       "name": "Tahj Washington",
-      "team": "PHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Tejhaun Palmer",
-      "team": "NE",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4886,7 +4886,7 @@
     {
       "player_id": "",
       "name": "Carson Steele",
-      "team": "PHI",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4914,7 +4914,7 @@
     {
       "player_id": "",
       "name": "Cody Schrader",
-      "team": "DEN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -4928,28 +4928,28 @@
     {
       "player_id": "",
       "name": "Sincere McCormick",
-      "team": "SF",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Alex Bachman",
-      "team": "LAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Bryce Oliver",
-      "team": "TEN",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Kaden Davis",
-      "team": "CHI",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -4963,35 +4963,35 @@
     {
       "player_id": "",
       "name": "Kendall Milton",
-      "team": "CIN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Carlos Washington Jr.",
-      "team": "MIA",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Cam Grandy",
-      "team": "CIN",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Jalen Moreno-Cropper",
-      "team": "NO",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Frank Gore Jr.",
-      "team": "BUF",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5019,7 +5019,7 @@
     {
       "player_id": "",
       "name": "Jack Westover",
-      "team": "NE",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5047,7 +5047,7 @@
     {
       "player_id": "",
       "name": "Jarquez Hunter",
-      "team": "MIA",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5068,7 +5068,7 @@
     {
       "player_id": "",
       "name": "Kalel Mullings",
-      "team": "TEN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5082,7 +5082,7 @@
     {
       "player_id": "",
       "name": "Phil Mafah",
-      "team": "DAL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5110,28 +5110,28 @@
     {
       "player_id": "",
       "name": "Cam Miller",
-      "team": "MIA",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Ricky White III",
-      "team": "SEA",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Kaden Prather",
-      "team": "GB",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Damien Martinez",
-      "team": "GB",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5145,7 +5145,7 @@
     {
       "player_id": "",
       "name": "Dominic Lovett",
-      "team": "DET",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5159,14 +5159,14 @@
     {
       "player_id": "",
       "name": "Junior Bergen",
-      "team": "NYJ",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Kyle McCord",
-      "team": "GB",
+      "team": "MIA",
       "position": "QB",
       "points": 0
     },
@@ -5194,7 +5194,7 @@
     {
       "player_id": "",
       "name": "Nick Nash",
-      "team": "WAS",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5208,7 +5208,7 @@
     {
       "player_id": "",
       "name": "Isaiah Neyor",
-      "team": "GB",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5243,21 +5243,21 @@
     {
       "player_id": "",
       "name": "Chandler Brayboy",
-      "team": "JAC",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Lan Larison",
-      "team": "NE",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Nathan Carter",
-      "team": "ATL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5271,14 +5271,14 @@
     {
       "player_id": "",
       "name": "Zavier Scott",
-      "team": "MIN",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Brady Cook",
-      "team": "NYJ",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -5292,7 +5292,7 @@
     {
       "player_id": "",
       "name": "Dalen Cambre",
-      "team": "NYG",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5341,14 +5341,14 @@
     {
       "player_id": "",
       "name": "Kedon Slovis",
-      "team": "ARI",
+      "team": "",
       "position": "QB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Zaire Mitchell-Paden",
-      "team": "NO",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -5362,14 +5362,14 @@
     {
       "player_id": "",
       "name": "Hayden Rucci",
-      "team": "SF",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Amar Johnson",
-      "team": "LAC",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5383,28 +5383,28 @@
     {
       "player_id": "",
       "name": "Jacoby Jones",
-      "team": "WAS",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Zach Horton",
-      "team": "DET",
+      "team": "",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Jacardia Wright",
-      "team": "SEA",
+      "team": "",
       "position": "RB",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Ulysses Bentley IV",
-      "team": "IND",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5418,7 +5418,7 @@
     {
       "player_id": "",
       "name": "Drake Dabney",
-      "team": "GB",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -5432,7 +5432,7 @@
     {
       "player_id": "",
       "name": "Brennan Presley",
-      "team": "LAR",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5446,7 +5446,7 @@
     {
       "player_id": "",
       "name": "Adrian Martinez",
-      "team": "SF",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -5523,7 +5523,7 @@
     {
       "player_id": "",
       "name": "Jam Miller",
-      "team": "NE",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -5565,14 +5565,14 @@
     {
       "player_id": "",
       "name": "Lewis Bond",
-      "team": "HOU",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Anthony Smith",
-      "team": "DAL",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -5586,14 +5586,14 @@
     {
       "player_id": "",
       "name": "Emmanuel Henderson Jr.",
-      "team": "SEA",
+      "team": "",
       "position": "WR",
       "points": 0
     },
     {
       "player_id": "",
       "name": "Michael Trigg",
-      "team": "DAL",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -6741,7 +6741,7 @@
     {
       "player_id": "",
       "name": "Tanner Brown",
-      "team": "NO",
+      "team": "",
       "position": "K",
       "points": 0
     },
@@ -6923,7 +6923,7 @@
     {
       "player_id": "",
       "name": "Jha'Quan Jackson",
-      "team": "TB",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -7168,7 +7168,7 @@
     {
       "player_id": "",
       "name": "Charlie Smyth",
-      "team": "NO",
+      "team": "",
       "position": "K",
       "points": 0
     },
@@ -7197,6 +7197,20 @@
       "player_id": "",
       "name": "Jack Strand",
       "team": "ATL",
+      "position": "QB",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Dohnte Meyers",
+      "team": "CIN",
+      "position": "WR",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Jalon Daniels",
+      "team": "TB",
       "position": "QB",
       "points": 0
     }
@@ -7263,8 +7277,6 @@
     "garrett wilson": 249.4043967,
     "breecehall": 273.98688564,
     "breece hall": 273.98688564,
-    "joshjacobs": 259.1031289,
-    "josh jacobs": 259.1031289,
     "javontewilliams": 259.71629961,
     "javonte williams": 259.71629961,
     "maliknabers": 245.72458121,
@@ -7319,6 +7331,8 @@
     "jayden daniels": 318.38275744,
     "drakemaye": 319.39446754,
     "drake maye": 319.39446754,
+    "joshjacobs": 259.1031289,
+    "josh jacobs": 259.1031289,
     "jadarianprice": 194.06057448,
     "jadarian price": 194.06057448,
     "lutherburdeniii": 205.86797941,
@@ -7371,6 +7385,8 @@
     "chuba hubbard": 172.93475323,
     "stefondiggs": 163.9960847,
     "stefon diggs": 163.9960847,
+    "marshawnlloyd": 86.27873299,
+    "marshawn lloyd": 86.27873299,
     "jaxsondart": 299.75567051,
     "jaxson dart": 299.75567051,
     "justinherbert": 283.64472641,
@@ -7517,8 +7533,6 @@
     "jordan love": 258.98158971,
     "calvinridley": 135.38042789,
     "calvin ridley": 135.38042789,
-    "marshawnlloyd": 86.27873299,
-    "marshawn lloyd": 86.27873299,
     "keatonmitchell": 93.8876592,
     "keaton mitchell": 93.8876592,
     "brentonstrange": 142.47217578,
@@ -9256,6 +9270,10 @@
     "bensauls": 0,
     "ben sauls": 0,
     "jackstrand": 0,
-    "jack strand": 0
+    "jack strand": 0,
+    "dohntemeyers": 0,
+    "dohnte meyers": 0,
+    "jalondaniels": 0,
+    "jalon daniels": 0
   }
 }

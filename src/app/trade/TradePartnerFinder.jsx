@@ -140,7 +140,7 @@ function AssetPill({ asset }) {
   </div>;
 }
 
-export default function TradePartnerFinder({ league, players, getMetric, getWeeklyMetric, metricMode, username, onLoadPackage }) {
+export default function TradePartnerFinder({ league, players, getMetric, getWeeklyMetric, metricMode, username, onLoadPackage, handoffContext }) {
   const [userId, setUserId] = useState("");
   const [tradedPicks, setTradedPicks] = useState([]);
   const [completedDraftSeasons, setCompletedDraftSeasons] = useState(() => new Set());
@@ -250,8 +250,8 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
     const shapes = packageShape === "all" ? [[1,1],[1,2],[2,1],[2,2],[2,3],[3,2]] : [packageShape.split("x").map(Number)];
     const results = [];
     profiles.filter((partner) => partner.rosterId !== mine.rosterId && (directionFilter === "all" || partner.direction === directionFilter)).forEach((partner) => {
-      const myPool = [...mine.playerAssets.sort((a,b) => b.value-a.value).slice(0, 14), ...mine.pickAssets.slice(0, 8)];
-      const partnerPool = [...partner.playerAssets.sort((a,b) => b.value-a.value).slice(0, 14), ...partner.pickAssets.slice(0, 8)];
+      const myPool = [...mine.playerAssets.sort((a,b) => b.value-a.value).slice(0, 20), ...mine.pickAssets.slice(0, 10)];
+      const partnerPool = [...partner.playerAssets.sort((a,b) => b.value-a.value).slice(0, 20), ...partner.pickAssets.slice(0, 10)];
       shapes.forEach(([giveSize, receiveSize]) => {
         const giveCombos = combinations(myPool, giveSize);
         const receiveIndex = combinations(partnerPool, receiveSize)
@@ -260,13 +260,14 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
         giveCombos.forEach((give) => {
           if (targetAssetId !== "all" && !give.some((asset) => assetKey(asset) === targetAssetId)) return;
           const giveValue = sum(give);
-          nearestPackages(receiveIndex, giveValue).forEach((receive) => {
+          nearestPackages(receiveIndex, giveValue, 40).forEach((receive) => {
             const receiveValue = sum(receive);
             const valueGapPct = Math.abs(giveValue - receiveValue) / Math.max(1, (giveValue + receiveValue) / 2);
-            if (valueGapPct > 0.2) return;
+            if (valueGapPct > 0.35) return;
             const myPlayerCount = mine.rosterPlayerCount - give.filter((asset) => asset.kind === "player").length + receive.filter((asset) => asset.kind === "player").length;
             const partnerPlayerCount = partner.rosterPlayerCount - receive.filter((asset) => asset.kind === "player").length + give.filter((asset) => asset.kind === "player").length;
-            if (myPlayerCount > mine.rosterCapacity || partnerPlayerCount > partner.rosterCapacity) return;
+            const myRosterOverflow = Math.max(0, myPlayerCount - mine.rosterCapacity);
+            const partnerRosterOverflow = Math.max(0, partnerPlayerCount - partner.rosterCapacity);
             const myAfter = replaceAssets(mine.assets, give, receive);
             const partnerAfter = replaceAssets(partner.assets, receive, give);
             const myLineupDelta = lineupScore(myAfter, starterNeeds) - mine.currentLineup;
@@ -275,13 +276,16 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
             const partnerNeedFit = needFit(partner, give);
             const myDirectionFit = directionFit(mine.direction, receive);
             const partnerDirectionFit = directionFit(partner.direction, give);
-            const myUtility = myNeedFit * 2 + myDirectionFit + clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 20, -2, 3) - valueGapPct * 3;
-            const partnerUtility = partnerNeedFit * 2 + partnerDirectionFit + clamp(partnerLineupDelta / Math.max(1, partner.currentLineup) * 20, -2, 3) - valueGapPct * 3;
-            if (myUtility < -0.2 || partnerUtility < -0.2) return;
-            const mutualScore = Math.min(myUtility, partnerUtility) * 3 + myUtility + partnerUtility - valueGapPct * 8;
+            const myUtility = myNeedFit * 2 + myDirectionFit + clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 20, -2, 3) - valueGapPct * 3 - myRosterOverflow * 0.8;
+            const partnerUtility = partnerNeedFit * 2 + partnerDirectionFit + clamp(partnerLineupDelta / Math.max(1, partner.currentLineup) * 20, -2, 3) - valueGapPct * 3 - partnerRosterOverflow * 0.8;
+            if (myUtility < -2.5 || partnerUtility < -2.5) return;
+            const preferredGive = String(handoffContext?.surplus || "").toUpperCase();
+            const preferredReceive = String(handoffContext?.need || "").toUpperCase();
+            const handoffBonus = (preferredGive && give.some((asset) => asset.pos === preferredGive) ? 1.5 : 0) + (preferredReceive && receive.some((asset) => asset.pos === preferredReceive) ? 2 : 0);
+            const mutualScore = Math.min(myUtility, partnerUtility) * 3 + myUtility + partnerUtility - valueGapPct * 8 + handoffBonus;
             const myPlayoffImpact = mine.direction === "Rebuilder" ? 0 : clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 35, -8, 8);
             const partnerPlayoffImpact = partner.direction === "Rebuilder" ? 0 : clamp(partnerLineupDelta / Math.max(1, partner.currentLineup) * 35, -8, 8);
-            results.push({ id: `${partner.rosterId}-${give.map(assetKey).join("_")}-${receive.map(assetKey).join("_")}`, mine, partner, give, receive, giveValue, receiveValue, valueGapPct, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact, mutualScore, reasons: describePackage({ mine, partner, give, receive, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact }) });
+            results.push({ id: `${partner.rosterId}-${give.map(assetKey).join("_")}-${receive.map(assetKey).join("_")}`, mine, partner, give, receive, giveValue, receiveValue, valueGapPct, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact, myRosterOverflow, partnerRosterOverflow, mutualScore, reasons: describePackage({ mine, partner, give, receive, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact }) });
           });
         });
       });
@@ -289,7 +293,7 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
     const seen = new Set();
     const suggestions = results.sort((a, b) => b.mutualScore - a.mutualScore || a.valueGapPct - b.valueGapPct).filter((row) => { const key = `${row.partner.rosterId}:${row.give.map(assetKey).sort().join("|")}:${row.receive.map(assetKey).sort().join("|")}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, 40);
     return { profiles, suggestions, mine };
-  }, [completedDraftSeasons, currentWeek, directionFilter, getMetric, getWeeklyMetric, league, metricMode, packageShape, players, selectedRosterId, targetAssetId, tradedPicks]);
+  }, [completedDraftSeasons, currentWeek, directionFilter, getMetric, getWeeklyMetric, handoffContext, league, metricMode, packageShape, players, selectedRosterId, targetAssetId, tradedPicks]);
 
   if (!league) return null;
   const targetOptions = analysis.mine?.assets?.filter((asset) => asset.value > 0).sort((a, b) => b.value - a.value) || [];

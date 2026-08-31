@@ -316,6 +316,9 @@ export default function TradeAnalyzer() {
     if (surplus || need) setHandoffContext({ surplus, need });
     if (requestedLeague && leagues.some((item) => String(item.league_id) === requestedLeague))
       handleLeagueChange(requestedLeague);
+    // Route values are a one-time handoff. Removing them prevents a later
+    // visit to /trade from reapplying stale Intelligence constraints.
+    window.history.replaceState({}, "", "/trade");
   }, [leagues]);
 
   const league = leagues.find(
@@ -344,6 +347,7 @@ export default function TradeAnalyzer() {
   };
 
   const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType, projectionScoring), [valueSource, format, qbType, projectionScoring]);
+  const getFallbackTradeValue = useMemo(() => makeGetPlayerValue("FantasyCalc", format, qbType, projectionScoring), [format, qbType, projectionScoring]);
 
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
@@ -355,6 +359,7 @@ export default function TradeAnalyzer() {
     }
     return (p) => getPlayerValue(p) || 0;
   }, [metricMode, projectionSource, projMaps, getPlayerValue, getProjection]);
+  const getFinderMetric = useMemo(() => (player) => Number(getMetric(player) || getFallbackTradeValue(player) || 0), [getMetric, getFallbackTradeValue]);
 
   const tradeValueA = sideA.reduce((sum, p) => sum + getMetric(p), 0);
   const tradeValueB = sideB.reduce((sum, p) => sum + getMetric(p), 0);
@@ -754,6 +759,7 @@ export default function TradeAnalyzer() {
               league={league}
               players={players}
               getMetric={getMetric}
+              finderMetric={getFinderMetric}
               getWeeklyMetric={getWeeklyMetric}
               metricMode={metricMode}
               username={username}
@@ -772,6 +778,7 @@ export default function TradeAnalyzer() {
               }}
               initialTab={tradeTab === "analyzer" ? "finder" : tradeTab}
               handoffContext={handoffContext}
+              onClearHandoff={() => setHandoffContext(null)}
               hideNavigation
             /></div>
 
