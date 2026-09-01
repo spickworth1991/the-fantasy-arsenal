@@ -314,6 +314,25 @@ function matchupHref(leagueId) {
   return `https://sleeper.com/leagues/${leagueId}/matchup`;
 }
 
+function MatchupRoster({ title, roster, match, league, players }) {
+  const ids = (roster?.players || []).map(String).filter((id) => id && id !== "0");
+  const points = match?.players_points || {};
+  const bestBall = leagueFormat(league) === "bestball";
+  const starterCount = Math.max(1, (league?.roster_positions || []).filter((slot) => !["BN", "IR", "TAXI"].includes(String(slot || "").toUpperCase())).length);
+  const starterIds = bestBall
+    ? [...ids].sort((a, b) => n(points[b]) - n(points[a])).slice(0, starterCount)
+    : (match?.starters || []).map(String).filter((id) => id && id !== "0");
+  const starterSet = new Set(starterIds);
+  const benchIds = ids.filter((id) => !starterSet.has(id)).sort((a, b) => n(points[b]) - n(points[a]));
+  const rows = (playerIds) => playerIds.map((id) => { const status=injury(players?.[id]); return <div key={id} className="flex items-center gap-2 rounded-xl bg-white/[0.03] p-2.5"><AvatarImage name={playerName(players, id)} playerId={id} size={32} className="rounded-lg" alt=""/><div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-2"><div className="truncate text-xs font-semibold">{playerName(players, id)}</div>{status?<span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${["OUT","IR","PUP","NFI","SUSPENDED","NA"].includes(status)?"bg-rose-300/10 text-rose-100":"bg-amber-300/10 text-amber-100"}`}>{status}</span>:null}</div><div className="text-[9px] text-white/30">{position(players?.[id])} · {players?.[id]?.team || "FA"}</div></div><b className="text-sm text-cyan-100">{n(points[id]).toFixed(1)}</b></div>; });
+  return <section><div className="flex items-end justify-between gap-3"><h3 className="truncate text-lg font-black">{title}</h3><span className="text-xs text-white/40">{n(match?.points).toFixed(1)} pts</span></div><div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-emerald-100/55">{bestBall ? "Highest scorers" : "Starters"}</div><div className="mt-2 space-y-1.5">{rows(starterIds)}</div><details className="mt-3 rounded-2xl border border-white/[0.07] bg-black/10 p-3"><summary className="cursor-pointer text-xs font-semibold text-white/55">Bench · {benchIds.length}</summary><div className="mt-2 space-y-1.5">{rows(benchIds)}</div></details></section>;
+}
+
+function MatchupDetail({ row, players, onClose }) {
+  if (!row) return null;
+  return <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/85 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose();}}><section role="dialog" aria-modal="true" aria-label={`${row.league.name} matchup`} className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5"><div><div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100/55">Week matchup</div><h2 className="mt-1 text-2xl font-black">{row.league.name}</h2><p className="mt-1 text-xs text-white/38">{leagueFormat(row.league)==="bestball"?"Best Ball starters are the highest-scoring players for the week.":"Sleeper starters and bench with current player points."}</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-white/60" aria-label="Close">×</button></header><div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2"><MatchupRoster title="Your roster" roster={row.mine} match={row.myMatch} league={row.league} players={players}/><MatchupRoster title={row.opponentName} roster={row.opponentRoster} match={row.opponentMatch} league={row.league} players={players}/></div><footer className="border-t border-white/10 p-4 text-right"><a href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="inline-block rounded-xl bg-emerald-300/10 px-4 py-3 text-xs font-black text-emerald-100">Open matchup in Sleeper ↗</a></footer></section></div>;
+}
+
 export default function GameCenterClient() {
   const {
     username,
@@ -334,11 +353,13 @@ export default function GameCenterClient() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("command");
+  const [tab, setTab] = useState("matchups");
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState("all");
   const [bestBallFilter, setBestBallFilter] = useState("include");
+  const [bestBallAlertLeagueIds, setBestBallAlertLeagueIds] = useState([]);
+  const [selectedMatchupLeagueId, setSelectedMatchupLeagueId] = useState("");
   const [liveMode, setLiveMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [liveEvents, setLiveEvents] = useState([]);
@@ -363,11 +384,7 @@ export default function GameCenterClient() {
         const nextSeasonType = sleeperSeasonType(state.season_type);
         setNflSeason(n(state.season) || new Date().getFullYear());
         setSeasonType(nextSeasonType);
-        setWeek(
-          nextSeasonType === "preseason"
-            ? Math.max(1, (n(state.week) || 1) + 1)
-            : Math.max(1, n(state.week) || 1),
-        );
+        setWeek(nextSeasonType === "preseason" ? 2 : Math.max(1, n(state.week) || 1));
       })
       .catch(() => {})
       .finally(() => setNflStateReady(true));
@@ -394,6 +411,11 @@ export default function GameCenterClient() {
           rootPromise,
         ]);
         setGames(schedule.games || []);
+        if (schedule.games?.length) {
+          if (schedule.seasonType && schedule.seasonType !== seasonType) setSeasonType(schedule.seasonType);
+          if (n(schedule.week) > 0 && n(schedule.week) !== week) setWeek(n(schedule.week));
+          if (n(schedule.season) > 0 && n(schedule.season) !== nflSeason) setNflSeason(n(schedule.season));
+        }
         if (schedule.error)
           setError(
             "The NFL schedule feed is temporarily unavailable. Portfolio players are shown without kickoff grouping until it reconnects.",
@@ -605,6 +627,7 @@ export default function GameCenterClient() {
       preseasonMode
         ? []
         : visibleRows.map((row) => {
+            const actionAlertsEnabled = leagueFormat(row.league) !== "bestball" || bestBallAlertLeagueIds.includes(String(row.league.league_id));
             const myIds = (row.myMatch?.starters || [])
               .map(String)
               .filter((id) => id && id !== "0");
@@ -634,15 +657,15 @@ export default function GameCenterClient() {
             const winProbability = Math.round(
               100 / (1 + Math.exp(-(projected - opponentProjected) / 12)),
             );
-            const emptySlots = (row.myMatch?.starters || []).filter(
+            const emptySlots = actionAlertsEnabled ? (row.myMatch?.starters || []).filter(
               (id) => !id || id === "0",
-            ).length;
-            const riskyStarters = myIds.filter((id) => isRisk(players?.[id]));
+            ).length : 0;
+            const riskyStarters = actionAlertsEnabled ? myIds.filter((id) => isRisk(players?.[id])) : [];
             const startedSet = new Set(myIds);
             const benchIds = (row.mine?.players || [])
               .map(String)
               .filter((id) => !startedSet.has(id));
-            const lateSwap = riskyStarters
+            const lateSwap = actionAlertsEnabled ? riskyStarters
               .map((starterId) => {
                 const starter = players?.[starterId];
                 const starterGame = gameByTeam.get(
@@ -668,7 +691,7 @@ export default function GameCenterClient() {
                   .sort((a, b) => weeklyProjection(b) - weeklyProjection(a))[0];
                 return replacement ? { starterId, replacement } : null;
               })
-              .filter(Boolean);
+              .filter(Boolean) : [];
             const completed = !myRemaining.length && !opponentRemaining.length;
             const status = completed
               ? "completed"
@@ -691,9 +714,10 @@ export default function GameCenterClient() {
               emptySlots,
               riskyStarters,
               lateSwap,
+              actionAlertsEnabled,
             };
           }),
-    [preseasonMode, visibleRows, gameByTeam, players, weeklyProjection],
+    [preseasonMode, visibleRows, gameByTeam, players, weeklyProjection, bestBallAlertLeagueIds],
   );
 
   const playerRows = useMemo(() => {
@@ -915,6 +939,8 @@ export default function GameCenterClient() {
           ? row.actual === 0 && row.opponentActual === 0
           : row.status === filter),
   );
+  const selectedMatchup = matchupRows.find((row) => String(row.league.league_id) === selectedMatchupLeagueId) || null;
+  const bestBallLeagues = rows.filter((row) => leagueFormat(row.league) === "bestball");
 
   const shellClass = liveMode
     ? "fixed inset-0 z-[105] h-[100dvh] overflow-y-auto overscroll-contain bg-slate-950 text-white"
@@ -976,7 +1002,7 @@ export default function GameCenterClient() {
               </button>
             </div>
           </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-[150px_110px_170px_170px_1fr]">
+          <div className="mt-5 grid gap-2 sm:grid-cols-[150px_150px_1fr]">
             <select
               value={seasonType}
               onChange={(event) => {
@@ -1006,32 +1032,12 @@ export default function GameCenterClient() {
                 </option>
               ))}
             </select>
-            <select
-              value={formatFilter}
-              onChange={(event) => setFormatFilter(event.target.value)}
-              className="min-h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"
-            >
-              <option value="all">All league types</option>
-              <option value="dynasty">Dynasty</option>
-              <option value="keeper">Keeper</option>
-              <option value="redraft">Redraft</option>
-              <option value="bestball">Best Ball</option>
-            </select>
-            <select
-              value={bestBallFilter}
-              onChange={(event) => setBestBallFilter(event.target.value)}
-              className="min-h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"
-            >
-              <option value="include">Include Best Ball</option>
-              <option value="exclude">Exclude Best Ball</option>
-              <option value="only">Only Best Ball</option>
-            </select>
-            <div className="flex items-center justify-end text-[10px] text-white/30">
-              {lastUpdated
-                ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`
-                : "Waiting for first scan"}
-            </div>
+            <details className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+              <summary className="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-semibold text-white/55"><span>League filters</span><span className="text-[10px] font-normal text-white/30">{formatFilter === "all" ? "All types" : formatFilter} · {bestBallFilter === "include" ? "Best Ball included" : bestBallFilter === "exclude" ? "Best Ball excluded" : "Best Ball only"}</span></summary>
+              <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2"><select value={formatFilter} onChange={(event) => setFormatFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="all">All league types</option><option value="dynasty">Dynasty</option><option value="keeper">Keeper</option><option value="redraft">Redraft</option><option value="bestball">Best Ball</option></select><select value={bestBallFilter} onChange={(event) => setBestBallFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="include">Include Best Ball</option><option value="exclude">Exclude Best Ball</option><option value="only">Only Best Ball</option></select></div>{bestBallLeagues.length ? <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Best Ball action-alert overrides</div><p className="mt-1 text-[10px] leading-4 text-white/30">Lineup and injury alerts are off by default. Enable only custom leagues where managers can make moves.</p><div className="mt-2 grid gap-1.5 sm:grid-cols-2">{bestBallLeagues.map((row)=><label key={row.league.league_id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-2 text-xs text-white/55"><input type="checkbox" checked={bestBallAlertLeagueIds.includes(String(row.league.league_id))} onChange={(event)=>setBestBallAlertLeagueIds((current)=>event.target.checked?[...new Set([...current,String(row.league.league_id)])]:current.filter((id)=>id!==String(row.league.league_id)))} />{row.league.name}</label>)}</div></div> : null}
+            </details>
           </div>
+          <div className="mt-2 text-right text-[10px] text-white/30">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}` : "Waiting for first scan"}</div>
         </header>
 
         {error ? (
@@ -1148,9 +1154,9 @@ export default function GameCenterClient() {
                       ["timeline", "Player Timeline"],
                     ]
                   : [
-                      ["command", "Command"],
-                      ["timeline", "Player Timeline"],
                       ["matchups", "Matchups"],
+                      ["timeline", "Player Timeline"],
+                      ["command", "Command"],
                     ]
                 ).map(([key, label]) => (
                   <button
@@ -1176,6 +1182,17 @@ export default function GameCenterClient() {
             {tab === "command" && !preseasonMode ? (
               <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
                 <div className="space-y-4">
+                  <Panel className="p-4">
+                    <h2 className="font-black">Weekly recap</h2>
+                    <p className="mt-2 break-words text-xs leading-5 text-white/42">
+                      {counts.winning > counts.losing
+                        ? `Your portfolio is projected ahead in ${counts.winning} leagues with an average ${Math.round(averageWin)}% win probability.`
+                        : `Your portfolio needs leverage: ${counts.losing} leagues project behind and ${counts.close} remain within one scoring swing.`}{" "}
+                      {riskyLineups.length
+                        ? `${riskyLineups.length} lineups still need attention before their players lock.`
+                        : "Every observed lineup is currently compliant."}
+                    </p>
+                  </Panel>
                   <Panel className="overflow-hidden">
                     <div className="border-b border-white/10 p-4 sm:p-5">
                       <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-amber-200/50">
@@ -1243,55 +1260,12 @@ export default function GameCenterClient() {
                       ) : null}
                     </div>
                   </Panel>
-                  <Panel className="overflow-hidden">
-                    <div className="border-b border-white/10 p-4 sm:p-5">
-                      <h2 className="text-xl font-black">
-                        Late-swap opportunities
-                      </h2>
-                      <p className="mt-1 text-xs text-white/35">
-                        Healthy same-position bench options that lock no earlier
-                        than the risky starter.
-                      </p>
-                    </div>
-                    <div className="grid gap-2 p-3 sm:grid-cols-2">
-                      {lateSwaps
-                        .slice(0, 12)
-                        .map(({ starterId, replacement, row }) => (
-                          <a
-                            key={`${row.league.league_id}-${starterId}`}
-                            href={matchupHref(row.league.league_id)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"
-                          >
-                            <div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">
-                              {row.league.name}
-                            </div>
-                            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                              <b className="break-words text-amber-100">
-                                {playerName(players, starterId)}
-                              </b>
-                              <span className="text-white/20">→</span>
-                              <b className="break-words text-emerald-100">
-                                {playerName(players, replacement)}
-                              </b>
-                            </div>
-                            <div className="mt-1 break-words text-[10px] text-white/32">
-                              {injury(players?.[starterId])} contingency ·{" "}
-                              {weeklyProjection(replacement).toFixed(1)}{" "}
-                              projected
-                            </div>
-                          </a>
-                        ))}
-                      {!lateSwaps.length ? (
-                        <div className="p-3 text-sm text-white/35">
-                          No direct late-swap chain is currently required.
-                        </div>
-                      ) : null}
-                    </div>
-                  </Panel>
                 </div>
                 <div className="space-y-4">
+                  <Panel className="overflow-hidden">
+                    <div className="border-b border-white/10 p-4 sm:p-5"><h2 className="text-xl font-black">Late-swap opportunities</h2><p className="mt-1 text-xs text-white/35">Healthy same-position bench options that lock no earlier than the risky starter.</p></div>
+                    <div className="grid gap-2 p-3">{lateSwaps.slice(0,12).map(({starterId,replacement,row})=><a key={`${row.league.league_id}-${starterId}`} href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"><div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">{row.league.name}</div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm"><b className="break-words text-amber-100">{playerName(players,starterId)}</b><span className="text-white/20">→</span><b className="break-words text-emerald-100">{playerName(players,replacement)}</b></div><div className="mt-1 break-words text-[10px] text-white/32">{injury(players?.[starterId])} contingency · {weeklyProjection(replacement).toFixed(1)} projected</div></a>)}{!lateSwaps.length?<div className="p-3 text-sm text-white/35">No direct late-swap chain is currently required.</div>:null}</div>
+                  </Panel>
                   {liveMode ? (
                     <Panel className="overflow-hidden border-emerald-300/15">
                       <div className="border-b border-white/10 p-4">
@@ -1357,17 +1331,6 @@ export default function GameCenterClient() {
                         </div>
                       ))}
                     </div>
-                  </Panel>
-                  <Panel className="p-4">
-                    <h2 className="font-black">Weekly recap</h2>
-                    <p className="mt-2 break-words text-xs leading-5 text-white/42">
-                      {counts.winning > counts.losing
-                        ? `Your portfolio is projected ahead in ${counts.winning} leagues with an average ${Math.round(averageWin)}% win probability.`
-                        : `Your portfolio needs leverage: ${counts.losing} leagues project behind and ${counts.close} remain within one scoring swing.`}{" "}
-                      {riskyLineups.length
-                        ? `${riskyLineups.length} lineups still need attention before their players lock.`
-                        : "Every observed lineup is currently compliant."}
-                    </p>
                   </Panel>
                 </div>
               </div>
@@ -1586,12 +1549,11 @@ export default function GameCenterClient() {
                 </Panel>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {filteredMatchups.map((row) => (
-                    <a
+                    <button
+                      type="button"
                       key={row.league.league_id}
-                      href={matchupHref(row.league.league_id)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`rounded-[24px] border p-4 transition hover:-translate-y-0.5 ${row.margin <= 10 && row.status !== "completed" ? "border-amber-300/20 bg-amber-300/[0.035]" : "border-white/10 bg-slate-900/80"}`}
+                      onClick={()=>setSelectedMatchupLeagueId(String(row.league.league_id))}
+                      className={`rounded-[24px] border p-4 text-left transition hover:-translate-y-0.5 ${row.margin <= 10 && row.status !== "completed" ? "border-amber-300/20 bg-amber-300/[0.035]" : "border-white/10 bg-slate-900/80"}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="truncate font-black">
@@ -1626,7 +1588,7 @@ export default function GameCenterClient() {
                           {row.myRemaining.length} vs{" "}
                           {row.opponentRemaining.length} remaining
                         </span>
-                        <span>Open matchup ↗</span>
+                        <span>View rosters →</span>
                       </div>
                       {row.emptySlots || row.riskyStarters.length ? (
                         <div className="mt-3 rounded-xl bg-rose-300/[0.06] px-3 py-2 text-[10px] text-rose-100">
@@ -1634,11 +1596,12 @@ export default function GameCenterClient() {
                           {row.riskyStarters.length} injury risk
                         </div>
                       ) : null}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
             ) : null}
+            <MatchupDetail row={selectedMatchup} players={players} onClose={()=>setSelectedMatchupLeagueId("")} />
           </>
         ) : null}
       </div>

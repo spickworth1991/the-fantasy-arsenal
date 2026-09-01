@@ -29,6 +29,7 @@ function Badge({ text }) {
 }
 
 const TOOL_ICONS = {
+  "Arsenal Intelligence": "/icons/football-icon.webp",
   "Trade Analyzer": "/icons/trade-icon.png",
   "Player Stock": "/icons/stock-icon.png",
   "Player Availability": "/icons/availability-icon.png",
@@ -86,6 +87,12 @@ export default function HomeClient() {
   const isLoggedIn = !!username;
 
   const tools = [
+    {
+      name: "Arsenal Intelligence",
+      link: "/intelligence",
+      description: "Turn lineup, waiver, trade, draft, playoff, portfolio, and commissioner signals into one prioritized action list.",
+      badge: "NEW",
+    },
     {
       name: "Trade Analyzer",
       link: "/trade",
@@ -215,12 +222,13 @@ export default function HomeClient() {
     
   ];
   const toolGroups = [
-    { title:"Weekly Command", eyebrow:"RUN YOUR SUNDAY", description:"Lineups, live conflicts, player availability, and every league needing attention.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
-    { title:"Draft Room", eyebrow:"BUILD THE ROSTER", description:"Prepare picks, follow live boards, and review the complete league draft.", names:["Draft Command Center","Draft Monitor","Draft Grade Studio"] },
-    { title:"Market & Trades", eyebrow:"FIND THE EDGE", description:"Understand player markets and build moves that fit real rosters.", names:["Trade Analyzer","Player Stock","Ballsville Stats"] },
-    { title:"League Intelligence", eyebrow:"KNOW THE FIELD", description:"Research managers, player production, NFL opportunity, league strength, schedules, playoff paths, and history.", names:["Manager Intelligence","Stat Central","NFL Depth Charts","Power Rankings","Strength of Schedule","Playoff Odds","League History"] },
-    { title:"Commissioner Office", eyebrow:"OPERATE THE LEAGUE", description:"Review league health, settings, participation, reports, and action items.", names:["Commissioner Dashboard"] },
-    { title:"Arsenal Community", eyebrow:"BUILD YOUR ARSENAL", description:"Manage your profile, compare verified records, and inspect the evidence and accuracy behind Arsenal intelligence.", names:["My Arsenal","Manager Leaderboard","Trust & Accuracy Center"] },
+    { title:"Fan Favorites", eyebrow:"MOST POPULAR", description:"Quick access to player value movement, live draft tracking, roster rankings, and Ballsville draft trends.", names:["Player Stock","Draft Monitor","Power Rankings","Ballsville Stats"], favorite:true },
+    { title:"Weekly Team Management", eyebrow:"MANAGE MY TEAMS", description:"Review every league needing attention, follow live matchups, set lineups, and find available players.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
+    { title:"Draft Preparation & Grades", eyebrow:"DRAFT DAY", description:"Prepare picks with a league-aware draft board, then review and grade every team after the draft.", names:["Draft Command Center","Draft Grade Studio"] },
+    { title:"Trades & Player Research", eyebrow:"EVALUATE PLAYERS", description:"Analyze trade value, study production and consistency, check depth-chart opportunity, and compare upcoming schedules.", names:["Trade Analyzer","Stat Central","NFL Depth Charts","Strength of Schedule"] },
+    { title:"League & Manager Research", eyebrow:"KNOW THE COMPETITION", description:"Get a prioritized league action list, research manager tendencies, forecast playoff chances, and explore league history.", names:["Arsenal Intelligence","Manager Intelligence","Playoff Odds","League History"] },
+    { title:"Commissioner Tools", eyebrow:"RUN THE LEAGUE", description:"Review league settings, participation, competitive balance, roster quality, and commissioner action items.", names:["Commissioner Dashboard"] },
+    { title:"Account, Community & Trust", eyebrow:"MY ARSENAL", description:"Manage your account, compare verified manager records, and inspect the freshness and accuracy behind Arsenal data.", names:["My Arsenal","Manager Leaderboard","Trust & Accuracy Center"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
   return (
@@ -366,15 +374,10 @@ export default function HomeClient() {
         ) : (
           <div className="w-full max-w-6xl space-y-8">
             <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
-              <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">Your fantasy operating system</div>
-              <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Choose a workspace instead of hunting through a wall of tools. Every section keeps related decisions together.</p></div><Link href="/league-hub" className="rounded-2xl bg-cyan-300/10 px-5 py-3 text-center text-sm font-bold text-cyan-100">Open League Hub →</Link></div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[["/draft-helper","Draft Command Center","Live recommendations, board pressure, and team needs"],["/draft-pick-tracker","Draft Monitor","Track every live draft in one place"],["/league-hub","League Hub","Open one league’s complete action center"],["/power-rankings","Power Rankings","Rank every roster using the league’s detected format"],["/leaderboard","Manager Leaderboard","Compare verified Sleeper portfolio records"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs text-white/38">{detail}</div></Link>)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">New here?</div>
+              <div className="mt-2"><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Start with your goal. The full tool library below is organized into clear groups when you need something more specific.</p></div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">{[["/league-hub","Manage this week","Open League Hub for lineup, waiver, injury, and trade priorities"],["/draft-helper","Prepare for a draft","Use Draft Command Center for a live, league-aware draft board"],["/trade","Research a move","Start in Trade Analyzer to compare value and roster fit"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs leading-5 text-white/38">{detail}</div></Link>)}</div>
             </section>
-            <Link href="/intelligence" className="group flex flex-col gap-4 rounded-[24px] border border-amber-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(251,191,36,.1),transparent_42%),linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.94))] p-4 transition hover:-translate-y-0.5 hover:border-amber-300/25 sm:flex-row sm:items-center">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-lg font-black text-amber-100">A</div>
-              <div className="min-w-0 flex-1"><div className="text-[9px] font-semibold uppercase tracking-[.22em] text-amber-200/50">Arsenal Intelligence</div><h2 className="mt-0.5 text-lg font-black text-white">What should I do today?</h2><p className="mt-1 text-xs leading-5 text-white/38">Open your prioritized lineup, waiver, trade, draft, playoff, portfolio, and commissioner workflow.</p></div>
-              <div className="flex shrink-0 items-center gap-3"><div className="hidden gap-1.5 lg:flex"><span className="rounded-full bg-rose-300/[0.07] px-2.5 py-1 text-[9px] text-rose-100">Urgent</span><span className="rounded-full bg-cyan-300/[0.07] px-2.5 py-1 text-[9px] text-cyan-100">Opportunities</span><span className="rounded-full bg-violet-300/[0.07] px-2.5 py-1 text-[9px] text-violet-100">Memory</span></div><span className="text-sm font-black text-amber-100 transition group-hover:translate-x-0.5">Open →</span></div>
-            </Link>
             {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
 
             {/* Extra space below cards so they never feel cramped */}
@@ -392,7 +395,7 @@ export default function HomeClient() {
 }
 
 function ToolSection({group,offset=0}) {
-  return <section><div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-cyan-200/45">{group.eyebrow}</div><h2 className="mt-1 text-2xl font-black text-white">{group.title}</h2></div><p className="max-w-xl text-xs leading-5 text-white/38 sm:text-right">{group.description}</p></div><div className={`grid gap-4 ${group.tools.length===1?"grid-cols-1":"sm:grid-cols-2 lg:grid-cols-3"}`}>{group.tools.map((tool,index)=><ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={(offset+index)*70} featured={group.tools.length===1}/>)}</div></section>;
+  return <section className={group.favorite?"rounded-[28px] border border-amber-300/15 bg-amber-300/[0.025] p-5 sm:p-6":""}><div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className={`text-[10px] font-semibold uppercase tracking-[.22em] ${group.favorite?"text-amber-200/60":"text-cyan-200/45"}`}>{group.eyebrow}</div><h2 className="mt-1 text-2xl font-black text-white">{group.title}</h2></div><p className="max-w-xl text-xs leading-5 text-white/38 sm:text-right">{group.description}</p></div><div className={`grid gap-4 ${group.tools.length===1?"grid-cols-1":group.favorite?"sm:grid-cols-2 xl:grid-cols-4":"sm:grid-cols-2 lg:grid-cols-3"}`}>{group.tools.map((tool,index)=><ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={(offset+index)*70} featured={group.tools.length===1}/>)}</div></section>;
 }
 
 function ToolCard({ name, link, description, comingSoon, badge, delay, disabled, icon, featured=false }) {

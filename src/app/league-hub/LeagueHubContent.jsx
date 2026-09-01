@@ -379,7 +379,7 @@ export default function LeagueHubContent() {
   const [injuryStatusFilter, setInjuryStatusFilter] = useState("ALL");
   const [hubControlsOpen, setHubControlsOpen] = useState(false);
   const [actionFilter, setActionFilter] = useState("all");
-  const [actionCenterOpen, setActionCenterOpen] = useState(true);
+  const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [dismissedActions, setDismissedActions] = useState(() => new Set());
   const [nflState, setNflState] = useState({ season: "", week: 1 });
 

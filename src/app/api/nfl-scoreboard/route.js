@@ -128,7 +128,11 @@ export async function GET(request) {
   const seasonType = seasonTypeCode === 1 ? "preseason" : seasonTypeCode === 3 ? "postseason" : "regular";
   try {
     const { payload, source } = await fetchEspnScoreboard({ season, seasonTypeCode, week });
-    const games = (payload.events || []).map((event) => {
+    const matchingEvents = (payload.events || []).filter((event) => {
+      const returnedType = Number(event?.season?.type || 0);
+      return returnedType ? returnedType === seasonTypeCode : true;
+    });
+    const games = matchingEvents.map((event) => {
       const competition = event.competitions?.[0] || {};
       const competitors = competition.competitors || [];
       const weather = competition.weather || null;
@@ -140,6 +144,9 @@ export async function GET(request) {
       const activeStadium = regularHomeVenue ? stadium : null;
       return {
         id:event.id,
+        season:Number(event.season?.year || season),
+        seasonTypeCode:Number(event.season?.type || seasonTypeCode),
+        week:Number(event.week?.number || week),
         date:event.date,
         name:event.name,
         status:event.status?.type?.shortDetail || event.status?.type?.description || "Scheduled",
@@ -170,8 +177,12 @@ export async function GET(request) {
         } : null,
       };
     });
+    const returnedSeasonTypeCode = Number(games[0]?.seasonTypeCode || seasonTypeCode);
+    const returnedSeasonType = returnedSeasonTypeCode === 1 ? "preseason" : returnedSeasonTypeCode === 3 ? "postseason" : "regular";
+    const returnedWeek = Number(games[0]?.week || week);
+    const returnedSeason = Number(games[0]?.season || season);
     return NextResponse.json(
-      { season:Number(season), week:Number(week), seasonType, seasonTypeCode, source, games:await addForecasts(games) },
+      { season:returnedSeason, week:returnedWeek, seasonType:returnedSeasonType, seasonTypeCode:returnedSeasonTypeCode, requested:{ season:Number(season), week:Number(week), seasonType }, source, games:await addForecasts(games) },
       { headers:{ "Cache-Control":"no-store, max-age=0" } },
     );
   } catch (error) {
