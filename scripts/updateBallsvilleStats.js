@@ -63,12 +63,19 @@ const leaderboardYear = leaderboardPayload?.[String(season)] || leaderboardPaylo
 const leaderboardLeagues = Object.entries(leaderboardYear).flatMap(([mode,block]) => clean(mode).startsWith("__") ? [] : Object.entries(block?.leagueMeta || {}).map(([name,meta]) => ({ mode, name, leagueId:clean(meta?.leagueId) })).filter((row)=>row.leagueId));
 const publishedLeagueIds = new Set(draftRows.map(({league})=>clean(league?.leagueId)).filter(Boolean));
 const missingLeaderboardLeagues = leaderboardLeagues.filter((row)=>!publishedLeagueIds.has(row.leagueId));
-console.log(`Joining ${draftRows.length} Ballsville drafts to Sleeper...`);
+const publishedDraftIds = new Set(draftRows.map(({league})=>clean(league?.draftId)).filter(Boolean));
+console.log(`Joining ${publishedDraftIds.size} unique Ballsville drafts (${draftRows.length} mode-feed rows) to Sleeper...`);
+if (missingLeaderboardLeagues.length) {
+  throw new Error(`Ballsville draft feeds are incomplete: ${missingLeaderboardLeagues.length} leaderboard league${missingLeaderboardLeagues.length === 1 ? " is" : "s are"} still missing. Refusing to replace the last complete statistics cache.`);
+}
 const joined = await mapLimit(draftRows, 6, async ({mode,league}) => {
   const [usersRaw,rostersRaw,picksRaw,leagueInfo]=await Promise.all([getJson(`${SLEEPER}/league/${league.leagueId}/users`,[]),getJson(`${SLEEPER}/league/${league.leagueId}/rosters`,[]),getJson(`${SLEEPER}/draft/${league.draftId}/picks`,[]),getJson(`${SLEEPER}/league/${league.leagueId}`,{})]);
   const users=asArray(usersRaw),rosters=asArray(rostersRaw),picks=asArray(picksRaw);const rosterOwner=new Map(rosters.map((row)=>[clean(row?.roster_id),clean(row?.owner_id)]));
   return {mode,league,leagueInfo,users,rosters,picks:picks.map((pick)=>({...pick,ownerId:clean(pick?.picked_by||rosterOwner.get(clean(pick?.roster_id))) }))};
 });
+if (joined.length !== draftRows.length) {
+  throw new Error(`Sleeper data was unavailable for ${draftRows.length - joined.length} of ${draftRows.length} draft rows. Refusing to publish partial statistics.`);
+}
 
 let previousPayloads=[];
 try { const previousModes=normalizeModes(await getJson(`${BALLSVILLE}/modes_${season-1}.json`),season-1);previousPayloads=await mapLimit(previousModes,4,async(mode)=>({mode,payload:await getJson(`${BALLSVILLE}/drafts_${season-1}_${mode.modeSlug}.json`)})); } catch (error) { console.warn(`Prior season unavailable: ${error.message}`); }
