@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-31T04:07:44.570Z",
+  "updated": "2026-09-01T04:07:33.801Z",
   "season": 2026,
   "source": "DraftSharks",
   "scoring": "STD/HALF/PPR/TEP",
@@ -56,7 +56,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 51
+        "dsValue": 52
       },
       "analysis": {
         "player.bottom_line": "Allen is one of fantasy football’s safest bets, finishing as a top-4 QB in fantasy points per game in six straight seasons. That run includes four overall QB1 finishes. There should be continuity in 2026 with former OC Joe Brady taking over as HC. And D.J. Moore has the potential to elevate the WR corps. Allen sits safely ahead of the rest of the pack in our QB rankings and is worth considering as early as Round 3. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
@@ -225,7 +225,7 @@
       "team": "NE",
       "position": "QB",
       "points": 354,
-      "source_rank": 57,
+      "source_rank": 58,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 354,
@@ -367,7 +367,7 @@
       "team": "WAS",
       "position": "QB",
       "points": 353,
-      "source_rank": 58,
+      "source_rank": 59,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 353,
@@ -864,7 +864,7 @@
       "team": "LAC",
       "position": "QB",
       "points": 343,
-      "source_rank": 75,
+      "source_rank": 76,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 343,
@@ -935,7 +935,7 @@
       "team": "SF",
       "position": "QB",
       "points": 342,
-      "source_rank": 76,
+      "source_rank": 77,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 342,
@@ -1006,7 +1006,7 @@
       "team": "CHI",
       "position": "QB",
       "points": 342,
-      "source_rank": 77,
+      "source_rank": 78,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 342,
@@ -1219,7 +1219,7 @@
       "team": "NYG",
       "position": "QB",
       "points": 338,
-      "source_rank": 84,
+      "source_rank": 83,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 338,
@@ -1290,7 +1290,7 @@
       "team": "DEN",
       "position": "QB",
       "points": 334,
-      "source_rank": 88,
+      "source_rank": 89,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 334,
@@ -1361,7 +1361,7 @@
       "team": "KC",
       "position": "QB",
       "points": 332,
-      "source_rank": 94,
+      "source_rank": 95,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 332,
@@ -1574,7 +1574,7 @@
       "team": "LAR",
       "position": "QB",
       "points": 324,
-      "source_rank": 113,
+      "source_rank": 114,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 324,
@@ -1645,7 +1645,7 @@
       "team": "GB",
       "position": "QB",
       "points": 323,
-      "source_rank": 116,
+      "source_rank": 117,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 323,
@@ -1787,7 +1787,7 @@
       "team": "NO",
       "position": "QB",
       "points": 322,
-      "source_rank": 119,
+      "source_rank": 120,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 322,
@@ -1856,7 +1856,7 @@
       "team": "TB",
       "position": "QB",
       "points": 320,
-      "source_rank": 124,
+      "source_rank": 125,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 320,
@@ -1998,7 +1998,7 @@
       "team": "MIA",
       "position": "QB",
       "points": 310,
-      "source_rank": 148,
+      "source_rank": 147,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 310,
@@ -2140,7 +2140,7 @@
       "team": "IND",
       "position": "QB",
       "points": 309,
-      "source_rank": 151,
+      "source_rank": 152,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 309,
@@ -2353,7 +2353,7 @@
       "team": "TEN",
       "position": "QB",
       "points": 300,
-      "source_rank": 177,
+      "source_rank": 174,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 300,
@@ -2495,7 +2495,7 @@
       "team": "HOU",
       "position": "QB",
       "points": 293,
-      "source_rank": 190,
+      "source_rank": 189,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 293,
@@ -2769,7 +2769,7 @@
       "team": "SEA",
       "position": "QB",
       "points": 286,
-      "source_rank": 209,
+      "source_rank": 210,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 286,
@@ -3099,6 +3099,77 @@
     },
     {
       "player_id": "",
+      "source_player_id": "35318",
+      "name": "Omarion Hampton",
+      "team": "LAC",
+      "position": "RB",
+      "points": 281,
+      "source_rank": 22,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 281,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": 172.04,
+        "rush_yds": 1162.8,
+        "rush_tds": 9.86,
+        "receivingTotal": 87.55,
+        "rec_catch": 44.2,
+        "rec_yds": 331.5,
+        "rec_tds": 1.7,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 55
+      },
+      "analysis": {
+        "player.bottom_line": "Hampton checks the boxes we want for a Year 2 RB leap: Round 1 NFL Draft capital, size, speed, receiving ability, and strong tackle-breaking production. The Chargers should also give him a much better setup with a healthier O-line and Mike McDaniel calling plays. Keaton Mitchell could chip away at touches, but Hampton remains the clear bet for goal-line work and lead-back volume. He’s a fringe RB1 with top-5 upside if his health cooperates. Customize Hampton’s projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/omarion-hampton/35318"
+      },
+      "points_std": 233,
+      "points_half": 257,
+      "points_ppr": 281,
+      "points_tep": 281,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "Hampton checks the boxes we want for a Year 2 RB leap: Round 1 NFL Draft capital, size, speed, receiving ability, and strong tackle-breaking production. The Chargers should also give him a much better setup with a healthier O-line and Mike McDaniel calling plays. Keaton Mitchell could chip away at touches, but Hampton remains the clear bet for goal-line work and lead-back volume. He’s a fringe RB1 with top-5 upside if his health cooperates. Customize Hampton’s projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/omarion-hampton/35318"
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "10796",
       "name": "Nico Collins",
       "team": "HOU",
@@ -3241,83 +3312,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "35318",
-      "name": "Omarion Hampton",
-      "team": "LAC",
-      "position": "RB",
-      "points": 277,
-      "source_rank": 23,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 277,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": 166.77,
-        "rush_yds": 1150.9,
-        "rush_tds": 9.18,
-        "receivingTotal": 87.55,
-        "rec_catch": 44.2,
-        "rec_yds": 331.5,
-        "rec_tds": 1.7,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 53
-      },
-      "analysis": {
-        "player.bottom_line": "Hampton checks the boxes we want for a Year 2 RB leap: Round 1 NFL Draft capital, size, speed, receiving ability, and strong tackle-breaking production. The Chargers should also give him a much better setup with a healthier O-line and Mike McDaniel calling plays. Keaton Mitchell could chip away at touches, but Hampton remains the clear bet for goal-line work and lead-back volume. He’s a fringe RB1 with top-5 upside if his health cooperates. Customize Hampton’s projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/omarion-hampton/35318"
-      },
-      "points_std": 229,
-      "points_half": 253,
-      "points_ppr": 277,
-      "points_tep": 277,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Hampton checks the boxes we want for a Year 2 RB leap: Round 1 NFL Draft capital, size, speed, receiving ability, and strong tackle-breaking production. The Chargers should also give him a much better setup with a healthier O-line and Mike McDaniel calling plays. Keaton Mitchell could chip away at touches, but Hampton remains the clear bet for goal-line work and lead-back volume. He’s a fringe RB1 with top-5 upside if his health cooperates. Customize Hampton’s projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/omarion-hampton/35318"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "6653",
       "name": "Geno Smith",
       "team": "NYJ",
       "position": "QB",
       "points": 276,
-      "source_rank": 236,
+      "source_rank": 235,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 276,
@@ -3591,7 +3591,7 @@
       "team": "LV",
       "position": "TE",
       "points": 269,
-      "source_rank": 22,
+      "source_rank": 23,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 269,
@@ -3662,7 +3662,7 @@
       "team": "ARI",
       "position": "QB",
       "points": 268,
-      "source_rank": 206,
+      "source_rank": 207,
       "projections": {
         "games_played": 13,
         "weekly3dPts": 268,
@@ -3936,7 +3936,7 @@
       "team": "ARI",
       "position": "RB",
       "points": 262,
-      "source_rank": 34,
+      "source_rank": 35,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 262,
@@ -4007,7 +4007,7 @@
       "team": "LV",
       "position": "QB",
       "points": 261,
-      "source_rank": 238,
+      "source_rank": 241,
       "projections": {
         "games_played": 13,
         "weekly3dPts": 261,
@@ -4423,7 +4423,7 @@
       "team": "NYJ",
       "position": "WR",
       "points": 254,
-      "source_rank": 35,
+      "source_rank": 34,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 254,
@@ -4494,7 +4494,7 @@
       "team": "NO",
       "position": "RB",
       "points": 248,
-      "source_rank": 41,
+      "source_rank": 42,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 248,
@@ -5408,83 +5408,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "10269",
-      "name": "Terry McLaurin",
-      "team": "WAS",
-      "position": "WR",
-      "points": 232,
-      "source_rank": 54,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 232,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 216.92,
-        "rec_catch": 73.1,
-        "rec_yds": 1020,
-        "rec_tds": 6.97,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 31
-      },
-      "analysis": {
-        "player.bottom_line": "McLaurin’s 2025 was frustrating, but the setup for 2026 leaves us optimistic. He gets Jayden Daniels back, faces little target competition, and should benefit from more movement around the formation. Entering his age-31 season matters, but McLaurin’s career-best yards per route in 2025 suggests he’s not in decline. He’s a strong bounce-back candidate and priced fairly with a WR23 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/terry-mclaurin/10269"
-      },
-      "points_std": 154,
-      "points_half": 193,
-      "points_ppr": 232,
-      "points_tep": 232,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "McLaurin’s 2025 was frustrating, but the setup for 2026 leaves us optimistic. He gets Jayden Daniels back, faces little target competition, and should benefit from more movement around the formation. Entering his age-31 season matters, but McLaurin’s career-best yards per route in 2025 suggests he’s not in decline. He’s a strong bounce-back candidate and priced fairly with a WR23 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/terry-mclaurin/10269"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "6938",
       "name": "Mike Evans",
       "team": "SF",
       "position": "WR",
       "points": 232,
-      "source_rank": 55,
+      "source_rank": 54,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 232,
@@ -5545,6 +5474,77 @@
           "key": "player.bottom_line",
           "text": "It’s OK if you’d rather just pass on a 33-year-old WR with high injury risk. But this isn’t your average example on that front. Evans is closing out a hall-of-fame career, and he’s entering one of the league’s most dependably efficient offenses. He’s worth the risk at his low-WR2 ADP, especially if you land him as the third guy in a receiver-heavy start. If you do draft Evans, securing insurance at the position becomes more important than it might with other early-round wideouts. Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/mike-evans/6938"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "10269",
+      "name": "Terry McLaurin",
+      "team": "WAS",
+      "position": "WR",
+      "points": 232,
+      "source_rank": 55,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 232,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": 216.92,
+        "rec_catch": 73.1,
+        "rec_yds": 1020,
+        "rec_tds": 6.97,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 31
+      },
+      "analysis": {
+        "player.bottom_line": "McLaurin’s 2025 was frustrating, but the setup for 2026 leaves us optimistic. He gets Jayden Daniels back, faces little target competition, and should benefit from more movement around the formation. Entering his age-31 season matters, but McLaurin’s career-best yards per route in 2025 suggests he’s not in decline. He’s a strong bounce-back candidate and priced fairly with a WR23 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >"
+      },
+      "analysis_links": {
+        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/terry-mclaurin/10269"
+      },
+      "points_std": 154,
+      "points_half": 193,
+      "points_ppr": 232,
+      "points_tep": 232,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "McLaurin’s 2025 was frustrating, but the setup for 2026 leaves us optimistic. He gets Jayden Daniels back, faces little target competition, and should benefit from more movement around the formation. Entering his age-31 season matters, but McLaurin’s career-best yards per route in 2025 suggests he’s not in decline. He’s a strong bounce-back candidate and priced fairly with a WR23 ADP. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
+          "url": "https://www.draftsharks.com/fantasy/points-outlook/terry-mclaurin/10269"
         }
       ]
     },
@@ -5979,7 +5979,7 @@
       "team": "DET",
       "position": "WR",
       "points": 225,
-      "source_rank": 67,
+      "source_rank": 68,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 225,
@@ -6050,7 +6050,7 @@
       "team": "NE",
       "position": "RB",
       "points": 224,
-      "source_rank": 66,
+      "source_rank": 67,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 224,
@@ -6190,7 +6190,7 @@
       "team": "CLE",
       "position": "RB",
       "points": 223,
-      "source_rank": 68,
+      "source_rank": 69,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 223,
@@ -6261,7 +6261,7 @@
       "team": "BUF",
       "position": "WR",
       "points": 223,
-      "source_rank": 74,
+      "source_rank": 75,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 223,
@@ -6401,7 +6401,7 @@
       "team": "JAC",
       "position": "WR",
       "points": 222,
-      "source_rank": 78,
+      "source_rank": 79,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 222,
@@ -6472,7 +6472,7 @@
       "team": "PIT",
       "position": "WR",
       "points": 217,
-      "source_rank": 87,
+      "source_rank": 88,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 217,
@@ -6543,7 +6543,7 @@
       "team": "TEN",
       "position": "WR",
       "points": 216,
-      "source_rank": 89,
+      "source_rank": 90,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 216,
@@ -6756,7 +6756,7 @@
       "team": "GB",
       "position": "WR",
       "points": 213,
-      "source_rank": 98,
+      "source_rank": 100,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 213,
@@ -6827,7 +6827,7 @@
       "team": "NE",
       "position": "RB",
       "points": 212,
-      "source_rank": 83,
+      "source_rank": 84,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 212,
@@ -6898,7 +6898,7 @@
       "team": "PIT",
       "position": "WR",
       "points": 212,
-      "source_rank": 101,
+      "source_rank": 103,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 212,
@@ -7182,7 +7182,7 @@
       "team": "MIN",
       "position": "WR",
       "points": 209,
-      "source_rank": 114,
+      "source_rank": 115,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 209,
@@ -7253,7 +7253,7 @@
       "team": "GB",
       "position": "TE",
       "points": 208,
-      "source_rank": 69,
+      "source_rank": 70,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 208,
@@ -7324,7 +7324,7 @@
       "team": "CLE",
       "position": "TE",
       "points": 208,
-      "source_rank": 70,
+      "source_rank": 71,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 208,
@@ -7466,7 +7466,7 @@
       "team": "NYJ",
       "position": "LB",
       "points": 208,
-      "source_rank": 90,
+      "source_rank": 91,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 208,
@@ -7535,7 +7535,7 @@
       "team": "LAC",
       "position": "WR",
       "points": 208,
-      "source_rank": 120,
+      "source_rank": 119,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 208,
@@ -7677,7 +7677,7 @@
       "team": "DET",
       "position": "TE",
       "points": 207,
-      "source_rank": 71,
+      "source_rank": 72,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 207,
@@ -7748,7 +7748,7 @@
       "team": "JAC",
       "position": "WR",
       "points": 206,
-      "source_rank": 123,
+      "source_rank": 124,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 206,
@@ -7888,7 +7888,7 @@
       "team": "IND",
       "position": "WR",
       "points": 205,
-      "source_rank": 129,
+      "source_rank": 128,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 205,
@@ -7959,7 +7959,7 @@
       "team": "CAR",
       "position": "RB",
       "points": 204,
-      "source_rank": 92,
+      "source_rank": 93,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 204,
@@ -8030,7 +8030,7 @@
       "team": "PIT",
       "position": "RB",
       "points": 204,
-      "source_rank": 93,
+      "source_rank": 94,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 204,
@@ -8377,7 +8377,7 @@
       "team": "BAL",
       "position": "LB",
       "points": 202,
-      "source_rank": 115,
+      "source_rank": 116,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 202,
@@ -8517,7 +8517,7 @@
       "team": "KC",
       "position": "WR",
       "points": 200,
-      "source_rank": 146,
+      "source_rank": 145,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 200,
@@ -8659,7 +8659,7 @@
       "team": "SF",
       "position": "TE",
       "points": 198,
-      "source_rank": 91,
+      "source_rank": 92,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 198,
@@ -8720,75 +8720,6 @@
           "key": "player.bottom_line",
           "text": "Kittle’s situation will bear watching right up until your draft day. If he’s on track to play Week 1, then it’s easy to make the upside case for a guy who typically finishes top 5 among TEs and is now going ninth at the position in ADP. If Week 1 -- and potentially other early games -- is in doubt, however, it’s a tough position at which to carry two starter types for many fantasy formats. In short: This decision will depend heavily on both how Kittle’s summer progresses and the specifics of your situation. See what the Draft War Room says for your draft, and consider how interested you are in taking on this risk-reward equation. Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/george-kittle/9540"
-        }
-      ]
-    },
-    {
-      "player_id": "",
-      "source_player_id": "36082",
-      "name": "Jacob Rodriguez",
-      "team": "MIA",
-      "position": "LB",
-      "points": 198,
-      "source_rank": 131,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 198,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": 171.82,
-        "idp_solo": 18.96,
-        "idp_assist": 57.3,
-        "idp_sack": 1.7,
-        "idp_pass_def": 1.7,
-        "idp_int": "0",
-        "idp_fum_forced": 1.7,
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 17
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 198,
-      "points_half": 198,
-      "points_ppr": 198,
-      "points_tep": 133,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
         }
       ]
     },
@@ -8868,7 +8799,7 @@
       "team": "CLE",
       "position": "WR",
       "points": 198,
-      "source_rank": 153,
+      "source_rank": 156,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 198,
@@ -8939,7 +8870,7 @@
       "team": "TEN",
       "position": "RB",
       "points": 197,
-      "source_rank": 99,
+      "source_rank": 101,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 197,
@@ -9010,7 +8941,7 @@
       "team": "NE",
       "position": "LB",
       "points": 197,
-      "source_rank": 136,
+      "source_rank": 137,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 197,
@@ -9079,7 +9010,7 @@
       "team": "ARI",
       "position": "WR",
       "points": 197,
-      "source_rank": 158,
+      "source_rank": 160,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 197,
@@ -9150,7 +9081,7 @@
       "team": "GB",
       "position": "RB",
       "points": 196,
-      "source_rank": 100,
+      "source_rank": 102,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 196,
@@ -9359,7 +9290,7 @@
       "team": "SEA",
       "position": "LB",
       "points": 195,
-      "source_rank": 145,
+      "source_rank": 144,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 195,
@@ -9428,7 +9359,7 @@
       "team": "TEN",
       "position": "WR",
       "points": 195,
-      "source_rank": 162,
+      "source_rank": 163,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 195,
@@ -9499,7 +9430,7 @@
       "team": "PHI",
       "position": "WR",
       "points": 195,
-      "source_rank": 163,
+      "source_rank": 164,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 195,
@@ -9570,7 +9501,7 @@
       "team": "LV",
       "position": "LB",
       "points": 194,
-      "source_rank": 152,
+      "source_rank": 153,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 194,
@@ -9639,7 +9570,7 @@
       "team": "GB",
       "position": "WR",
       "points": 194,
-      "source_rank": 170,
+      "source_rank": 169,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 194,
@@ -9781,7 +9712,7 @@
       "team": "IND",
       "position": "WR",
       "points": 190,
-      "source_rank": 173,
+      "source_rank": 171,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 190,
@@ -9852,7 +9783,7 @@
       "team": "DEN",
       "position": "RB",
       "points": 189,
-      "source_rank": 112,
+      "source_rank": 113,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 189,
@@ -9913,6 +9844,75 @@
           "key": "player.bottom_line",
           "text": "The case for RJ Harvey is easy to spot and easier to overpay for. He was a strong PPR producer in the seven games J.K. Dobbins missed, but his rushing efficiency lagged and Denver brought Dobbins back. Harvey’s receiving role gives him some standalone value in PPR leagues, but he will likely settle back into his complementary role. He’s an OK shot to take at his spring RB3 ADP if you want to bet on late-season upside, but don’t expect Harvey to start for you early in the year. That makes him an unexciting draft target. Customize Harvey’s projection for your exact league settings inside the Draft War Room . Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/rj-harvey/35325"
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "36082",
+      "name": "Jacob Rodriguez",
+      "team": "MIA",
+      "position": "LB",
+      "points": 189,
+      "source_rank": 131,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 189,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": 171.82,
+        "idp_solo": 18.96,
+        "idp_assist": 57.3,
+        "idp_sack": 1.7,
+        "idp_pass_def": 1.7,
+        "idp_int": "0",
+        "idp_fum_forced": 1.7,
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 17
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 189,
+      "points_half": 189,
+      "points_ppr": 189,
+      "points_tep": 127,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
         }
       ]
     },
@@ -9994,7 +9994,7 @@
       "team": "CHI",
       "position": "LB",
       "points": 189,
-      "source_rank": 179,
+      "source_rank": 178,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 189,
@@ -10063,7 +10063,7 @@
       "team": "LAC",
       "position": "LB",
       "points": 188,
-      "source_rank": 184,
+      "source_rank": 183,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 188,
@@ -10132,7 +10132,7 @@
       "team": "WAS",
       "position": "RB",
       "points": 187,
-      "source_rank": 117,
+      "source_rank": 118,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 187,
@@ -10414,7 +10414,7 @@
       "team": "SF",
       "position": "WR",
       "points": 186,
-      "source_rank": 191,
+      "source_rank": 192,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 186,
@@ -10554,7 +10554,7 @@
       "team": "LAR",
       "position": "LB",
       "points": 184,
-      "source_rank": 211,
+      "source_rank": 212,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 184,
@@ -10623,7 +10623,7 @@
       "team": "NYG",
       "position": "LB",
       "points": 182,
-      "source_rank": 235,
+      "source_rank": 236,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 182,
@@ -10692,7 +10692,7 @@
       "team": "CAR",
       "position": "RB",
       "points": 181,
-      "source_rank": 125,
+      "source_rank": 126,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 181,
@@ -10763,7 +10763,7 @@
       "team": "SEA",
       "position": "WR",
       "points": 181,
-      "source_rank": 220,
+      "source_rank": 218,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 181,
@@ -10834,7 +10834,7 @@
       "team": "DEN",
       "position": "LB",
       "points": 181,
-      "source_rank": 240,
+      "source_rank": 242,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 181,
@@ -10903,7 +10903,7 @@
       "team": "TEN",
       "position": "RB",
       "points": 180,
-      "source_rank": 128,
+      "source_rank": 129,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 180,
@@ -10974,7 +10974,7 @@
       "team": "KC",
       "position": "DB",
       "points": 179,
-      "source_rank": 118,
+      "source_rank": 112,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 179,
@@ -11185,7 +11185,7 @@
       "team": "DAL",
       "position": "K",
       "points": 177,
-      "source_rank": 147,
+      "source_rank": 148,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 177,
@@ -11325,7 +11325,7 @@
       "team": "CAR",
       "position": "WR",
       "points": 177,
-      "source_rank": 245,
+      "source_rank": 248,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 177,
@@ -11391,83 +11391,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "35949",
-      "name": "Denzel Boston",
-      "team": "CLE",
-      "position": "WR",
-      "points": 176,
-      "source_rank": 250,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 176,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": 147.68,
-        "rec_catch": 52.6,
-        "rec_yds": 707.2,
-        "rec_tds": 4.06,
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 2
-      },
-      "analysis": {
-        "player.bottom_line": "Boston brings an intriguing blend of size, ball skills, and route-running ability. His second-round draft capital and a relatively weak Browns WR room point to an immediate role, particularly downfield and in the red zone. But Boston’s college production was modest, and Cleveland's shaky QB situation neuters the 2026 appeal. Consider the rookie just a late-round bench stash. Customize Boston’s projection for your exact league settings inside the Draft War Room . Read Full Profile >"
-      },
-      "analysis_links": {
-        "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/denzel-boston/35949"
-      },
-      "points_std": 113,
-      "points_half": 144,
-      "points_ppr": 176,
-      "points_tep": 176,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "Boston brings an intriguing blend of size, ball skills, and route-running ability. His second-round draft capital and a relatively weak Browns WR room point to an immediate role, particularly downfield and in the red zone. But Boston’s college production was modest, and Cleveland's shaky QB situation neuters the 2026 appeal. Consider the rookie just a late-round bench stash. Customize Boston’s projection for your exact league settings inside the Draft War Room . Read Full Profile >",
-          "url": "https://www.draftsharks.com/fantasy/points-outlook/denzel-boston/35949"
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "34990",
       "name": "Blake Corum",
       "team": "LAR",
       "position": "RB",
       "points": 175,
-      "source_rank": 135,
+      "source_rank": 136,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 175,
@@ -11609,7 +11538,7 @@
       "team": "TB",
       "position": "DB",
       "points": 174,
-      "source_rank": 137,
+      "source_rank": 135,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 174,
@@ -11653,7 +11582,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 15
+        "dsValue": 16
       },
       "analysis": {
         "player.bottom_line": ""
@@ -11678,7 +11607,7 @@
       "team": "NO",
       "position": "WR",
       "points": 174,
-      "source_rank": 192,
+      "source_rank": 193,
       "projections": {
         "games_played": 13,
         "weekly3dPts": 174,
@@ -11749,7 +11678,7 @@
       "team": "WAS",
       "position": "RB",
       "points": 173,
-      "source_rank": 138,
+      "source_rank": 139,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 173,
@@ -11810,75 +11739,6 @@
           "key": "player.bottom_line",
           "text": "White enters 2026 as the biggest name in Washington’s backfleld but appears headed for a committee situation. He delivered top-10 and top-24 PPR seasons among four years in Tampa, but sagging efficiency cast doubt on White’s upside going forward. His touch upside as the Commanders’ most veteran back make his early RB38 ADP reasonable. Customize his projection for your exact league settings inside the Draft War Room . Read Full Profile >",
           "url": "https://www.draftsharks.com/fantasy/points-outlook/rachaad-white/12583"
-        }
-      ]
-    },
-    {
-      "player_id": "",
-      "source_player_id": "10675",
-      "name": "DeShon Elliott",
-      "team": "PIT",
-      "position": "DB",
-      "points": 173,
-      "source_rank": 139,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 173,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": 173.36,
-        "idp_solo": 33.79,
-        "idp_assist": 48.1,
-        "idp_sack": "0",
-        "idp_pass_def": 5.1,
-        "idp_int": 1.7,
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 15
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 173,
-      "points_half": 173,
-      "points_ppr": 173,
-      "points_tep": 116,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
         }
       ]
     },
@@ -11960,7 +11820,7 @@
       "team": "DAL",
       "position": "TE",
       "points": 171,
-      "source_rank": 204,
+      "source_rank": 205,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 171,
@@ -12102,7 +11962,7 @@
       "team": "NYJ",
       "position": "DB",
       "points": 170,
-      "source_rank": 155,
+      "source_rank": 154,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -12240,7 +12100,7 @@
       "team": "BAL",
       "position": "TE",
       "points": 170,
-      "source_rank": 212,
+      "source_rank": 213,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 170,
@@ -12311,7 +12171,7 @@
       "team": "BAL",
       "position": "DB",
       "points": 169,
-      "source_rank": 160,
+      "source_rank": 161,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 169,
@@ -12355,7 +12215,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 12
+        "dsValue": 13
       },
       "analysis": {
         "player.bottom_line": ""
@@ -12380,7 +12240,7 @@
       "team": "CLE",
       "position": "DB",
       "points": 168,
-      "source_rank": 161,
+      "source_rank": 162,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 168,
@@ -12424,7 +12284,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 12
+        "dsValue": 13
       },
       "analysis": {
         "player.bottom_line": ""
@@ -12449,7 +12309,7 @@
       "team": "NYG",
       "position": "TE",
       "points": 168,
-      "source_rank": 225,
+      "source_rank": 223,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 168,
@@ -12564,7 +12424,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 11
+        "dsValue": 12
       },
       "analysis": {
         "player.bottom_line": ""
@@ -12633,7 +12493,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 11
+        "dsValue": 12
       },
       "analysis": {
         "player.bottom_line": ""
@@ -12702,7 +12562,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 11
+        "dsValue": 12
       },
       "analysis": {
         "player.bottom_line": ""
@@ -12722,81 +12582,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "35741",
-      "name": "Nick Emmanwori",
-      "team": "SEA",
-      "position": "DB",
-      "points": 167,
-      "source_rank": 169,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 167,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": 167.1,
-        "idp_solo": 38.88,
-        "idp_assist": 32.3,
-        "idp_sack": 3.4,
-        "idp_pass_def": 10.2,
-        "idp_int": 1.8,
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 11
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 167,
-      "points_half": 167,
-      "points_ppr": 167,
-      "points_tep": 113,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "10839",
       "name": "Paulson Adebo",
       "team": "NYG",
       "position": "DB",
       "points": 167,
-      "source_rank": 171,
+      "source_rank": 170,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 167,
@@ -13078,7 +12869,7 @@
       "team": "LAR",
       "position": "DB",
       "points": 165,
-      "source_rank": 178,
+      "source_rank": 173,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 165,
@@ -13147,7 +12938,7 @@
       "team": "LAC",
       "position": "DB",
       "points": 161,
-      "source_rank": 189,
+      "source_rank": 188,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 161,
@@ -13189,6 +12980,75 @@
         "idp_pass_def": 7.2,
         "idp_int": 1.7,
         "idp_fum_forced": 1.7,
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 8
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 161,
+      "points_half": 161,
+      "points_ppr": 161,
+      "points_tep": 109,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "35741",
+      "name": "Nick Emmanwori",
+      "team": "SEA",
+      "position": "DB",
+      "points": 161,
+      "source_rank": 191,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 161,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": 160.89,
+        "idp_solo": 37.36,
+        "idp_assist": 31,
+        "idp_sack": 3.3,
+        "idp_pass_def": 9.8,
+        "idp_int": 1.8,
+        "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
         "dsValue": 8
@@ -13285,7 +13145,7 @@
       "team": "SEA",
       "position": "DB",
       "points": 160,
-      "source_rank": 193,
+      "source_rank": 194,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 160,
@@ -13354,7 +13214,7 @@
       "team": "ATL",
       "position": "DB",
       "points": 160,
-      "source_rank": 194,
+      "source_rank": 195,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 160,
@@ -13423,7 +13283,7 @@
       "team": "LAR",
       "position": "DL",
       "points": 159,
-      "source_rank": 42,
+      "source_rank": 41,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 159,
@@ -13561,7 +13421,7 @@
       "team": "DEN",
       "position": "DB",
       "points": 158,
-      "source_rank": 207,
+      "source_rank": 206,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13625,12 +13485,81 @@
     },
     {
       "player_id": "",
+      "source_player_id": "36104",
+      "name": "Dillon Thieneman",
+      "team": "CHI",
+      "position": "DB",
+      "points": 158,
+      "source_rank": 209,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 158,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": 152.08,
+        "idp_solo": 29.25,
+        "idp_assist": 42.8,
+        "idp_sack": "0",
+        "idp_pass_def": 3.4,
+        "idp_int": 1.7,
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 5
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 158,
+      "points_half": 158,
+      "points_ppr": 158,
+      "points_tep": 106,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "35130",
       "name": "Cam Little",
       "team": "JAC",
       "position": "K",
       "points": 158,
-      "source_rank": 222,
+      "source_rank": 220,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13699,7 +13628,7 @@
       "team": "SF",
       "position": "K",
       "points": 158,
-      "source_rank": 223,
+      "source_rank": 221,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13768,7 +13697,7 @@
       "team": "CHI",
       "position": "K",
       "points": 158,
-      "source_rank": 224,
+      "source_rank": 222,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 158,
@@ -13975,7 +13904,7 @@
       "team": "CIN",
       "position": "K",
       "points": 157,
-      "source_rank": 226,
+      "source_rank": 227,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 157,
@@ -14044,7 +13973,7 @@
       "team": "NE",
       "position": "DB",
       "points": 156,
-      "source_rank": 227,
+      "source_rank": 224,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -14182,7 +14111,7 @@
       "team": "DET",
       "position": "K",
       "points": 156,
-      "source_rank": 241,
+      "source_rank": 244,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -14251,7 +14180,7 @@
       "team": "LAR",
       "position": "K",
       "points": 156,
-      "source_rank": 248,
+      "source_rank": 249,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 156,
@@ -14320,7 +14249,7 @@
       "team": "CIN",
       "position": "DB",
       "points": 155,
-      "source_rank": 242,
+      "source_rank": 245,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 155,
@@ -14458,7 +14387,7 @@
       "team": "CLE",
       "position": "RB",
       "points": 152,
-      "source_rank": 174,
+      "source_rank": 172,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 152,
@@ -14600,7 +14529,7 @@
       "team": "LV",
       "position": "DL",
       "points": 150,
-      "source_rank": 59,
+      "source_rank": 57,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 150,
@@ -14644,7 +14573,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 30
+        "dsValue": 31
       },
       "analysis": {
         "player.bottom_line": ""
@@ -14740,7 +14669,7 @@
       "team": "HOU",
       "position": "DL",
       "points": 145,
-      "source_rank": 72,
+      "source_rank": 66,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 145,
@@ -14784,7 +14713,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 27
+        "dsValue": 28
       },
       "analysis": {
         "player.bottom_line": ""
@@ -14809,7 +14738,7 @@
       "team": "JAC",
       "position": "RB",
       "points": 145,
-      "source_rank": 181,
+      "source_rank": 180,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 145,
@@ -14880,7 +14809,7 @@
       "team": "LV",
       "position": "RB",
       "points": 145,
-      "source_rank": 182,
+      "source_rank": 181,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 145,
@@ -14951,7 +14880,7 @@
       "team": "DET",
       "position": "DL",
       "points": 144,
-      "source_rank": 79,
+      "source_rank": 74,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 144,
@@ -14995,7 +14924,7 @@
         "idp_fum_forced": 3.4,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 26
+        "dsValue": 27
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15020,7 +14949,7 @@
       "team": "SEA",
       "position": "RB",
       "points": 144,
-      "source_rank": 156,
+      "source_rank": 157,
       "projections": {
         "games_played": 10,
         "weekly3dPts": 144,
@@ -15091,7 +15020,7 @@
       "team": "NYG",
       "position": "DL",
       "points": 139,
-      "source_rank": 95,
+      "source_rank": 87,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 139,
@@ -15160,7 +15089,7 @@
       "team": "MIN",
       "position": "DL",
       "points": 136,
-      "source_rank": 102,
+      "source_rank": 98,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 136,
@@ -15204,7 +15133,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 21
+        "dsValue": 22
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15229,7 +15158,7 @@
       "team": "LAR",
       "position": "DL",
       "points": 136,
-      "source_rank": 103,
+      "source_rank": 99,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 136,
@@ -15273,7 +15202,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 21
+        "dsValue": 22
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15298,7 +15227,7 @@
       "team": "ARI",
       "position": "RB",
       "points": 135,
-      "source_rank": 196,
+      "source_rank": 197,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 135,
@@ -15369,7 +15298,7 @@
       "team": "DEN",
       "position": "DL",
       "points": 131,
-      "source_rank": 126,
+      "source_rank": 123,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 131,
@@ -15413,7 +15342,7 @@
         "idp_fum_forced": 3.4,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 17
+        "dsValue": 18
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15438,7 +15367,7 @@
       "team": "ATL",
       "position": "RB",
       "points": 131,
-      "source_rank": 203,
+      "source_rank": 204,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 131,
@@ -15509,7 +15438,7 @@
       "team": "PIT",
       "position": "DL",
       "points": 127,
-      "source_rank": 144,
+      "source_rank": 138,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 127,
@@ -15553,7 +15482,7 @@
         "idp_fum_forced": 3.4,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 15
+        "dsValue": 16
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15573,81 +15502,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "2969",
-      "name": "Houston Texans",
-      "team": "HOU",
-      "position": "DEF",
-      "points": 127,
-      "source_rank": 180,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 127,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": 124.8,
-        "def_opp_pts": 395.9,
-        "def_opp_yds": 6236.1,
-        "def_sack": 41,
-        "def_int": 11.5,
-        "def_fum_rec": 13.6,
-        "def_tds": 5.1,
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 9
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 127,
-      "points_half": 127,
-      "points_ppr": 127,
-      "points_tep": 127,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "35927",
       "name": "Jonah Coleman",
       "team": "DEN",
       "position": "RB",
       "points": 127,
-      "source_rank": 217,
+      "source_rank": 216,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 127,
@@ -15716,7 +15576,7 @@
       "team": "NYG",
       "position": "RB",
       "points": 127,
-      "source_rank": 218,
+      "source_rank": 217,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 127,
@@ -15772,12 +15632,81 @@
     },
     {
       "player_id": "",
+      "source_player_id": "2969",
+      "name": "Houston Texans",
+      "team": "HOU",
+      "position": "DEF",
+      "points": 126,
+      "source_rank": 182,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 126,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": 124.8,
+        "def_opp_pts": 395.9,
+        "def_opp_yds": 6236.1,
+        "def_sack": 41,
+        "def_int": 11.5,
+        "def_fum_rec": 13.6,
+        "def_tds": 5.1,
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 9
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 126,
+      "points_half": 126,
+      "points_ppr": 126,
+      "points_tep": 126,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "7751",
       "name": "Alvin Kamara",
       "team": "NO",
       "position": "RB",
       "points": 126,
-      "source_rank": 210,
+      "source_rank": 211,
       "projections": {
         "games_played": 16,
         "weekly3dPts": 126,
@@ -15838,7 +15767,7 @@
       "team": "HOU",
       "position": "DL",
       "points": 125,
-      "source_rank": 154,
+      "source_rank": 146,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 125,
@@ -15882,7 +15811,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 13
+        "dsValue": 14
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15907,7 +15836,7 @@
       "team": "LAC",
       "position": "DL",
       "points": 124,
-      "source_rank": 157,
+      "source_rank": 151,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 124,
@@ -15951,7 +15880,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 13
+        "dsValue": 14
       },
       "analysis": {
         "player.bottom_line": ""
@@ -15976,7 +15905,7 @@
       "team": "PIT",
       "position": "DL",
       "points": 124,
-      "source_rank": 159,
+      "source_rank": 155,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 124,
@@ -16020,7 +15949,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 12
+        "dsValue": 13
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16045,7 +15974,7 @@
       "team": "CLE",
       "position": "DL",
       "points": 123,
-      "source_rank": 164,
+      "source_rank": 158,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 123,
@@ -16089,7 +16018,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 12
+        "dsValue": 13
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16114,7 +16043,7 @@
       "team": "TEN",
       "position": "DL",
       "points": 123,
-      "source_rank": 165,
+      "source_rank": 159,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 123,
@@ -16158,7 +16087,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 12
+        "dsValue": 13
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16178,15 +16107,84 @@
     },
     {
       "player_id": "",
+      "source_player_id": "778",
+      "name": "Denver Broncos",
+      "team": "DEN",
+      "position": "DEF",
+      "points": 123,
+      "source_rank": 196,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 123,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": 121.7,
+        "def_opp_pts": 381.6,
+        "def_opp_yds": 6190.3,
+        "def_sack": 37.9,
+        "def_int": 11.7,
+        "def_fum_rec": 11.9,
+        "def_tds": 5.1,
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 7
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 123,
+      "points_half": 123,
+      "points_ppr": 123,
+      "points_tep": 123,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
       "source_player_id": "12735",
       "name": "Isiah Pacheco",
       "team": "DET",
       "position": "RB",
-      "points": 123,
+      "points": 122,
       "source_rank": 229,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 123,
+        "weekly3dPts": 122,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
@@ -16236,9 +16234,9 @@
         "player.bottom_line": "https://www.draftsharks.com/fantasy/points-outlook/isiah-pacheco/12735"
       },
       "points_std": 102,
-      "points_half": 113,
-      "points_ppr": 123,
-      "points_tep": 123,
+      "points_half": 112,
+      "points_ppr": 122,
+      "points_tep": 122,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -16249,81 +16247,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "778",
-      "name": "Denver Broncos",
-      "team": "DEN",
-      "position": "DEF",
-      "points": 122,
-      "source_rank": 197,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 122,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": 121.7,
-        "def_opp_pts": 381.6,
-        "def_opp_yds": 6190.3,
-        "def_sack": 37.9,
-        "def_int": 11.7,
-        "def_fum_rec": 11.9,
-        "def_tds": 5.1,
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 7
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 122,
-      "points_half": 122,
-      "points_ppr": 122,
-      "points_tep": 122,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "10230",
       "name": "Josh Hines-Allen",
       "team": "JAC",
       "position": "DL",
       "points": 121,
-      "source_rank": 172,
+      "source_rank": 165,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 121,
@@ -16367,7 +16296,7 @@
         "idp_fum_forced": 3.4,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 11
+        "dsValue": 12
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16392,7 +16321,7 @@
       "team": "SEA",
       "position": "DEF",
       "points": 120,
-      "source_rank": 205,
+      "source_rank": 203,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 120,
@@ -16522,7 +16451,7 @@
       "team": "BUF",
       "position": "DL",
       "points": 118,
-      "source_rank": 183,
+      "source_rank": 177,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 118,
@@ -16566,7 +16495,7 @@
         "idp_fum_forced": 3.4,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 9
+        "dsValue": 10
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16591,7 +16520,7 @@
       "team": "SF",
       "position": "DL",
       "points": 118,
-      "source_rank": 188,
+      "source_rank": 179,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 118,
@@ -16635,7 +16564,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 8
+        "dsValue": 9
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16655,81 +16584,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "2408",
-      "name": "Green Bay Packers",
-      "team": "GB",
-      "position": "DEF",
-      "points": 118,
-      "source_rank": 219,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 118,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": 113.6,
-        "def_opp_pts": 395.2,
-        "def_opp_yds": 6493.5,
-        "def_sack": 36.6,
-        "def_int": 11.5,
-        "def_fum_rec": 10.2,
-        "def_tds": 5.1,
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
-        "idp_int": "0",
-        "idp_fum_forced": "0",
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 5
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 118,
-      "points_half": 118,
-      "points_ppr": 118,
-      "points_tep": 118,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "2564",
       "name": "Baltimore Ravens",
       "team": "BAL",
       "position": "DEF",
       "points": 118,
-      "source_rank": 221,
+      "source_rank": 219,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 118,
@@ -16798,7 +16658,7 @@
       "team": "CAR",
       "position": "DL",
       "points": 117,
-      "source_rank": 195,
+      "source_rank": 184,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 117,
@@ -16842,7 +16702,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": 1.7,
         "idp_tds": "0",
-        "dsValue": 7
+        "dsValue": 8
       },
       "analysis": {
         "player.bottom_line": ""
@@ -16862,84 +16722,15 @@
     },
     {
       "player_id": "",
-      "source_player_id": "10236",
-      "name": "Montez Sweat",
-      "team": "CHI",
-      "position": "DL",
-      "points": 116,
-      "source_rank": 199,
-      "projections": {
-        "games_played": 17,
-        "weekly3dPts": 116,
-        "passTotal": "0",
-        "pass_att": "0",
-        "pass_cmp": "0",
-        "pass_yds": "0",
-        "pass_tds": "0",
-        "pass_int": "0",
-        "rushTotal": "0",
-        "rush_yds": "0",
-        "rush_tds": "0",
-        "receivingTotal": "0",
-        "rec_catch": "0",
-        "rec_yds": "0",
-        "rec_tds": "0",
-        "returningTotal": "0",
-        "pr_yds_total": "0",
-        "kr_yds_total": "0",
-        "return_touchdowns": "0",
-        "kickingTotal": "0",
-        "k_xp": "0",
-        "k_fg_0_29": "0",
-        "k_fg_30_39": "0",
-        "k_fg_40_49": "0",
-        "k_fg_50_59": "0",
-        "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": 113.64,
-        "idp_solo": 15.06,
-        "idp_assist": 17.2,
-        "idp_sack": 10.2,
-        "idp_pass_def": 4.3,
-        "idp_int": "0",
-        "idp_fum_forced": 1.7,
-        "idp_fum_rec": "0",
-        "idp_tds": "0",
-        "dsValue": 6
-      },
-      "analysis": {
-        "player.bottom_line": ""
-      },
-      "analysis_links": {},
-      "points_std": 116,
-      "points_half": 116,
-      "points_ppr": 116,
-      "points_tep": 81,
-      "analysis_articles": [
-        {
-          "key": "player.bottom_line",
-          "text": "",
-          "url": null
-        }
-      ]
-    },
-    {
-      "player_id": "",
       "source_player_id": "2897",
       "name": "Pittsburgh Steelers",
       "team": "PIT",
       "position": "DEF",
-      "points": 116,
-      "source_rank": 228,
+      "points": 117,
+      "source_rank": 225,
       "projections": {
         "games_played": 17,
-        "weekly3dPts": 116,
+        "weekly3dPts": 117,
         "passTotal": "0",
         "pass_att": "0",
         "pass_cmp": "0",
@@ -16986,10 +16777,10 @@
         "player.bottom_line": ""
       },
       "analysis_links": {},
-      "points_std": 116,
-      "points_half": 116,
-      "points_ppr": 116,
-      "points_tep": 116,
+      "points_std": 117,
+      "points_half": 117,
+      "points_ppr": 117,
+      "points_tep": 117,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -17000,12 +16791,73 @@
     },
     {
       "player_id": "",
-      "source_player_id": "3086",
-      "name": "Minnesota Vikings",
-      "team": "MIN",
-      "position": "DEF",
+      "source_player_id": "35932",
+      "name": "Emmett Johnson",
+      "team": "KC",
+      "position": "RB",
+      "points": 117,
+      "source_rank": 247,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 117,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": 38.33,
+        "rush_yds": 270.5,
+        "rush_tds": 1.88,
+        "receivingTotal": 43.07,
+        "rec_catch": 21.9,
+        "rec_yds": 161.3,
+        "rec_tds": 0.84,
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 2
+      },
+      "analysis": {},
+      "analysis_links": {},
+      "points_std": 0,
+      "points_half": 0,
+      "points_ppr": 117,
+      "points_tep": 117,
+      "analysis_articles": []
+    },
+    {
+      "player_id": "",
+      "source_player_id": "10236",
+      "name": "Montez Sweat",
+      "team": "CHI",
+      "position": "DL",
       "points": 116,
-      "source_rank": 231,
+      "source_rank": 190,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 116,
@@ -17033,23 +16885,23 @@
         "k_fg_40_49": "0",
         "k_fg_50_59": "0",
         "k_fg_60": "0",
-        "defensiveTotal": 111.4,
-        "def_opp_pts": 396.9,
-        "def_opp_yds": 6211.3,
-        "def_sack": 35.6,
-        "def_int": 10.9,
-        "def_fum_rec": 10.2,
-        "def_tds": 5.1,
-        "idpTotal": "0",
-        "idp_solo": "0",
-        "idp_assist": "0",
-        "idp_sack": "0",
-        "idp_pass_def": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": 113.64,
+        "idp_solo": 15.06,
+        "idp_assist": 17.2,
+        "idp_sack": 10.2,
+        "idp_pass_def": 4.3,
         "idp_int": "0",
-        "idp_fum_forced": "0",
+        "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 4
+        "dsValue": 8
       },
       "analysis": {
         "player.bottom_line": ""
@@ -17058,7 +16910,7 @@
       "points_std": 116,
       "points_half": 116,
       "points_ppr": 116,
-      "points_tep": 116,
+      "points_tep": 81,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -17074,7 +16926,7 @@
       "team": "NE",
       "position": "DEF",
       "points": 116,
-      "source_rank": 232,
+      "source_rank": 231,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 116,
@@ -17138,12 +16990,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "35932",
-      "name": "Emmett Johnson",
-      "team": "KC",
-      "position": "RB",
+      "source_player_id": "3086",
+      "name": "Minnesota Vikings",
+      "team": "MIN",
+      "position": "DEF",
       "points": 116,
-      "source_rank": 249,
+      "source_rank": 232,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 116,
@@ -17153,13 +17005,13 @@
         "pass_yds": "0",
         "pass_tds": "0",
         "pass_int": "0",
-        "rushTotal": 38.33,
-        "rush_yds": 270.5,
-        "rush_tds": 1.88,
-        "receivingTotal": 43.07,
-        "rec_catch": 21.9,
-        "rec_yds": 161.3,
-        "rec_tds": 0.84,
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
         "returningTotal": "0",
         "pr_yds_total": "0",
         "kr_yds_total": "0",
@@ -17171,13 +17023,13 @@
         "k_fg_40_49": "0",
         "k_fg_50_59": "0",
         "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
+        "defensiveTotal": 111.4,
+        "def_opp_pts": 396.9,
+        "def_opp_yds": 6211.3,
+        "def_sack": 35.6,
+        "def_int": 10.9,
+        "def_fum_rec": 10.2,
+        "def_tds": 5.1,
         "idpTotal": "0",
         "idp_solo": "0",
         "idp_assist": "0",
@@ -17187,15 +17039,23 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 2
+        "dsValue": 3
       },
-      "analysis": {},
+      "analysis": {
+        "player.bottom_line": ""
+      },
       "analysis_links": {},
-      "points_std": 0,
-      "points_half": 0,
+      "points_std": 116,
+      "points_half": 116,
       "points_ppr": 116,
       "points_tep": 116,
-      "analysis_articles": []
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
     },
     {
       "player_id": "",
@@ -17204,7 +17064,7 @@
       "team": "BAL",
       "position": "DL",
       "points": 115,
-      "source_rank": 213,
+      "source_rank": 199,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 115,
@@ -17248,7 +17108,7 @@
         "idp_fum_forced": 1.7,
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 5
+        "dsValue": 6
       },
       "analysis": {
         "player.bottom_line": ""
@@ -17268,12 +17128,81 @@
     },
     {
       "player_id": "",
-      "source_player_id": "10013",
-      "name": "Harold Landry",
-      "team": "NE",
-      "position": "DL",
+      "source_player_id": "2551",
+      "name": "Los Angeles Rams",
+      "team": "LAR",
+      "position": "DEF",
+      "points": 115,
+      "source_rank": 238,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 115,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": 106,
+        "def_opp_pts": 395.7,
+        "def_opp_yds": 6297.7,
+        "def_sack": 36.8,
+        "def_int": 11.5,
+        "def_fum_rec": 11.9,
+        "def_tds": 3.4,
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
+        "idp_pass_def": "0",
+        "idp_int": "0",
+        "idp_fum_forced": "0",
+        "idp_fum_rec": "0",
+        "idp_tds": "0",
+        "dsValue": 3
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 115,
+      "points_half": 115,
+      "points_ppr": 115,
+      "points_tep": 115,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "1197",
+      "name": "Philadelphia Eagles",
+      "team": "PHI",
+      "position": "DEF",
       "points": 114,
-      "source_rank": 216,
+      "source_rank": 250,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 114,
@@ -17301,23 +17230,23 @@
         "k_fg_40_49": "0",
         "k_fg_50_59": "0",
         "k_fg_60": "0",
-        "defensiveTotal": "0",
-        "def_opp_pts": "0.0",
-        "def_opp_yds": "0.0",
-        "def_sack": "0",
-        "def_int": "0",
-        "def_fum_rec": "0",
-        "def_tds": "0",
-        "idpTotal": 113.38,
-        "idp_solo": 12.15,
-        "idp_assist": 25.4,
-        "idp_sack": 9.5,
+        "defensiveTotal": 106.3,
+        "def_opp_pts": 394,
+        "def_opp_yds": 6251.4,
+        "def_sack": 39.7,
+        "def_int": 11.4,
+        "def_fum_rec": 10.2,
+        "def_tds": 3.4,
+        "idpTotal": "0",
+        "idp_solo": "0",
+        "idp_assist": "0",
+        "idp_sack": "0",
         "idp_pass_def": "0",
         "idp_int": "0",
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 5
+        "dsValue": 2
       },
       "analysis": {
         "player.bottom_line": ""
@@ -17326,7 +17255,7 @@
       "points_std": 114,
       "points_half": 114,
       "points_ppr": 114,
-      "points_tep": 80,
+      "points_tep": 114,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -17342,7 +17271,7 @@
       "team": "TB",
       "position": "DL",
       "points": 112,
-      "source_rank": 244,
+      "source_rank": 226,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -17386,7 +17315,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 3
+        "dsValue": 4
       },
       "analysis": {
         "player.bottom_line": ""
@@ -17411,7 +17340,7 @@
       "team": "SEA",
       "position": "DL",
       "points": 112,
-      "source_rank": 247,
+      "source_rank": 228,
       "projections": {
         "games_played": 17,
         "weekly3dPts": 112,
@@ -17455,7 +17384,7 @@
         "idp_fum_forced": "0",
         "idp_fum_rec": "0",
         "idp_tds": "0",
-        "dsValue": 2
+        "dsValue": 4
       },
       "analysis": {
         "player.bottom_line": ""
@@ -17465,6 +17394,75 @@
       "points_half": 112,
       "points_ppr": 112,
       "points_tep": 77,
+      "analysis_articles": [
+        {
+          "key": "player.bottom_line",
+          "text": "",
+          "url": null
+        }
+      ]
+    },
+    {
+      "player_id": "",
+      "source_player_id": "10813",
+      "name": "Gregory Rousseau",
+      "team": "BUF",
+      "position": "DL",
+      "points": 111,
+      "source_rank": 240,
+      "projections": {
+        "games_played": 17,
+        "weekly3dPts": 111,
+        "passTotal": "0",
+        "pass_att": "0",
+        "pass_cmp": "0",
+        "pass_yds": "0",
+        "pass_tds": "0",
+        "pass_int": "0",
+        "rushTotal": "0",
+        "rush_yds": "0",
+        "rush_tds": "0",
+        "receivingTotal": "0",
+        "rec_catch": "0",
+        "rec_yds": "0",
+        "rec_tds": "0",
+        "returningTotal": "0",
+        "pr_yds_total": "0",
+        "kr_yds_total": "0",
+        "return_touchdowns": "0",
+        "kickingTotal": "0",
+        "k_xp": "0",
+        "k_fg_0_29": "0",
+        "k_fg_30_39": "0",
+        "k_fg_40_49": "0",
+        "k_fg_50_59": "0",
+        "k_fg_60": "0",
+        "defensiveTotal": "0",
+        "def_opp_pts": "0.0",
+        "def_opp_yds": "0.0",
+        "def_sack": "0",
+        "def_int": "0",
+        "def_fum_rec": "0",
+        "def_tds": "0",
+        "idpTotal": 108.79,
+        "idp_solo": 14.44,
+        "idp_assist": 18.7,
+        "idp_sack": 6.8,
+        "idp_pass_def": 1.7,
+        "idp_int": "0",
+        "idp_fum_forced": 3.4,
+        "idp_fum_rec": 1.7,
+        "idp_tds": "0",
+        "dsValue": 3
+      },
+      "analysis": {
+        "player.bottom_line": ""
+      },
+      "analysis_links": {},
+      "points_std": 111,
+      "points_half": 111,
+      "points_ppr": 111,
+      "points_tep": 111,
       "analysis_articles": [
         {
           "key": "player.bottom_line",
@@ -17564,12 +17562,12 @@
     "chasebrown": 284,
     "aaron rodgers": 282,
     "aaronrodgers": 282,
+    "omarion hampton": 281,
+    "omarionhampton": 281,
     "nico collins": 280,
     "nicocollins": 280,
     "ashton jeanty": 277,
     "ashtonjeanty": 277,
-    "omarion hampton": 277,
-    "omarionhampton": 277,
     "geno smith": 276,
     "genosmith": 276,
     "rashee rice": 275,
@@ -17630,10 +17628,10 @@
     "emekaegbuka": 236,
     "cedric gray": 233,
     "cedricgray": 233,
-    "terry mclaurin": 232,
-    "terrymclaurin": 232,
     "mike evans": 232,
     "mikeevans": 232,
+    "terry mclaurin": 232,
+    "terrymclaurin": 232,
     "cameron skattebo": 231,
     "cameronskattebo": 231,
     "bucky irving": 230,
@@ -17724,8 +17722,6 @@
     "romeodoubs": 199,
     "george kittle": 198,
     "georgekittle": 198,
-    "jacob rodriguez": 198,
-    "jacobrodriguez": 198,
     "foyesade oluokun": 198,
     "foyesadeoluokun": 198,
     "kc concepcion": 198,
@@ -17758,6 +17754,8 @@
     "alecpierce": 190,
     "rj harvey": 189,
     "rjharvey": 189,
+    "jacob rodriguez": 189,
+    "jacobrodriguez": 189,
     "travis kelce": 189,
     "traviskelce": 189,
     "devin bush": 189,
@@ -17800,8 +17798,6 @@
     "jalenmcmillan": 177,
     "jalen coker": 177,
     "jalencoker": 177,
-    "denzel boston": 176,
-    "denzelboston": 176,
     "blake corum": 175,
     "blakecorum": 175,
     "dalton kincaid": 175,
@@ -17812,8 +17808,6 @@
     "jordyntyson": 174,
     "rachaad white": 173,
     "rachaadwhite": 173,
-    "deshon elliott": 173,
-    "deshonelliott": 173,
     "dallas goedert": 172,
     "dallasgoedert": 172,
     "jake ferguson": 171,
@@ -17838,8 +17832,6 @@
     "jeremychinn": 167,
     "nick cross": 167,
     "nickcross": 167,
-    "nick emmanwori": 167,
-    "nickemmanwori": 167,
     "paulson adebo": 167,
     "paulsonadebo": 167,
     "brenton strange": 167,
@@ -17852,6 +17844,8 @@
     "quentinlake": 165,
     "derwin james": 161,
     "derwinjames": 161,
+    "nick emmanwori": 161,
+    "nickemmanwori": 161,
     "kaimi fairbairn": 161,
     "ka'imifairbairn": 161,
     "devon witherspoon": 160,
@@ -17864,6 +17858,8 @@
     "trevonmoehrig": 159,
     "talanoa hufanga": 158,
     "talanoahufanga": 158,
+    "dillon thieneman": 158,
+    "dillonthieneman": 158,
     "cam little": 158,
     "camlittle": 158,
     "eddy pineiro": 158,
@@ -17920,12 +17916,12 @@
     "brianrobinsonjr.": 131,
     "tj watt": 127,
     "t.j.watt": 127,
-    "houston texans": 127,
-    "houstontexans": 127,
     "jonah coleman": 127,
     "jonahcoleman": 127,
     "tyrone tracy": 127,
     "tyronetracyjr.": 127,
+    "houston texans": 126,
+    "houstontexans": 126,
     "alvin kamara": 126,
     "alvinkamara": 126,
     "danielle hunter": 125,
@@ -17938,10 +17934,10 @@
     "jaredverse": 123,
     "jeffery simmons": 123,
     "jefferysimmons": 123,
-    "isiah pacheco": 123,
-    "isiahpacheco": 123,
-    "denver broncos": 122,
-    "denverbroncos": 122,
+    "denver broncos": 123,
+    "denverbroncos": 123,
+    "isiah pacheco": 122,
+    "isiahpacheco": 122,
     "josh hinesallen": 121,
     "joshhines-allen": 121,
     "seattle seahawks": 120,
@@ -17952,30 +17948,32 @@
     "bradleychubb": 118,
     "nick bosa": 118,
     "nickbosa": 118,
-    "green bay packers": 118,
-    "greenbaypackers": 118,
     "baltimore ravens": 118,
     "baltimoreravens": 118,
     "jaelan phillips": 117,
     "jaelanphillips": 117,
+    "pittsburgh steelers": 117,
+    "pittsburghsteelers": 117,
+    "emmett johnson": 117,
+    "emmettjohnson": 117,
     "montez sweat": 116,
     "montezsweat": 116,
-    "pittsburgh steelers": 116,
-    "pittsburghsteelers": 116,
-    "minnesota vikings": 116,
-    "minnesotavikings": 116,
     "new england patriots": 116,
     "newenglandpatriots": 116,
-    "emmett johnson": 116,
-    "emmettjohnson": 116,
+    "minnesota vikings": 116,
+    "minnesotavikings": 116,
     "trey hendrickson": 115,
     "treyhendrickson": 115,
-    "harold landry": 114,
-    "haroldlandry": 114,
+    "los angeles rams": 115,
+    "losangelesrams": 115,
+    "philadelphia eagles": 114,
+    "philadelphiaeagles": 114,
     "yaya diaby": 112,
     "yayadiaby": 112,
     "leonard williams": 112,
-    "leonardwilliams": 112
+    "leonardwilliams": 112,
+    "gregory rousseau": 111,
+    "gregoryrousseau": 111
   },
   "scoring_variants": [
     "std",
