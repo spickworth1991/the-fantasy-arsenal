@@ -5,6 +5,8 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
 import { useSleeper } from "../../context/SleeperContext";
+import GuidedTips from "../../components/GuidedTips";
+import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 
 const n = (value) => Number(value || 0);
@@ -83,6 +85,12 @@ const leagueFormat = (league) => {
   if (Number(league?.settings?.type) === 1) return "keeper";
   return classifyLeagueFormat(league, []).key;
 };
+const GAME_CENTER_PROJECTION_SOURCES = [
+  ...DEFAULT_SOURCES.filter((source) => source.key === "proj:thefantasyarsenal-model"),
+  ...DEFAULT_SOURCES.filter(
+    (source) => source.type === "projection" && source.key !== "proj:thefantasyarsenal-model",
+  ),
+];
 
 async function concurrentMap(rows, limit, worker, onProgress) {
   const results = new Array(rows.length);
@@ -101,9 +109,10 @@ async function concurrentMap(rows, limit, worker, onProgress) {
   return results;
 }
 
-function Panel({ children, className = "" }) {
+function Panel({ children, className = "", ...props }) {
   return (
     <div
+      {...props}
       className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 shadow-[0_30px_90px_-65px_rgba(16,185,129,.7)] ${className}`}
     >
       {children}
@@ -342,6 +351,8 @@ export default function GameCenterClient() {
     getProjection,
     getWeeklyProjection,
     projectionSource,
+    sourceKey,
+    setSourceKey,
   } = useSleeper();
   const [week, setWeek] = useState(1);
   const [seasonType, setSeasonType] = useState("regular");
@@ -613,12 +624,15 @@ export default function GameCenterClient() {
 
   const weeklyProjection = useCallback(
     (id) => {
-      if (projectionSource === "ARSENAL_MODEL") {
-        return n(getWeeklyProjection?.(players?.[id], projectionSource, week));
+      const selectedProjectionSource = String(sourceKey || "").startsWith("proj:")
+        ? projectionSource
+        : "ARSENAL_MODEL";
+      if (selectedProjectionSource === "ARSENAL_MODEL") {
+        return n(getWeeklyProjection?.(players?.[id], selectedProjectionSource, week));
       }
-      return n(getProjection?.(players?.[id], projectionSource)) / 17;
+      return n(getProjection?.(players?.[id], selectedProjectionSource)) / 17;
     },
-    [getProjection, getWeeklyProjection, players, projectionSource, week],
+    [getProjection, getWeeklyProjection, players, projectionSource, sourceKey, week],
   );
 
   const preseasonMode = seasonType === "preseason";
@@ -891,15 +905,20 @@ export default function GameCenterClient() {
       matchupRows.length
     : 0;
   const compliancePenalty = riskyLineups.reduce(
-    (sum, row) => sum + row.emptySlots * 10 + row.riskyStarters.length * 3,
+    (sum, row) => sum + row.emptySlots * 25 + row.riskyStarters.length * 8,
     0,
+  );
+  const readinessScore = Math.max(
+    0,
+    100 - compliancePenalty / Math.max(1, matchupRows.length),
+  );
+  const outlookScore = Math.max(
+    0,
+    Math.min(100, 50 + (averageWin - 50) * 2),
   );
   const gradeScore = Math.max(
     0,
-    Math.min(
-      100,
-      averageWin - compliancePenalty / Math.max(1, matchupRows.length),
-    ),
+    Math.min(100, readinessScore * 0.7 + outlookScore * 0.3),
   );
   const grade =
     gradeScore >= 90
@@ -953,7 +972,7 @@ export default function GameCenterClient() {
       <div
         className={`mx-auto max-w-[1600px] px-3 pb-20 sm:px-4 ${liveMode ? "pt-[max(1rem,env(safe-area-inset-top))]" : "pt-20"}`}
       >
-        <header className="rounded-[30px] border border-emerald-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(16,185,129,.2),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.13),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-4 sm:p-7">
+        <header data-guide-tip="game-center-header" className="rounded-[30px] border border-emerald-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(16,185,129,.2),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(34,211,238,.13),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-4 sm:p-7">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[.24em] text-emerald-200/60">
@@ -980,7 +999,7 @@ export default function GameCenterClient() {
                   : "One Sunday screen for scores, remaining players, lineup risk, late swaps, conflicts, weather, and the plays moving several leagues at once."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-guide-tip="game-center-live-controls">
               <button
                 type="button"
                 onClick={() => scan(false)}
@@ -1002,7 +1021,7 @@ export default function GameCenterClient() {
               </button>
             </div>
           </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-[150px_150px_1fr]">
+          <div className="mt-5 grid gap-2 sm:grid-cols-[150px_150px_1fr]" data-guide-tip="game-center-week-filters">
             <select
               value={seasonType}
               onChange={(event) => {
@@ -1032,8 +1051,9 @@ export default function GameCenterClient() {
                 </option>
               ))}
             </select>
-            <details className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
-              <summary className="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-semibold text-white/55"><span>League filters</span><span className="text-[10px] font-normal text-white/30">{formatFilter === "all" ? "All types" : formatFilter} · {bestBallFilter === "include" ? "Best Ball included" : bestBallFilter === "exclude" ? "Best Ball excluded" : "Best Ball only"}</span></summary>
+            <details data-guide-tip="game-center-settings" className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+              <summary data-guide-tip="game-center-settings-summary" className="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-semibold text-white/55"><span>League & model settings</span><span className="text-[10px] font-normal text-white/30">{GAME_CENTER_PROJECTION_SOURCES.find((source) => source.key === (String(sourceKey || "").startsWith("proj:") ? sourceKey : "proj:thefantasyarsenal-model"))?.label || "The Fantasy Arsenal Projections"} · {formatFilter === "all" ? "All types" : formatFilter}</span></summary>
+              <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Win-probability model</div><p className="mt-1 text-[10px] leading-4 text-white/35">Projected finishes, win chances, close-matchup labels, swing players, and late-swap rankings use this projection source. Player market values are intentionally excluded because they do not predict a single week's score.</p><SourceSelector sources={GAME_CENTER_PROJECTION_SOURCES} value={String(sourceKey || "").startsWith("proj:") ? sourceKey : "proj:thefantasyarsenal-model"} onChange={setSourceKey} layout="inline" showToggles={false} className="mt-2" /></div>
               <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2"><select value={formatFilter} onChange={(event) => setFormatFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="all">All league types</option><option value="dynasty">Dynasty</option><option value="keeper">Keeper</option><option value="redraft">Redraft</option><option value="bestball">Best Ball</option></select><select value={bestBallFilter} onChange={(event) => setBestBallFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="include">Include Best Ball</option><option value="exclude">Exclude Best Ball</option><option value="only">Only Best Ball</option></select></div>{bestBallLeagues.length ? <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Best Ball action-alert overrides</div><p className="mt-1 text-[10px] leading-4 text-white/30">Lineup and injury alerts are off by default. Enable only custom leagues where managers can make moves.</p><div className="mt-2 grid gap-1.5 sm:grid-cols-2">{bestBallLeagues.map((row)=><label key={row.league.league_id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-2 text-xs text-white/55"><input type="checkbox" checked={bestBallAlertLeagueIds.includes(String(row.league.league_id))} onChange={(event)=>setBestBallAlertLeagueIds((current)=>event.target.checked?[...new Set([...current,String(row.league.league_id)])]:current.filter((id)=>id!==String(row.league.league_id)))} />{row.league.name}</label>)}</div></div> : null}
             </details>
           </div>
@@ -1056,7 +1076,7 @@ export default function GameCenterClient() {
         {username || preseasonMode ? (
           <>
             {preseasonMode ? (
-              <section className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              <section data-guide-tip="game-center-scoreboard" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 <Stat
                   label="Preseason games"
                   value={games.length}
@@ -1103,7 +1123,7 @@ export default function GameCenterClient() {
                 />
               </section>
             ) : (
-              <section className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+              <section data-guide-tip="game-center-scoreboard" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
                 <Stat
                   label="Actual points"
                   value={totalActual.toFixed(1)}
@@ -1132,9 +1152,9 @@ export default function GameCenterClient() {
                   tone={riskyLineups.length ? "amber" : "emerald"}
                 />
                 <Stat
-                  label="Portfolio grade"
+                  label="Game-day grade"
                   value={grade}
-                  detail={`${Math.round(gradeScore)} command score`}
+                  detail={`${Math.round(readinessScore)} readiness · ${Math.round(averageWin)}% win outlook`}
                   tone={
                     gradeScore >= 75
                       ? "emerald"
@@ -1146,7 +1166,7 @@ export default function GameCenterClient() {
               </section>
             )}
 
-            <Panel className="sticky top-0 z-30 mt-4 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur-xl">
+            <Panel data-guide-tip="game-center-tabs" className="sticky top-0 z-30 mt-4 overflow-x-auto rounded-2xl bg-slate-950/95 p-2 backdrop-blur-xl">
               <div className="flex w-max gap-1">
                 {(preseasonMode
                   ? [
@@ -1162,6 +1182,7 @@ export default function GameCenterClient() {
                   <button
                     key={key}
                     type="button"
+                    data-guide-tip={`game-center-tab-${key}`}
                     onClick={() => setTab(key)}
                     className={`min-h-11 rounded-xl px-4 py-2 text-sm font-semibold ${tab === key ? "bg-white/10 text-white" : "text-white/42"}`}
                   >
@@ -1172,17 +1193,19 @@ export default function GameCenterClient() {
             </Panel>
 
             {tab === "command" && preseasonMode ? (
-              <PreseasonCommand
-                games={gameGroups}
-                exposureRows={preseasonPlayerRows}
-                liveMode={liveMode}
-              />
+              <div data-guide-tip="game-center-preseason-command">
+                <PreseasonCommand
+                  games={gameGroups}
+                  exposureRows={preseasonPlayerRows}
+                  liveMode={liveMode}
+                />
+              </div>
             ) : null}
 
             {tab === "command" && !preseasonMode ? (
-              <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
+              <div data-guide-tip="game-center-command" className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
                 <div className="space-y-4">
-                  <Panel className="p-4">
+                  <Panel data-guide-tip="game-center-command-summary" className="p-4">
                     <h2 className="font-black">Weekly recap</h2>
                     <p className="mt-2 break-words text-xs leading-5 text-white/42">
                       {counts.winning > counts.losing
@@ -1193,7 +1216,7 @@ export default function GameCenterClient() {
                         : "Every observed lineup is currently compliant."}
                     </p>
                   </Panel>
-                  <Panel className="overflow-hidden">
+                  <Panel data-guide-tip="game-center-decisions" className="overflow-hidden">
                     <div className="border-b border-white/10 p-4 sm:p-5">
                       <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-amber-200/50">
                         Decision queue
@@ -1262,7 +1285,7 @@ export default function GameCenterClient() {
                   </Panel>
                 </div>
                 <div className="space-y-4">
-                  <Panel className="overflow-hidden">
+                  <Panel data-guide-tip="game-center-late-swap" className="overflow-hidden">
                     <div className="border-b border-white/10 p-4 sm:p-5"><h2 className="text-xl font-black">Late-swap opportunities</h2><p className="mt-1 text-xs text-white/35">Healthy same-position bench options that lock no earlier than the risky starter.</p></div>
                     <div className="grid gap-2 p-3">{lateSwaps.slice(0,12).map(({starterId,replacement,row})=><a key={`${row.league.league_id}-${starterId}`} href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"><div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">{row.league.name}</div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm"><b className="break-words text-amber-100">{playerName(players,starterId)}</b><span className="text-white/20">→</span><b className="break-words text-emerald-100">{playerName(players,replacement)}</b></div><div className="mt-1 break-words text-[10px] text-white/32">{injury(players?.[starterId])} contingency · {weeklyProjection(replacement).toFixed(1)} projected</div></a>)}{!lateSwaps.length?<div className="p-3 text-sm text-white/35">No direct late-swap chain is currently required.</div>:null}</div>
                   </Panel>
@@ -1337,8 +1360,8 @@ export default function GameCenterClient() {
             ) : null}
 
             {tab === "timeline" ? (
-              <div className="mt-4 space-y-4">
-                <Panel className="p-4">
+              <div data-guide-tip="game-center-timeline" className="mt-4 space-y-4">
+                <Panel data-guide-tip="game-center-timeline-summary" className="p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h2 className="text-2xl font-black">
@@ -1525,8 +1548,8 @@ export default function GameCenterClient() {
             ) : null}
 
             {tab === "matchups" && !preseasonMode ? (
-              <div className="mt-4">
-                <Panel className="mb-4 overflow-x-auto p-2">
+              <div data-guide-tip="game-center-matchups" className="mt-4">
+                <Panel data-guide-tip="game-center-matchup-filters" className="mb-4 overflow-x-auto p-2">
                   <div className="flex w-max gap-1">
                     {[
                       ["all", "All"],
@@ -1552,6 +1575,7 @@ export default function GameCenterClient() {
                     <button
                       type="button"
                       key={row.league.league_id}
+                      data-guide-tip="game-center-matchup-card"
                       onClick={()=>setSelectedMatchupLeagueId(String(row.league.league_id))}
                       className={`rounded-[24px] border p-4 text-left transition hover:-translate-y-0.5 ${row.margin <= 10 && row.status !== "completed" ? "border-amber-300/20 bg-amber-300/[0.035]" : "border-white/10 bg-slate-900/80"}`}
                     >
@@ -1605,6 +1629,111 @@ export default function GameCenterClient() {
           </>
         ) : null}
       </div>
+      {username && !liveMode ? (
+        <GuidedTips
+          storageKey="tfa:tips:game-center"
+          label="Fantasy Game Center tour"
+          steps={preseasonMode ? [
+            {
+              target: "game-center-week-filters",
+              title: "Start with the correct schedule",
+              detail: "Preseason and regular-season schedules are separate. Pick the season type first, then the week. League filters narrow portfolio exposure without changing the active league used by other tools; Best Ball lineup alerts remain off unless you explicitly enable a custom league.",
+            },
+            {
+              target: "game-center-settings-summary",
+              title: "Control the model and league scope",
+              detail: "Open this menu to choose the projection source and scoring format used by Game Center, filter league types, or enable alerts for a custom Best Ball league. In preseason, the model affects exposure rankings; regular-season win probabilities become available only with fantasy matchups.",
+              onEnter: () => { const menu = document.querySelector('[data-guide-tip="game-center-settings"]'); if (menu) menu.open = true; return () => { if (menu) menu.open = false; }; },
+            },
+            {
+              target: "game-center-scoreboard",
+              title: "Read the portfolio pulse",
+              detail: "These totals summarize the selected preseason slate: live games, fantasy production, unique portfolio players, and total league exposures. Exposure counts repeat a player when you roster them in several leagues, helping identify the games that matter most to your portfolio.",
+            },
+            {
+              target: "game-center-tabs",
+              title: "Two preseason views, two jobs",
+              detail: "Preseason Command follows NFL games and portfolio exposure. Player Timeline reorganizes the same slate by kickoff window and player. The guide will open each tab next so you can see the difference.",
+            },
+            {
+              target: "game-center-tab-command",
+              title: "Monitor the preseason slate",
+              detail: "This board combines game status, scores, weather, and your highest-exposure players. It is designed to test the Sunday workflow and identify portfolio-relevant performances—not to create regular-season fantasy matchups.",
+              onEnter: () => setTab("command"),
+            },
+            {
+              target: "game-center-tab-timeline",
+              title: "Follow players by kickoff window",
+              detail: "The timeline groups rostered players beneath their NFL games and shows live fantasy points, raw production, and exposure count. Search for a player or team when you want to isolate one part of a large slate.",
+              onEnter: () => setTab("timeline"),
+            },
+            {
+              target: "game-center-live-controls",
+              title: "Turn the board into a live screen",
+              detail: "Refresh now performs a one-time scan. Preseason Live Mode creates a full-screen board and polls more frequently while games are active. Exit Live Mode when you want the normal navigation and guide controls back.",
+              onEnter: () => setTab("command"),
+            },
+          ] : [
+            {
+              target: "game-center-week-filters",
+              title: "Set the slate before reading alerts",
+              detail: "Choose Regular Season and the NFL week you want to monitor. League filters narrow this screen without changing your sidebar league. Best Ball lineup and injury alerts are excluded by default; only enable an override for a custom Best Ball league that permits manager moves.",
+            },
+            {
+              target: "game-center-settings-summary",
+              title: "Choose what drives the win percentages",
+              detail: "Game Center adds the selected source's remaining-player projections to each live score, compares the two modeled finishes, and converts that margin into win probability. This menu also controls scoring format, league filters, and Best Ball alert exceptions. Player values are excluded because dynasty or trade value does not predict one week's fantasy points.",
+              onEnter: () => { const menu = document.querySelector('[data-guide-tip="game-center-settings"]'); if (menu) menu.open = true; return () => { if (menu) menu.open = false; }; },
+            },
+            {
+              target: "game-center-scoreboard",
+              title: "Your whole portfolio in one glance",
+              detail: "Actual points show what has scored; Projected finish includes remaining production. Winning, Losing, and Close use modeled finishes—not only the current score. Game-day grade is 70% lineup readiness and 30% matchup outlook. Fix empty slots and unavailable starters to raise the part you can control.",
+            },
+            {
+              target: "game-center-tabs",
+              title: "Use each tab for a different question",
+              detail: "Matchups answers “Where am I winning or vulnerable?” Player Timeline answers “Which NFL window and players affect me next?” Command answers “What action should I take before kickoff?” The next tips open every tab automatically.",
+            },
+            {
+              target: "game-center-matchup-card",
+              title: "Click a matchup to inspect both rosters",
+              detail: "Each card combines live score, modeled finish, win probability, players remaining, and lineup risk. Click any card to open both complete rosters, separated into starters and bench with player points and injury statuses. From that roster view, you can open the matchup directly in Sleeper. Use the Close filter to find leagues within one scoring swing.",
+              onEnter: () => setTab("matchups"),
+            },
+            {
+              target: "game-center-timeline-summary",
+              title: "See when your portfolio moves",
+              detail: "Players are grouped by NFL game and kickoff window with fantasy points plus how many leagues you have them for and against. A conflict means the same player helps you in some leagues and hurts you in others. Search by player or team to isolate an upcoming window.",
+              onEnter: () => setTab("timeline"),
+            },
+            {
+              target: "game-center-command-summary",
+              title: "Turn information into a Sunday plan",
+              detail: "Command puts the weekly recap and urgent decisions on the left, with late swaps and high-impact players kept visible on the right. This tab prioritizes fixable lineup problems before broader portfolio context.",
+              onEnter: () => setTab("command"),
+            },
+            {
+              target: "game-center-decisions",
+              title: "Fix must-act problems first",
+              detail: "The decision queue ranks empty starting slots ahead of injured or unavailable starters. Selecting a league opens its Sleeper matchup so you can make the change. A clean queue means no actionable issue was detected—not that every close start/sit choice is automatically settled.",
+              onEnter: () => setTab("command"),
+            },
+            {
+              target: "game-center-late-swap",
+              title: "Protect flexibility after early games lock",
+              detail: "Late-swap opportunities pair a risky starter with a healthy same-position bench option whose game locks no earlier. Treat these as contingency paths: verify the injury news and your league's eligibility rules before making the swap.",
+              onEnter: () => setTab("command"),
+            },
+            {
+              target: "game-center-live-controls",
+              title: "Use Live Mode on game day",
+              detail: "Refresh now performs a single portfolio scan. Sunday Live Mode expands Game Center into a dedicated full-screen board and uses game-aware polling while NFL games are active. Exit it when you need the normal site navigation again.",
+              onEnter: () => setTab("matchups"),
+            },
+          ]}
+        />
+      ) : null}
     </main>
   );
 }

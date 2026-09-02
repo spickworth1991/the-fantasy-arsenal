@@ -1,5 +1,6 @@
 import "./globals.css";
 import Providers from "./providers";
+import ToolGuides from "../components/ToolGuides";
 
 // Set NEXT_PUBLIC_SITE_URL in your env for accurate canonical URLs.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://thefantasyarsenal.com";
@@ -96,7 +97,7 @@ export default function RootLayout({ children }) {
             ),
           }}
         />
-        <Providers>{children}</Providers>
+        <Providers>{children}<ToolGuides /></Providers>
       </body>
     </html>
   );

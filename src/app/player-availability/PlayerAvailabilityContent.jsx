@@ -2078,7 +2078,7 @@ export default function PlayerAvailabilityContent() {
         />
       ) : (
         <div className="max-w-6xl mx-auto px-4 pb-12 pt-20">
-          <div className="mb-6">
+          <div className="mb-6" data-guide-tip="availability-intro">
             <h1 className="text-3xl font-bold tracking-tight">
               Player Availability
             </h1>
@@ -2089,7 +2089,7 @@ export default function PlayerAvailabilityContent() {
           </div>
 
           {/* Scan summary */}
-          <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+          <div data-guide-tip="availability-scan" className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <StatPill
                 label="Scanned"
@@ -2133,51 +2133,6 @@ export default function PlayerAvailabilityContent() {
               </div>
             </div>
 
-            <details className="premium-disclosure mt-4">
-              <summary>
-                League Scope{" "}
-                <span className="ml-auto text-xs font-normal text-white/45">
-                  {onlyBestBall
-                    ? "Best Ball only"
-                    : excludeBestBall
-                      ? "No Best Ball"
-                      : "All leagues"}
-                </span>
-              </summary>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                  <input
-                    type="checkbox"
-                    className="accent-cyan-400"
-                    checked={onlyBestBall}
-                    onChange={() =>
-                      setOnlyBestBall((v) => (excludeBestBall ? true : !v))
-                    }
-                  />
-                  Only Best Ball
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                  <input
-                    type="checkbox"
-                    className="accent-cyan-400"
-                    checked={excludeBestBall}
-                    onChange={() =>
-                      setExcludeBestBall((v) => (onlyBestBall ? true : !v))
-                    }
-                  />
-                  Exclude Best Ball
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
-                  <input
-                    type="checkbox"
-                    className="accent-cyan-400"
-                    checked={includeDrafting}
-                    onChange={() => setIncludeDrafting((v) => !v)}
-                  />
-                  Include drafting
-                </label>
-              </div>
-            </details>
           </div>
 
           {!username ? (
@@ -2194,13 +2149,19 @@ export default function PlayerAvailabilityContent() {
             <>
               {/* Premium Controls */}
               <div className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6">
-                <details className="premium-disclosure mb-4">
+                <details data-guide-tip="availability-settings" className="premium-disclosure mb-4">
                   <summary>
-                    Ranking Settings{" "}
+                    Ranking, League & Filter Settings{" "}
                     <span className="ml-auto text-xs font-normal text-white/45">
                       {bestMetric === "projection" ? "Projections" : "Values"}
                     </span>
                   </summary>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={onlyBestBall} onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))} />Only Best Ball</label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={excludeBestBall} onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))} />Exclude Best Ball</label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={includeDrafting} onChange={() => setIncludeDrafting((v) => !v)} />Include drafting leagues</label>
+                    <button type="button" className="ml-auto rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10" onClick={() => setShowIncludedLeaguesModal(true)}>Choose included leagues ({includedLeaguesList.length})</button>
+                  </div>
                   <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                     <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
                       Availability Lens
@@ -2258,7 +2219,7 @@ export default function PlayerAvailabilityContent() {
                 </details>
 
                 <div className="space-y-4">
-                  <div>
+                  <div data-guide-tip="availability-player-picker">
                     <div className="text-sm font-semibold text-white/80 mb-2">
                       Search & Add Player
                     </div>
@@ -2301,7 +2262,10 @@ export default function PlayerAvailabilityContent() {
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-3">
+                  <div
+                    data-guide-tip="availability-check-controls"
+                    className="flex flex-col gap-3"
+                  >
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() =>
@@ -2416,6 +2380,7 @@ export default function PlayerAvailabilityContent() {
               {anySelected && (
                 <div
                   ref={computeAnchorRef}
+                  data-guide-tip="availability-matrix"
                   className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6"
                 >
                   <h3 className="text-lg font-semibold mb-3">
@@ -2521,7 +2486,7 @@ export default function PlayerAvailabilityContent() {
               {/* Best Available + Trending (desktop: hot | best | cold) */}
               <div className="relative  grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
                 {/* HOT */}
-                <div className="relative order-2 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div data-guide-tip="availability-hot-adds" className="relative order-2 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">
@@ -2642,7 +2607,7 @@ export default function PlayerAvailabilityContent() {
                 </div>
 
                 {/* BEST */}
-                <div className="relative order-1 lg:col-span-12 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
+                <div data-guide-tip="availability-best" className="relative order-1 lg:col-span-12 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-bold text-white">
@@ -2771,7 +2736,7 @@ export default function PlayerAvailabilityContent() {
                 </div>
 
                 {/* COLD */}
-                <div className="relative order-3 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
+                <div data-guide-tip="availability-cold-drops" className="relative order-3 lg:col-span-6 rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">

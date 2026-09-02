@@ -210,15 +210,42 @@ function teamStrength({ roster, players, getMetricWeekly, slots, week, byeMap })
   return sum;
 }
 
-function samplePerformanceScore(strength) {
-  const base = Math.max(1, Number(strength || 0));
-  const variance = base < 150 ? 0.28 : base < 500 ? 0.22 : 0.16;
-  return base * (1 + (Math.random() * 2 - 1) * variance);
+function hashSeed(value) {
+  let hash = 2166136261;
+  for (const char of String(value || "")) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
-function simulateMatchup(ridA, ridB, strengthMap) {
-  const scoreA = samplePerformanceScore(strengthMap[ridA] || 0);
-  const scoreB = samplePerformanceScore(strengthMap[ridB] || 0);
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function normalSample(random) {
+  const u = Math.max(Number.EPSILON, random());
+  const v = Math.max(Number.EPSILON, random());
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function samplePerformanceScore(strength, random, sharedEnvironment = 0) {
+  const base = Math.max(1, Number(strength || 0));
+  const coefficientOfVariation = base < 150 ? 0.22 : base < 500 ? 0.18 : 0.14;
+  const z = Math.sqrt(0.88) * normalSample(random) + Math.sqrt(0.12) * sharedEnvironment;
+  return Math.max(0, base * (1 + coefficientOfVariation * z));
+}
+
+function simulateMatchup(ridA, ridB, strengthMap, random, sharedEnvironment = 0) {
+  const scoreA = samplePerformanceScore(strengthMap[ridA] || 0, random, sharedEnvironment);
+  const scoreB = samplePerformanceScore(strengthMap[ridB] || 0, random, sharedEnvironment);
   if (scoreA === scoreB) {
     return {
       winner: (strengthMap[ridA] || 0) >= (strengthMap[ridB] || 0) ? ridA : ridB,
@@ -229,7 +256,7 @@ function simulateMatchup(ridA, ridB, strengthMap) {
   return { winner: scoreA > scoreB ? ridA : ridB, scoreA, scoreB };
 }
 
-function runPlayoffBracket(ranked, playoffSlots, byeSlots, strengthMap) {
+function runPlayoffBracket(ranked, playoffSlots, byeSlots, strengthMap, random) {
   const seeds = ranked.slice(0, playoffSlots);
   if (!seeds.length) return null;
   if (seeds.length === 1) return seeds[0];
@@ -241,7 +268,7 @@ function runPlayoffBracket(ranked, playoffSlots, byeSlots, strengthMap) {
     let left = 0;
     let right = teams.length - 1;
     while (left < right) {
-      winners.push(simulateMatchup(teams[left], teams[right], strengthMap).winner);
+      winners.push(simulateMatchup(teams[left], teams[right], strengthMap, random, normalSample(random)).winner);
       left += 1;
       right -= 1;
     }
@@ -465,7 +492,7 @@ export default function PlayoffOddsPage() {
   const [stateWeek, setStateWeek] = useState(1);
   const [stateSeason, setStateSeason] = useState(new Date().getFullYear());
   const [byeMap, setByeMap] = useState({ by_team: {} });
-  const [runs, setRuns] = useState(2500);
+  const [runs, setRuns] = useState(10000);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [schedCache, setSchedCache] = useState({});
@@ -833,12 +860,14 @@ export default function PlayoffOddsPage() {
       const matchupConditions = Object.fromEntries(firstWeekGroups.map(([a, b]) => [`${a}-${b}`, { a, b, aWinRuns: 0, aWinFocusMakes: 0, bWinRuns: 0, bWinFocusMakes: 0 }]));
 
       for (let run = 0; run < runs; run += 1) {
+        const random = seededRandom(hashSeed(`${activeLeague}|${leagueSeason}|${sourceKey}|${runs}|${run}`));
         const wins = { ...baseWins };
         const pointsFor = { ...basePointsFor };
         const firstWeekWinners = new Set();
         const firstWeekLosers = new Set();
 
         futureWeeks.forEach((currentWeek, index) => {
+          const sharedEnvironment = normalSample(random);
           const schedule = futureScheduleRows[index] || { groups: [], hasRealMatchups: false };
           const strengthMap = strengthsByWeek[currentWeek] || {};
           const groups = schedule.hasRealMatchups
@@ -849,7 +878,7 @@ export default function PlayoffOddsPage() {
           groups.forEach((group) => {
             if (group.length === 2) {
               const [ridA, ridB] = group;
-              const sim = simulateMatchup(ridA, ridB, strengthMap);
+              const sim = simulateMatchup(ridA, ridB, strengthMap, random, sharedEnvironment);
               wins[sim.winner] += 1;
               if (index === 0) {
                 firstWeekWinners.add(sim.winner);
@@ -861,7 +890,7 @@ export default function PlayoffOddsPage() {
               weeklyScores[ridB] = sim.scoreB;
             } else if (group.length === 1) {
               const rid = group[0];
-              const score = samplePerformanceScore(strengthMap[rid] || 0);
+              const score = samplePerformanceScore(strengthMap[rid] || 0, random, sharedEnvironment);
               pointsFor[rid] += score;
               weeklyScores[rid] = score;
             }
@@ -916,7 +945,7 @@ export default function PlayoffOddsPage() {
           });
         }
 
-        const champion = runPlayoffBracket(ranked, playoffSlots, byeSlots, averageStrengthByRoster);
+        const champion = runPlayoffBracket(ranked, playoffSlots, byeSlots, averageStrengthByRoster, random);
         if (champion) champs[champion] += 1;
       }
 
@@ -1239,17 +1268,18 @@ export default function PlayoffOddsPage() {
                     : `The regular season is complete through Week ${regularSeasonEnd}; the odds now reflect the final standings.`}
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <StatChip label="Baseline" value={latestObservedWeek > 0 ? `Through Week ${latestObservedWeek}` : "Preseason"} />
                   <StatChip label="Remaining" value={latestObservedWeek < regularSeasonEnd ? `W${latestObservedWeek + 1}-W${regularSeasonEnd}` : "Final"} />
+                  <StatChip label="Simulation noise" value={`±${(98 / Math.sqrt(runs)).toFixed(1)} pts`} />
                   <div>
                     <label className="mb-2 block text-xs text-white/50">Simulation Runs</label>
                     <select
                       className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/30"
                       value={runs}
-                      onChange={(e) => setRuns(Number(e.target.value) || 2500)}
+                      onChange={(e) => setRuns(Number(e.target.value) || 10000)}
                     >
-                      {[1000, 2500, 5000, 7500, 10000].map((count) => (
+                      {[2500, 5000, 10000, 20000].map((count) => (
                         <option key={count} value={count}>
                           {count.toLocaleString()}
                         </option>
@@ -1375,7 +1405,7 @@ export default function PlayoffOddsPage() {
                   </div>
                 </div>
 
-                <Card className="overflow-hidden border-violet-300/15">
+                {false && <Card className="overflow-hidden border-violet-300/15">
                   <div className="bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,.18),transparent_36%),linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.92))] p-5 sm:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                       <div>
@@ -1424,7 +1454,7 @@ export default function PlayoffOddsPage() {
                       <div className="mt-3 text-[11px] leading-5 text-white/35">Trade impact is a sensitivity estimate, not a second full Monte Carlo simulation. It accounts for the selected team’s optimized lineup change and remaining weeks; it does not model multi-player packages or the trade partner’s changed schedule.</div>
                     </div>
                   </div> : null}
-                </Card>
+                </Card>}
 
                 <Card className="overflow-hidden">
                   <div className="border-b border-white/10 px-5 py-4 sm:px-6">

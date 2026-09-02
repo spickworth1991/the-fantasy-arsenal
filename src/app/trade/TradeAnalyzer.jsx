@@ -11,6 +11,7 @@ import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import GuidedTips from "../../components/GuidedTips";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import { makeGetPlayerValue } from "../../lib/values";
 import { parsePickLabel, roundToOrdinal } from "../../lib/picks";
@@ -125,6 +126,7 @@ export default function TradeAnalyzer() {
     username,
     leagues,
     players,
+    activeLeague,
     setActiveLeague,
     fetchLeagueRostersSilent,
     format,
@@ -160,22 +162,20 @@ export default function TradeAnalyzer() {
   const [handoffContext, setHandoffContext] = useState(null);
 
   useEffect(() => {
-    const resetLeagueContext = () => {
-      setTradeLeagueId("");
-      setActiveLeague(null);
+    const resetTrade = () => {
       setSideA([]);
       setSideB([]);
       setSelectedOwnerA("");
       setSelectedOwnerB("");
       setLeaguePickAssets({});
     };
-    resetLeagueContext();
-    window.addEventListener("pageshow", resetLeagueContext);
+    resetTrade();
+    window.addEventListener("pageshow", resetTrade);
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     if (["analyzer", "finder", "block", "history", "market"].includes(requestedTab))
       setTradeTab(requestedTab);
-    return () => window.removeEventListener("pageshow", resetLeagueContext);
-  }, [setActiveLeague]);
+    return () => window.removeEventListener("pageshow", resetTrade);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -301,6 +301,15 @@ export default function TradeAnalyzer() {
       setLeaguePickAssets(next);
     }
   };
+
+  useEffect(() => {
+    const nextLeagueId = String(activeLeague || "");
+    if (nextLeagueId === String(tradeLeagueId || "")) return;
+    if (nextLeagueId && !leagues.some((item) => String(item.league_id) === nextLeagueId)) return;
+    handleLeagueChange(nextLeagueId);
+    // handleLeagueChange intentionally refreshes all league-specific trade data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLeague, leagues]);
 
   useEffect(() => {
     if (routeHandoffApplied.current || !leagues?.length) return;
@@ -641,8 +650,10 @@ export default function TradeAnalyzer() {
     };
     localStorage.setItem(key, JSON.stringify([item, ...current].slice(0, 30)));
     window.dispatchEvent(new CustomEvent("tfa:trade-workspaces-updated", { detail:{ key } }));
-    await syncNow({ quiet:true }).catch(() => {});
-    setSaveMessage("Trade saved to your Arsenal account.");
+    const syncResult = await syncNow({ quiet:true });
+    setSaveMessage(syncResult?.ok
+      ? "Trade saved and synced to your Arsenal account."
+      : "Trade saved on this device, but Arsenal account sync did not complete yet.");
   };
 
   const printTradeSummary = () => {
@@ -683,7 +694,7 @@ export default function TradeAnalyzer() {
         ) : (
           <>
             <div className="mb-6 space-y-4">
-              <details className="premium-disclosure">
+              <details data-guide-tip="trade-model" className="premium-disclosure">
                 <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
               <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">Trade Lens</div>
@@ -732,7 +743,7 @@ export default function TradeAnalyzer() {
               </div>
               </details>
 
-              <div className="rounded-2xl border border-white/10 bg-gray-900 p-4">
+              <div data-guide-tip="trade-league" className="rounded-2xl border border-white/10 bg-gray-900 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">League Context</div>
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1">
@@ -753,7 +764,7 @@ export default function TradeAnalyzer() {
               </div>
             </div>
 
-            <div className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["workspace","Saved Trades"],["finder","Partner Finder"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
+            <div data-guide-tip="trade-tabs" className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["finder","Partner Finder"],["workspace","Saved Trades"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
 
             <div className={tradeTab !== "analyzer" ? "block" : "hidden"}><TradeWorkspaceSuite
               league={league}
@@ -782,7 +793,7 @@ export default function TradeAnalyzer() {
               hideNavigation
             /></div>
 
-            <div className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
+            <div data-guide-tip="trade-analyzer" className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">
                 <div className="text-xs uppercase tracking-wide text-blue-200/60">Side A</div>
                 <div className="mt-1 text-2xl font-semibold text-white">{Math.round(tradeValueA).toLocaleString()}</div>
@@ -961,6 +972,16 @@ export default function TradeAnalyzer() {
             ) : null}</div>
           </>
         )}
+        {username ? <GuidedTips storageKey="tfa:tips:trade-analyzer" label="Trade Analyzer tips" steps={[
+          { target:"trade-league", title:"Add league context", detail:"Choose a league when you want roster-aware trading. This identifies each manager's roster, available roster space, team needs, draft picks, and the league's scoring and quarterback format." },
+          { target:"trade-model", title:"Choose the evaluation lens", detail:"Model Settings controls the value or projection source, dynasty or redraft format, quarterback setup, and negotiation cushion. Every tab uses this same active lens." },
+          { target:"trade-analyzer", title:"Analyzer: build a specific deal", detail:"Add assets to both sides or select league managers to work from their rosters. The balance meter compares the active source, suggests gap-closing additions, and lets you save or print the result.", onEnter:()=>setTradeTab("analyzer") },
+          { target:"trade-finder", title:"Partner Finder: discover workable packages", detail:"Partner Finder ranks trades by both teams' needs, lineup impact, direction, roster limits, picks, and value. Load any idea into Analyzer when you want to edit it.", onEnter:()=>setTradeTab("finder") },
+          { target:"trade-workspace", title:"Saved Trades: manage negotiations", detail:"Saved Trades is available without an Arsenal account. In guest or portfolio-only use, versions, notes, sources, and outcomes are saved only in this browser and depend on its storage/privacy settings; clearing site data can remove them. When signed into an Arsenal account, these trade workspaces are included in automatic account sync so they can follow you across supported devices. Reopen any version in Analyzer to continue without rebuilding it.", onEnter:()=>setTradeTab("workspace") },
+          { target:"trade-block", title:"Trade Block: start with what you will move", detail:"Select players you are willing to discuss and the positions or picks you want back. The tool generates matching offers locally and can copy a private board link; it does not post to Sleeper.", onEnter:()=>setTradeTab("block") },
+          { target:"trade-history", title:"Trade History: review completed deals", detail:"Review the league's completed trades one by one, including players and picks. Current values are labeled as current; fair-at-the-time values appear only where archived data exists.", onEnter:()=>setTradeTab("history") },
+          { target:"trade-market", title:"League Market: understand trading behavior", detail:"League Market summarizes the same completed-deal sample into volume, package size, frequently traded positions, active managers, and repeated trading relationships.", onEnter:()=>setTradeTab("market") },
+        ]} /> : null}
       </div>
     </>
   );

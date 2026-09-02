@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
@@ -49,7 +49,7 @@ const TOOL_ICONS = {
   "Trust & Accuracy Center": "/icons/power-icon.webp",
   "Stat Central": "/icons/power-icon.webp",
   "My Arsenal": "/icons/manager-intelligence-icon.webp",
-  "Manager Leaderboard": "/icons/manager-intelligence-icon.webp",
+  "Arsenal Leaderboard": "/icons/manager-intelligence-icon.webp",
   "Ballsville Stats": "/icons/power-icon.webp",
 };
 
@@ -64,6 +64,10 @@ export default function HomeClient() {
   const [showPassword, setShowPassword] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountMessage, setAccountMessage] = useState("");
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const [tipStep, setTipStep] = useState(0);
+  const [tipArrow, setTipArrow] = useState(null);
+  const tipPanelRef = useRef(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -85,6 +89,86 @@ export default function HomeClient() {
   };
 
   const isLoggedIn = !!username;
+  const tips = useMemo(
+    () =>
+      isLoggedIn
+        ? [
+            { title: "Start with what you need", detail: "These shortcuts take you straight to the most common jobs: managing this week, preparing for a draft, or researching a move.", target: "start" },
+            { title: "Fan Favorites", detail: "The most-used Arsenal tools live together here: Player Stock, Draft Monitor, Power Rankings, and Ballsville Stats.", target: "favorites" },
+            { title: "Weekly Team Management", detail: "Use these tools during the season to find urgent league actions, follow live matchups, set lineups, and locate available players.", target: "weekly" },
+            { title: "Draft Day & Review", detail: "Draft Command Center helps while picks are live. Draft Grade Studio evaluates the picks and roster builds after the draft.", target: "draft" },
+            { title: "Trades & Player Research", detail: "Start here when evaluating a move: build a trade, study production, check depth-chart opportunity, or compare upcoming schedules.", target: "players" },
+            { title: "League & Manager Research", detail: "Understand the competition through prioritized intelligence, manager tendencies, verified records, league history, and playoff scenarios.", target: "league-research" },
+            { title: "Commissioner Tools", detail: "Commissioners can audit settings, participation, competitive balance, and roster quality from one focused workspace.", target: "commissioner" },
+            { title: "Account & Data Trust", detail: "Manage saved Arsenal work and preferences, then inspect the freshness, coverage, and accuracy of the data behind the tools.", target: "account-trust" },
+            { title: "Open tools or switch leagues", detail: "The menu contains the complete grouped tool library. Its Active league selector changes the league used by league-aware tools without sending you to another page.", target: "menu" },
+            { title: "Open or change a portfolio", detail: "Use the profile control in the top right to manage your Arsenal account, return to your connected portfolio, or search and temporarily view another Sleeper manager's public profile.", target: "portfolio" },
+          ]
+        : [
+            { title: "Load a Sleeper portfolio", detail: "Enter any public Sleeper username. No Sleeper password is needed—the Arsenal only reads public league and draft data.", target: "access" },
+            { title: "Portfolio or Arsenal account?", detail: "Loading a portfolio is the quickest start. An optional Arsenal account adds cross-device preferences and saved work.", target: "access" },
+            { title: "Explore the toolkit", detail: "After a portfolio loads, the homepage changes into goal-based shortcuts and clearly grouped tool collections.", target: "about" },
+            { title: "Open tips anytime", detail: "The Tips button stays in the corner. Turn automatic tips off now and reopen them only when you want a reminder.", target: "menu" },
+            { title: "Search Sleeper profiles", detail: "The control in the top right opens account and portfolio access. Use it to load your own portfolio or search another Sleeper manager's public profile.", target: "portfolio" },
+          ],
+    [isLoggedIn],
+  );
+
+  useEffect(() => {
+    try {
+      const enabled = localStorage.getItem("tfa:home-tips-enabled") !== "false";
+      const seen = localStorage.getItem("tfa:home-tips-seen") === "true";
+      if (enabled && !seen) setTipsOpen(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!tipsOpen) return;
+    const target = document.querySelector(`[data-home-tip="${tips[tipStep]?.target}"]`);
+    target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [tipStep, tips, tipsOpen]);
+
+  useEffect(() => {
+    if (!tipsOpen) return;
+    let timer;
+    const measure = () => {
+      const target = document.querySelector(`[data-home-tip="${tips[tipStep]?.target}"]`);
+      const panel = tipPanelRef.current;
+      if (!target || !panel) return setTipArrow(null);
+      const targetRect = target.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      setTipArrow({
+        fromX: panelRect.left + panelRect.width / 2,
+        fromY: panelRect.top - 8,
+        toX: Math.max(24, Math.min(window.innerWidth - 24, targetRect.left + Math.min(targetRect.width / 2, 180))),
+        toY: Math.max(24, Math.min(panelRect.top - 44, targetRect.top + Math.min(targetRect.height / 2, 70))),
+      });
+    };
+    const scheduleMeasure = () => { clearTimeout(timer); timer = setTimeout(measure, 80); };
+    measure();
+    timer = setTimeout(measure, 500);
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure);
+    };
+  }, [tipStep, tips, tipsOpen]);
+
+  const closeTips = (disable = false) => {
+    setTipsOpen(false);
+    setTipStep(0);
+    try {
+      localStorage.setItem("tfa:home-tips-seen", "true");
+      if (disable) localStorage.setItem("tfa:home-tips-enabled", "false");
+    } catch {}
+  };
+
+  const tipClass = (target) =>
+    tipsOpen && tips[tipStep]?.target === target
+      ? "relative z-[92] ring-2 ring-cyan-300 ring-offset-4 ring-offset-slate-950 shadow-[0_0_55px_rgba(34,211,238,.3)]"
+      : "";
 
   const tools = [
     {
@@ -150,7 +234,7 @@ export default function HomeClient() {
     {
       name: "Player Availability",
       link: "/player-availability",
-      description: "Find which leagues have a player available",
+      description: "Search once to see every loaded league where a player is available to add.",
     },
     {
       name: "League Hub",
@@ -180,12 +264,12 @@ export default function HomeClient() {
     {
       name: "Power Rankings",
       link: "/power-rankings",
-      description: "See where you rank amongst your league.",
+      description: "Compare every roster in a league using team strength, depth, and positional rankings.",
     },
     {
       name: "Strength of Schedule",
       link: "/sos",
-      description: "Analyze team schedules based on various metrics.",
+      description: "Compare regular-season and playoff schedules, difficult weeks, and position-specific matchups.",
     },
     {
       name: "Lineup Optimizer",
@@ -196,7 +280,7 @@ export default function HomeClient() {
     {
       name: "Playoff Odds",
       link: "/playoff-odds",
-      description: "Predict your team's chances of making the playoffs.",
+      description: "Estimate playoff chances and test how future wins, losses, and league results change the path.",
       badge: "NEW",
     },
     {
@@ -207,7 +291,7 @@ export default function HomeClient() {
       badge: "NEW",
     },
     {
-      name: "Manager Leaderboard",
+      name: "Arsenal Leaderboard",
       link: "/leaderboard",
       description:
         "Compare verified Sleeper portfolio records and discover public Arsenal manager profiles.",
@@ -222,20 +306,20 @@ export default function HomeClient() {
     
   ];
   const toolGroups = [
-    { title:"Fan Favorites", eyebrow:"MOST POPULAR", description:"Quick access to player value movement, live draft tracking, roster rankings, and Ballsville draft trends.", names:["Player Stock","Draft Monitor","Power Rankings","Ballsville Stats"], favorite:true },
-    { title:"Weekly Team Management", eyebrow:"MANAGE MY TEAMS", description:"Review every league needing attention, follow live matchups, set lineups, and find available players.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
-    { title:"Draft Preparation & Grades", eyebrow:"DRAFT DAY", description:"Prepare picks with a league-aware draft board, then review and grade every team after the draft.", names:["Draft Command Center","Draft Grade Studio"] },
-    { title:"Trades & Player Research", eyebrow:"EVALUATE PLAYERS", description:"Analyze trade value, study production and consistency, check depth-chart opportunity, and compare upcoming schedules.", names:["Trade Analyzer","Stat Central","NFL Depth Charts","Strength of Schedule"] },
-    { title:"League & Manager Research", eyebrow:"KNOW THE COMPETITION", description:"Get a prioritized league action list, research manager tendencies, forecast playoff chances, and explore league history.", names:["Arsenal Intelligence","Manager Intelligence","Playoff Odds","League History"] },
-    { title:"Commissioner Tools", eyebrow:"RUN THE LEAGUE", description:"Review league settings, participation, competitive balance, roster quality, and commissioner action items.", names:["Commissioner Dashboard"] },
-    { title:"Account, Community & Trust", eyebrow:"MY ARSENAL", description:"Manage your account, compare verified manager records, and inspect the freshness and accuracy behind Arsenal data.", names:["My Arsenal","Manager Leaderboard","Trust & Accuracy Center"] },
+    { title:"Fan Favorites", tipTarget:"favorites", eyebrow:"MOST POPULAR", description:"The four most-visited tools: follow player value, monitor live drafts, compare league rosters, and explore Ballsville draft trends.", names:["Player Stock","Draft Monitor","Power Rankings","Ballsville Stats"], favorite:true },
+    { title:"Weekly Team Management", tipTarget:"weekly", eyebrow:"MANAGE MY TEAMS", description:"See what needs attention across your leagues, follow matchups, make lineup decisions, and find available players.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
+    { title:"Draft Day & Review", tipTarget:"draft", eyebrow:"DRAFT", description:"Use a live, league-aware board while drafting, then grade the picks, roster construction, and every team afterward.", names:["Draft Command Center","Draft Grade Studio"] },
+    { title:"Trades & Player Research", tipTarget:"players", eyebrow:"EVALUATE PLAYERS", description:"Build trades, study player production, understand depth-chart opportunity, and compare regular-season or playoff schedules.", names:["Trade Analyzer","Stat Central","NFL Depth Charts","Strength of Schedule"] },
+    { title:"League & Manager Research", tipTarget:"league-research", eyebrow:"KNOW THE COMPETITION", description:"Review prioritized intelligence, research manager behavior and records, explore league history, and model the playoff race.", names:["Arsenal Intelligence","Manager Intelligence","Arsenal Leaderboard","League History","Playoff Odds"] },
+    { title:"Commissioner Tools", tipTarget:"commissioner", eyebrow:"RUN THE LEAGUE", description:"Audit settings, participation, competitive balance, and roster quality—then turn the findings into commissioner actions.", names:["Commissioner Dashboard"] },
+    { title:"Account & Data Trust", tipTarget:"account-trust", eyebrow:"MY ARSENAL", description:"Manage your Arsenal profile and saved work, then inspect the freshness and accuracy behind Arsenal data.", names:["My Arsenal","Trust & Accuracy Center"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));
 
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div aria-hidden className="h-[72px]" />
       <BackgroundParticles />
-      <Navbar pageTitle="Home" />
+      <Navbar pageTitle="Home" highlightMenu={tipsOpen && tips[tipStep]?.target === "menu"} highlightPortfolio={tipsOpen && tips[tipStep]?.target === "portfolio"} />
 
       <main className="flex flex-col items-center px-4 pb-24">
         <h1 className="text-4xl text-white sm:text-6xl font-bold mb-4 text-center animate-fadeIn">
@@ -249,7 +333,7 @@ export default function HomeClient() {
 
         {!isLoggedIn ? (
           <>
-            <section className="mb-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/95 shadow-2xl animate-fadeIn">
+            <section data-home-tip="access" className={`mb-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/95 shadow-2xl animate-fadeIn ${tipClass("access")}`}>
               <div className="grid grid-cols-2 gap-2 border-b border-white/10 bg-black/15 p-2">
                 <button type="button" onClick={() => { setAccessMode("portfolio"); setAccountMessage(""); }} className={`min-h-12 rounded-xl px-2 text-xs font-black transition sm:text-sm ${accessMode === "portfolio" ? "bg-cyan-300/12 text-cyan-100 ring-1 ring-cyan-300/15" : "text-white/40 hover:bg-white/[0.04]"}`}>Load Sleeper Portfolio</button>
                 <button type="button" onClick={() => { setAccessMode("account"); setAccountMessage(""); }} className={`min-h-12 rounded-xl px-2 text-xs font-black transition sm:text-sm ${accessMode === "account" ? "bg-violet-300/12 text-violet-100 ring-1 ring-violet-300/15" : "text-white/40 hover:bg-white/[0.04]"}`}>Arsenal Account</button>
@@ -291,7 +375,7 @@ export default function HomeClient() {
             </section>
 
             {/* SEO content (VISIBLE ONLY WHEN LOGGED OUT) */}
-            <section className="max-w-6xl mx-auto px-2 sm:px-6 pb-24 w-full">
+            <section data-home-tip="about" className={`max-w-6xl mx-auto px-2 sm:px-6 pb-24 w-full ${tipClass("about")}`}>
               <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-gray-900/70 border border-white/10 rounded-2xl p-6 shadow-xl">
                   <h2 className="text-2xl font-bold text-white">
@@ -373,12 +457,14 @@ export default function HomeClient() {
           </>
         ) : (
           <div className="w-full max-w-6xl space-y-8">
-            <section className="overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7">
+            <section data-home-tip="start" className={`overflow-hidden rounded-[30px] border border-cyan-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.14),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))] p-5 sm:p-7 ${tipClass("start")}`}>
               <div className="text-[10px] font-semibold uppercase tracking-[.26em] text-cyan-200/55">New here?</div>
               <div className="mt-2"><h2 className="text-2xl font-black text-white sm:text-4xl">What do you need to do?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">Start with your goal. The full tool library below is organized into clear groups when you need something more specific.</p></div>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">{[["/league-hub","Manage this week","Open League Hub for lineup, waiver, injury, and trade priorities"],["/draft-helper","Prepare for a draft","Use Draft Command Center for a live, league-aware draft board"],["/trade","Research a move","Start in Trade Analyzer to compare value and roster fit"]].map(([link,name,detail])=><Link key={link} href={link} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.065]"><div className="font-bold text-white">{name}</div><div className="mt-1 text-xs leading-5 text-white/38">{detail}</div></Link>)}</div>
             </section>
-            {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4}/>) }
+            <div className="space-y-8">
+              {toolGroups.map((group,index)=><ToolSection key={group.title} group={group} offset={index*4} tipActive={tipsOpen && tips[tipStep]?.target === group.tipTarget}/>) }
+            </div>
 
             {/* Extra space below cards so they never feel cramped */}
             <div aria-hidden className="h-10" />
@@ -390,12 +476,38 @@ export default function HomeClient() {
           </div>
         )}
       </main>
+      <button type="button" onClick={() => { setTipStep(0); setTipsOpen(true); }} className="fixed bottom-5 right-5 z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10" aria-label="Open homepage tips">
+        ? Tips
+      </button>
+      {tipsOpen ? (
+        <>
+          <div className="fixed inset-0 z-[80] bg-slate-950/55 backdrop-blur-[1px]" aria-hidden />
+          {tipArrow ? (
+            <svg className="pointer-events-none fixed inset-0 z-[105] h-full w-full" aria-hidden>
+              <defs><marker id="home-tip-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="rgb(103 232 249)" /></marker></defs>
+              <path d={`M ${tipArrow.fromX} ${tipArrow.fromY} Q ${(tipArrow.fromX + tipArrow.toX) / 2 + 36} ${(tipArrow.fromY + tipArrow.toY) / 2} ${tipArrow.toX} ${tipArrow.toY}`} fill="none" stroke="rgba(103,232,249,.9)" strokeWidth="3" strokeLinecap="round" strokeDasharray="7 7" markerEnd="url(#home-tip-arrow)" className="animate-pulse" />
+            </svg>
+          ) : null}
+          <div ref={tipPanelRef} className="fixed inset-x-4 bottom-32 z-[110] mx-auto max-w-lg rounded-[26px] border border-cyan-100/45 bg-[#26364f] p-5 shadow-[0_30px_100px_rgba(0,0,0,.9),0_0_40px_rgba(34,211,238,.18)] sm:bottom-16 sm:p-6" role="dialog" aria-modal="true" aria-label="Homepage tips">
+            <div className="flex items-start justify-between gap-4">
+              <div><div className="text-[10px] font-black uppercase tracking-[.22em] text-cyan-100/75">Homepage tip {tipStep + 1} of {tips.length}</div><h2 className="mt-1 text-xl font-black text-white">{tips[tipStep].title}</h2></div>
+              <button type="button" onClick={() => closeTips(false)} className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/75 hover:bg-white/[0.09]" aria-label="Close tips">Close</button>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-white/75">{tips[tipStep].detail}</p>
+            <div className="mt-5 flex items-center gap-2">
+              <button type="button" disabled={tipStep === 0} onClick={() => setTipStep((step) => Math.max(0, step - 1))} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-bold text-white/55 disabled:opacity-25">Back</button>
+              <button type="button" onClick={() => tipStep === tips.length - 1 ? closeTips(false) : setTipStep((step) => step + 1)} className="flex-1 rounded-xl bg-cyan-300/15 px-4 py-2.5 text-xs font-black text-cyan-100 hover:bg-cyan-300/20">{tipStep === tips.length - 1 ? "Done" : "Next tip"}</button>
+              <button type="button" onClick={() => closeTips(true)} className="rounded-xl px-3 py-2.5 text-[10px] font-bold text-white/35 hover:text-white/60">Turn tips off</button>
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
 
-function ToolSection({group,offset=0}) {
-  return <section className={group.favorite?"rounded-[28px] border border-amber-300/15 bg-amber-300/[0.025] p-5 sm:p-6":""}><div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className={`text-[10px] font-semibold uppercase tracking-[.22em] ${group.favorite?"text-amber-200/60":"text-cyan-200/45"}`}>{group.eyebrow}</div><h2 className="mt-1 text-2xl font-black text-white">{group.title}</h2></div><p className="max-w-xl text-xs leading-5 text-white/38 sm:text-right">{group.description}</p></div><div className={`grid gap-4 ${group.tools.length===1?"grid-cols-1":group.favorite?"sm:grid-cols-2 xl:grid-cols-4":"sm:grid-cols-2 lg:grid-cols-3"}`}>{group.tools.map((tool,index)=><ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={(offset+index)*70} featured={group.tools.length===1}/>)}</div></section>;
+function ToolSection({group,offset=0,tipActive=false}) {
+  return <section data-home-tip={group.tipTarget} className={`${group.favorite?"rounded-[28px] border border-amber-300/15 bg-amber-300/[0.025] p-5 sm:p-6":""} ${tipActive?"relative z-[93] rounded-[28px] ring-2 ring-amber-300 ring-offset-4 ring-offset-slate-950 shadow-[0_0_55px_rgba(252,211,77,.24)]":""}`}><div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className={`text-[10px] font-semibold uppercase tracking-[.22em] ${group.favorite?"text-amber-200/60":"text-cyan-200/45"}`}>{group.eyebrow}</div><h2 className="mt-1 text-2xl font-black text-white">{group.title}</h2></div><p className="max-w-xl text-xs leading-5 text-white/38 sm:text-right">{group.description}</p></div><div className={`grid gap-4 ${group.tools.length===1?"grid-cols-1":group.favorite?"sm:grid-cols-2 xl:grid-cols-4":"sm:grid-cols-2 lg:grid-cols-3"}`}>{group.tools.map((tool,index)=><ToolCard key={tool.name} {...tool} icon={TOOL_ICONS[tool.name]} delay={(offset+index)*70} featured={group.tools.length===1}/>)}</div></section>;
 }
 
 function ToolCard({ name, link, description, comingSoon, badge, delay, disabled, icon, featured=false }) {

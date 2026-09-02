@@ -15,6 +15,7 @@ import { useSleeper } from "../../../context/SleeperContext";
 import AvatarImage from "../../../components/AvatarImage";
 import ExportButtons from "../../../components/ExportButtons";
 import LeagueFormatBadge from "../../../components/LeagueFormatBadge";
+import GuidedTips from "../../../components/GuidedTips";
 import { classifyLeagueFormat } from "../../../lib/leagueFormat";
 
 const safeNum = (v) => {
@@ -1595,7 +1596,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
           </div>
         ) : (
           <div className="mb-4">
-            <div className="rounded-2xl border border-white/10 bg-gray-950/80 shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+            <div data-guide-tip="stock-controls" className="rounded-2xl border border-white/10 bg-gray-950/80 shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur">
               <div className="border-b border-white/10 p-4 md:p-5">
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
@@ -1679,6 +1680,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                     <div className="grid w-full grid-cols-2 gap-2 self-start sm:flex sm:w-auto xl:self-center">
                       <button
                         type="button"
+                        data-guide-tip="stock-filters"
                         className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15"
                         onClick={() => setShowFiltersModal(true)}
                         title="Filters & options"
@@ -1686,6 +1688,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         Filters & Display
                       </button>
                       <button
+                        data-guide-tip="stock-refresh"
                         className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-gray-200 transition hover:bg-white/[0.08]"
                         onClick={doRefresh}
                         title="Rescan now (ignores cache)"
@@ -1697,7 +1700,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 </div>
               </div>
 
-              <div className="p-4 md:p-5">
+              <div data-guide-tip="stock-scope" className="p-4 md:p-5">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
                   {leagueCount > 0 ? (
                     <button
@@ -1734,19 +1737,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
               </div>
             </div>
 
-            <ExportButtons
-              rows={stockExportRows}
-              columns={stockExportColumns}
-              filename="player-stock"
-              className="mt-4 justify-end"
-            />
+            <div data-guide-tip="stock-export">
+              <ExportButtons
+                rows={stockExportRows}
+                columns={stockExportColumns}
+                filename="player-stock"
+                className="mt-4 justify-end"
+              />
+            </div>
 
             {sorted.length === 0 ? (
               <div className="text-center text-gray-400 py-10">
                 {loading ? "Working…" : trendingMode !== "all" ? "No matching trending players." : "No players found."}
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 mt-4 bg-gray-950/70 backdrop-blur">
+              <div data-guide-tip="stock-table" className="overflow-x-auto rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 mt-4 bg-gray-950/70 backdrop-blur">
                 <table className="min-w-full bg-transparent">
                   <thead className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur">
                     <tr>
@@ -1918,6 +1923,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
           </div>
         )}
       </div>
+
+      {username ? <GuidedTips storageKey="tfa:tips:player-stock" label="Player Stock tips" steps={[
+        { target:"stock-controls", title:"Choose what Player Stock measures", detail:"Search for a player, team, or position, then include only the league formats you want. Local ADP and exposure recalculate from the leagues currently in scope." },
+        { target:"stock-scope", title:"Scanned is not the same as showing", detail:"Scanned is every league successfully read during the refresh. Showing is the smaller set left after format filters and any manual league selections; exposure uses the showing count." },
+        { target:"stock-filters", title:"Advanced controls live here", detail:"Filters & Display contains the value or projection source, exposure threshold, trending window, display accents, manual league selection, and Ballsville ADP group assignments." },
+        { target:"stock-table", title:"Sort, compare, and open a player", detail:"Click any column heading to sort. Leagues is your portfolio exposure, ADP is your own drafted average, Ballsville columns show wider market ADP, and clicking a player opens league-by-league details." },
+        { target:"stock-export", title:"Take the table with you", detail:"Download the filtered results as a CSV, or choose Open Google Sheets. For Google Sheets, click the first cell (A1) in the new sheet and paste with Ctrl+V (Cmd+V on Mac)." },
+        { target:"stock-refresh", title:"Refresh only when you need a new scan", detail:"Player Stock caches its portfolio scan for speed. Refresh ignores that cache and rereads league, roster, and draft data; ordinary filtering does not require another scan." },
+      ]} /> : null}
 
       {showFiltersModal && (
         <div

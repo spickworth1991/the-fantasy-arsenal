@@ -208,7 +208,7 @@ function LegacyExpansion({ seasons, selectedSeason, history, players, getPlayerV
 }
 
 export default function LeagueHistoryClient() {
-  const { username, year, players, getPlayerValue } = useSleeper();
+  const { username, year, players, getPlayerValue, activeLeague, setActiveLeague } = useSleeper();
   const [leagues, setLeagues] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [tab, setTab] = useState("overview");
@@ -232,12 +232,23 @@ export default function LeagueHistoryClient() {
         if (!active) return;
         const sorted = (rows || []).sort((a, b) => String(a.name).localeCompare(String(b.name)));
         setLeagues(sorted);
-        setSelectedLeagueId((current) => current || String(sorted[0]?.league_id || ""));
+        setSelectedLeagueId((current) => {
+          const shared = String(activeLeague || "");
+          if (shared && sorted.some((league) => String(league.league_id) === shared)) return shared;
+          return current || String(sorted[0]?.league_id || "");
+        });
       } catch { if (active) setError("We couldn’t load your Sleeper leagues for this season."); }
       finally { if (active) setLoadingLeagues(false); }
     })();
     return () => { active = false; };
-  }, [username, year]);
+  }, [username, year, activeLeague]);
+
+  useEffect(() => {
+    const shared = String(activeLeague || "");
+    if (shared && leagues.some((league) => String(league.league_id) === shared)) {
+      setSelectedLeagueId(shared);
+    }
+  }, [activeLeague, leagues]);
 
   useEffect(() => {
     let active = true;
@@ -316,7 +327,7 @@ export default function LeagueHistoryClient() {
           </div>
 
           <div className="relative mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="block"><span className="mb-2 block text-xs font-semibold text-white/50">League</span><select value={selectedLeagueId} onChange={(event) => setSelectedLeagueId(event.target.value)} disabled={loadingLeagues} className="w-full rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/35"><option value="">Choose a league</option>{leagues.map((league) => <option key={league.league_id} value={league.league_id}>{league.name}</option>)}</select></label>
+            <label className="block"><span className="mb-2 block text-xs font-semibold text-white/50">League</span><select value={selectedLeagueId} onChange={(event) => { const id = event.target.value; setSelectedLeagueId(id); setActiveLeague(id || null); }} disabled={loadingLeagues} className="w-full rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/35"><option value="">Choose a league</option>{leagues.map((league) => <option key={league.league_id} value={league.league_id}>{league.name}</option>)}</select></label>
             <div className="grid grid-cols-3 gap-2 sm:min-w-[330px]"><Metric label="Seasons" value={seasons.length || "—"} /><Metric label="Matchups" value={totalGames || "—"} /><Metric label="Moves" value={totalTransactions || "—"} /></div>
           </div>
         </header>

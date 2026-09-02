@@ -95,7 +95,7 @@ const STAT_GUIDES = {
     summary:
       "Choose a position, offense, and defense to connect team production with what that defense allowed to the position.",
     bullets: [
-      "An allowance index of 100 is league average; higher is more favorable to the offense.",
+      "The defense summary shows how many more or fewer fantasy points it allows than league average. More points allowed is a better matchup for the offense.",
       "Click a defensive bar or ranked defense to load its complete position profile.",
       "Player-v-defense history is sample-regressed and compared with that player's other opponents.",
     ],
@@ -1418,7 +1418,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
           <span
             className={`rounded-full px-3 py-1 text-[10px] font-black ${defenseIndex <= 0.9 ? "bg-emerald-300/10 text-emerald-100" : defenseIndex >= 1.1 ? "bg-rose-300/10 text-rose-100" : "bg-white/5 text-white/50"}`}
           >
-            {Math.round(defenseIndex * 100)} allowance index · 100 average
+            {defenseIndex >= 1 ? "+" : ""}{Math.round((defenseIndex - 1) * 100)}% points allowed vs average
           </span>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

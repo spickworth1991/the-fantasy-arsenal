@@ -8,6 +8,7 @@ import ExportButtons from "../../components/ExportButtons";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import GuidedTips from "../../components/GuidedTips";
 import { parsePickLabel } from "../../lib/picks";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
@@ -418,8 +419,6 @@ export default function PowerRankingsPage() {
   const [includePicks, setIncludePicks] = useState(true);
 
   const [sortKey, setSortKey] = useState("rating");
-  const [teamAId, setTeamAId] = useState("");
-  const [teamBId, setTeamBId] = useState("");
   const [openTeamId, setOpenTeamId] = useState(null);
 
   const [ownedPicks, setOwnedPicks] = useState(null);
@@ -803,9 +802,6 @@ export default function PowerRankingsPage() {
     };
   }, [sortedTeams, metricMode]);
 
-  const compA = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamAId)), [sortedTeams, teamAId]);
-  const compB = useMemo(()=> sortedTeams.find(t => String(t.teamId) === String(teamBId)), [sortedTeams, teamBId]);
-
   const powerExportRows = useMemo(
     () =>
       sortedTeams.map((team) => {
@@ -879,7 +875,7 @@ export default function PowerRankingsPage() {
           <>
             {/* Controls */}
             <Card className="p-4">
-              <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+              <div data-guide-tip="rankings-overview" className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">League Snapshot</div>
                   <div className="mt-1 text-sm text-white/65">
@@ -894,7 +890,7 @@ export default function PowerRankingsPage() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <details className="premium-disclosure">
+                <details data-guide-tip="rankings-model" className="premium-disclosure">
                   <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
                 <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                   <SourceSelector
@@ -918,7 +914,7 @@ export default function PowerRankingsPage() {
                 </div>
                 </details>
 
-                <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
+                <div data-guide-tip="rankings-league" className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
                   <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                     <span className="shrink-0 font-semibold">League:</span>
                     <LeagueSearchSelect leagues={leagues} value={activeLeague || ""} onChange={setActiveLeague} className="w-full sm:w-80" />
@@ -1052,7 +1048,7 @@ export default function PowerRankingsPage() {
             </Card>
 
             {/* ===== MOBILE META (unchanged except pick sections hide on projections) ===== */}
-            <div className="space-y-4 mt-6 lg:hidden">
+            <div data-guide-tip="rankings-summary" className="space-y-4 mt-6 lg:hidden">
               <MobileAccordion title="Team Tiers">
                 {(!league || !league.rosters) ? (
                   <div className="text-center text-gray-400 py-4">Choose a league to see tiers.</div>
@@ -1135,68 +1131,9 @@ export default function PowerRankingsPage() {
             </div>
             {/* ===== END MOBILE META ===== */}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+            <div data-guide-tip="rankings-context" className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
               {/* MAIN COLUMN */}
-              <main className="lg:col-span-8 space-y-8">
-                {/* Comparison */}
-                <SectionTitle subtitle="Pick two teams for a premium head-to-head snapshot.">
-                  Comparison Mode
-                </SectionTitle>
-                <Card className="p-4">
-                  {(!league || !league.rosters) ? (
-                    <div className="text-center text-gray-400 py-12">Choose a league to compare teams.</div>
-                  ) : (
-                    <>
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <select className="bg-gray-800 p-2 rounded" value={teamAId} onChange={e=>setTeamAId(e.target.value)}>
-                          <option value="">Select Team A</option>
-                          {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
-                        </select>
-                        <select className="bg-gray-800 p-2 rounded" value={teamBId} onChange={e=>setTeamBId(e.target.value)}>
-                          <option value="">Select Team B</option>
-                          {sortedTeams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
-                        </select>
-                      </div>
-                      {(compA && compB) ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[compA, compB].map((t, idx)=>(
-                            <div key={idx} className="rounded-xl p-4 bg-gradient-to-br from-[#0c2035] to-[#0f2741] border border-white/10">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="text-lg font-semibold">{t.name}</div>
-                                <div className="text-sm opacity-70">Rank #{t.rank}</div>
-                              </div>
-                              <div className="grid grid-cols-2 min-[420px]:grid-cols-3 gap-2 mb-3">
-                                <StatPill label="Overall" value={t.rating} />
-                                <StatPill label="Total" value={t.total} className="hidden sm:flex" />
-                                <StatPill label={`Top ${startersCount}`} value={t.stars} />
-                                <StatPill label="Depth" value={t.depth} />
-                                {metricMode === "values" && includePicks && <StatPill label="Picks" value={t.picksValue} className="hidden sm:flex" />}
-                                <StatPill label="Avg Age" value={t.valueWeightedAge} className="hidden md:flex" />
-                              </div>
-                              <div className="mb-2">
-                                <div className="flex justify-between text-xs opacity-70 mb-1">
-                                  <span>Positional Balance (QB/RB/WR/TE)</span>
-                                  <span>
-                                    QB {t.mixPct.QB.toFixed(0)}% · RB {t.mixPct.RB.toFixed(0)}% · WR {t.mixPct.WR.toFixed(0)}% · TE {t.mixPct.TE.toFixed(0)}%
-                                  </span>
-                                </div>
-                                <StackedMini parts={[
-                                  { value: t.mix.QB, className: "bg-cyan-400" },
-                                  { value: t.mix.RB, className: "bg-blue-400" },
-                                  { value: t.mix.WR, className: "bg-violet-400" },
-                                  { value: t.mix.TE, className: "bg-fuchsia-400" },
-                                ]}/>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm opacity-70">Select both teams to compare.</div>
-                      )}
-                    </>
-                  )}
-                </Card>
-
+              <main data-guide-tip="rankings-list" className="lg:col-span-8 space-y-8">
                 {/* Power Rankings */}
                 <SectionTitle subtitle={
                   metricMode === "projections"
@@ -1417,7 +1354,7 @@ export default function PowerRankingsPage() {
               </main>
 
               {/* SIDEBAR */}
-              <aside className="hidden lg:block lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+              <aside data-guide-tip="rankings-summary" className="hidden lg:block lg:col-span-4 space-y-6 lg:sticky lg:top-20">
                 <div>
                   <SectionTitle subtitle="Auto-bucketed by rating percentiles.">Team Tiers</SectionTitle>
                   <Card className="p-4">
@@ -1511,6 +1448,13 @@ export default function PowerRankingsPage() {
           </>
         )}
       </div>
+      {username ? <GuidedTips storageKey="tfa:tips:power-rankings" label="Power Rankings tips" steps={[
+        { target:"rankings-league", title:"Start with a league", detail:"Select any loaded league. The Arsenal reads its roster size, starting slots, scoring format, and quarterback setup so every team is evaluated within that league's actual rules." },
+        { target:"rankings-model", title:"Choose what power means", detail:"Open Model Settings to rank by projected season production or by a selected trade-value market. Projection mode emphasizes current contention; value mode emphasizes market strength and can include future picks." },
+        { target:"rankings-list", title:"Compare every roster", detail:"Sort the full board by Overall, Total, top starters, or Depth. Overall balances lineup strength with bench quality—and future picks when they are enabled in value mode." },
+        { target:"rankings-list", title:"Open the roster breakdown", detail:"Each team card shows positional ranks and its weakest room. Use Show Roster Breakdown to see which players create the score, which assets lack a value, and where the roster gains or loses ground." },
+        { target:"rankings-summary", title:"Read league-wide context", detail:"Team Tiers group similar ratings, position leaderboards identify the strongest rooms, and League Summary highlights depth, age, picks, and major stars-versus-depth gaps." },
+      ]} /> : null}
     </>
   );
 }

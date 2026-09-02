@@ -1344,7 +1344,6 @@ export default function LeagueHubContent() {
     { label: "Free-agent opportunities", value: bestFreeAgents.filter((r) => r.needScore >= 0.25).length, target: "free-agents" },
     { label: "Injured roster players", value: injuryRows.length, target: "injuries" },
     { label: "Lineup-risk leagues", value: managerIssues.length, target: "lineup-risk" },
-    { label: "Watched players", value: watchlistRows.length, target: "watchlist" },
   ];
 
   const actionItems = useMemo(() => {
@@ -2584,7 +2583,7 @@ export default function LeagueHubContent() {
               {scanLoading ? `${scanProgressText} (${scanProgressPct}%)` : "Updating waiver activity…"}
             </div>
           )}
-          <div className="mb-6">
+          <div className="mb-6" data-guide-tip="league-hub-intro">
             <div>
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200/55">Your command center</div>
@@ -2650,7 +2649,7 @@ export default function LeagueHubContent() {
 
           <nav className="sticky top-16 z-30 -mx-4 mb-4 overflow-x-auto border-y border-white/10 bg-gray-950/90 px-4 py-2 backdrop-blur md:hidden">
             <div className="flex w-max gap-2">
-              {[["for-you","Action Center"],["summary","Summary"],["free-agents","Waiver Builder"],["watchlist","Watchlist"],["injuries","Injuries"],["waivers","Activity"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
+              {[["for-you","Action Center"],["summary","Summary"],["free-agents","Waiver Builder"],["injuries","Injuries"],["waivers","Activity"],["lineup-risk","Lineup Risk"]].map(([id, label]) => (
                 <a key={id} href={`#${id}`} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">{label}</a>
               ))}
             </div>
@@ -2996,12 +2995,6 @@ export default function LeagueHubContent() {
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2">
                                       <div className="text-white font-semibold truncate">{row.name}</div>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); toggleWatchlist(row.id); }}
-                                        className={`text-base ${watchlistIds.has(row.id) ? "text-yellow-300" : "text-white/30 hover:text-yellow-200"}`}
-                                        title={watchlistIds.has(row.id) ? "Remove from watchlist" : "Add to watchlist"}
-                                      >★</button>
                                     </div>
                                     <div className="mt-1 flex items-center gap-2">
                                       <span className={PILL}>
@@ -3054,37 +3047,6 @@ export default function LeagueHubContent() {
                       </tbody>
                     </table>
                   )}
-                </div>
-              </section>
-
-              <section id="watchlist" className={`lg:col-span-12 ${SECTION_SHELL} scroll-mt-28`}>
-                <div className="flex items-center justify-between gap-3">
-                  <div><div className="text-lg font-semibold">Cross-League Watchlist</div><div className="text-xs text-white/50 mt-1">Persistent players and where they are currently available.</div></div>
-                  <span className={PILL}>{watchlistRows.length} watched</span>
-                </div>
-                {watchlistRows.length === 0 ? (
-                  <div className={`${SUBCARD} mt-4 p-4 text-sm text-white/60`}>Use the ★ beside a free agent to start a watchlist.</div>
-                ) : (
-                  <div className="mt-4 grid gap-2 md:grid-cols-2">
-                    {watchlistRows.map((row) => (
-                      <div key={`watch-${row.id}`} className={`${SUBCARD} flex items-center gap-3 p-3`}>
-                        <AvatarImage name={row.name} playerId={row.id} size={34} className="rounded-full" alt={row.name} />
-                        <div className="min-w-0 flex-1"><div className="font-semibold truncate">{row.name}</div><div className="text-xs text-white/50">{row.pos} {row.team ? `• ${row.team}` : ""} • open in {row.openCount}/{visibleLeaguesList.length}</div></div>
-                        <button type="button" onClick={() => toggleWatchlist(row.id)} className="text-yellow-300" title="Remove from watchlist">★</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className={`lg:col-span-12 ${SECTION_SHELL}`}>
-                <div className="text-lg font-semibold">Waiver Analytics</div>
-                <div className="text-xs text-white/50 mt-1">Recent claims across visible leagues; failed claims are counted when Sleeper returns them.</div>
-                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Average winning bid</div><div className="text-xl font-bold">{waiverAnalytics.avgBid ? waiverAnalytics.avgBid.toFixed(1) : "—"}</div></div>
-                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Failed claims seen</div><div className="text-xl font-bold">{waiverAnalytics.failed}</div></div>
-                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Most wins</div><div className="text-sm font-semibold truncate">{waiverAnalytics.wins[0] ? `${waiverAnalytics.wins[0].name} (${waiverAnalytics.wins[0].count})` : "—"}</div></div>
-                  <div className={SUBCARD + " p-3"}><div className="text-xs text-white/45">Most added</div><div className="text-sm font-semibold truncate">{waiverAnalytics.topAdds[0] ? `${labelForId(waiverAnalytics.topAdds[0].id)} (${waiverAnalytics.topAdds[0].count})` : "—"}</div></div>
                 </div>
               </section>
 

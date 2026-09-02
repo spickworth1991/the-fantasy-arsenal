@@ -16,6 +16,7 @@ import SourceSelector, {
 import ValueSourceDropdown from "../../components/ValueSourceDropdown";
 import FormatQBToggles from "../../components/FormatQBToggles";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import GuidedTips from "../../components/GuidedTips";
 import { makeGetPlayerValue } from "../../lib/values";
 import { classifyLeagueFormat, classifyQbFormat } from "../../lib/leagueFormat";
 import {
@@ -963,10 +964,10 @@ export default function LineupTool() {
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
-  const [sourceKey, setSourceKey] = useState("proj:ffa");
+  const [sourceKey, setSourceKey] = useState("proj:thefantasyarsenal-model");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
-  const [projectionSource, setProjectionSource] = useState("CSV"); // CSV | ESPN | CBS | SLEEPER
+  const [projectionSource, setProjectionSource] = useState("ARSENAL_MODEL");
   const [projMaps, setProjMaps] = useState({
     CSV: null,
     ESPN: null,
@@ -994,7 +995,7 @@ export default function LineupTool() {
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
-  const [lineupStrategy, setLineupStrategy] = useState("median");
+  const lineupStrategy = "median";
   const [lockedPlayerIds, setLockedPlayerIds] = useState(() => new Set());
   const [excludedPlayerIds, setExcludedPlayerIds] = useState(() => new Set());
   const [controlsScope, setControlsScope] = useState("");
@@ -1019,7 +1020,6 @@ export default function LineupTool() {
     try {
       const params = new URLSearchParams(window.location.search);
       const leagueId = params.get("league");
-      const strategy = params.get("strategy");
       if (
         leagueId &&
         leagues.some((row) => String(row.league_id) === String(leagueId))
@@ -1027,8 +1027,6 @@ export default function LineupTool() {
         routeHandoffApplied.current = true;
         setActiveLeague(leagueId);
       }
-      if (["safe", "median", "aggressive"].includes(strategy))
-        setLineupStrategy(strategy);
     } catch {}
   }, [leagues, setActiveLeague]);
   useEffect(() => {
@@ -1443,12 +1441,8 @@ export default function LineupTool() {
       weatherMap,
       kickoffMap,
       strategy: lineupStrategy,
-      lockedIds:
-        String(uid) === String(ownerA)
-          ? new Set([...lockedPlayerIds, ...startedIdsFor(uid)])
-          : startedIdsFor(uid),
-      excludedIds:
-        String(uid) === String(ownerA) ? excludedPlayerIds : new Set(),
+      lockedIds: startedIdsFor(uid),
+      excludedIds: new Set(),
     });
 
   /* ----- Auto-select opponent when week changes (and on init) ----- */
@@ -1621,8 +1615,6 @@ export default function LineupTool() {
       );
     setLockedPlayerIds(new Set(selected));
     setExcludedPlayerIds(new Set());
-    if (["safe", "median", "aggressive"].includes(row?.strategy))
-      setLineupStrategy(row.strategy);
   };
 
   return (
@@ -1644,7 +1636,7 @@ export default function LineupTool() {
           </div>
         ) : (
           <>
-            <Card className="p-4">
+            <Card className="p-4" data-guide-tip="lineup-setup">
               <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">
@@ -1662,7 +1654,7 @@ export default function LineupTool() {
                 </div>
               </div>
 
-              <details className="premium-disclosure mb-4">
+              <details className="premium-disclosure mb-4" data-guide-tip="lineup-source">
                 <summary>
                   Model Settings{" "}
                   <span className="ml-auto text-xs font-normal text-white/45">
@@ -1745,9 +1737,10 @@ export default function LineupTool() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-wrap items-end gap-4" data-guide-tip="lineup-week-controls">
                 <span className="font-semibold">League:</span>
                 <LeagueSearchSelect
+                  data-guide-tip="lineup-league"
                   className="w-full sm:w-80"
                   leagues={leagues || []}
                   value={activeLeague || ""}
@@ -1894,8 +1887,8 @@ export default function LineupTool() {
                 </div>
               </Card>
             ) : (
-              <Card className="p-4">
-                <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <Card className="p-4" data-guide-tip="lineup-results">
+                <div className="grid sm:grid-cols-3 gap-3 mb-4" data-guide-tip="lineup-matchup">
                   {/* Owner A locked */}
                   <div>
                     <div className="block text-sm font-medium mb-1">
@@ -1945,56 +1938,11 @@ export default function LineupTool() {
                   </div>
                 </div>
 
-                <div className="mb-4 rounded-3xl border border-emerald-300/15 bg-gradient-to-br from-emerald-400/[0.08] via-slate-950/40 to-slate-950/70 p-4">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200/60">
-                        Lineup strategy
-                      </div>
-                      <div className="mt-1 text-sm text-white/55">
-                        Choose whether the solver protects your floor or
-                        embraces volatility and correlation.
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1">
-                      {[
-                        ["safe", "Safe", "Higher floor"],
-                        ["median", "Median", "Best projection"],
-                        ["aggressive", "Aggressive", "Ceiling + stacks"],
-                      ].map(([key, label, hint]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setLineupStrategy(key)}
-                          title={hint}
-                          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${lineupStrategy === key ? "bg-emerald-300/15 text-emerald-50 shadow-inner" : "text-white/45 hover:bg-white/5 hover:text-white/75"}`}
-                        >
-                          <span className="block">{label}</span>
-                          <span className="mt-0.5 hidden text-[9px] font-normal opacity-60 sm:block">
-                            {hint}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <LineupPersonalizationPremium
-                  result={matchup?.a}
-                  lockedIds={lockedPlayerIds}
-                  excludedIds={excludedPlayerIds}
-                  setLockedIds={setLockedPlayerIds}
-                  setExcludedIds={setExcludedPlayerIds}
-                  savedLineups={savedLineups}
-                  saveAs={saveLineupAs}
-                  restoreSaved={restoreSavedLineup}
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4" data-guide-tip="lineup-teams">
                   <TeamBox
                     title={
                       ownerA
-                        ? `${ownerLabel(ownerA)} — ${lineupStrategy === "safe" ? "Safe" : lineupStrategy === "aggressive" ? "Aggressive" : "Median"} Lineup`
+                        ? `${ownerLabel(ownerA)} — Best Projected Lineup`
                         : "Owner A"
                     }
                     res={ownerA ? compute(ownerA) : null}
@@ -2005,7 +1953,7 @@ export default function LineupTool() {
                   <TeamBox
                     title={
                       ownerB
-                        ? `${ownerLabel(ownerB)} — ${lineupStrategy === "safe" ? "Safe" : lineupStrategy === "aggressive" ? "Aggressive" : "Median"} Lineup`
+                        ? `${ownerLabel(ownerB)} — Best Projected Lineup`
                         : "Owner B"
                     }
                     res={ownerB ? compute(ownerB) : null}
@@ -2074,7 +2022,7 @@ export default function LineupTool() {
                 )}
 
                 {ownerA && ownerB ? (
-                  <div className="mt-5">
+                  <div className="mt-5" data-guide-tip="lineup-explainer">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/55">
@@ -2181,6 +2129,39 @@ export default function LineupTool() {
           </>
         )}
       </div>
+      {username ? (
+        <GuidedTips
+          storageKey="tfa:tips:lineup-optimizer"
+          label="Lineup Optimizer tips"
+          steps={[
+            {
+              target: "lineup-week-controls",
+              title: "Choose your league and week",
+              detail: "Pick the Sleeper league you want to manage, then choose the NFL week. Your team and scheduled opponent update automatically. A league change made in the sidebar updates this screen too.",
+            },
+            {
+              target: "lineup-source",
+              title: "Choose what drives the lineup",
+              detail: "The default is The Fantasy Arsenal Projections—the Safe / Expected weekly model. Open Model Settings if you want another projection source or need to confirm the league's scoring format. Changing the source can change both the recommended starters and matchup totals.",
+            },
+            {
+              target: "lineup-matchup",
+              title: "The matchup follows your schedule",
+              detail: "Your Sleeper roster is locked on the left. When you change weeks, the optimizer finds that week's opponent automatically. Selecting another opponent does the reverse: it jumps to the week when you play them.",
+            },
+            {
+              target: "lineup-teams",
+              title: "Read the recommended lineups",
+              detail: "Your best projected starters are on the left and your opponent's are on the right. Bench players are ranked below them. A Close call note means a bench option is within two projected points, so that decision deserves a closer look.",
+            },
+            {
+              target: "lineup-explainer",
+              title: "Understand the difficult decisions",
+              detail: "Use the Decision Explainer when two players are close. It compares their expected points and range, then adds injury status, weather, and estimated win-probability impact. These ranges describe uncertainty—they are not guaranteed scores.",
+            },
+          ]}
+        />
+      ) : null}
     </>
   );
 }

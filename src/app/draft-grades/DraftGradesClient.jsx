@@ -866,6 +866,13 @@ export default function DraftGradesClient() {
   const recommendedAdpMode = adpModes.find(
     (mode) => mode.modeSlug === recommendedAdpSlug,
   );
+  const applyRecommendedLens = () => {
+    if (!recommendedAdpMode?.modeSlug) return;
+    setAdpError("");
+    setAdpMap(new Map());
+    setAdpLoading(true);
+    setGradingLens(recommendedAdpMode.modeSlug);
+  };
   const gradingNotices = useMemo(() => {
     const notices = [];
     if (isAuctionDraft)
@@ -1208,6 +1215,7 @@ export default function DraftGradesClient() {
                   <select
                     value={gradingLens}
                     onChange={(event) => setGradingLens(event.target.value)}
+                    data-guide-tip="draft-grade-lens"
                     className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold"
                   >
                     <option value="source">
@@ -1223,7 +1231,7 @@ export default function DraftGradesClient() {
                 {recommendedAdpMode && gradingLens !== recommendedAdpSlug ? (
                   <button
                     type="button"
-                    onClick={() => setGradingLens(recommendedAdpSlug)}
+                    onClick={applyRecommendedLens}
                     className="w-full rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-3 py-2 text-left text-xs font-bold text-emerald-100"
                   >
                     Recommended for this draft: {recommendedAdpMode.title} ADP{" "}
@@ -1242,7 +1250,7 @@ export default function DraftGradesClient() {
                     layout="inline"
                   />
                 ) : (
-                  <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100/65">
+                  <div aria-live="polite" className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100/65">
                     {adpLoading
                       ? "Loading the selected ADP board…"
                       : adpError ||

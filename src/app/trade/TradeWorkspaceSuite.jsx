@@ -81,7 +81,11 @@ export default function TradeWorkspaceSuite({
       if (!event?.detail?.key || event.detail.key === storageKey) loadSaved();
     };
     window.addEventListener("tfa:trade-workspaces-updated", onSaved);
-    return () => window.removeEventListener("tfa:trade-workspaces-updated", onSaved);
+    window.addEventListener("tfa:cloud-sync-applied", loadSaved);
+    return () => {
+      window.removeEventListener("tfa:trade-workspaces-updated", onSaved);
+      window.removeEventListener("tfa:cloud-sync-applied", loadSaved);
+    };
   }, [leagueKey]);
 
   useEffect(() => {
@@ -238,7 +242,7 @@ export default function TradeWorkspaceSuite({
   return <Panel className="mb-6 overflow-hidden border-violet-300/15">
     <div className="border-b border-white/10 bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,.15),transparent_40%)] p-4 sm:p-5"><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-violet-200/55">Consolidated trade workflow</div><h2 className="mt-1 text-2xl font-black">Trade Suite</h2><p className="mt-2 text-xs leading-5 text-white/38">Find a mutually useful deal, negotiate versions, publish local interests, evaluate league history, and move through packages without leaving this analyzer.</p></div>
     {!hideNavigation ? <div className="overflow-x-auto border-b border-white/10 p-2"><div className="flex w-max gap-1">{[["finder","Partner Finder"],["workspace","Saved Trades"],["block","Trade Block"],["history","History"],["market","League Market"],["swipe","Swipe Finder"]].map(([key, label]) => <button type="button" key={key} onClick={() => setTab(key)} className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${tab === key ? "bg-violet-300/10 text-violet-100" : "text-white/40"}`}>{label}</button>)}</div></div> : null}
-    <div className="p-3 sm:p-4">
+    <div data-guide-tip={`trade-${tab}`} className="p-3 sm:p-4">
       {handoffContext?.surplus || handoffContext?.need ? <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.055] p-3 text-xs text-amber-100/75"><div><b>Intelligence preference:</b> ranking partners who can use {handoffContext.surplus || "your surplus"} depth and can return {handoffContext.need || "a position of need"}. This boosts matching ideas without excluding other workable trades.</div><button type="button" onClick={onClearHandoff} className="shrink-0 rounded-lg bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-white/55">Clear</button></div> : null}
       {message ? <div className="mb-3 rounded-xl bg-cyan-300/[0.05] p-3 text-xs text-cyan-100">{message}</div> : null}
       {tab === "finder" ? <TradePartnerFinder league={league} players={players} getMetric={finderMetric || getMetric} getWeeklyMetric={getWeeklyMetric} metricMode={metricMode} username={username} onLoadPackage={onLoadPackage} handoffContext={handoffContext} /> : null}

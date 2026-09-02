@@ -112,8 +112,8 @@ function BallsvilleLink({ className = "" }) {
   );
 }
 
-export default function Navbar({ pageTitle }) {
-  const { username, year, loadPortfolio, clearPortfolio } = useSleeper();
+export default function Navbar({ pageTitle, highlightMenu = false, highlightPortfolio = false }) {
+  const { username, year, leagues, activeLeague, setActiveLeague, loadPortfolio, clearPortfolio } = useSleeper();
   const { account, isConnected, disconnect, loginAccount } = useArsenalAccount();
   const { embedded, openFullscreen } = useEmbeddedMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -224,12 +224,13 @@ export default function Navbar({ pageTitle }) {
   return (
     <>
       {/* Top Bar (full-bleed) */}
-      <nav className="fixed top-0 left-0 right-0 w-full bg-gray-900 text-white px-4 sm:px-6 h-14 flex justify-between items-center shadow-lg z-50">
+      <nav className={`fixed top-0 left-0 right-0 w-full bg-gray-900 text-white px-4 sm:px-6 h-14 flex justify-between items-center shadow-lg ${highlightMenu || highlightPortfolio ? "z-[95]" : "z-50"}`}>
         {/* Left: Menu button */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="sm:flex items-center gap-2 text-white text-3xl hover:scale-110 transition-transform duration-200"
+            data-home-tip="menu"
+            className={`sm:flex items-center gap-2 text-white text-3xl hover:scale-110 transition-transform duration-200 ${highlightMenu ? "rounded-xl ring-2 ring-cyan-300 ring-offset-2 ring-offset-gray-900 shadow-[0_0_45px_rgba(34,211,238,.4)]" : ""}`}
             aria-label="Open menu"
           >
             <img src={ICONS.football} alt="Menu" className="w-[100px] h-12" />
@@ -252,7 +253,7 @@ export default function Navbar({ pageTitle }) {
           )}
           {embedded ? <button type="button" onClick={openFullscreen} className="hidden rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-bold text-cyan-100 sm:block" title="Open this tool directly in The Fantasy Arsenal">Full screen ↗</button> : null}
 
-          <button type="button" onClick={() => openIdentity(isConnected ? "account" : username ? "portfolio" : "account")} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07]" aria-label="Open account and Sleeper portfolio access">
+          <button type="button" data-home-tip="portfolio" onClick={() => openIdentity(isConnected ? "account" : username ? "portfolio" : "account")} className={`flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-1.5 pr-2.5 transition hover:bg-white/[0.07] ${highlightPortfolio ? "ring-2 ring-violet-300 ring-offset-2 ring-offset-gray-900 shadow-[0_0_45px_rgba(196,181,253,.4)]" : ""}`} aria-label="Open account and Sleeper portfolio access">
             <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-slate-950"><img src={isConnected ? accountAvatar(account) : ICONS.profile} alt="" className="h-7 w-7 object-contain" /></span>
             <span className="hidden text-left sm:block"><b className="block max-w-28 truncate text-xs">{account?.displayName || username || "Sign in"}</b><small className={`block text-[8px] ${isConnected ? "text-emerald-200/55" : "text-white/30"}`}>{isConnected ? "Arsenal account" : username ? `${year || ""} · Sleeper view` : "Account or portfolio"}</small></span>
           </button>
@@ -347,13 +348,23 @@ export default function Navbar({ pageTitle }) {
             {/* Navigation Links */}
             <nav className="clear-both min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-3 pr-1 pt-1 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
+              {username && Array.isArray(leagues) && leagues.length ? (
+                <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-3">
+                  <label className="block text-[9px] font-black uppercase tracking-[.16em] text-cyan-100/55">Active league for tools</label>
+                  <select value={activeLeague || ""} onChange={(event) => { setActiveLeague(event.target.value || null); handleCloseSidebar(); }} className="mt-2 min-h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-xs font-bold text-white outline-none focus:border-cyan-300/30">
+                    <option value="">Choose from {leagues.length} loaded leagues…</option>
+                    {[...leagues].sort((a,b) => String(a?.name || "").localeCompare(String(b?.name || ""))).map((league) => <option key={league.league_id} value={league.league_id}>{league.name || `League ${league.league_id}`}</option>)}
+                  </select>
+                  <p className="mt-1.5 text-[9px] leading-4 text-white/28">Changes the league used by league-aware tools without leaving this page.</p>
+                </div>
+              ) : null}
               <NavGroup label="Fan Favorites" detail="The tools managers visit most" defaultOpen><SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /><SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} /><SidebarLink href="/ballsville-stats" icon={ICONS.stats} label="Ballsville Stats" onClick={handleCloseSidebar} badge="NEW" /></NavGroup>
               <NavGroup label="Weekly Team Management" detail="Attention, matchups, lineups, and waivers"><SidebarLink href="/league-hub" icon={ICONS.leaguehub} label="League Hub" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-hub"]} /><SidebarLink href="/game-center" icon={ICONS.gamecenter} label="Fantasy Game Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/game-center"]} /><SidebarLink href="/lineup" icon={ICONS.lineup} label="Lineup Optimizer" onClick={handleCloseSidebar} badge={NAV_BADGES["/lineup"]} /><SidebarLink href="/player-availability" icon={ICONS.availability} label="Player Availability" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-availability"]} /></NavGroup>
-              <NavGroup label="Draft Preparation & Grades" detail="Prepare picks and review finished drafts"><SidebarLink href="/draft-helper" icon={ICONS.draftcommand} label="Draft Command Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-grades" icon={ICONS.draftcommand} label="Draft Grade Studio" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-grades"]} /></NavGroup>
+              <NavGroup label="Draft Day & Review" detail="Draft live and review finished drafts"><SidebarLink href="/draft-helper" icon={ICONS.draftcommand} label="Draft Command Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-helper"]} /><SidebarLink href="/draft-grades" icon={ICONS.draftcommand} label="Draft Grade Studio" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-grades"]} /></NavGroup>
               <NavGroup label="Trades & Player Research" detail="Trades, stats, opportunity, and schedules"><SidebarLink href="/trade" icon={ICONS.trade} label="Trade Analyzer" onClick={handleCloseSidebar} badge={NAV_BADGES["/trade"]} /><SidebarLink href="/stat-central" icon={ICONS.stats} label="Stat Central" onClick={handleCloseSidebar} badge={NAV_BADGES["/stat-central"]} /><SidebarLink href="/depth-charts" icon={ICONS.depthcharts} label="NFL Depth Charts" onClick={handleCloseSidebar} badge={NAV_BADGES["/depth-charts"]} /><SidebarLink href="/sos" icon={ICONS.sos} label="Strength of Schedule" onClick={handleCloseSidebar} badge={NAV_BADGES["/sos"]} /></NavGroup>
-              <NavGroup label="League & Manager Research" detail="Action list, rivals, playoffs, and history"><SidebarLink href="/intelligence" icon={ICONS.intelligence} label="Arsenal Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/intelligence"]} /><SidebarLink href="/manager-intelligence" icon={ICONS.manager} label="Manager Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/manager-intelligence"]} /><SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} /><SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} /></NavGroup>
+              <NavGroup label="League & Manager Research" detail="Action list, rivals, records, playoffs, and history"><SidebarLink href="/intelligence" icon={ICONS.intelligence} label="Arsenal Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/intelligence"]} /><SidebarLink href="/manager-intelligence" icon={ICONS.manager} label="Manager Intelligence" onClick={handleCloseSidebar} badge={NAV_BADGES["/manager-intelligence"]} /><SidebarLink href="/leaderboard" icon={ICONS.profile} label="Arsenal Leaderboard" onClick={handleCloseSidebar} badge="NEW" /><SidebarLink href="/league-history" icon={ICONS.history} label="League History" onClick={handleCloseSidebar} badge={NAV_BADGES["/league-history"]} /><SidebarLink href="/playoff-odds" icon={ICONS.playoff} label="Playoff Odds" onClick={handleCloseSidebar} badge={NAV_BADGES["/playoff-odds"]} /></NavGroup>
               <NavGroup label="Commissioner Tools" detail="League health, settings, and action items"><SidebarLink href="/commissioner-dashboard" icon={ICONS.commissioner} label="Commissioner Dashboard" onClick={handleCloseSidebar} badge={NAV_BADGES["/commissioner-dashboard"]} /></NavGroup>
-              <NavGroup label="Account, Community & Trust" detail="Profile, records, and data transparency"><SidebarLink href="/account" icon={ICONS.profile} label="My Arsenal" onClick={handleCloseSidebar} badge="NEW" /><SidebarLink href="/leaderboard" icon={ICONS.profile} label="Manager Leaderboard" onClick={handleCloseSidebar} badge="NEW" /><SidebarLink href="/trust-center" icon={ICONS.trust} label="Trust & Accuracy Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/trust-center"]} /></NavGroup>
+              <NavGroup label="Account & Data Trust" detail="Profile, saved work, and data transparency"><SidebarLink href="/account" icon={ICONS.profile} label="My Arsenal" onClick={handleCloseSidebar} badge="NEW" /><SidebarLink href="/trust-center" icon={ICONS.trust} label="Trust & Accuracy Center" onClick={handleCloseSidebar} badge={NAV_BADGES["/trust-center"]} /></NavGroup>
             </nav>
 
             <div className="border-t border-white/10 pt-3" />

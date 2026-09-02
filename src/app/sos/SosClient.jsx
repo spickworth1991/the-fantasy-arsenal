@@ -796,7 +796,7 @@ export default function SOSPage() {
       <BackgroundParticles />
       <Navbar pageTitle="SOS — Rest of Season" />
       <div className="max-w-7xl mx-auto px-4 pt-20 pb-10">
-        <Card className="p-4">
+        <Card data-guide-tip="sos-setup" className="p-4">
           <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">Schedule Lens</div>
@@ -962,9 +962,7 @@ export default function SOSPage() {
           Results
         </SectionTitle>
 
-        <SOSIntelligence heatData={heatData} rows={rows} league={league} lineups={lineups} matchupMeta={matchupMeta} preferredRosterId={myRosterId}/>
-
-        <div className="flex items-center gap-3 mt-4">
+        <div data-guide-tip="sos-view-toggle" className="flex items-center gap-3 mt-4">
           <button
             className={`px-3 py-1 rounded border ${!heatmapMode ? "bg-white/10 border-white/20" : "border-white/10 hover:bg-white/5"}`}
             onClick={() => setHeatmapMode(false)}
@@ -979,7 +977,7 @@ export default function SOSPage() {
           </button>
         </div>
 
-        <Card className="p-4 mt-4">
+        <Card data-guide-tip="sos-results" className="p-4 mt-4">
           {!activeLeague ? (
             <div className="text-sm opacity-70">Choose a league above.</div>
           ) : leagueLoading ? (
@@ -1077,6 +1075,8 @@ export default function SOSPage() {
           )
           }
         </Card>
+
+        <div data-guide-tip="sos-intelligence"><SOSIntelligence heatData={heatData} rows={rows} league={league} lineups={lineups} matchupMeta={matchupMeta} preferredRosterId={myRosterId}/></div>
 
         {/* Matchup Modal */}
         <Modal

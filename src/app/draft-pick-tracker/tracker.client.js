@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSleeper } from "../../context/SleeperContext";
 import LoadingScreen from "../../components/LoadingScreen";
+import GuidedTips from "../../components/GuidedTips";
 import { getDraftSlotForPick } from "../../lib/draftOrder";
 import { isPreassignedDraftPick, nextOpenDraftPick, openDraftPickNumbers } from "../../lib/draftPickProgress";
 
@@ -839,7 +840,7 @@ export default function DraftPickTrackerClient() {
   return (
     <div className="mt-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div data-guide-tip="monitor-overview" className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-3xl font-bold text-white">Draft Pick Tracker</h2>
@@ -858,6 +859,7 @@ export default function DraftPickTrackerClient() {
 
         <div className="flex flex-wrap gap-2 items-center">
           <button
+            data-guide-tip="monitor-refresh"
             onClick={refresh}
             disabled={loading}
             className="px-5 py-2.5 rounded-2xl bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-700 disabled:opacity-60 text-white font-semibold shadow-[0_18px_40px_rgba(37,99,235,0.25)] border border-white/10"
@@ -868,7 +870,7 @@ export default function DraftPickTrackerClient() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-b from-gray-900/80 to-black/40 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-hidden">
+      <div data-guide-tip="monitor-controls" className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-b from-gray-900/80 to-black/40 shadow-[0_20px_70px_rgba(0,0,0,0.45)] overflow-hidden">
         <div className="px-5 py-4 bg-black/20 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <Pill tone="cyan">{totalLeagues} leagues</Pill>
@@ -988,7 +990,7 @@ export default function DraftPickTrackerClient() {
 
       {/* Card view */}
       {view === "cards" && (
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+        <div data-guide-tip="monitor-results" className="mt-6 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
           {filteredDraftRows.map((r) => {
             const elapsed = Math.max(0, safeNum(now) - safeNum(r.computedAt));
             const rawClockLeft = Math.max(0, safeNum(r.clockLeftMs) - elapsed);
@@ -1176,7 +1178,7 @@ export default function DraftPickTrackerClient() {
 
       {/* Table view (mobile-optimized) */}
       {view === "table" && (
-        <div className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+        <div data-guide-tip="monitor-results" className="mt-6 bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <Pill tone="cyan">{filteredDraftRows.length} leagues</Pill>
@@ -1417,6 +1419,14 @@ export default function DraftPickTrackerClient() {
           
         </div>
       )}
+      {username ? <GuidedTips storageKey="tfa:tips:draft-monitor" label="Draft Monitor tips" steps={[
+        { target:"monitor-overview", title:"Watch every draft from one screen", detail:"Draft Monitor combines all loaded Sleeper leagues with a draft into one dashboard, so you can see which rooms need attention without opening each draft separately." },
+        { target:"monitor-controls", title:"Filter urgency and choose a view", detail:"Use Filters to search leagues, show only active or paused drafts, isolate on-deck and on-clock leagues, or control auto-refresh. Cards provide detail; Table makes many drafts easier to scan and sort." },
+        { target:"monitor-results", title:"Read the attention signals", detail:"On Clock means it is your turn now. On Deck and Up in show how close your next owned pick is, including traded-pick ownership. Paused drafts stay visible only when you choose to include them." },
+        { target:"monitor-results", title:"Understand ETA and recent picks", detail:"ETA uses the league's configured pick timer and the live clock—not an assumed drafting pace. Expand Recent picks on a card to see the latest run and spot positional trends." },
+        { target:"monitor-results", title:"Move from monitoring to drafting", detail:"Select a league name in Table view or use Open this league in Draft Command Center on a card when you are ready for player recommendations and roster-aware draft help." },
+        { target:"monitor-refresh", title:"Refresh on demand", detail:"Auto-refresh polls while a draft is actively running. Use Refresh when you want an immediate reread of every eligible draft, including status and traded-pick changes." },
+      ]} /> : null}
     </div>
   );
 }

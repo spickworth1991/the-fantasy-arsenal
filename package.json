@@ -28,7 +28,7 @@
     "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
     "git": "git add . && git commit -m \"DraftCommand_SearchLeague\" && git push origin main",
-    "sync": "node ./scripts/git-sync.mjs \"updates\""
+    "sync": "node ./scripts/git-sync.mjs \"guides\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

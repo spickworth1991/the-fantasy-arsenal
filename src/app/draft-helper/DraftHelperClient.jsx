@@ -10,6 +10,7 @@ import { classifyLeagueFormat } from "../../lib/leagueFormat";
 import PlayerResearchPanel from "../../components/PlayerResearchPanel";
 import DraftStrategySuite from "./DraftStrategySuite";
 import LeagueSearchSelect from "../../components/LeagueSearchSelect";
+import GuidedTips from "../../components/GuidedTips";
 import { aggregateBallsvilleAdp, ballsvilleAdpProxyUrl, resolveBallsvilleAdp } from "../../lib/ballsvilleAdp";
 import { getDraftSlotForPick } from "../../lib/draftOrder";
 import { nextOpenDraftPick, openDraftPickNumbers } from "../../lib/draftPickProgress";
@@ -573,5 +574,13 @@ export default function DraftHelperClient() {
       {tab === "strategy" ? <DraftStrategySuite ranked={ranked} picks={picks} picksAway={picksAway} nextMyPick={nextMyPick} players={players} rosters={rosters} focusRosterId={focusRosterId} draftedByRoster={draftedByRoster} rosterMap={rosterMap} userMap={userMap} getPlayerValue={(player)=>getPlayerValue(player,{format:valueFormat,qbType})} teams={teams} rounds={rounds} draft={draft} byeWeeks={byeWeeks} onInspect={inspectPlayer} /> : null}
 
     </> : null}
+    {username && draft ? <GuidedTips storageKey="tfa:tips:draft-command-center" label="Draft Command Center tips" steps={[
+      { selector:"main header", title:"Choose the league and draft", detail:"Start with a league and one of its Sleeper drafts. Refresh rereads the board once; Fast Draft keeps a live draft updating every five seconds while you work." },
+      { selector:"main header details", title:"Settings stay out of the way", detail:"Draft settings and sources are collapsed by default. Open them only when you need to override the eligible player pool, dynasty or redraft market, quarterback format, or value source." },
+      { selector:"main .sticky.top-14", title:"Use the workspace tabs", detail:"Draft Room is the live decision view. My Team reviews your build, Full Board shows every pick, Player Queue lists available values, Team Needs compares all rosters, and Strategy Suite looks ahead." },
+      { selector:"main .mt-5.space-y-5", title:"Aim recommendations at any roster", detail:"The recommendation target defaults to your team when it can identify you. Switch the target to another manager to see how the same available pool fits that roster instead." },
+      { selector:"main .mt-5.space-y-5", title:"The three recommendations have different jobs", detail:"Best Value finds the strongest market discount, Best Roster Fit addresses construction, and Best Strategy considers timing and what may survive to your next pick. In 1QB leagues, extra quarterbacks are heavily limited unless the value is exceptional." },
+      { selector:"main .sticky.top-14", title:"Use the deeper views when needed", detail:"Open a player for full intelligence, star watchlist targets, inspect traded ownership on Full Board, and use Team Needs or Strategy Suite when the three quick recommendations are not enough." },
+    ]} /> : null}
   </div></main>;
 }
