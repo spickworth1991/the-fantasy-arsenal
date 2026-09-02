@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useEmbeddedMode } from "../context/EmbeddedModeContext";
 
 export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
+  const { embedded } = useEmbeddedMode();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [arrow, setArrow] = useState(null);
@@ -40,10 +42,15 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
     if (!open || (!current?.target && !current?.selector)) return;
     const target = findCurrentTarget();
     if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const embeddedMobile = embedded && window.matchMedia("(max-width: 767px)").matches;
+    target.scrollIntoView({
+      behavior: embeddedMobile ? "auto" : "smooth",
+      block: embeddedMobile ? "start" : "center",
+      inline: "nearest",
+    });
     target.classList.add("relative", "z-[93]", "rounded-2xl", "ring-2", "ring-cyan-300", "ring-offset-4", "ring-offset-slate-950");
     return () => target.classList.remove("relative", "z-[93]", "rounded-2xl", "ring-2", "ring-cyan-300", "ring-offset-4", "ring-offset-slate-950");
-  }, [current?.selector, current?.target, open, targetVersion]);
+  }, [current?.selector, current?.target, embedded, open, targetVersion]);
 
   useEffect(() => {
     if (!open || (!current?.target && !current?.selector)) return;
@@ -88,7 +95,7 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
 
   return (
     <>
-      <button type="button" onClick={() => { setStep(0); setOpen(true); }} className="fixed bottom-5 right-5 z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10" aria-label={`Open ${label.toLowerCase()}`}>
+      <button type="button" onClick={() => { setStep(0); setOpen(true); }} className={`fixed z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10 ${embedded ? "bottom-20 left-5 right-auto" : "bottom-5 right-5"}`} aria-label={`Open ${label.toLowerCase()}`}>
         ? {label}
       </button>
       {open ? <>

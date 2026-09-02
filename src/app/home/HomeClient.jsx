@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import Link from "next/link";
 import { useArsenalAccount } from "../../context/ArsenalAccountContext";
+import { useEmbeddedMode } from "../../context/EmbeddedModeContext";
 
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), {
   ssr: false,
@@ -56,6 +57,7 @@ const TOOL_ICONS = {
 export default function HomeClient() {
   const { username, loadPortfolio, loading, error } = useSleeper();
   const { account, isConnected, loginAccount } = useArsenalAccount();
+  const { embedded } = useEmbeddedMode();
   const [unameInput, setUnameInput] = useState("");
   const [yearInput, setYearInput] = useState(new Date().getFullYear());
   const [accessMode, setAccessMode] = useState("portfolio");
@@ -125,8 +127,13 @@ export default function HomeClient() {
   useEffect(() => {
     if (!tipsOpen) return;
     const target = document.querySelector(`[data-home-tip="${tips[tipStep]?.target}"]`);
-    target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-  }, [tipStep, tips, tipsOpen]);
+    const embeddedMobile = embedded && window.matchMedia("(max-width: 767px)").matches;
+    target?.scrollIntoView?.({
+      behavior: embeddedMobile ? "auto" : "smooth",
+      block: embeddedMobile ? "start" : "center",
+      inline: "nearest",
+    });
+  }, [embedded, tipStep, tips, tipsOpen]);
 
   useEffect(() => {
     if (!tipsOpen) return;
@@ -476,7 +483,7 @@ export default function HomeClient() {
           </div>
         )}
       </main>
-      <button type="button" onClick={() => { setTipStep(0); setTipsOpen(true); }} className="fixed bottom-5 right-5 z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10" aria-label="Open homepage tips">
+      <button type="button" onClick={() => { setTipStep(0); setTipsOpen(true); }} className={`fixed z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10 ${embedded ? "bottom-20 left-5 right-auto" : "bottom-5 right-5"}`} aria-label="Open homepage tips">
         ? Tips
       </button>
       {tipsOpen ? (
