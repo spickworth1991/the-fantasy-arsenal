@@ -703,9 +703,10 @@ export default function PlayerAvailabilityContent() {
     players,
     year,
     format,
-    qbType,
-    getProjection,
-    projectionScoring,
+      qbType,
+      getProjection,
+      preloadProjections,
+      projectionScoring,
   } = useSleeper();
 
   // local overrides (so you can toggle without mutating global context)
@@ -910,6 +911,15 @@ export default function PlayerAvailabilityContent() {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const sharedSource = projSource === "CSV" ? "FFA" : projSource;
+      const sharedIndex = await preloadProjections(sharedSource);
+      if (alive) {
+        setProjectionMaps((current) => ({
+          ...current,
+          [projSource]: sharedIndex,
+        }));
+      }
+      return;
       const [
         csv,
         espn,
@@ -959,9 +969,14 @@ export default function PlayerAvailabilityContent() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projSource]);
 
   const activeProjMap = useMemo(() => {
+    return {
+      fantasyProsGetter: (player) =>
+        getProjection(player, projSource === "CSV" ? "FFA" : projSource),
+    };
+    /* Kept as a compatibility fallback for older cached sessions.
     if (
       [
         "FANTASYPROS",
@@ -988,7 +1003,7 @@ export default function PlayerAvailabilityContent() {
                 ? projectionMaps.ARSENAL_MODEL
                 : projSource === "ARSENAL"
                   ? projectionMaps.ARSENAL
-                  : projectionMaps.CSV;
+                  : projectionMaps.CSV; */
   }, [projSource, projectionMaps, getProjection]);
 
   // ---------- Scan leagues with cache ----------
@@ -2103,12 +2118,6 @@ export default function PlayerAvailabilityContent() {
                 onClick={() => setShowVisibleLeaguesModal(true)}
                 title="Leagues currently visible by filters"
               />
-              <StatPill
-                label="Best Available"
-                value={includedLeaguesList.length}
-                onClick={() => setShowIncludedLeaguesModal(true)}
-                title="Choose which visible leagues are included in Best Available"
-              />
 
               {lastUpdated && (
                 <div
@@ -2160,7 +2169,7 @@ export default function PlayerAvailabilityContent() {
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={onlyBestBall} onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))} />Only Best Ball</label>
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={excludeBestBall} onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))} />Exclude Best Ball</label>
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={includeDrafting} onChange={() => setIncludeDrafting((v) => !v)} />Include drafting leagues</label>
-                    <button type="button" className="ml-auto rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10" onClick={() => setShowIncludedLeaguesModal(true)}>Choose included leagues ({includedLeaguesList.length})</button>
+                    <button type="button" className="ml-auto rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] px-3 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/10" onClick={() => setShowIncludedLeaguesModal(true)}>Included leagues ({includedLeaguesList.length})</button>
                   </div>
                   <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                     <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
@@ -2200,20 +2209,13 @@ export default function PlayerAvailabilityContent() {
                         ) : null}
                       </button>
 
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
-                        onClick={() => setShowIncludedLeaguesModal(true)}
-                      >
-                        Included Leagues ({includedLeaguesList.length})
-                      </button>
                     </div>
                     <div className="mt-2 text-[11px] text-white/45">
-                      Best Available uses{" "}
+                      Best Available ranks players from the selected projection or value source, then measures availability across{" "}
                       <span className="text-white/70 font-semibold">
                         {includedLeaguesList.length}
                       </span>{" "}
-                      league(s). Click a player row to see open leagues.
+                      included league(s). Click a player row to see the exact open leagues.
                     </div>
                   </div>
                 </details>
@@ -2296,13 +2298,6 @@ export default function PlayerAvailabilityContent() {
                         Filters
                       </button>
 
-                      <button
-                        type="button"
-                        className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition"
-                        onClick={() => setShowIncludedLeaguesModal(true)}
-                      >
-                        Included ({includedLeaguesList.length})
-                      </button>
 
                       <div className="ml-auto text-xs text-white/60">
                         Selected:{" "}

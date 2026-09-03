@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
@@ -11,6 +11,7 @@ const TEAMS = ["ARI","ATL","BAL","BUF","CAR","CHI","CIN","CLE","DAL","DEN","DET"
 const POSITIONS = ["QB","RB","WR","TE","K","DEF"];
 const n = (value) => Number(value || 0);
 const upper = (value) => String(value || "").toUpperCase();
+const normalizedTeam = (value) => ({ JAC:"JAX", LA:"LAR", WSH:"WAS" }[upper(value)] || upper(value));
 const playerName = (player) => player?.full_name || player?.search_full_name || [player?.first_name, player?.last_name].filter(Boolean).join(" ") || "Unknown player";
 const risk = (player) => ["OUT","DOUBTFUL","QUESTIONABLE","IR","PUP","SUSPENDED"].includes(upper(player?.injury_status));
 
@@ -19,10 +20,16 @@ function Panel({ children, className = "" }) {
 }
 
 export default function DepthChartClient() {
-  const { username, players, leagues = [], sourceKey, setSourceKey, format, setFormat, qbType, setQbType, getPlayerValue, getProjection, projectionSource } = useSleeper();
+  const { username, players, leagues = [], sourceKey, setSourceKey, format, setFormat, qbType, setQbType, getPlayerValue, getProjection, projectionSource, fetchLeagueRostersSilent } = useSleeper();
   const [team, setTeam] = useState("BUF");
   const [positionFilter, setPositionFilter] = useState("ALL");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const missing = leagues.filter((league) => !Array.isArray(league.rosters) || !Array.isArray(league.users));
+    if (!missing.length) return;
+    Promise.allSettled(missing.map((league) => fetchLeagueRostersSilent(league.league_id)));
+  }, [fetchLeagueRostersSilent, leagues]);
 
   const exposure = useMemo(() => {
     const map = new Map();
@@ -38,14 +45,14 @@ export default function DepthChartClient() {
     return map;
   }, [leagues, username]);
 
-  const teamPlayers = useMemo(() => Object.values(players || {}).filter((player) => upper(player.team) === team && POSITIONS.includes(upper(player.position))).filter((player) => positionFilter === "ALL" || upper(player.position) === positionFilter).filter((player) => !query.trim() || playerName(player).toLowerCase().includes(query.toLowerCase())).sort((a, b) => upper(a.position).localeCompare(upper(b.position)) || (n(a.depth_chart_order) || 99) - (n(b.depth_chart_order) || 99) || n(getPlayerValue(b)) - n(getPlayerValue(a))), [players, team, positionFilter, query, getPlayerValue]);
+  const teamPlayers = useMemo(() => Object.values(players || {}).filter((player) => normalizedTeam(player.team) === team && POSITIONS.includes(upper(player.position))).filter((player) => positionFilter === "ALL" || upper(player.position) === positionFilter).filter((player) => !query.trim() || playerName(player).toLowerCase().includes(query.toLowerCase())).sort((a, b) => upper(a.position).localeCompare(upper(b.position)) || (n(a.depth_chart_order) || 99) - (n(b.depth_chart_order) || 99) || n(getPlayerValue(b)) - n(getPlayerValue(a))), [players, team, positionFilter, query, getPlayerValue]);
   const groups = POSITIONS.map((pos) => {
     const rows = teamPlayers.filter((player) => upper(player.position) === pos);
     const starter = rows.find((player) => n(player.depth_chart_order) === 1) || rows[0];
     const opportunity = starter && risk(starter) ? `${playerName(starter)} is ${starter.injury_status}; the next healthy option has elevated opportunity.` : rows.length < (pos === "WR" ? 5 : pos === "RB" ? 3 : 2) ? "Depth is thin relative to a typical NFL room." : "No obvious injury-created vacancy.";
     return { pos, rows, opportunity };
   }).filter((group) => group.rows.length);
-  const totalExposure = [...exposure.entries()].filter(([id]) => upper(players?.[id]?.team) === team).reduce((sum, [, rows]) => sum + rows.length, 0);
+  const totalExposure = [...exposure.entries()].filter(([id]) => normalizedTeam(players?.[id]?.team) === team).reduce((sum, [, rows]) => sum + rows.length, 0);
   const injured = teamPlayers.filter(risk).length;
   const rookies = teamPlayers.filter((player) => n(player.years_exp) === 0).length;
 

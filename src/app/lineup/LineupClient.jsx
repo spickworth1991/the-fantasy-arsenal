@@ -1015,6 +1015,7 @@ export default function LineupTool() {
   const [kickoffMap, setKickoffMap] = useState({});
 
   const routeHandoffApplied = useRef(false);
+  const tourSelectedLeagueRef = useRef(false);
   useEffect(() => {
     if (routeHandoffApplied.current) return;
     try {
@@ -2133,11 +2134,13 @@ export default function LineupTool() {
         <GuidedTips
           storageKey="tfa:tips:lineup-optimizer"
           label="Lineup Optimizer tips"
+          onTourStart={()=>{if(!activeLeague&&leagues?.[0]?.league_id){tourSelectedLeagueRef.current=true;setActiveLeague(String(leagues[0].league_id));}}}
+          onTourEnd={()=>{if(tourSelectedLeagueRef.current){tourSelectedLeagueRef.current=false;setActiveLeague(null);}}}
           steps={[
             {
               target: "lineup-week-controls",
               title: "Choose your league and week",
-              detail: "Pick the Sleeper league you want to manage, then choose the NFL week. Your team and scheduled opponent update automatically. A league change made in the sidebar updates this screen too.",
+              detail: "Pick the Sleeper league you want to manage, then choose the NFL week. Try it now so the remaining tips have real lineups to show. If no league was selected, the tour temporarily chooses one and restores the empty state when you finish or close it. A sidebar league change also updates this screen.",
             },
             {
               target: "lineup-source",
@@ -2151,11 +2154,13 @@ export default function LineupTool() {
             },
             {
               target: "lineup-teams",
+              scrollBlock: "start",
               title: "Read the recommended lineups",
               detail: "Your best projected starters are on the left and your opponent's are on the right. Bench players are ranked below them. A Close call note means a bench option is within two projected points, so that decision deserves a closer look.",
             },
             {
               target: "lineup-explainer",
+              scrollBlock: "start",
               title: "Understand the difficult decisions",
               detail: "Use the Decision Explainer when two players are close. It compares their expected points and range, then adds injury status, weather, and estimated win-probability impact. These ranges describe uncertainty—they are not guaranteed scores.",
             },

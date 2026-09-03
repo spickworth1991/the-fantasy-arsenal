@@ -575,12 +575,16 @@ export default function DraftHelperClient() {
 
     </> : null}
     {username && draft ? <GuidedTips storageKey="tfa:tips:draft-command-center" label="Draft Command Center tips" steps={[
-      { selector:"main header", title:"Choose the league and draft", detail:"Start with a league and one of its Sleeper drafts. Refresh rereads the board once; Fast Draft keeps a live draft updating every five seconds while you work." },
+      { selector:"main header .mt-6.grid", title:"Choose both the league and draft", detail:"First choose a loaded Sleeper league, then choose one of that league's drafts. Both inputs are highlighted together because the draft list depends on the league. Refresh rereads once; Fast Draft polls every five seconds while a draft is live." },
       { selector:"main header details", title:"Settings stay out of the way", detail:"Draft settings and sources are collapsed by default. Open them only when you need to override the eligible player pool, dynasty or redraft market, quarterback format, or value source." },
       { selector:"main .sticky.top-14", title:"Use the workspace tabs", detail:"Draft Room is the live decision view. My Team reviews your build, Full Board shows every pick, Player Queue lists available values, Team Needs compares all rosters, and Strategy Suite looks ahead." },
       { selector:"main .mt-5.space-y-5", title:"Aim recommendations at any roster", detail:"The recommendation target defaults to your team when it can identify you. Switch the target to another manager to see how the same available pool fits that roster instead." },
       { selector:"main .mt-5.space-y-5", title:"The three recommendations have different jobs", detail:"Best Value finds the strongest market discount, Best Roster Fit addresses construction, and Best Strategy considers timing and what may survive to your next pick. In 1QB leagues, extra quarterbacks are heavily limited unless the value is exceptional." },
-      { selector:"main .sticky.top-14", title:"Use the deeper views when needed", detail:"Open a player for full intelligence, star watchlist targets, inspect traded ownership on Full Board, and use Team Needs or Strategy Suite when the three quick recommendations are not enough." },
+      { selector:"main .sticky.top-14 button:nth-of-type(2)", title:"My Team", detail:"Review your drafted roster, construction, needs, and how the recommendations fit the team already built.", onEnter:()=>setTab("myteam") },
+      { selector:"main .sticky.top-14 button:nth-of-type(3)", title:"Full Board", detail:"See every selection and the current owner of future cells, including traded-pick ownership.", onEnter:()=>setTab("board") },
+      { selector:"main .sticky.top-14 button:nth-of-type(4)", title:"Player Queue", detail:"Search and filter the remaining eligible player pool, inspect player intelligence, and save watchlist targets.", onEnter:()=>setTab("players") },
+      { selector:"main .sticky.top-14 button:nth-of-type(5)", title:"Team Needs", detail:"Compare positional construction across every roster and send any manager back to Draft Room as the recommendation target.", onEnter:()=>setTab("needs") },
+      { selector:"main .sticky.top-14 button:nth-of-type(6)", title:"Strategy Suite", detail:"Look beyond the next pick with availability timing, positional pressure, and future-turn strategy. Finishing or closing returns to Draft Room.", onEnter:()=>{setTab("strategy");return()=>setTab("room");} },
     ]} /> : null}
   </div></main>;
 }

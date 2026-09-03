@@ -1161,7 +1161,7 @@ export default function PlayoffOddsPage() {
 
       <div className="mx-auto w-full min-w-0 max-w-7xl overflow-x-clip px-3 pb-12 pt-20 [overflow-wrap:anywhere] sm:px-4">
         <Card className="p-5 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
+          <div data-guide-tip="playoff-setup" className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/40">Playoff Lens</div>
               <div className="mt-2 text-2xl font-black tracking-tight text-white sm:text-[2rem]">
@@ -1213,7 +1213,7 @@ export default function PlayoffOddsPage() {
           </div>
 
           {playoffLensOpen ? (
-            <div id="playoff-lens-panel">
+            <div id="playoff-lens-panel" data-guide-tip="playoff-settings">
               <SourceSelector
                 sources={DEFAULT_SOURCES}
                 value={sourceKey}
@@ -1456,7 +1456,7 @@ export default function PlayoffOddsPage() {
                   </div> : null}
                 </Card>}
 
-                <Card className="overflow-hidden">
+                <Card data-guide-tip="playoff-odds-board" className="overflow-hidden">
                   <div className="border-b border-white/10 px-5 py-4 sm:px-6">
                     <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                       <div>

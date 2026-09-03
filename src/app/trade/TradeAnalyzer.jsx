@@ -21,81 +21,6 @@ import {
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
 
-import { PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../../lib/projectionSeason";
-
-function normNameForMap(name) {
-  return String(name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "")
-    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeTeamAbbr(x) {
-  const s = String(x || "").toUpperCase().trim();
-  const map = { JAX: "JAC", LA: "LAR", STL: "LAR", SD: "LAC", OAK: "LV", WFT: "WAS", WSH: "WAS" };
-  return map[s] || s;
-}
-
-function normalizePos(x) {
-  const p = String(x || "").toUpperCase().trim();
-  if (p === "DST" || p === "D/ST" || p === "DEFENSE") return "DEF";
-  if (p === "PK") return "K";
-  return p;
-}
-
-function buildProjectionMapFromJSON(json) {
-  const rows = Array.isArray(json) ? json : json?.rows || [];
-  const byId = Object.create(null);
-  const byName = Object.create(null);
-  const byNameTeam = Object.create(null);
-  const byNamePos = Object.create(null);
-
-  rows.forEach((r) => {
-    const pid = r.player_id != null ? String(r.player_id) : "";
-    const name = r.name || r.player || r.full_name || "";
-    const seasonPts = Number(r.points ?? r.pts ?? r.total ?? r.projection ?? 0) || 0;
-    const team = normalizeTeamAbbr(r.team ?? r.nfl_team ?? r.team_abbr ?? r.team_code ?? r.pro_team);
-    const pos = normalizePos(r.pos ?? r.position ?? r.player_position);
-
-    if (pid) byId[pid] = seasonPts;
-    if (!name) return;
-
-    const nn = normNameForMap(name);
-    byName[nn] = seasonPts;
-    byName[name.toLowerCase().replace(/\s+/g, "")] = seasonPts;
-    if (team) byNameTeam[`${nn}|${team}`] = seasonPts;
-    if (pos) byNamePos[`${nn}|${pos}`] = seasonPts;
-  });
-
-  return { byId, byName, byNameTeam, byNamePos };
-}
-
-async function fetchProjectionMap(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  return buildProjectionMapFromJSON(await res.json());
-}
-
-function getSeasonPointsForPlayer(map, p) {
-  if (!map || !p) return 0;
-
-  const hit = map.byId?.[String(p.player_id)];
-  if (hit != null) return hit;
-
-  const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`);
-  const team = normalizeTeamAbbr(p.team);
-  const pos = normalizePos(p.position);
-
-  if (nn && team && map.byNameTeam?.[`${nn}|${team}`] != null) return map.byNameTeam[`${nn}|${team}`];
-  if (nn && pos && map.byNamePos?.[`${nn}|${pos}`] != null) return map.byNamePos[`${nn}|${pos}`];
-  if (team || pos) return 0;
-  if (nn && map.byName?.[nn] != null) return map.byName[nn];
-
-  const compact = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
-  return compact && map.byName?.[compact] != null ? map.byName[compact] : 0;
-}
 
 function escapePrintHtml(value) {
   return String(value ?? "")
@@ -104,20 +29,6 @@ function escapePrintHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function hasSeasonPointsForPlayer(map, p) {
-  if (!map || !p) return false;
-  if (Object.prototype.hasOwnProperty.call(map.byId || {}, String(p.player_id))) return true;
-  const nn = normNameForMap(p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`);
-  const team = normalizeTeamAbbr(p.team);
-  const pos = normalizePos(p.position);
-  if (nn && team && Object.prototype.hasOwnProperty.call(map.byNameTeam || {}, `${nn}|${team}`)) return true;
-  if (nn && pos && Object.prototype.hasOwnProperty.call(map.byNamePos || {}, `${nn}|${pos}`)) return true;
-  if (team || pos) return false;
-  if (nn && Object.prototype.hasOwnProperty.call(map.byName || {}, nn)) return true;
-  const compact = (p.search_full_name || "").toLowerCase().replace(/\s+/g, "");
-  return Boolean(compact && Object.prototype.hasOwnProperty.call(map.byName || {}, compact));
 }
 
 export default function TradeAnalyzer() {
@@ -139,13 +50,13 @@ export default function TradeAnalyzer() {
     hasProjection,
     getWeeklyProjection,
     projectionScoring,
+    preloadProjections,
   } = useSleeper();
 
   const metricMode = metricModeFromSourceKey(sourceKey);
   const projectionSource = projectionSourceFromKey(sourceKey);
   const valueSource = valueSourceFromKey(sourceKey);
 
-  const [projMaps, setProjMaps] = useState({ CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");
   const [sideA, setSideA] = useState([]);
@@ -178,63 +89,30 @@ export default function TradeAnalyzer() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    if (metricMode !== "projections") {
+      setProjLoading(false);
       setProjError("");
-      setProjLoading(true);
-      try {
-        const [csv, espn, cbs, sleeper, fantasySharks, draftSharks, arsenal, arsenalModel] = await Promise.allSettled([
-          fetchProjectionMap(PROJ_JSON_URL),
-          fetchProjectionMap(PROJ_ESPN_JSON_URL),
-          fetchProjectionMap(PROJ_CBS_JSON_URL),
-          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
-          fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
-          fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
-          fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
-          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
-        ]);
-        if (!mounted) return;
-
-        const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null };
-        if (csv.status === "fulfilled") next.CSV = csv.value;
-        if (espn.status === "fulfilled") next.ESPN = espn.value;
-        if (cbs.status === "fulfilled") next.CBS = cbs.value;
-        if (sleeper.status === "fulfilled") next.SLEEPER = sleeper.value;
-        if (fantasySharks.status === "fulfilled") next.FANTASYSHARKS = fantasySharks.value;
-        if (draftSharks.status === "fulfilled") next.DRAFTSHARKS = draftSharks.value;
-        if (arsenal.status === "fulfilled") next.ARSENAL = arsenal.value;
-        if (arsenalModel.status === "fulfilled") next.ARSENAL_MODEL = arsenalModel.value;
-        setProjMaps(next);
-
-        const fallbackKey = next.ARSENAL ? "proj:thefantasyarsenal" : next.FANTASYSHARKS ? "proj:fantasysharks" : next.DRAFTSHARKS ? "proj:draftsharks" : next.ESPN ? "proj:espn" : next.CBS ? "proj:cbs" : next.SLEEPER ? "proj:sleeper" : next.CSV ? "proj:ffa" : null;
-        if (metricMode === "projections" && !fallbackKey) {
-          setProjError("No projections found. Using values instead.");
-          setSourceKey("val:thefantasyarsenal");
-          return;
-        }
-        if (String(sourceKey || "").startsWith("proj:")) {
-          if (projectionSource === "CBS" && !next.CBS && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "ESPN" && !next.ESPN && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "CSV" && !next.CSV && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "SLEEPER" && !next.SLEEPER && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "FANTASYSHARKS" && !next.FANTASYSHARKS && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "DRAFTSHARKS" && !next.DRAFTSHARKS && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "ARSENAL" && !next.ARSENAL && fallbackKey) setSourceKey(fallbackKey);
-          if (projectionSource === "ARSENAL_MODEL" && !next.ARSENAL_MODEL && fallbackKey) setSourceKey(fallbackKey);
-        }
-      } catch {
-        if (!mounted) return;
-        setProjError("Projections unavailable. Using values.");
-        setSourceKey("val:thefantasyarsenal");
-      } finally {
+      return;
+    }
+    let mounted = true;
+    setProjError("");
+    setProjLoading(true);
+    preloadProjections(projectionSource)
+      .then((index) => {
+        if (mounted && !index) setProjError(`${projectionSource} projections are currently unavailable.`);
+      })
+      .catch(() => {
+        if (mounted) setProjError(`${projectionSource} projections are currently unavailable.`);
+      })
+      .finally(() => {
         if (mounted) setProjLoading(false);
-      }
-    })();
+      });
     return () => {
       mounted = false;
     };
+    // preloadProjections is supplied by the shared context and intentionally omitted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [metricMode, projectionSource]);
 
   const handleLeagueChange = async (leagueId) => {
     setTradeLeagueId(leagueId || "");
@@ -360,14 +238,10 @@ export default function TradeAnalyzer() {
 
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
-      if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projectionSource)) return (p) => getProjection(p, projectionSource) || 0;
-      const chosen =
-        projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
-      if (chosen) return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
-      return () => 0;
+      return (p) => getProjection(p, projectionSource) || 0;
     }
     return (p) => getPlayerValue(p) || 0;
-  }, [metricMode, projectionSource, projMaps, getPlayerValue, getProjection]);
+  }, [metricMode, projectionSource, getPlayerValue, getProjection]);
   const getFinderMetric = useMemo(() => (player) => Number(getMetric(player) || getFallbackTradeValue(player) || 0), [getMetric, getFallbackTradeValue]);
 
   const tradeValueA = sideA.reduce((sum, p) => sum + getMetric(p), 0);
@@ -395,11 +269,7 @@ export default function TradeAnalyzer() {
     "Selected source";
   const isPlayerRanked = (player) => {
     if (metricMode === "projections") {
-      if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projectionSource)) {
-        return hasProjection?.(player, projectionSource) ?? getMetric(player) > 0;
-      }
-      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projMaps.CSV;
-      return hasSeasonPointsForPlayer(chosen, player);
+      return hasProjection?.(player, projectionSource) ?? getMetric(player) > 0;
     }
     const formatKey = `${format === "dynasty" ? "dynasty" : "redraft"}_${qbType === "sf" ? "sf" : "1qb"}`;
     const scoring = String(projectionScoring || "ppr").toLowerCase();
@@ -975,12 +845,12 @@ export default function TradeAnalyzer() {
         {username ? <GuidedTips storageKey="tfa:tips:trade-analyzer" label="Trade Analyzer tips" steps={[
           { target:"trade-league", title:"Add league context", detail:"Choose a league when you want roster-aware trading. This identifies each manager's roster, available roster space, team needs, draft picks, and the league's scoring and quarterback format." },
           { target:"trade-model", title:"Choose the evaluation lens", detail:"Model Settings controls the value or projection source, dynasty or redraft format, quarterback setup, and negotiation cushion. Every tab uses this same active lens." },
-          { target:"trade-analyzer", title:"Analyzer: build a specific deal", detail:"Add assets to both sides or select league managers to work from their rosters. The balance meter compares the active source, suggests gap-closing additions, and lets you save or print the result.", onEnter:()=>setTradeTab("analyzer") },
+          { target:"trade-analyzer", scrollBlock:"start", title:"Analyzer: build a specific deal", detail:"Add assets to both sides or select league managers to work from their rosters. The balance meter compares the active source, suggests gap-closing additions, and lets you save or print the result.", onEnter:()=>setTradeTab("analyzer") },
           { target:"trade-finder", title:"Partner Finder: discover workable packages", detail:"Partner Finder ranks trades by both teams' needs, lineup impact, direction, roster limits, picks, and value. Load any idea into Analyzer when you want to edit it.", onEnter:()=>setTradeTab("finder") },
           { target:"trade-workspace", title:"Saved Trades: manage negotiations", detail:"Saved Trades is available without an Arsenal account. In guest or portfolio-only use, versions, notes, sources, and outcomes are saved only in this browser and depend on its storage/privacy settings; clearing site data can remove them. When signed into an Arsenal account, these trade workspaces are included in automatic account sync so they can follow you across supported devices. Reopen any version in Analyzer to continue without rebuilding it.", onEnter:()=>setTradeTab("workspace") },
           { target:"trade-block", title:"Trade Block: start with what you will move", detail:"Select players you are willing to discuss and the positions or picks you want back. The tool generates matching offers locally and can copy a private board link; it does not post to Sleeper.", onEnter:()=>setTradeTab("block") },
           { target:"trade-history", title:"Trade History: review completed deals", detail:"Review the league's completed trades one by one, including players and picks. Current values are labeled as current; fair-at-the-time values appear only where archived data exists.", onEnter:()=>setTradeTab("history") },
-          { target:"trade-market", title:"League Market: understand trading behavior", detail:"League Market summarizes the same completed-deal sample into volume, package size, frequently traded positions, active managers, and repeated trading relationships.", onEnter:()=>setTradeTab("market") },
+          { target:"trade-market", title:"League Market: understand trading behavior", detail:"League Market summarizes the same completed-deal sample into volume, package size, frequently traded positions, active managers, and repeated trading relationships. Finishing or closing returns to Analyzer.", onEnter:()=>{setTradeTab("market");return()=>setTradeTab("analyzer");} },
         ]} /> : null}
       </div>
     </>

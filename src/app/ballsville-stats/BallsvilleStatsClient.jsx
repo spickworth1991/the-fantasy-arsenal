@@ -382,6 +382,7 @@ export default function BallsvilleStatsClient() {
   const [rankingSource, setRankingSource] = useState("val:thefantasyarsenal");
   const [rankingFormat, setRankingFormat] = useState("dynasty");
   const [rankingQb, setRankingQb] = useState("sf");
+  const [workspaceTab, setWorkspaceTab] = useState("players");
   useEffect(() => {
     let active = true;
     fetch(`/data/ballsville-stats-${season}.json`, { cache: "no-store" })
@@ -545,6 +546,19 @@ export default function BallsvilleStatsClient() {
   const selectedPowerTeam = rankedTeams.find(
     (team) => `${team.key}:${team.modeSlug}` === powerTeamKey,
   );
+  const selectedPopulation = useMemo(() => {
+    const activeModes = modes.filter((mode) => selectedModes.has(mode.modeSlug));
+    const selectedTeams = (Array.isArray(data?.teams) ? data.teams : []).filter((team) => selectedModes.has(team.modeSlug));
+    return {
+      modes: activeModes.length,
+      leagues: activeModes.reduce((sum, mode) => sum + n(mode.leagues), 0),
+      drafts: activeModes.reduce((sum, mode) => sum + n(mode.drafts), 0),
+      seats: activeModes.reduce((sum, mode) => sum + n(mode.seats), 0),
+      picks: activeModes.reduce((sum, mode) => sum + n(mode.picks), 0),
+      managers: new Set(selectedTeams.map((team) => String(team.owner?.key || "")).filter(Boolean)).size,
+      players: cachePlayers.filter((player) => Object.keys(player?.modes || {}).some((slug) => selectedModes.has(slug))).length,
+    };
+  }, [cachePlayers, data?.teams, modes, selectedModes]);
   const rankingSourceLabel =
     DEFAULT_SOURCES.find((source) => source.key === rankingSource)?.label ||
     rankingSource;
@@ -608,40 +622,26 @@ export default function BallsvilleStatsClient() {
           </Card>
         ) : (
           <>
-            <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
+            <div data-guide-tip="ballsville-totals" className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Metric
-                label="Drafting managers"
+                label="Unique managers"
                 value={n(summary.totalOwners).toLocaleString()}
-                detail="Made 1+ picks · Sleeper IDs"
+                detail="Distinct Sleeper manager IDs"
               />
               <Metric
-                label="Draft-cycle seats"
-                value={n(summary.totalSeats).toLocaleString()}
-                detail="Startup + rookie can repeat seats"
-              />
-              <Metric
-                label="Unique roster seats"
-                value={n(summary.uniqueRosterSeats).toLocaleString()}
-                detail="One seat per league roster"
-              />
-              <Metric
-                label="Leagues included"
+                label="Ballsville leagues"
                 value={n(summary.totalLeagues).toLocaleString()}
-                detail={`${n(data?.coverage?.leaderboardLeagues)} on leaderboard`}
+                detail={`${n(data?.coverage?.includedLeagues)} included in this cache`}
               />
               <Metric
-                label="Drafts"
+                label="Completed draft boards"
                 value={n(summary.totalDrafts).toLocaleString()}
+                detail="A league can have startup and rookie drafts"
               />
-              <Metric label="Game modes" value={n(summary.totalModes)} />
               <Metric
-                label="Players drafted"
+                label="Distinct players selected"
                 value={n(summary.totalPlayers).toLocaleString()}
-              />
-              <Metric
-                label="Cross-mode managers"
-                value={n(summary.crossModeOwners).toLocaleString()}
-                detail="Appeared in 2+ modes"
+                detail={`${n(summary.totalModes)} game modes · ${n(summary.crossModeOwners)} cross-mode managers`}
               />
             </div>
             {Array.isArray(data?.coverage?.missingLeagues) &&
@@ -674,7 +674,7 @@ export default function BallsvilleStatsClient() {
                 </details>
               </Card>
             ) : null}
-            <Card className="mt-5 p-5">
+            <Card data-guide-tip="ballsville-modes" className="mt-5 p-5">
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-black">Game-mode population</h2>
@@ -736,6 +736,14 @@ export default function BallsvilleStatsClient() {
                   </button>
                 ))}
               </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-4 sm:grid-cols-3 lg:grid-cols-6">
+                <Metric label="Selected managers" value={selectedPopulation.managers.toLocaleString()} detail="Unique across selected modes" />
+                <Metric label="Selected leagues" value={selectedPopulation.leagues.toLocaleString()} />
+                <Metric label="Selected drafts" value={selectedPopulation.drafts.toLocaleString()} />
+                <Metric label="Draft seats" value={selectedPopulation.seats.toLocaleString()} detail="Managers can repeat" />
+                <Metric label="Selections" value={selectedPopulation.picks.toLocaleString()} />
+                <Metric label="Players" value={selectedPopulation.players.toLocaleString()} detail="In active player table" />
+              </div>
             </Card>
             {selectedModes.size > 1 ? (
               <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4 text-sm leading-6 text-amber-50/80">
@@ -746,7 +754,10 @@ export default function BallsvilleStatsClient() {
                 mode-by-mode ADP, or select one mode for a clean ranking.
               </div>
             ) : null}
-            <Card className="mt-5 overflow-visible p-5">
+            <nav data-guide-tip="ballsville-tabs" className="sticky top-14 z-30 mt-5 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl">
+              <div className="flex w-max gap-1">{[["players","Player Popularity"],["teams","Team Power Board"]].map(([key,label]) => <button type="button" key={key} onClick={()=>setWorkspaceTab(key)} className={`rounded-xl px-5 py-2.5 text-sm font-black ${workspaceTab===key ? "bg-amber-300/10 text-amber-100" : "text-white/40"}`}>{label}</button>)}</div>
+            </nav>
+            {workspaceTab === "teams" ? <Card data-guide-tip="ballsville-teams" className="mt-5 overflow-visible p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-200/55">
@@ -833,8 +844,8 @@ export default function BallsvilleStatsClient() {
                   </div>
                 ) : null}
               </div>
-            </Card>
-            <Card className="mt-5 overflow-hidden">
+            </Card> : null}
+            {workspaceTab === "players" ? <Card data-guide-tip="ballsville-players" className="mt-5 overflow-hidden">
               <div className="border-b border-white/10 p-5">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
                   <div className="min-w-0 flex-1">
@@ -1023,7 +1034,7 @@ export default function BallsvilleStatsClient() {
                 matching players. All details come from the scheduled cache, not
                 live league requests.
               </div>
-            </Card>
+            </Card> : null}
           </>
         )}
       </div>

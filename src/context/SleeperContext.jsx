@@ -14,6 +14,19 @@ import {
 
 const SleeperContext = createContext();
 export const useSleeper = () => useContext(SleeperContext);
+const projectionIndexMemory = new Map();
+const projectionLoadPromises = new Map();
+const PROJECTION_URLS = {
+  FFA: PROJ_JSON_URL,
+  ESPN: PROJ_ESPN_JSON_URL,
+  CBS: PROJ_CBS_JSON_URL,
+  SLEEPER: PROJ_SLEEPER_JSON_URL,
+  FANTASYSHARKS: PROJ_FANTASYSHARKS_JSON_URL,
+  DRAFTSHARKS: PROJ_DRAFTSHARKS_JSON_URL,
+  FANTASYPROS: PROJ_FANTASYPROS_JSON_URL,
+  ARSENAL: PROJ_ARSENAL_JSON_URL,
+  ARSENAL_MODEL: PROJ_ARSENAL_MODEL_JSON_URL,
+};
 
 // ---- SSR-safe localStorage helpers (no-ops on server) ----
 const isBrowser = typeof window !== "undefined";
@@ -788,7 +801,7 @@ export const SleeperProvider = ({ children }) => {
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
     const PROJ_CACHE_KEY = `projIndex_v1.111:${PROJECTION_DATA_SEASON}`;
 
-  const preloadProjections = async () => {
+  const preloadAllProjectionsLegacy = async () => {
     try {
       let projectionCacheKey = PROJ_CACHE_KEY;
       try {
@@ -877,6 +890,50 @@ export const SleeperProvider = ({ children }) => {
     }
   };
 
+  const preloadProjections = async (requestedSource = null) => {
+    let src = String(requestedSource || "");
+    if (!src && String(sourceKey || "").startsWith("proj:")) src = projectionSourceFromKey(sourceKey);
+    if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
+    if (!PROJECTION_URLS[src]) return null;
+    if (projectionIndexes[src]) return projectionIndexes[src];
+    if (projectionIndexMemory.has(src)) {
+      const index = projectionIndexMemory.get(src);
+      setProjectionIndexes((current) => ({ ...current, [src]: index }));
+      return index;
+    }
+    if (projectionLoadPromises.has(src)) return projectionLoadPromises.get(src);
+
+    const cacheKey = `projIndex_v2:${PROJECTION_DATA_SEASON}:${src}`;
+    const promise = (async () => {
+      try {
+        let raw = await get(cacheKey).catch(() => null);
+        if (!raw || typeof raw !== "object" || !Object.keys(raw).length) {
+          const fetched = await fetchProjectionIndex(PROJECTION_URLS[src]);
+          raw = fetched?.raw || null;
+          if (raw) await set(cacheKey, raw).catch(() => {});
+        }
+        if (!raw || !Object.keys(raw).length) return null;
+        const index = createProjectionIndex(raw);
+        projectionIndexMemory.set(src, index);
+        setProjectionIndexes((current) => ({ ...current, [src]: index }));
+        return index;
+      } catch (error) {
+        console.error(`Projection source ${src} could not be loaded:`, error);
+        return null;
+      } finally {
+        projectionLoadPromises.delete(src);
+      }
+    })();
+    projectionLoadPromises.set(src, promise);
+    return promise;
+  };
+
+  useEffect(() => {
+    if (!storageReady || !String(sourceKey || "").startsWith("proj:")) return;
+    preloadProjections(projectionSourceFromKey(sourceKey));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey, storageReady]);
+
   // Single helper: matches your value-style candidate rules (pos required; pos+team preferred)
   const getProjection = (p, source = "FFA") => {
     // Accept either legacy codes (FFA/ESPN/CBS) or SourceSelector keys (proj:ffa/proj:espn/proj:cbs)
@@ -964,8 +1021,10 @@ export const SleeperProvider = ({ children }) => {
     const hasUsername = !!username;
     const missingPlayers = !players || Object.keys(players).length === 0;
     const missingLeagues = !Array.isArray(leagues) || leagues.length === 0;
-    const missingProjs =
-      !projectionIndexes?.FFA && !projectionIndexes?.ESPN && !projectionIndexes?.CBS && !projectionIndexes?.SLEEPER && !projectionIndexes?.FANTASYSHARKS && !projectionIndexes?.DRAFTSHARKS && !projectionIndexes?.FANTASYPROS && !projectionIndexes?.ARSENAL && !projectionIndexes?.ARSENAL_MODEL;
+    const activeProjectionSource = String(sourceKey || "").startsWith("proj:")
+      ? projectionSourceFromKey(sourceKey)
+      : null;
+    const missingProjs = Boolean(activeProjectionSource && !projectionIndexes?.[activeProjectionSource]);
 
     if (!hasUsername) return;
     if (loading) return;
@@ -996,7 +1055,7 @@ export const SleeperProvider = ({ children }) => {
         }
 
         if (missingProjs) {
-          await preloadProjections();
+          await preloadProjections(activeProjectionSource);
         }
       } catch (e) {
         console.error("❌ Auto-recover failed:", e);

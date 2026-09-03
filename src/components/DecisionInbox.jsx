@@ -1220,8 +1220,8 @@ export default function DecisionInbox({ full = false }) {
   const ratedCount = memoryRows.filter((row) => row.outcome).length;
 
   return (
-    <section className="overflow-hidden rounded-[30px] border border-amber-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(251,191,36,.13),transparent_38%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.1),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))]">
-      <div className="border-b border-white/10 p-4 sm:p-6">
+    <section data-guide-tip="intelligence-workspace" className="overflow-hidden rounded-[30px] border border-amber-300/15 bg-[radial-gradient(circle_at_88%_0%,rgba(251,191,36,.13),transparent_38%),radial-gradient(circle_at_8%_100%,rgba(139,92,246,.1),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.95))]">
+      <div data-guide-tip="intelligence-header" className="border-b border-white/10 p-4 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[.24em] text-amber-200/55">
@@ -1297,7 +1297,7 @@ export default function DecisionInbox({ full = false }) {
         </div>
       </div>
       {full ? (
-        <div className="border-b border-white/10 p-3 sm:p-4">
+        <div data-guide-tip="intelligence-tabs" className="border-b border-white/10 p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex overflow-x-auto">
               {[
@@ -1333,7 +1333,7 @@ export default function DecisionInbox({ full = false }) {
         </div>
       ) : null}
       {full ? (
-        <details className="border-b border-white/10 p-4">
+        <details data-guide-tip="intelligence-scope" className="border-b border-white/10 p-4">
           <summary className="cursor-pointer text-xs font-bold text-white/55">
             League scope · {targetLeagues.length} of {leagues.length} leagues
           </summary>
@@ -1422,6 +1422,7 @@ export default function DecisionInbox({ full = false }) {
         </div>
       ) : null}
       <div
+        data-guide-tip="intelligence-decisions"
         className={
           full
             ? "grid gap-3 p-3 sm:p-5 lg:grid-cols-2"

@@ -390,6 +390,7 @@ export default function PowerRankingsPage() {
     setActiveLeague,
     fetchLeagueRostersSilent,
     getProjection,
+    preloadProjections,
     projectionScoring,
   } = useSleeper();
 
@@ -420,6 +421,7 @@ export default function PowerRankingsPage() {
 
   const [sortKey, setSortKey] = useState("rating");
   const [openTeamId, setOpenTeamId] = useState(null);
+  const tourSelectedLeagueRef = useRef(false);
 
   const [ownedPicks, setOwnedPicks] = useState(null);
   const [picksLoading, setPicksLoading] = useState(false);
@@ -433,14 +435,14 @@ export default function PowerRankingsPage() {
       setProjLoading(true);
       try {
         const [csvMap, espnMap, cbsMap, sleeperMap, fantasySharksMap, draftSharksMap, arsenalMap, arsenalModel] = await Promise.allSettled([
-          fetchProjectionMap(PROJ_JSON_URL),
-          fetchProjectionMap(PROJ_ESPN_JSON_URL),
-          fetchProjectionMap(PROJ_CBS_JSON_URL),
-          fetchProjectionMap(PROJ_SLEEPER_JSON_URL),
-          fetchProjectionMap(PROJ_FANTASYSHARKS_JSON_URL),
-          fetchProjectionMap(PROJ_DRAFTSHARKS_JSON_URL),
-          fetchProjectionMap(PROJ_ARSENAL_JSON_URL),
-          fetchProjectionMap(PROJ_ARSENAL_MODEL_JSON_URL),
+          ["CSV", "FFA"].includes(projectionSource) ? preloadProjections("FFA") : Promise.resolve(null),
+          projectionSource === "ESPN" ? preloadProjections("ESPN") : Promise.resolve(null),
+          projectionSource === "CBS" ? preloadProjections("CBS") : Promise.resolve(null),
+          projectionSource === "SLEEPER" ? preloadProjections("SLEEPER") : Promise.resolve(null),
+          projectionSource === "FANTASYSHARKS" ? preloadProjections("FANTASYSHARKS") : Promise.resolve(null),
+          projectionSource === "DRAFTSHARKS" ? preloadProjections("DRAFTSHARKS") : Promise.resolve(null),
+          projectionSource === "ARSENAL" ? preloadProjections("ARSENAL") : Promise.resolve(null),
+          projectionSource === "ARSENAL_MODEL" ? preloadProjections("ARSENAL_MODEL") : Promise.resolve(null),
         ]);
         const next = { CSV: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, ARSENAL: null, ARSENAL_MODEL: null };
         if (csvMap.status === "fulfilled") next.CSV = csvMap.value;
@@ -495,7 +497,7 @@ export default function PowerRankingsPage() {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectionSource]);
 
   const league = useMemo(
     () => leagues.find((lg) => lg.league_id === activeLeague),
@@ -526,7 +528,9 @@ export default function PowerRankingsPage() {
 
   const getMetricRaw = useMemo(() => {
     if (metricMode === "projections") {
-      if (["FANTASYPROS", "SLEEPER", "DRAFTSHARKS", "ARSENAL", "ARSENAL_MODEL"].includes(projectionSource)) return (p) => getProjection(p, projectionSource) || 0;
+      return (p) => getProjection(p, projectionSource === "CSV" ? "FFA" : projectionSource) || 0;
+      /* Legacy local maps are retained temporarily for saved UI state, but scoring
+         now comes from the shared projection index above.
       const chosen =
         projectionSource === "ESPN" ? projMaps.ESPN :
         projectionSource === "CBS"  ? projMaps.CBS  :
@@ -540,7 +544,7 @@ export default function PowerRankingsPage() {
         return (p) => getSeasonPointsForPlayer(chosen, p) || 0;
       }
       // If projections selected but not loaded yet, return 0s (UI will show loading)
-      return () => 0;
+      return () => 0; */
     }
     // Values mode
     return (p) => getValueRaw(p) || 0;
@@ -1263,7 +1267,7 @@ export default function PowerRankingsPage() {
                               </div>
                             </div>
 
-                            <div className="mt-3">
+                            <div className="mt-3" data-guide-tip="rankings-breakdown-control">
                               <button
                                 onClick={() => setOpenTeamId(openTeamId === t.teamId ? null : t.teamId)}
                                 className="text-sm px-3 py-1 rounded-lg border border-white/10 hover:bg-white/5"
@@ -1448,12 +1452,12 @@ export default function PowerRankingsPage() {
           </>
         )}
       </div>
-      {username ? <GuidedTips storageKey="tfa:tips:power-rankings" label="Power Rankings tips" steps={[
-        { target:"rankings-league", title:"Start with a league", detail:"Select any loaded league. The Arsenal reads its roster size, starting slots, scoring format, and quarterback setup so every team is evaluated within that league's actual rules." },
+      {username ? <GuidedTips storageKey="tfa:tips:power-rankings" label="Power Rankings tips" onTourStart={()=>{if(!activeLeague&&leagues?.[0]?.league_id){tourSelectedLeagueRef.current=true;setActiveLeague(String(leagues[0].league_id));}}} onTourEnd={()=>{if(tourSelectedLeagueRef.current){tourSelectedLeagueRef.current=false;setActiveLeague(null);}}} steps={[
+        { target:"rankings-league", title:"Start with a league—try it now", detail:"Select any loaded league. Arsenal reads its roster size, starting slots, scoring format, and quarterback setup. If none was selected, the tour temporarily chooses one so the next examples work, then restores the empty state when you finish or close it." },
         { target:"rankings-model", title:"Choose what power means", detail:"Open Model Settings to rank by projected season production or by a selected trade-value market. Projection mode emphasizes current contention; value mode emphasizes market strength and can include future picks." },
-        { target:"rankings-list", title:"Compare every roster", detail:"Sort the full board by Overall, Total, top starters, or Depth. Overall balances lineup strength with bench quality—and future picks when they are enabled in value mode." },
-        { target:"rankings-list", title:"Open the roster breakdown", detail:"Each team card shows positional ranks and its weakest room. Use Show Roster Breakdown to see which players create the score, which assets lack a value, and where the roster gains or loses ground." },
-        { target:"rankings-summary", title:"Read league-wide context", detail:"Team Tiers group similar ratings, position leaderboards identify the strongest rooms, and League Summary highlights depth, age, picks, and major stars-versus-depth gaps." },
+        { target:"rankings-list", scrollBlock:"start", title:"Compare every roster", detail:"Sort the full board by Overall, Total, top starters, or Depth. Overall balances lineup strength with bench quality—and future picks when they are enabled in value mode." },
+        { target:"rankings-list", focusSelector:'[data-guide-tip="rankings-breakdown-control"] button', scrollBlock:"start", title:"Open the roster breakdown", detail:"Each team card shows positional ranks and its weakest room. The outlined Show Roster Breakdown button reveals which players create the score, which assets lack a value, and where the roster gains or loses ground." },
+        { target:"rankings-summary", scrollBlock:"start", title:"Read league-wide context", detail:"Team Tiers group similar ratings, position leaderboards identify the strongest rooms, and League Summary highlights depth, age, picks, and major stars-versus-depth gaps." },
       ]} /> : null}
     </>
   );

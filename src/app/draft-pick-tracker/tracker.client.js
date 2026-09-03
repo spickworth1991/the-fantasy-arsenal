@@ -881,6 +881,7 @@ export default function DraftPickTrackerClient() {
 
           <button
             type="button"
+            data-guide-tip="monitor-filter-button"
             onClick={() => setFiltersOpen((v) => !v)}
             className={classNames(
               "px-4 py-2.5 rounded-2xl text-sm font-semibold border border-white/10 bg-black/20 text-gray-200 hover:bg-white/5",
@@ -1018,6 +1019,7 @@ export default function DraftPickTrackerClient() {
             return (
               <div
                 key={r.leagueId}
+                data-guide-tip="monitor-draft-card"
                 className={classNames(
                   "bg-gray-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden",
                   attention.cardAccentClass
@@ -1056,7 +1058,7 @@ export default function DraftPickTrackerClient() {
                 </div>
 
                 <div className="p-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div data-guide-tip="monitor-attention" className="grid grid-cols-2 gap-3">
                     <div className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <div className="text-xs text-gray-400">Current Pick</div>
                       <div className="text-white text-lg font-semibold">
@@ -1086,7 +1088,7 @@ export default function DraftPickTrackerClient() {
                       </div>
                     </div>
 
-                    <div className="bg-black/20 border border-white/10 rounded-xl p-3">
+                    <div data-guide-tip="monitor-eta" className="bg-black/20 border border-white/10 rounded-xl p-3">
                       <div className="text-xs text-gray-400">ETA</div>
                       <div className="text-white text-lg font-semibold">
                         {r.myNextPickOverall ? etaHuman : "—"}
@@ -1109,7 +1111,7 @@ export default function DraftPickTrackerClient() {
                     </div>
                   </div>
 
-                  <div className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
+                  <div data-guide-tip="monitor-recent" className="mt-4 bg-black/20 border border-white/10 rounded-xl p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm text-white font-semibold">
                         Recent picks
@@ -1162,7 +1164,7 @@ export default function DraftPickTrackerClient() {
                       )}
                     </div>
                   </div>
-                  <a href={`/draft-helper?league=${encodeURIComponent(r.leagueId)}&draft=${encodeURIComponent(r.draftId || "")}`} className="mt-3 block rounded-xl border border-violet-300/20 bg-violet-300/10 px-4 py-2.5 text-center text-xs font-bold text-violet-100">Open this league in Draft Command Center →</a>
+                  <a data-guide-tip="monitor-open-command" href={`/draft-helper?league=${encodeURIComponent(r.leagueId)}&draft=${encodeURIComponent(r.draftId || "")}`} className="mt-3 block rounded-xl border border-violet-300/20 bg-violet-300/10 px-4 py-2.5 text-center text-xs font-bold text-violet-100">Open this league in Draft Command Center →</a>
                 </div>
               </div>
             );
@@ -1421,10 +1423,11 @@ export default function DraftPickTrackerClient() {
       )}
       {username ? <GuidedTips storageKey="tfa:tips:draft-monitor" label="Draft Monitor tips" steps={[
         { target:"monitor-overview", title:"Watch every draft from one screen", detail:"Draft Monitor combines all loaded Sleeper leagues with a draft into one dashboard, so you can see which rooms need attention without opening each draft separately." },
-        { target:"monitor-controls", title:"Filter urgency and choose a view", detail:"Use Filters to search leagues, show only active or paused drafts, isolate on-deck and on-clock leagues, or control auto-refresh. Cards provide detail; Table makes many drafts easier to scan and sort." },
-        { target:"monitor-results", title:"Read the attention signals", detail:"On Clock means it is your turn now. On Deck and Up in show how close your next owned pick is, including traded-pick ownership. Paused drafts stay visible only when you choose to include them." },
-        { target:"monitor-results", title:"Understand ETA and recent picks", detail:"ETA uses the league's configured pick timer and the live clock—not an assumed drafting pace. Expand Recent picks on a card to see the latest run and spot positional trends." },
-        { target:"monitor-results", title:"Move from monitoring to drafting", detail:"Select a league name in Table view or use Open this league in Draft Command Center on a card when you are ready for player recommendations and roster-aware draft help." },
+        { target:"monitor-controls", focusSelector:'[data-guide-tip="monitor-filter-button"]', title:"Filter urgency and choose a view", detail:"Filters search leagues, show only active or paused drafts, isolate on-deck and on-clock rooms, and control auto-refresh. Cards provide detail; Table makes many drafts easier to scan. The filter panel opens for this tip and returns to its prior state afterward.", onEnter:()=>{const wasOpen=filtersOpen;setFiltersOpen(true);return()=>setFiltersOpen(wasOpen);} },
+        { target:"monitor-draft-card", focusSelector:'[data-guide-tip="monitor-attention"]', scrollBlock:"start", title:"Read the attention signals", detail:"On Clock means it is your turn now. On Deck and Up in show how close your next owned pick is, including traded-pick ownership. The full draft card remains visible while its live-status area is outlined." },
+        { target:"monitor-draft-card", focusSelector:'[data-guide-tip="monitor-eta"]', scrollBlock:"start", title:"Understand the ETA", detail:"ETA uses the league's configured pick timer and live clock—not an assumed drafting pace. It becomes unavailable while a draft is paused." },
+        { target:"monitor-draft-card", focusSelector:'[data-guide-tip="monitor-recent"]', scrollBlock:"start", title:"Inspect recent picks", detail:"Expand Recent picks to see the latest run and identify positional movement before your next selection." },
+        { target:"monitor-draft-card", focusSelector:'[data-guide-tip="monitor-open-command"]', scrollBlock:"start", title:"Move from monitoring to drafting", detail:"Use this button when you are ready for available-player recommendations, roster construction, and the live board in Draft Command Center." },
         { target:"monitor-refresh", title:"Refresh on demand", detail:"Auto-refresh polls while a draft is actively running. Use Refresh when you want an immediate reread of every eligible draft, including status and traded-pick changes." },
       ]} /> : null}
     </div>

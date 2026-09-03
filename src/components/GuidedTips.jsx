@@ -3,22 +3,36 @@
 import { useEffect, useRef, useState } from "react";
 import { useEmbeddedMode } from "../context/EmbeddedModeContext";
 
-export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
+export default function GuidedTips({ steps = [], storageKey, label = "Tips", onTourStart, onTourEnd }) {
   const { embedded } = useEmbeddedMode();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [arrow, setArrow] = useState(null);
   const [targetVersion, setTargetVersion] = useState(0);
   const panelRef = useRef(null);
+  const tourOpenRef = useRef(false);
+  const onTourStartRef = useRef(onTourStart);
+  const onTourEndRef = useRef(onTourEnd);
+  onTourStartRef.current = onTourStart;
+  onTourEndRef.current = onTourEnd;
   const current = steps[step];
-  const findCurrentTarget = () => {
-    const selector = current?.selector || `[data-guide-tip="${current?.target}"]`;
-    const matches = [...document.querySelectorAll(selector)];
+  const findTarget = (selector) => {
+    if (!selector) return null;
+    let matches = [];
+    try {
+      matches = [...document.querySelectorAll(selector)];
+    } catch {
+      return null;
+    }
     return matches.find((element) => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
     }) || matches[0] || null;
   };
+  const findCurrentTarget = () => findTarget(
+    current?.selector || `[data-guide-tip="${current?.target}"]`,
+  );
+  const findCurrentFocus = () => findTarget(current?.focusSelector) || findCurrentTarget();
 
   useEffect(() => {
     try {
@@ -27,6 +41,20 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
       if (enabled && !seen && steps.length) setOpen(true);
     } catch {}
   }, [steps.length, storageKey]);
+
+  useEffect(() => {
+    if (open && !tourOpenRef.current) {
+      tourOpenRef.current = true;
+      onTourStartRef.current?.();
+    } else if (!open && tourOpenRef.current) {
+      tourOpenRef.current = false;
+      onTourEndRef.current?.();
+    }
+  }, [open]);
+
+  useEffect(() => () => {
+    if (tourOpenRef.current) onTourEndRef.current?.();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -44,28 +72,35 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
     if (!target) return;
     const embeddedMobile = embedded && window.matchMedia("(max-width: 767px)").matches;
     target.scrollIntoView({
-      behavior: embeddedMobile ? "auto" : "smooth",
-      block: embeddedMobile ? "start" : "center",
+      behavior: current?.scrollBehavior || "auto",
+      block: current?.scrollBlock || (embeddedMobile ? "start" : "center"),
       inline: "nearest",
     });
     target.classList.add("relative", "z-[93]", "rounded-2xl", "ring-2", "ring-cyan-300", "ring-offset-4", "ring-offset-slate-950");
-    return () => target.classList.remove("relative", "z-[93]", "rounded-2xl", "ring-2", "ring-cyan-300", "ring-offset-4", "ring-offset-slate-950");
-  }, [current?.selector, current?.target, embedded, open, targetVersion]);
+    const focus = findCurrentFocus();
+    if (focus && focus !== target) focus.classList.add("relative", "z-[106]", "rounded-xl", "ring-4", "ring-amber-300", "ring-offset-2", "ring-offset-slate-950", "shadow-[0_0_36px_rgba(252,211,77,.6)]");
+    return () => {
+      target.classList.remove("relative", "z-[93]", "rounded-2xl", "ring-2", "ring-cyan-300", "ring-offset-4", "ring-offset-slate-950");
+      if (focus && focus !== target) focus.classList.remove("relative", "z-[106]", "rounded-xl", "ring-4", "ring-amber-300", "ring-offset-2", "ring-offset-slate-950", "shadow-[0_0_36px_rgba(252,211,77,.6)]");
+    };
+  }, [current?.focusSelector, current?.scrollBlock, current?.selector, current?.target, embedded, open, targetVersion]);
 
   useEffect(() => {
     if (!open || (!current?.target && !current?.selector)) return;
     let timer;
     const measure = () => {
       const target = findCurrentTarget();
+      const focus = findCurrentFocus();
       const panel = panelRef.current;
-      if (!target || !panel) return setArrow(null);
+      if (!target || !focus || !panel) return setArrow(null);
       const targetRect = target.getBoundingClientRect();
+      const focusRect = focus.getBoundingClientRect();
       const panelRect = panel.getBoundingClientRect();
       setArrow({
         fromX: panelRect.left + panelRect.width / 2,
         fromY: panelRect.top - 8,
-        toX: Math.max(24, Math.min(window.innerWidth - 24, targetRect.left + Math.min(targetRect.width / 2, 220))),
-        toY: Math.max(24, Math.min(panelRect.top - 44, targetRect.top + Math.min(targetRect.height / 2, 70))),
+        toX: Math.max(24, Math.min(window.innerWidth - 24, focusRect.left + Math.min(focusRect.width / 2, 220))),
+        toY: Math.max(24, Math.min(panelRect.top - 44, focusRect.top + Math.min(focusRect.height / 2, 70))),
         targetX: Math.max(0, targetRect.left - 8),
         targetY: Math.max(0, targetRect.top - 8),
         targetWidth: Math.min(window.innerWidth, targetRect.width + 16),
@@ -78,7 +113,7 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips" }) {
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, { passive: true });
     return () => { clearTimeout(timer); window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule); };
-  }, [current?.selector, current?.target, open, targetVersion]);
+  }, [current?.focusSelector, current?.selector, current?.target, open, targetVersion]);
 
   const close = (disable = false) => {
     setOpen(false);

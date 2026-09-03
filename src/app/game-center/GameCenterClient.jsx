@@ -1389,7 +1389,7 @@ export default function GameCenterClient() {
                   );
                   if (!involved.length && !preseasonMode) return null;
                   return (
-                    <Panel key={game.id} className="overflow-hidden">
+                    <Panel key={game.id} data-guide-tip="game-center-player-group" className="overflow-hidden">
                       <div className="border-b border-white/10 bg-white/[0.025] p-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div>
@@ -1702,7 +1702,8 @@ export default function GameCenterClient() {
               onEnter: () => setTab("matchups"),
             },
             {
-              target: "game-center-timeline-summary",
+              target: "game-center-player-group",
+              scrollBlock: "start",
               title: "See when your portfolio moves",
               detail: "Players are grouped by NFL game and kickoff window with fantasy points plus how many leagues you have them for and against. A conflict means the same player helps you in some leagues and hurts you in others. Search by player or team to isolate an upcoming window.",
               onEnter: () => setTab("timeline"),
