@@ -336,12 +336,31 @@ function opponentAdjustment(row) {
         (sum, item) => sum + item.comparison_games,
         0,
       );
-      const reliability = comparisons.length / (comparisons.length + 4);
+      const weightSquared = comparisons.reduce(
+        (sum, item) => sum + item.weight * item.weight,
+        0,
+      );
+      const effectiveMeetings = weightSquared > 0 ? (weight * weight) / weightSquared : 0;
+      const residualVariance = comparisons.reduce(
+        (sum, item) => sum + item.weight * Math.pow(item.residual - rawResidual, 2),
+        0,
+      ) / Math.max(weight, 1);
+      const standardError = Math.sqrt(residualVariance / Math.max(1, effectiveMeetings));
+      const contextualGames = Math.min(18, comparisonGames) / 6;
+      const evidenceStrength = 1 - Math.exp(-(effectiveMeetings + contextualGames) / 4.5);
+      const directionStrength = 1 - Math.exp(-Math.abs(rawResidual) / Math.max(2, standardError));
+      const stabilityStrength = 1 / (1 + standardError / 8);
+      const reliability = Math.min(
+        0.9,
+        evidenceStrength * (0.45 + 0.35 * directionStrength + 0.2 * stabilityStrength),
+      );
       const baselineCoverage = Math.min(
         1,
         comparisonGames / Math.max(1, comparisons.length * 6),
       );
-      const confidence = Math.round(reliability * baselineCoverage * 100);
+      const confidence = Math.round(
+        Math.min(0.95, reliability * (0.7 + 0.3 * baselineCoverage)) * 100,
+      );
       return [
         scoring,
         {
@@ -349,6 +368,8 @@ function opponentAdjustment(row) {
           raw_residual: round(rawResidual),
           same_season_baseline: round(baseline),
           reliability: round(reliability, 4),
+          effective_meetings: round(effectiveMeetings, 2),
+          residual_standard_error: round(standardError, 2),
           confidence,
           confidence_label:
             confidence >= 60

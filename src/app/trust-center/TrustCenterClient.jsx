@@ -8,6 +8,29 @@ import { useSleeper } from "../../context/SleeperContext";
 const season = new Date().getFullYear();
 const SOURCES = [
   {
+    key: "arsenal-model",
+    freshnessKey: "arsenal_model_proj",
+    label: "The Fantasy Arsenal Projections",
+    kind: "Projection",
+    derived: true,
+    file: `/projections_thefantasyarsenal_model_${season}.json`,
+  },
+  {
+    key: "arsenal-average",
+    freshnessKey: "arsenal_proj",
+    label: "Average of All Projections",
+    kind: "Projection",
+    derived: true,
+    file: `/projections_thefantasyarsenal_${season}.json`,
+  },
+  {
+    key: "stickypicky",
+    freshnessKey: "sp",
+    label: "The Fantasy Arsenal Values",
+    kind: "Value",
+    file: "/stickypicky_cache.json",
+  },
+  {
     key: "ffa",
     freshnessKey: "proj",
     label: "Fantasy Football Analytics",
@@ -55,22 +78,6 @@ const SOURCES = [
     label: "FantasyPros Projections",
     kind: "Projection",
     file: `/projections_fantasypros_${season}.json`,
-  },
-  {
-    key: "arsenal-model",
-    freshnessKey: "arsenal_model_proj",
-    label: "The Fantasy Arsenal Projections",
-    kind: "Projection",
-    derived: true,
-    file: `/projections_thefantasyarsenal_model_${season}.json`,
-  },
-  {
-    key: "arsenal-average",
-    freshnessKey: "arsenal_proj",
-    label: "Average of All Projections",
-    kind: "Projection",
-    derived: true,
-    file: `/projections_thefantasyarsenal_${season}.json`,
   },
   {
     key: "fantasycalc",
@@ -127,13 +134,6 @@ const SOURCES = [
     label: "IDP Show",
     kind: "Value",
     file: "/idpshow_cache.json",
-  },
-  {
-    key: "stickypicky",
-    freshnessKey: "sp",
-    label: "The Fantasy Arsenal Values",
-    kind: "Value",
-    file: "/stickypicky_cache.json",
   },
 ];
 const SOURCE_METHODS = {
@@ -283,6 +283,19 @@ async function fetchJsonWithTimeout(url, options = {}, timeout = 15000) {
     clearTimeout(timer);
   }
 }
+async function fetchPublicAsset(path) {
+  const cleanPath = String(path || "").startsWith("/") ? String(path) : `/${path}`;
+  const candidates = [cleanPath, `https://thefantasyarsenal.com${cleanPath}`];
+  let lastError = null;
+  for (const url of [...new Set(candidates)]) {
+    try {
+      return await fetchJsonWithTimeout(url, { cache: "no-store" });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error(`Unable to load ${cleanPath}`);
+}
 const FORMAT_KEYS = {
   dynasty_sf: "Dynasty_SF",
   dynasty_1qb: "Dynasty_1QB",
@@ -421,7 +434,7 @@ function SourceLedger({ records }) {
               <h2 className="text-xl font-black">Source methodology library</h2>
               <Type type="Fact" />
             </div>
-            <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Every selectable source has a permanent explanation here: where the data originates, what the Arsenal changes, where it is used, and what it cannot prove. Names describe the data product—not merely the publisher.</p>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Coverage, freshness, and methodology live together here. A source can contain players while not publishing the selected league format; that is labeled unavailable instead of incorrectly reporting zero players.</p>
           </div>
           <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] px-4 py-3 text-xs text-cyan-100">{records.length} monitored sources</div>
         </div>
@@ -452,7 +465,7 @@ function SourceLedger({ records }) {
                   <span className={`rounded-full border px-2 py-1 text-[9px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Metric label="Selected board" value={source.coverage.toLocaleString()} detail={`${source.filePopulation.toLocaleString()} players stored in file`} />
+                  <Metric label={source.supported ? "Selected board" : "Players stored"} value={(source.supported ? source.coverage : source.filePopulation).toLocaleString()} detail={source.supported ? `${source.filePopulation.toLocaleString()} unique players stored across the file` : "Selected format is not published by this source"} />
                   <Metric label="Age" value={age(source.updated)} detail={source.updated ? new Date(source.updated).toLocaleString() : "No timestamp"} />
                 </div>
               </div>
@@ -492,7 +505,7 @@ function ValueIntelligence({ metrics, records, valueFormat, valueScoring }) {
   if (valueFormat.startsWith("dynasty")) valueScoring = "scoring-neutral";
   return (
     <div className="mt-4 space-y-4">
-      <Panel className="p-5 sm:p-6">
+      {/* <Panel className="p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -515,13 +528,13 @@ function ValueIntelligence({ metrics, records, valueFormat, valueScoring }) {
                 </div>
                 <span className={`rounded-full border px-2 py-1 text-[8px] font-bold ${tone[freshness(source.updated)]}`}>{freshness(source.updated)}</span>
               </div>
-              <div className="mt-4 text-2xl font-black">{source.coverage.toLocaleString()}</div>
-              <div className="text-[9px] uppercase tracking-wider text-white/28">players on selected board</div>
+              <div className="mt-4 text-2xl font-black">{source.supported ? source.coverage.toLocaleString() : "—"}</div>
+              <div className="text-[9px] uppercase tracking-wider text-white/28">{source.supported ? "players on selected board" : `${source.filePopulation.toLocaleString()} players stored · format unavailable`}</div>
               {source.sourceDataDate ? <div className="mt-3 text-[9px] text-amber-100/55">Publisher date {source.sourceDataDate}</div> : null}
             </div>
           ))}
         </div>
-      </Panel>
+      </Panel> */}
       <Panel className="p-5 sm:p-6">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-black">What FantasyPros ECR means</h2>
@@ -547,69 +560,23 @@ function ValueIntelligence({ metrics, records, valueFormat, valueScoring }) {
           </div>
         </details>
       </Panel>
-      <div className="grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
-        <Panel className="overflow-hidden">
-          <div className="border-b border-white/10 p-5">
-            <h2 className="text-xl font-black">Where markets disagree most</h2>
-            <p className="mt-1 text-xs leading-5 text-white/38">Range compares normalized rank positions, not raw publisher scales. It identifies players worth investigating; it does not automatically identify a wrong source.</p>
-          </div>
-          <div className="divide-y divide-white/[0.06]">
-            {metrics.valueDisagreements.slice(0, 20).map((row, index) => (
-              <div key={row.name} className="grid grid-cols-[34px_minmax(0,1fr)_75px] items-center gap-3 px-5 py-3">
-                <div className="text-xs font-black text-white/25">#{index + 1}</div>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold">{row.displayName}</div>
-                  <div className="mt-1 text-[9px] text-white/28">
-                    {row.sources} sources · {Math.round(row.low).toLocaleString()}–{Math.round(row.high).toLocaleString()}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-black text-amber-100">{row.spread.toFixed(0)}%</div>
-                  <div className="text-[8px] text-white/25">range</div>
-                </div>
-              </div>
-            ))}
-            {!metrics.valueDisagreements.length ? <div className="p-6 text-sm text-white/38">At least three populated value sources are required for disagreement analysis in this format.</div> : null}
-          </div>
-        </Panel>
-        <div className="space-y-4">
-          <Panel className="p-5">
-            <h2 className="text-lg font-black">Retrieval date versus publisher date</h2>
-            <p className="mt-2 text-xs leading-5 text-white/42">
-              <b className="text-white/70">Last successful retrieval</b> means the update script downloaded and validated the file. <b className="text-white/70">Publisher date</b> is embedded by the source. A fresh retrieval can still contain older rankings, so both dates matter.
-            </p>
-          </Panel>
-          <Panel className="p-5">
-            <h2 className="text-lg font-black">Movement tracking</h2>
-            <p className="mt-2 text-xs leading-5 text-white/42">{metrics.archives >= 2 ? "Multiple frozen archives are available, enabling honest day-over-day source and consensus movement." : "The first archive establishes the baseline. The second dated archive unlocks daily movers, consensus changes, and source-by-source “what changed?” explanations."}</p>
-          </Panel>
-          <Panel className="p-5">
-            <h2 className="text-lg font-black">Confidence levels</h2>
-            <div className="mt-3 space-y-2">
-              {[
-                ["High", "Four or more usable sources with reasonable agreement"],
-                ["Medium", "Two or three sources, or wider disagreement"],
-                ["Low", "One source, stale data, or unsupported format"],
-              ].map(([level, detail]) => (
-                <div key={level} className="rounded-xl border border-white/[0.06] p-3">
-                  <b className="text-xs">{level}</b>
-                  <p className="mt-1 text-[10px] leading-4 text-white/35">{detail}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-      </div>
+      <SourceLedger records={records} />
     </div>
   );
 }
 function TrendIntelligence({ archive, metrics }) {
+  const [moverSource, setMoverSource] = useState("all");
+  const [moverSearch, setMoverSearch] = useState("");
   const days = [...(archive?.archives || [])].slice(0, 14).reverse();
   const maxFiles = Math.max(1, ...days.map((row) => num(row.files)));
-  const movers = metrics.values
+  const moverSources = metrics.values.filter((source) => source.rows.some((row) => num(row.trend) !== 0));
+  const movers = moverSources
+    .filter((source) => moverSource === "all" || source.key === moverSource)
     .flatMap((source) => source.rows.filter((row) => num(row.trend) !== 0).map((row) => ({ ...row, source: source.label })))
+    .filter((row) => !moverSearch || String(row.name || "").toLowerCase().includes(moverSearch.toLowerCase()))
     .sort((a, b) => Math.abs(num(b.trend)) - Math.abs(num(a.trend)))
-    .slice(0, 16);
+    .slice(0, 25);
+  const maxMove = Math.max(1, ...movers.map((row) => Math.abs(num(row.trend))));
   const partialDays = days.filter((row) => row.partial_update).length;
   return (
     <div className="mt-4 space-y-4">
@@ -661,21 +628,22 @@ function TrendIntelligence({ archive, metrics }) {
       <div className="grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
         <Panel className="overflow-hidden">
           <div className="border-b border-white/10 p-5">
-            <h3 className="text-lg font-black">Published market movers</h3>
-            <p className="mt-1 text-xs text-white/38">Largest source-supplied movement fields in the selected format. The source and direction are always shown.</p>
+            <h3 className="text-lg font-black">Top 25 market movers</h3>
+            <p className="mt-1 text-xs text-white/38">Rotate through publishers or view every available movement feed together. Movement is source-supplied and remains on that publisher&apos;s scale.</p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <select value={moverSource} onChange={(event) => setMoverSource(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"><option value="all">All sources</option>{moverSources.map((source) => <option key={source.key} value={source.key}>{source.label}</option>)}</select>
+              <input value={moverSearch} onChange={(event) => setMoverSearch(event.target.value)} placeholder="Search a player…" className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs" />
+            </div>
           </div>
-          <div className="grid gap-px bg-white/[0.05] sm:grid-cols-2">
+          <div className="divide-y divide-white/[0.055]">
             {movers.map((row, index) => (
-              <div key={`${row.source}-${row.name}-${index}`} className="min-w-0 bg-slate-950/90 p-4">
-                <div className="truncate text-sm font-bold">{row.name}</div>
-                <div className="mt-1 text-[9px] text-white/30">{row.source}</div>
-                <div className={`mt-2 text-xl font-black ${num(row.trend) > 0 ? "text-emerald-100" : "text-rose-100"}`}>
-                  {num(row.trend) > 0 ? "+" : ""}
-                  {num(row.trend).toFixed(0)}
-                </div>
+              <div key={`${row.source}-${row.name}-${index}`} className="grid grid-cols-[30px_minmax(120px,.7fr)_minmax(160px,1fr)_64px] items-center gap-3 px-4 py-2.5">
+                <span className="text-[10px] font-black text-white/25">#{index + 1}</span><div className="min-w-0"><div className="truncate text-xs font-bold">{row.name}</div><div className="truncate text-[8px] text-white/28">{row.source}</div></div>
+                <div className="flex h-3 items-center"><div className={`h-2 rounded-full ${num(row.trend) > 0 ? "bg-gradient-to-r from-emerald-500/60 to-emerald-300" : "bg-gradient-to-r from-rose-500/60 to-rose-300"}`} style={{width:`${Math.max(3, Math.abs(num(row.trend)) / maxMove * 100)}%`}} /></div>
+                <b className={`text-right text-sm ${num(row.trend) > 0 ? "text-emerald-100" : "text-rose-100"}`}>{num(row.trend) > 0 ? "+" : ""}{num(row.trend).toFixed(0)}</b>
               </div>
             ))}
-            {!movers.length ? <div className="p-6 text-sm text-white/38 sm:col-span-2">No selected source currently publishes a usable movement field. Daily archives are still accumulating for future calculated trends.</div> : null}
+            {!movers.length ? <div className="p-6 text-sm text-white/38">No matching player movement is published for this source and format.</div> : null}
           </div>
         </Panel>
         <Panel className="p-5">
@@ -690,6 +658,11 @@ function TrendIntelligence({ archive, metrics }) {
   );
 }
 function ScaleDifferencePanel({ rows = [] }) {
+  const [search, setSearch] = useState("");
+  const [minimumSources, setMinimumSources] = useState(3);
+  const [visible, setVisible] = useState(12);
+  const filteredRows = rows.filter((row) => (!search || String(row.displayName || row.name).toLowerCase().includes(search.toLowerCase())) && num(row.sources) >= minimumSources);
+  const maxSpread = Math.max(1, ...filteredRows.map((row) => num(row.spread)));
   return (
     <Panel className="mt-4 overflow-hidden">
       <div className="border-b border-white/10 p-5">
@@ -698,9 +671,10 @@ function ScaleDifferencePanel({ rows = [] }) {
           <Type type="Estimate" />
         </div>
         <p className="mt-2 text-xs leading-5 text-white/42">Players are ranked by the range of their normalized market percentiles. Expand a row to see which sources are highest and lowest while retaining each publisher’s original raw value.</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_190px]"><input value={search} onChange={(event) => { setSearch(event.target.value); setVisible(12); }} placeholder="Search disagreement by player…" className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs" /><select value={minimumSources} onChange={(event) => setMinimumSources(num(event.target.value))} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"><option value="3">3+ sources</option><option value="4">4+ sources</option><option value="5">5+ sources</option></select></div>
       </div>
       <div className="grid gap-px bg-white/[0.05] md:grid-cols-2">
-        {rows.slice(0, 16).map((row, index) => (
+        {filteredRows.slice(0, visible).map((row, index) => (
           <details key={row.name} className="group min-w-0 bg-slate-950/90 p-4">
             <summary className="flex cursor-pointer list-none items-center gap-3">
               <span className="text-xs font-black text-white/25">#{index + 1}</span>
@@ -712,6 +686,7 @@ function ScaleDifferencePanel({ rows = [] }) {
               </div>
               <b className="text-lg text-amber-100">{row.spread.toFixed(0)}%</b>
             </summary>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.055]"><div className="h-full rounded-full bg-gradient-to-r from-amber-400/60 to-rose-300" style={{width:`${Math.max(3, num(row.spread) / maxSpread * 100)}%`}} /></div>
             <div className="mt-3 space-y-1.5">
               {row.leaders.map((entry) => (
                 <div key={entry.source} className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-3 py-2 text-xs">
@@ -724,8 +699,9 @@ function ScaleDifferencePanel({ rows = [] }) {
             </div>
           </details>
         ))}
-        {!rows.length ? <div className="p-6 text-sm text-white/38">At least three populated sources are required for normalized disagreement.</div> : null}
+        {!filteredRows.length ? <div className="p-6 text-sm text-white/38">No players match these disagreement filters.</div> : null}
       </div>
+      {visible < filteredRows.length ? <button type="button" onClick={() => setVisible((count) => count + 12)} className="m-4 w-[calc(100%-2rem)] rounded-xl border border-white/10 bg-white/[0.035] py-3 text-xs font-black text-cyan-100">Show 12 more disagreements</button> : null}
     </Panel>
   );
 }
@@ -982,9 +958,7 @@ export default function TrustCenterClient() {
         Promise.all(
           SOURCES.map(async (source) => {
             try {
-              const response = await fetch(source.file, { cache: "no-store" });
-              if (!response.ok) throw new Error();
-              const data = await response.json();
+              const data = await fetchPublicAsset(source.file);
               const rows = source.kind === "Value" ? normalizeValueRows(source, data, valueFormat, valueScoring) : rowsOf(data);
               return {
                 ...source,
@@ -1247,10 +1221,9 @@ export default function TrustCenterClient() {
   }, [accuracyLeagueId, accuracyRun, leagues, players, tab]);
   const tabs = [
     ["overview", "Trust overview"],
-    ["values", "Value intelligence"],
+    ["values", "Sources & values"],
     ["trends", "Trends"],
     ["accuracy", "Projection accuracy"],
-    ["sources", "Source ledger"],
     ["models", "Model transparency"],
   ];
 
@@ -1472,7 +1445,6 @@ export default function TrustCenterClient() {
                 </Panel>
               </div>
             ) : null}
-            {tab === "sources" ? <SourceLedger records={records} /> : null}
             {tab === "models" ? <ModelTransparency evidence={modelEvidence} metrics={metrics} /> : null}
           </>
         )}

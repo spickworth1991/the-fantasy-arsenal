@@ -44,9 +44,9 @@ const WORKSPACES = [
   },
   {
     key: "guide",
-    label: "Data Guide",
-    detail: "Sources and transparent calculations",
-    tabs: [["method", "Methodology", "What is measured, modeled, and estimated"]],
+    label: "Accuracy",
+    detail: "Method, sources, calibration, and results",
+    tabs: [["model", "Accuracy & Method", "Sources, version, calibration, coverage, and frozen results"]],
   },
 ];
 const STAT_GUIDES = {
@@ -130,6 +130,16 @@ const STAT_GUIDES = {
       "Projection builds are timestamped and evaluated without rewriting earlier forecasts.",
     ],
   },
+  model: {
+    title: "How the projection model is audited",
+    summary:
+      "Review the exact Arsenal build, feature coverage, trained calibration, frozen snapshots, and measured results separately from the weekly projection workflow.",
+    bullets: [
+      "Each model build has an immutable ID so later improvements cannot rewrite earlier forecasts.",
+      "Accuracy uses the final snapshot made before each player’s kickoff and reports coverage alongside MAE, RMSE, bias, and rank correlation.",
+      "External stat-line sources are ingredients; The Fantasy Arsenal is the synthesis, calibration, matchup layer, and published output.",
+    ],
+  },
 };
 const CORE_POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"];
 const SCORING = [
@@ -156,9 +166,10 @@ const quantile = (values, percentile) => {
 };
 const round = (value, places = 1) => Number(num(value).toFixed(places));
 
-function Panel({ children, className = "" }) {
+function Panel({ children, className = "", ...props }) {
   return (
     <section
+      {...props}
       className={`rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}
     >
       {children}
@@ -1090,7 +1101,78 @@ const normalizeTeam = (team) =>
   ({ OAK: "LV", SD: "LAC", STL: "LAR", JAX: "JAC", WSH: "WAS" })[
     String(team || "").toUpperCase()
   ] || String(team || "").toUpperCase();
-function MatchupLab({ players, schedule, season, scoring }) {
+
+function TeamProfiles({ rows }) {
+  const profiles = ["ALL", "QB", "RB", "WR", "TE"].map((position) => {
+    const teams = [...new Set([...(rows.attack || []).map((row) => row.team), ...(rows.defense || []).map((row) => row.team)])].sort();
+    const values = teams.map((team) => {
+      const attacks = (rows.attack || []).filter((row) => row.team === team && (position === "ALL" || row.position === position));
+      const defenses = (rows.defense || []).filter((row) => row.team === team && (position === "ALL" || row.position === position));
+      return {
+        team,
+        offense: attacks.reduce((sum, row) => sum + num(row.average), 0),
+        allowed: defenses.reduce((sum, row) => sum + num(row.average), 0),
+      };
+    }).filter((row) => row.offense || row.allowed);
+    const offenseRank = [...values].sort((a, b) => b.offense - a.offense);
+    const defenseRank = [...values].sort((a, b) => a.allowed - b.allowed);
+    const favorableRank = [...values].sort((a, b) => b.allowed - a.allowed);
+    const average = values.reduce((sum, row) => sum + row.offense, 0) / Math.max(1, values.length);
+    const allowedAverage = values.reduce((sum, row) => sum + row.allowed, 0) / Math.max(1, values.length);
+    return { position, values, offenseRank, defenseRank, favorableRank, average, allowedAverage };
+  });
+  return <div data-guide-tip="matchup-team-profiles" className="space-y-4">
+    {profiles.map((profile) => {
+      const max = Math.max(1, ...profile.values.flatMap((row) => [row.offense, row.allowed]));
+      return <Panel key={profile.position} className="overflow-hidden p-5 sm:p-6">
+        <div className="flex items-end justify-between gap-3"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/50">League-wide team profile</div><h3 className="mt-1 text-xl font-black">{profile.position === "ALL" ? "All fantasy positions" : profile.position}</h3></div><span className="text-[10px] text-white/35">All {profile.values.length} teams · offense vs points allowed</span></div>
+        <div className="mt-4 grid gap-2 grid-cols-2 lg:grid-cols-4">
+          <Metric label="Top offense" value={profile.offenseRank[0]?.team || "—"} detail={`${num(profile.offenseRank[0]?.offense).toFixed(1)} points/game`} tone="emerald" />
+          <Metric label="Toughest defense" value={profile.defenseRank[0]?.team || "—"} detail={`${num(profile.defenseRank[0]?.allowed).toFixed(1)} allowed/game`} tone="cyan" />
+          <Metric label="Most favorable defense" value={profile.favorableRank[0]?.team || "—"} detail={`${num(profile.favorableRank[0]?.allowed).toFixed(1)} allowed/game`} tone="rose" />
+          <Metric label="League offense average" value={profile.average.toFixed(1)} detail="Fantasy points per team game" tone="violet" />
+        </div>
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-white/[0.08] bg-black/15">
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-[76px_minmax(230px,1fr)_70px_minmax(230px,1fr)_70px] items-center gap-3 border-b border-white/10 bg-white/[0.045] px-4 py-3 text-[9px] font-black uppercase tracking-[.14em] text-white/35">
+              <span>Team</span><span>Offense produced</span><span className="text-right">Pts / rank</span><span>Defense allowed</span><span className="text-right">Pts / rank</span>
+            </div>
+            <div>
+              {[...profile.values].sort((a, b) => a.team.localeCompare(b.team)).map((row, index) => {
+                const offensePlace = profile.offenseRank.findIndex((item) => item.team === row.team) + 1;
+                const defensePlace = profile.defenseRank.findIndex((item) => item.team === row.team) + 1;
+                return <div key={row.team} className={`grid grid-cols-[76px_minmax(230px,1fr)_70px_minmax(230px,1fr)_70px] items-center gap-3 border-b border-white/[0.055] px-4 py-2.5 text-[10px] last:border-b-0 ${index % 2 ? "bg-white/[0.018]" : ""}`}>
+                  <div className="flex items-center gap-2"><span className="grid h-7 w-10 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.04] font-black text-white/80">{row.team}</span></div>
+                  <div className="relative h-3 overflow-hidden rounded-full bg-white/[0.055]"><span className="absolute inset-y-0 z-10 w-px bg-white/30" style={{ left:`${Math.min(100, (profile.average / max) * 100)}%` }} /><span className="block h-full rounded-full bg-gradient-to-r from-emerald-500/65 to-cyan-300/85" style={{ width:`${(row.offense / max) * 100}%` }} /></div>
+                  <div className="text-right"><b className="text-emerald-100">{row.offense.toFixed(1)}</b><span className="ml-1 text-[8px] text-white/28">#{offensePlace}</span></div>
+                  <div className="relative h-3 overflow-hidden rounded-full bg-white/[0.055]"><span className="absolute inset-y-0 z-10 w-px bg-white/30" style={{ left:`${Math.min(100, (profile.allowedAverage / max) * 100)}%` }} /><span className="block h-full rounded-full bg-gradient-to-r from-violet-500/65 to-fuchsia-300/80" style={{ width:`${(row.allowed / max) * 100}%` }} /></div>
+                  <div className="text-right"><b className="text-violet-100">{row.allowed.toFixed(1)}</b><span className="ml-1 text-[8px] text-white/28">#{defensePlace}</span></div>
+                </div>;
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[9px] text-white/35"><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-300/70" />Offense produced</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-violet-300/70" />Defense allowed</span><span>The white marker is the league average · defense rank #1 is toughest</span></div>
+      </Panel>;
+    })}
+  </div>;
+}
+function PlayerPicker({ label, players, value, onChange, preference = "stat-central-player" }) {
+  const selected = players.find((player) => player.key === value) || null;
+  const [text, setText] = useState(selected?.name || "");
+  const listId = `players-${preference.replace(/[^a-z0-9]/gi, "-")}`;
+  useEffect(() => setText(selected?.name || ""), [selected?.name]);
+  const commit = (next) => {
+    setText(next);
+    const exact = players.find((player) => normalize(player.name) === normalize(next));
+    if (exact) onChange(exact.key);
+  };
+  return <label data-guide-tip="stat-player-picker" className="min-w-0"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">{label}</span><input list={listId} value={text} onChange={(event) => commit(event.target.value)} onBlur={() => { if (!players.some((player) => normalize(player.name) === normalize(text))) setText(selected?.name || ""); }} placeholder="Type a player name…" data-account-preference={preference} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm" /><datalist id={listId}>{players.slice(0, 1200).map((player) => <option key={player.key} value={player.name}>{player.position} · {player.team || "FA"}</option>)}</datalist></label>;
+}
+
+function MatchupLab({ players, currentPlayers = {}, schedule, season, scoring, availableSeasons = [], leagues = [], scoringLeagueId = "", onSeasonChange, onScoringChange, onScoringLeagueChange }) {
+  const [matchupView, setMatchupView] = useState("overview");
+  const [playerHistoryView, setPlayerHistoryView] = useState("best");
   const [position, setPosition] = useState("QB");
   const [offense, setOffense] = useState("");
   const [defense, setDefense] = useState("");
@@ -1328,16 +1410,17 @@ function MatchupLab({ players, schedule, season, scoring }) {
             ["Targets allowed", "rec_tgt"],
             ["Receptions allowed", "rec"],
           ];
+  const currentPlayerByName = new Map(Object.values(currentPlayers || {}).map((player) => [normalize(player.full_name || `${player.first_name || ""} ${player.last_name || ""}`), player]));
   const positionPlayers = players
-    .filter(
-      (player) =>
-        player.position === position &&
-        normalizeTeam(player.team) === selectedOffense,
-    )
+    .map((player) => {
+      const current = currentPlayerByName.get(normalize(player.name));
+      return current ? { ...player, team: current.team || "FA", injury_status: current.injury_status || null } : player;
+    })
+    .filter((player) => player.position === position && normalizeTeam(player.team) === selectedOffense)
     .sort((a, b) => b.average - a.average);
   return (
     <div className="space-y-4">
-      <Panel className="p-5 sm:p-6">
+      <Panel data-guide-tip="matchup-shared-controls" className="p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/50">
@@ -1350,13 +1433,19 @@ function MatchupLab({ players, schedule, season, scoring }) {
               per team game—not a defensive player grade.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Select label="Position" value={position} onChange={setPosition}>
+          <div className={`grid grid-cols-2 gap-2 ${matchupView === "teams" ? "sm:grid-cols-2" : "sm:grid-cols-5"}`}>
+            <Select label="Season" value={season} onChange={onSeasonChange}>
+              {availableSeasons.map((year) => <option key={year}>{year}</option>)}
+            </Select>
+            <Select label="Scoring" value={scoring} onChange={onScoringChange}>
+              {SCORING.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </Select>
+            {matchupView !== "teams" ? <Select label="Position" value={position} onChange={setPosition}>
               {["QB", "RB", "WR", "TE"].map((item) => (
                 <option key={item}>{item}</option>
               ))}
-            </Select>
-            <Select
+            </Select> : null}
+            {matchupView !== "teams" ? <Select
               label="Offense"
               value={selectedOffense}
               onChange={setOffense}
@@ -1364,8 +1453,8 @@ function MatchupLab({ players, schedule, season, scoring }) {
               {teams.map((team) => (
                 <option key={team}>{team}</option>
               ))}
-            </Select>
-            <Select
+            </Select> : null}
+            {matchupView !== "teams" ? <Select
               label="Defense"
               value={selectedDefense}
               onChange={setDefense}
@@ -1373,11 +1462,36 @@ function MatchupLab({ players, schedule, season, scoring }) {
               {defenseTeams.map((team) => (
                 <option key={team}>{team}</option>
               ))}
-            </Select>
+            </Select> : null}
           </div>
         </div>
+        {scoring === "LEAGUE" ? (
+          <div data-guide-tip="matchup-league-scoring" className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
+            {leagues.length ? <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,360px)] sm:items-end">
+              <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/55">League scoring is active</div><p className="mt-1 text-[11px] leading-5 text-white/42">Team Profiles, matchup grades, and player history are recalculated from the selected league&apos;s Sleeper scoring rules. Change the league here to rebuild every profile.</p></div>
+              <Select label="Scoring league" value={scoringLeagueId} preference="stat-central-scoring-league" onChange={onScoringLeagueChange}>{leagues.map((league) => <option key={league.league_id} value={league.league_id}>{league.name}</option>)}</Select>
+            </div> : <p className="text-xs leading-5 text-amber-100/65">Load a Sleeper portfolio to use league scoring. PPR, Half PPR, and Standard remain available.</p>}
+          </div>
+        ) : null}
       </Panel>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-guide-tip="matchup-secondary-tabs" className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/80 p-2">
+        {[
+          ["overview", "Matchup Overview"],
+          ["teams", "Team Profiles"],
+          ["players", "Player History"],
+        ].map(([key, label]) => (
+          <button
+            type="button"
+            key={key}
+            onClick={() => setMatchupView(key)}
+            className={`rounded-xl px-3 py-2.5 text-xs font-black transition ${matchupView === key ? "bg-violet-300/15 text-violet-100 ring-1 ring-violet-300/20" : "text-white/40 hover:bg-white/5 hover:text-white/70"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {matchupView === "teams" ? <TeamProfiles rows={rows} /> : null}
+      <div className={`${matchupView === "overview" ? "grid" : "hidden"} gap-3 sm:grid-cols-2 lg:grid-cols-4`}>
         <Metric
           label="Matchup grade"
           value={matchupGrade}
@@ -1405,7 +1519,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
           tone="amber"
         />
       </div>
-      <Panel className="p-5 sm:p-6">
+      <Panel data-guide-tip="matchup-defense-profile" className={`${matchupView === "defense" ? "" : "hidden"} p-5 sm:p-6`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h3 className="text-xl font-black">
@@ -1479,8 +1593,8 @@ function MatchupLab({ players, schedule, season, scoring }) {
           </div>
         </div>
       </Panel>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Panel className="overflow-hidden">
+      <div data-guide-tip="matchup-offense-profile" className={`${matchupView === "offense" ? "grid" : "hidden"} gap-4`}>
+        <Panel className="hidden overflow-hidden">
           <div className="border-b border-white/10 p-5">
             <h3 className="text-lg font-black">Defenses vs {position}</h3>
             <p className="mt-1 text-xs text-white/35">
@@ -1535,7 +1649,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
             Team-level {position} fantasy output per game.
           </p>
           <div className="mt-4 space-y-2">
-            {offenses.slice(0, 12).map((row, index) => (
+            {offenses.map((row, index) => (
               <div
                 key={row.team}
                 className="grid grid-cols-[36px_42px_1fr_50px] items-center gap-2 text-xs"
@@ -1556,7 +1670,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
           </div>
         </Panel>
       </div>
-      <Panel className="p-5 sm:p-6">
+      <Panel data-guide-tip="matchup-overview" className={`${matchupView === "overview" ? "" : "hidden"} p-5 sm:p-6`}>
         <h3 className="text-lg font-black">
           {selectedOffense} {position} matchup profile
         </h3>
@@ -1591,7 +1705,22 @@ function MatchupLab({ players, schedule, season, scoring }) {
           evidence rather than official NFL splits.
         </p>
       </Panel>
-      <Panel className="overflow-hidden">
+      <Panel className={`${matchupView === "overview" ? "" : "hidden"} p-5 sm:p-6`}>
+        <div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/45">Arsenal opponent-adjustment model</div>
+        <h3 className="mt-1 text-lg font-black">Explainable player estimates</h3>
+        <p className="mt-2 text-xs leading-5 text-white/38">A descriptive matchup estimate that combines each player&apos;s observed baseline with the selected defense&apos;s sample-regressed positional allowance. The current weekly Arsenal projection remains separate.</p>
+        <div className="mt-4 grid gap-2 md:grid-cols-2">
+          {positionPlayers.slice(0, 10).map((player) => {
+            const estimate = player.average * Math.sqrt(Math.max(0.35, defenseIndex));
+            return <div key={player.key} className="grid grid-cols-[minmax(0,1fr)_65px_75px] items-center gap-2 rounded-xl border border-white/[0.06] p-3 text-xs"><b className="truncate">{player.name}</b><span className="text-right text-white/40">{player.average.toFixed(1)} base</span><b className="text-right text-emerald-100">{estimate.toFixed(1)} est</b></div>;
+          })}
+        </div>
+      </Panel>
+      {matchupView === "players" ? <div data-guide-tip="matchup-player-history-toggle" className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/80 p-2">
+        <button type="button" onClick={() => setPlayerHistoryView("best")} className={`rounded-xl px-3 py-2.5 text-xs font-black ${playerHistoryView === "best" ? "bg-cyan-300/15 text-cyan-100" : "text-white/40 hover:bg-white/5"}`}>Best weekly performances</button>
+        <button type="button" onClick={() => setPlayerHistoryView("repeat")} className={`rounded-xl px-3 py-2.5 text-xs font-black ${playerHistoryView === "repeat" ? "bg-cyan-300/15 text-cyan-100" : "text-white/40 hover:bg-white/5"}`}>Repeated opponent performance</button>
+      </div> : null}
+      <Panel data-guide-tip="matchup-player-history" className={`${matchupView === "players" && playerHistoryView === "best" ? "" : "hidden"} overflow-hidden`}>
         <div className="border-b border-white/10 p-5 sm:p-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
@@ -1682,6 +1811,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
           </table>
         </div>
       </Panel>
+      <div className={matchupView === "players" && playerHistoryView === "repeat" ? "space-y-4" : "hidden"}>
       {scoring === "LEAGUE" ? (
         <Panel className="border-emerald-300/10 p-5">
           <div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/50">
@@ -1698,8 +1828,8 @@ function MatchupLab({ players, schedule, season, scoring }) {
           scoring={String(scoring || "PPR").toLowerCase()}
         />
       )}
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Panel className="p-5">
+      <div className="hidden grid gap-4 xl:grid-cols-2">
+        <Panel className="hidden p-5">
           <h3 className="text-lg font-black">
             {position} specialists vs {selectedDefense}
           </h3>
@@ -1733,15 +1863,15 @@ function MatchupLab({ players, schedule, season, scoring }) {
         </Panel>
         <Panel className="p-5">
           <div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/45">
-            Arsenal matchup model · v1.0
+            Arsenal opponent-adjustment model
           </div>
           <h3 className="mt-1 text-lg font-black">
             Explainable player estimates
           </h3>
           <p className="mt-2 text-xs leading-5 text-white/38">
-            The first model scales each player’s observed average by the square
-            root of the selected defense’s positional allowance index. It avoids
-            pretending that small samples are certainty.
+            This descriptive estimate scales each player&apos;s observed average by
+            the selected defense&apos;s sample-regressed positional allowance. It is
+            matchup context—not the current Arsenal weekly projection model.
           </p>
           <div className="mt-4 space-y-2">
             {positionPlayers.slice(0, 10).map((player) => {
@@ -1771,6 +1901,7 @@ function MatchupLab({ players, schedule, season, scoring }) {
             forecast.
           </div>
         </Panel>
+      </div>
       </div>
     </div>
   );
@@ -2533,7 +2664,7 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
         />
       </div>
       <div className="grid gap-4 xl:grid-cols-[1.25fr_.75fr]">
-        <Panel className="p-5 sm:p-6">
+        <Panel className="order-3 p-5 sm:p-6 xl:order-1">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-xl font-black">Weekly scoring profile</h2>
@@ -2549,7 +2680,7 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
             <WeeklyChart player={selected} />
           </div>
         </Panel>
-        <Panel className="p-5">
+        <Panel className="order-1 self-start p-5 xl:order-2">
           <h2 className="text-lg font-black">Performance identity</h2>
           <div className="mt-4 grid grid-cols-2 gap-2">
             <Metric
@@ -2578,10 +2709,7 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
             />
           </div>
         </Panel>
-      </div>
-      <TrendChart player={selected} />
-      <ProductionTrend player={selected} />
-      <Panel className="p-5">
+      <Panel className="order-2 self-start p-5 xl:order-3 xl:col-start-2">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black">Underlying production</h2>
@@ -2636,6 +2764,8 @@ function PerformanceLab({ selected, metrics, positionPlayers }) {
           </div>
         )}
       </Panel>
+      </div>
+      <ProductionTrend player={selected} />
     </div>
   );
 }
@@ -2968,6 +3098,7 @@ export default function StatCentralClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedKey, setSelectedKey] = useState("");
+  const [focusedPlayerName, setFocusedPlayerName] = useState("");
   const [compareKey, setCompareKey] = useState("");
   const [career, setCareer] = useState([]);
   const [careerLoading, setCareerLoading] = useState(false);
@@ -3071,7 +3202,7 @@ export default function StatCentralClient() {
     leagues.length,
   ]);
   useEffect(() => {
-    if (tab !== "projections" || projectionModel) return;
+    if (!["projections", "model"].includes(tab) || projectionModel) return;
     let live = true;
     const controller = new AbortController();
     setProjectionLoading(true);
@@ -3160,13 +3291,15 @@ export default function StatCentralClient() {
   );
   useEffect(() => {
     if (!allPlayers.length) return;
-    const choices = filtered.length ? filtered : allPlayers;
-    if (!choices.some((player) => player.key === selectedKey))
-      setSelectedKey(choices[0].key);
-    if (!choices.some((player) => player.key === compareKey))
-      setCompareKey(choices[1]?.key || choices[0].key);
-  }, [allPlayers, compareKey, filtered, selectedKey]);
+    if (!allPlayers.some((player) => player.key === selectedKey))
+      setSelectedKey(allPlayers[0].key);
+    if (!allPlayers.some((player) => player.key === compareKey))
+      setCompareKey(allPlayers[1]?.key || allPlayers[0].key);
+  }, [allPlayers, compareKey, selectedKey]);
   const selected = allPlayers.find((player) => player.key === selectedKey);
+  useEffect(() => {
+    if (selected?.name && tab !== "projections") setFocusedPlayerName(selected.name);
+  }, [selected?.name, tab]);
   const compared = allPlayers.find((player) => player.key === compareKey);
   const positionPlayers = allPlayers.filter(
     (player) => player.position === selected?.position,
@@ -3185,7 +3318,7 @@ export default function StatCentralClient() {
       workspace.tabs.some(([key]) => key === tab),
     ) || WORKSPACES[0];
   const playerWorkspace = ["overview", "advanced", "history", "compare"].includes(tab);
-  const historicalWorkspace = !["projections", "method"].includes(tab);
+  const historicalWorkspace = !["projections", "method", "model"].includes(tab);
   const showPositionAndSearch = playerWorkspace || tab === "leaders";
 
   async function loadCareer() {
@@ -3240,18 +3373,10 @@ export default function StatCentralClient() {
             production, and direct start/sit history.
           </p>
           {tab === "projections" ? (
-            <div className="mt-5 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4 text-xs leading-5 text-white/45">
-              Projection Center has its own week, scoring, position, team, and
-              player controls. Use Safe / Expected for the most likely path or
-              Risky to expose data-supported boom and bust weeks.
-            </div>
-          ) : tab === "method" ? (
-            <div className="mt-5 rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4 text-xs leading-5 text-white/45">
-              Source definitions and calculation rules are separated from the
-              research controls so facts, estimates, and modeled outputs remain
-              easy to distinguish.
-            </div>
-          ) : historicalWorkspace ? (
+            null
+          ) : tab === "method" || tab === "model" ? (
+            null
+          ) : historicalWorkspace && tab !== "matchups" ? (
             <>
               <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${showPositionAndSearch ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
                 <Select
@@ -3288,7 +3413,7 @@ export default function StatCentralClient() {
                         <option key={value}>{value}</option>
                       ))}
                     </Select>
-                    <label>
+                    <label className="hidden">
                       <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
                         Find a player
                       </span>
@@ -3341,7 +3466,9 @@ export default function StatCentralClient() {
                 </div>
               ) : null}
               {playerWorkspace ? (
-                <div className={`mt-4 grid gap-2 ${tab === "compare" ? "md:grid-cols-2" : "grid-cols-1"}`}>
+                <div className={`mt-4 grid gap-2 [&>label]:hidden ${tab === "compare" ? "md:grid-cols-2" : "grid-cols-1"}`}>
+                  <div><PlayerPicker label={tab === "compare" ? "Primary player" : "Search player"} players={allPlayers} value={selectedKey} onChange={setSelectedKey} /></div>
+                  {tab === "compare" ? <div><PlayerPicker label="Comparison player" players={allPlayers} value={compareKey} onChange={setCompareKey} preference="stat-central-comparison-player" /></div> : null}
                   <Select
                     label={tab === "compare" ? "Primary player" : "Selected player"}
                     value={selectedKey}
@@ -3386,10 +3513,10 @@ export default function StatCentralClient() {
             </button>
           ))}
         </div>
-        <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            <div className={`grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/75 p-2 lg:flex lg:flex-col lg:p-3 ${activeWorkspace.tabs.length === 4 ? "min-[380px]:grid-cols-2" : activeWorkspace.tabs.length > 1 ? "min-[380px]:grid-cols-3" : ""}`}>
-              <div className="hidden px-2 pb-1 lg:block">
+        <div className="mt-4 min-w-0 space-y-4">
+          {activeWorkspace.tabs.length > 1 ? <aside className="min-w-0">
+            <div data-guide-tip="stat-secondary-tabs" className={`grid gap-2 rounded-2xl border border-white/10 bg-slate-950/75 p-2 ${activeWorkspace.tabs.length === 4 ? "grid-cols-2 lg:grid-cols-4" : activeWorkspace.tabs.length > 1 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-1"}`}>
+              <div className="hidden px-2 pb-1">
                 <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-200/40">
                   {activeWorkspace.label}
                 </div>
@@ -3404,15 +3531,14 @@ export default function StatCentralClient() {
                   className={`min-w-0 rounded-xl px-3 py-3 text-left transition ${tab === key ? "bg-white/[0.08] text-white ring-1 ring-white/10" : "text-white/42 hover:bg-white/[0.04] hover:text-white/72"}`}
                 >
                   <span className="block text-xs font-black">{label}</span>
-                  <span className="mt-1 hidden text-[9px] leading-4 text-white/28 lg:block">
+                  <span className="mt-1 hidden text-[9px] leading-4 text-white/28 sm:block">
                     {detail}
                   </span>
                 </button>
               ))}
             </div>
-          </aside>
+          </aside> : null}
           <div className="min-w-0">
-        <WorkspaceGuide tab={tab} />
         {loading && historicalWorkspace ? (
           <LoadingScreen
             progress={65}
@@ -3455,9 +3581,16 @@ export default function StatCentralClient() {
             {tab === "matchups" ? (
               <MatchupLab
                 players={seasonPlayers}
+                currentPlayers={playerDb}
                 schedule={data?.schedule}
                 season={season}
                 scoring={scoring}
+                availableSeasons={availableSeasons}
+                leagues={leagues}
+                scoringLeagueId={scoringLeagueId}
+                onSeasonChange={(value) => { setSeason(num(value)); setCareer([]); }}
+                onScoringChange={(value) => { setScoring(value); setCareer([]); }}
+                onScoringLeagueChange={(value) => { setScoringLeagueId(value); setCareer([]); }}
               />
             ) : null}
             {tab === "projections" ? (
@@ -3471,6 +3604,12 @@ export default function StatCentralClient() {
                   leagues={leagues}
                   scoringLeagueId={scoringLeagueId}
                   onScoringLeagueChange={setScoringLeagueId}
+                  selectedPlayerName={focusedPlayerName}
+                  onSelectedPlayerChange={(name) => {
+                    setFocusedPlayerName(name);
+                    const match = allPlayers.find((player) => normalize(player.name) === normalize(name));
+                    if (match) setSelectedKey(match.key);
+                  }}
                 />
               )
             ) : null}
@@ -3631,6 +3770,28 @@ export default function StatCentralClient() {
                   </p>
                 </Panel>
               </div>
+            ) : null}
+            {tab === "model" ? (
+              projectionLoading ? (
+                <LoadingScreen text="Loading the current Arsenal model record…" />
+              ) : projectionError ? (
+                <Panel className="p-6 text-rose-100">{projectionError}</Panel>
+              ) : (
+                <div data-guide-tip="stat-accuracy" className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <Panel className="p-5"><h2 className="text-lg font-black">Historical evidence</h2><p className="mt-2 text-xs leading-5 text-white/42">FantasyPros archives provide saved weekly scoring history. Sleeper supplies player identity and raw passing, rushing, receiving, kicking, and defensive production. Missing evidence remains unavailable rather than becoming zero.</p></Panel>
+                  <Panel className="p-5"><h2 className="text-lg font-black">Current projection inputs</h2><p className="mt-2 text-xs leading-5 text-white/42">External stat-line priors, schedule, role, availability, market context, weather, advanced team tendencies, and opponent evidence are reconciled by The Fantasy Arsenal model. Arsenal is the synthesis and published output—not a circular input into itself.</p></Panel>
+                  <Panel className="p-5"><h2 className="text-lg font-black">Frozen evaluation</h2><p className="mt-2 text-xs leading-5 text-white/42">Each player is graded from the final immutable snapshot created before kickoff. Coverage, inactive outcomes, MAE, RMSE, bias, and rank correlation are reported together so accuracy cannot improve by silently dropping misses.</p></Panel>
+                </div>
+                <StatProjectionLab
+                  model={projectionModel}
+                  leagues={leagues}
+                  scoringLeagueId={scoringLeagueId}
+                  onScoringLeagueChange={setScoringLeagueId}
+                  modelOnly
+                />
+                </div>
+              )
             ) : null}
           </div>
         )}

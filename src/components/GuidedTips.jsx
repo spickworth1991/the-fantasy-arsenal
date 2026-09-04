@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useEmbeddedMode } from "../context/EmbeddedModeContext";
+import { useArsenalAccount } from "../context/ArsenalAccountContext";
 
 export default function GuidedTips({ steps = [], storageKey, label = "Tips", onTourStart, onTourEnd }) {
   const { embedded } = useEmbeddedMode();
+  const { ready: accountReady, isConnected, syncState, syncNow } = useArsenalAccount();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [arrow, setArrow] = useState(null);
@@ -35,12 +37,19 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
   const findCurrentFocus = () => findTarget(current?.focusSelector) || findCurrentTarget();
 
   useEffect(() => {
-    try {
-      const enabled = localStorage.getItem(`${storageKey}:enabled`) !== "false";
-      const seen = localStorage.getItem(`${storageKey}:seen`) === "true";
-      if (enabled && !seen && steps.length) setOpen(true);
-    } catch {}
-  }, [steps.length, storageKey]);
+    if (!accountReady || (isConnected && syncState?.status !== "synced")) return;
+    const restore = () => {
+      try {
+        const enabled = localStorage.getItem(`${storageKey}:enabled`) !== "false";
+        const seen = localStorage.getItem(`${storageKey}:seen`) === "true";
+        if (seen || !enabled) setOpen(false);
+        else if (steps.length) setOpen(true);
+      } catch {}
+    };
+    restore();
+    window.addEventListener("tfa:cloud-sync-applied", restore);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", restore);
+  }, [accountReady, isConnected, steps.length, storageKey, syncState?.status]);
 
   useEffect(() => {
     if (open && !tourOpenRef.current) {
@@ -121,6 +130,7 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
     try {
       localStorage.setItem(`${storageKey}:seen`, "true");
       if (disable) localStorage.setItem(`${storageKey}:enabled`, "false");
+      if (isConnected) syncNow({ quiet: true });
     } catch {}
   };
 

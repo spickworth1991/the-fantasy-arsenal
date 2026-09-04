@@ -17,6 +17,7 @@ const SYNC_EXACT = new Set([
   "draft-helper-watchlist", "leagueHubWatchlist",
 ]);
 const SYNC_PREFIXES = [
+  "tfa:tips:",
   "commissioner-", "orphan-recruiting:", "lineup-saves:", "lineup-controls:",
   "draft-helper-queue:", "playoff-scenarios:",
   "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",

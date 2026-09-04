@@ -636,7 +636,7 @@ export default function TradeAnalyzer() {
 
             <div data-guide-tip="trade-tabs" className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-2"><div className="flex w-max gap-1">{[["analyzer","Analyzer"],["finder","Partner Finder"],["workspace","Saved Trades"],["block","Trade Block"],["history","Trade History"],["market","League Market"]].map(([key,label])=><button type="button" key={key} onClick={()=>setTradeTab(key)} className={`min-h-11 rounded-xl px-5 text-sm font-black ${tradeTab===key?"bg-cyan-300/10 text-cyan-100":"text-white/40"}`}>{label}</button>)}</div></div>
 
-            <div className={tradeTab !== "analyzer" ? "block" : "hidden"}><TradeWorkspaceSuite
+            {tradeTab !== "analyzer" ? <div><TradeWorkspaceSuite
               league={league}
               players={players}
               getMetric={getMetric}
@@ -661,7 +661,7 @@ export default function TradeAnalyzer() {
               handoffContext={handoffContext}
               onClearHandoff={() => setHandoffContext(null)}
               hideNavigation
-            /></div>
+            /></div> : null}
 
             <div data-guide-tip="trade-analyzer" className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">

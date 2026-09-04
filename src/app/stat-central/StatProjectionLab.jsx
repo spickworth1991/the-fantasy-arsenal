@@ -65,9 +65,10 @@ const POSITION_STATS = {
   ],
 };
 
-function Card({ children, className = "" }) {
+function Card({ children, className = "", ...props }) {
   return (
     <section
+      {...props}
       className={`min-w-0 max-w-full rounded-[24px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 sm:rounded-[28px] ${className}`}
     >
       {children}
@@ -211,6 +212,9 @@ export default function StatProjectionLab({
   leagues = [],
   scoringLeagueId = "",
   onScoringLeagueChange,
+  modelOnly = false,
+  selectedPlayerName = "",
+  onSelectedPlayerChange,
 }) {
   const [week, setWeek] = useState(() => recommendedWeek(model));
   const [scoring, setScoring] = useState("ppr");
@@ -220,10 +224,16 @@ export default function StatProjectionLab({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("projection");
   const [selectedName, setSelectedName] = useState("");
+  const [playerSearchText, setPlayerSearchText] = useState("");
   const [visibleCount, setVisibleCount] = useState(40);
   const [accuracy, setAccuracy] = useState(null);
   const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
-  const [view, setView] = useState("player");
+  const [view, setView] = useState(modelOnly ? "model" : "player");
+  const choosePlayer = (name) => {
+    setSelectedName(name);
+    setPlayerSearchText(name);
+    onSelectedPlayerChange?.(name);
+  };
   const selectedScoringLeague = leagues.find(
     (league) => String(league.league_id) === String(scoringLeagueId),
   ) || null;
@@ -285,10 +295,15 @@ export default function StatProjectionLab({
     };
   }, [model?.season]);
   useEffect(() => {
-    if (!rows.length) return;
-    if (!selectedName || !rows.some((row) => row.name === selectedName))
-      setSelectedName(rows[0].name);
-  }, [rows, selectedName]);
+    const modelPlayers = model?.players || [];
+    if (!modelPlayers.length) return;
+    const external = modelPlayers.find((player) => normalize(player.name) === normalize(selectedPlayerName));
+    if (external && external.name !== selectedName) setSelectedName(external.name);
+    else if (!modelPlayers.some((player) => player.name === selectedName)) setSelectedName(modelPlayers[0].name);
+  }, [model, selectedName, selectedPlayerName]);
+  useEffect(() => {
+    if (selectedName) setPlayerSearchText(selectedName);
+  }, [selectedName]);
   const pinnedPlayer = (model?.players || []).find(
     (player) => player.name === selectedName,
   );
@@ -301,6 +316,7 @@ export default function StatProjectionLab({
         .filter((row) => !row.bye)
         .map((row) => ({
           ...row,
+          week: number(row.week),
           projection:
             scoring === "league"
               ? customWeekProjection(selected, row, leagueScoring, lens)
@@ -316,7 +332,9 @@ export default function StatProjectionLab({
     1,
     ...seasonSeries.map((row) => row.projection),
   );
-  const selectedWeekIndex = seasonSeries.findIndex((row) => row.week === week);
+  const selectedWeekIndex = seasonSeries.findIndex(
+    (row) => number(row.week) === number(week),
+  );
   const selectWeek = (value) => setWeek(number(value));
   const moveSelectedWeek = (direction) => {
     if (!seasonSeries.length) return;
@@ -402,6 +420,7 @@ export default function StatProjectionLab({
 
   return (
     <div className="min-w-0 max-w-full space-y-4 overflow-x-clip">
+      {!modelOnly ? <>
       <Card className="overflow-hidden p-5 sm:p-6">
         <div className="flex flex-col gap-5">
           <div>
@@ -461,19 +480,26 @@ export default function StatProjectionLab({
                 Find player
               </span>
               <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                list="stat-projection-player-list"
+                value={playerSearchText}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPlayerSearchText(value);
+                  const exact = (model?.players || []).find((player) => normalize(player.name) === normalize(value));
+                  if (exact) { choosePlayer(exact.name); setView("player"); }
+                }}
                 placeholder="Search player…"
                 className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"
               />
+              <datalist id="stat-projection-player-list">{(model?.players || []).map((player) => <option key={`${player.player_id || player.name}:${player.position}`} value={player.name}>{player.position} · {player.team}</option>)}</datalist>
             </label>
           </div>
-          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="grid min-w-0 gap-2 [&>label]:hidden sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <Filter
               label="Selected player"
               value={selected?.name || rows[0]?.name || ""}
               onChange={(value) => {
-                setSelectedName(value);
+                choosePlayer(value);
                 setView("player");
               }}
             >
@@ -531,7 +557,7 @@ export default function StatProjectionLab({
         </div>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {false ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi
           label="Projected-stat coverage"
           value={`${number(coverage.projected_stat_source_players).toLocaleString()} players`}
@@ -563,11 +589,12 @@ export default function StatProjectionLab({
         />
       </div>
 
-      <div className="sticky top-[108px] z-20 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:gap-2">
+      : null}
+      <div data-guide-tip="projection-secondary-tabs" className="sticky top-[108px] z-20 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:gap-2">
         {[
           ["player", "Player Forecast", "One player across every week"],
           ["board", "Weekly Board", "Rank the complete slate"],
-          ["model", "Model & Accuracy", "Method and measured results"],
+          ["dna", "Projected Stat DNA", "Inputs behind the point estimate"],
         ].map(([key, label, detail]) => (
           <button
             type="button"
@@ -582,10 +609,12 @@ export default function StatProjectionLab({
           </button>
         ))}
       </div>
+      </> : null}
 
-      {view === "player" && selected ? (
+      {(view === "player" || view === "dna") && selected ? (
         <>
-          <div className="grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
+          {view === "player" ? <>
+          <div className="space-y-4">
             <Card className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -715,7 +744,7 @@ export default function StatProjectionLab({
                   tone="violet"
                 />
                 <Kpi
-                  label="Vs Arsenal consensus"
+                  label="Vs external-source consensus"
                   value={
                     anchorAvailable
                       ? `${anchorVariance >= 0 ? "+" : ""}${anchorVariance.toFixed(1)}`
@@ -723,8 +752,8 @@ export default function StatProjectionLab({
                   }
                   detail={
                     anchorAvailable
-                      ? `Season points · ${number(selected?.season?.consensus_anchor_sources)} format-capable sources`
-                      : "No format-capable consensus anchor"
+                      ? `Arsenal season projection minus the average of ${number(selected?.season?.consensus_anchor_sources)} compatible outside publishers`
+                      : "No compatible external-source average for this scoring format"
                   }
                   tone={
                     anchorAvailable && Math.abs(anchorVariance) < 8
@@ -769,7 +798,7 @@ export default function StatProjectionLab({
 
             <Card className="p-5 sm:p-6">
               <h3 className="text-lg font-black">Why the model landed here</h3>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 grid items-start gap-3 lg:grid-cols-2">
                 {customScoringCoverage ? (
                   <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
@@ -1035,7 +1064,8 @@ export default function StatProjectionLab({
             </Card>
           </div>
 
-          <Card className="p-5 sm:p-6">
+          </> : null}
+          {view === "dna" ? <Card data-guide-tip="projection-stat-dna" className="p-5 sm:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h3 className="text-xl font-black">Projected stat DNA</h3>
@@ -1044,6 +1074,9 @@ export default function StatProjectionLab({
                 </p>
               </div>
               <div className="flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-emerald-300/10 px-3 py-1 text-[9px] font-black text-emerald-100">
+                  The Fantasy Arsenal synthesis
+                </span>
                 {(selected.stat_prior?.sources || []).map((source) => (
                   <span
                     key={source}
@@ -1058,6 +1091,13 @@ export default function StatProjectionLab({
                   </span>
                 ) : null}
               </div>
+            </div>
+            <div data-guide-tip="projection-dna-week" className="mt-4 grid gap-2 sm:grid-cols-[auto_minmax(160px,260px)_auto] sm:items-end">
+              <button type="button" disabled={selectedWeekIndex <= 0} onClick={() => moveSelectedWeek(-1)} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white/60 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-30">Previous week</button>
+              <Filter label="Stat DNA week" value={week} onChange={selectWeek}>
+                {seasonSeries.map((row) => <option key={row.week} value={row.week}>Week {row.week}{row.completed ? " · final" : ""}</option>)}
+              </Filter>
+              <button type="button" disabled={selectedWeekIndex < 0 || selectedWeekIndex >= seasonSeries.length - 1} onClick={() => moveSelectedWeek(1)} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white/60 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-30">Next week</button>
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {statRows.map(([label, key]) => (
@@ -1079,7 +1119,28 @@ export default function StatProjectionLab({
                 </div>
               ))}
             </div>
-          </Card>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+                <div className="text-[9px] font-black uppercase tracking-wider text-white/30">Past vs {selected.forecast.opponent}</div>
+                <div className="mt-2 text-2xl font-black text-violet-100">{number(personalHistory.games)} meetings</div>
+                <p className="mt-2 text-[10px] leading-4 text-white/35">
+                  {number(personalHistory.games) >= 2
+                    ? `${number(personalHistory.split_average).toFixed(1)} PPR points per game in the stored sample.`
+                    : "Too little repeat history to apply a player-specific opponent adjustment."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+                <div className="text-[9px] font-black uppercase tracking-wider text-white/30">Against other teams</div>
+                <div className="mt-2 text-2xl font-black text-cyan-100">{personalHistory.player_baseline == null ? "—" : `${number(personalHistory.player_baseline).toFixed(1)} PPR`}</div>
+                <p className="mt-2 text-[10px] leading-4 text-white/35">The comparable personal baseline used before the opponent-specific adjustment.</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
+                <div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/60">Arsenal synthesis</div>
+                <div className="mt-2 text-2xl font-black text-emerald-100">{selected.projection.toFixed(1)} {scoringLabel}</div>
+                <p className="mt-2 text-[10px] leading-4 text-white/38">External stat priors are reconciled with Arsenal role allocation, historical regression, matchup learning, availability, and calibrated outcomes.</p>
+              </div>
+            </div>
+          </Card> : null}
         </>
       ) : null}
 
@@ -1126,7 +1187,7 @@ export default function StatProjectionLab({
               type="button"
               key={player.name}
               onClick={() => {
-                setSelectedName(player.name);
+                choosePlayer(player.name);
                 setView("player");
               }}
               className="w-full p-4 text-left hover:bg-white/[0.03]"
@@ -1181,7 +1242,7 @@ export default function StatProjectionLab({
                 <tr
                   key={player.name}
                   onClick={() => {
-                    setSelectedName(player.name);
+                    choosePlayer(player.name);
                     setView("player");
                   }}
                   className={`cursor-pointer hover:bg-white/[0.035] ${selected?.name === player.name ? "bg-cyan-300/[0.04]" : ""}`}

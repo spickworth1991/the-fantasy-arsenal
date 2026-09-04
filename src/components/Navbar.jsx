@@ -35,11 +35,7 @@ const ICONS = {
 
 // Set badges for sidebar links here (optional).
 const NAV_BADGES = {
-  "/trade": "UPDATED",
-  "/lineup": "UPDATED",
-  "/league-hub": "UPDATED",
-  "/player-stock": "UPDATED",
-  "/playoff-odds": "NEW",
+  "/playoff-odds": "DEVELOPING",
   "/league-history": "NEW",
   "/commissioner-dashboard": "DEVELOPING",
   "/draft-helper": "NEW",
@@ -48,8 +44,9 @@ const NAV_BADGES = {
   "/game-center": "DEVELOPING",
   "/depth-charts": "NEW",
   "/intelligence": "NEW",
-  "/trust-center": "NEW",
+  "/trust-center": "DEVELOPING",
   "/stat-central": "DEVELOPING",
+  "/ballsville-stats": "NEW",
 };
 
 const BADGE_STYLES = {

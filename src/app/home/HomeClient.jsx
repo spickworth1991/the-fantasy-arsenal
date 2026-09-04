@@ -188,13 +188,11 @@ export default function HomeClient() {
       name: "Trade Analyzer",
       link: "/trade",
       description: "Analyze trades and generate mutually useful, roster-aware packages with Trade Partner Finder 2.0.",
-      badge: "UPDATED",
     },
     {
       name: "Player Stock",
       link: "/player-stock/results",
       description: "Track player value changes over time - Now includes drafting leagues for real-time draft momentum!",
-      badge: "UPDATED",
     },
     {
       name: "Draft Command Center",
@@ -218,7 +216,7 @@ export default function HomeClient() {
       name: "Trust & Accuracy Center",
       link: "/trust-center",
       description: "Audit source freshness, coverage, disagreement, projection accuracy, confidence, and the evidence behind every calculation.",
-      badge: "NEW",
+      badge: "DEVELOPING",
     },
     {
       name: "Stat Central",
@@ -248,7 +246,6 @@ export default function HomeClient() {
       link: "/league-hub",
       description:
         "Your multi-league action center for lineups, waivers, injuries, trades, and opportunities.",
-      badge: "UPDATED",
     },
     {
       name: "League History",
@@ -282,13 +279,12 @@ export default function HomeClient() {
       name: "Lineup Optimizer",
       link: "/lineup",
       description: "Explain start/sit choices with safe, median, and aggressive lineups plus win-impact analysis.",
-      badge: "UPDATED",
     },
     {
       name: "Playoff Odds",
       link: "/playoff-odds",
       description: "Estimate playoff chances and test how future wins, losses, and league results change the path.",
-      badge: "NEW",
+      badge: "DEVELOPING",
     },
     {
       name: "My Arsenal",
