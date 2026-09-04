@@ -6,6 +6,7 @@ import {
   scoreSleeperStats,
   sleeperScoringCoverage,
 } from "../../lib/sleeperScoring";
+import DelayedStatHint from "../../components/DelayedStatHint";
 
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const normalize = (value) =>
@@ -87,7 +88,7 @@ function Kpi({ label, value, detail, tone = "cyan" }) {
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
       <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
-        {label}
+        <DelayedStatHint term={label}>{label}</DelayedStatHint>
       </div>
       <div
         className={`mt-1 break-words text-xl font-black leading-tight sm:text-2xl ${tones[tone] || tones.cyan}`}
@@ -860,7 +861,7 @@ export default function StatProjectionLab({
                   <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
                       <span className="text-amber-100/65">Projected opportunity</span>
-                      <b>{(number(opportunity.reliability) * 100).toFixed(0)}% role confidence</b>
+                      <b><DelayedStatHint term="role confidence">{(number(opportunity.reliability) * 100).toFixed(0)}% role confidence</DelayedStatHint></b>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <Kpi label="Team plays" value={number(opportunity.team_plays).toFixed(1)} detail={`${(number(opportunity.team_neutral_pass_rate) * 100).toFixed(0)}% neutral pass rate`} tone="amber" />
@@ -882,7 +883,7 @@ export default function StatProjectionLab({
                 {simulation ? (
                   <div className="rounded-2xl border border-violet-300/10 bg-violet-300/[0.035] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2 text-xs">
-                      <span className="text-violet-100/65">Correlated game simulation</span>
+                      <span className="text-violet-100/65"><DelayedStatHint term="correlated game simulation">Correlated game simulation</DelayedStatHint></span>
                       <b>500 outcomes</b>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -892,7 +893,7 @@ export default function StatProjectionLab({
                         ["P90", simulation.p90, "Ceiling outcome"],
                       ].map(([label, value, detail]) => (
                         <div key={label} className="min-w-0 rounded-xl border border-white/[0.06] bg-black/15 p-3">
-                          <div className="text-[8px] font-black uppercase tracking-wider text-white/30">{label}</div>
+                          <div className="text-[8px] font-black uppercase tracking-wider text-white/30"><DelayedStatHint term={label}>{label}</DelayedStatHint></div>
                           <div className="mt-1 text-lg font-black text-violet-100 sm:text-xl">{number(value).toFixed(1)}</div>
                           <div className="mt-1 hidden text-[9px] text-white/28 sm:block">{detail}</div>
                         </div>
@@ -977,7 +978,7 @@ export default function StatProjectionLab({
                       }
                     >
                       {number(advancedSignals.epa_matchup) >= 0 ? "+" : ""}
-                      {number(advancedSignals.epa_matchup).toFixed(2)} EPA
+                      <DelayedStatHint term="EPA">{number(advancedSignals.epa_matchup).toFixed(2)} EPA</DelayedStatHint>
                     </b>
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/35">
@@ -1002,7 +1003,7 @@ export default function StatProjectionLab({
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
                   <div className="flex justify-between gap-4 text-xs">
-                    <span className="text-white/40">Opponent adjustment</span>
+                    <span className="text-white/40"><DelayedStatHint term="opponent adjustment">Opponent adjustment</DelayedStatHint></span>
                     <b>
                       {matchupChange >= 0 ? "+" : ""}
                       {matchupChange.toFixed(1)}%
@@ -1040,7 +1041,7 @@ export default function StatProjectionLab({
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
                   <div className="flex justify-between gap-4 text-xs">
                     <span className="text-white/40">
-                      Historical player blend
+                      <DelayedStatHint term="historical player blend">Historical player blend</DelayedStatHint>
                     </span>
                     <b>{regressionBlend.toFixed(1)}%</b>
                   </div>
@@ -1051,7 +1052,7 @@ export default function StatProjectionLab({
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-4">
                   <div className="flex justify-between gap-4 text-xs">
-                    <span className="text-white/40">Workload prior</span>
+                    <span className="text-white/40"><DelayedStatHint term="workload prior">Workload prior</DelayedStatHint></span>
                     <b>{roleFactor.toFixed(2)}×</b>
                   </div>
                   <p className="mt-2 text-[10px] leading-4 text-white/30">

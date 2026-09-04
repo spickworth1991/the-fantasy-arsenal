@@ -119,6 +119,73 @@ function replaceAssets(currentAssets, outgoing, incoming) {
   return [...currentAssets.filter((asset) => !outgoingKeys.has(assetKey(asset))), ...incoming];
 }
 
+// A raw value total is not a depth chart.  Keep the players who are carrying a
+// shallow starting group out of automatic outgoing packages.  Users can still
+// deliberately select one with "Build around asset", but the finder should
+// never treat a star as surplus simply because his value lifts a positional
+// league average.
+function protectedStarterKeys(profile) {
+  const protectedKeys = new Set();
+  CORE_POSITIONS.forEach((pos) => {
+    const required = Number(profile.starterNeeds?.[pos] || 0);
+    if (!required) return;
+    const room = [...profile.playerAssets]
+      .filter((asset) => asset.pos === pos)
+      .sort((a, b) => b.lineupValue - a.lineupValue || b.value - a.value);
+    if (!room.length) return;
+    // On a shallow room, protect the primary starters plus its first usable
+    // replacement. This catches a roster with one clear WR starter and several
+    // speculative/secondary options without freezing healthy deep rooms.
+    const shallowRoom = room.length <= required + 2;
+    const protectCount = Math.min(room.length, required + (shallowRoom ? 1 : 0));
+    room.slice(0, protectCount).forEach((asset) => protectedKeys.add(assetKey(asset)));
+  });
+  return protectedKeys;
+}
+
+function shallowPositionSet(profile, leagueDepthAverages) {
+  return new Set(CORE_POSITIONS.filter((pos) => {
+    const required = Number(profile.starterNeeds?.[pos] || 0);
+    if (!required) return false;
+    const room = [...profile.playerAssets].filter((asset) => asset.pos === pos).sort((a, b) => b.lineupValue - a.lineupValue);
+    const roomStrength = profile.positionDepth?.[pos] || { starters:0, reserves:0 };
+    const leagueStrength = leagueDepthAverages?.[pos] || { starters:0, reserves:0 };
+    const starterRatio = roomStrength.starters / Math.max(1, leagueStrength.starters);
+    const reserveRatio = roomStrength.reserves / Math.max(1, leagueStrength.reserves);
+    // Counts catch a truly bare room. Otherwise, quality decides whether this
+    // position has actual surplus: current starters and the next two options
+    // are compared with the league's equivalent room.
+    const weakReserves = leagueStrength.reserves > 0 && reserveRatio < 0.72;
+    return room.length <= required + 1 || starterRatio < 0.9 || weakReserves;
+  }));
+}
+
+function playerPositionCounts(assets) {
+  return assets.filter((asset) => asset.kind === "player").reduce((counts, asset) => {
+    counts[asset.pos] = (counts[asset.pos] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function pickDetails(asset) {
+  const match = String(asset?.id || "").match(/^(\d{4})-(\d+)-/);
+  return match ? { season:Number(match[1]), round:Number(match[2]) } : { season:0, round:0 };
+}
+
+function packageSignature(assets, ignorePickSeason = false) {
+  return assets.map((asset) => {
+    if (asset.kind !== "pick") return assetKey(asset);
+    const { season, round } = pickDetails(asset);
+    return ignorePickSeason ? `pick:r${round}` : `pick:${season}:r${round}`;
+  }).sort();
+}
+
+function overlapRatio(left, right) {
+  if (!left.length || !right.length) return 0;
+  const rightSet = new Set(right);
+  return left.filter((value) => rightSet.has(value)).length / Math.max(left.length, right.length);
+}
+
 function describePackage({ mine, partner, give, receive, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact }) {
   const reasons = [];
   const theirIncomingPositions = [...new Set(give.filter((asset) => asset.kind === "player").map((asset) => asset.pos))];
@@ -148,7 +215,7 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
   const [packageShape, setPackageShape] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
   const [targetAssetId, setTargetAssetId] = useState("all");
-  const [showCount, setShowCount] = useState(8);
+  const [showCount, setShowCount] = useState(5);
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(1);
@@ -196,7 +263,7 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
 
   useEffect(() => {
     setTargetAssetId("all");
-    setShowCount(8);
+    setShowCount(5);
   }, [selectedRosterId]);
 
   const analysis = useMemo(() => {
@@ -234,11 +301,20 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
         }
       });
       const positionValues = Object.fromEntries(CORE_POSITIONS.map((pos) => [pos, sum(playerAssets.filter((asset) => asset.pos === pos).sort((a, b) => b.value - a.value).slice(0, Math.max(1, starterNeeds[pos] + (pos === "WR" || pos === "RB" ? 1 : 0))))]));
+      const positionDepth = Object.fromEntries(CORE_POSITIONS.map((pos) => {
+        const room = playerAssets.filter((asset) => asset.pos === pos).sort((a, b) => b.lineupValue - a.lineupValue);
+        const required = Math.max(1, Number(starterNeeds[pos] || 0));
+        return [pos, { starters:sum(room.slice(0, required), (asset) => asset.lineupValue), reserves:sum(room.slice(required, required + 2), (asset) => asset.lineupValue) }];
+      }));
       const fantasyPlayers = playerAssets.filter((asset) => CORE_POSITIONS.includes(asset.pos));
       const averageAge = fantasyPlayers.length ? sum(fantasyPlayers, (asset) => asset.age) / fantasyPlayers.length : 25;
-      return { roster, rosterId: String(roster.roster_id), name, assets: [...playerAssets, ...pickAssets], playerAssets, pickAssets, positionValues, averageAge, starterNeeds, rosterCapacity: Math.max(rosterCapacity, (roster.players || []).length), rosterPlayerCount: (roster.players || []).length, currentLineup: lineupScore(playerAssets, starterNeeds), wins: Number(roster?.settings?.wins || 0), points: Number(roster?.settings?.fpts || 0) + Number(roster?.settings?.fpts_decimal || 0) / 100 };
+      return { roster, rosterId: String(roster.roster_id), name, assets: [...playerAssets, ...pickAssets], playerAssets, pickAssets, positionValues, positionDepth, averageAge, starterNeeds, rosterCapacity: Math.max(rosterCapacity, (roster.players || []).length), rosterPlayerCount: (roster.players || []).length, currentLineup: lineupScore(playerAssets, starterNeeds), wins: Number(roster?.settings?.wins || 0), points: Number(roster?.settings?.fpts || 0) + Number(roster?.settings?.fpts_decimal || 0) / 100 };
     });
     const leagueAverages = Object.fromEntries(CORE_POSITIONS.map((pos) => [pos, sum(profiles, (profile) => profile.positionValues[pos]) / Math.max(1, profiles.length)]));
+    const leagueDepthAverages = Object.fromEntries(CORE_POSITIONS.map((pos) => [pos, {
+      starters:sum(profiles, (profile) => profile.positionDepth[pos].starters) / Math.max(1, profiles.length),
+      reserves:sum(profiles, (profile) => profile.positionDepth[pos].reserves) / Math.max(1, profiles.length),
+    }]));
     profiles.forEach((profile) => {
       profile.needScores = Object.fromEntries(CORE_POSITIONS.map((pos) => [pos, clamp((leagueAverages[pos] - profile.positionValues[pos]) / Math.max(1, leagueAverages[pos]), 0, 1)]));
     });
@@ -246,24 +322,69 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
     ranked.forEach((profile, index) => { profile.direction = inferDirection(profile, index, ranked.length); profile.rank = index + 1; });
     const mine = profiles.find((profile) => profile.rosterId === String(selectedRosterId));
     if (!mine) return { profiles, suggestions: [], mine: null };
+    const highestNeed = Math.max(0, ...CORE_POSITIONS.map((pos) => Number(mine.needScores[pos] || 0)));
+    const protectedPositions = new Set(
+      CORE_POSITIONS.filter((pos) => highestNeed >= 0.08 && Number(mine.needScores[pos] || 0) >= Math.max(0.08, highestNeed - 0.035)),
+    );
+    const protectedStarterAssetKeys = protectedStarterKeys(mine);
+    const shallowPositions = shallowPositionSet(mine, leagueDepthAverages);
+    const requiredQbs = Number(starterNeeds.QB || 0) + Number(starterNeeds.SUPER_FLEX || 0);
+    const rosterQbs = mine.playerAssets.filter((asset) => asset.pos === "QB").length;
 
     const shapes = packageShape === "all" ? [[1,1],[1,2],[2,1],[2,2],[2,3],[3,2]] : [packageShape.split("x").map(Number)];
     const results = [];
     profiles.filter((partner) => partner.rosterId !== mine.rosterId && (directionFilter === "all" || partner.direction === directionFilter)).forEach((partner) => {
-      const myPool = [...mine.playerAssets.sort((a,b) => b.value-a.value).slice(0, 20), ...mine.pickAssets.slice(0, 10)];
-      const partnerPool = [...partner.playerAssets.sort((a,b) => b.value-a.value).slice(0, 20), ...partner.pickAssets.slice(0, 10)];
+      const myPlayers = [...mine.playerAssets]
+        .filter((asset) => targetAssetId === assetKey(asset) || !protectedStarterAssetKeys.has(assetKey(asset)))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 20);
+      const myPool = [...myPlayers, ...mine.pickAssets.slice(0, 10)];
+      const partnerPool = [...partner.playerAssets].sort((a,b) => b.value-a.value).slice(0, 20).concat(partner.pickAssets.slice(0, 10));
       shapes.forEach(([giveSize, receiveSize]) => {
-        const giveCombos = combinations(myPool, giveSize);
-        const receiveIndex = combinations(partnerPool, receiveSize)
+        const giveCombos = combinations(myPool, giveSize, 160);
+        const receiveIndex = combinations(partnerPool, receiveSize, 180)
           .map((assets) => ({ assets, total: sum(assets) }))
           .sort((a, b) => a.total - b.total);
         giveCombos.forEach((give) => {
           if (targetAssetId !== "all" && !give.some((asset) => assetKey(asset) === targetAssetId)) return;
           const giveValue = sum(give);
-          nearestPackages(receiveIndex, giveValue, 40).forEach((receive) => {
+          nearestPackages(receiveIndex, giveValue, 16).forEach((receive) => {
             const receiveValue = sum(receive);
             const valueGapPct = Math.abs(giveValue - receiveValue) / Math.max(1, (giveValue + receiveValue) / 2);
             if (valueGapPct > 0.35) return;
+            const sendsProtectedStarter = give.some((asset) => protectedStarterAssetKeys.has(assetKey(asset)));
+            const samePositionReplacement = give.filter((asset) => asset.kind === "player").every((asset) => receive.some((incoming) => incoming.kind === "player" && incoming.pos === asset.pos && incoming.lineupValue >= asset.lineupValue * 0.9));
+            if (sendsProtectedStarter && targetAssetId === "all" && !samePositionReplacement) return;
+            const givePositionCounts = playerPositionCounts(give);
+            const receivePositionCounts = playerPositionCounts(receive);
+            const weakPositionSent = Object.keys(givePositionCounts).some((pos) => shallowPositions.has(pos));
+            const replacesWeakPosition = Object.entries(givePositionCounts)
+              .filter(([pos]) => shallowPositions.has(pos))
+              .every(([pos, count]) => Number(receivePositionCounts[pos] || 0) >= count);
+            // A thin WR/RB/TE room can be consolidated or diversified, but it
+            // must receive the same number of that role back. Value alone is
+            // not a replacement, and one WR does not replace two sent WRs.
+            // Team direction is intentionally not an exception: standings do
+            // not grant permission to hollow out a starting position.
+            if (weakPositionSent && !replacesWeakPosition) return;
+            const receivesQb = receive.some((asset) => asset.kind === "player" && asset.pos === "QB");
+            const sendsQb = give.some((asset) => asset.kind === "player" && asset.pos === "QB");
+            if (receivesQb && !sendsQb && rosterQbs >= requiredQbs + 1) return;
+            const allPicks = [...give, ...receive].every((asset) => asset.kind === "pick");
+            const onlyFutureLatePicks = allPicks && [...give, ...receive].every((asset) => {
+              const pick = pickDetails(asset);
+              return pick.season > currentSeason && pick.round >= 3;
+            });
+            if (onlyFutureLatePicks) return;
+            const protectedRoomLoss = [...protectedPositions].reduce((loss, pos) => {
+              const outgoing = sum(give.filter((asset) => asset.kind === "player" && asset.pos === pos));
+              if (!outgoing) return loss;
+              const incoming = sum(receive.filter((asset) => asset.kind === "player" && asset.pos === pos));
+              return loss + Math.max(0, (outgoing - incoming) / Math.max(1, outgoing));
+            }, 0);
+            const explicitWeakAsset = targetAssetId !== "all" && give.some((asset) => protectedPositions.has(asset.pos) && assetKey(asset) === targetAssetId);
+            const rebuildingReturn = mine.direction === "Rebuilder" && receive.some((asset) => asset.kind === "pick") && sum(receive.filter((asset) => asset.kind === "pick")) >= giveValue * 0.7;
+            if (protectedRoomLoss > 0.1 && !explicitWeakAsset && !rebuildingReturn) return;
             const myPlayerCount = mine.rosterPlayerCount - give.filter((asset) => asset.kind === "player").length + receive.filter((asset) => asset.kind === "player").length;
             const partnerPlayerCount = partner.rosterPlayerCount - receive.filter((asset) => asset.kind === "player").length + give.filter((asset) => asset.kind === "player").length;
             const myRosterOverflow = Math.max(0, myPlayerCount - mine.rosterCapacity);
@@ -276,22 +397,40 @@ export default function TradePartnerFinder({ league, players, getMetric, getWeek
             const partnerNeedFit = needFit(partner, give);
             const myDirectionFit = directionFit(mine.direction, receive);
             const partnerDirectionFit = directionFit(partner.direction, give);
-            const myUtility = myNeedFit * 2 + myDirectionFit + clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 20, -2, 3) - valueGapPct * 3 - myRosterOverflow * 0.8;
+            const myUtility = myNeedFit * 2 + myDirectionFit + clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 20, -2, 3) - valueGapPct * 3 - myRosterOverflow * 0.8 - protectedRoomLoss * 3;
             const partnerUtility = partnerNeedFit * 2 + partnerDirectionFit + clamp(partnerLineupDelta / Math.max(1, partner.currentLineup) * 20, -2, 3) - valueGapPct * 3 - partnerRosterOverflow * 0.8;
-            if (myUtility < -2.5 || partnerUtility < -2.5) return;
+            // Do not present a recommendation that removes points from the
+            // user's active lineup unless it is an intentional rebuilding move.
+            if ((mine.direction !== "Rebuilder" && myLineupDelta < -0.05) || myUtility < -2.5 || partnerUtility < -2.5) return;
             const preferredGive = String(handoffContext?.surplus || "").toUpperCase();
             const preferredReceive = String(handoffContext?.need || "").toUpperCase();
             const handoffBonus = (preferredGive && give.some((asset) => asset.pos === preferredGive) ? 1.5 : 0) + (preferredReceive && receive.some((asset) => asset.pos === preferredReceive) ? 2 : 0);
             const mutualScore = Math.min(myUtility, partnerUtility) * 3 + myUtility + partnerUtility - valueGapPct * 8 + handoffBonus;
             const myPlayoffImpact = mine.direction === "Rebuilder" ? 0 : clamp(myLineupDelta / Math.max(1, mine.currentLineup) * 35, -8, 8);
             const partnerPlayoffImpact = partner.direction === "Rebuilder" ? 0 : clamp(partnerLineupDelta / Math.max(1, partner.currentLineup) * 35, -8, 8);
-            results.push({ id: `${partner.rosterId}-${give.map(assetKey).join("_")}-${receive.map(assetKey).join("_")}`, mine, partner, give, receive, giveValue, receiveValue, valueGapPct, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact, myRosterOverflow, partnerRosterOverflow, mutualScore, reasons: describePackage({ mine, partner, give, receive, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact }) });
+            results.push({ id: `${partner.rosterId}-${give.map(assetKey).join("_")}-${receive.map(assetKey).join("_")}`, mine, partner, give, receive, giveValue, receiveValue, valueGapPct, myLineupDelta, partnerLineupDelta, myPlayoffImpact, partnerPlayoffImpact, myRosterOverflow, partnerRosterOverflow, mutualScore });
           });
         });
       });
     });
     const seen = new Set();
-    const suggestions = results.sort((a, b) => b.mutualScore - a.mutualScore || a.valueGapPct - b.valueGapPct).filter((row) => { const key = `${row.partner.rosterId}:${row.give.map(assetKey).sort().join("|")}:${row.receive.map(assetKey).sort().join("|")}`; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, 40);
+    const suggestions = [];
+    results.sort((a, b) => b.mutualScore - a.mutualScore || a.valueGapPct - b.valueGapPct).forEach((row) => {
+      if (suggestions.length >= 100) return;
+      const giveSignature = packageSignature(row.give);
+      const receiveSignature = packageSignature(row.receive);
+      const exactKey = `${row.partner.rosterId}:${giveSignature.join("|")}:${receiveSignature.join("|")}`;
+      if (seen.has(exactKey)) return;
+      const giveCore = packageSignature(row.give, true);
+      const receiveCore = packageSignature(row.receive, true);
+      // Do not fill the list with a familiar offer plus a different future
+      // third. Each surfaced idea needs a meaningfully different send and
+      // receive core; lower-ranked variants can still be generated later.
+      const tooSimilar = suggestions.some((shown) => overlapRatio(giveCore, packageSignature(shown.give, true)) >= 0.75 || overlapRatio(receiveCore, packageSignature(shown.receive, true)) >= 0.75);
+      if (tooSimilar) return;
+      seen.add(exactKey);
+      suggestions.push({ ...row, reasons: describePackage(row) });
+    });
     return { profiles, suggestions, mine };
   }, [completedDraftSeasons, currentWeek, directionFilter, getMetric, getWeeklyMetric, handoffContext, league, metricMode, packageShape, players, selectedRosterId, targetAssetId, tradedPicks]);
 

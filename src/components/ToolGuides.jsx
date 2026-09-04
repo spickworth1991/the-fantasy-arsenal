@@ -1,12 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import { usePathname } from "next/navigation";
 import GuidedTips from "./GuidedTips";
 
 const s = (selector, title, detail, onEnter, options = {}) => ({ selector, title, detail, onEnter, ...options });
 const tab = (label) => () => {
   [...document.querySelectorAll("main button")]
-    .find((button) => button.textContent.trim() === label)?.click();
+    .find((button) => button.textContent.trim().startsWith(label))?.click();
 };
 
 const GUIDES = {
@@ -48,7 +49,10 @@ const GUIDES = {
   "/stat-central": [
     s("main header", "Set the shared research context once", "Season and scoring live in the Stat Central header. Player views also expose position and player search; Matchups keeps one shared position, offense, and defense bar. Feature-specific controls stay with the feature they affect."),
     s('[data-guide-tip="stat-workspaces"] button:nth-of-type(1)', "Player Lab", "Player Research covers scoring identity and underlying production. Advanced Stats, Career History, and Compare Players answer different questions without crowding one screen.", tab("Player Lab")),
-    s('[data-guide-tip="stat-secondary-tabs"]', "Secondary views use the full width", "These tabs sit below the main workspace bar instead of consuming a left column. Shared season, scoring, position, search, and player context persist while you switch views.", tab("Player Research")),
+    s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(1)', "Player Research: understand the scoring profile", "Use this first view for weekly scoring, floor and ceiling, consistency, and the workload evidence behind a player’s results.", tab("Player Research")),
+    s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(2)', "Advanced Stats: validate the role", "Open Advanced Stats to inspect snaps, opportunity, target and carry share, high-value work, and efficiency. It helps separate a repeatable role from a fragile box score.", tab("Advanced Stats")),
+    s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(3)', "Career History: add the longer view", "Use Career History for season-over-season production and role trends. It is historical context, not a current-week projection.", tab("Career History")),
+    s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(4)', "Compare Players: answer a direct choice", "Choose two players to compare their scoring, workload, efficiency, and consistency under the same season and scoring setup.", tab("Compare Players")),
     s('[data-guide-tip="stat-player-picker"]', "Search and select in one field", "Start typing and choose the player from the matching browser suggestions. Stat Central keeps that player selected when you move through Player Research, Advanced Stats, Career History, Compare Players, and Projection Center instead of resetting to the first-ranked name."),
     s('[data-guide-tip="stat-workspaces"] button:nth-of-type(2)', "Matchups uses one shared setup", "Choose season, scoring, position, offense, and defense once. Team Profiles does not require a selected team; only Matchup Overview uses the offense-versus-defense pairing.", tab("Matchups")),
     s('[data-guide-tip="matchup-shared-controls"]', "Position, offense, and defense stay shared", "Offense supplies the team baseline; defense supplies positional allowance and opponent history. Adjustment is relative to the league average for that position—not a 0–100 grade."),
@@ -151,5 +155,12 @@ const GUIDES = {
 export default function ToolGuides() {
   const pathname = usePathname();
   const steps = GUIDES[pathname];
-  return steps ? <GuidedTips storageKey={`tfa:tips:${pathname.slice(1)}:premium`} label="Tool tour" steps={steps} /> : null;
+  const statTabBeforeTour = useRef("");
+  const isStatCentral = pathname === "/stat-central";
+  const restoreStatCentralTab = () => {
+    const labels = { overview:"Player Research", advanced:"Advanced Stats", history:"Career History", compare:"Compare Players", matchups:"Matchup Lab", projections:"Projection Center", leaders:"Leaderboards", model:"Accuracy & Method" };
+    const label = labels[statTabBeforeTour.current];
+    if (label) tab(label)();
+  };
+  return steps ? <GuidedTips storageKey={`tfa:tips:${pathname.slice(1)}:premium`} label="Tool tour" steps={steps} onTourStart={isStatCentral ? () => { statTabBeforeTour.current = document.documentElement.dataset.statTab || "overview"; } : undefined} onTourEnd={isStatCentral ? restoreStatCentralTab : undefined} /> : null;
 }

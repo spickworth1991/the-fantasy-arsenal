@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar";
+import DelayedStatHint from "../../components/DelayedStatHint";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useSleeper } from "../../context/SleeperContext";
@@ -216,7 +217,7 @@ function Metric({ label, value, detail, tone = "cyan" }) {
   return (
     <div className="min-w-0 max-w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 sm:p-4">
       <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
-        {label}
+        <DelayedStatHint term={label}>{label}</DelayedStatHint>
       </div>
       <div className={`mt-1 break-words text-xl font-black leading-tight sm:text-2xl ${tones[tone] || tones.cyan}`}>
         {value}

@@ -8,6 +8,7 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
   const { embedded } = useEmbeddedMode();
   const { ready: accountReady, isConnected, syncState, syncNow } = useArsenalAccount();
   const [open, setOpen] = useState(false);
+  const [tipsEnabled, setTipsEnabled] = useState(true);
   const [step, setStep] = useState(0);
   const [arrow, setArrow] = useState(null);
   const [targetVersion, setTargetVersion] = useState(0);
@@ -40,8 +41,9 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
     if (!accountReady || (isConnected && syncState?.status !== "synced")) return;
     const restore = () => {
       try {
-        const enabled = localStorage.getItem(`${storageKey}:enabled`) !== "false";
+        const enabled = localStorage.getItem("tfa:tips:enabled") !== "false";
         const seen = localStorage.getItem(`${storageKey}:seen`) === "true";
+        setTipsEnabled(enabled);
         if (seen || !enabled) setOpen(false);
         else if (steps.length) setOpen(true);
       } catch {}
@@ -129,12 +131,15 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
     setStep(0);
     try {
       localStorage.setItem(`${storageKey}:seen`, "true");
-      if (disable) localStorage.setItem(`${storageKey}:enabled`, "false");
+      if (disable) {
+        localStorage.setItem("tfa:tips:enabled", "false");
+        setTipsEnabled(false);
+      }
       if (isConnected) syncNow({ quiet: true });
     } catch {}
   };
 
-  if (!steps.length) return null;
+  if (!steps.length || !tipsEnabled) return null;
   const markerId = `guide-arrow-${String(storageKey).replace(/[^a-z0-9]/gi, "-")}`;
   const maskId = `${markerId}-mask`;
 
@@ -152,7 +157,7 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
         <div ref={panelRef} className="fixed inset-x-4 bottom-32 z-[110] mx-auto max-w-lg rounded-[26px] border border-cyan-100/45 bg-[#26364f] p-5 shadow-[0_30px_100px_rgba(0,0,0,.9),0_0_40px_rgba(34,211,238,.18)] sm:bottom-16 sm:p-6" role="dialog" aria-modal="true" aria-label={label}>
           <div className="flex items-start justify-between gap-4"><div><div className="text-[10px] font-black uppercase tracking-[.22em] text-cyan-100/75">{label} · {step + 1} of {steps.length}</div><h2 className="mt-1 text-xl font-black text-white">{current.title}</h2></div><button type="button" onClick={() => close(false)} className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/75 hover:bg-white/[0.09]">Close</button></div>
           <p className="mt-3 text-sm leading-6 text-white/75">{current.detail}</p>
-          <div className="mt-5 flex items-center gap-2"><button type="button" disabled={!step} onClick={() => setStep((value) => Math.max(0, value - 1))} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-bold text-white/65 disabled:opacity-25">Back</button><button type="button" onClick={() => step === steps.length - 1 ? close(false) : setStep((value) => value + 1)} className="flex-1 rounded-xl bg-cyan-300/15 px-4 py-2.5 text-xs font-black text-cyan-100 hover:bg-cyan-300/20">{step === steps.length - 1 ? "Done" : "Next tip"}</button><button type="button" onClick={() => close(true)} className="rounded-xl px-3 py-2.5 text-[10px] font-bold text-white/40 hover:text-white/70">Turn tips off</button></div>
+          <div className="mt-5 flex items-center gap-2"><button type="button" disabled={!step} onClick={() => setStep((value) => Math.max(0, value - 1))} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-bold text-white/65 disabled:opacity-25">Back</button><button type="button" onClick={() => step === steps.length - 1 ? close(false) : setStep((value) => value + 1)} className="flex-1 rounded-xl bg-cyan-300/15 px-4 py-2.5 text-xs font-black text-cyan-100 hover:bg-cyan-300/20">{step === steps.length - 1 ? "Done" : "Next tip"}</button><button type="button" onClick={() => close(true)} className="rounded-xl px-3 py-2.5 text-[10px] font-bold text-white/40 hover:text-white/70">Turn all tips off</button></div>
         </div>
       </> : null}
     </>

@@ -13,6 +13,15 @@ const ownerName = (league, ownerId) => {
 };
 const rosterOwner = (league, rosterId) => (league?.rosters || []).find((row) => String(row.roster_id) === String(rosterId))?.owner_id;
 const unique = (rows) => [...new Set(rows)];
+const corePositions = ["QB", "RB", "WR", "TE"];
+
+function startingSlots(rosterPositions = []) {
+  return rosterPositions.reduce((slots, raw) => {
+    const pos = String(raw || "").toUpperCase();
+    if (corePositions.includes(pos)) slots[pos] = (slots[pos] || 0) + 1;
+    return slots;
+  }, { QB:0, RB:0, WR:0, TE:0 });
+}
 
 function Panel({ children, className = "" }) {
   return <div className={`rounded-[26px] border border-white/10 bg-gradient-to-b from-slate-900/95 to-slate-950/90 ${className}`}>{children}</div>;
@@ -113,6 +122,28 @@ export default function TradeWorkspaceSuite({
   const myRoster = (league?.rosters || []).find((roster) => String(roster.owner_id) === String(signedInUser?.user_id));
   const myPlayers = (myRoster?.players || []).map((id) => players?.[id]).filter(Boolean).sort((a, b) => n(getMetric(b)) - n(getMetric(a)));
   const owners = (league?.rosters || []).filter((roster) => String(roster.owner_id) !== String(myRoster?.owner_id));
+  const protectedOutgoingIds = useMemo(() => {
+    if (!myRoster) return new Set();
+    const slots = startingSlots(league?.roster_positions || []);
+    const protectedIds = new Set();
+    corePositions.forEach((pos) => {
+      const room = myPlayers.filter((player) => position(player) === pos);
+      const required = slots[pos] || 0;
+      if (!required || !room.length) return;
+      const shallow = room.length <= required + 2;
+      room.slice(0, Math.min(room.length, required + (shallow ? 1 : 0))).forEach((player) => protectedIds.add(String(player.player_id)));
+    });
+    return protectedIds;
+  }, [league?.roster_positions, myPlayers, myRoster]);
+  const shallowMyPositions = useMemo(() => {
+    const slots = startingSlots(league?.roster_positions || []);
+    return new Set(corePositions.filter((pos) => slots[pos] && myPlayers.filter((player) => position(player) === pos).length <= slots[pos] + 2));
+  }, [league?.roster_positions, myPlayers]);
+  const requiredQbs = useMemo(() => {
+    const slots = startingSlots(league?.roster_positions || []);
+    return slots.QB + (league?.roster_positions || []).filter((slot) => ["SUPER_FLEX", "SF", "OP"].includes(String(slot || "").toUpperCase())).length;
+  }, [league?.roster_positions]);
+  const myQbCount = myPlayers.filter((player) => position(player) === "QB").length;
 
   const rosterNeeds = (roster) => {
     const counts = (roster?.players || []).reduce((map, id) => {
@@ -131,14 +162,16 @@ export default function TradeWorkspaceSuite({
       const partnerPlayers = (partner.players || []).map((id) => players?.[id]).filter(Boolean).filter((player) => n(getMetric(player)) > 0).sort((a, b) => n(getMetric(b)) - n(getMetric(a)));
       const theirNeeds = rosterNeeds(partner);
       const myNeeds = rosterNeeds(myRoster);
-      const givePool = myPlayers.filter((player) => theirNeeds.slice(0, 2).some((need) => need.pos === position(player))).slice(0, 12);
+      const givePool = myPlayers.filter((player) => !protectedOutgoingIds.has(String(player.player_id)) && theirNeeds.slice(0, 2).some((need) => need.pos === position(player))).slice(0, 12);
       const receivePool = partnerPlayers.filter((player) => myNeeds.slice(0, 2).some((need) => need.pos === position(player))).slice(0, 12);
       const packages = [];
       receivePool.slice(0, 5).forEach((target) => {
+        if (position(target) === "QB" && myQbCount >= requiredQbs + 1) return;
         const targetValue = n(getMetric(target));
         const give = [...givePool].sort((a, b) => Math.abs(n(getMetric(a)) - targetValue / packageSize) - Math.abs(n(getMetric(b)) - targetValue / packageSize)).slice(0, packageSize);
         const giveValue = give.reduce((sum, player) => sum + n(getMetric(player)), 0);
         if (!give.length || !targetValue) return;
+        if (give.some((player) => shallowMyPositions.has(position(player))) && !give.every((player) => !shallowMyPositions.has(position(player)) || position(player) === position(target))) return;
         const key = `${partner.roster_id}:${target.player_id}:${give.map((player) => player.player_id).join("-")}`;
         packages.push({
           key,
@@ -155,7 +188,7 @@ export default function TradeWorkspaceSuite({
       });
       return packages;
     }).filter((row) => row.balance <= .4).sort((a, b) => a.balance - b.balance);
-  }, [owners, myRoster, myPlayers, players, getMetric, packageSize, swipeDecisions]);
+  }, [owners, myRoster, myPlayers, players, getMetric, myQbCount, packageSize, protectedOutgoingIds, requiredQbs, shallowMyPositions, swipeDecisions]);
   const swipe = generatedPackages[swipeIndex % Math.max(1, generatedPackages.length)];
   const blockOffers = generatedPackages.filter((offer) => {
     if (!block.length || !offer.give.some((player) => block.includes(String(player.player_id)))) return false;
