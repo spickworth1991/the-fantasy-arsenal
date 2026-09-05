@@ -6,6 +6,7 @@ const decode = (value = "") => String(value).replace(/<!\[CDATA\[([\s\S]*?)\]\]>
 const textOnly = (value = "") => decode(value).replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))).replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16))).replace(/\s+/g, " ").trim();
 const absoluteFantasyPros = (value) => { try { return new URL(String(value || ""), "https://www.fantasypros.com").toString(); } catch { return ""; } };
 const normalized = (value) => textOnly(value).toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\b(jr|sr|ii|iii|iv)\b/g, " ").replace(/\s+/g, " ").trim();
+const playerSlug = (value) => String(value || "").toLowerCase().normalize("NFKD").replace(/[’']/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const categoryFor = (article) => {
   const value = `${article.title} ${article.summary}`.toLowerCase();
   if (/injur|questionable|doubtful|out\b|practice|surgery/.test(value)) return "Injury";
@@ -26,6 +27,13 @@ const parsePage = (html) => [...String(html || "").matchAll(/<div class="player-
   const date = block.match(/<\/span><br\s*\/?>\s*<p>([\s\S]*?)<br>/i);
   return { title: textOnly(header?.[2]), source: "FantasyPros", link: absoluteFantasyPros(header?.[1]), published: textOnly(date?.[1]), summary: textOnly(impact?.[1]) };
 }).filter((article) => article.title && article.link);
+const parsePlayerPage = (html) => [...String(html || "").matchAll(/<div class="content">\s*<a href="([^"]*\/nfl\/news\/[^"]+)"[^>]*>\s*<b>([\s\S]*?)<\/b>\s*<\/a>\s*<p>([\s\S]*?)<\/p>\s*<p>\s*<b>Fantasy Impact<\/b>\s*<\/p>\s*<p>([\s\S]*?)<\/p>[\s\S]*?<span class="pull-right timestamp">([\s\S]*?)<\/span>/gi)].map((match) => ({
+  title: textOnly(match[2]),
+  source: "FantasyPros",
+  link: absoluteFantasyPros(match[1]),
+  published: textOnly(match[5]),
+  summary: textOnly(match[4] || match[3]),
+})).filter((article) => article.title && article.link);
 const belongsToPlayer = (article, playerName) => {
   const needle = normalized(playerName), haystack = normalized(`${article.title} ${article.summary}`);
   if (!needle || !haystack) return false;
@@ -43,6 +51,11 @@ export async function GET(request) {
   if (process.env.FANTASYPROS_API_KEY) try {
     const response = await fetch("https://api.fantasypros.com/public/v2/json/nfl/news?limit=100", { headers: { "x-api-key": process.env.FANTASYPROS_API_KEY, Accept: "application/json" }, next: { revalidate: 900 } });
     if (response.ok) candidates.push(...normalizeApi(await response.json()));
+  } catch {}
+  if (!candidates.some((article) => belongsToPlayer(article, query))) try {
+    const slug = playerSlug(query);
+    const response = await fetch(`https://www.fantasypros.com/nfl/news/${slug}.php`, { headers: { "User-Agent": "Mozilla/5.0 (compatible; TheFantasyArsenal/1.0; +https://thefantasyarsenal.com)", Accept: "text/html,application/xhtml+xml" }, next: { revalidate: 900 } });
+    if (response.ok) candidates.push(...parsePlayerPage(await response.text()));
   } catch {}
   if (!candidates.some((article) => belongsToPlayer(article, query))) try {
     const suffix = ["QB", "RB", "WR", "TE", "K", "DL"].includes(position) ? `?position=${position}` : "";
