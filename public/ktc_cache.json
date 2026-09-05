@@ -607,7 +607,7 @@
       "name": "C.J. Stroud",
       "team": "HOU",
       "position": "QB",
-      "value": 4429
+      "value": 4431
     },
     {
       "rank": 88,
@@ -705,7 +705,7 @@
       "name": "Matthew Stafford",
       "team": "LAR",
       "position": "QB",
-      "value": 3756
+      "value": 3759
     },
     {
       "rank": 102,
@@ -719,7 +719,7 @@
       "name": "Jordan Addison",
       "team": "MIN",
       "position": "WR",
-      "value": 3717
+      "value": 3714
     },
     {
       "rank": 104,
@@ -782,7 +782,7 @@
       "name": "Quentin Johnston",
       "team": "LAC",
       "position": "WR",
-      "value": 3580
+      "value": 3579
     },
     {
       "rank": 113,
@@ -803,14 +803,14 @@
       "name": "Davante Adams",
       "team": "LAR",
       "position": "WR",
-      "value": 3477
+      "value": 3480
     },
     {
       "rank": 116,
       "name": "Josh Downs",
       "team": "IND",
       "position": "WR",
-      "value": 3462
+      "value": 3456
     },
     {
       "rank": 117,
@@ -1489,7 +1489,7 @@
       "name": "T.J. Hockenson",
       "team": "MIN",
       "position": "TE",
-      "value": 2454
+      "value": 2457
     },
     {
       "rank": 214,
@@ -1503,7 +1503,7 @@
       "name": "Jalen Nailor",
       "team": "LV",
       "position": "WR",
-      "value": 2438
+      "value": 2435
     },
     {
       "rank": 216,
@@ -1762,7 +1762,7 @@
       "name": "Jaylen Wright",
       "team": "MIA",
       "position": "RB",
-      "value": 2142
+      "value": 2145
     },
     {
       "rank": 253,
@@ -1780,15 +1780,15 @@
     },
     {
       "rank": 255,
-      "name": "Michael Mayer",
-      "team": "LV",
+      "name": "David Njoku",
+      "team": "LAC",
       "position": "TE",
-      "value": 2128
+      "value": 2125
     },
     {
       "rank": 256,
-      "name": "David Njoku",
-      "team": "LAC",
+      "name": "Michael Mayer",
+      "team": "LV",
       "position": "TE",
       "value": 2125
     },
@@ -2585,17 +2585,17 @@
     },
     {
       "rank": 370,
-      "name": "Tai Felton",
-      "team": "MIN",
-      "position": "WR",
-      "value": 1337
-    },
-    {
-      "rank": 371,
       "name": "Marlin Klein",
       "team": "HOU",
       "position": "TE",
-      "value": 1336
+      "value": 1339
+    },
+    {
+      "rank": 371,
+      "name": "Tai Felton",
+      "team": "MIN",
+      "position": "WR",
+      "value": 1334
     },
     {
       "rank": 372,
@@ -8027,5 +8027,5 @@
       "pickValueMethod": "source-curve interpolation"
     }
   ],
-  "updated": "2026-09-05T04:06:36.341Z"
+  "updated": "2026-09-05T04:03:05.345Z"
 }

@@ -138,6 +138,11 @@ function getInjuryCategory(p) {
   return "OTHER";
 }
 
+function isConfirmedUnavailable(p) {
+  const category = getInjuryCategory(p);
+  return ["OUT", "IR", "PUP"].includes(category) || /suspend/.test(String(p?.status || "").toLowerCase());
+}
+
 function timeAgo(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(s / 60);
@@ -368,14 +373,38 @@ export default function LeagueHubContent() {
 
   // scan filters
   const [onlyBestBall, setOnlyBestBall] = useState(false);
-  const [excludeBestBall, setExcludeBestBall] = useState(false);
+  const [excludeBestBall, setExcludeBestBall] = useState(true);
   const [includeDrafting, setIncludeDrafting] = useState(true);
+  const [scopePreferencesReady, setScopePreferencesReady] = useState(false);
   const [leagueQuery, setLeagueQuery] = useState("");
   useEffect(()=>{const leagueId=new URLSearchParams(window.location.search).get("league");if(leagueId)setLeagueQuery(leagueId);},[]);
   const [leagueFormatFilter, setLeagueFormatFilter] = useState("ALL");
   const [leagueSizeFilter, setLeagueSizeFilter] = useState("ALL");
   const [scoringFilter, setScoringFilter] = useState("ALL");
   const [leagueStatusFilter, setLeagueStatusFilter] = useState("ALL");
+  useEffect(() => {
+    const restore = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("tfa:league-hub:scope") || "null");
+        if (!saved || typeof saved !== "object") return;
+        setOnlyBestBall(!!saved.onlyBestBall);
+        setExcludeBestBall(saved.excludeBestBall !== false);
+        setIncludeDrafting(saved.includeDrafting !== false);
+        setLeagueFormatFilter(saved.leagueFormatFilter || "ALL");
+        setLeagueSizeFilter(saved.leagueSizeFilter || "ALL");
+        setScoringFilter(saved.scoringFilter || "ALL");
+        setLeagueStatusFilter(saved.leagueStatusFilter || "ALL");
+      } catch {}
+      finally { setScopePreferencesReady(true); }
+    };
+    restore();
+    window.addEventListener("tfa:cloud-sync-applied", restore);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", restore);
+  }, []);
+  useEffect(() => {
+    if (!scopePreferencesReady) return;
+    localStorage.setItem("tfa:league-hub:scope", JSON.stringify({ onlyBestBall, excludeBestBall, includeDrafting, leagueFormatFilter, leagueSizeFilter, scoringFilter, leagueStatusFilter }));
+  }, [scopePreferencesReady, onlyBestBall, excludeBestBall, includeDrafting, leagueFormatFilter, leagueSizeFilter, scoringFilter, leagueStatusFilter]);
   const [injuryStatusFilter, setInjuryStatusFilter] = useState("ALL");
   const [hubControlsOpen, setHubControlsOpen] = useState(false);
   const [actionFilter, setActionFilter] = useState("all");
@@ -403,7 +432,7 @@ export default function LeagueHubContent() {
 
   // Best available filters
   const [bestPos, setBestPos] = useState("ALL");
-  const [bestLimit, setBestLimit] = useState(20);
+  const [bestPage, setBestPage] = useState(0);
   const [minOpenSlots, setMinOpenSlots] = useState(1);
   const [bestSort, setBestSort] = useState("metric");
   const [trendingAdds, setTrendingAdds] = useState(() => new Map());
@@ -488,10 +517,11 @@ export default function LeagueHubContent() {
   }, [excludedKey, excludedLeagueIds]);
 
   const [selectedManagerLeague, setSelectedManagerLeague] = useState(null);
+  const [managerInjuryFilter, setManagerInjuryFilter] = useState("ALL");
+  const [opportunityOnly, setOpportunityOnly] = useState(false);
   const [selectedInjuryPlayer, setSelectedInjuryPlayer] = useState(null);
 
-  const projectionsReady =
-    !!projectionIndexes?.FFA || !!projectionIndexes?.ESPN || !!projectionIndexes?.CBS || !!projectionIndexes?.SLEEPER || !!projectionIndexes?.FANTASYSHARKS || !!projectionIndexes?.DRAFTSHARKS || !!projectionIndexes?.ARSENAL;
+  const projectionsReady = !!projectionIndexes?.[projectionSource];
 
 
   // ---------- Guards ----------
@@ -803,7 +833,7 @@ export default function LeagueHubContent() {
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score);
 
-    const candidateCount = Math.max(bestLimit * 8, 600);
+    const candidateCount = 800;
     const candidates = ranked.slice(0, candidateCount);
     const out = [];
 
@@ -837,13 +867,24 @@ export default function LeagueHubContent() {
       const proj = getProjection(p, projectionSource);
       const val = getValueForPlayer(p);
       let needTotal = 0;
+      const opportunityLeagues = [];
       for (const lg of openLeagues) {
         const mine = myRosterRef.current.get(lg.id) || new Set();
-        const ownedAtPos = Array.from(mine).filter((id) => getPrimaryPos(playersMap?.[id]) === playerPos).length;
+        const positionRoom = Array.from(mine)
+          .map((id) => playersMap?.[id])
+          .filter((rostered) => rostered && getPrimaryPos(rostered) === playerPos)
+          .map((rostered) => metricFor(rostered))
+          .filter((value) => value > 0)
+          .sort((a, b) => b - a);
+        const ownedAtPos = positionRoom.length;
         const starterDemand = (lg.roster_positions || []).filter((slot) => eligibleForSlot(slot, playerPos)).length;
-        needTotal += starterDemand > 0
-          ? Math.max(0, Math.min(1, (starterDemand + 1 - ownedAtPos) / (starterDemand + 1)))
-          : 0;
+        const starterCutline = positionRoom[Math.max(0, Math.min(positionRoom.length - 1, starterDemand - 1))] || 0;
+        const depthShortfall = starterDemand > 0 && ownedAtPos < starterDemand;
+        const actualUpgrade = starterCutline > 0 && score > starterCutline * 1.03;
+        if (depthShortfall || actualUpgrade) {
+          opportunityLeagues.push(lg);
+          needTotal += depthShortfall ? 1 : Math.min(1, (score - starterCutline) / Math.max(1, starterCutline));
+        }
       }
       const needScore = openLeagues.length ? needTotal / openLeagues.length : 0;
       const availabilityPct = openLeagues.length / Math.max(leagues.length, 1);
@@ -861,6 +902,7 @@ export default function LeagueHubContent() {
         value: val,
         openCount: openLeagues.length,
         openLeagues,
+        opportunityLeagues,
         needScore,
         availabilityPct,
         adds,
@@ -874,13 +916,12 @@ export default function LeagueHubContent() {
         ? b.opportunityScore - a.opportunityScore || b.score - a.score
         : b.score - a.score || b.opportunityScore - a.opportunityScore
     );
-    return out.slice(0, bestLimit);
+    return out.slice(0, 100);
   }, [
     visibleLeaguesList,
     playerList,
     bestMetric,
     bestPos,
-    bestLimit,
     minOpenSlots,
     getValueForPlayer,
     getProjection,
@@ -890,6 +931,16 @@ export default function LeagueHubContent() {
     trendingAdds,
     trendingDrops,
   ]);
+  const shownFreeAgents = useMemo(
+    () =>
+      bestFreeAgents.filter(
+        (row) => !opportunityOnly || row.opportunityLeagues?.length > 0,
+      ),
+    [bestFreeAgents, opportunityOnly],
+  );
+  const freeAgentPages = Math.max(1, Math.ceil(shownFreeAgents.length / 20));
+  const pagedFreeAgents = shownFreeAgents.slice(bestPage * 20, bestPage * 20 + 20);
+  useEffect(() => { setBestPage((page) => Math.min(page, freeAgentPages - 1)); }, [freeAgentPages, opportunityOnly, bestPos, bestSort, minOpenSlots]);
 
   const watchlistRows = useMemo(() => Array.from(watchlistIds).map((pid) => {
     const p = playersMap?.[pid];
@@ -1002,6 +1053,9 @@ export default function LeagueHubContent() {
 
     const yearNum = Number(yrStr) || new Date().getFullYear();
     const weeks = Array.from({ length: 18 }, (_, i) => i + 1);
+    const liveWeek = String(nflState?.season || "") === String(yearNum)
+      ? Math.max(0, Number(nflState?.week || nflState?.leg || 0))
+      : 0;
 
     const out = [];
 
@@ -1025,20 +1079,26 @@ export default function LeagueHubContent() {
           if (!p) return null;
           const pos = posLabel(getPrimaryPos(p));
           const bye = getByeWeekForPlayer(p, yearNum);
-          const inj = isInjuredOrLimited(p);
+          const injuryFlag = isInjuredOrLimited(p);
+          const confirmedUnavailable = isConfirmedUnavailable(p);
           const name =
             p.full_name ||
             p.search_full_name ||
             `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
             `Player #${pid}`;
           const team = normalizeTeamAbbr(p?.team);
-          return { pid: String(pid), name, pos, team, bye, injured: inj };
+          return { pid: String(pid), name, pos, team, bye, injuryFlag, confirmedUnavailable, injuryCategory:getInjuryCategory(p) };
         })
         .filter(Boolean);
 
       const availableInWeek = (rp, week) => {
         if (!rp) return false;
-        if (rp.injured) return false;
+        // Injury feeds generally do not provide a reliable return date. A
+        // current-week flag can affect availability; in later weeks only a
+        // confirmed Out/IR/PUP status is treated as unavailable.
+        const injuryIncluded = managerInjuryFilter === "ALL" || rp.injuryCategory === managerInjuryFilter;
+        const inTwoWeekWatch = week > liveWeek && week <= liveWeek + 2;
+        if (injuryIncluded && (week <= liveWeek || inTwoWeekWatch ? rp.injuryFlag : rp.confirmedUnavailable)) return false;
         if (rp.bye && Number(rp.bye) === Number(week)) return false;
         return true;
       };
@@ -1066,7 +1126,9 @@ export default function LeagueHubContent() {
             outByeByPos[p] = (outByeByPos[p] || 0) + 1;
             (outByePlayersByPos[p] ||= []).push(rp);
           }
-          if (rp.injured) {
+          const injuryIncluded = managerInjuryFilter === "ALL" || rp.injuryCategory === managerInjuryFilter;
+          const inTwoWeekWatch = week > liveWeek && week <= liveWeek + 2;
+          if (injuryIncluded && (week <= liveWeek || inTwoWeekWatch ? rp.injuryFlag : rp.confirmedUnavailable)) {
             outInjByPos[p] = (outInjByPos[p] || 0) + 1;
             (outInjPlayersByPos[p] ||= []).push(rp);
           }
@@ -1149,7 +1211,9 @@ export default function LeagueHubContent() {
           .sort((a, b) => b.missing - a.missing || (b.byeOut + b.injOut) - (a.byeOut + a.injOut));
 
         const byeOutAll = rosterPlayers.filter((rp) => rp.bye === week);
-        const injOutAll = rosterPlayers.filter((rp) => rp.injured);
+        const inTwoWeekWatch = week > liveWeek && week <= liveWeek + 2;
+        const injOutAll = rosterPlayers.filter((rp) => (managerInjuryFilter === "ALL" || rp.injuryCategory === managerInjuryFilter) && (week <= liveWeek || inTwoWeekWatch ? rp.injuryFlag : rp.confirmedUnavailable));
+        const injuryFlagCount = rosterPlayers.filter((rp) => (managerInjuryFilter === "ALL" || rp.injuryCategory === managerInjuryFilter) && rp.injuryFlag).length;
 
         issues.push({
           week,
@@ -1161,6 +1225,8 @@ export default function LeagueHubContent() {
           availCounts,
           byeCount: byeOutAll.length,
           injCount: injOutAll.length,
+          injuryFlagCount,
+          futureInjuryUncertain: inTwoWeekWatch && injuryFlagCount > 0,
           byePlayers: byeOutAll,
           injPlayers: injOutAll,
           byePreview: byeOutAll
@@ -1174,19 +1240,19 @@ export default function LeagueHubContent() {
 
       if (!issues.length) continue;
 
-      issues.sort((a, b) => b.totalMissing - a.totalMissing || a.week - b.week);
+      issues.sort((a, b) => a.week - b.week);
 
       out.push({
         league: lg,
         slotCounts,
         issues,
-        worst: issues[0],
+        worst: [...issues].sort((a, b) => b.totalMissing - a.totalMissing || a.week - b.week)[0],
       });
     }
 
     out.sort((a, b) => (b.worst?.totalMissing || 0) - (a.worst?.totalMissing || 0));
     return out.slice(0, 60);
-  }, [visibleLeaguesList, playersMap, yrStr]);
+  }, [visibleLeaguesList, playersMap, yrStr, nflState, managerInjuryFilter]);
 
   // ---------- Waiver tracker (recent transactions across visible leagues) ----------
     useEffect(() => {
@@ -1715,12 +1781,30 @@ export default function LeagueHubContent() {
             </div>
 
             <div className="mt-3 text-[11px] text-white/50">
+              <div className="mb-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-3 text-white/60">
+                <div className="text-[10px] font-black uppercase tracking-[.16em] text-cyan-100/55">League scope</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[{ key: "all", label: "All leagues" }, { key: "best", label: "Best Ball only" }, { key: "managed", label: "Managed only" }].map((option) => {
+                    const active = option.key === "all" ? !onlyBestBall && !excludeBestBall : option.key === "best" ? onlyBestBall : excludeBestBall;
+                    return <button key={option.key} type="button" onClick={() => { setOnlyBestBall(option.key === "best"); setExcludeBestBall(option.key === "managed"); }} className={`rounded-xl border px-3 py-2 text-[11px] font-bold transition ${active ? "border-cyan-300/35 bg-cyan-300/15 text-cyan-50" : "border-white/10 bg-black/20 text-white/45 hover:bg-white/[0.06]"}`}>{option.label}</button>;
+                  })}
+                  <button type="button" onClick={() => setIncludeDrafting((value) => !value)} className={`rounded-xl border px-3 py-2 text-[11px] font-bold transition ${includeDrafting ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-white/10 bg-black/20 text-white/45 hover:bg-white/[0.06]"}`}>
+                    Drafting {includeDrafting ? "included" : "hidden"}
+                  </button>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <select value={leagueFormatFilter} onChange={(e) => setLeagueFormatFilter(e.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white"><option value="ALL">All league types</option><option value="DYNASTY">Dynasty</option><option value="KEEPER">Keeper</option><option value="REDRAFT">Redraft</option></select>
+                  <select value={leagueSizeFilter} onChange={(e) => setLeagueSizeFilter(e.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white"><option value="ALL">All sizes</option>{[8,10,12,14,16].map((size) => <option key={size} value={String(size)}>{size} teams</option>)}</select>
+                  <select value={scoringFilter} onChange={(e) => setScoringFilter(e.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white"><option value="ALL">All scoring</option><option value="PPR">PPR</option><option value="HALF">Half PPR</option><option value="STANDARD">Standard</option></select>
+                  <select value={leagueStatusFilter} onChange={(e) => setLeagueStatusFilter(e.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white"><option value="ALL">All statuses</option><option value="IN_SEASON">In season</option><option value="DRAFTING">Drafting</option><option value="PRE_DRAFT">Pre-draft</option><option value="COMPLETE">Complete</option></select>
+                </div>
+              </div>
               Included:{" "}
               <span className="text-white/80 font-semibold">
-                {all.length - excludedLeagueIds.size}
+                {all.filter((leagueRow) => !excludedLeagueIds.has(String(leagueRow.id))).length}
               </span>{" "}
               • Excluded:{" "}
-              <span className="text-white/80 font-semibold">{excludedLeagueIds.size}</span>
+              <span className="text-white/80 font-semibold">{all.filter((leagueRow) => excludedLeagueIds.has(String(leagueRow.id))).length}</span>
               <span className="mx-2 text-white/20">•</span>
               BestBall filter:{" "}
               <span className="text-white/75">
@@ -2100,7 +2184,9 @@ export default function LeagueHubContent() {
     const [showAll, setShowAll] = useState(false);
     if (!row) return null;
 
-    const list = showAll ? row.openLeagues : row.openLeagues.slice(0, 24);
+    const opportunityLeagues = row.opportunityLeagues || [];
+    const primaryLeagues = opportunityLeagues.length ? opportunityLeagues : row.openLeagues;
+    const list = showAll ? primaryLeagues : primaryLeagues.slice(0, 24);
     const suggestedFaab = Math.max(1, Math.min(25, Math.round(3 + (row.needScore || 0) * 10 + (row.availabilityPct || 0) * 5 + Math.max(0, (row.adds || 0) - (row.drops || 0)) / 100)));
     const dropCandidateFor = (lg) => {
       const mine = Array.from(myRosterRef.current.get(lg.id) || []);
@@ -2137,13 +2223,13 @@ export default function LeagueHubContent() {
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-2 shrink-0">
-            <div className="text-xs text-white/60">Available in these leagues:</div>
-            {row.openLeagues.length > 24 ? (
+            <div className="text-xs text-white/60">{opportunityLeagues.length ? `Source-based opportunity in ${opportunityLeagues.length} league${opportunityLeagues.length === 1 ? "" : "s"}:` : "Available in these leagues:"}</div>
+            {primaryLeagues.length > 24 ? (
               <button
                 onClick={() => setShowAll((v) => !v)}
                 className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
               >
-                {showAll ? "Show less" : `Show all (${row.openLeagues.length})`}
+                {showAll ? "Show less" : `Show all (${primaryLeagues.length})`}
               </button>
             ) : null}
           </div>
@@ -2272,14 +2358,14 @@ export default function LeagueHubContent() {
     );
   };
 
-  const ManagerModal = ({ item, onClose }) => {
+  const ManagerModal = ({ item, onClose, injuryFilter, setInjuryFilter }) => {
     if (!item) return null;
     const lg = item.league;
 
     return (
       <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
         <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-        <div className="relative flex flex-col w-full max-w-4xl max-h-[84vh] overflow-hidden rounded-3xl border border-white/10 bg-gray-950/90 backdrop-blur p-5 shadow-2xl">
+        <div className="relative flex flex-col w-full max-w-5xl max-h-[88vh] overflow-hidden rounded-[32px] border border-rose-300/20 bg-[radial-gradient(circle_at_92%_0%,rgba(251,113,133,.18),transparent_34%),radial-gradient(circle_at_5%_100%,rgba(34,211,238,.12),transparent_38%),#020617] p-5 shadow-[0_40px_140px_rgba(0,0,0,.75)] backdrop-blur sm:p-6">
           <div className="flex items-start justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <img
@@ -2315,11 +2401,17 @@ export default function LeagueHubContent() {
             </span>
           </div>
 
-          <div className="mt-4 max-h-[66vh] overflow-y-auto pr-2 -mr-2 space-y-3">
+          <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] px-4 py-3 text-[11px] leading-5 text-amber-50/75 shrink-0">
+            Injury feeds do not provide reliable return dates. Current flags are treated as a cautious potential conflict for the next two NFL weeks; farther out, only confirmed Out, IR, or PUP statuses are counted.
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] shrink-0"><span className="font-semibold text-white/55">Injury designations in this manager:</span>{["ALL","OUT","IR","PUP","DOUBTFUL","QUESTIONABLE","LIMITED"].map((status) => <button key={status} type="button" onClick={() => setInjuryFilter(status)} className={`rounded-full border px-2.5 py-1 ${injuryFilter === status ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-white/10 bg-white/[0.03] text-white/45"}`}>{status === "ALL" ? "All flags" : status}</button>)}</div>
+
+          <div className="mt-4 max-h-[66vh] space-y-3 overflow-y-auto pr-2 -mr-2">
             {item.issues.map((w) => (
               <div
                 key={`mgr-${lg.id}-${w.week}`}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.075] to-white/[0.02] p-4 shadow-[0_16px_38px_rgba(0,0,0,.16)]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-white font-semibold">
@@ -2332,7 +2424,7 @@ export default function LeagueHubContent() {
                     Shortfall:{" "}
                     <span className="text-white/80 tabular-nums">{w.shortfallText}</span>
                     <span className="mx-2 text-white/20">•</span>
-                    Bye:{w.byeCount} • Inj:{w.injCount}
+                    Bye:{w.byeCount} • Confirmed inj:{w.injCount}
                   </div>
                 </div>
 
@@ -2345,6 +2437,8 @@ export default function LeagueHubContent() {
                       .join("  ")}
                   </span>
                 </div>
+
+                {w.futureInjuryUncertain ? <div className="mt-2 text-[11px] leading-5 text-amber-100/65">Potential conflict: {w.injuryFlagCount} roster injury flag{w.injuryFlagCount === 1 ? "" : "s"} has no reliable return date. This cautious flag applies only inside the next-two-week watch window.</div> : null}
 
                 {/* NEW: conflict breakdown */}
                 {w.conflicts?.length ? (
@@ -2657,7 +2751,7 @@ export default function LeagueHubContent() {
 
           <section id="summary" className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4 scroll-mt-28">
             {actionSummary.map((item) => (
-              <a key={item.label} href={`#${item.target}`} className="rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10">
+              <a key={item.label} href={`#${item.target}`} onClick={() => { if (item.target === "free-agents") { setOpportunityOnly(true); setBestSort("opportunity"); } }} className="rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10">
                 <div className="text-2xl font-bold text-white tabular-nums">{item.value}</div>
                 <div className="mt-1 text-xs text-white/55">{item.label}</div>
               </a>
@@ -2738,7 +2832,7 @@ export default function LeagueHubContent() {
               />
             </div>}
 
-            <div className="mt-4 flex flex-wrap items-center gap-4">
+            <div className="hidden mt-4 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-white/75">
                   <input
                     type="checkbox"
@@ -2793,16 +2887,16 @@ export default function LeagueHubContent() {
                 placeholder="Search leagues"
                 className="col-span-2 md:col-span-1 bg-gray-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white"
               />
-              <select value={leagueFormatFilter} onChange={(e) => setLeagueFormatFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+              <select value={leagueFormatFilter} onChange={(e) => setLeagueFormatFilter(e.target.value)} className="hidden bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
                 <option value="ALL">All formats</option><option value="DYNASTY">Dynasty</option><option value="KEEPER">Keeper</option><option value="REDRAFT">Redraft</option><option value="BESTBALL">Best Ball</option>
               </select>
-              <select value={leagueSizeFilter} onChange={(e) => setLeagueSizeFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+              <select value={leagueSizeFilter} onChange={(e) => setLeagueSizeFilter(e.target.value)} className="hidden bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
                 <option value="ALL">All sizes</option>{[8,10,12,14,16].map((n) => <option key={n} value={String(n)}>{n} teams</option>)}
               </select>
-              <select value={scoringFilter} onChange={(e) => setScoringFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+              <select value={scoringFilter} onChange={(e) => setScoringFilter(e.target.value)} className="hidden bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
                 <option value="ALL">All scoring</option><option value="PPR">PPR</option><option value="HALF">Half PPR</option><option value="STANDARD">Standard</option>
               </select>
-              <select value={leagueStatusFilter} onChange={(e) => setLeagueStatusFilter(e.target.value)} className="bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
+              <select value={leagueStatusFilter} onChange={(e) => setLeagueStatusFilter(e.target.value)} className="hidden bg-gray-950 border border-white/10 rounded-xl px-2 py-2 text-xs">
                 <option value="ALL">All statuses</option><option value="IN_SEASON">In season</option><option value="DRAFTING">Drafting</option><option value="PRE_DRAFT">Pre-draft</option><option value="COMPLETE">Complete</option>
               </select>
             </div>
@@ -2900,11 +2994,20 @@ export default function LeagueHubContent() {
                       <div className="text-lg font-semibold">Top Free Agents</div>
                     </div>
                     <div className="text-xs text-white/50 mt-1">
-                      Ranked by {bestMetric === "projection" ? "season projection" : "value"}. Click a player to see leagues.
+                      Ranked by {bestMetric === "projection" ? "season projection" : "value"}. {opportunityOnly ? "Showing only players with a real starter upgrade or positional shortfall in at least one available league." : "Click a player to see leagues."}
+                    </div>
+                    <div className="mt-1 text-[10px] leading-4 text-white/35">
+                      Opportunity rank blends the selected source metric with roster need, availability across your leagues, and recent add/drop momentum. It is a sorting signal, not a separate player value.
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => { setOpportunityOnly(true); setBestPage(0); setBestSort("opportunity"); }} aria-pressed={opportunityOnly} title="Show only players who are available in at least one league with a starter upgrade or positional shortfall" className={`rounded-full border px-3 py-2 text-[11px] font-bold transition ${opportunityOnly ? "border-emerald-300/30 bg-emerald-300/12 text-emerald-100" : "border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.08]"}`}>{opportunityOnly ? "Opportunities active" : "Opportunities only"}</button>
+                    {opportunityOnly ? (
+                      <button type="button" onClick={() => { setOpportunityOnly(false); setBestPage(0); }} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold text-white/65 transition hover:bg-white/[0.08]">
+                        Show all free agents
+                      </button>
+                    ) : null}
                     <select
                       className="bg-gray-950 border border-white/10 rounded-2xl px-2 py-2 text-xs text-white/80"
                       value={bestSort}
@@ -2912,7 +3015,7 @@ export default function LeagueHubContent() {
                       title="Rank by"
                     >
                       <option value="metric">Source metric</option>
-                      <option value="opportunity">Opportunity score</option>
+                      <option value="opportunity">Opportunity rank</option>
                     </select>
                     <select
                       className="bg-gray-950 border border-white/10 rounded-2xl px-2 py-2 text-xs text-white/80"
@@ -2940,22 +3043,11 @@ export default function LeagueHubContent() {
                       <option value="4">4+ open</option>
                       <option value="5">5+ open</option>
                     </select>
-                    <select
-                      className="bg-gray-950 border border-white/10 rounded-2xl px-2 py-2 text-xs text-white/80"
-                      value={String(bestLimit)}
-                      onChange={(e) => setBestLimit(parseInt(e.target.value, 10) || 25)}
-                      title="Show"
-                    >
-                      <option value="20">20</option>
-                      <option value="50">50</option>
-                      <option value="75">75</option>
-                      <option value="100">100</option>
-                    </select>
                   </div>
                 </div>
 
                 <div className="mt-4 overflow-x-auto">
-                  {bestFreeAgents.length === 0 ? (
+                  {shownFreeAgents.length === 0 ? (
                     <div className={`${SUBCARD} p-4 text-sm text-white/60`}>
                       No free agents found (try loosening filters or switching sources).
                     </div>
@@ -2973,14 +3065,14 @@ export default function LeagueHubContent() {
                         </tr>
                       </thead>
                       <tbody>
-                        {bestFreeAgents.map((row) => {
+                        {pagedFreeAgents.map((row) => {
                           const metricVal = bestMetric === "projection" ? row.proj : row.value;
                           const openLabel = `${row.openCount}/${visibleLeaguesList.length}`;
                           const previews = row.openLeagues.slice(0, 6);
                           return (
                             <tr
                               key={row.id}
-                              className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                              className={`border-b border-white/5 cursor-pointer transition hover:bg-white/5 ${opportunityOnly ? "bg-emerald-300/[0.035]" : ""}`}
                               onClick={() => setSelectedFA(row)}
                             >
                               <td className="py-2 pr-2">
@@ -2995,6 +3087,7 @@ export default function LeagueHubContent() {
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2">
                                       <div className="text-white font-semibold truncate">{row.name}</div>
+                                      {row.needScore >= 0.25 ? <span title={`Opportunity in ${row.opportunityLeagues?.length || 0} league${row.opportunityLeagues?.length === 1 ? "" : "s"}: source-based starter upgrade or a true position shortfall. Click this player to see those leagues.`} className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-1.5 py-0.5 text-[9px] font-black text-emerald-100">Opportunity</span> : null}
                                     </div>
                                     <div className="mt-1 flex items-center gap-2">
                                       <span className={PILL}>
@@ -3048,6 +3141,7 @@ export default function LeagueHubContent() {
                     </table>
                   )}
                 </div>
+                {shownFreeAgents.length > 20 ? <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 p-3 text-xs"><span className="text-white/45">Showing {bestPage * 20 + 1}–{Math.min((bestPage + 1) * 20, shownFreeAgents.length)} of {shownFreeAgents.length}</span><div className="flex gap-2"><button type="button" disabled={!bestPage} onMouseDown={(event) => event.preventDefault()} onClick={(event) => { event.currentTarget.blur(); setBestPage((page) => page - 1); }} className="rounded-xl bg-white/[0.06] px-3 py-2 font-bold disabled:opacity-30">Previous</button><span className="px-2 py-2 text-white/55">Page {bestPage + 1} / {freeAgentPages}</span><button type="button" disabled={bestPage >= freeAgentPages - 1} onMouseDown={(event) => event.preventDefault()} onClick={(event) => { event.currentTarget.blur(); setBestPage((page) => page + 1); }} className="rounded-xl bg-cyan-300/10 px-3 py-2 font-bold text-cyan-100 disabled:opacity-30">Next</button></div></div> : null}
               </section>
 
               {/* Injury Report (click player => leagues) */}
@@ -3253,7 +3347,7 @@ export default function LeagueHubContent() {
         <InjuryPlayerModal row={selectedInjuryPlayer} onClose={() => setSelectedInjuryPlayer(null)} />
       ) : null}
       {selectedManagerLeague ? (
-        <ManagerModal item={selectedManagerLeague} onClose={() => setSelectedManagerLeague(null)} />
+        <ManagerModal item={managerIssues.find((entry) => String(entry.league?.id) === String(selectedManagerLeague.league?.id)) || selectedManagerLeague} onClose={() => setSelectedManagerLeague(null)} injuryFilter={managerInjuryFilter} setInjuryFilter={setManagerInjuryFilter} />
       ) : null}
             {showLeaguesModal ? <LeaguesModal onClose={() => setShowLeaguesModal(false)} /> : null}
 

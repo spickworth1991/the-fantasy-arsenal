@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSleeper } from "../context/SleeperContext";
 import AvatarImage from "./AvatarImage";
-import { DEFAULT_SOURCES } from "./SourceSelector";
 import PlayerResearchPanel from "./PlayerResearchPanel";
+import { DEFAULT_SOURCES } from "./SourceSelector";
 import {
   scoreSleeperStats,
   sleeperScoringCoverage,
@@ -14,9 +14,8 @@ const TABS = [
   ["overview", "Overview"],
   ["sources", "All sources"],
   ["live", "Live Game"],
-  ["production", "Production"],
-  ["market", "Market"],
-  ["research", "Research"],
+  ["production", "Games"],
+  ["research", "News"],
 ];
 const n = (value) => Number(value) || 0;
 const pct = (value) => `${Math.round(value * 100)}%`;
@@ -83,6 +82,60 @@ async function readArchivedJson(url) {
   return new Response(stream).json();
 }
 
+const archiveSourceFile = {
+  "val:fantasycalc": "fantasycalc_cache.json",
+  "val:keeptradecut": "ktc_cache.json",
+  "val:dynastyprocess": "dynastyprocess_cache.json",
+  "val:fantasynav": "fantasynav_cache.json",
+  "val:fantasypros": "fantasypros_cache.json",
+  "val:fantasypros-ecr": "fantasypros_ecr_cache.json",
+  "val:idynastyp": "idynastyp_cache.json",
+  "val:idpshow": "idpshow_cache.json",
+  "val:thefantasyarsenal": "stickypicky_cache.json",
+  "proj:ffa": (season) => `projections_${season}.json`,
+  "proj:espn": (season) => `projections_espn_${season}.json`,
+  "proj:cbs": (season) => `projections_cbs_${season}.json`,
+  "proj:sleeper": (season) => `projections_sleeper_${season}.json`,
+  "proj:fantasysharks": (season) => `projections_fantasysharks_${season}.json`,
+  "proj:draftsharks": (season) => `projections_draftsharks_${season}.json`,
+  "proj:fantasypros": (season) => `projections_fantasypros_${season}.json`,
+  "proj:thefantasyarsenal": (season) =>
+    `projections_thefantasyarsenal_${season}.json`,
+  "proj:thefantasyarsenal-model": (season) =>
+    `projections_thefantasyarsenal_model_${season}.json`,
+};
+
+function archivedSourceAmount(payload, sourceKey, { name, position, format, qbType }) {
+  if (!payload) return 0;
+  const targetName = normalizedName(name);
+  const targetPosition = positionFamily(position);
+  const matches = (row) =>
+    row &&
+    normalizedName(row.name) === targetName &&
+    (!targetPosition || !row.position || positionFamily(row.position) === targetPosition);
+  const bucket = `${format === "redraft" ? "Redraft" : "Dynasty"}_${qbType === "sf" ? "SF" : "1QB"}`;
+  const findIn = (rows) => (Array.isArray(rows) ? rows.find(matches) : null);
+
+  if (sourceKey === "val:dynastyprocess") {
+    const match = Object.entries(payload).find(([rowName, row]) =>
+      normalizedName(rowName) === targetName &&
+      (!targetPosition || positionFamily(row?.pos) === targetPosition),
+    )?.[1];
+    return n(match?.[qbType === "sf" ? "superflex" : "one_qb"]);
+  }
+  if (sourceKey === "val:keeptradecut") {
+    return n(findIn(payload?.[qbType === "sf" ? "Superflex" : "OneQB"])?.value);
+  }
+  if (sourceKey === "val:fantasypros-ecr") {
+    return n(findIn(payload?.formats?.[bucket])?.value);
+  }
+  if (sourceKey === "val:idynastyp") {
+    return n(findIn(payload)?.[qbType === "sf" ? "superflex" : "one_qb"]);
+  }
+  if (sourceKey.startsWith("proj:")) return n(findIn(payload?.rows)?.points);
+  return n(findIn(payload?.[bucket])?.value);
+}
+
 function Metric({ label, value, detail, tone = "cyan" }) {
   const colors =
     tone === "emerald"
@@ -111,7 +164,14 @@ function Metric({ label, value, detail, tone = "cyan" }) {
   );
 }
 
-function SourceTable({ title, rows, currentSource, suffix = "" }) {
+function SourceTable({
+  title,
+  rows,
+  currentSource,
+  movement = {},
+  suffix = "",
+  rawScale = false,
+}) {
   const usable = rows.filter((row) => row.supported && row.amount > 0);
   const values = usable.map((row) => row.amount);
   const average = values.length
@@ -135,7 +195,7 @@ function SourceTable({ title, rows, currentSource, suffix = "" }) {
           </p>
         </div>
         <div className="text-left text-[10px] text-white/35 min-[390px]:text-right">
-          Consensus{" "}
+          {rawScale ? "Raw source average" : "Consensus"}{" "}
           <b className="text-white/70">
             {average
               ? suffix
@@ -180,8 +240,9 @@ function SourceTable({ title, rows, currentSource, suffix = "" }) {
             <tr>
               <th className="w-[56%] px-2.5 py-2.5 sm:px-3">Source</th>
               <th className="px-2.5 py-2.5 text-right sm:px-3">Result</th>
+              <th className="px-2.5 py-2.5 text-right sm:px-3">7d move</th>
               <th className="hidden px-3 py-2.5 text-right sm:table-cell">
-                vs consensus
+                {rawScale ? "vs raw avg" : "vs consensus"}
               </th>
             </tr>
           </thead>
@@ -189,7 +250,10 @@ function SourceTable({ title, rows, currentSource, suffix = "" }) {
             {rows.map((row) => {
               const delta =
                 average && row.amount ? (row.amount - average) / average : 0;
-              const outlier = Math.abs(delta) >= 0.2;
+              const outlier =
+                Math.abs(delta) >= 0.2 &&
+                !(rawScale && row.key === "val:thefantasyarsenal");
+              const sourceMovement = movement[row.key];
               return (
                 <tr
                   key={row.key}
@@ -223,6 +287,14 @@ function SourceTable({ title, rows, currentSource, suffix = "" }) {
                     )}
                   </td>
                   <td
+                    className={`px-2.5 py-3 text-right text-[10px] font-bold sm:px-3 ${sourceMovement?.delta > 0 ? "text-emerald-200" : sourceMovement?.delta < 0 ? "text-amber-200" : "text-white/30"}`}
+                    title={sourceMovement?.detail}
+                  >
+                    {sourceMovement
+                      ? `${sourceMovement.delta > 0 ? "+" : ""}${suffix ? sourceMovement.delta.toFixed(1) : Math.round(sourceMovement.delta).toLocaleString()}${suffix}`
+                      : "—"}
+                  </td>
+                  <td
                     className={`hidden px-3 py-3 text-right text-[10px] sm:table-cell ${outlier ? "text-amber-200" : "text-white/30"}`}
                   >
                     {row.amount && average
@@ -247,8 +319,11 @@ export default function GlobalPlayerSourceDrawer() {
     activeLeague,
     setActiveLeague,
     fetchLeagueRostersSilent,
+    preloadProjections,
     getPlayerValue,
+    getProjection,
     sourceKey,
+    setSourceKey,
     format,
     qbType,
   } = useSleeper();
@@ -264,6 +339,8 @@ export default function GlobalPlayerSourceDrawer() {
   const [archive, setArchive] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [sourceMovement, setSourceMovement] = useState({});
+  const [projectionSourcesLoading, setProjectionSourcesLoading] = useState(false);
   const [portfolioExposure, setPortfolioExposure] = useState({
     loading: false,
     count: 0,
@@ -310,6 +387,15 @@ export default function GlobalPlayerSourceDrawer() {
     player?.search_full_name ||
     [player?.first_name, player?.last_name].filter(Boolean).join(" ") ||
     playerId;
+  const injuryStatus = String(player?.injury_status || "").trim();
+  const playerStatus = String(player?.status || "").trim();
+  const depthOrder = player?.depth_chart_order;
+  const depthRole = player?.depth_chart_position || player?.position || "";
+  const depthStatus = depthOrder
+    ? `${depthRole} ${depthOrder}`
+    : depthRole
+      ? `${depthRole} depth unknown`
+      : "Unavailable";
   const rows = useMemo(
     () =>
       player
@@ -317,22 +403,33 @@ export default function GlobalPlayerSourceDrawer() {
             const supported =
               source.type === "projection" ||
               source.supports?.[format] !== false;
-            const amount = supported
-              ? n(
-                  getPlayerValue(player, {
-                    sourceKey: source.key,
-                    format,
-                    qbType,
-                  }),
-                )
-              : 0;
+            const amount = supported ? n(source.type === "projection" ? getProjection(player, source.key) : getPlayerValue(player, { sourceKey:source.key, format, qbType })) : 0;
             return { ...source, supported, amount };
           })
         : [],
-    [format, getPlayerValue, player, qbType],
+    [format, getPlayerValue, getProjection, player, qbType],
   );
   const valueRows = rows.filter((row) => row.type === "value");
   const projectionRows = rows.filter((row) => row.type === "projection");
+
+  useEffect(() => {
+    let active = true;
+    if (tab !== "sources" || !playerId) return undefined;
+    setProjectionSourcesLoading(true);
+    Promise.all(
+      DEFAULT_SOURCES.filter((source) => source.type === "projection").map(
+        (source) => preloadProjections(source.key).catch(() => null),
+      ),
+    ).finally(() => {
+      if (active) setProjectionSourcesLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+    // Projection loader is recreated by the provider; source/view changes are
+    // the intentional triggers here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, playerId]);
   const consensus = (group) => {
     const values = group.map((row) => row.amount).filter((value) => value > 0);
     return values.length
@@ -662,49 +759,65 @@ export default function GlobalPlayerSourceDrawer() {
 
   useEffect(() => {
     let active = true;
-    if (tab !== "research" || !playerId || !archive?.archives?.length)
+    if (tab !== "sources" || !playerId || !archive?.archives?.length)
       return undefined;
     setHistoryLoading(true);
-    const bucket = `${format === "redraft" ? "Redraft" : "Dynasty"}_${qbType === "sf" ? "SF" : "1QB"}`;
-    Promise.all(
-      archive.archives.slice(0, 14).map(async (entry) => {
-        const date = entry.date;
-        const season = n(entry.season) || new Date().getFullYear();
-        const [values, projections] = await Promise.all([
-          readArchivedJson(`/archive/stickypicky_cache_${date}.json.gz`).catch(
-            () => null,
+    const latestEntry = archive.archives[0];
+    const targetDate = new Date(`${latestEntry.date}T00:00:00Z`);
+    targetDate.setUTCDate(targetDate.getUTCDate() - 7);
+    const weekAgoEntry =
+      archive.archives.find(
+        (entry) => new Date(`${entry.date}T00:00:00Z`) <= targetDate,
+      ) || archive.archives.at(-1);
+    const snapshots = [latestEntry, weekAgoEntry].filter(Boolean);
+    const readSnapshot = async (entry) => {
+      const manifest = await fetch(`/archive/${entry.manifest}`).then((response) =>
+        response.ok ? response.json() : Promise.reject(new Error("Archive manifest unavailable")),
+      );
+      const season = n(entry.season) || new Date().getFullYear();
+      const files = Object.fromEntries(
+        (manifest.files || []).map((file) => [file.source, file.file]),
+      );
+      const amounts = await Promise.all(
+        DEFAULT_SOURCES.map(async (source) => {
+          const archiveFile = archiveSourceFile[source.key];
+          const sourceName = typeof archiveFile === "function" ? archiveFile(season) : archiveFile;
+          const file = files[sourceName];
+          if (!file) return [source.key, 0];
+          const payload = await readArchivedJson(`/archive/${file}`).catch(() => null);
+          return [
+            source.key,
+            archivedSourceAmount(payload, source.key, {
+              name,
+              position: player?.position,
+              format,
+              qbType,
+            }),
+          ];
+        }),
+      );
+      return { date: entry.date, amounts: Object.fromEntries(amounts) };
+    };
+    Promise.all(snapshots.map(readSnapshot))
+      .then(([latest, earliest]) => {
+        if (!active || !latest || !earliest) return;
+        setSourceMovement(
+          Object.fromEntries(
+            DEFAULT_SOURCES.map((source) => {
+              const before = n(earliest.amounts[source.key]);
+              const after = n(latest.amounts[source.key]);
+              return [
+                source.key,
+                before || after
+                  ? {
+                      delta: after - before,
+                      detail: `${earliest.date} → ${latest.date}`,
+                    }
+                  : null,
+              ];
+            }).filter(([, movement]) => movement),
           ),
-          readArchivedJson(
-            `/archive/projections_thefantasyarsenal_${season}_${date}.json.gz`,
-          ).catch(() => null),
-        ]);
-        const targetName = normalizedName(name);
-        const targetPos = positionFamily(player.position);
-        const valueRow = (values?.[bucket] || []).find(
-          (row) =>
-            normalizedName(row.name) === targetName &&
-            positionFamily(row.position) === targetPos,
         );
-        const projectionRow = (projections?.rows || []).find(
-          (row) =>
-            normalizedName(row.name) === targetName &&
-            positionFamily(row.position) === targetPos,
-        );
-        return {
-          date,
-          value: n(valueRow?.value),
-          projection: n(projectionRow?.points),
-          partial: !!entry.partial_update,
-        };
-      }),
-    )
-      .then((rows) => {
-        if (active)
-          setHistory(
-            rows
-              .filter((row) => row.value || row.projection)
-              .sort((a, b) => a.date.localeCompare(b.date)),
-          );
       })
       .finally(() => {
         if (active) setHistoryLoading(false);
@@ -842,7 +955,7 @@ export default function GlobalPlayerSourceDrawer() {
           </div>
         </div>
         <div className="min-h-0 flex-1 touch-pan-y space-y-4 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 [-webkit-overflow-scrolling:touch] sm:space-y-5 sm:p-5">
-          {["overview", "live", "market"].includes(tab) ? (
+          {["overview", "live"].includes(tab) ? (
             <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3">
               <label
                 htmlFor="player-modal-league"
@@ -869,11 +982,12 @@ export default function GlobalPlayerSourceDrawer() {
                 Controls ownership, roster fit, and exact live scoring
                 throughout this player window.
               </p>
+              <details className="mt-3 rounded-xl border border-white/10 bg-black/15 p-3"><summary className="cursor-pointer text-[10px] font-black uppercase tracking-[.15em] text-white/55">Value / projection source</summary><select value={sourceKey} onChange={(event) => setSourceKey(event.target.value)} className="mt-2 min-h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-xs text-white">{DEFAULT_SOURCES.map((source) => <option key={source.key} value={source.key}>{source.label}</option>)}</select><p className="mt-2 text-[10px] leading-4 text-white/30">This source controls the values or projections used throughout this player drawer.</p></details>
             </div>
           ) : null}
           {tab === "overview" ? (
             <>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 <Metric
                   label="Value consensus"
                   value={
@@ -908,6 +1022,23 @@ export default function GlobalPlayerSourceDrawer() {
                   value={guidance}
                   detail={timeline}
                   tone="amber"
+                />
+                <Metric
+                  label="Depth chart"
+                  value={depthStatus}
+                  detail={player?.team || "No current team"}
+                  tone="violet"
+                />
+                <Metric
+                  label="Injury status"
+                  value={injuryStatus || "Clear"}
+                  detail={
+                    player?.injury_notes ||
+                    (playerStatus && playerStatus.toLowerCase() !== "active"
+                      ? playerStatus
+                      : "No active injury designation")
+                  }
+                  tone={injuryStatus ? "amber" : "emerald"}
                 />
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
@@ -944,27 +1075,35 @@ export default function GlobalPlayerSourceDrawer() {
                   </p>
                 </div>
               </div>
-              <PlayerResearchPanel player={player} name={name} />
             </>
           ) : null}
           {tab === "sources" ? (
             <>
               <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.04] p-3 text-xs leading-5 text-white/45">
-                Values and season projections use different scales. Outliers are
-                flagged at 20% above or below their group consensus;
-                disagreement is information, not an automatic error.
+                Publisher values are displayed on their original scales. Arsenal
+                values are a separate, percentile-normalized market consensus,
+                so its row is not a raw average of the rows above it. Season
+                projections share a comparable points scale.
               </div>
               <SourceTable
                 title="Player values"
                 rows={valueRows}
                 currentSource={sourceKey}
+                movement={sourceMovement}
+                rawScale
               />
               <SourceTable
                 title="Season projections"
                 rows={projectionRows}
                 currentSource={sourceKey}
+                movement={sourceMovement}
                 suffix=" pts"
               />
+              {projectionSourcesLoading ? (
+                <p className="-mt-1 text-[10px] text-cyan-100/55">
+                  Loading current publisher projections…
+                </p>
+              ) : null}
             </>
           ) : null}
           {tab === "league" ? (
@@ -1303,7 +1442,13 @@ export default function GlobalPlayerSourceDrawer() {
           {tab === "research" ? (
             <>
               <PlayerResearchPanel player={player} name={name} expanded />
-              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+              <div className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,.12),transparent_55%),rgba(255,255,255,.025)] p-5">
+                <div className="text-[10px] font-black uppercase tracking-[.2em] text-cyan-100/55">Player news</div>
+                <h3 className="mt-1 text-xl font-black">Follow the current story</h3>
+                <p className="mt-2 text-xs leading-5 text-white/45">Open a focused news search for verified reporting, practice updates, role changes, and team context. News availability varies by publisher, so this never presents an empty feed as proof that nothing happened.</p>
+                <div className="mt-4 flex flex-wrap gap-2"><a href={`https://www.google.com/search?q=${encodeURIComponent(`${name} NFL news`)}`} target="_blank" rel="noreferrer" className="rounded-xl bg-cyan-300/15 px-4 py-3 text-xs font-black text-cyan-100">Search player news ↗</a><a href={`https://www.spotrac.com/nfl/search/_/q/${encodeURIComponent(name)}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/[0.06] px-4 py-3 text-xs font-black text-white/70">Contract on Spotrac ↗</a></div>
+              </div>
+              {false ? <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h3 className="font-black">Value and projection history</h3>
@@ -1386,7 +1531,7 @@ export default function GlobalPlayerSourceDrawer() {
                     </div>
                   </>
                 )}
-              </div>
+              </div> : null}
               <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] p-4">
                 <h3 className="font-black text-amber-100">Data boundaries</h3>
                 <p className="mt-2 text-xs leading-5 text-white/40">

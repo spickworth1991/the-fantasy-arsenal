@@ -135,7 +135,12 @@ export default function GuidedTips({ steps = [], storageKey, label = "Tips", onT
         localStorage.setItem("tfa:tips:enabled", "false");
         setTipsEnabled(false);
       }
-      if (isConnected) syncNow({ quiet: true });
+      if (isConnected) {
+        // A background hydration sync can briefly hold the lock. Retry after
+        // this write so the global preference is not left device-only.
+        syncNow({ quiet: true });
+        window.setTimeout(() => syncNow({ quiet: true }), 1200);
+      }
     } catch {}
   };
 

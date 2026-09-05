@@ -630,50 +630,130 @@ function normNameForMap(name) {
     .trim();
 }
 async function fetchSleeperPlayersMap() {
-  const { data } = await axios.get("https://api.sleeper.app/v1/players/nfl", {
-    timeout: 120000,
-  });
-  const byId = {};
-  for (const [pid, p] of Object.entries(data || {})) {
-    const name =
-      p.full_name ||
-      (p.first_name && p.last_name
-        ? `${p.first_name} ${p.last_name}`
-        : p.search_full_name) ||
-      "";
-    const position = (p.position || "").toString().replace(/\d+$/, "").trim();
-    const team = p.team || "";
-    const search_full_name =
-      p.search_full_name ||
-      (name ? name.toLowerCase().replace(/\s+/g, "") : "");
-    // Preserve the compact fields used by the source updaters, while also
-    // retaining the role/availability context consumed by the Arsenal model.
-    // Previously that model looked for these fields after this helper had
-    // discarded them, leaving every player ID and context adjustment blank.
-    byId[String(pid)] = {
-      player_id: String(pid),
-      name,
-      full_name: p.full_name || name,
-      first_name: p.first_name || "",
-      last_name: p.last_name || "",
-      search_full_name,
-      team,
-      position,
-      fantasy_positions: Array.isArray(p.fantasy_positions)
-        ? p.fantasy_positions
-        : position
-          ? [position]
-          : [],
-      active: p.active,
-      status: p.status || null,
-      injury_status: p.injury_status || null,
-      depth_chart_order: p.depth_chart_order ?? null,
-      depth_chart_position: p.depth_chart_position || null,
-      years_exp: p.years_exp ?? null,
-      age: p.age ?? null,
-    };
+  const compact = (data) => {
+    const byId = {};
+    for (const [pid, p] of Object.entries(data || {})) {
+      const name =
+        p.full_name ||
+        p.name ||
+        (p.first_name && p.last_name
+          ? `${p.first_name} ${p.last_name}`
+          : p.search_full_name) ||
+        "";
+      const position = (p.position || "").toString().replace(/\d+$/, "").trim();
+      const team = p.team || "";
+      const search_full_name =
+        p.search_full_name ||
+        (name ? name.toLowerCase().replace(/\s+/g, "") : "");
+      byId[String(p.player_id || pid)] = {
+        player_id: String(p.player_id || pid),
+        name,
+        full_name: p.full_name || name,
+        first_name: p.first_name || "",
+        last_name: p.last_name || "",
+        search_full_name,
+        team,
+        position,
+        fantasy_positions: Array.isArray(p.fantasy_positions)
+          ? p.fantasy_positions
+          : position
+            ? [position]
+            : [],
+        active: p.active,
+        status: p.status || null,
+        injury_status: p.injury_status || null,
+        depth_chart_order: p.depth_chart_order ?? null,
+        depth_chart_position: p.depth_chart_position || null,
+        years_exp: p.years_exp ?? null,
+        age: p.age ?? null,
+      };
+    }
+    return byId;
+  };
+  try {
+    const { data } = await axios.get("https://api.sleeper.app/v1/players/nfl", {
+      timeout: 120000,
+    });
+    const byId = compact(data);
+    if (Object.keys(byId).length < 1000)
+      throw new Error(`Sleeper player response was incomplete (${Object.keys(byId).length} rows).`);
+    fs.writeFileSync(
+      path.join(__dirname, "../public/sleeper_players_cache.json"),
+      JSON.stringify({ updated: new Date().toISOString(), source: "Sleeper NFL players", players: byId }),
+    );
+    return byId;
+  } catch (networkError) {
+    const cachePath = path.join(__dirname, "../public/sleeper_players_cache.json");
+    if (fs.existsSync(cachePath)) {
+      const cached = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+      const byId = compact(cached?.players || cached);
+      if (Object.keys(byId).length >= 1000) {
+        console.warn(`Sleeper player API unavailable; using local player cache (${Object.keys(byId).length} players).`);
+        return byId;
+      }
+    }
+    const projectionPath = path.join(
+      __dirname,
+      `../public/projections_sleeper_${CURRENT_SEASON}.json`,
+    );
+    if (fs.existsSync(projectionPath)) {
+      const projectionData = JSON.parse(fs.readFileSync(projectionPath, "utf8"));
+      const projectionPlayers = Object.fromEntries(
+        (projectionData?.rows || [])
+          .filter((row) => row?.player_id && row?.name)
+          .map((row) => [String(row.player_id), row]),
+      );
+      const snapshotRoot = path.join(
+        __dirname,
+        `../public/archive/stat-projections/${CURRENT_SEASON}`,
+      );
+      const snapshotIndexPath = path.join(snapshotRoot, "index.json");
+      if (fs.existsSync(snapshotIndexPath)) {
+        try {
+          const snapshotIndex = JSON.parse(
+            fs.readFileSync(snapshotIndexPath, "utf8"),
+          );
+          const identitySnapshot = [...(snapshotIndex?.snapshots || [])]
+            .reverse()
+            .find(
+              (entry) =>
+                Number(entry?.players) >= 530 &&
+                entry?.file &&
+                fs.existsSync(path.join(snapshotRoot, entry.file)),
+            );
+          if (identitySnapshot) {
+            const archived = JSON.parse(
+              fs.readFileSync(path.join(snapshotRoot, identitySnapshot.file), "utf8"),
+            );
+            for (const player of archived?.players || []) {
+              const id = String(player?.player_id || "");
+              if (!id || projectionPlayers[id]) continue;
+              projectionPlayers[id] = {
+                player_id: id,
+                name: player.name,
+                full_name: player.name,
+                team: player.team,
+                position: player.position,
+                active: true,
+              };
+            }
+          }
+        } catch (snapshotError) {
+          console.warn(
+            `Archived Sleeper identity fallback could not be read: ${snapshotError?.message || snapshotError}`,
+          );
+        }
+      }
+      const byId = compact(projectionPlayers);
+      if (Object.keys(byId).length >= 300) {
+        console.warn(
+          `Sleeper player API and full cache unavailable; using projection identity fallback (${Object.keys(byId).length} players, injury/depth context may be incomplete).`,
+        );
+        return byId;
+      }
+    }
+    throw networkError;
   }
-  return byId;
 }
 
 function getArgFlag(flag) {
@@ -2161,13 +2241,35 @@ async function updateStickyPicky() {
             : entry.source,
         ),
       ).size;
-      const coverageMultiplier =
-        0.72 + 0.28 * Math.min(1, independentCoverage / 3);
-      // A linear percentile makes the median player worth about 5,000. A curved
-      // market scale preserves ordering while creating realistic separation:
-      // elite assets remain near 10k and replaceable depth falls much faster.
+      // Every source has already been standardized onto Arsenal's 0–10,000
+      // value scale. Percentiles are useful for identifying disagreement, but
+      // converting a percentile back through a curved scale can produce a
+      // "consensus" outside the publishers' actual value range. Use a weighted,
+      // winsorized mean of the standardized inputs for the published value.
+      const rawValues = sourcePcts
+        .map((entry) => Number(entry.row.value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .sort((a, b) => a - b);
+      const rawMiddle = Math.floor(rawValues.length / 2);
+      const rawMedian = rawValues.length % 2
+        ? rawValues[rawMiddle]
+        : (rawValues[rawMiddle - 1] + rawValues[rawMiddle]) / 2;
+      const rawFloor = rawMedian * 0.65;
+      const rawCeiling = rawMedian * 1.35;
+      const rawWeight = (source) => sourceWeights[source] || 0.5;
+      const weightedRawTotal = sourcePcts.reduce(
+        (sum, entry) =>
+          sum +
+          Math.max(rawFloor, Math.min(rawCeiling, Number(entry.row.value))) *
+            rawWeight(entry.source),
+        0,
+      );
+      const weightedRawWeight = sourcePcts.reduce(
+        (sum, entry) => sum + rawWeight(entry.source),
+        0,
+      );
       const stickyValue = Math.round(
-        Math.pow(consensusPct, 2.1) * 10000 * coverageMultiplier,
+        weightedRawTotal / Math.max(0.01, weightedRawWeight),
       );
       const variance =
         adjusted.reduce(
@@ -2216,7 +2318,7 @@ async function updateStickyPicky() {
           ),
         ),
         disagreement: Number(disagreement.toFixed(4)),
-        model_version: "arsenal-values-2.0",
+        model_version: "arsenal-values-2.1",
       });
     }
 
@@ -2225,9 +2327,9 @@ async function updateStickyPicky() {
 
   out.metadata = {
     updated: new Date().toISOString(),
-    model_version: "arsenal-values-2.0",
+    model_version: "arsenal-values-2.1",
     method:
-      "scale-free weighted market consensus with outlier bounds and independent-source coverage correction",
+      "weighted, winsorized consensus of publisher-standardized 0–10,000 values; percentile agreement is retained for confidence and disagreement only",
     fantasypros_policy:
       "Official FantasyPros trade values and ECR are separate inputs; ECR is rank-normalized and receives less weight than a published trade-value board.",
     sleeper_context_policy:
