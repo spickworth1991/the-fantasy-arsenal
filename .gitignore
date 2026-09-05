@@ -38,4 +38,5 @@ backup.zip
 !/scripts/checkPublicAssetSizes.js
 !/scripts/updateBallsvilleStats.js
 !/scripts/git-sync.mjs
+!/scripts/buildPlayerStockDrafters.js
 /docs/

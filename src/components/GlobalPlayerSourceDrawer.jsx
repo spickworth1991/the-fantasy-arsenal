@@ -1499,12 +1499,6 @@ export default function GlobalPlayerSourceDrawer() {
           {tab === "research" ? (
             <>
               <PlayerResearchPanel player={player} name={name} expanded />
-              <div className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,.12),transparent_55%),rgba(255,255,255,.025)] p-5">
-                <div className="text-[10px] font-black uppercase tracking-[.2em] text-cyan-100/55">Player news</div>
-                <h3 className="mt-1 text-xl font-black">Follow the current story</h3>
-                <p className="mt-2 text-xs leading-5 text-white/45">Open a focused news search for verified reporting, practice updates, role changes, and team context. News availability varies by publisher, so this never presents an empty feed as proof that nothing happened.</p>
-                <div className="mt-4 flex flex-wrap gap-2"><a href={`https://www.google.com/search?q=${encodeURIComponent(`${name} NFL news`)}`} target="_blank" rel="noreferrer" className="rounded-xl bg-cyan-300/15 px-4 py-3 text-xs font-black text-cyan-100">Search player news ↗</a><a href={`https://www.spotrac.com/nfl/search/_/q/${encodeURIComponent(name)}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/[0.06] px-4 py-3 text-xs font-black text-white/70">Contract on Spotrac ↗</a></div>
-              </div>
               {false ? <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>

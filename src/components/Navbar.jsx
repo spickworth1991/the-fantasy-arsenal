@@ -1,6 +1,6 @@
 "use client";
 import { clearPlayerStockSessionCache } from "../utils/psCache";
-import React, { useEffect, useState } from "react"; // <-- add useEffect
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSleeper } from "../context/SleeperContext";
@@ -110,13 +110,14 @@ function BallsvilleLink({ className = "" }) {
 }
 
 export default function Navbar({ pageTitle, highlightMenu = false, highlightPortfolio = false }) {
-  const { username, year, leagues, activeLeague, setActiveLeague, loadPortfolio, clearPortfolio } = useSleeper();
+  const { username, year, players, loadPortfolio, clearPortfolio } = useSleeper();
   const { account, isConnected, disconnect, loginAccount } = useArsenalAccount();
   const { embedded, openFullscreen } = useEmbeddedMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarClosing, setSidebarClosing] = useState(false);
   const [portfolioInput, setPortfolioInput] = useState("");
   const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
   const [identityOpen, setIdentityOpen] = useState(false);
   const [identityMode, setIdentityMode] = useState("portfolio");
   const [accountName, setAccountName] = useState("");
@@ -125,6 +126,36 @@ export default function Navbar({ pageTitle, highlightMenu = false, highlightPort
   const [identityMessage, setIdentityMessage] = useState("");
   const [accountLoading, setAccountLoading] = useState(false);
   const router = useRouter();
+
+  const playerSearchResults = useMemo(() => {
+    const query = playerSearch.trim().toLowerCase();
+    if (query.length < 2) return [];
+    const starts = [];
+    const contains = [];
+    Object.entries(players || {}).forEach(([playerId, player]) => {
+      const name = String(
+        player?.full_name ||
+          player?.search_full_name ||
+          [player?.first_name, player?.last_name].filter(Boolean).join(" "),
+      ).trim();
+      if (!name || !String(player?.position || "").trim()) return;
+      const candidate = { playerId, player, name };
+      const normalizedName = name.toLowerCase();
+      if (normalizedName.startsWith(query)) starts.push(candidate);
+      else if (normalizedName.includes(query)) contains.push(candidate);
+    });
+    return [...starts, ...contains]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 8);
+  }, [playerSearch, players]);
+
+  const inspectPlayer = (playerId) => {
+    setPlayerSearch("");
+    handleCloseSidebar();
+    window.dispatchEvent(
+      new CustomEvent("tfa:inspect-player", { detail: { playerId } }),
+    );
+  };
 
   // ✅ NEW: hide Ballsville promo when tools are being used via Ballsville
   const [hideBallsville, setHideBallsville] = useState(false);
@@ -345,14 +376,20 @@ export default function Navbar({ pageTitle, highlightMenu = false, highlightPort
             {/* Navigation Links */}
             <nav className="clear-both min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-3 pr-1 pt-1 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
               <SidebarLink href="/" icon={ICONS.home} label="Home" onClick={handleCloseSidebar} badge={NAV_BADGES["/"]} />
-              {username && Array.isArray(leagues) && leagues.length ? (
-                <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.035] p-3">
-                  <label className="block text-[9px] font-black uppercase tracking-[.16em] text-cyan-100/55">Active league for tools</label>
-                  <select value={activeLeague || ""} onChange={(event) => { setActiveLeague(event.target.value || null); handleCloseSidebar(); }} className="mt-2 min-h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-xs font-bold text-white outline-none focus:border-cyan-300/30">
-                    <option value="">Choose from {leagues.length} loaded leagues…</option>
-                    {[...leagues].sort((a,b) => String(a?.name || "").localeCompare(String(b?.name || ""))).map((league) => <option key={league.league_id} value={league.league_id}>{league.name || `League ${league.league_id}`}</option>)}
-                  </select>
-                  <p className="mt-1.5 text-[9px] leading-4 text-white/28">Changes the league used by league-aware tools without leaving this page.</p>
+              {players && Object.keys(players).length ? (
+                <div className="rounded-2xl border border-violet-300/12 bg-violet-300/[0.035] p-3">
+                  <label htmlFor="sidebar-player-search" className="block text-[9px] font-black uppercase tracking-[.16em] text-violet-100/55">Find a player</label>
+                  <input id="sidebar-player-search" type="search" value={playerSearch} onChange={(event) => setPlayerSearch(event.target.value)} placeholder="Search any NFL player…" autoComplete="off" className="mt-2 min-h-10 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-xs font-bold text-white outline-none placeholder:text-white/25 focus:border-violet-300/35" />
+                  {playerSearch.trim().length >= 2 ? (
+                    <div className="mt-2 overflow-hidden rounded-xl border border-white/10 bg-slate-950/95 shadow-xl">
+                      {playerSearchResults.length ? playerSearchResults.map(({ playerId, player, name }) => (
+                        <button key={playerId} type="button" onClick={() => inspectPlayer(playerId)} className="flex w-full items-center justify-between gap-3 border-b border-white/[0.05] px-3 py-2.5 text-left transition last:border-0 hover:bg-violet-300/[0.07]">
+                          <span className="min-w-0 truncate text-xs font-bold text-white/80">{name}</span>
+                          <span className="shrink-0 text-[9px] font-semibold text-white/35">{player.position || "—"} · {player.team || "FA"}</span>
+                        </button>
+                      )) : <div className="px-3 py-3 text-xs text-white/30">No matching player found.</div>}
+                    </div>
+                  ) : <p className="mt-1.5 text-[9px] leading-4 text-white/28">Open the complete player card without leaving this tool.</p>}
                 </div>
               ) : null}
               <NavGroup label="Fan Favorites" detail="The tools managers visit most" defaultOpen><SidebarLink href="/player-stock/results" icon={ICONS.stock} label="Player Stock" onClick={handleCloseSidebar} badge={NAV_BADGES["/player-stock"]} /><SidebarLink href="/draft-pick-tracker" icon={ICONS.draft} label="Draft Monitor" onClick={handleCloseSidebar} badge={NAV_BADGES["/draft-pick-tracker"]} /><SidebarLink href="/power-rankings" icon={ICONS.powerrank} label="Power Rankings" onClick={handleCloseSidebar} badge={NAV_BADGES["/power-rankings"]} /><SidebarLink href="/ballsville-stats" icon={ICONS.stats} label="Ballsville Stats" onClick={handleCloseSidebar} badge="NEW" /></NavGroup>
