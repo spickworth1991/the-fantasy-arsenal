@@ -1,6 +1,7 @@
 export const metadata = {
-  title: "My Arsenal | The Fantasy Arsenal",
+  title: "My Arsenal",
   description: "Your personalized Fantasy Arsenal account, career résumé, collections, and privacy controls.",
+  robots: { index: false, follow: true },
 };
 
 import AccountClient from "./AccountClient";

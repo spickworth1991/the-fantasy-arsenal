@@ -1,7 +1,7 @@
 import LineupClient from "./LineupClient";
 
 export const metadata = {
-  title: "Fantasy Football Lineup Optimizer | Start/Sit Help for Sleeper | The Fantasy Arsenal",
+  title: "Sleeper Fantasy Lineup Optimizer",
   description:
     "Optimize your weekly lineup for maximum points. Fast start/sit guidance with a premium dashboard experience.",
   alternates: { canonical: "/lineup" },

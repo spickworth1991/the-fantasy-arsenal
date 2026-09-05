@@ -1,7 +1,7 @@
 import ManagerIntelligenceClient from "./ManagerIntelligenceClient";
 
 export const metadata = {
-  title: "Sleeper Manager Intelligence | The Fantasy Arsenal",
+  title: "Sleeper Manager Intelligence",
   description: "Explore public Sleeper manager history, shared leagues, player exposure, trade activity, and draft history.",
   alternates: { canonical: "/manager-intelligence" },
 };

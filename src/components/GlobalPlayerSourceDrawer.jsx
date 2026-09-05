@@ -17,6 +17,18 @@ const TABS = [
   ["production", "Games"],
   ["research", "News"],
 ];
+let ballsvilleDraftersPromise;
+const loadBallsvilleDrafters = () => {
+  if (!ballsvilleDraftersPromise) {
+    const season = new Date().getFullYear();
+    ballsvilleDraftersPromise = fetch(
+      `/data/player-stock-drafters-${season}.json`,
+    )
+      .then((response) => (response.ok ? response.json() : { players: {} }))
+      .catch(() => ({ players: {} }));
+  }
+  return ballsvilleDraftersPromise;
+};
 const n = (value) => Number(value) || 0;
 const pct = (value) => `${Math.round(value * 100)}%`;
 const norm = (value) =>
@@ -341,6 +353,7 @@ export default function GlobalPlayerSourceDrawer() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [sourceMovement, setSourceMovement] = useState({});
   const [projectionSourcesLoading, setProjectionSourcesLoading] = useState(false);
+  const [ballsvilleDrafters, setBallsvilleDrafters] = useState([]);
   const [portfolioExposure, setPortfolioExposure] = useState({
     loading: false,
     count: 0,
@@ -396,6 +409,23 @@ export default function GlobalPlayerSourceDrawer() {
     : depthRole
       ? `${depthRole} depth unknown`
       : "Unavailable";
+
+  useEffect(() => {
+    let active = true;
+    if (!playerId) {
+      setBallsvilleDrafters([]);
+      return () => {
+        active = false;
+      };
+    }
+    loadBallsvilleDrafters().then((payload) => {
+      if (active) setBallsvilleDrafters(payload?.players?.[playerId] || []);
+    });
+    return () => {
+      active = false;
+    };
+  }, [playerId]);
+
   const rows = useMemo(
     () =>
       player
@@ -1074,6 +1104,33 @@ export default function GlobalPlayerSourceDrawer() {
                       : `${portfolioExposure.scanned ? Math.round((portfolioExposure.count / portfolioExposure.scanned) * 100) : 0}% exposure across ${portfolioExposure.scanned || leagues.length} scanned leagues.`}
                   </p>
                 </div>
+              </div>
+              <div className="rounded-2xl border border-violet-300/10 bg-gradient-to-br from-violet-300/[0.07] to-cyan-300/[0.025] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-violet-100/55">
+                      Most frequent Ballsville drafters
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-white/40">
+                      Managers who drafted this player most often across published Ballsville draft modes this season.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-violet-200/10 bg-violet-200/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-violet-100/55">
+                    Top 5
+                  </span>
+                </div>
+                {ballsvilleDrafters.length ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                    {ballsvilleDrafters.slice(0, 5).map((manager, index) => (
+                      <div key={`${manager.name}-${index}`} className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2">
+                        <span className="truncate text-xs font-semibold text-white/75">{manager.name}</span>
+                        <span className="shrink-0 text-xs font-black text-violet-200">{manager.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-white/35">No published Ballsville draft history is available for this player yet.</p>
+                )}
               </div>
             </>
           ) : null}

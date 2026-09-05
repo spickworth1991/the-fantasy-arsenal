@@ -6,6 +6,20 @@ const arsenalDevApiOrigin = String(
 const nextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true }, // you use <img>; keeps behavior identical & no extra image pipeline
+  async redirects() {
+    return [
+      {
+        source: "/player-stock",
+        destination: "/player-stock/results",
+        permanent: true,
+      },
+      {
+        source: "/profile",
+        destination: "/account?tab=profile",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     const useRemoteAccountApi =
       process.env.NODE_ENV === "development" &&

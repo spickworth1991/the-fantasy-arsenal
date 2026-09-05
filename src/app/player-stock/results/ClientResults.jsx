@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 
 const Navbar = dynamic(() => import("../../../components/Navbar"), { ssr: false });
@@ -16,6 +17,7 @@ import AvatarImage from "../../../components/AvatarImage";
 import ExportButtons from "../../../components/ExportButtons";
 import LeagueFormatBadge from "../../../components/LeagueFormatBadge";
 import GuidedTips from "../../../components/GuidedTips";
+import DelayedStatHint from "../../../components/DelayedStatHint";
 import { classifyLeagueFormat } from "../../../lib/leagueFormat";
 
 const safeNum = (v) => {
@@ -416,7 +418,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [showVisibleLeaguesModal, setShowVisibleLeaguesModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
 
-  const [sortKey, setSortKey] = useState("count"); // name | count | adp | ballsvilleRedraftAdp | ballsvilleDynastyAdp | value | proj
+  const [sortKey, setSortKey] = useState("count"); // name | count | adp | ballsvilleRedraftAdp | ballsvilleDynastyAdp | topDrafter | value | proj | trend
   const [sortDir, setSortDir] = useState("desc");
 
   const [pageSize, setPageSize] = useState(25);
@@ -437,6 +439,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [trendingMode, setTrendingMode] = useState("all");
   const [trendingAddMap, setTrendingAddMap] = useState(() => new Map());
   const [trendingDropMap, setTrendingDropMap] = useState(() => new Map());
+  const [trendingReady, setTrendingReady] = useState({ adds: false, drops: false });
+  const [draftLeaderMap, setDraftLeaderMap] = useState(() => new Map());
 
   const [includeDrafting, setIncludeDrafting] = useState(true);
   const [showRedraft, setShowRedraft] = useState(true);
@@ -468,6 +472,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     const cached = sessionStorage.getItem(key);
     if (cached) {
       setTrendingAddMap(new Map(Object.entries(JSON.parse(cached))));
+      setTrendingReady((current) => ({ ...current, adds: true }));
       return;
     }
     (async () => {
@@ -486,15 +491,32 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setTrendingAddMap(m);
       } catch {
         setTrendingAddMap(new Map());
+      } finally {
+        setTrendingReady((current) => ({ ...current, adds: true }));
       }
     })();
   }, [trendingHours]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    fetch(`/data/player-stock-drafters-${targetSeason}.json`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+      .then((payload) => {
+        if (!cancelled) setDraftLeaderMap(new Map(Object.entries(payload?.players || {})));
+      })
+      .catch(() => {
+        if (!cancelled) setDraftLeaderMap(new Map());
+      });
+    return () => { cancelled = true; };
+  }, [year, paramsKey]);
 
   useEffect(() => {
     const key = `ps:trending:drop:${trendingHours}:L${TRENDING_LIMIT}`;
     const cached = sessionStorage.getItem(key);
     if (cached) {
       setTrendingDropMap(new Map(Object.entries(JSON.parse(cached))));
+      setTrendingReady((current) => ({ ...current, drops: true }));
       return;
     }
     (async () => {
@@ -513,6 +535,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         setTrendingDropMap(m);
       } catch {
         setTrendingDropMap(new Map());
+      } finally {
+        setTrendingReady((current) => ({ ...current, drops: true }));
       }
     })();
   }, [trendingHours]);
@@ -1401,6 +1425,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
     }
   };
 
+  const toggleTrending = (mode) => {
+    if (!trendingReady[mode]) return;
+    const next = trendingMode === mode ? "all" : mode;
+    setTrendingMode(next);
+    setSortKey(next === "all" ? "count" : "trend");
+    setSortDir("desc");
+    setCurrentPage(1);
+  };
+
   const sortIndicator = (key) =>
     sortKey !== key ? <span className="opacity-40">↕</span> : sortDir === "asc" ? <span>▲</span> : <span>▼</span>;
 
@@ -1409,27 +1442,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
     const getMetricVal = (r) => (isProj ? (r._projAvg || 0) : (r._value || 0));
 
-    if (trendingMode !== "all") {
-      const getTrend = (r) =>
-        trendingMode === "adds"
-          ? (trendingAddMap.get(r.player_id) || 0)
-          : (trendingDropMap.get(r.player_id) || 0);
-
-      return [...filteredRows].sort((a, b) => {
-        const tDiff = getTrend(b) - getTrend(a);
-        if (tDiff !== 0) return tDiff;
-        if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
-        if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
-        if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
-        if (sortKey === "value" || sortKey === "proj") return (getMetricVal(a) - getMetricVal(b)) * dir;
-        if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
-        if (sortKey === "ballsvilleRedraftAdp") return compareDraftPosition(a._ballsvilleRedraftAdp, b._ballsvilleRedraftAdp, dir);
-        if (sortKey === "ballsvilleDynastyAdp") return compareDraftPosition(a._ballsvilleDynastyAdp, b._ballsvilleDynastyAdp, dir);
-        return ((a.count || 0) - (b.count || 0)) * dir;
-      });
-    }
-
     return [...filteredRows].sort((a, b) => {
+      if (sortKey === "trend") {
+        const trendMap = trendingMode === "drops" ? trendingDropMap : trendingAddMap;
+        return ((trendMap.get(a.player_id) || 0) - (trendMap.get(b.player_id) || 0)) * dir;
+      }
       if (sortKey === "name") return a._name.localeCompare(b._name) * dir;
       if (sortKey === "team") return a._team.localeCompare(b._team) * dir;
       if (sortKey === "pos") return a._pos.localeCompare(b._pos) * dir;
@@ -1441,9 +1458,10 @@ export default function ClientResults({ initialSearchParams = {} }) {
       if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
       if (sortKey === "ballsvilleRedraftAdp") return compareDraftPosition(a._ballsvilleRedraftAdp, b._ballsvilleRedraftAdp, dir);
       if (sortKey === "ballsvilleDynastyAdp") return compareDraftPosition(a._ballsvilleDynastyAdp, b._ballsvilleDynastyAdp, dir);
+      if (sortKey === "topDrafter") return (((draftLeaderMap.get(String(a.player_id)) || [])[0]?.count || 0) - ((draftLeaderMap.get(String(b.player_id)) || [])[0]?.count || 0)) * dir;
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
-  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, isProj]);
+  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, draftLeaderMap, isProj]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const pageStart = (currentPage - 1) * pageSize;
@@ -1464,13 +1482,15 @@ export default function ClientResults({ initialSearchParams = {} }) {
         averageDraftSlot: formatAverageDraftPosition(row.avgDraftPickNo, row.avgDraftTeams),
         ballsvilleRedraftAdp: row._ballsvilleRedraftAdp || "",
         ballsvilleDynastyAdp: row._ballsvilleDynastyAdp || "",
+        topDrafter: (draftLeaderMap.get(String(row.player_id)) || [])[0]?.name || "",
+        topDrafterCount: (draftLeaderMap.get(String(row.player_id)) || [])[0]?.count || 0,
         metric: isProj ? row._projAvg || 0 : row._value || 0,
         trendingAdds: trendingAddMap.get(row.player_id) || 0,
         trendingDrops: trendingDropMap.get(row.player_id) || 0,
         starterSomewhere: starterPidSet.has(row.player_id) ? "Yes" : "No",
         leagueNames: (row.leagues || []).map((league) => league.name),
       })),
-    [sorted, visibleLeagueCount, isProj, trendingAddMap, trendingDropMap, starterPidSet]
+    [sorted, visibleLeagueCount, isProj, trendingAddMap, trendingDropMap, draftLeaderMap, starterPidSet]
   );
 
   const stockExportColumns = [
@@ -1486,6 +1506,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
     { key: "averageDraftSlot", label: "Average Draft Slot" },
     { key: "ballsvilleRedraftAdp", label: "Ballsville Redraft ADP" },
     { key: "ballsvilleDynastyAdp", label: "Ballsville Big Game ADP" },
+    { key: "topDrafter", label: "Top Ballsville Drafter" },
+    { key: "topDrafterCount", label: "Top Drafter Picks" },
     { key: "metric", label: valueOrProjLabel },
     { key: "trendingAdds", label: "Trending Adds" },
     { key: "trendingDrops", label: "Trending Drops" },
@@ -1614,53 +1636,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           />
                         </div>
 
-                        <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-5 gap-2.5">
-                          <ToggleRow
-                            label="Include drafting"
-                            checked={includeDrafting}
-                            onChange={() => {
-                              setIncludeDrafting((v) => !v);
-                              setCurrentPage(1);
-                            }}
-                            compact
-                          />
-                          <ToggleRow
-                            label="Redraft"
-                            checked={showRedraft}
-                            onChange={() => {
-                              setShowRedraft((v) => !v);
-                              setCurrentPage(1);
-                            }}
-                            compact
-                          />
-                          <ToggleRow
-                            label="Keeper"
-                            checked={showKeeper}
-                            onChange={() => {
-                              setShowKeeper((v) => !v);
-                              setCurrentPage(1);
-                            }}
-                            compact
-                          />
-                          <ToggleRow
-                            label="Dynasty"
-                            checked={showDynasty}
-                            onChange={() => {
-                              setShowDynasty((v) => !v);
-                              setCurrentPage(1);
-                            }}
-                            compact
-                          />
-                          <ToggleRow
-                            label="Best Ball"
-                            checked={showBestBallFormat}
-                            onChange={() => {
-                              setShowBestBallFormat((v) => !v);
-                              setCurrentPage(1);
-                            }}
-                            compact
-                          />
-                        </div>
                       </div>
 
                       <div className="hidden sm:flex flex-wrap items-center gap-2 text-[11px] md:text-xs">
@@ -1681,11 +1656,16 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       <button
                         type="button"
                         data-guide-tip="stock-filters"
-                        className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15"
-                        onClick={() => setShowFiltersModal(true)}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15"
+                        onClick={() => setShowFiltersModal((open) => !open)}
                         title="Filters & options"
+                        aria-expanded={showFiltersModal}
+                        aria-controls="stock-filters-panel"
                       >
-                        Filters & Display
+                        <span>{showFiltersModal ? "Hide controls" : "Filters & display"}</span>
+                        <span className="rounded-full border border-cyan-300/15 bg-black/20 px-1.5 py-0.5 text-[10px] text-cyan-100/70">
+                          {[showRedraft, showKeeper, showDynasty, showBestBallFormat].filter(Boolean).length} formats
+                        </span>
                       </button>
                       <button
                         data-guide-tip="stock-refresh"
@@ -1699,6 +1679,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </div>
                 </div>
               </div>
+
+              <div id="stock-filters-panel" />
 
               <div data-guide-tip="stock-scope" className="p-4 md:p-5">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
@@ -1737,12 +1719,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
               </div>
             </div>
 
-            <div data-guide-tip="stock-export">
+            <div data-guide-tip="stock-export" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <DelayedStatHint hint="Show only players among Sleeper's most-added players over the last 24 hours. Click the flame again to return to all players.">
+                  <button type="button" disabled={!trendingReady.adds} aria-label="Toggle hot adds only" aria-pressed={trendingMode === "adds"} onClick={() => toggleTrending("adds")} className={`grid h-10 w-10 place-items-center rounded-xl border text-lg transition disabled:cursor-wait disabled:opacity-35 ${trendingMode === "adds" ? "border-orange-300/35 bg-orange-300/15 ring-1 ring-orange-300/25" : "border-white/10 bg-white/[0.035] hover:bg-orange-300/10"}`}>🔥</button>
+                </DelayedStatHint>
+                <DelayedStatHint hint="Show only players among Sleeper's most-dropped players over the last 24 hours. Click the snowflake again to return to all players.">
+                  <button type="button" disabled={!trendingReady.drops} aria-label="Toggle cold drops only" aria-pressed={trendingMode === "drops"} onClick={() => toggleTrending("drops")} className={`grid h-10 w-10 place-items-center rounded-xl border text-lg transition disabled:cursor-wait disabled:opacity-35 ${trendingMode === "drops" ? "border-sky-300/35 bg-sky-300/15 ring-1 ring-sky-300/25" : "border-white/10 bg-white/[0.035] hover:bg-sky-300/10"}`}>❄️</button>
+                </DelayedStatHint>
+                {trendingMode !== "all" ? <span className="text-xs font-semibold text-white/50">Showing {trendingMode === "adds" ? "hot adds" : "cold drops"}</span> : null}
+              </div>
               <ExportButtons
                 rows={stockExportRows}
                 columns={stockExportColumns}
                 filename="player-stock"
-                className="mt-4 justify-end"
+                className="justify-end"
               />
             </div>
 
@@ -1774,6 +1765,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           BS Big Game <span className="ml-1 inline-block">{sortIndicator("ballsvilleDynastyAdp")}</span>
                         </th>
                       ) : null}
+                      <th className="hidden text-right px-4 py-2 cursor-pointer select-none lg:table-cell" onClick={() => toggleSort("topDrafter")}>
+                        Top drafter <span className="ml-1 inline-block">{sortIndicator("topDrafter")}</span>
+                      </th>
                       <th
                         className="text-right px-3 md:px-4 py-2 cursor-pointer select-none"
                         onClick={() => toggleSort(valueOrProjSortKey)}
@@ -1795,6 +1789,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       const avgDraftLabel = formatAverageDraftPosition(r.avgDraftPickNo, r.avgDraftTeams);
                       const ballsvilleRedraftLabel = formatAverageDraftPosition(r._ballsvilleRedraftAdp, 12);
                       const ballsvilleDynastyLabel = formatAverageDraftPosition(r._ballsvilleDynastyAdp, 12);
+                      const topDrafter = (draftLeaderMap.get(String(r.player_id)) || [])[0] || null;
 
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
@@ -1835,15 +1830,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                       : ""
                                   }
                                 >
-                                  {r._name} <div className="text-xs text-gray-400">
-                                {r._pos || "—"} • {r._team || "FA"}
-                                {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
-                              </div>
+                                  {r._name}
+                                  <div className="text-xs text-gray-400">
+                                    {r._pos || "—"} • {r._team || "FA"}
+                                    {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
+                                  </div>
+                                  {topDrafter ? (
+                                    <div className="mt-1 max-w-[15rem] truncate text-[10px] font-semibold text-violet-200/65 lg:hidden">
+                                      Top drafter: {topDrafter.name} - {topDrafter.count}
+                                    </div>
+                                  ) : null}
                                 </span>
 
                                 {addCount ? (
                                   <span
-                                    className="ml-2 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70"
+                                    className={`${trendingMode === "adds" ? "inline-flex" : "hidden"} ml-2 items-center whitespace-nowrap rounded border border-white/10 bg-gray-800/70 px-1.5 py-0.5 text-[11px] lg:inline-flex`}
                                     title={`Trending adds: ${addCount}`}
                                   >
                                     🔥 {addCount}
@@ -1852,7 +1853,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
 
                                 {dropCount ? (
                                   <span
-                                    className="ml-1 text-[11px] px-1.5 py-0.5 rounded border border-white/10 bg-gray-800/70"
+                                    className={`${trendingMode === "drops" ? "inline-flex" : "hidden"} ml-1 items-center whitespace-nowrap rounded border border-white/10 bg-gray-800/70 px-1.5 py-0.5 text-[11px] lg:inline-flex`}
                                     title={`Trending drops: ${dropCount}`}
                                   >
                                     🧊 {dropCount}
@@ -1872,6 +1873,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
                           {showBallsvilleDynastyColumn ? (
                             <td className={`px-4 py-3 text-right hidden md:table-cell font-medium ${getAdpToneClass("dynasty", showAdpAccents)}`}>{ballsvilleDynastyLabel}</td>
                           ) : null}
+                          <td className="hidden whitespace-nowrap px-4 py-3 text-right text-xs font-semibold text-violet-100/80 lg:table-cell">
+                            {topDrafter ? `${topDrafter.name} - ${topDrafter.count}` : "—"}
+                          </td>
                           <td className="px-3 md:px-4 py-3 text-right text-white font-semibold">{Math.round(metricVal)}</td>
                         </tr>
                       );
@@ -1927,47 +1931,47 @@ export default function ClientResults({ initialSearchParams = {} }) {
       {username ? <GuidedTips storageKey="tfa:tips:player-stock" label="Player Stock tips" steps={[
         { target:"stock-controls", title:"Choose what Player Stock measures", detail:"Search for a player, team, or position, then include only the league formats you want. Local ADP and exposure recalculate from the leagues currently in scope." },
         { target:"stock-scope", title:"Scanned is not the same as showing", detail:"Scanned is every league successfully read during the refresh. Showing is the smaller set left after format filters and any manual league selections; exposure uses the showing count." },
-        { target:"stock-filters", title:"Advanced controls live here", detail:"Filters & Display contains the value or projection source, exposure threshold, trending window, display accents, manual league selection, and Ballsville ADP group assignments." },
+        { target:"stock-filters", title:"Open the table controls", detail:"Expand Filters & display to choose league types, value or projection source, exposure threshold, trending window, display accents, manual league selection, and Ballsville ADP groups. Collapse it when you want more room for the table." },
         { target:"stock-table", scrollBlock:"start", title:"Sort, compare, and open a player", detail:"Click any column heading to sort. Leagues is your portfolio exposure, ADP is your own drafted average, Ballsville columns show wider market ADP, and clicking a player opens league-by-league details." },
-        { target:"stock-export", title:"Take the table with you", detail:"Download the filtered results as a CSV, or choose Open Google Sheets. For Google Sheets, click the first cell (A1) in the new sheet and paste with Ctrl+V (Cmd+V on Mac)." },
+        { target:"stock-export", title:"Trend shortcuts and export", detail:"The flame shows Sleeper's hottest adds and the snowflake shows its coldest drops over the last 24 hours; click an active symbol again to return to all players. Download the current table as CSV, or open Google Sheets, click cell A1, and paste with Ctrl+V (Cmd+V on Mac)." },
         { target:"stock-refresh", title:"Refresh only when you need a new scan", detail:"Player Stock caches its portfolio scan for speed. Refresh ignores that cache and rereads league, roster, and draft data; ordinary filtering does not require another scan." },
       ]} /> : null}
 
-      {showFiltersModal && (
+      {showFiltersModal && typeof document !== "undefined" ? createPortal(
         <div
-          className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
-          onClick={() => setShowFiltersModal(false)}
+          className="border-t border-white/10 bg-gradient-to-b from-cyan-400/[0.035] to-transparent p-4 md:p-5"
         >
           <div
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gray-950/95 backdrop-blur rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-5 border border-white/10"
-            onClick={(e) => e.stopPropagation()}
+            className="rounded-2xl border border-white/10 bg-slate-950/75 p-4 shadow-inner shadow-black/20 md:p-5"
           >
             <div className="flex items-start justify-between mb-3">
-              <div><div className="text-xl font-bold text-white">Filters & Display</div><div className="mt-1 text-sm text-gray-500">Tune league scope, ADP presentation, and comparison pools without changing scan results.</div></div>
+              <div><div className="text-lg font-bold text-white">Table controls</div><div className="mt-1 text-sm text-gray-500">Choose which leagues feed exposure, then refine the table and its comparison data.</div></div>
               <button
-                className="rounded px-2 py-1 border border-white/20 hover:bg-white/10"
+                className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:bg-white/10"
                 onClick={() => setShowFiltersModal(false)}
               >
-                ✕
+                Collapse
               </button>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5 mt-4">
+            <div className="mt-4 space-y-4">
               <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
                 <div>
-                  <div className="text-sm font-semibold text-white">Search & source</div>
-                  <div className="mt-1 text-xs text-gray-500">Narrow the table and choose the value source shown throughout the page.</div>
+                  <div className="text-sm font-semibold text-white">Metric & presentation</div>
+                  <div className="mt-1 text-xs text-gray-500">Search stays visible above. These controls change how the matching players are evaluated and displayed.</div>
                 </div>
 
-                <input
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Search name/team/pos"
-                  className="w-full rounded-xl bg-gray-800 border border-white/10 px-3 py-2.5 text-sm"
-                />
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="text-sm font-medium text-white mb-2">Metric & source</div>
+                  <SourceSelector
+                    value={effectiveSourceKey}
+                    onChange={setEffectiveSourceKey}
+                    mode={format}
+                    qbType={qbType}
+                    onModeChange={setFormat}
+                    onQbTypeChange={setQbType}
+                  />
+                </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="text-sm font-medium text-white">Exposure threshold</div>
@@ -1987,21 +1991,21 @@ export default function ClientResults({ initialSearchParams = {} }) {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-sm font-medium text-white mb-2">Metric & source</div>
-                  <SourceSelector
-                    value={effectiveSourceKey}
-                    onChange={setEffectiveSourceKey}
-                    mode={format}
-                    qbType={qbType}
-                    onModeChange={setFormat}
-                    onQbTypeChange={setQbType}
-                  />
-                </div>
+                <section className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4">
+                  <div className="text-sm font-semibold text-white">League scope</div>
+                  <div className="mt-1 text-xs text-gray-500">Only enabled league types count toward exposure. Drafting status is separate from league format.</div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                    <ToggleRow label="Include drafting" checked={includeDrafting} onChange={() => { setIncludeDrafting((v) => !v); setCurrentPage(1); }} compact />
+                    <ToggleRow label="Redraft" checked={showRedraft} onChange={() => { setShowRedraft((v) => !v); setCurrentPage(1); }} compact />
+                    <ToggleRow label="Keeper" checked={showKeeper} onChange={() => { setShowKeeper((v) => !v); setCurrentPage(1); }} compact />
+                    <ToggleRow label="Dynasty" checked={showDynasty} onChange={() => { setShowDynasty((v) => !v); setCurrentPage(1); }} compact />
+                    <ToggleRow label="Best Ball" checked={showBestBallFormat} onChange={() => { setShowBestBallFormat((v) => !v); setCurrentPage(1); }} compact />
+                  </div>
+                </section>
 
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="mb-2 text-sm font-medium text-white">Display accents</div>
-                  <div className="space-y-2.5">
+                  <div className="grid gap-2.5 md:grid-cols-3">
                     <ToggleRow
                       label="Highlight starters"
                       checked={highlightStarters}
@@ -2029,61 +2033,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 <div>
                   <div className="text-sm font-semibold text-white">Comparison pools & manual selection</div>
                   <div className="mt-1 text-xs text-gray-500">Use these to tune Ballsville ADP pools and optionally narrow visible leagues further.</div>
-                </div>
-
-                <div className="mt-4 border-t border-white/10 pt-3">
-                  <div className="text-sm text-gray-400 mb-2">Trending players</div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="all"
-                        checked={trendingMode === "all"}
-                        onChange={() => setTrendingMode("all")}
-                      />
-                      All players
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="adds"
-                        checked={trendingMode === "adds"}
-                        onChange={() => setTrendingMode("adds")}
-                      />
-                      Only trending adds
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="trending-mode"
-                        value="drops"
-                        checked={trendingMode === "drops"}
-                        onChange={() => setTrendingMode("drops")}
-                      />
-                      Only trending drops
-                    </label>
-                  </div>
-
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-sm text-gray-400">Lookback</span>
-                    <select
-                      value={trendingHours}
-                      onChange={(e) => setTrendingHours(Number(e.target.value))}
-                      className="bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-                      title="How far back to consider for trending adds/drops"
-                    >
-                      <option value={6}>6h</option>
-                      <option value={12}>12h</option>
-                      <option value={24}>24h</option>
-                      <option value={48}>48h</option>
-                      <option value={72}>72h</option>
-                      <option value={168}>7d</option>
-                    </select>
-                    <span className="text-xs text-gray-500">Sleeper top 50 per window</span>
-                  </div>
                 </div>
 
                 <div className="mt-4 border-t border-white/10 pt-3">
@@ -2236,12 +2185,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
                 className="text-sm rounded px-3 py-1 border border-blue-500 text-blue-300 hover:bg-blue-500/10"
                 onClick={() => setShowFiltersModal(false)}
               >
-                Close
+                Done
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        document.getElementById("stock-filters-panel")
+      ) : null}
 
       {showLeaguesModal && (
         <div

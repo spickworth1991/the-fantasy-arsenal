@@ -5,10 +5,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://thefantasyarsenal.
 
 export default function robots() {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-    },
+    rules: [
+      { userAgent: "*", allow: "/" },
+      { userAgent: "OAI-SearchBot", allow: "/" },
+      { userAgent: "ChatGPT-User", allow: "/" },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

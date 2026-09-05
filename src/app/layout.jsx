@@ -81,14 +81,21 @@ export default function RootLayout({ children }) {
                 "@graph": [
                   {
                     "@type": "Organization",
+                    "@id": `${SITE_URL}/#organization`,
                     name: SITE_NAME,
+                    alternateName: "Fantasy Arsenal",
                     url: SITE_URL,
                     logo: `${SITE_URL}/icons/icon-512x512.png`,
                   },
                   {
                     "@type": "WebSite",
+                    "@id": `${SITE_URL}/#website`,
                     name: SITE_NAME,
+                    alternateName: "Fantasy Arsenal",
                     url: SITE_URL,
+                    description: DEFAULT_DESCRIPTION,
+                    inLanguage: "en-US",
+                    publisher: { "@id": `${SITE_URL}/#organization` },
                   },
                 ],
               },

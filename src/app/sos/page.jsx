@@ -1,7 +1,7 @@
 import SosClient from "./SosClient";
 
 export const metadata = {
-  title: "Strength of Schedule | Fantasy Football SOS Analyzer | The Fantasy Arsenal",
+  title: "Fantasy Football SOS Analyzer",
   description:
     "Analyze fantasy football strength of schedule with premium charts and quick comparisons. Built for Sleeper leagues.",
   alternates: { canonical: "/sos" },

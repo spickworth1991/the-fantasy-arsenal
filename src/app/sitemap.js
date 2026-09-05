@@ -10,7 +10,7 @@ export default function sitemap() {
   const routes = [
     "",
     "/trade",
-    "/player-stock",
+    "/player-stock/results",
     "/ballsville-stats",
     "/player-availability",
     "/power-rankings",
@@ -22,9 +22,8 @@ export default function sitemap() {
     "/manager-intelligence",
     "/game-center",
     "/depth-charts",
+    "/stat-central",
     "/intelligence",
-    "/profile",
-    "/account",
     "/leaderboard",
     "/trust-center",
     "/league-hub",
@@ -37,6 +36,6 @@ export default function sitemap() {
     url: `${SITE_URL}${path}`,
     lastModified: now,
     changeFrequency: path === "" ? "weekly" : "monthly",
-    priority: path === "" ? 1 : 0.7,
+    priority: path === "" ? 1 : ["/trade", "/player-stock/results", "/draft-pick-tracker", "/league-hub"].includes(path) ? 0.9 : 0.7,
   }));
 }
