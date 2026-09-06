@@ -32,6 +32,7 @@ function generatedDataFile(file) {
   return (
     normalized.startsWith("public/archive/") ||
     /^public\/data\/ballsville-stats-\d{4}\.json$/i.test(normalized) ||
+    /^public\/data\/player-stock-drafters-\d{4}\.json$/i.test(normalized) ||
     /^public\/(?:[^/]+_cache|source-freshness|value-cache-version)\.json$/i.test(normalized) ||
     /^public\/projections(?:_[^/]+)?\.json$/i.test(normalized) ||
     /^public\/stats\/(?:advanced|derived|history|projections)\//i.test(normalized)

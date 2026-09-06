@@ -19,6 +19,9 @@ import LeagueFormatBadge from "../../../components/LeagueFormatBadge";
 import GuidedTips from "../../../components/GuidedTips";
 import DelayedStatHint from "../../../components/DelayedStatHint";
 import { classifyLeagueFormat } from "../../../lib/leagueFormat";
+import { useArsenalAccount } from "../../../context/ArsenalAccountContext";
+
+const BALLSVILLE_EXPOSURE_METRIC_KEY = "ps:ballsville:exposure-metric";
 
 const safeNum = (v) => {
   if (v == null) return 0;
@@ -125,15 +128,6 @@ const DYNASTY_LINEAGE_LIMIT = 12;
 // portfolios moving without unleashing every league request at once.
 const SCAN_CONCURRENCY = 8;
 
-const BALLSVILLE_FETCH_CONCURRENCY = 3;
-const BALLSVILLE_PROXY_PATH = "/api/ballsville-adp";
-
-const getBallsvilleProxyUrl = (key) => {
-  const normalizedKey = String(key || "").replace(/^\/+/, "");
-  if (!normalizedKey) return "";
-  return `${BALLSVILLE_PROXY_PATH}?key=${encodeURIComponent(normalizedKey)}`;
-};
-
 const isTruthyId = (value) => {
   const s = cleanText(value);
   return !!s && s !== "0" && s.toLowerCase() !== "null" && s.toLowerCase() !== "undefined" && s.toLowerCase() !== "false";
@@ -210,106 +204,32 @@ const normalizeBallsvilleModesPayload = (payload, fallbackSeason) => {
     .sort((a, b) => a.title.localeCompare(b.title));
 };
 
-const getBallsvilleJsonUrl = (key) => {
-  const normalizedKey = String(key || "").replace(/^\/+/, "");
-  return normalizedKey ? getBallsvilleProxyUrl(normalizedKey) : "";
-};
-
-const extractBallsvilleLeagueRows = (raw) => {
-  const perLeague = raw?.perLeague || {};
-  return [
-    ...(Array.isArray(perLeague?.sideA) ? perLeague.sideA : []),
-    ...(Array.isArray(perLeague?.sideB) ? perLeague.sideB : []),
-    ...(Array.isArray(raw?.leagues) ? raw.leagues : []),
-  ];
-};
-
-const aggregateBallsvilleModeJson = (raw) => {
-  const leagueRows = extractBallsvilleLeagueRows(raw);
-  const byLeaguePlayer = new Map();
-
-  for (const league of leagueRows) {
-    const leagueId = cleanText(league?.leagueId || league?.id || league?.name || Math.random());
-    const playersMap = league?.players && typeof league.players === "object" ? league.players : {};
-    const seen = new Set();
-
-    for (const [rawKey, player] of Object.entries(playersMap)) {
-      const obj = player && typeof player === "object" ? player : {};
-      const [nameFromKey = "", posFromKey = ""] = String(rawKey).split("|||");
-      const name = cleanText(obj?.name || nameFromKey);
-      const position = cleanText(obj?.position || posFromKey).toUpperCase();
-      const overallPick = safeNum(obj?.modeOverallPick ?? obj?.avgOverallPick ?? obj?.adp ?? obj?.avgPick);
-      if (!name || !overallPick) continue;
-
-      const dedupeKey = `${normalizePlayerName(name)}|||${position}`;
-      if (seen.has(dedupeKey)) continue;
-      seen.add(dedupeKey);
-
-      if (!byLeaguePlayer.has(dedupeKey)) {
-        byLeaguePlayer.set(dedupeKey, {
-          name,
-          position,
-          sumPick: 0,
-          sampleCount: 0,
-          leagueIds: new Set(),
-        });
-      }
-      const entry = byLeaguePlayer.get(dedupeKey);
-      if (entry.leagueIds.has(leagueId)) continue;
-      entry.leagueIds.add(leagueId);
-      entry.sumPick += overallPick;
-      entry.sampleCount += 1;
+const aggregateCachedBallsvilleAdp = (payload, selectedModes) => {
+  const slugs = new Set(Array.from(selectedModes || []).map(String));
+  const output = new Map();
+  for (const player of Object.values(payload?.adpPlayers || {})) {
+    let weightedPick = 0;
+    let samples = 0;
+    for (const [slug, detail] of Object.entries(player?.modes || {})) {
+      if (!slugs.has(String(slug))) continue;
+      const drafts = safeNum(detail?.drafts);
+      const adp = safeNum(detail?.avgOverallPick);
+      if (!drafts || !adp) continue;
+      weightedPick += adp * drafts;
+      samples += drafts;
+    }
+    if (!samples) continue;
+    const entry = {
+      name: cleanText(player?.name),
+      position: cleanText(player?.position).toUpperCase(),
+      sampleCount: samples,
+      avgOverallPick: weightedPick / samples,
+    };
+    for (const key of buildPlayerLookupKeys(entry.name, entry.position)) {
+      output.set(key, entry);
     }
   }
-
-  if (byLeaguePlayer.size === 0 && raw?.players && typeof raw.players === "object") {
-    for (const [rawKey, player] of Object.entries(raw.players)) {
-      const obj = player && typeof player === "object" ? player : {};
-      const [nameFromKey = "", posFromKey = ""] = String(rawKey).split("|||");
-      const name = cleanText(obj?.name || nameFromKey);
-      const position = cleanText(obj?.position || posFromKey).toUpperCase();
-      const overallPick = safeNum(obj?.avgOverallPick ?? obj?.modeOverallPick ?? obj?.adp ?? obj?.avgPick);
-      const sampleCount = safeNum(obj?.count || obj?.leagueCount || 0) || 1;
-      if (!name || !overallPick) continue;
-      byLeaguePlayer.set(`${normalizePlayerName(name)}|||${position}`, {
-        name,
-        position,
-        sumPick: overallPick * sampleCount,
-        sampleCount,
-        leagueIds: new Set(),
-      });
-    }
-  }
-
-  return byLeaguePlayer;
-};
-
-const mergeBallsvilleModeMaps = (maps) => {
-  const out = new Map();
-  for (const modeMap of maps) {
-    for (const [key, entry] of modeMap.entries()) {
-      if (!out.has(key)) {
-        out.set(key, {
-          name: entry.name,
-          position: entry.position,
-          sumPick: 0,
-          sampleCount: 0,
-        });
-      }
-      const dest = out.get(key);
-      dest.sumPick += safeNum(entry?.sumPick);
-      dest.sampleCount += safeNum(entry?.sampleCount);
-    }
-  }
-  return new Map(
-    Array.from(out.entries()).map(([key, entry]) => [
-      key,
-      {
-        ...entry,
-        avgOverallPick: entry.sampleCount > 0 ? entry.sumPick / entry.sampleCount : 0,
-      },
-    ])
-  );
+  return output;
 };
 
 const resolveBallsvilleAdp = (map, playerName, playerPosition, fallbackName = "") => {
@@ -380,6 +300,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
     metricType,
     getPlayerValueForSelectedSource,
   } = useSleeper();
+  const { isConnected: arsenalConnected, syncNow: syncArsenal } = useArsenalAccount();
 
   const effectiveSourceKey = sourceKey ?? selectedSource ?? "";
   const setEffectiveSourceKey = setSourceKey ?? (() => {});
@@ -417,6 +338,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [showLeaguesModal, setShowLeaguesModal] = useState(false);
   const [showVisibleLeaguesModal, setShowVisibleLeaguesModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [ballsvilleExposurePid, setBallsvilleExposurePid] = useState(null);
 
   const [sortKey, setSortKey] = useState("count"); // name | count | adp | ballsvilleRedraftAdp | ballsvilleDynastyAdp | topDrafter | value | proj | trend
   const [sortDir, setSortDir] = useState("desc");
@@ -441,6 +363,35 @@ export default function ClientResults({ initialSearchParams = {} }) {
   const [trendingDropMap, setTrendingDropMap] = useState(() => new Map());
   const [trendingReady, setTrendingReady] = useState({ adds: false, drops: false });
   const [draftLeaderMap, setDraftLeaderMap] = useState(() => new Map());
+  const [ballsvilleCache, setBallsvilleCache] = useState(null);
+  const [ballsvilleExposureMetric, setBallsvilleExposureMetric] = useState("percentage");
+
+  const changeBallsvilleExposureMetric = (metric) => {
+    const next = metric === "count" ? "count" : "percentage";
+    setBallsvilleExposureMetric(next);
+    try {
+      localStorage.setItem(BALLSVILLE_EXPOSURE_METRIC_KEY, next);
+      localStorage.removeItem("ps:ballsville-exposure-metric");
+    } catch {}
+    if (arsenalConnected) window.setTimeout(() => syncArsenal({ quiet:true }), 0);
+  };
+
+  useEffect(() => {
+    const restore = () => {
+      try {
+        const saved = localStorage.getItem(BALLSVILLE_EXPOSURE_METRIC_KEY)
+          || localStorage.getItem("ps:ballsville-exposure-metric");
+        if (saved === "count" || saved === "percentage") {
+          setBallsvilleExposureMetric(saved);
+          localStorage.setItem(BALLSVILLE_EXPOSURE_METRIC_KEY, saved);
+          localStorage.removeItem("ps:ballsville-exposure-metric");
+        }
+      } catch {}
+    };
+    restore();
+    window.addEventListener("tfa:cloud-sync-applied", restore);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", restore);
+  }, []);
 
   const [includeDrafting, setIncludeDrafting] = useState(true);
   const [showRedraft, setShowRedraft] = useState(true);
@@ -500,14 +451,24 @@ export default function ClientResults({ initialSearchParams = {} }) {
   useEffect(() => {
     let cancelled = false;
     const targetSeason = String(getParam("year") || year || new Date().getFullYear());
+    setBallsvilleModesLoading(true);
+    setBallsvilleModesError("");
     fetch(`/data/player-stock-drafters-${targetSeason}.json`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
       .then((payload) => {
-        if (!cancelled) setDraftLeaderMap(new Map(Object.entries(payload?.players || {})));
+        if (cancelled) return;
+        setDraftLeaderMap(new Map(Object.entries(payload?.players || {})));
+        setBallsvilleCache(payload);
+        setBallsvilleModes(normalizeBallsvilleModesPayload(payload?.adpModes || [], targetSeason));
       })
-      .catch(() => {
-        if (!cancelled) setDraftLeaderMap(new Map());
-      });
+      .catch((error) => {
+        if (cancelled) return;
+        setDraftLeaderMap(new Map());
+        setBallsvilleCache(null);
+        setBallsvilleModes([]);
+        setBallsvilleModesError(error?.message || "The local Ballsville comparison cache is unavailable.");
+      })
+      .finally(() => { if (!cancelled) setBallsvilleModesLoading(false); });
     return () => { cancelled = true; };
   }, [year, paramsKey]);
 
@@ -542,56 +503,6 @@ export default function ClientResults({ initialSearchParams = {} }) {
   }, [trendingHours]);
 
   useEffect(() => {
-    let cancelled = false;
-    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
-    const cacheKey = `ps:ballsville:modes:${targetSeason}`;
-
-    async function loadBallsvilleModes() {
-      setBallsvilleModesLoading(true);
-      setBallsvilleModesError("");
-      let hadCachedModes = false;
-
-      try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const rows = normalizeBallsvilleModesPayload(parsed, targetSeason);
-          if (rows.length) {
-            hadCachedModes = true;
-            if (!cancelled) setBallsvilleModes(rows);
-          }
-        }
-
-        const url = getBallsvilleJsonUrl(`data/draft-compare/modes_${targetSeason}.json`);
-        if (!url) throw new Error("Missing Ballsville modes URL");
-
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`Ballsville modes request failed (${res.status})`);
-
-        const json = await res.json();
-        const rows = normalizeBallsvilleModesPayload(json, targetSeason);
-        if (!rows.length) throw new Error("No Ballsville modes found");
-
-        sessionStorage.setItem(cacheKey, JSON.stringify(json));
-        if (!cancelled) setBallsvilleModes(rows);
-      } catch (e) {
-        if (!cancelled) {
-          if (!hadCachedModes) setBallsvilleModes([]);
-          setBallsvilleModesError(hadCachedModes ? "Showing cached Ballsville groups; the latest group list could not be checked." : e?.message || "Ballsville ADP modes could not be loaded.");
-        }
-      }
-    }
-
-    loadBallsvilleModes().finally(() => {
-      if (!cancelled) setBallsvilleModesLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [year, paramsKey]);
-
-  useEffect(() => {
     if (!ballsvilleModes.length) return;
     const targetSeason = String(getParam("year") || year || new Date().getFullYear());
     if (ballsvilleAssignmentSeasonRef.current === targetSeason) return;
@@ -611,75 +522,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
   }, [ballsvilleModes, year, paramsKey]);
 
   useEffect(() => {
-    let cancelled = false;
-    const targetSeason = String(getParam("year") || year || new Date().getFullYear());
-
-    async function loadBallsvilleAdp() {
-      if (!ballsvilleModes.length) {
-        setBallsvilleRedraftAdpMap(new Map());
-        setBallsvilleDynastyAdpMap(new Map());
-        return;
-      }
-      setBallsvilleAdpLoading(true);
-      setBallsvilleAdpError("");
-      try {
-        const fetchCombined = async (modeSlugs, bucketKey) => {
-          const slugs = Array.from(modeSlugs || []).filter(Boolean).sort();
-          if (!slugs.length) return new Map();
-
-          const cacheKey = `ps:ballsville:${targetSeason}:${bucketKey}:${slugs.join(",")}`;
-          const cached = sessionStorage.getItem(cacheKey);
-          if (cached) {
-            return new Map(JSON.parse(cached));
-          }
-
-          let cursor = 0;
-          const maps = [];
-          const workers = Array.from({ length: Math.min(BALLSVILLE_FETCH_CONCURRENCY, slugs.length) }, async () => {
-            while (!cancelled) {
-              const index = cursor;
-              cursor += 1;
-              if (index >= slugs.length) break;
-              const slug = slugs[index];
-              try {
-                const url = getBallsvilleJsonUrl(`data/draft-compare/drafts_${targetSeason}_${slug}.json`);
-                if (!url) continue;
-                const res = await fetch(url, { cache: "no-store" });
-                if (!res.ok) continue;
-                const json = await res.json();
-                maps.push(aggregateBallsvilleModeJson(json));
-              } catch {}
-            }
-          });
-          await Promise.all(workers);
-          const merged = mergeBallsvilleModeMaps(maps);
-          sessionStorage.setItem(cacheKey, JSON.stringify(Array.from(merged.entries())));
-          return merged;
-        };
-
-        const [redraftMap, dynastyMap] = await Promise.all([
-          fetchCombined(selectedBallsvilleRedraftModes, "redraft"),
-          fetchCombined(selectedBallsvilleDynastyModes, "dynasty"),
-        ]);
-        if (cancelled) return;
-        setBallsvilleRedraftAdpMap(redraftMap);
-        setBallsvilleDynastyAdpMap(dynastyMap);
-      } catch (e) {
-        if (!cancelled) {
-          setBallsvilleAdpError(e?.message || "Ballsville ADP could not be loaded.");
-          setBallsvilleRedraftAdpMap(new Map());
-          setBallsvilleDynastyAdpMap(new Map());
-        }
-      } finally {
-        if (!cancelled) setBallsvilleAdpLoading(false);
-      }
-    }
-
-    loadBallsvilleAdp();
-    return () => {
-      cancelled = true;
-    };
-  }, [ballsvilleModes, selectedBallsvilleRedraftModes, selectedBallsvilleDynastyModes, year, paramsKey]);
+    setBallsvilleAdpLoading(false);
+    setBallsvilleAdpError("");
+    setBallsvilleRedraftAdpMap(aggregateCachedBallsvilleAdp(ballsvilleCache, selectedBallsvilleRedraftModes));
+    setBallsvilleDynastyAdpMap(aggregateCachedBallsvilleAdp(ballsvilleCache, selectedBallsvilleDynastyModes));
+  }, [ballsvilleCache, selectedBallsvilleRedraftModes, selectedBallsvilleDynastyModes]);
 
   const getMetricRaw = (p) => safeNum(getPlayerValueForSelectedSource?.(p));
 
@@ -1458,10 +1305,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
       if (sortKey === "adp") return compareDraftPosition(a.avgDraftPickNo, b.avgDraftPickNo, dir);
       if (sortKey === "ballsvilleRedraftAdp") return compareDraftPosition(a._ballsvilleRedraftAdp, b._ballsvilleRedraftAdp, dir);
       if (sortKey === "ballsvilleDynastyAdp") return compareDraftPosition(a._ballsvilleDynastyAdp, b._ballsvilleDynastyAdp, dir);
-      if (sortKey === "topDrafter") return (((draftLeaderMap.get(String(a.player_id)) || [])[0]?.count || 0) - ((draftLeaderMap.get(String(b.player_id)) || [])[0]?.count || 0)) * dir;
+      if (sortKey === "topDrafter") {
+        const leader = (row) => [...(draftLeaderMap.get(String(row.player_id)) || [])].sort((left, right) => Number(right.count || 0) - Number(left.count || 0))[0];
+        return (Number(leader(a)?.[ballsvilleExposureMetric] || 0) - Number(leader(b)?.[ballsvilleExposureMetric] || 0)) * dir;
+      }
       return ((a.count || 0) - (b.count || 0)) * dir;
     });
-  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, draftLeaderMap, isProj]);
+  }, [filteredRows, sortKey, sortDir, trendingMode, trendingAddMap, trendingDropMap, draftLeaderMap, ballsvilleExposureMetric, isProj]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const pageStart = (currentPage - 1) * pageSize;
@@ -1484,6 +1334,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
         ballsvilleDynastyAdp: row._ballsvilleDynastyAdp || "",
         topDrafter: (draftLeaderMap.get(String(row.player_id)) || [])[0]?.name || "",
         topDrafterCount: (draftLeaderMap.get(String(row.player_id)) || [])[0]?.count || 0,
+        topDrafterPercentage: (draftLeaderMap.get(String(row.player_id)) || [])[0]?.percentage || 0,
         metric: isProj ? row._projAvg || 0 : row._value || 0,
         trendingAdds: trendingAddMap.get(row.player_id) || 0,
         trendingDrops: trendingDropMap.get(row.player_id) || 0,
@@ -1506,8 +1357,9 @@ export default function ClientResults({ initialSearchParams = {} }) {
     { key: "averageDraftSlot", label: "Average Draft Slot" },
     { key: "ballsvilleRedraftAdp", label: "Ballsville Redraft ADP" },
     { key: "ballsvilleDynastyAdp", label: "Ballsville Big Game ADP" },
-    { key: "topDrafter", label: "Top Ballsville Drafter" },
-    { key: "topDrafterCount", label: "Top Drafter Picks" },
+    { key: "topDrafter", label: "Top Ballsville Manager" },
+    { key: "topDrafterCount", label: "Manager Rostered Leagues" },
+    { key: "topDrafterPercentage", label: "Manager Ballsville Exposure Percent" },
     { key: "metric", label: valueOrProjLabel },
     { key: "trendingAdds", label: "Trending Adds" },
     { key: "trendingDrops", label: "Trending Drops" },
@@ -1766,7 +1618,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                         </th>
                       ) : null}
                       <th className="hidden text-right px-4 py-2 cursor-pointer select-none lg:table-cell" onClick={() => toggleSort("topDrafter")}>
-                        Top drafter <span className="ml-1 inline-block">{sortIndicator("topDrafter")}</span>
+                        Top Ballsville exposure <span className="ml-1 inline-block">{sortIndicator("topDrafter")}</span>
                       </th>
                       <th
                         className="text-right px-3 md:px-4 py-2 cursor-pointer select-none"
@@ -1789,7 +1641,11 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       const avgDraftLabel = formatAverageDraftPosition(r.avgDraftPickNo, r.avgDraftTeams);
                       const ballsvilleRedraftLabel = formatAverageDraftPosition(r._ballsvilleRedraftAdp, 12);
                       const ballsvilleDynastyLabel = formatAverageDraftPosition(r._ballsvilleDynastyAdp, 12);
-                      const topDrafter = (draftLeaderMap.get(String(r.player_id)) || [])[0] || null;
+                      const ballsvilleDrafters = [...(draftLeaderMap.get(String(r.player_id)) || [])].sort((left, right) => Number(right.count || 0) - Number(left.count || 0));
+                      const topDrafter = ballsvilleDrafters[0] || null;
+                      const topDrafterMetric = topDrafter
+                        ? ballsvilleExposureMetric === "percentage" ? `${Number(topDrafter.percentage || 0).toFixed(1)}%` : String(topDrafter.count || 0)
+                        : "—";
 
                       const titleBits = [];
                       if (overCap) titleBits.push(`Exposure ${exposure}% exceeds ${maxExposurePct}%`);
@@ -1836,9 +1692,13 @@ export default function ClientResults({ initialSearchParams = {} }) {
                                     {visibleLeagueCount ? ` • ${exposure}% exp.` : ""}
                                   </div>
                                   {topDrafter ? (
-                                    <div className="mt-1 max-w-[15rem] truncate text-[10px] font-semibold text-violet-200/65 lg:hidden">
-                                      Top drafter: {topDrafter.name} - {topDrafter.count}
-                                    </div>
+                                    <span className="block lg:hidden">
+                                      <DelayedStatHint hint="Percentage is this manager’s share of the unique Ballsville leagues rostering the player. Count is the exact number of those leagues. Click the exposure to open the full ranked manager list.">
+                                        <button data-guide-tip="stock-ballsville-exposure" type="button" onClick={(event) => { event.stopPropagation(); setBallsvilleExposurePid(String(r.player_id)); }} className="mt-1 block max-w-[15rem] truncate text-left text-[10px] font-semibold text-violet-200/65 hover:text-violet-100">
+                                          Top exposure: {topDrafter.name} - {topDrafterMetric}
+                                        </button>
+                                      </DelayedStatHint>
+                                    </span>
                                   ) : null}
                                 </span>
 
@@ -1874,7 +1734,7 @@ export default function ClientResults({ initialSearchParams = {} }) {
                             <td className={`px-4 py-3 text-right hidden md:table-cell font-medium ${getAdpToneClass("dynasty", showAdpAccents)}`}>{ballsvilleDynastyLabel}</td>
                           ) : null}
                           <td className="hidden whitespace-nowrap px-4 py-3 text-right text-xs font-semibold text-violet-100/80 lg:table-cell">
-                            {topDrafter ? `${topDrafter.name} - ${topDrafter.count}` : "—"}
+                            {topDrafter ? <DelayedStatHint hint="Percentage is this manager’s share of the unique Ballsville leagues rostering the player. Count is the exact number of those leagues. Click the exposure to open the full ranked manager list."><button data-guide-tip="stock-ballsville-exposure" type="button" onClick={(event) => { event.stopPropagation(); setBallsvilleExposurePid(String(r.player_id)); }} className="rounded-lg px-2 py-1 hover:bg-violet-300/10 hover:text-violet-100">{topDrafter.name} - {topDrafterMetric}</button></DelayedStatHint> : "—"}
                           </td>
                           <td className="px-3 md:px-4 py-3 text-right text-white font-semibold">{Math.round(metricVal)}</td>
                         </tr>
@@ -1932,7 +1792,8 @@ export default function ClientResults({ initialSearchParams = {} }) {
         { target:"stock-controls", title:"Choose what Player Stock measures", detail:"Search for a player, team, or position, then include only the league formats you want. Local ADP and exposure recalculate from the leagues currently in scope." },
         { target:"stock-scope", title:"Scanned is not the same as showing", detail:"Scanned is every league successfully read during the refresh. Showing is the smaller set left after format filters and any manual league selections; exposure uses the showing count." },
         { target:"stock-filters", title:"Open the table controls", detail:"Expand Filters & display to choose league types, value or projection source, exposure threshold, trending window, display accents, manual league selection, and Ballsville ADP groups. Collapse it when you want more room for the table." },
-        { target:"stock-table", scrollBlock:"start", title:"Sort, compare, and open a player", detail:"Click any column heading to sort. Leagues is your portfolio exposure, ADP is your own drafted average, Ballsville columns show wider market ADP, and clicking a player opens league-by-league details." },
+        { target:"stock-table", scrollBlock:"start", title:"Sort, compare, and open a player", detail:"Click any column heading to sort. Leagues is your portfolio exposure, ADP is your own drafted average, and Ballsville columns show wider market ADP. Top Ballsville exposure identifies the manager rostering that player in the most unique Ballsville leagues; Filters switches between league count and percentage. Click the exposure value for the full manager list, or click elsewhere on the player row for your league-by-league details." },
+        { target:"stock-ballsville-exposure", scrollBlock:"center", title:"Open the complete Ballsville exposure list", detail:"This value shows the leading Ballsville manager for the player. Percentage is that manager’s share of all unique Ballsville leagues rostering the player; Count is the exact number of those leagues. Click the manager and value to open the full ranked list, where you can switch between Percentage and Count without leaving the table." },
         { target:"stock-export", title:"Trend shortcuts and export", detail:"The flame shows Sleeper's hottest adds and the snowflake shows its coldest drops over the last 24 hours; click an active symbol again to return to all players. Download the current table as CSV, or open Google Sheets, click cell A1, and paste with Ctrl+V (Cmd+V on Mac)." },
         { target:"stock-refresh", title:"Refresh only when you need a new scan", detail:"Player Stock caches its portfolio scan for speed. Refresh ignores that cache and rereads league, roster, and draft data; ordinary filtering does not require another scan." },
       ]} /> : null}
@@ -2025,6 +1886,17 @@ export default function ClientResults({ initialSearchParams = {} }) {
                       onChange={() => setShowExposureBars((v) => !v)}
                       compact
                     />
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-white/70">Ballsville exposure display</div>
+                      <div className="mt-0.5 text-[10px] text-white/30">Show the leading manager’s share of unique Ballsville leagues rostering this player or their exact league count.</div>
+                    </div>
+                    <div className="grid grid-cols-2 rounded-xl border border-white/10 bg-slate-950 p-1">
+                      {[['percentage', 'Percentage'], ['count', 'Count']].map(([key, label]) => (
+                        <button key={key} type="button" data-no-account-persist aria-pressed={ballsvilleExposureMetric === key} onClick={() => { changeBallsvilleExposureMetric(key); setCurrentPage(1); }} className={`rounded-lg px-3 py-2 text-[10px] font-bold transition ${ballsvilleExposureMetric === key ? "bg-violet-300/15 text-violet-100 ring-1 ring-violet-300/20" : "text-white/35 hover:text-white/65"}`}>{label}</button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2192,6 +2064,29 @@ export default function ClientResults({ initialSearchParams = {} }) {
         </div>,
         document.getElementById("stock-filters-panel")
       ) : null}
+
+      {ballsvilleExposurePid ? (() => {
+        const playerRow = rows.find((row) => String(row.player_id) === String(ballsvilleExposurePid));
+        const managers = [...(draftLeaderMap.get(String(ballsvilleExposurePid)) || [])].sort((left, right) => Number(right.count || 0) - Number(left.count || 0));
+        return <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-5" onClick={() => setBallsvilleExposurePid(null)}>
+          <div className="flex max-h-[88dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-violet-300/15 bg-slate-950 shadow-[0_30px_90px_rgba(0,0,0,.65)]" onClick={(event) => event.stopPropagation()}>
+            <div className="border-b border-white/10 bg-gradient-to-r from-violet-300/[0.09] to-cyan-300/[0.035] p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div><div className="text-[10px] font-black uppercase tracking-[.18em] text-violet-100/55">Ballsville manager exposure</div><h2 className="mt-1 text-xl font-black text-white">{playerRow?._name || "Player"}</h2><p className="mt-1 text-xs text-white/40">Current ownership across {managers[0]?.totalLeagues || 0} unique Ballsville leagues rostering this player. One league counts once, including leagues with separate startup and rookie drafts.</p></div>
+                <button type="button" onClick={() => setBallsvilleExposurePid(null)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/55 hover:bg-white/[0.06] hover:text-white" aria-label="Close Ballsville exposure">✕</button>
+              </div>
+              <div className="mt-4 inline-grid grid-cols-2 rounded-xl border border-white/10 bg-black/20 p-1">
+                {[['percentage', 'Percentage'], ['count', 'Count']].map(([key, label]) => <button key={key} type="button" data-no-account-persist onClick={() => changeBallsvilleExposureMetric(key)} className={`rounded-lg px-4 py-2 text-xs font-bold ${ballsvilleExposureMetric === key ? "bg-violet-300/15 text-violet-100" : "text-white/40"}`}>{label}</button>)}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
+              <div className="grid grid-cols-[minmax(0,1fr)_110px] gap-2 border-b border-white/10 px-3 pb-2 text-[9px] font-black uppercase tracking-wider text-white/30"><span>Manager</span><span className="text-right">{ballsvilleExposureMetric === "percentage" ? "Exposure" : "Leagues"}</span></div>
+              {managers.map((manager, index) => <div key={`${manager.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_110px] items-center gap-2 border-b border-white/[0.05] px-3 py-3 last:border-0"><span className="truncate text-xs font-semibold text-white/75">{manager.name}</span><span className="text-right text-xs font-black text-violet-200">{ballsvilleExposureMetric === "percentage" ? `${Number(manager.percentage || 0).toFixed(1)}%` : `${manager.count} league${Number(manager.count) === 1 ? "" : "s"}`}</span></div>)}
+              {!managers.length ? <div className="p-6 text-center text-sm text-white/35">No Ballsville exposure records are available for this player.</div> : null}
+            </div>
+          </div>
+        </div>;
+      })() : null}
 
       {showLeaguesModal && (
         <div

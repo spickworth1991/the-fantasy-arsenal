@@ -1109,10 +1109,10 @@ export default function GlobalPlayerSourceDrawer() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-violet-100/55">
-                      Most frequent Ballsville drafters
+                      Top Ballsville manager exposure
                     </div>
                     <p className="mt-1 text-xs leading-5 text-white/40">
-                      Managers who drafted this player most often across published Ballsville draft modes this season.
+                      Exposure is each manager’s share of unique Ballsville leagues rostering this player. Leagues shows that manager’s count and the player’s Ballsville total.
                     </p>
                   </div>
                   <span className="rounded-full border border-violet-200/10 bg-violet-200/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-violet-100/55">
@@ -1120,16 +1120,18 @@ export default function GlobalPlayerSourceDrawer() {
                   </span>
                 </div>
                 {ballsvilleDrafters.length ? (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                    {ballsvilleDrafters.slice(0, 5).map((manager, index) => (
-                      <div key={`${manager.name}-${index}`} className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2">
+                  <div className="mt-3 overflow-hidden rounded-xl border border-white/[0.06] bg-black/20">
+                    <div className="grid grid-cols-[minmax(0,1fr)_72px_68px] gap-2 border-b border-white/[0.06] px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white/30"><span>Manager</span><span className="text-right">Exposure</span><span className="text-right">Leagues</span></div>
+                    {[...ballsvilleDrafters].sort((left, right) => Number(right.count || 0) - Number(left.count || 0)).slice(0, 5).map((manager, index) => (
+                      <div key={`${manager.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_72px_68px] items-center gap-2 border-b border-white/[0.05] px-3 py-2.5 last:border-0">
                         <span className="truncate text-xs font-semibold text-white/75">{manager.name}</span>
-                        <span className="shrink-0 text-xs font-black text-violet-200">{manager.count}</span>
+                        <span className="text-right text-xs font-black text-violet-200">{Number(manager.percentage || 0).toFixed(1)}%</span>
+                        <span className="text-right text-xs font-bold text-white/55">{manager.count}/{manager.totalLeagues || manager.count}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 text-xs text-white/35">No published Ballsville draft history is available for this player yet.</p>
+                  <p className="mt-3 text-xs text-white/35">No published Ballsville roster exposure is available for this player yet.</p>
                 )}
               </div>
             </>

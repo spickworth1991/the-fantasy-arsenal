@@ -362,7 +362,10 @@ const previousReleaseSnapshot = snapshots
       Date.parse(right.snapshot.generated_at) -
       Date.parse(left.snapshot.generated_at),
   )[0]?.snapshot;
-const newestInputChecks = (newestSnapshot?.input_manifest?.files || []).map(
+// Reproducibility of the live build must be checked against the inputs used by
+// current.json. Archived snapshots are immutable historical evidence and are
+// expected to differ after a later daily source refresh.
+const currentInputChecks = (current?.input_manifest?.files || []).map(
   (entry) => {
     const file = path.join(root, entry.path);
     const actualSha = fingerprint(file);
@@ -407,7 +410,7 @@ addCheck(
   "source_alias_coverage",
   actionableUnmatchedAliases.length ? "warn" : "pass",
   actionableUnmatchedAliases.length
-    ? `${actionableUnmatchedAliases.length} rostered source rows projected for at least 50 points could not be attached to a modeled player.`
+    ? `${actionableUnmatchedAliases.length} scheduled-team source rows projected for at least 50 points could not be attached to a modeled player.`
     : `${unmatchedAliases.length} unmatched depth/free-agent rows were retained for review; none crossed the actionable threshold.`,
   {
     actionable_unmatched: actionableUnmatchedAliases.slice(0, 100),
@@ -445,18 +448,18 @@ addCheck(
       : `All ${newestSnapshot.players?.length || 0} latest-snapshot forecasts were captured before kickoff.`,
 );
 addCheck(
-  "latest_snapshot_input_reproducibility",
-  !newestSnapshot?.input_manifest
+  "current_model_input_reproducibility",
+  !current?.input_manifest
     ? "warn"
-    : newestInputChecks.every((entry) => entry.matches_current_workspace)
+    : currentInputChecks.every((entry) => entry.matches_current_workspace)
       ? "pass"
       : "fail",
-  !newestSnapshot?.input_manifest
-    ? "Latest snapshot predates input fingerprinting."
-    : newestInputChecks.every((entry) => entry.matches_current_workspace)
-      ? `All ${newestInputChecks.length} fingerprinted inputs match the latest snapshot.`
-      : `${newestInputChecks.filter((entry) => !entry.matches_current_workspace).length} fingerprinted inputs differ from the latest snapshot.`,
-  { inputs: newestInputChecks },
+  !current?.input_manifest
+    ? "Current model predates input fingerprinting."
+    : currentInputChecks.every((entry) => entry.matches_current_workspace)
+      ? `All ${currentInputChecks.length} fingerprinted inputs match the current model build.`
+      : `${currentInputChecks.filter((entry) => !entry.matches_current_workspace).length} fingerprinted inputs differ from the current model build.`,
+  { inputs: currentInputChecks },
 );
 const futureDatedSources = sourceReports.filter(
   (source) =>
@@ -528,6 +531,13 @@ const quantile = (values, probability) => {
 const adjustmentDistribution = (snapshot, position) => {
   const values = (snapshot?.players || [])
     .filter((player) => player.position === position)
+    // Availability can intentionally zero the final matchup factor for
+    // players on IR/PUP. Those zeroes are lineup-safety decisions, not a
+    // shift in the matchup model this release guard is designed to measure.
+    .filter(
+      (player) =>
+        Number(player?.forecast?.availability?.player_factor ?? 1) > 0,
+    )
     // Compare the published, season-neutral matchup factor. Raw trained
     // factors are normalized back to the player's season workload and can
     // legitimately move as a model's role calibration changes.
@@ -537,7 +547,7 @@ const adjustmentDistribution = (snapshot, position) => {
           player?.forecast?.learned_adjustment?.factor,
       ),
     )
-    .filter(Number.isFinite);
+    .filter((value) => Number.isFinite(value) && value > 0);
   return {
     sample: values.length,
     p05: quantile(values, 0.05),
@@ -679,4 +689,8 @@ console.log(
 console.log(
   `Canonical players: ${canonical.length}; Sleeper IDs: ${identityOutput.sleeper_id_players}; unmatched aliases: ${unmatchedAliases.length}; ambiguous aliases: ${ambiguousAliases.length}.`,
 );
-if (overallStatus === "fail") process.exitCode = 1;
+for (const check of checks.filter((entry) => entry.status !== "pass"))
+  console.log(`  ${check.status === "fail" ? "FAIL" : "WARN"} ${check.key}: ${check.message}`);
+if (overallStatus === "fail" && process.argv.includes("--report-only"))
+  console.log("Audit failure recorded in report-only mode; the daily data refresh will continue.");
+else if (overallStatus === "fail") process.exitCode = 1;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const HINTS = {
   "neutral week": "The season projection divided across active, non-bye weeks before this opponent and game environment are applied.",
@@ -44,10 +45,36 @@ export default function DelayedStatHint({ term, hint, children }) {
       const rect = anchorRef.current?.getBoundingClientRect();
       if (!rect) return;
       const width = Math.min(320, window.innerWidth - 24);
-      setTip({ width, left: Math.max(12, Math.min(window.innerWidth - width - 12, rect.left + rect.width / 2 - width / 2)), top: Math.min(window.innerHeight - 100, rect.bottom + 10) });
+      const left = Math.max(
+        12,
+        Math.min(
+          window.innerWidth - width - 12,
+          rect.left + rect.width / 2 - width / 2,
+        ),
+      );
+      const openAbove = rect.bottom + 150 > window.innerHeight && rect.top > 150;
+      setTip(
+        openAbove
+          ? { width, left, bottom: window.innerHeight - rect.top + 10, placement: "above" }
+          : { width, left, top: rect.bottom + 10, placement: "below" },
+      );
     }, delay);
   };
   useEffect(() => () => clearTimeout(timerRef.current), []);
   if (!text) return children;
-  return <span className="inline-flex items-center gap-1"><span ref={anchorRef} tabIndex={0} aria-describedby={tip ? id : undefined} onPointerEnter={() => open(700)} onPointerLeave={close} onFocus={() => open(350)} onBlur={close} className="cursor-help underline decoration-dotted decoration-white/30 underline-offset-2 outline-none focus:text-cyan-100">{children}</span><span aria-hidden className="text-[8px] font-black normal-case tracking-normal text-cyan-200/45">?</span>{tip ? <span id={id} role="tooltip" className="pointer-events-none fixed z-[140] rounded-xl border border-cyan-200/20 bg-slate-900 px-3 py-2.5 text-left text-[11px] font-medium normal-case leading-5 tracking-normal text-white/80 shadow-[0_18px_55px_rgba(0,0,0,.75)]" style={tip}>{text}</span> : null}</span>;
+  const tooltip = tip && typeof document !== "undefined"
+    ? createPortal(
+        <span
+          id={id}
+          role="tooltip"
+          data-placement={tip.placement}
+          className="pointer-events-none fixed z-[9999] rounded-xl border border-cyan-200/20 bg-slate-900 px-3 py-2.5 text-left text-[11px] font-medium normal-case leading-5 tracking-normal text-white/80 shadow-[0_18px_55px_rgba(0,0,0,.75)]"
+          style={{ width:tip.width, left:tip.left, top:tip.top, bottom:tip.bottom }}
+        >
+          {text}
+        </span>,
+        document.body,
+      )
+    : null;
+  return <span className="inline-flex items-center gap-1"><span ref={anchorRef} tabIndex={0} aria-describedby={tip ? id : undefined} onPointerEnter={() => open(700)} onPointerLeave={close} onFocus={() => open(350)} onBlur={close} className="cursor-help underline decoration-dotted decoration-white/30 underline-offset-2 outline-none focus:text-cyan-100">{children}</span><span aria-hidden className="text-[8px] font-black normal-case tracking-normal text-cyan-200/45">?</span>{tooltip}</span>;
 }
