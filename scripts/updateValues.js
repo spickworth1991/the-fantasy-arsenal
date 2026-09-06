@@ -3893,18 +3893,51 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
 }
 
 async function updateFantasySharksProjections() {
+  const proxyOrigin = String(
+    process.env.FANTASYSHARKS_PROXY_ORIGIN || "https://thefantasyarsenal.com",
+  ).replace(/\/$/, "");
+  const proxyUrl = (segment = "") =>
+    `${proxyOrigin}/api/projection-feeds/fantasysharks${
+      segment ? `?segment=${encodeURIComponent(segment)}` : ""
+    }`;
+  const fetchFeed = async (directUrl, segment = "") => {
+    const headers = {
+      "user-agent":
+        "Mozilla/5.0 (compatible; TheFantasyArsenal/1.0; +https://thefantasyarsenal.com)",
+      accept: segment ? "text/csv,*/*" : "text/html,application/xhtml+xml,*/*",
+    };
+    let directStatus = "network error";
+    try {
+      const direct = await fetch(directUrl, { headers });
+      directStatus = `HTTP ${direct.status}`;
+      if (direct.ok) return direct.text();
+    } catch (error) {
+      directStatus = error instanceof Error ? error.message : directStatus;
+    }
+
+    const fallback = proxyUrl(segment);
+    console.warn(
+      `⚠️ FantasySharks direct request failed (${directStatus}); retrying through the Arsenal edge feed.`,
+    );
+    let proxied;
+    try {
+      proxied = await fetch(fallback, { headers });
+    } catch (error) {
+      throw new Error(
+        `FantasySharks direct request failed (${directStatus}); Arsenal edge feed failed (${error instanceof Error ? error.message : "network error"})`,
+      );
+    }
+    if (!proxied.ok)
+      throw new Error(
+        `FantasySharks direct request failed (${directStatus}); Arsenal edge feed returned HTTP ${proxied.status}`,
+      );
+    return proxied.text();
+  };
   let segment = "";
   try {
-    const landing = await fetch(
+    const landing = await fetchFeed(
       "https://www.fantasysharks.com/apps/bert/forecasts/projections.php?Position=",
-      { headers: { "user-agent": "Mozilla/5.0" } },
-    ).then((response) => {
-      if (!response.ok)
-        throw new Error(
-          `FantasySharks landing page returned HTTP ${response.status}`,
-        );
-      return response.text();
-    });
+    );
     const segmentMatch = landing.match(
       new RegExp(
         `<option\\b[^>]*value=["']?(\\d+)["']?[^>]*>\\s*${CURRENT_SEASON}\\s+NFL\\s+Season\\s*</option>`,
@@ -3947,13 +3980,7 @@ async function updateFantasySharksProjections() {
       `FantasySharks did not expose a ${CURRENT_SEASON} season segment.`,
     );
   const url = `https://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=${segment}&Position=99&scoring=2&League=&uid=4&uid2=&printable=`;
-  const csv = await fetch(url, {
-    headers: { "user-agent": "Mozilla/5.0", accept: "text/csv,*/*" },
-  }).then((response) => {
-    if (!response.ok)
-      throw new Error(`FantasySharks CSV returned HTTP ${response.status}`);
-    return response.text();
-  });
+  const csv = await fetchFeed(url, segment);
   const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
   if (parsed.errors?.length && !parsed.data?.length)
     throw new Error(
