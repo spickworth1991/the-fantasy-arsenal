@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T06:00:14.566Z",
+  "updated": "2026-09-06T09:36:20.594Z",
   "season": 2026,
   "source": "Projection Source Average Anchor",
   "scoring": "PPR",
@@ -12155,7 +12155,7 @@
       "position": "RB",
       "points": 160.536,
       "points_ppr": 160.536,
-      "points_half": 143.839,
+      "points_half": 143.838,
       "points_std": 123.452,
       "source_count": 7,
       "format_source_count": {
@@ -12219,7 +12219,7 @@
         },
         "Sleeper": {
           "ppr": 142.38,
-          "half": 128.75,
+          "half": 128.74,
           "std": 115.09
         },
         "FantasySharks": {
@@ -15166,7 +15166,7 @@
         "std": 6
       },
       "confidence": 86,
-      "disagreement": 0.0558,
+      "disagreement": 0.0557,
       "consensus_contributors": {
         "ppr": [
           "FantasyPros",
@@ -15227,9 +15227,9 @@
           "std": 141
         },
         "Sleeper": {
-          "ppr": 125.66,
-          "half": 125.66,
-          "std": 125.66
+          "ppr": 125.69,
+          "half": 125.69,
+          "std": 125.69
         },
         "FantasySharks": {
           "ppr": 137.2,
@@ -16726,10 +16726,10 @@
       "name": "Trey Smack",
       "team": "GB",
       "position": "K",
-      "points": 128.543,
-      "points_ppr": 128.543,
-      "points_half": 128.543,
-      "points_std": 128.543,
+      "points": 128.546,
+      "points_ppr": 128.546,
+      "points_half": 128.546,
+      "points_std": 128.546,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -16798,9 +16798,9 @@
           "std": 126
         },
         "Sleeper": {
-          "ppr": 118.94,
-          "half": 118.94,
-          "std": 118.94
+          "ppr": 118.97,
+          "half": 118.97,
+          "std": 118.97
         },
         "FantasySharks": {
           "ppr": 80.3,
@@ -18960,10 +18960,10 @@
       "name": "Edgerrin Cooper",
       "team": "GB",
       "position": "LB",
-      "points": 116.012,
-      "points_ppr": 116.012,
-      "points_half": 116.012,
-      "points_std": 116.012,
+      "points": 116.013,
+      "points_ppr": 116.013,
+      "points_half": 116.013,
+      "points_std": 116.013,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -18971,7 +18971,7 @@
         "std": 4
       },
       "confidence": 20,
-      "disagreement": 0.7362,
+      "disagreement": 0.7361,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -19015,9 +19015,9 @@
           "std": 94.9
         },
         "Sleeper": {
-          "ppr": 5.77,
-          "half": 5.77,
-          "std": 5.77
+          "ppr": 5.78,
+          "half": 5.78,
+          "std": 5.78
         },
         "FantasySharks": {
           "ppr": 80.1,
@@ -21111,10 +21111,10 @@
       "name": "Minnesota Vikings",
       "team": "MIN",
       "position": "DEF",
-      "points": 107.374,
-      "points_ppr": 107.374,
-      "points_half": 107.374,
-      "points_std": 107.374,
+      "points": 107.378,
+      "points_ppr": 107.378,
+      "points_half": 107.378,
+      "points_std": 107.378,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -21122,7 +21122,7 @@
         "std": 4
       },
       "confidence": 66,
-      "disagreement": 0.1168,
+      "disagreement": 0.1169,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -21164,9 +21164,9 @@
           "std": 88.9
         },
         "Sleeper": {
-          "ppr": 123.55,
-          "half": 123.55,
-          "std": 123.55
+          "ppr": 123.59,
+          "half": 123.59,
+          "std": 123.59
         },
         "DraftSharks": {
           "ppr": 115,
@@ -25826,10 +25826,10 @@
       "name": "Green Bay Packers",
       "team": "GB",
       "position": "DEF",
-      "points": 92.099,
-      "points_ppr": 92.099,
-      "points_half": 92.099,
-      "points_std": 92.099,
+      "points": 92.104,
+      "points_ppr": 92.104,
+      "points_half": 92.104,
+      "points_std": 92.104,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -25837,7 +25837,7 @@
         "std": 3
       },
       "confidence": 55,
-      "disagreement": 0.1569,
+      "disagreement": 0.157,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -25876,9 +25876,9 @@
           "std": 80.1
         },
         "Sleeper": {
-          "ppr": 117.38,
-          "half": 117.38,
-          "std": 117.38
+          "ppr": 117.41,
+          "half": 117.41,
+          "std": 117.41
         },
         "FantasyPros": {
           "ppr": 95.25,
@@ -28584,10 +28584,10 @@
       "name": "Zaire Franklin",
       "team": "GB",
       "position": "LB",
-      "points": 82.816,
-      "points_ppr": 82.816,
-      "points_half": 82.816,
-      "points_std": 82.816,
+      "points": 82.817,
+      "points_ppr": 82.817,
+      "points_half": 82.817,
+      "points_std": 82.817,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -28595,7 +28595,7 @@
         "std": 3
       },
       "confidence": 20,
-      "disagreement": 0.648,
+      "disagreement": 0.6479,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -28636,9 +28636,9 @@
           "std": 93.2
         },
         "Sleeper": {
-          "ppr": 5.43,
-          "half": 5.43,
-          "std": 5.43
+          "ppr": 5.44,
+          "half": 5.44,
+          "std": 5.44
         },
         "FantasySharks": {
           "ppr": 95.7,
@@ -45929,10 +45929,10 @@
       "name": "Javon Bullard",
       "team": "GB",
       "position": "DB",
-      "points": 37.363,
-      "points_ppr": 37.363,
-      "points_half": 37.363,
-      "points_std": 37.363,
+      "points": 37.366,
+      "points_ppr": 37.366,
+      "points_half": 37.366,
+      "points_std": 37.366,
       "source_count": 2,
       "format_source_count": {
         "ppr": 2,
@@ -45940,7 +45940,7 @@
         "std": 2
       },
       "confidence": 20,
-      "disagreement": 0.9266,
+      "disagreement": 0.9262,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -45973,9 +45973,9 @@
       },
       "sources": {
         "Sleeper": {
-          "ppr": 1.86,
-          "half": 1.86,
-          "std": 1.86
+          "ppr": 1.87,
+          "half": 1.87,
+          "std": 1.87
         },
         "FantasySharks": {
           "ppr": 48.8,
@@ -50565,10 +50565,10 @@
       "name": "Lukas Van Ness",
       "team": "GB",
       "position": "DL",
-      "points": 27.668,
-      "points_ppr": 27.668,
-      "points_half": 27.668,
-      "points_std": 27.668,
+      "points": 27.671,
+      "points_ppr": 27.671,
+      "points_half": 27.671,
+      "points_std": 27.671,
       "source_count": 2,
       "format_source_count": {
         "ppr": 2,
@@ -50576,7 +50576,7 @@
         "std": 2
       },
       "confidence": 20,
-      "disagreement": 0.7141,
+      "disagreement": 0.7137,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -50609,9 +50609,9 @@
       },
       "sources": {
         "Sleeper": {
-          "ppr": 5.77,
-          "half": 5.77,
-          "std": 5.77
+          "ppr": 5.78,
+          "half": 5.78,
+          "std": 5.78
         },
         "FantasySharks": {
           "ppr": 34.6,
@@ -64763,8 +64763,8 @@
     "nickfolk": 128.81,
     "greg dulcich": 128.652,
     "gregdulcich": 128.652,
-    "trey smack": 128.543,
-    "treysmack": 128.543,
+    "trey smack": 128.546,
+    "treysmack": 128.546,
     "zack baun": 127.746,
     "zackbaun": 127.746,
     "jamien sherwood": 127.592,
@@ -64817,8 +64817,8 @@
     "jalennailor": 116.509,
     "denver broncos": 116.319,
     "denverbroncos": 116.319,
-    "edgerrin cooper": 116.012,
-    "edgerrincooper": 116.012,
+    "edgerrin cooper": 116.013,
+    "edgerrincooper": 116.013,
     "seattle seahawks": 115.706,
     "seattleseahawks": 115.706,
     "jauan jennings": 115.184,
@@ -64871,8 +64871,8 @@
     "gunnarhelm": 107.534,
     "antoine winfield": 107.491,
     "antoinewinfield": 107.491,
-    "minnesota vikings": 107.374,
-    "minnesotavikings": 107.374,
+    "minnesota vikings": 107.378,
+    "minnesotavikings": 107.378,
     "nick cross": 106.398,
     "nickcross": 106.398,
     "tykee smith": 106.036,
@@ -64993,8 +64993,8 @@
     "jalentolbert": 92.508,
     "brian burns": 92.133,
     "brianburns": 92.133,
-    "green bay packers": 92.099,
-    "greenbaypackers": 92.099,
+    "green bay packers": 92.104,
+    "greenbaypackers": 92.104,
     "tre harris": 91.8,
     "tre'harris": 91.8,
     "demario douglas": 91.639,
@@ -65071,8 +65071,8 @@
     "tulituipulotu": 83.27,
     "mike washington": 83.238,
     "mikewashington": 83.238,
-    "zaire franklin": 82.816,
-    "zairefranklin": 82.816,
+    "zaire franklin": 82.817,
+    "zairefranklin": 82.817,
     "las vegas raiders": 82.509,
     "lasvegasraiders": 82.509,
     "isaac teslaa": 82.415,
@@ -65575,8 +65575,8 @@
     "benjaminmorrison": 37.635,
     "chau smithwade": 37.517,
     "chausmith-wade": 37.517,
-    "javon bullard": 37.363,
-    "javonbullard": 37.363,
+    "javon bullard": 37.366,
+    "javonbullard": 37.366,
     "isaiah bond": 37.361,
     "isaiahbond": 37.361,
     "tutu atwell": 37.234,
@@ -65711,8 +65711,8 @@
     "bradenfiske": 27.944,
     "blake whiteheart": 27.917,
     "blakewhiteheart": 27.917,
-    "lukas van ness": 27.668,
-    "lukasvanness": 27.668,
+    "lukas van ness": 27.671,
+    "lukasvanness": 27.671,
     "roschon johnson": 27.568,
     "roschonjohnson": 27.568,
     "leo chenal": 27.545,
