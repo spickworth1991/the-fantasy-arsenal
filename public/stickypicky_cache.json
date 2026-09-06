@@ -848,7 +848,7 @@
       "name": "2026 Early 1st",
       "team": "",
       "position": "PICK",
-      "value": 5587,
+      "value": 5589,
       "source_count": 3,
       "sources": [
         "KTC",
@@ -1791,7 +1791,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0726,
+      "disagreement": 0.0723,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -1873,25 +1873,10 @@
       "model_version": "arsenal-values-2.1"
     },
     {
-      "name": "Nick Bosa",
-      "team": "SF",
-      "position": "DL",
-      "value": 4254,
-      "source_count": 2,
-      "sources": [
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "low",
-      "confidence_score": 54,
-      "disagreement": 0.0177,
-      "model_version": "arsenal-values-2.1"
-    },
-    {
       "name": "Cam Ward",
       "team": "TEN",
       "position": "QB",
-      "value": 4253,
+      "value": 4254,
       "source_count": 8,
       "sources": [
         "FC",
@@ -1905,7 +1890,22 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0549,
+      "disagreement": 0.0546,
+      "model_version": "arsenal-values-2.1"
+    },
+    {
+      "name": "Nick Bosa",
+      "team": "SF",
+      "position": "DL",
+      "value": 4254,
+      "source_count": 2,
+      "sources": [
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "low",
+      "confidence_score": 54,
+      "disagreement": 0.0177,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -2026,7 +2026,7 @@
       "name": "Brian Thomas",
       "team": "JAX",
       "position": "WR",
-      "value": 4139,
+      "value": 4138,
       "source_count": 8,
       "sources": [
         "FC",
@@ -2040,7 +2040,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0527,
+      "disagreement": 0.053,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -3129,7 +3129,7 @@
       "name": "Terry McLaurin",
       "team": "WAS",
       "position": "WR",
-      "value": 3195,
+      "value": 3197,
       "source_count": 8,
       "sources": [
         "FC",
@@ -3264,7 +3264,7 @@
       "name": "Josh Downs",
       "team": "IND",
       "position": "WR",
-      "value": 3126,
+      "value": 3124,
       "source_count": 8,
       "sources": [
         "FC",
@@ -3448,7 +3448,7 @@
       "name": "Isaiah Likely",
       "team": "NYG",
       "position": "TE",
-      "value": 3084,
+      "value": 3085,
       "source_count": 8,
       "sources": [
         "FC",
@@ -5011,7 +5011,7 @@
       "name": "Rachaad White",
       "team": "WAS",
       "position": "RB",
-      "value": 2333,
+      "value": 2332,
       "source_count": 8,
       "sources": [
         "FC",
@@ -5025,7 +5025,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0944,
+      "disagreement": 0.0947,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -5220,7 +5220,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.092,
+      "disagreement": 0.0916,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -5781,7 +5781,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0964,
+      "disagreement": 0.0966,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -6108,6 +6108,27 @@
       "model_version": "arsenal-values-2.1"
     },
     {
+      "name": "Juwan Johnson",
+      "team": "NO",
+      "position": "TE",
+      "value": 2007,
+      "source_count": 8,
+      "sources": [
+        "FC",
+        "FN",
+        "FP",
+        "FPECR",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high",
+      "confidence_score": 98,
+      "disagreement": 0.0885,
+      "model_version": "arsenal-values-2.1"
+    },
+    {
       "name": "Chris Rodriguez",
       "team": "JAX",
       "position": "RB",
@@ -6126,27 +6147,6 @@
       "confidence": "high",
       "confidence_score": 98,
       "disagreement": 0.0862,
-      "model_version": "arsenal-values-2.1"
-    },
-    {
-      "name": "Juwan Johnson",
-      "team": "NO",
-      "position": "TE",
-      "value": 2006,
-      "source_count": 8,
-      "sources": [
-        "FC",
-        "FN",
-        "FP",
-        "FPECR",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high",
-      "confidence_score": 98,
-      "disagreement": 0.0888,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -7335,26 +7335,6 @@
       "model_version": "arsenal-values-2.1"
     },
     {
-      "name": "Jake Tonges",
-      "team": "SF",
-      "position": "TE",
-      "value": 1742,
-      "source_count": 7,
-      "sources": [
-        "FC",
-        "FN",
-        "FPECR",
-        "KTC",
-        "DP",
-        "IDP",
-        "IDPSHOW"
-      ],
-      "confidence": "high",
-      "confidence_score": 97,
-      "disagreement": 0.1205,
-      "model_version": "arsenal-values-2.1"
-    },
-    {
       "name": "Isaac TeSlaa",
       "team": "DET",
       "position": "WR",
@@ -7373,6 +7353,26 @@
       "confidence": "high",
       "confidence_score": 98,
       "disagreement": 0.0984,
+      "model_version": "arsenal-values-2.1"
+    },
+    {
+      "name": "Jake Tonges",
+      "team": "SF",
+      "position": "TE",
+      "value": 1740,
+      "source_count": 7,
+      "sources": [
+        "FC",
+        "FN",
+        "FPECR",
+        "KTC",
+        "DP",
+        "IDP",
+        "IDPSHOW"
+      ],
+      "confidence": "high",
+      "confidence_score": 96,
+      "disagreement": 0.1209,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -12143,7 +12143,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0956,
+      "disagreement": 0.0954,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -12260,7 +12260,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.1149,
+      "disagreement": 0.1146,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -18445,7 +18445,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.1055,
+      "disagreement": 0.1053,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -23763,7 +23763,7 @@
       "name": "Marvin Harrison Jr",
       "team": "ARI",
       "position": "WR",
-      "value": 5001,
+      "value": 5002,
       "source_count": 8,
       "sources": [
         "FC",
@@ -24006,7 +24006,7 @@
       "name": "Makai Lemon",
       "team": "PHI",
       "position": "WR",
-      "value": 4830,
+      "value": 4831,
       "source_count": 8,
       "sources": [
         "FC",
@@ -24116,7 +24116,7 @@
       "name": "Bucky Irving",
       "team": "TB",
       "position": "RB",
-      "value": 4654,
+      "value": 4653,
       "source_count": 8,
       "sources": [
         "FC",
@@ -25155,7 +25155,7 @@
       "name": "Terry McLaurin",
       "team": "WAS",
       "position": "WR",
-      "value": 3794,
+      "value": 3795,
       "source_count": 8,
       "sources": [
         "FC",
@@ -25675,7 +25675,7 @@
       "name": "Blake Corum",
       "team": "LAR",
       "position": "RB",
-      "value": 3574,
+      "value": 3573,
       "source_count": 8,
       "sources": [
         "FC",
@@ -27791,7 +27791,7 @@
       "name": "Rachaad White",
       "team": "WAS",
       "position": "RB",
-      "value": 2674,
+      "value": 2673,
       "source_count": 8,
       "sources": [
         "FC",
@@ -29517,7 +29517,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.0974,
+      "disagreement": 0.0971,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -29747,7 +29747,7 @@
       "name": "Jake Tonges",
       "team": "SF",
       "position": "TE",
-      "value": 2097,
+      "value": 2096,
       "source_count": 7,
       "sources": [
         "FC",
@@ -34109,7 +34109,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.1251,
+      "disagreement": 0.1252,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -40481,7 +40481,7 @@
       ],
       "confidence": "high",
       "confidence_score": 98,
-      "disagreement": 0.102,
+      "disagreement": 0.1021,
       "model_version": "arsenal-values-2.1"
     },
     {
@@ -62007,7 +62007,7 @@
     }
   ],
   "metadata": {
-    "updated": "2026-09-06T09:36:12.056Z",
+    "updated": "2026-09-06T09:42:49.240Z",
     "model_version": "arsenal-values-2.1",
     "method": "weighted, winsorized consensus of publisher-standardized 0–10,000 values; percentile agreement is retained for confidence and disagreement only",
     "fantasypros_policy": "Official FantasyPros trade values and ECR are separate inputs; ECR is rank-normalized and receives less weight than a published trade-value board.",
