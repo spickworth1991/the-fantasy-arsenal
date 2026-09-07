@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:43:34.543Z",
+  "updated": "2026-09-07T04:08:24.037Z",
   "season": 2026,
   "source": "Average of All Projections",
   "scoring": "PPR",
@@ -327,10 +327,10 @@
       "name": "Bijan Robinson",
       "team": "ATL",
       "position": "RB",
-      "points": 345.348,
-      "points_ppr": 345.348,
-      "points_half": 316,
-      "points_std": 280.22,
+      "points": 345.349,
+      "points_ppr": 345.349,
+      "points_half": 316.001,
+      "points_std": 280.221,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -415,9 +415,9 @@
           "std": 279.47
         },
         "FantasyArsenal": {
-          "ppr": 343.61,
-          "half": 308.929,
-          "std": 274.248
+          "ppr": 343.613,
+          "half": 308.931,
+          "std": 274.25
         }
       }
     },
@@ -426,10 +426,10 @@
       "name": "Drake Maye",
       "team": "NE",
       "position": "QB",
-      "points": 339.861,
-      "points_ppr": 339.861,
-      "points_half": 339.861,
-      "points_std": 339.861,
+      "points": 339.865,
+      "points_ppr": 339.865,
+      "points_half": 339.865,
+      "points_std": 339.865,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -524,9 +524,9 @@
           "std": 324.95
         },
         "FantasyArsenal": {
-          "ppr": 334.263,
-          "half": 334.263,
-          "std": 334.263
+          "ppr": 334.289,
+          "half": 334.289,
+          "std": 334.289
         }
       }
     },
@@ -1070,10 +1070,10 @@
       "name": "Puka Nacua",
       "team": "LAR",
       "position": "WR",
-      "points": 331.13,
-      "points_ppr": 331.13,
-      "points_half": 281.07,
-      "points_std": 220.656,
+      "points": 331.326,
+      "points_ppr": 331.326,
+      "points_half": 281.38,
+      "points_std": 220.964,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -1081,7 +1081,7 @@
         "std": 4
       },
       "confidence": 96,
-      "disagreement": 0.1461,
+      "disagreement": 0.1463,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -1148,9 +1148,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 352,
-          "half": 288,
-          "std": 224
+          "ppr": 353,
+          "half": 289,
+          "std": 225
         },
         "FantasyPros": {
           "ppr": 338.27,
@@ -1158,9 +1158,9 @@
           "std": 221.27
         },
         "FantasyArsenal": {
-          "ppr": 330.597,
-          "half": 272.507,
-          "std": 214.416
+          "ppr": 330.643,
+          "half": 272.545,
+          "std": 214.447
         }
       }
     },
@@ -2457,10 +2457,10 @@
       "name": "Amon-Ra St. Brown",
       "team": "DET",
       "position": "WR",
-      "points": 311.128,
-      "points_ppr": 311.128,
-      "points_half": 264.781,
-      "points_std": 205.648,
+      "points": 311.474,
+      "points_ppr": 311.474,
+      "points_half": 265.098,
+      "points_std": 205.961,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -2468,7 +2468,7 @@
         "std": 4
       },
       "confidence": 95,
-      "disagreement": 0.1597,
+      "disagreement": 0.1601,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -2535,9 +2535,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 322,
-          "half": 264,
-          "std": 205
+          "ppr": 324,
+          "half": 265,
+          "std": 206
         },
         "FantasyPros": {
           "ppr": 333.52,
@@ -2545,9 +2545,9 @@
           "std": 211.07
         },
         "FantasyArsenal": {
-          "ppr": 310.103,
-          "half": 253.387,
-          "std": 196.671
+          "ppr": 310.18,
+          "half": 253.45,
+          "std": 196.72
         }
       }
     },
@@ -4416,10 +4416,10 @@
       "name": "A.J. Brown",
       "team": "NE",
       "position": "WR",
-      "points": 256.934,
-      "points_ppr": 256.934,
-      "points_half": 223.27,
-      "points_std": 176.938,
+      "points": 256.946,
+      "points_ppr": 256.946,
+      "points_half": 223.284,
+      "points_std": 176.949,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -4504,9 +4504,9 @@
           "std": 174.3
         },
         "FantasyArsenal": {
-          "ppr": 258.339,
-          "half": 213.474,
-          "std": 168.607
+          "ppr": 258.404,
+          "half": 213.522,
+          "std": 168.643
         }
       }
     },
@@ -6332,10 +6332,10 @@
       "name": "Travis Etienne",
       "team": "NO",
       "position": "RB",
-      "points": 232.4,
-      "points_ppr": 232.4,
-      "points_half": 213.319,
-      "points_std": 192.501,
+      "points": 232.404,
+      "points_ppr": 232.404,
+      "points_half": 213.324,
+      "points_std": 192.508,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -6420,9 +6420,9 @@
           "std": 190.55
         },
         "FantasyArsenal": {
-          "ppr": 229.055,
-          "half": 208.653,
-          "std": 188.251
+          "ppr": 229.075,
+          "half": 208.672,
+          "std": 188.272
         }
       }
     },
@@ -6728,10 +6728,10 @@
       "name": "Cam Skattebo",
       "team": "NYG",
       "position": "RB",
-      "points": 227.345,
-      "points_ppr": 227.345,
-      "points_half": 207.668,
-      "points_std": 185.577,
+      "points": 227.348,
+      "points_ppr": 227.348,
+      "points_half": 207.671,
+      "points_std": 185.581,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -6816,9 +6816,9 @@
           "std": 190.07
         },
         "FantasyArsenal": {
-          "ppr": 224.061,
-          "half": 202.299,
-          "std": 180.535
+          "ppr": 224.075,
+          "half": 202.31,
+          "std": 180.548
         }
       }
     },
@@ -7025,8 +7025,8 @@
       "name": "D'Andre Swift",
       "team": "CHI",
       "position": "RB",
-      "points": 220.28,
-      "points_ppr": 220.28,
+      "points": 220.281,
+      "points_ppr": 220.281,
       "points_half": 208.91,
       "points_std": 190.709,
       "source_count": 8,
@@ -7093,7 +7093,7 @@
           "std": null
         },
         "Sleeper": {
-          "ppr": 209.92,
+          "ppr": 209.93,
           "half": 191.04,
           "std": 172.15
         },
@@ -7322,10 +7322,10 @@
       "name": "Jameson Williams",
       "team": "DET",
       "position": "WR",
-      "points": 215.575,
-      "points_ppr": 215.575,
-      "points_half": 187.256,
-      "points_std": 154.283,
+      "points": 215.569,
+      "points_ppr": 215.569,
+      "points_half": 187.245,
+      "points_std": 154.272,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -7410,9 +7410,9 @@
           "std": 149.67
         },
         "FantasyArsenal": {
-          "ppr": 212.446,
-          "half": 180.875,
-          "std": 149.306
+          "ppr": 212.411,
+          "half": 180.838,
+          "std": 149.269
         }
       }
     },
@@ -8312,10 +8312,10 @@
       "name": "Christian Watson",
       "team": "GB",
       "position": "WR",
-      "points": 199.059,
-      "points_ppr": 199.059,
-      "points_half": 184.566,
-      "points_std": 152.92,
+      "points": 199.057,
+      "points_ppr": 199.057,
+      "points_half": 184.561,
+      "points_std": 152.914,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -8400,9 +8400,9 @@
           "std": 138.06
         },
         "FantasyArsenal": {
-          "ppr": 205.278,
-          "half": 175.435,
-          "std": 145.596
+          "ppr": 205.264,
+          "half": 175.419,
+          "std": 145.578
         }
       }
     },
@@ -8708,10 +8708,10 @@
       "name": "Rhamondre Stevenson",
       "team": "NE",
       "position": "RB",
-      "points": 197.397,
-      "points_ppr": 197.397,
-      "points_half": 185.862,
-      "points_std": 166.667,
+      "points": 197.461,
+      "points_ppr": 197.461,
+      "points_half": 186.558,
+      "points_std": 167.062,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -8719,7 +8719,7 @@
         "std": 4
       },
       "confidence": 97,
-      "disagreement": 0.1232,
+      "disagreement": 0.125,
       "consensus_contributors": {
         "ppr": [
           "CBS",
@@ -8786,9 +8786,9 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 223,
-          "half": 202,
-          "std": 182
+          "ppr": 225,
+          "half": 204,
+          "std": 183
         },
         "FantasyPros": {
           "ppr": 196.37,
@@ -8796,9 +8796,9 @@
           "std": 156.63
         },
         "FantasyArsenal": {
-          "ppr": 202.842,
-          "half": 183.758,
-          "std": 164.672
+          "ppr": 203.188,
+          "half": 184.091,
+          "std": 164.995
         }
       }
     },
@@ -9001,112 +9001,13 @@
       }
     },
     {
-      "player_id": "12529",
-      "name": "TreVeyon Henderson",
-      "team": "NE",
-      "position": "RB",
-      "points": 192.991,
-      "points_ppr": 192.991,
-      "points_half": 177.334,
-      "points_std": 159.311,
-      "source_count": 8,
-      "format_source_count": {
-        "ppr": 8,
-        "half": 4,
-        "std": 4
-      },
-      "confidence": 98,
-      "disagreement": 0.0643,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasyPros",
-          "CBS",
-          "FantasyArsenal",
-          "ESPN",
-          "Sleeper",
-          "FantasySharks"
-        ],
-        "half": [
-          "FantasyPros",
-          "FantasyArsenal",
-          "Sleeper",
-          "DraftSharks"
-        ],
-        "std": [
-          "FantasyPros",
-          "FantasyArsenal",
-          "Sleeper",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "DraftSharks"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 23,
-        "years_experience": 1,
-        "depth_chart_order": 2,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 170,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 197.871,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 187.8,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 198.85,
-          "half": 180.81,
-          "std": 162.76
-        },
-        "FantasySharks": {
-          "ppr": 202.4,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 210,
-          "half": 190,
-          "std": 170
-        },
-        "FantasyPros": {
-          "ppr": 183.74,
-          "half": 167.16,
-          "std": 150.57
-        },
-        "FantasyArsenal": {
-          "ppr": 191.091,
-          "half": 173.625,
-          "std": 156.157
-        }
-      }
-    },
-    {
       "player_id": "8228",
       "name": "Jaylen Warren",
       "team": "PIT",
       "position": "RB",
       "points": 192.804,
       "points_ppr": 192.804,
-      "points_half": 179.401,
+      "points_half": 179.4,
       "points_std": 155.647,
       "source_count": 8,
       "format_source_count": {
@@ -9193,8 +9094,107 @@
         },
         "FantasyArsenal": {
           "ppr": 189.805,
-          "half": 168.276,
-          "std": 146.747
+          "half": 168.274,
+          "std": 146.746
+        }
+      }
+    },
+    {
+      "player_id": "12529",
+      "name": "TreVeyon Henderson",
+      "team": "NE",
+      "position": "RB",
+      "points": 192.465,
+      "points_ppr": 192.465,
+      "points_half": 175.705,
+      "points_std": 158.085,
+      "source_count": 8,
+      "format_source_count": {
+        "ppr": 8,
+        "half": 4,
+        "std": 4
+      },
+      "confidence": 98,
+      "disagreement": 0.0615,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasyPros",
+          "CBS",
+          "FantasyArsenal",
+          "ESPN",
+          "Sleeper",
+          "FantasySharks"
+        ],
+        "half": [
+          "FantasyPros",
+          "FantasyArsenal",
+          "Sleeper",
+          "DraftSharks"
+        ],
+        "std": [
+          "FantasyPros",
+          "FantasyArsenal",
+          "Sleeper",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "DraftSharks"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 23,
+        "years_experience": 1,
+        "depth_chart_order": 2,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 170,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 197.871,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 187.8,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 198.85,
+          "half": 180.81,
+          "std": 162.76
+        },
+        "FantasySharks": {
+          "ppr": 202.4,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 207,
+          "half": 187,
+          "std": 168
+        },
+        "FantasyPros": {
+          "ppr": 183.74,
+          "half": 167.16,
+          "std": 150.57
+        },
+        "FantasyArsenal": {
+          "ppr": 188.28,
+          "half": 171.167,
+          "std": 154.05
         }
       }
     },
@@ -9397,6 +9397,105 @@
       }
     },
     {
+      "player_id": "4217",
+      "name": "George Kittle",
+      "team": "SF",
+      "position": "TE",
+      "points": 189.457,
+      "points_ppr": 189.457,
+      "points_half": 155.912,
+      "points_std": 119.81,
+      "source_count": 8,
+      "format_source_count": {
+        "ppr": 8,
+        "half": 4,
+        "std": 4
+      },
+      "confidence": 93,
+      "disagreement": 0.1859,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "FantasyArsenal",
+          "FantasyPros",
+          "ESPN",
+          "DraftSharks",
+          "Sleeper"
+        ],
+        "half": [
+          "FantasyPros",
+          "FantasyArsenal",
+          "DraftSharks",
+          "Sleeper"
+        ],
+        "std": [
+          "FantasyPros",
+          "FantasyArsenal",
+          "DraftSharks",
+          "Sleeper"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "FFA",
+          "CBS"
+        ],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 32,
+        "years_experience": 9,
+        "depth_chart_order": 1,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 104,
+          "half": null,
+          "std": null
+        },
+        "ESPN": {
+          "ppr": 193.437,
+          "half": null,
+          "std": null
+        },
+        "CBS": {
+          "ppr": 215.1,
+          "half": null,
+          "std": null
+        },
+        "Sleeper": {
+          "ppr": 202.22,
+          "half": 164.74,
+          "std": 127.26
+        },
+        "FantasySharks": {
+          "ppr": 176.9,
+          "half": null,
+          "std": null
+        },
+        "DraftSharks": {
+          "ppr": 199,
+          "half": 161,
+          "std": 123
+        },
+        "FantasyPros": {
+          "ppr": 187.01,
+          "half": 151.81,
+          "std": 116.62
+        },
+        "FantasyArsenal": {
+          "ppr": 186.469,
+          "half": 151.837,
+          "std": 117.204
+        }
+      }
+    },
+    {
       "player_id": "10859",
       "name": "Sam LaPorta",
       "team": "DET",
@@ -9492,105 +9591,6 @@
           "ppr": 187.387,
           "half": 152.637,
           "std": 117.886
-        }
-      }
-    },
-    {
-      "player_id": "4217",
-      "name": "George Kittle",
-      "team": "SF",
-      "position": "TE",
-      "points": 189.221,
-      "points_ppr": 189.221,
-      "points_half": 155.551,
-      "points_std": 119.465,
-      "source_count": 8,
-      "format_source_count": {
-        "ppr": 8,
-        "half": 4,
-        "std": 4
-      },
-      "confidence": 93,
-      "disagreement": 0.1857,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "FantasyArsenal",
-          "FantasyPros",
-          "ESPN",
-          "DraftSharks",
-          "Sleeper"
-        ],
-        "half": [
-          "FantasyArsenal",
-          "FantasyPros",
-          "DraftSharks",
-          "Sleeper"
-        ],
-        "std": [
-          "FantasyPros",
-          "FantasyArsenal",
-          "DraftSharks",
-          "Sleeper"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "FFA",
-          "CBS"
-        ],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 32,
-        "years_experience": 9,
-        "depth_chart_order": 1,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 104,
-          "half": null,
-          "std": null
-        },
-        "ESPN": {
-          "ppr": 193.437,
-          "half": null,
-          "std": null
-        },
-        "CBS": {
-          "ppr": 215.1,
-          "half": null,
-          "std": null
-        },
-        "Sleeper": {
-          "ppr": 202.22,
-          "half": 164.74,
-          "std": 127.26
-        },
-        "FantasySharks": {
-          "ppr": 176.9,
-          "half": null,
-          "std": null
-        },
-        "DraftSharks": {
-          "ppr": 198,
-          "half": 160,
-          "std": 122
-        },
-        "FantasyPros": {
-          "ppr": 187.01,
-          "half": 151.81,
-          "std": 116.62
-        },
-        "FantasyArsenal": {
-          "ppr": 186.207,
-          "half": 151.626,
-          "std": 117.046
         }
       }
     },
@@ -10304,10 +10304,10 @@
       "name": "Jadarian Price",
       "team": "SEA",
       "position": "RB",
-      "points": 184.319,
-      "points_ppr": 184.319,
-      "points_half": 168.866,
-      "points_std": 156.825,
+      "points": 184.317,
+      "points_ppr": 184.317,
+      "points_half": 168.863,
+      "points_std": 157.121,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -10384,7 +10384,7 @@
         "DraftSharks": {
           "ppr": 207,
           "half": 193,
-          "std": 178
+          "std": 179
         },
         "FantasyPros": {
           "ppr": 163.45,
@@ -10392,9 +10392,9 @@
           "std": 143.93
         },
         "FantasyArsenal": {
-          "ppr": 178.738,
-          "half": 166.308,
-          "std": 153.884
+          "ppr": 178.727,
+          "half": 166.298,
+          "std": 153.876
         }
       }
     },
@@ -10700,10 +10700,10 @@
       "name": "Rico Dowdle",
       "team": "PIT",
       "position": "RB",
-      "points": 179.957,
-      "points_ppr": 179.957,
+      "points": 179.956,
+      "points_ppr": 179.956,
       "points_half": 169.921,
-      "points_std": 153.094,
+      "points_std": 153.092,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -10788,9 +10788,9 @@
           "std": 144.87
         },
         "FantasyArsenal": {
-          "ppr": 174.361,
-          "half": 158.778,
-          "std": 143.198
+          "ppr": 174.357,
+          "half": 158.776,
+          "std": 143.194
         }
       }
     },
@@ -11595,10 +11595,10 @@
       "name": "Jayden Reed",
       "team": "GB",
       "position": "WR",
-      "points": 170.064,
-      "points_ppr": 170.064,
-      "points_half": 156.932,
-      "points_std": 124.119,
+      "points": 170.06,
+      "points_ppr": 170.06,
+      "points_half": 156.924,
+      "points_std": 124.111,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -11685,9 +11685,9 @@
           "std": 113.24
         },
         "FantasyArsenal": {
-          "ppr": 173.115,
-          "half": 142.738,
-          "std": 112.357
+          "ppr": 173.093,
+          "half": 142.71,
+          "std": 112.332
         }
       }
     },
@@ -11696,10 +11696,10 @@
       "name": "RJ Harvey",
       "team": "DEN",
       "position": "RB",
-      "points": 169.551,
-      "points_ppr": 169.551,
-      "points_half": 148.362,
-      "points_std": 124.688,
+      "points": 169.552,
+      "points_ppr": 169.552,
+      "points_half": 148.364,
+      "points_std": 124.69,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -11784,9 +11784,9 @@
           "std": 117.04
         },
         "FantasyArsenal": {
-          "ppr": 166.566,
-          "half": 143.765,
-          "std": 120.962
+          "ppr": 166.572,
+          "half": 143.77,
+          "std": 120.969
         }
       }
     },
@@ -12391,8 +12391,8 @@
       "position": "RB",
       "points": 166.518,
       "points_ppr": 166.518,
-      "points_half": 164.871,
-      "points_std": 154.822,
+      "points_half": 164.873,
+      "points_std": 154.823,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -12477,9 +12477,9 @@
           "std": 156.02
         },
         "FantasyArsenal": {
-          "ppr": 169.131,
-          "half": 159.231,
-          "std": 149.33
+          "ppr": 169.134,
+          "half": 159.236,
+          "std": 149.334
         }
       }
     },
@@ -13589,10 +13589,10 @@
       "name": "Romeo Doubs",
       "team": "NE",
       "position": "WR",
-      "points": 158.555,
-      "points_ppr": 158.555,
-      "points_half": 144.865,
-      "points_std": 114.075,
+      "points": 158.566,
+      "points_ppr": 158.566,
+      "points_half": 144.879,
+      "points_std": 114.084,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -13600,7 +13600,7 @@
         "std": 4
       },
       "confidence": 93,
-      "disagreement": 0.1819,
+      "disagreement": 0.183,
       "consensus_contributors": {
         "ppr": [
           "FantasySharks",
@@ -13667,7 +13667,7 @@
           "std": null
         },
         "DraftSharks": {
-          "ppr": 198,
+          "ppr": 199,
           "half": 164,
           "std": 129
         },
@@ -13677,9 +13677,9 @@
           "std": 107.67
         },
         "FantasyArsenal": {
-          "ppr": 162.612,
-          "half": 134.255,
-          "std": 105.902
+          "ppr": 162.671,
+          "half": 134.303,
+          "std": 105.933
         }
       }
     },
@@ -14079,9 +14079,9 @@
           "std": 150.41
         },
         "FantasyArsenal": {
-          "ppr": 146.945,
-          "half": 146.945,
-          "std": 146.945
+          "ppr": 146.946,
+          "half": 146.946,
+          "std": 146.946
         }
       }
     },
@@ -14687,8 +14687,8 @@
           "std": 134.15
         },
         "FantasyArsenal": {
-          "ppr": 148.769,
-          "half": 142.126,
+          "ppr": 148.772,
+          "half": 142.128,
           "std": 135.484
         }
       }
@@ -14698,10 +14698,10 @@
       "name": "Rachaad White",
       "team": "WAS",
       "position": "RB",
-      "points": 147.671,
-      "points_ppr": 147.671,
-      "points_half": 137.559,
-      "points_std": 117.429,
+      "points": 147.669,
+      "points_ppr": 147.669,
+      "points_half": 137.556,
+      "points_std": 117.425,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -14786,9 +14786,9 @@
           "std": 119.75
         },
         "FantasyArsenal": {
-          "ppr": 143.472,
-          "half": 125.884,
-          "std": 108.298
+          "ppr": 143.462,
+          "half": 125.875,
+          "std": 108.285
         }
       }
     },
@@ -15762,10 +15762,10 @@
       "name": "Cairo Santos",
       "team": "CHI",
       "position": "K",
-      "points": 138.794,
-      "points_ppr": 138.794,
-      "points_half": 138.794,
-      "points_std": 138.794,
+      "points": 138.792,
+      "points_ppr": 138.792,
+      "points_half": 138.792,
+      "points_std": 138.792,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -15840,9 +15840,9 @@
           "std": 143
         },
         "Sleeper": {
-          "ppr": 121.52,
-          "half": 121.52,
-          "std": 121.52
+          "ppr": 121.49,
+          "half": 121.49,
+          "std": 121.49
         },
         "FantasySharks": {
           "ppr": 111.5,
@@ -15860,9 +15860,9 @@
           "std": 133.26
         },
         "FantasyArsenal": {
-          "ppr": 135.437,
-          "half": 135.437,
-          "std": 135.437
+          "ppr": 135.436,
+          "half": 135.436,
+          "std": 135.436
         }
       }
     },
@@ -18261,10 +18261,10 @@
       "name": "Nick Folk",
       "team": "ATL",
       "position": "K",
-      "points": 126.233,
-      "points_ppr": 126.233,
-      "points_half": 126.233,
-      "points_std": 126.233,
+      "points": 126.228,
+      "points_ppr": 126.228,
+      "points_half": 126.228,
+      "points_std": 126.228,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -18336,9 +18336,9 @@
           "std": 131
         },
         "Sleeper": {
-          "ppr": 121.27,
-          "half": 121.27,
-          "std": 121.27
+          "ppr": 121.21,
+          "half": 121.21,
+          "std": 121.21
         },
         "FantasySharks": {
           "ppr": 102.8,
@@ -18351,9 +18351,9 @@
           "std": 121.07
         },
         "FantasyArsenal": {
-          "ppr": 117.601,
-          "half": 117.601,
-          "std": 117.601
+          "ppr": 117.598,
+          "half": 117.598,
+          "std": 117.598
         }
       }
     },
@@ -19325,107 +19325,6 @@
       }
     },
     {
-      "player_id": "1945",
-      "name": "Chris Boswell",
-      "team": "PIT",
-      "position": "K",
-      "points": 121.392,
-      "points_ppr": 121.392,
-      "points_half": 121.392,
-      "points_std": 121.392,
-      "source_count": 7,
-      "format_source_count": {
-        "ppr": 7,
-        "half": 7,
-        "std": 7
-      },
-      "confidence": 92,
-      "disagreement": 0.091,
-      "consensus_contributors": {
-        "ppr": [
-          "FantasySharks",
-          "Sleeper",
-          "FantasyPros",
-          "FantasyArsenal",
-          "FFA"
-        ],
-        "half": [
-          "FantasySharks",
-          "Sleeper",
-          "FantasyPros",
-          "FantasyArsenal",
-          "FFA"
-        ],
-        "std": [
-          "FantasySharks",
-          "Sleeper",
-          "FantasyPros",
-          "FantasyArsenal",
-          "FFA"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [
-          "CBS",
-          "ESPN"
-        ],
-        "half": [
-          "CBS",
-          "ESPN"
-        ],
-        "std": [
-          "CBS",
-          "ESPN"
-        ]
-      },
-      "context": {
-        "age": 35,
-        "years_experience": 12,
-        "depth_chart_order": 1,
-        "injury_status": null,
-        "active": true,
-        "adjustment": 1,
-        "reasons": []
-      },
-      "sources": {
-        "FFA": {
-          "ppr": 134,
-          "half": 134,
-          "std": 134
-        },
-        "ESPN": {
-          "ppr": 142.755,
-          "half": 142.755,
-          "std": 142.755
-        },
-        "CBS": {
-          "ppr": 111,
-          "half": 111,
-          "std": 111
-        },
-        "Sleeper": {
-          "ppr": 117.76,
-          "half": 117.76,
-          "std": 117.76
-        },
-        "FantasySharks": {
-          "ppr": 115.9,
-          "half": 115.9,
-          "std": 115.9
-        },
-        "FantasyPros": {
-          "ppr": 118.29,
-          "half": 118.29,
-          "std": 118.29
-        },
-        "FantasyArsenal": {
-          "ppr": 118.651,
-          "half": 118.651,
-          "std": 118.651
-        }
-      }
-    },
-    {
       "player_id": "12713",
       "name": "Andy Borregales",
       "team": "NE",
@@ -19523,6 +19422,107 @@
           "ppr": 116.476,
           "half": 116.476,
           "std": 116.476
+        }
+      }
+    },
+    {
+      "player_id": "1945",
+      "name": "Chris Boswell",
+      "team": "PIT",
+      "position": "K",
+      "points": 121.388,
+      "points_ppr": 121.388,
+      "points_half": 121.388,
+      "points_std": 121.388,
+      "source_count": 7,
+      "format_source_count": {
+        "ppr": 7,
+        "half": 7,
+        "std": 7
+      },
+      "confidence": 92,
+      "disagreement": 0.091,
+      "consensus_contributors": {
+        "ppr": [
+          "FantasySharks",
+          "Sleeper",
+          "FantasyPros",
+          "FantasyArsenal",
+          "FFA"
+        ],
+        "half": [
+          "FantasySharks",
+          "Sleeper",
+          "FantasyPros",
+          "FantasyArsenal",
+          "FFA"
+        ],
+        "std": [
+          "FantasySharks",
+          "Sleeper",
+          "FantasyPros",
+          "FantasyArsenal",
+          "FFA"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [
+          "CBS",
+          "ESPN"
+        ],
+        "half": [
+          "CBS",
+          "ESPN"
+        ],
+        "std": [
+          "CBS",
+          "ESPN"
+        ]
+      },
+      "context": {
+        "age": 35,
+        "years_experience": 12,
+        "depth_chart_order": 1,
+        "injury_status": null,
+        "active": true,
+        "adjustment": 1,
+        "reasons": []
+      },
+      "sources": {
+        "FFA": {
+          "ppr": 134,
+          "half": 134,
+          "std": 134
+        },
+        "ESPN": {
+          "ppr": 142.755,
+          "half": 142.755,
+          "std": 142.755
+        },
+        "CBS": {
+          "ppr": 111,
+          "half": 111,
+          "std": 111
+        },
+        "Sleeper": {
+          "ppr": 117.71,
+          "half": 117.71,
+          "std": 117.71
+        },
+        "FantasySharks": {
+          "ppr": 115.9,
+          "half": 115.9,
+          "std": 115.9
+        },
+        "FantasyPros": {
+          "ppr": 118.29,
+          "half": 118.29,
+          "std": 118.29
+        },
+        "FantasyArsenal": {
+          "ppr": 118.65,
+          "half": 118.65,
+          "std": 118.65
         }
       }
     },
@@ -21315,7 +21315,7 @@
         ]
       },
       "context": {
-        "age": 26,
+        "age": 27,
         "years_experience": 5,
         "depth_chart_order": 1,
         "injury_status": null,
@@ -21913,9 +21913,9 @@
           "std": 116.71
         },
         "FantasyArsenal": {
-          "ppr": 105.197,
-          "half": 105.197,
-          "std": 105.197
+          "ppr": 105.196,
+          "half": 105.196,
+          "std": 105.196
         }
       }
     },
@@ -22068,10 +22068,10 @@
       "name": "Ryan Fitzgerald",
       "team": "CAR",
       "position": "K",
-      "points": 108.194,
-      "points_ppr": 108.194,
-      "points_half": 108.194,
-      "points_std": 108.194,
+      "points": 108.192,
+      "points_ppr": 108.192,
+      "points_half": 108.192,
+      "points_std": 108.192,
       "source_count": 7,
       "format_source_count": {
         "ppr": 7,
@@ -22143,9 +22143,9 @@
           "std": 106
         },
         "Sleeper": {
-          "ppr": 115.02,
-          "half": 115.02,
-          "std": 115.02
+          "ppr": 115,
+          "half": 115,
+          "std": 115
         },
         "FantasySharks": {
           "ppr": 70.5,
@@ -22324,10 +22324,10 @@
       "name": "Pittsburgh Steelers",
       "team": "PIT",
       "position": "DEF",
-      "points": 107.757,
-      "points_ppr": 107.757,
-      "points_half": 107.757,
-      "points_std": 107.757,
+      "points": 107.75,
+      "points_ppr": 107.75,
+      "points_half": 107.75,
+      "points_std": 107.75,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -22377,9 +22377,9 @@
           "std": 90
         },
         "Sleeper": {
-          "ppr": 113.05,
-          "half": 113.05,
-          "std": 113.05
+          "ppr": 112.98,
+          "half": 112.98,
+          "std": 112.98
         },
         "DraftSharks": {
           "ppr": 119,
@@ -25735,10 +25735,10 @@
       "name": "Zach Charbonnet",
       "team": "SEA",
       "position": "RB",
-      "points": 98.739,
-      "points_ppr": 98.739,
-      "points_half": 93.276,
-      "points_std": 84.794,
+      "points": 98.741,
+      "points_ppr": 98.741,
+      "points_half": 93.278,
+      "points_std": 84.796,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -25826,9 +25826,9 @@
           "std": 98.31
         },
         "FantasyArsenal": {
-          "ppr": 105.374,
-          "half": 97.042,
-          "std": 88.71
+          "ppr": 105.383,
+          "half": 97.05,
+          "std": 88.717
         }
       }
     },
@@ -25982,10 +25982,10 @@
       "name": "Atlanta Falcons",
       "team": "ATL",
       "position": "DEF",
-      "points": 98.03,
-      "points_ppr": 98.03,
-      "points_half": 98.03,
-      "points_std": 98.03,
+      "points": 98.022,
+      "points_ppr": 98.022,
+      "points_half": 98.022,
+      "points_std": 98.022,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -25993,7 +25993,7 @@
         "std": 3
       },
       "confidence": 60,
-      "disagreement": 0.0862,
+      "disagreement": 0.086,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -26032,9 +26032,9 @@
           "std": 87.9
         },
         "Sleeper": {
-          "ppr": 107.2,
-          "half": 107.2,
-          "std": 107.2
+          "ppr": 107.15,
+          "half": 107.15,
+          "std": 107.15
         },
         "FantasyPros": {
           "ppr": 104.95,
@@ -26597,10 +26597,10 @@
       "name": "Chicago Bears",
       "team": "CHI",
       "position": "DEF",
-      "points": 94.714,
-      "points_ppr": 94.714,
-      "points_half": 94.714,
-      "points_std": 94.714,
+      "points": 94.709,
+      "points_ppr": 94.709,
+      "points_half": 94.709,
+      "points_std": 94.709,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -26608,7 +26608,7 @@
         "std": 3
       },
       "confidence": 58,
-      "disagreement": 0.1118,
+      "disagreement": 0.1117,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -26647,9 +26647,9 @@
           "std": 83.3
         },
         "Sleeper": {
-          "ppr": 109.62,
-          "half": 109.62,
-          "std": 109.62
+          "ppr": 109.59,
+          "half": 109.59,
+          "std": 109.59
         },
         "FantasyPros": {
           "ppr": 100.91,
@@ -27459,10 +27459,10 @@
       "name": "Tyrone Tracy",
       "team": "NYG",
       "position": "RB",
-      "points": 91.47,
-      "points_ppr": 91.47,
-      "points_half": 85.027,
-      "points_std": 74.312,
+      "points": 91.471,
+      "points_ppr": 91.471,
+      "points_half": 85.028,
+      "points_std": 74.313,
       "source_count": 8,
       "format_source_count": {
         "ppr": 8,
@@ -27549,9 +27549,9 @@
           "std": 61.19
         },
         "FantasyArsenal": {
-          "ppr": 92.525,
-          "half": 81.703,
-          "std": 70.881
+          "ppr": 92.528,
+          "half": 81.706,
+          "std": 70.884
         }
       }
     },
@@ -28023,74 +28023,6 @@
       }
     },
     {
-      "player_id": "13453",
-      "name": "Jacob Rodriguez",
-      "team": "MIA",
-      "position": "LB",
-      "points": 90.449,
-      "points_ppr": 90.449,
-      "points_half": 90.449,
-      "points_std": 90.449,
-      "source_count": 3,
-      "format_source_count": {
-        "ppr": 3,
-        "half": 3,
-        "std": 3
-      },
-      "confidence": 20,
-      "disagreement": 1.1765,
-      "consensus_contributors": {
-        "ppr": [
-          "Sleeper",
-          "FantasySharks",
-          "DraftSharks"
-        ],
-        "half": [
-          "Sleeper",
-          "FantasySharks",
-          "DraftSharks"
-        ],
-        "std": [
-          "Sleeper",
-          "FantasySharks",
-          "DraftSharks"
-        ]
-      },
-      "trimmed_sources": {
-        "ppr": [],
-        "half": [],
-        "std": []
-      },
-      "context": {
-        "age": 24,
-        "years_experience": 0,
-        "depth_chart_order": 1,
-        "injury_status": "Questionable",
-        "active": true,
-        "adjustment": 1.02,
-        "reasons": [
-          "Depth-chart order 1 used as a bounded correction"
-        ]
-      },
-      "sources": {
-        "Sleeper": {
-          "ppr": 7.11,
-          "half": 7.11,
-          "std": 7.11
-        },
-        "FantasySharks": {
-          "ppr": 16.9,
-          "half": 16.9,
-          "std": 16.9
-        },
-        "DraftSharks": {
-          "ppr": 189,
-          "half": 189,
-          "std": 189
-        }
-      }
-    },
-    {
       "player_id": "TB",
       "name": "Tampa Bay Buccaneers",
       "team": "TB",
@@ -28378,6 +28310,74 @@
           "ppr": 94.48,
           "half": 94.48,
           "std": 94.48
+        }
+      }
+    },
+    {
+      "player_id": "13453",
+      "name": "Jacob Rodriguez",
+      "team": "MIA",
+      "position": "LB",
+      "points": 89.147,
+      "points_ppr": 89.147,
+      "points_half": 89.147,
+      "points_std": 89.147,
+      "source_count": 3,
+      "format_source_count": {
+        "ppr": 3,
+        "half": 3,
+        "std": 3
+      },
+      "confidence": 20,
+      "disagreement": 1.1731,
+      "consensus_contributors": {
+        "ppr": [
+          "Sleeper",
+          "FantasySharks",
+          "DraftSharks"
+        ],
+        "half": [
+          "Sleeper",
+          "FantasySharks",
+          "DraftSharks"
+        ],
+        "std": [
+          "Sleeper",
+          "FantasySharks",
+          "DraftSharks"
+        ]
+      },
+      "trimmed_sources": {
+        "ppr": [],
+        "half": [],
+        "std": []
+      },
+      "context": {
+        "age": 24,
+        "years_experience": 0,
+        "depth_chart_order": 1,
+        "injury_status": "Questionable",
+        "active": true,
+        "adjustment": 1.02,
+        "reasons": [
+          "Depth-chart order 1 used as a bounded correction"
+        ]
+      },
+      "sources": {
+        "Sleeper": {
+          "ppr": 7.11,
+          "half": 7.11,
+          "std": 7.11
+        },
+        "FantasySharks": {
+          "ppr": 16.9,
+          "half": 16.9,
+          "std": 16.9
+        },
+        "DraftSharks": {
+          "ppr": 186,
+          "half": 186,
+          "std": 186
         }
       }
     },
@@ -29704,7 +29704,7 @@
       "position": "RB",
       "points": 85.243,
       "points_ppr": 85.243,
-      "points_half": 93.287,
+      "points_half": 93.286,
       "points_std": 87.533,
       "source_count": 8,
       "format_source_count": {
@@ -29791,7 +29791,7 @@
         },
         "FantasyArsenal": {
           "ppr": 87.336,
-          "half": 82.232,
+          "half": 82.231,
           "std": 77.13
         }
       }
@@ -29946,10 +29946,10 @@
       "name": "Carolina Panthers",
       "team": "CAR",
       "position": "DEF",
-      "points": 84.641,
-      "points_ppr": 84.641,
-      "points_half": 84.641,
-      "points_std": 84.641,
+      "points": 84.638,
+      "points_ppr": 84.638,
+      "points_half": 84.638,
+      "points_std": 84.638,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -29957,7 +29957,7 @@
         "std": 3
       },
       "confidence": 57,
-      "disagreement": 0.127,
+      "disagreement": 0.1269,
       "consensus_contributors": {
         "ppr": [
           "FFA",
@@ -29996,9 +29996,9 @@
           "std": 76.3
         },
         "Sleeper": {
-          "ppr": 103.59,
-          "half": 103.59,
-          "std": 103.59
+          "ppr": 103.57,
+          "half": 103.57,
+          "std": 103.57
         },
         "FantasyPros": {
           "ppr": 86.35,
@@ -34978,10 +34978,10 @@
       "name": "Jaquan Brisker",
       "team": "PIT",
       "position": "DB",
-      "points": 70.822,
-      "points_ppr": 70.822,
-      "points_half": 70.822,
-      "points_std": 70.822,
+      "points": 70.821,
+      "points_ppr": 70.821,
+      "points_half": 70.821,
+      "points_std": 70.821,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -34989,7 +34989,7 @@
         "std": 3
       },
       "confidence": 20,
-      "disagreement": 0.6732,
+      "disagreement": 0.6733,
       "consensus_contributors": {
         "ppr": [
           "Sleeper",
@@ -35030,9 +35030,9 @@
           "std": 90.8
         },
         "Sleeper": {
-          "ppr": 3.91,
-          "half": 3.91,
-          "std": 3.91
+          "ppr": 3.9,
+          "half": 3.9,
+          "std": 3.9
         },
         "FantasySharks": {
           "ppr": 71,
@@ -35526,9 +35526,9 @@
           "std": 39.14
         },
         "FantasyArsenal": {
-          "ppr": 72.806,
-          "half": 64.807,
-          "std": 56.809
+          "ppr": 72.805,
+          "half": 64.808,
+          "std": 56.808
         }
       }
     },
@@ -36822,7 +36822,7 @@
         "std": []
       },
       "context": {
-        "age": 26,
+        "age": 27,
         "years_experience": 4,
         "depth_chart_order": 1,
         "injury_status": null,
@@ -37135,10 +37135,10 @@
       "name": "Najee Harris",
       "team": "NYG",
       "position": "RB",
-      "points": 65.124,
-      "points_ppr": 65.124,
-      "points_half": 58.473,
-      "points_std": 53.374,
+      "points": 65.123,
+      "points_ppr": 65.123,
+      "points_half": 58.471,
+      "points_std": 53.373,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -37211,9 +37211,9 @@
           "std": 63.46
         },
         "FantasyArsenal": {
-          "ppr": 65.059,
-          "half": 59.793,
-          "std": 54.527
+          "ppr": 65.055,
+          "half": 59.788,
+          "std": 54.525
         }
       }
     },
@@ -37344,7 +37344,7 @@
         "age": 27,
         "years_experience": 3,
         "depth_chart_order": 1,
-        "injury_status": null,
+        "injury_status": "Questionable",
         "active": true,
         "adjustment": 1.02,
         "reasons": [
@@ -43284,10 +43284,10 @@
       "name": "Emanuel Wilson",
       "team": "SEA",
       "position": "RB",
-      "points": 51.576,
-      "points_ppr": 51.576,
-      "points_half": 51.933,
-      "points_std": 47.856,
+      "points": 51.577,
+      "points_ppr": 51.577,
+      "points_half": 51.934,
+      "points_std": 47.858,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -43326,7 +43326,7 @@
         "age": 27,
         "years_experience": 3,
         "depth_chart_order": 3,
-        "injury_status": "Questionable",
+        "injury_status": null,
         "active": true,
         "adjustment": 0.98,
         "reasons": [
@@ -43360,9 +43360,9 @@
           "std": 55.42
         },
         "FantasyArsenal": {
-          "ppr": 53.657,
-          "half": 49.498,
-          "std": 45.339
+          "ppr": 53.662,
+          "half": 49.502,
+          "std": 45.343
         }
       }
     },
@@ -44487,10 +44487,10 @@
       "name": "George Holani",
       "team": "SEA",
       "position": "RB",
-      "points": 47.745,
-      "points_ppr": 47.745,
-      "points_half": 45.007,
-      "points_std": 39.414,
+      "points": 47.747,
+      "points_ppr": 47.747,
+      "points_half": 45.008,
+      "points_std": 39.416,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -44563,9 +44563,9 @@
           "std": 34.04
         },
         "FantasyArsenal": {
-          "ppr": 57.322,
-          "half": 51.098,
-          "std": 44.869
+          "ppr": 57.328,
+          "half": 51.101,
+          "std": 44.874
         }
       }
     },
@@ -49374,10 +49374,10 @@
       "name": "Devin Singletary",
       "team": "NYG",
       "position": "RB",
-      "points": 36.214,
-      "points_ppr": 36.214,
-      "points_half": 31.47,
-      "points_std": 27.401,
+      "points": 36.213,
+      "points_ppr": 36.213,
+      "points_half": 31.472,
+      "points_std": 27.399,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -49450,9 +49450,9 @@
           "std": 22.55
         },
         "FantasyArsenal": {
-          "ppr": 48.788,
-          "half": 43.768,
-          "std": 38.757
+          "ppr": 48.784,
+          "half": 43.771,
+          "std": 38.751
         }
       }
     },
@@ -55665,8 +55665,8 @@
       "position": "RB",
       "points": 23.348,
       "points_ppr": 23.348,
-      "points_half": 20.66,
-      "points_std": 18.801,
+      "points_half": 20.661,
+      "points_std": 18.8,
       "source_count": 6,
       "format_source_count": {
         "ppr": 6,
@@ -55738,8 +55738,8 @@
         },
         "FantasyArsenal": {
           "ppr": 22.632,
-          "half": 20.283,
-          "std": 17.935
+          "half": 20.284,
+          "std": 17.934
         }
       }
     },
@@ -59758,7 +59758,7 @@
         },
         "FantasyArsenal": {
           "ppr": 15.985,
-          "half": 15.069,
+          "half": 15.068,
           "std": 14.148
         }
       }
@@ -61856,8 +61856,8 @@
       "position": "RB",
       "points": 13.414,
       "points_ppr": 13.414,
-      "points_half": 8.295,
-      "points_std": 6.605,
+      "points_half": 8.297,
+      "points_std": 6.604,
       "source_count": 4,
       "format_source_count": {
         "ppr": 4,
@@ -61919,8 +61919,8 @@
         },
         "FantasyArsenal": {
           "ppr": 14.521,
-          "half": 11.76,
-          "std": 9.002
+          "half": 11.763,
+          "std": 9
         }
       }
     },
@@ -62507,10 +62507,10 @@
       "name": "Tyler Badie",
       "team": "DEN",
       "position": "RB",
-      "points": 12.704,
-      "points_ppr": 12.704,
+      "points": 12.703,
+      "points_ppr": 12.703,
       "points_half": 9.732,
-      "points_std": 6.75,
+      "points_std": 6.749,
       "source_count": 5,
       "format_source_count": {
         "ppr": 5,
@@ -62577,9 +62577,9 @@
           "std": 5.23
         },
         "FantasyArsenal": {
-          "ppr": 14.757,
+          "ppr": 14.756,
           "half": 11.091,
-          "std": 7.427
+          "std": 7.426
         }
       }
     },
@@ -64117,10 +64117,10 @@
       "name": "Adam Prentice",
       "team": "DEN",
       "position": "RB",
-      "points": 11.165,
-      "points_ppr": 11.165,
-      "points_half": 9.412,
-      "points_std": 7.325,
+      "points": 11.164,
+      "points_ppr": 11.164,
+      "points_half": 9.41,
+      "points_std": 7.322,
       "source_count": 3,
       "format_source_count": {
         "ppr": 3,
@@ -64170,9 +64170,9 @@
           "std": 7.35
         },
         "FantasyArsenal": {
-          "ppr": 11.428,
-          "half": 9.364,
-          "std": 7.299
+          "ppr": 11.425,
+          "half": 9.36,
+          "std": 7.295
         }
       }
     },
@@ -64856,7 +64856,7 @@
         "std": []
       },
       "context": {
-        "age": 21,
+        "age": 22,
         "years_experience": 0,
         "depth_chart_order": 2,
         "injury_status": "Questionable",
@@ -65091,9 +65091,9 @@
       "name": "Patrick Ricard",
       "team": "NYG",
       "position": "RB",
-      "points": 9.635,
-      "points_ppr": 9.635,
-      "points_half": 12.267,
+      "points": 9.634,
+      "points_ppr": 9.634,
+      "points_half": 12.266,
       "points_std": 9.091,
       "source_count": 4,
       "format_source_count": {
@@ -65150,9 +65150,9 @@
           "std": 12.43
         },
         "FantasyArsenal": {
-          "ppr": 10.309,
-          "half": 8.034,
-          "std": 5.753
+          "ppr": 10.307,
+          "half": 8.032,
+          "std": 5.752
         }
       }
     },
@@ -68827,10 +68827,10 @@
     "jahmyrgibbs": 356.97,
     "lamar jackson": 347.052,
     "lamarjackson": 347.052,
-    "bijan robinson": 345.348,
-    "bijanrobinson": 345.348,
-    "drake maye": 339.861,
-    "drakemaye": 339.861,
+    "bijan robinson": 345.349,
+    "bijanrobinson": 345.349,
+    "drake maye": 339.865,
+    "drakemaye": 339.865,
     "jalen hurts": 339.344,
     "jalenhurts": 339.344,
     "jayden daniels": 335.498,
@@ -68841,8 +68841,8 @@
     "ja'marrchase": 332.013,
     "brock purdy": 331.34,
     "brockpurdy": 331.34,
-    "puka nacua": 331.13,
-    "pukanacua": 331.13,
+    "puka nacua": 331.326,
+    "pukanacua": 331.326,
     "dak prescott": 329.865,
     "dakprescott": 329.865,
     "christian mccaffrey": 328.783,
@@ -68867,8 +68867,8 @@
     "bonix": 312.63,
     "jared goff": 312.359,
     "jaredgoff": 312.359,
-    "amonra st brown": 311.128,
-    "amon-rast.brown": 311.128,
+    "amonra st brown": 311.474,
+    "amon-rast.brown": 311.474,
     "baker mayfield": 304.189,
     "bakermayfield": 304.189,
     "jonathan taylor": 304.019,
@@ -68905,8 +68905,8 @@
     "saquonbarkley": 261.786,
     "rashee rice": 258.41,
     "rasheerice": 258.41,
-    "aj brown": 256.934,
-    "a.j.brown": 256.934,
+    "aj brown": 256.946,
+    "a.j.brown": 256.946,
     "ashton jeanty": 256.136,
     "ashtonjeanty": 256.136,
     "nico collins": 253.889,
@@ -68943,28 +68943,28 @@
     "devontasmith": 233.742,
     "garrett wilson": 233.72,
     "garrettwilson": 233.72,
-    "travis etienne": 232.4,
-    "travisetienne": 232.4,
+    "travis etienne": 232.404,
+    "travisetienne": 232.404,
     "kyren williams": 230.951,
     "kyrenwilliams": 230.951,
     "malik nabers": 230.096,
     "maliknabers": 230.096,
     "tee higgins": 228.779,
     "teehiggins": 228.779,
-    "cam skattebo": 227.345,
-    "camskattebo": 227.345,
+    "cam skattebo": 227.348,
+    "camskattebo": 227.348,
     "tetairoa mcmillan": 225.979,
     "tetairoamcmillan": 225.979,
     "emeka egbuka": 222.431,
     "emekaegbuka": 222.431,
-    "dandre swift": 220.28,
-    "d'andreswift": 220.28,
+    "dandre swift": 220.281,
+    "d'andreswift": 220.281,
     "davante adams": 218.35,
     "davanteadams": 218.35,
     "ladd mcconkey": 216.94,
     "laddmcconkey": 216.94,
-    "jameson williams": 215.575,
-    "jamesonwilliams": 215.575,
+    "jameson williams": 215.569,
+    "jamesonwilliams": 215.569,
     "jaylen waddle": 215.525,
     "jaylenwaddle": 215.525,
     "terry mclaurin": 214.245,
@@ -68983,32 +68983,32 @@
     "djmoore": 202.559,
     "tyler warren": 200.331,
     "tylerwarren": 200.331,
-    "christian watson": 199.059,
-    "christianwatson": 199.059,
+    "christian watson": 199.057,
+    "christianwatson": 199.057,
     "rome odunze": 198.952,
     "romeodunze": 198.952,
     "parker washington": 198.115,
     "parkerwashington": 198.115,
     "mike evans": 197.697,
     "mikeevans": 197.697,
-    "rhamondre stevenson": 197.397,
-    "rhamondrestevenson": 197.397,
+    "rhamondre stevenson": 197.461,
+    "rhamondrestevenson": 197.461,
     "courtland sutton": 195.811,
     "courtlandsutton": 195.811,
     "bhayshul tuten": 194.474,
     "bhayshultuten": 194.474,
-    "treveyon henderson": 192.991,
-    "treveyonhenderson": 192.991,
     "jaylen warren": 192.804,
     "jaylenwarren": 192.804,
+    "treveyon henderson": 192.465,
+    "treveyonhenderson": 192.465,
     "alec pierce": 192.218,
     "alecpierce": 192.218,
     "dk metcalf": 191.188,
     "dkmetcalf": 191.188,
+    "george kittle": 189.457,
+    "georgekittle": 189.457,
     "sam laporta": 189.267,
     "samlaporta": 189.267,
-    "george kittle": 189.221,
-    "georgekittle": 189.221,
     "harold fannin": 188.732,
     "haroldfannin": 188.732,
     "marvin harrison": 187.821,
@@ -69023,16 +69023,16 @@
     "fernandomendoza": 185.216,
     "tua tagovailoa": 184.805,
     "tuatagovailoa": 184.805,
-    "jadarian price": 184.319,
-    "jadarianprice": 184.319,
+    "jadarian price": 184.317,
+    "jadarianprice": 184.317,
     "chris godwin": 183.928,
     "chrisgodwin": 183.928,
     "travis kelce": 183.131,
     "traviskelce": 183.131,
     "tucker kraft": 182.185,
     "tuckerkraft": 182.185,
-    "rico dowdle": 179.957,
-    "ricodowdle": 179.957,
+    "rico dowdle": 179.956,
+    "ricodowdle": 179.956,
     "michael pittman": 179.616,
     "michaelpittman": 179.616,
     "deshaun watson": 177.284,
@@ -69049,10 +69049,10 @@
     "wan'dalerobinson": 172.185,
     "josh downs": 171.933,
     "joshdowns": 171.933,
-    "jayden reed": 170.064,
-    "jaydenreed": 170.064,
-    "rj harvey": 169.551,
-    "rjharvey": 169.551,
+    "jayden reed": 170.06,
+    "jaydenreed": 170.06,
+    "rj harvey": 169.552,
+    "rjharvey": 169.552,
     "jakobi meyers": 169.327,
     "jakobimeyers": 169.327,
     "quentin johnston": 169.179,
@@ -69089,8 +69089,8 @@
     "xavierworthy": 159.527,
     "dalton kincaid": 158.707,
     "daltonkincaid": 158.707,
-    "romeo doubs": 158.555,
-    "romeodoubs": 158.555,
+    "romeo doubs": 158.566,
+    "romeodoubs": 158.566,
     "juwan johnson": 156.95,
     "juwanjohnson": 156.95,
     "deebo samuel": 156.616,
@@ -69111,8 +69111,8 @@
     "brentonstrange": 150.149,
     "jacory croskeymerritt": 148.743,
     "jacorycroskey-merritt": 148.743,
-    "rachaad white": 147.671,
-    "rachaadwhite": 147.671,
+    "rachaad white": 147.669,
+    "rachaadwhite": 147.669,
     "kc concepcion": 145.534,
     "kcconcepcion": 145.534,
     "rashid shaheed": 144.977,
@@ -69133,8 +69133,8 @@
     "daltonschultz": 140.418,
     "tj hockenson": 140.391,
     "t.j.hockenson": 140.391,
-    "cairo santos": 138.794,
-    "cairosantos": 138.794,
+    "cairo santos": 138.792,
+    "cairosantos": 138.792,
     "blake corum": 138.69,
     "blakecorum": 138.69,
     "cam little": 138.579,
@@ -69187,8 +69187,8 @@
     "jamiensherwood": 127.592,
     "roquan smith": 126.739,
     "roquansmith": 126.739,
-    "nick folk": 126.233,
-    "nickfolk": 126.233,
+    "nick folk": 126.228,
+    "nickfolk": 126.228,
     "spencer shrader": 125.861,
     "spencershrader": 125.861,
     "ernest jones": 125.533,
@@ -69211,10 +69211,10 @@
     "nickbolton": 122.085,
     "devaughn vele": 121.873,
     "devaughnvele": 121.873,
-    "chris boswell": 121.392,
-    "chrisboswell": 121.392,
     "andy borregales": 121.389,
     "andyborregales": 121.389,
+    "chris boswell": 121.388,
+    "chrisboswell": 121.388,
     "houston texans": 120.97,
     "houstontexans": 120.97,
     "quay walker": 120.881,
@@ -69275,14 +69275,14 @@
     "devinbush": 108.402,
     "dillon thieneman": 108.209,
     "dillonthieneman": 108.209,
-    "ryan fitzgerald": 108.194,
-    "ryanfitzgerald": 108.194,
+    "ryan fitzgerald": 108.192,
+    "ryanfitzgerald": 108.192,
     "travis hunter": 108.023,
     "travishunter": 108.023,
     "jaylin noel": 107.786,
     "jaylinnoel": 107.786,
-    "pittsburgh steelers": 107.757,
-    "pittsburghsteelers": 107.757,
+    "pittsburgh steelers": 107.75,
+    "pittsburghsteelers": 107.75,
     "antoine winfield": 107.491,
     "antoinewinfield": 107.491,
     "minnesota vikings": 107.378,
@@ -69365,14 +69365,14 @@
     "davidnjoku": 98.935,
     "colby parkinson": 98.841,
     "colbyparkinson": 98.841,
-    "zach charbonnet": 98.739,
-    "zachcharbonnet": 98.739,
+    "zach charbonnet": 98.741,
+    "zachcharbonnet": 98.741,
     "ryan flournoy": 98.642,
     "ryanflournoy": 98.642,
     "myles garrett": 98.4,
     "mylesgarrett": 98.4,
-    "atlanta falcons": 98.03,
-    "atlantafalcons": 98.03,
+    "atlanta falcons": 98.022,
+    "atlantafalcons": 98.022,
     "jacksonville jaguars": 97.468,
     "jacksonvillejaguars": 97.468,
     "justice hill": 97.259,
@@ -69387,8 +69387,8 @@
     "jalentolbert": 95.538,
     "andrew van ginkel": 95.333,
     "andrewvanginkel": 95.333,
-    "chicago bears": 94.714,
-    "chicagobears": 94.714,
+    "chicago bears": 94.709,
+    "chicagobears": 94.709,
     "grant delpit": 94.641,
     "grantdelpit": 94.641,
     "adonai mitchell": 94.554,
@@ -69409,8 +69409,8 @@
     "dariusslayton": 92.036,
     "demario douglas": 91.899,
     "demariodouglas": 91.899,
-    "tyrone tracy": 91.47,
-    "tyronetracy": 91.47,
+    "tyrone tracy": 91.471,
+    "tyronetracy": 91.471,
     "omar cooper": 91.323,
     "omarcooper": 91.323,
     "tremaine edmunds": 91.134,
@@ -69423,8 +69423,6 @@
     "michaelpenix": 90.765,
     "germie bernard": 90.533,
     "germiebernard": 90.533,
-    "jacob rodriguez": 90.449,
-    "jacobrodriguez": 90.449,
     "tampa bay buccaneers": 90.081,
     "tampabaybuccaneers": 90.081,
     "terrance ferguson": 89.897,
@@ -69433,6 +69431,8 @@
     "newyorkgiants": 89.321,
     "indianapolis colts": 89.259,
     "indianapoliscolts": 89.259,
+    "jacob rodriguez": 89.147,
+    "jacobrodriguez": 89.147,
     "aidan hutchinson": 89.121,
     "aidanhutchinson": 89.121,
     "tennessee titans": 88.679,
@@ -69475,8 +69475,8 @@
     "jahandotson": 85.025,
     "jeffery simmons": 84.8,
     "jefferysimmons": 84.8,
-    "carolina panthers": 84.641,
-    "carolinapanthers": 84.641,
+    "carolina panthers": 84.638,
+    "carolinapanthers": 84.638,
     "alex singleton": 83.86,
     "alexsingleton": 83.86,
     "mike washington": 83.757,
@@ -69613,8 +69613,8 @@
     "demariodavis": 71.447,
     "cole bishop": 71.184,
     "colebishop": 71.184,
-    "jaquan brisker": 70.822,
-    "jaquanbrisker": 70.822,
+    "jaquan brisker": 70.821,
+    "jaquanbrisker": 70.821,
     "demetrius knight": 70.778,
     "demetriusknight": 70.778,
     "evan williams": 70.604,
@@ -69675,8 +69675,8 @@
     "jihaadcampbell": 65.466,
     "divine deablo": 65.244,
     "divinedeablo": 65.244,
-    "najee harris": 65.124,
-    "najeeharris": 65.124,
+    "najee harris": 65.123,
+    "najeeharris": 65.123,
     "tory horton": 64.577,
     "toryhorton": 64.577,
     "ty okada": 64.564,
@@ -69847,8 +69847,8 @@
     "ji'ayirbrown": 51.68,
     "roman wilson": 51.607,
     "romanwilson": 51.607,
-    "emanuel wilson": 51.576,
-    "emanuelwilson": 51.576,
+    "emanuel wilson": 51.577,
+    "emanuelwilson": 51.577,
     "teddye buchanan": 51.546,
     "teddyebuchanan": 51.546,
     "will kacmarek": 51.535,
@@ -69879,8 +69879,8 @@
     "jonnusmith": 48.962,
     "austin hooper": 47.974,
     "austinhooper": 47.974,
-    "george holani": 47.745,
-    "georgeholani": 47.745,
+    "george holani": 47.747,
+    "georgeholani": 47.747,
     "kobie turner": 47.5,
     "kobieturner": 47.5,
     "isaiah davis": 47.39,
@@ -70017,8 +70017,8 @@
     "elistowers": 36.494,
     "justin strnad": 36.379,
     "justinstrnad": 36.379,
-    "devin singletary": 36.214,
-    "devinsingletary": 36.214,
+    "devin singletary": 36.213,
+    "devinsingletary": 36.213,
     "tez johnson": 36.179,
     "tezjohnson": 36.179,
     "mitchell evans": 36.136,
@@ -70371,8 +70371,8 @@
     "akheemmesidor": 12.945,
     "lucas krull": 12.873,
     "lucaskrull": 12.873,
-    "tyler badie": 12.704,
-    "tylerbadie": 12.704,
+    "tyler badie": 12.703,
+    "tylerbadie": 12.703,
     "andy dalton": 12.696,
     "andydalton": 12.696,
     "r mason thomas": 12.654,
@@ -70413,8 +70413,8 @@
     "cobybryant": 11.282,
     "quinn ewers": 11.199,
     "quinnewers": 11.199,
-    "adam prentice": 11.165,
-    "adamprentice": 11.165,
+    "adam prentice": 11.164,
+    "adamprentice": 11.164,
     "derius davis": 11.067,
     "deriusdavis": 11.067,
     "jt tuimoloau": 11.064,
@@ -70441,8 +70441,8 @@
     "otitoogbonnia": 9.806,
     "sione vaki": 9.642,
     "sionevaki": 9.642,
-    "patrick ricard": 9.635,
-    "patrickricard": 9.635,
+    "patrick ricard": 9.634,
+    "patrickricard": 9.634,
     "ryan miller": 9.58,
     "ryanmiller": 9.58,
     "drew allar": 9.328,
