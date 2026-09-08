@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T04:07:55.437Z",
+  "updated": "2026-09-08T04:08:09.257Z",
   "season": 2026,
   "source": "FantasySharks",
   "scoring": "PPR",
@@ -5533,30 +5533,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "16572",
-      "name": "Ty Okada",
-      "team": "SEA",
-      "position": "DB",
-      "points": 84.5,
-      "source_rank": 308,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
-      }
-    },
-    {
-      "player_id": "",
       "source_player_id": "16603",
       "name": "Ray Davis",
       "team": "BUF",
       "position": "RB",
       "points": 84.3,
-      "source_rank": 309,
+      "source_rank": 308,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5574,7 +5556,7 @@
       "team": "WAS",
       "position": "DB",
       "points": 84.2,
-      "source_rank": 310,
+      "source_rank": 309,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5592,7 +5574,7 @@
       "team": "KC",
       "position": "DB",
       "points": 84.1,
-      "source_rank": 311,
+      "source_rank": 310,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5610,7 +5592,7 @@
       "team": "DAL",
       "position": "DB",
       "points": 84.1,
-      "source_rank": 312,
+      "source_rank": 311,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5628,7 +5610,7 @@
       "team": "CAR",
       "position": "TE",
       "points": 83.8,
-      "source_rank": 313,
+      "source_rank": 312,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5646,7 +5628,7 @@
       "team": "LAC",
       "position": "WR",
       "points": 83.6,
-      "source_rank": 314,
+      "source_rank": 313,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5664,7 +5646,7 @@
       "team": "LAC",
       "position": "LB",
       "points": 83.6,
-      "source_rank": 315,
+      "source_rank": 314,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5682,7 +5664,7 @@
       "team": "CHI",
       "position": "TE",
       "points": 83.6,
-      "source_rank": 316,
+      "source_rank": 315,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5700,7 +5682,7 @@
       "team": "TB",
       "position": "DB",
       "points": 83,
-      "source_rank": 317,
+      "source_rank": 316,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5718,7 +5700,7 @@
       "team": "PIT",
       "position": "LB",
       "points": 82.9,
-      "source_rank": 318,
+      "source_rank": 317,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5736,7 +5718,7 @@
       "team": "BAL",
       "position": "RB",
       "points": 82.9,
-      "source_rank": 319,
+      "source_rank": 318,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5754,7 +5736,7 @@
       "team": "TB",
       "position": "DB",
       "points": 82.7,
-      "source_rank": 320,
+      "source_rank": 319,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5772,7 +5754,7 @@
       "team": "GB",
       "position": "DB",
       "points": 82.5,
-      "source_rank": 321,
+      "source_rank": 320,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5790,6 +5772,24 @@
       "team": "HOU",
       "position": "DB",
       "points": 82.4,
+      "source_rank": 321,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
+      "source_player_id": "16241",
+      "name": "Devon Witherspoon",
+      "team": "SEA",
+      "position": "DB",
+      "points": 82.3,
       "source_rank": 322,
       "stats": {
         "pass_yds": 0,
@@ -5929,12 +5929,30 @@
     },
     {
       "player_id": "",
+      "source_player_id": "16572",
+      "name": "Ty Okada",
+      "team": "SEA",
+      "position": "DB",
+      "points": 80.3,
+      "source_rank": 330,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
       "source_player_id": "17080",
       "name": "Jaylin Noel",
       "team": "HOU",
       "position": "WR",
       "points": 80.2,
-      "source_rank": 330,
+      "source_rank": 331,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5952,7 +5970,7 @@
       "team": "IND",
       "position": "DB",
       "points": 80.1,
-      "source_rank": 331,
+      "source_rank": 332,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5970,7 +5988,7 @@
       "team": "GB",
       "position": "LB",
       "points": 80.1,
-      "source_rank": 332,
+      "source_rank": 333,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -5988,7 +6006,7 @@
       "team": "KC",
       "position": "DB",
       "points": 80,
-      "source_rank": 333,
+      "source_rank": 334,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6006,7 +6024,7 @@
       "team": "LAC",
       "position": "DL",
       "points": 79.8,
-      "source_rank": 334,
+      "source_rank": 335,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6024,7 +6042,7 @@
       "team": "LV",
       "position": "RB",
       "points": 79.4,
-      "source_rank": 335,
+      "source_rank": 336,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6042,7 +6060,7 @@
       "team": "TEN",
       "position": "WR",
       "points": 79.3,
-      "source_rank": 336,
+      "source_rank": 337,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6060,7 +6078,7 @@
       "team": "BUF",
       "position": "TE",
       "points": 79.2,
-      "source_rank": 337,
+      "source_rank": 338,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6078,7 +6096,7 @@
       "team": "NO",
       "position": "RB",
       "points": 79.2,
-      "source_rank": 338,
+      "source_rank": 339,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6096,7 +6114,7 @@
       "team": "NO",
       "position": "K",
       "points": 79.1,
-      "source_rank": 339,
+      "source_rank": 340,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6114,7 +6132,7 @@
       "team": "DAL",
       "position": "DB",
       "points": 78.7,
-      "source_rank": 340,
+      "source_rank": 341,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -6132,24 +6150,6 @@
       "team": "CAR",
       "position": "LB",
       "points": 78.7,
-      "source_rank": 341,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
-      }
-    },
-    {
-      "player_id": "",
-      "source_player_id": "16241",
-      "name": "Devon Witherspoon",
-      "team": "SEA",
-      "position": "DB",
-      "points": 78.4,
       "source_rank": 342,
       "stats": {
         "pass_yds": 0,
@@ -7189,12 +7189,30 @@
     },
     {
       "player_id": "",
+      "source_player_id": "17144",
+      "name": "Nick Emmanwori",
+      "team": "SEA",
+      "position": "DB",
+      "points": 70.7,
+      "source_rank": 400,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
       "source_player_id": "16314",
       "name": "SirVocea Dennis",
       "team": "TB",
       "position": "LB",
       "points": 70.6,
-      "source_rank": 400,
+      "source_rank": 401,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7212,7 +7230,7 @@
       "team": "HOU",
       "position": "DB",
       "points": 70.6,
-      "source_rank": 401,
+      "source_rank": 402,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7230,7 +7248,7 @@
       "team": "NE",
       "position": "DB",
       "points": 70.6,
-      "source_rank": 402,
+      "source_rank": 403,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7248,7 +7266,7 @@
       "team": "CAR",
       "position": "K",
       "points": 70.5,
-      "source_rank": 403,
+      "source_rank": 404,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7266,7 +7284,7 @@
       "team": "NE",
       "position": "LB",
       "points": 70.5,
-      "source_rank": 404,
+      "source_rank": 405,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7284,7 +7302,7 @@
       "team": "DEN",
       "position": "DB",
       "points": 70.3,
-      "source_rank": 405,
+      "source_rank": 406,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7302,7 +7320,7 @@
       "team": "CLE",
       "position": "DB",
       "points": 70.1,
-      "source_rank": 406,
+      "source_rank": 407,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7320,7 +7338,7 @@
       "team": "NO",
       "position": "DB",
       "points": 70.1,
-      "source_rank": 407,
+      "source_rank": 408,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7338,7 +7356,7 @@
       "team": "DEN",
       "position": "WR",
       "points": 69.9,
-      "source_rank": 408,
+      "source_rank": 409,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7356,7 +7374,7 @@
       "team": "HOU",
       "position": "DL",
       "points": 69.8,
-      "source_rank": 409,
+      "source_rank": 410,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7374,7 +7392,7 @@
       "team": "PHI",
       "position": "LB",
       "points": 69.7,
-      "source_rank": 410,
+      "source_rank": 411,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7392,7 +7410,7 @@
       "team": "SF",
       "position": "WR",
       "points": 69.7,
-      "source_rank": 411,
+      "source_rank": 412,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7410,7 +7428,7 @@
       "team": "DET",
       "position": "DL",
       "points": 69.6,
-      "source_rank": 412,
+      "source_rank": 413,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7428,7 +7446,7 @@
       "team": "NO",
       "position": "DB",
       "points": 69.4,
-      "source_rank": 413,
+      "source_rank": 414,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7446,7 +7464,7 @@
       "team": "PHI",
       "position": "DB",
       "points": 69.3,
-      "source_rank": 414,
+      "source_rank": 415,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7464,7 +7482,7 @@
       "team": "DEN",
       "position": "DL",
       "points": 69.2,
-      "source_rank": 415,
+      "source_rank": 416,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7482,7 +7500,7 @@
       "team": "CIN",
       "position": "DL",
       "points": 69.1,
-      "source_rank": 416,
+      "source_rank": 417,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7500,7 +7518,7 @@
       "team": "NE",
       "position": "DB",
       "points": 68.9,
-      "source_rank": 417,
+      "source_rank": 418,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7518,7 +7536,7 @@
       "team": "DET",
       "position": "DB",
       "points": 68.9,
-      "source_rank": 418,
+      "source_rank": 419,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7536,7 +7554,7 @@
       "team": "NYJ",
       "position": "DB",
       "points": 68.9,
-      "source_rank": 419,
+      "source_rank": 420,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7554,7 +7572,7 @@
       "team": "NE",
       "position": "LB",
       "points": 68.9,
-      "source_rank": 420,
+      "source_rank": 421,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7572,7 +7590,7 @@
       "team": "SF",
       "position": "DB",
       "points": 68.5,
-      "source_rank": 421,
+      "source_rank": 422,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7590,7 +7608,7 @@
       "team": "PIT",
       "position": "QB",
       "points": 68.3,
-      "source_rank": 422,
+      "source_rank": 423,
       "stats": {
         "pass_yds": 701,
         "pass_tds": 7.5,
@@ -7608,7 +7626,7 @@
       "team": "MIN",
       "position": "LB",
       "points": 68.3,
-      "source_rank": 423,
+      "source_rank": 424,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7626,7 +7644,7 @@
       "team": "MIA",
       "position": "DL",
       "points": 68,
-      "source_rank": 424,
+      "source_rank": 425,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7644,7 +7662,7 @@
       "team": "HOU",
       "position": "DL",
       "points": 68,
-      "source_rank": 425,
+      "source_rank": 426,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7662,7 +7680,7 @@
       "team": "KC",
       "position": "LB",
       "points": 67.9,
-      "source_rank": 426,
+      "source_rank": 427,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7680,7 +7698,7 @@
       "team": "JAC",
       "position": "DB",
       "points": 67.8,
-      "source_rank": 427,
+      "source_rank": 428,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7698,7 +7716,7 @@
       "team": "TB",
       "position": "DB",
       "points": 67.6,
-      "source_rank": 428,
+      "source_rank": 429,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7716,7 +7734,7 @@
       "team": "SF",
       "position": "RB",
       "points": 67.4,
-      "source_rank": 429,
+      "source_rank": 430,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7734,7 +7752,7 @@
       "team": "MIA",
       "position": "RB",
       "points": 67.3,
-      "source_rank": 430,
+      "source_rank": 431,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -7743,24 +7761,6 @@
         "receptions": 9.1,
         "rec_yds": 82,
         "rec_tds": 0.4
-      }
-    },
-    {
-      "player_id": "",
-      "source_player_id": "17144",
-      "name": "Nick Emmanwori",
-      "team": "SEA",
-      "position": "DB",
-      "points": 67.1,
-      "source_rank": 431,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
       }
     },
     {
@@ -9493,12 +9493,30 @@
     },
     {
       "player_id": "",
+      "source_player_id": "15989",
+      "name": "Josh Jobe",
+      "team": "SEA",
+      "position": "DB",
+      "points": 55.8,
+      "source_rank": 528,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
       "source_player_id": "16012",
       "name": "Dee Alford",
       "team": "BUF",
       "position": "DB",
       "points": 55.7,
-      "source_rank": 528,
+      "source_rank": 529,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9516,7 +9534,7 @@
       "team": "CAR",
       "position": "TE",
       "points": 55.7,
-      "source_rank": 529,
+      "source_rank": 530,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9534,7 +9552,7 @@
       "team": "ARI",
       "position": "WR",
       "points": 55.6,
-      "source_rank": 530,
+      "source_rank": 531,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9552,7 +9570,7 @@
       "team": "IND",
       "position": "DB",
       "points": 55.4,
-      "source_rank": 531,
+      "source_rank": 532,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9570,7 +9588,7 @@
       "team": "BUF",
       "position": "WR",
       "points": 55.3,
-      "source_rank": 532,
+      "source_rank": 533,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9588,7 +9606,7 @@
       "team": "ATL",
       "position": "DL",
       "points": 55.3,
-      "source_rank": 533,
+      "source_rank": 534,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9606,7 +9624,7 @@
       "team": "SEA",
       "position": "LB",
       "points": 55.2,
-      "source_rank": 534,
+      "source_rank": 535,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9624,7 +9642,7 @@
       "team": "BAL",
       "position": "LB",
       "points": 55.1,
-      "source_rank": 535,
+      "source_rank": 536,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9642,7 +9660,7 @@
       "team": "PIT",
       "position": "TE",
       "points": 54.9,
-      "source_rank": 536,
+      "source_rank": 537,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9660,7 +9678,7 @@
       "team": "IND",
       "position": "DL",
       "points": 54.9,
-      "source_rank": 537,
+      "source_rank": 538,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9678,7 +9696,7 @@
       "team": "SF",
       "position": "DB",
       "points": 54.8,
-      "source_rank": 538,
+      "source_rank": 539,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9696,7 +9714,7 @@
       "team": "BUF",
       "position": "DL",
       "points": 54.8,
-      "source_rank": 539,
+      "source_rank": 540,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9714,7 +9732,7 @@
       "team": "CLE",
       "position": "DB",
       "points": 54.7,
-      "source_rank": 540,
+      "source_rank": 541,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9732,7 +9750,7 @@
       "team": "BUF",
       "position": "DB",
       "points": 54.6,
-      "source_rank": 541,
+      "source_rank": 542,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9750,7 +9768,7 @@
       "team": "CLE",
       "position": "DL",
       "points": 54.5,
-      "source_rank": 542,
+      "source_rank": 543,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9768,7 +9786,7 @@
       "team": "DEN",
       "position": "DB",
       "points": 54.4,
-      "source_rank": 543,
+      "source_rank": 544,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9786,7 +9804,7 @@
       "team": "LAR",
       "position": "DB",
       "points": 54.2,
-      "source_rank": 544,
+      "source_rank": 545,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9804,7 +9822,7 @@
       "team": "NYG",
       "position": "WR",
       "points": 54.2,
-      "source_rank": 545,
+      "source_rank": 546,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9822,7 +9840,7 @@
       "team": "LAC",
       "position": "DB",
       "points": 53.9,
-      "source_rank": 546,
+      "source_rank": 547,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9840,7 +9858,7 @@
       "team": "NO",
       "position": "DL",
       "points": 53.8,
-      "source_rank": 547,
+      "source_rank": 548,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9858,7 +9876,7 @@
       "team": "WAS",
       "position": "DL",
       "points": 53.7,
-      "source_rank": 548,
+      "source_rank": 549,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9876,7 +9894,7 @@
       "team": "NYJ",
       "position": "RB",
       "points": 53.2,
-      "source_rank": 549,
+      "source_rank": 550,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -9885,24 +9903,6 @@
         "receptions": 14.6,
         "rec_yds": 125,
         "rec_tds": 0.5
-      }
-    },
-    {
-      "player_id": "",
-      "source_player_id": "15989",
-      "name": "Josh Jobe",
-      "team": "SEA",
-      "position": "DB",
-      "points": 53.2,
-      "source_rank": 550,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
       }
     },
     {
@@ -11365,30 +11365,12 @@
     },
     {
       "player_id": "",
-      "source_player_id": "15357",
-      "name": "Christian Barmore",
-      "team": "NE",
-      "position": "DL",
-      "points": 45.4,
-      "source_rank": 632,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
-      }
-    },
-    {
-      "player_id": "",
       "source_player_id": "15759",
       "name": "John Metchie",
       "team": "CAR",
       "position": "WR",
       "points": 45.2,
-      "source_rank": 633,
+      "source_rank": 632,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11406,7 +11388,7 @@
       "team": "DET",
       "position": "LB",
       "points": 45.2,
-      "source_rank": 634,
+      "source_rank": 633,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11424,7 +11406,7 @@
       "team": "NYG",
       "position": "DB",
       "points": 45.2,
-      "source_rank": 635,
+      "source_rank": 634,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11442,7 +11424,7 @@
       "team": "PHI",
       "position": "DL",
       "points": 45.1,
-      "source_rank": 636,
+      "source_rank": 635,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11460,7 +11442,7 @@
       "team": "CHI",
       "position": "DL",
       "points": 45,
-      "source_rank": 637,
+      "source_rank": 636,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11478,7 +11460,7 @@
       "team": "ARI",
       "position": "TE",
       "points": 44.9,
-      "source_rank": 638,
+      "source_rank": 637,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11496,7 +11478,7 @@
       "team": "KC",
       "position": "QB",
       "points": 44.9,
-      "source_rank": 639,
+      "source_rank": 638,
       "stats": {
         "pass_yds": 325,
         "pass_tds": 4.2,
@@ -11514,7 +11496,7 @@
       "team": "MIN",
       "position": "DB",
       "points": 44.7,
-      "source_rank": 640,
+      "source_rank": 639,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11532,7 +11514,7 @@
       "team": "BUF",
       "position": "DL",
       "points": 44.7,
-      "source_rank": 641,
+      "source_rank": 640,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11550,7 +11532,7 @@
       "team": "SEA",
       "position": "WR",
       "points": 44.5,
-      "source_rank": 642,
+      "source_rank": 641,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11568,7 +11550,7 @@
       "team": "BUF",
       "position": "DB",
       "points": 44.3,
-      "source_rank": 643,
+      "source_rank": 642,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11586,7 +11568,7 @@
       "team": "LV",
       "position": "LB",
       "points": 44.1,
-      "source_rank": 644,
+      "source_rank": 643,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11604,7 +11586,7 @@
       "team": "NO",
       "position": "RB",
       "points": 44.1,
-      "source_rank": 645,
+      "source_rank": 644,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11622,7 +11604,7 @@
       "team": "LAC",
       "position": "RB",
       "points": 44.1,
-      "source_rank": 646,
+      "source_rank": 645,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11640,7 +11622,7 @@
       "team": "LAR",
       "position": "DB",
       "points": 44,
-      "source_rank": 647,
+      "source_rank": 646,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11658,7 +11640,7 @@
       "team": "CHI",
       "position": "DB",
       "points": 43.9,
-      "source_rank": 648,
+      "source_rank": 647,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11676,7 +11658,7 @@
       "team": "SEA",
       "position": "DB",
       "points": 43.8,
-      "source_rank": 649,
+      "source_rank": 648,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11694,7 +11676,7 @@
       "team": "PIT",
       "position": "DB",
       "points": 43.8,
-      "source_rank": 650,
+      "source_rank": 649,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11712,7 +11694,7 @@
       "team": "MIA",
       "position": "DB",
       "points": 43.7,
-      "source_rank": 651,
+      "source_rank": 650,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11730,7 +11712,7 @@
       "team": "CIN",
       "position": "DL",
       "points": 43.6,
-      "source_rank": 652,
+      "source_rank": 651,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11748,7 +11730,7 @@
       "team": "TEN",
       "position": "DB",
       "points": 43.5,
-      "source_rank": 653,
+      "source_rank": 652,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11766,7 +11748,7 @@
       "team": "NO",
       "position": "RB",
       "points": 43.1,
-      "source_rank": 654,
+      "source_rank": 653,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -11783,6 +11765,24 @@
       "name": "Micah McFadden",
       "team": "NYG",
       "position": "LB",
+      "points": 43.1,
+      "source_rank": 654,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
+      "source_player_id": "15357",
+      "name": "Christian Barmore",
+      "team": "NE",
+      "position": "DL",
       "points": 43.1,
       "source_rank": 655,
       "stats": {
@@ -12643,12 +12643,30 @@
     },
     {
       "player_id": "",
+      "source_player_id": "15391",
+      "name": "Milton Williams",
+      "team": "NE",
+      "position": "DL",
+      "points": 38.7,
+      "source_rank": 703,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
       "source_player_id": "17599",
       "name": "Caleb Douglas",
       "team": "MIA",
       "position": "WR",
       "points": 38.6,
-      "source_rank": 703,
+      "source_rank": 704,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12666,7 +12684,7 @@
       "team": "TB",
       "position": "DL",
       "points": 38.6,
-      "source_rank": 704,
+      "source_rank": 705,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12684,7 +12702,7 @@
       "team": "PIT",
       "position": "DL",
       "points": 38.4,
-      "source_rank": 705,
+      "source_rank": 706,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12702,7 +12720,7 @@
       "team": "DAL",
       "position": "LB",
       "points": 38.2,
-      "source_rank": 706,
+      "source_rank": 707,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12720,7 +12738,7 @@
       "team": "MIN",
       "position": "DL",
       "points": 38.1,
-      "source_rank": 707,
+      "source_rank": 708,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12738,7 +12756,7 @@
       "team": "ATL",
       "position": "DL",
       "points": 38.1,
-      "source_rank": 708,
+      "source_rank": 709,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12756,7 +12774,7 @@
       "team": "CAR",
       "position": "QB",
       "points": 38.1,
-      "source_rank": 709,
+      "source_rank": 710,
       "stats": {
         "pass_yds": 377,
         "pass_tds": 4.7,
@@ -12774,7 +12792,7 @@
       "team": "NYJ",
       "position": "DL",
       "points": 37.9,
-      "source_rank": 710,
+      "source_rank": 711,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12792,7 +12810,7 @@
       "team": "CLE",
       "position": "WR",
       "points": 37.8,
-      "source_rank": 711,
+      "source_rank": 712,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12810,7 +12828,7 @@
       "team": "MIN",
       "position": "LB",
       "points": 37.7,
-      "source_rank": 712,
+      "source_rank": 713,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12828,7 +12846,7 @@
       "team": "MIA",
       "position": "DL",
       "points": 37.7,
-      "source_rank": 713,
+      "source_rank": 714,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12846,7 +12864,7 @@
       "team": "LAR",
       "position": "WR",
       "points": 37.3,
-      "source_rank": 714,
+      "source_rank": 715,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12864,7 +12882,7 @@
       "team": "PHI",
       "position": "DB",
       "points": 37.3,
-      "source_rank": 715,
+      "source_rank": 716,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12882,7 +12900,7 @@
       "team": "NYJ",
       "position": "DB",
       "points": 37,
-      "source_rank": 716,
+      "source_rank": 717,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12900,7 +12918,7 @@
       "team": "TB",
       "position": "DL",
       "points": 37,
-      "source_rank": 717,
+      "source_rank": 718,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12918,7 +12936,7 @@
       "team": "DEN",
       "position": "DL",
       "points": 37,
-      "source_rank": 718,
+      "source_rank": 719,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -12936,24 +12954,6 @@
       "team": "BAL",
       "position": "LB",
       "points": 36.9,
-      "source_rank": 719,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
-        "rec_tds": 0
-      }
-    },
-    {
-      "player_id": "",
-      "source_player_id": "15391",
-      "name": "Milton Williams",
-      "team": "NE",
-      "position": "DL",
-      "points": 36.8,
       "source_rank": 720,
       "stats": {
         "pass_yds": 0,
@@ -16783,12 +16783,30 @@
     },
     {
       "player_id": "",
+      "source_player_id": "16520",
+      "name": "Cory Durden",
+      "team": "NE",
+      "position": "DL",
+      "points": 20.2,
+      "source_rank": 933,
+      "stats": {
+        "pass_yds": 0,
+        "pass_tds": 0,
+        "rush_yds": 0,
+        "rush_tds": 0,
+        "receptions": 0,
+        "rec_yds": 0,
+        "rec_tds": 0
+      }
+    },
+    {
+      "player_id": "",
       "source_player_id": "16304",
       "name": "Jay Ward",
       "team": "MIN",
       "position": "DB",
       "points": 20.2,
-      "source_rank": 933,
+      "source_rank": 934,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16806,7 +16824,7 @@
       "team": "KC",
       "position": "DL",
       "points": 20.2,
-      "source_rank": 934,
+      "source_rank": 935,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16824,7 +16842,7 @@
       "team": "GB",
       "position": "DL",
       "points": 20.1,
-      "source_rank": 935,
+      "source_rank": 936,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16842,7 +16860,7 @@
       "team": "SF",
       "position": "DL",
       "points": 20.1,
-      "source_rank": 936,
+      "source_rank": 937,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16860,7 +16878,7 @@
       "team": "WAS",
       "position": "DL",
       "points": 20.1,
-      "source_rank": 937,
+      "source_rank": 938,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16878,7 +16896,7 @@
       "team": "BAL",
       "position": "TE",
       "points": 20,
-      "source_rank": 938,
+      "source_rank": 939,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16896,7 +16914,7 @@
       "team": "MIN",
       "position": "DB",
       "points": 20,
-      "source_rank": 939,
+      "source_rank": 940,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16914,7 +16932,7 @@
       "team": "WAS",
       "position": "WR",
       "points": 20,
-      "source_rank": 940,
+      "source_rank": 941,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16932,7 +16950,7 @@
       "team": "LAR",
       "position": "DL",
       "points": 19.8,
-      "source_rank": 941,
+      "source_rank": 942,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16950,7 +16968,7 @@
       "team": "NYG",
       "position": "DL",
       "points": 19.8,
-      "source_rank": 942,
+      "source_rank": 943,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16968,7 +16986,7 @@
       "team": "ATL",
       "position": "TE",
       "points": 19.7,
-      "source_rank": 943,
+      "source_rank": 944,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -16986,7 +17004,7 @@
       "team": "DAL",
       "position": "DB",
       "points": 19.5,
-      "source_rank": 944,
+      "source_rank": 945,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -17004,7 +17022,7 @@
       "team": "NYJ",
       "position": "DL",
       "points": 19.5,
-      "source_rank": 945,
+      "source_rank": 946,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -17022,7 +17040,7 @@
       "team": "PHI",
       "position": "RB",
       "points": 19.5,
-      "source_rank": 946,
+      "source_rank": 947,
       "stats": {
         "pass_yds": 0,
         "pass_tds": 0,
@@ -17030,24 +17048,6 @@
         "rush_tds": 0.2,
         "receptions": 7.2,
         "rec_yds": 41,
-        "rec_tds": 0
-      }
-    },
-    {
-      "player_id": "",
-      "source_player_id": "16520",
-      "name": "Cory Durden",
-      "team": "NE",
-      "position": "DL",
-      "points": 19.3,
-      "source_rank": 947,
-      "stats": {
-        "pass_yds": 0,
-        "pass_tds": 0,
-        "rush_yds": 0,
-        "rush_tds": 0,
-        "receptions": 0,
-        "rec_yds": 0,
         "rec_tds": 0
       }
     },
@@ -22438,8 +22438,6 @@
     "elicayomanor": 85,
     "camryn bynum": 84.7,
     "camrynbynum": 84.7,
-    "ty okada": 84.5,
-    "tyokada": 84.5,
     "ray davis": 84.3,
     "raydavis": 84.3,
     "nick cross": 84.2,
@@ -22468,6 +22466,8 @@
     "evanwilliams": 82.5,
     "kamari lassiter": 82.4,
     "kamarilassiter": 82.4,
+    "devon witherspoon": 82.3,
+    "devonwitherspoon": 82.3,
     "derwin james": 81.6,
     "derwinjames": 81.6,
     "brandon jones": 81.1,
@@ -22482,6 +22482,8 @@
     "avontemaddox": 80.4,
     "trey smack": 80.3,
     "treysmack": 80.3,
+    "ty okada": 80.3,
+    "tyokada": 80.3,
     "jaylin noel": 80.2,
     "jaylinnoel": 80.2,
     "aj haulcy": 80.1,
@@ -22506,8 +22508,6 @@
     "daronbland": 78.7,
     "bobby okereke": 78.7,
     "bobbyokereke": 78.7,
-    "devon witherspoon": 78.4,
-    "devonwitherspoon": 78.4,
     "julian blackmon": 78.4,
     "julianblackmon": 78.4,
     "chase young": 78.2,
@@ -22622,6 +22622,8 @@
     "jaquanbrisker": 71,
     "matt gay": 70.9,
     "mattgay": 70.9,
+    "nick emmanwori": 70.7,
+    "nickemmanwori": 70.7,
     "sirvocea dennis": 70.6,
     "sirvoceadennis": 70.6,
     "reed blankenship": 70.6,
@@ -22684,8 +22686,6 @@
     "kaelonblack": 67.4,
     "jaylen wright": 67.3,
     "jaylenwright": 67.3,
-    "nick emmanwori": 67.1,
-    "nickemmanwori": 67.1,
     "mike sainristil": 67,
     "mikesainristil": 67,
     "dallas turner": 67,
@@ -22878,6 +22878,8 @@
     "noahfant": 56,
     "josh oliver": 55.9,
     "josholiver": 55.9,
+    "josh jobe": 55.8,
+    "joshjobe": 55.8,
     "dee alford": 55.7,
     "deealford": 55.7,
     "darren waller": 55.7,
@@ -22922,8 +22924,6 @@
     "k'lavonchaisson": 53.7,
     "isaiah davis": 53.2,
     "isaiahdavis": 53.2,
-    "josh jobe": 53.2,
-    "joshjobe": 53.2,
     "kyle juszczyk": 53.1,
     "kylejuszczyk": 53.1,
     "jatavion sanders": 53,
@@ -23086,8 +23086,6 @@
     "tariqwoolen": 45.5,
     "odafe oweh": 45.4,
     "odafeoweh": 45.4,
-    "christian barmore": 45.4,
-    "christianbarmore": 45.4,
     "john metchie": 45.2,
     "johnmetchie": 45.2,
     "derrick barnes": 45.2,
@@ -23134,6 +23132,8 @@
     "kendremiller": 43.1,
     "micah mcfadden": 43.1,
     "micahmcfadden": 43.1,
+    "christian barmore": 43.1,
+    "christianbarmore": 43.1,
     "amik robertson": 43.1,
     "amikrobertson": 43.1,
     "jadon canady": 42.9,
@@ -23228,6 +23228,8 @@
     "marcusharris": 38.9,
     "jadeveon clowney": 38.9,
     "jadeveonclowney": 38.9,
+    "milton williams": 38.7,
+    "miltonwilliams": 38.7,
     "caleb douglas": 38.6,
     "calebdouglas": 38.6,
     "ashawn robinson": 38.6,
@@ -23262,8 +23264,6 @@
     "d.j.jones": 37,
     "trenton simpson": 36.9,
     "trentonsimpson": 36.9,
-    "milton williams": 36.8,
-    "miltonwilliams": 36.8,
     "mo aliecox": 36.7,
     "moalie-cox": 36.7,
     "davon hamilton": 36.6,
@@ -23682,6 +23682,8 @@
     "mykelwilliams": 20.2,
     "jd bertrand": 20.2,
     "jdbertrand": 20.2,
+    "cory durden": 20.2,
+    "corydurden": 20.2,
     "jay ward": 20.2,
     "jayward": 20.2,
     "khyiris tonga": 20.2,
@@ -23710,8 +23712,6 @@
     "braidenmcgregor": 19.5,
     "will shipley": 19.5,
     "willshipley": 19.5,
-    "cory durden": 19.3,
-    "corydurden": 19.3,
     "roy lopez": 19.1,
     "roylopez": 19.1,
     "tim patrick": 19.1,
