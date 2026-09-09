@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T04:08:13.031Z",
+  "updated": "2026-09-09T04:08:07.618Z",
   "season": 2026,
   "source": "ESPN",
   "count": 1036,
@@ -636,13 +636,6 @@
     },
     {
       "player_id": "",
-      "name": "Travis Hunter",
-      "team": "JAC",
-      "position": "WR",
-      "points": 103.57323334
-    },
-    {
-      "player_id": "",
       "name": "Tucker Kraft",
       "team": "GB",
       "position": "TE",
@@ -902,10 +895,10 @@
     },
     {
       "player_id": "",
-      "name": "Jordan Mason",
-      "team": "MIN",
+      "name": "Woody Marks",
+      "team": "HOU",
       "position": "RB",
-      "points": 152.34556629
+      "points": 131.79415156
     },
     {
       "player_id": "",
@@ -923,10 +916,10 @@
     },
     {
       "player_id": "",
-      "name": "Woody Marks",
-      "team": "HOU",
+      "name": "Jordan Mason",
+      "team": "MIN",
       "position": "RB",
-      "points": 131.79415156
+      "points": 152.34556629
     },
     {
       "player_id": "",
@@ -951,13 +944,6 @@
     },
     {
       "player_id": "",
-      "name": "Texans D/ST",
-      "team": "HOU",
-      "position": "DEF",
-      "points": 129.05937496
-    },
-    {
-      "player_id": "",
       "name": "Zach Charbonnet",
       "team": "SEA",
       "position": "RB",
@@ -965,17 +951,10 @@
     },
     {
       "player_id": "",
-      "name": "Broncos D/ST",
-      "team": "DEN",
-      "position": "DEF",
-      "points": 130.78326275
-    },
-    {
-      "player_id": "",
-      "name": "Jonah Coleman",
-      "team": "DEN",
+      "name": "Isiah Pacheco",
+      "team": "DET",
       "position": "RB",
-      "points": 74.38539046
+      "points": 70.95262009
     },
     {
       "player_id": "",
@@ -986,10 +965,10 @@
     },
     {
       "player_id": "",
-      "name": "Isiah Pacheco",
-      "team": "DET",
+      "name": "Jonah Coleman",
+      "team": "DEN",
       "position": "RB",
-      "points": 70.95262009
+      "points": 74.38539046
     },
     {
       "player_id": "",
@@ -1028,10 +1007,10 @@
     },
     {
       "player_id": "",
-      "name": "Mike Washington Jr.",
-      "team": "LV",
-      "position": "RB",
-      "points": 67.07137683
+      "name": "Travis Hunter",
+      "team": "JAC",
+      "position": "WR",
+      "points": 103.57323334
     },
     {
       "player_id": "",
@@ -1039,6 +1018,13 @@
       "team": "CLE",
       "position": "RB",
       "points": 88.16406577
+    },
+    {
+      "player_id": "",
+      "name": "Keaton Mitchell",
+      "team": "LAC",
+      "position": "RB",
+      "points": 93.88779413
     },
     {
       "player_id": "",
@@ -1056,10 +1042,10 @@
     },
     {
       "player_id": "",
-      "name": "Keaton Mitchell",
-      "team": "LAC",
+      "name": "Mike Washington Jr.",
+      "team": "LV",
       "position": "RB",
-      "points": 93.88779413
+      "points": 67.07137683
     },
     {
       "player_id": "",
@@ -1074,48 +1060,6 @@
       "team": "CIN",
       "position": "RB",
       "points": 100.32803864
-    },
-    {
-      "player_id": "",
-      "name": "Brandon Aubrey",
-      "team": "DAL",
-      "position": "K",
-      "points": 171.47184259
-    },
-    {
-      "player_id": "",
-      "name": "Cameron Dicker",
-      "team": "LAC",
-      "position": "K",
-      "points": 161.89103824
-    },
-    {
-      "player_id": "",
-      "name": "Jason Myers",
-      "team": "SEA",
-      "position": "K",
-      "points": 158.52167511
-    },
-    {
-      "player_id": "",
-      "name": "Ka'imi Fairbairn",
-      "team": "HOU",
-      "position": "K",
-      "points": 157.76907981
-    },
-    {
-      "player_id": "",
-      "name": "Harrison Mevis",
-      "team": "LAR",
-      "position": "K",
-      "points": 159.42880622
-    },
-    {
-      "player_id": "",
-      "name": "Eddy Pineiro",
-      "team": "SF",
-      "position": "K",
-      "points": 155.13091013
     },
     {
       "player_id": "",
@@ -1273,6 +1217,20 @@
     },
     {
       "player_id": "",
+      "name": "Texans D/ST",
+      "team": "HOU",
+      "position": "DEF",
+      "points": 129.05937496
+    },
+    {
+      "player_id": "",
+      "name": "Broncos D/ST",
+      "team": "DEN",
+      "position": "DEF",
+      "points": 130.78326275
+    },
+    {
+      "player_id": "",
       "name": "Steelers D/ST",
       "team": "PIT",
       "position": "DEF",
@@ -1340,6 +1298,48 @@
       "team": "LAC",
       "position": "DEF",
       "points": 94.48090522
+    },
+    {
+      "player_id": "",
+      "name": "Brandon Aubrey",
+      "team": "DAL",
+      "position": "K",
+      "points": 171.47184259
+    },
+    {
+      "player_id": "",
+      "name": "Cameron Dicker",
+      "team": "LAC",
+      "position": "K",
+      "points": 161.89103824
+    },
+    {
+      "player_id": "",
+      "name": "Jason Myers",
+      "team": "SEA",
+      "position": "K",
+      "points": 158.52167511
+    },
+    {
+      "player_id": "",
+      "name": "Harrison Mevis",
+      "team": "LAR",
+      "position": "K",
+      "points": 159.42880622
+    },
+    {
+      "player_id": "",
+      "name": "Ka'imi Fairbairn",
+      "team": "HOU",
+      "position": "K",
+      "points": 157.76907981
+    },
+    {
+      "player_id": "",
+      "name": "Eddy Pineiro",
+      "team": "SF",
+      "position": "K",
+      "points": 155.13091013
     },
     {
       "player_id": "",
@@ -1644,17 +1644,17 @@
     },
     {
       "player_id": "",
-      "name": "Darius Slayton",
-      "team": "",
-      "position": "WR",
-      "points": 80.08587629
-    },
-    {
-      "player_id": "",
       "name": "Antonio Williams",
       "team": "WAS",
       "position": "WR",
       "points": 77.58929359
+    },
+    {
+      "player_id": "",
+      "name": "Tyquan Thornton",
+      "team": "KC",
+      "position": "WR",
+      "points": 77.28641606
     },
     {
       "player_id": "",
@@ -1770,17 +1770,17 @@
     },
     {
       "player_id": "",
-      "name": "Tyquan Thornton",
-      "team": "KC",
-      "position": "WR",
-      "points": 77.28641606
-    },
-    {
-      "player_id": "",
       "name": "Keon Coleman",
       "team": "BUF",
       "position": "WR",
       "points": 75.45360391
+    },
+    {
+      "player_id": "",
+      "name": "Isaac TeSlaa",
+      "team": "DET",
+      "position": "WR",
+      "points": 72.84435101
     },
     {
       "player_id": "",
@@ -1833,13 +1833,6 @@
     },
     {
       "player_id": "",
-      "name": "Isaac TeSlaa",
-      "team": "DET",
-      "position": "WR",
-      "points": 72.84435101
-    },
-    {
-      "player_id": "",
       "name": "Pat Bryant",
       "team": "DEN",
       "position": "WR",
@@ -1858,6 +1851,13 @@
       "team": "CIN",
       "position": "WR",
       "points": 67.64686595
+    },
+    {
+      "player_id": "",
+      "name": "Kevin Coleman Jr.",
+      "team": "MIA",
+      "position": "WR",
+      "points": 66.90732661
     },
     {
       "player_id": "",
@@ -1903,13 +1903,6 @@
     },
     {
       "player_id": "",
-      "name": "Kevin Coleman Jr.",
-      "team": "MIA",
-      "position": "WR",
-      "points": 66.90732661
-    },
-    {
-      "player_id": "",
       "name": "KaVontae Turpin",
       "team": "DAL",
       "position": "WR",
@@ -1928,6 +1921,13 @@
       "team": "SEA",
       "position": "WR",
       "points": 65.47429572
+    },
+    {
+      "player_id": "",
+      "name": "Ted Hurst III",
+      "team": "TB",
+      "position": "WR",
+      "points": 64.8676217
     },
     {
       "player_id": "",
@@ -1987,10 +1987,10 @@
     },
     {
       "player_id": "",
-      "name": "Ted Hurst III",
-      "team": "TB",
+      "name": "Darnell Mooney",
+      "team": "NYG",
       "position": "WR",
-      "points": 64.8676217
+      "points": 63.69108384
     },
     {
       "player_id": "",
@@ -2057,17 +2057,17 @@
     },
     {
       "player_id": "",
-      "name": "Darnell Mooney",
-      "team": "NYG",
-      "position": "WR",
-      "points": 63.69108384
-    },
-    {
-      "player_id": "",
       "name": "Mack Hollins",
       "team": "NE",
       "position": "WR",
       "points": 57.1470884
+    },
+    {
+      "player_id": "",
+      "name": "Cyrus Allen",
+      "team": "KC",
+      "position": "WR",
+      "points": 52.80412259
     },
     {
       "player_id": "",
@@ -2582,17 +2582,17 @@
     },
     {
       "player_id": "",
+      "name": "Odell Beckham Jr.",
+      "team": "NYG",
+      "position": "WR",
+      "points": 24.01902646
+    },
+    {
+      "player_id": "",
       "name": "Malik Benson",
       "team": "LV",
       "position": "WR",
       "points": 56.54649452
-    },
-    {
-      "player_id": "",
-      "name": "Cyrus Allen",
-      "team": "KC",
-      "position": "WR",
-      "points": 52.80412259
     },
     {
       "player_id": "",
@@ -2673,17 +2673,17 @@
     },
     {
       "player_id": "",
-      "name": "Bryce Lance",
-      "team": "NO",
-      "position": "WR",
-      "points": 42.90678666
-    },
-    {
-      "player_id": "",
       "name": "Elijah Higgins",
       "team": "ARI",
       "position": "TE",
       "points": 42.92283743
+    },
+    {
+      "player_id": "",
+      "name": "Bryce Lance",
+      "team": "NO",
+      "position": "WR",
+      "points": 42.90678666
     },
     {
       "player_id": "",
@@ -2841,17 +2841,17 @@
     },
     {
       "player_id": "",
-      "name": "Mo Alie-Cox",
-      "team": "IND",
-      "position": "TE",
-      "points": 27.51668289
-    },
-    {
-      "player_id": "",
       "name": "Brenen Thompson",
       "team": "LAC",
       "position": "WR",
       "points": 27.51908848
+    },
+    {
+      "player_id": "",
+      "name": "Mo Alie-Cox",
+      "team": "IND",
+      "position": "TE",
+      "points": 27.51668289
     },
     {
       "player_id": "",
@@ -2894,13 +2894,6 @@
       "team": "DAL",
       "position": "RB",
       "points": 25.05595982
-    },
-    {
-      "player_id": "",
-      "name": "Odell Beckham Jr.",
-      "team": "NYG",
-      "position": "WR",
-      "points": 24.01902646
     },
     {
       "player_id": "",
@@ -3163,13 +3156,6 @@
     },
     {
       "player_id": "",
-      "name": "Tyrod Taylor",
-      "team": "GB",
-      "position": "QB",
-      "points": 9.42074952
-    },
-    {
-      "player_id": "",
       "name": "Trey Lance",
       "team": "LAC",
       "position": "QB",
@@ -3177,10 +3163,10 @@
     },
     {
       "player_id": "",
-      "name": "Riley Leonard",
-      "team": "IND",
+      "name": "Tyrod Taylor",
+      "team": "GB",
       "position": "QB",
-      "points": 9.36984604
+      "points": 9.42074952
     },
     {
       "player_id": "",
@@ -3188,6 +3174,13 @@
       "team": "JAC",
       "position": "QB",
       "points": 9.37966621
+    },
+    {
+      "player_id": "",
+      "name": "Riley Leonard",
+      "team": "IND",
+      "position": "QB",
+      "points": 9.36984604
     },
     {
       "player_id": "",
@@ -3275,13 +3268,6 @@
     },
     {
       "player_id": "",
-      "name": "Joshua Dobbs",
-      "team": "DET",
-      "position": "QB",
-      "points": 8.62646409
-    },
-    {
-      "player_id": "",
       "name": "Tyler Huntley",
       "team": "BAL",
       "position": "QB",
@@ -3307,6 +3293,13 @@
       "team": "SEA",
       "position": "TE",
       "points": 8.62253606
+    },
+    {
+      "player_id": "",
+      "name": "Joshua Dobbs",
+      "team": "DET",
+      "position": "QB",
+      "points": 8.62646409
     },
     {
       "player_id": "",
@@ -3366,17 +3359,17 @@
     },
     {
       "player_id": "",
-      "name": "Cade Klubnik",
-      "team": "NYJ",
-      "position": "QB",
-      "points": 8.22358552
-    },
-    {
-      "player_id": "",
       "name": "Johnny Mundt",
       "team": "PHI",
       "position": "TE",
       "points": 8.22215839
+    },
+    {
+      "player_id": "",
+      "name": "Cade Klubnik",
+      "team": "NYJ",
+      "position": "QB",
+      "points": 8.22358552
     },
     {
       "player_id": "",
@@ -3447,6 +3440,13 @@
       "team": "ARI",
       "position": "QB",
       "points": 7.13276175
+    },
+    {
+      "player_id": "",
+      "name": "Corey Kiner",
+      "team": "NE",
+      "position": "RB",
+      "points": 4.72295391
     },
     {
       "player_id": "",
@@ -3534,6 +3534,13 @@
     },
     {
       "player_id": "",
+      "name": "Cooper Rush",
+      "team": "ATL",
+      "position": "QB",
+      "points": 0.79390832
+    },
+    {
+      "player_id": "",
       "name": "Skyy Moore",
       "team": "GB",
       "position": "WR",
@@ -3552,20 +3559,6 @@
       "team": "PIT",
       "position": "TE",
       "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "Ray-Ray McCloud III",
-      "team": "",
-      "position": "WR",
-      "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "Cooper Rush",
-      "team": "ATL",
-      "position": "QB",
-      "points": 0.79390832
     },
     {
       "player_id": "",
@@ -3786,13 +3779,6 @@
     },
     {
       "player_id": "",
-      "name": "Chris Oladokun",
-      "team": "",
-      "position": "QB",
-      "points": 0
-    },
-    {
-      "player_id": "",
       "name": "Brittain Brown",
       "team": "CHI",
       "position": "RB",
@@ -3880,13 +3866,6 @@
       "name": "Aidan O'Connell",
       "team": "LV",
       "position": "QB",
-      "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "Brayden Willis",
-      "team": "",
-      "position": "TE",
       "points": 0
     },
     {
@@ -4136,13 +4115,6 @@
     },
     {
       "player_id": "",
-      "name": "Devin Neal",
-      "team": "",
-      "position": "RB",
-      "points": 0
-    },
-    {
-      "player_id": "",
       "name": "Robbie Ouzts",
       "team": "SEA",
       "position": "RB",
@@ -4154,13 +4126,6 @@
       "team": "PIT",
       "position": "QB",
       "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "Corey Kiner",
-      "team": "NE",
-      "position": "RB",
-      "points": 4.72295391
     },
     {
       "player_id": "",
@@ -4486,6 +4451,13 @@
     },
     {
       "player_id": "",
+      "name": "Ray-Ray McCloud III",
+      "team": "",
+      "position": "WR",
+      "points": 0
+    },
+    {
+      "player_id": "",
       "name": "Russell Gage Jr.",
       "team": "",
       "position": "WR",
@@ -4644,6 +4616,13 @@
       "team": "",
       "position": "TE",
       "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Darius Slayton",
+      "team": "",
+      "position": "WR",
+      "points": 80.08587629
     },
     {
       "player_id": "",
@@ -5886,6 +5865,13 @@
     },
     {
       "player_id": "",
+      "name": "Chris Oladokun",
+      "team": "",
+      "position": "QB",
+      "points": 0
+    },
+    {
+      "player_id": "",
       "name": "Brandon Smith",
       "team": "",
       "position": "WR",
@@ -6211,6 +6197,13 @@
       "name": "Clayton Tune",
       "team": "",
       "position": "QB",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Brayden Willis",
+      "team": "",
+      "position": "TE",
       "points": 0
     },
     {
@@ -6992,6 +6985,13 @@
     },
     {
       "player_id": "",
+      "name": "Devin Neal",
+      "team": "",
+      "position": "RB",
+      "points": 0
+    },
+    {
+      "player_id": "",
       "name": "Nick Nash",
       "team": "",
       "position": "WR",
@@ -7439,8 +7439,6 @@
     "stefon diggs": 172.9312346,
     "alecpierce": 185.29047985,
     "alec pierce": 185.29047985,
-    "travishunter": 103.57323334,
-    "travis hunter": 103.57323334,
     "tuckerkraft": 172.02990847,
     "tucker kraft": 172.02990847,
     "chubahubbard": 180.00633713,
@@ -7515,32 +7513,28 @@
     "tyjae spears": 154.28387791,
     "tylershough": 265.05851268,
     "tyler shough": 265.05851268,
-    "jordanmason": 152.34556629,
-    "jordan mason": 152.34556629,
+    "woodymarks": 131.79415156,
+    "woody marks": 131.79415156,
     "deebosamuelsr.": 149.47840566,
     "deebo samuel": 149.47840566,
     "jaredgoff": 268.27235245,
     "jared goff": 268.27235245,
-    "woodymarks": 131.79415156,
-    "woody marks": 131.79415156,
+    "jordanmason": 152.34556629,
+    "jordan mason": 152.34556629,
     "kcconcepcion": 156.010828,
     "kc concepcion": 156.010828,
     "jalenmcmillan": 132.74177503,
     "jalen mcmillan": 132.74177503,
     "tankdell": 0,
     "tank dell": 0,
-    "texansd/st": 129.05937496,
-    "texans dst": 129.05937496,
     "zachcharbonnet": 133.98936764,
     "zach charbonnet": 133.98936764,
-    "broncosd/st": 130.78326275,
-    "broncos dst": 130.78326275,
-    "jonahcoleman": 74.38539046,
-    "jonah coleman": 74.38539046,
-    "bakermayfield": 264.28533712,
-    "baker mayfield": 264.28533712,
     "isiahpacheco": 70.95262009,
     "isiah pacheco": 70.95262009,
+    "bakermayfield": 264.28533712,
+    "baker mayfield": 264.28533712,
+    "jonahcoleman": 74.38539046,
+    "jonah coleman": 74.38539046,
     "chrisrodriguezjr.": 71.996165,
     "chris rodriguez": 71.996165,
     "danieljones": 266.13003184,
@@ -7551,32 +7545,22 @@
     "alvin kamara": 113.28566173,
     "tylerallgeier": 92.61742709,
     "tyler allgeier": 92.61742709,
-    "mikewashingtonjr.": 67.07137683,
-    "mike washington": 67.07137683,
+    "travishunter": 103.57323334,
+    "travis hunter": 103.57323334,
     "dylansampson": 88.16406577,
     "dylan sampson": 88.16406577,
+    "keatonmitchell": 93.88779413,
+    "keaton mitchell": 93.88779413,
     "hunterhenry": 150.11836112,
     "hunter henry": 150.11836112,
     "t.j.hockenson": 158.44552232,
     "tj hockenson": 158.44552232,
-    "keatonmitchell": 93.88779413,
-    "keaton mitchell": 93.88779413,
+    "mikewashingtonjr.": 67.07137683,
+    "mike washington": 67.07137683,
     "keenanallen": 124.10633339,
     "keenan allen": 124.10633339,
     "samajeperine": 100.32803864,
     "samaje perine": 100.32803864,
-    "brandonaubrey": 171.47184259,
-    "brandon aubrey": 171.47184259,
-    "camerondicker": 161.89103824,
-    "cameron dicker": 161.89103824,
-    "jasonmyers": 158.52167511,
-    "jason myers": 158.52167511,
-    "ka'imifairbairn": 157.76907981,
-    "kaimi fairbairn": 157.76907981,
-    "harrisonmevis": 159.42880622,
-    "harrison mevis": 159.42880622,
-    "eddypineiro": 155.13091013,
-    "eddy pineiro": 155.13091013,
     "jordanlove": 262.63090383,
     "jordan love": 262.63090383,
     "brianrobinsonjr.": 93.82454429,
@@ -7621,6 +7605,10 @@
     "ray davis": 38.15998593,
     "najeeharris": 78.45242018,
     "najee harris": 78.45242018,
+    "texansd/st": 129.05937496,
+    "texans dst": 129.05937496,
+    "broncosd/st": 130.78326275,
+    "broncos dst": 130.78326275,
     "steelersd/st": 124.55220816,
     "steelers dst": 124.55220816,
     "seahawksd/st": 122.2881032,
@@ -7641,6 +7629,18 @@
     "chiefs dst": 100.41901674,
     "chargersd/st": 94.48090522,
     "chargers dst": 94.48090522,
+    "brandonaubrey": 171.47184259,
+    "brandon aubrey": 171.47184259,
+    "camerondicker": 161.89103824,
+    "cameron dicker": 161.89103824,
+    "jasonmyers": 158.52167511,
+    "jason myers": 158.52167511,
+    "harrisonmevis": 159.42880622,
+    "harrison mevis": 159.42880622,
+    "ka'imifairbairn": 157.76907981,
+    "kaimi fairbairn": 157.76907981,
+    "eddypineiro": 155.13091013,
+    "eddy pineiro": 155.13091013,
     "harrisonbutker": 148.76572896,
     "harrison butker": 148.76572896,
     "camlittle": 146.93234861,
@@ -7727,10 +7727,10 @@
     "chris bell": 88.32666718,
     "demariodouglas": 81.97767708,
     "demario douglas": 81.97767708,
-    "dariusslayton": 80.08587629,
-    "darius slayton": 80.08587629,
     "antoniowilliams": 77.58929359,
     "antonio williams": 77.58929359,
+    "tyquanthornton": 77.28641606,
+    "tyquan thornton": 77.28641606,
     "buccaneersd/st": 92.95845006,
     "buccaneers dst": 92.95845006,
     "packersd/st": 89.50856959,
@@ -7763,10 +7763,10 @@
     "emanuel wilson": 9.91477916,
     "emaridemercado": 24.57912837,
     "emari demercado": 24.57912837,
-    "tyquanthornton": 77.28641606,
-    "tyquan thornton": 77.28641606,
     "keoncoleman": 75.45360391,
     "keon coleman": 75.45360391,
+    "isaacteslaa": 72.84435101,
+    "isaac teslaa": 72.84435101,
     "jaguarsd/st": 77.01236044,
     "jaguars dst": 77.01236044,
     "saintsd/st": 88.99967917,
@@ -7781,14 +7781,14 @@
     "darren waller": 114.38863132,
     "cadeotton": 101.99621616,
     "cade otton": 101.99621616,
-    "isaacteslaa": 72.84435101,
-    "isaac teslaa": 72.84435101,
     "patbryant": 72.74451996,
     "pat bryant": 72.74451996,
     "marvinmimsjr.": 70.01112442,
     "marvin mims": 70.01112442,
     "andreiiosivas": 67.64686595,
     "andrei iosivas": 67.64686595,
+    "kevincolemanjr.": 66.90732661,
+    "kevin coleman": 66.90732661,
     "kalebjohnson": 7.86933939,
     "kaleb johnson": 7.86933939,
     "nicholassingleton": 19.78849696,
@@ -7801,14 +7801,14 @@
     "aaron rodgers": 218.83443299,
     "deshaunwatson": 78.21072456,
     "deshaun watson": 78.21072456,
-    "kevincolemanjr.": 66.90732661,
-    "kevin coleman": 66.90732661,
     "kavontaeturpin": 66.36383609,
     "kavontae turpin": 66.36383609,
     "jackbech": 65.91975767,
     "jack bech": 65.91975767,
     "toryhorton": 65.47429572,
     "tory horton": 65.47429572,
+    "tedhurstiii": 64.8676217,
+    "ted hurst": 64.8676217,
     "kendremiller": 18.78840958,
     "kendre miller": 18.78840958,
     "tahjbrooks": 18.35510582,
@@ -7825,8 +7825,8 @@
     "sione vaki": 9.35548591,
     "kenenwangwu": 2.28548888,
     "kene nwangwu": 2.28548888,
-    "tedhurstiii": 64.8676217,
-    "ted hurst": 64.8676217,
+    "darnellmooney": 63.69108384,
+    "darnell mooney": 63.69108384,
     "jetsd/st": 81.1502345,
     "jets dst": 81.1502345,
     "49ersd/st": 81.67628653,
@@ -7845,10 +7845,10 @@
     "mike gesicki": 96.45717275,
     "michaelmayer": 80.93732074,
     "michael mayer": 80.93732074,
-    "darnellmooney": 63.69108384,
-    "darnell mooney": 63.69108384,
     "mackhollins": 57.1470884,
     "mack hollins": 57.1470884,
+    "cyrusallen": 52.80412259,
+    "cyrus allen": 52.80412259,
     "tuatagovailoa": 115.3437919,
     "tua tagovailoa": 115.3437919,
     "cowboysd/st": 76.6907053,
@@ -7995,10 +7995,10 @@
     "cardinals dst": 50.36446206,
     "dolphinsd/st": 45.10084773,
     "dolphins dst": 45.10084773,
+    "odellbeckhamjr.": 24.01902646,
+    "odell beckham": 24.01902646,
     "malikbenson": 56.54649452,
     "malik benson": 56.54649452,
-    "cyrusallen": 52.80412259,
-    "cyrus allen": 52.80412259,
     "kylewilliams": 51.21666622,
     "kyle williams": 51.21666622,
     "troyfranklin": 50.68754178,
@@ -8021,10 +8021,10 @@
     "tommy tremble": 43.54027627,
     "austinhooper": 43.40253587,
     "austin hooper": 43.40253587,
-    "brycelance": 42.90678666,
-    "bryce lance": 42.90678666,
     "elijahhiggins": 42.92283743,
     "elijah higgins": 42.92283743,
+    "brycelance": 42.90678666,
+    "bryce lance": 42.90678666,
     "savionwilliams": 41.80826845,
     "savion williams": 41.80826845,
     "jonnusmith": 40.92205108,
@@ -8069,10 +8069,10 @@
     "jaylin lane": 28.48711769,
     "lukeschoonmaker": 27.67720138,
     "luke schoonmaker": 27.67720138,
-    "moalie-cox": 27.51668289,
-    "mo aliecox": 27.51668289,
     "brenenthompson": 27.51908848,
     "brenen thompson": 27.51908848,
+    "moalie-cox": 27.51668289,
+    "mo aliecox": 27.51668289,
     "jacksonhawes": 27.43833675,
     "jackson hawes": 27.43833675,
     "danielbellinger": 26.7365962,
@@ -8085,8 +8085,6 @@
     "elijah sarratt": 25.11414174,
     "hunterluepke": 25.05595982,
     "hunter luepke": 25.05595982,
-    "odellbeckhamjr.": 24.01902646,
-    "odell beckham": 24.01902646,
     "elicayomanor": 23.90866476,
     "elic ayomanor": 23.90866476,
     "durhamsmythe": 23.5547299,
@@ -8161,14 +8159,14 @@
     "brevyn spannford": 9.47359121,
     "drewallar": 9.4584956,
     "drew allar": 9.4584956,
-    "tyrodtaylor": 9.42074952,
-    "tyrod taylor": 9.42074952,
     "treylance": 9.42810769,
     "trey lance": 9.42810769,
-    "rileyleonard": 9.36984604,
-    "riley leonard": 9.36984604,
+    "tyrodtaylor": 9.42074952,
+    "tyrod taylor": 9.42074952,
     "quinnewers": 9.37966621,
     "quinn ewers": 9.37966621,
+    "rileyleonard": 9.36984604,
+    "riley leonard": 9.36984604,
     "tannerkoziol": 9.22946517,
     "tanner koziol": 9.22946517,
     "tylerconklin": 9.1753775,
@@ -8193,8 +8191,6 @@
     "sam roush": 8.72526941,
     "jahdaewalker": 8.68413498,
     "jahdae walker": 8.68413498,
-    "joshuadobbs": 8.62646409,
-    "joshua dobbs": 8.62646409,
     "tylerhuntley": 8.64330695,
     "tyler huntley": 8.64330695,
     "matthewhibner": 8.62649322,
@@ -8203,6 +8199,8 @@
     "josh cuevas": 8.62649322,
     "ericsaubert": 8.62253606,
     "eric saubert": 8.62253606,
+    "joshuadobbs": 8.62646409,
+    "joshua dobbs": 8.62646409,
     "dariuscooper": 8.49969558,
     "darius cooper": 8.49969558,
     "andrewbeck": 8.42754121,
@@ -8219,10 +8217,10 @@
     "dareke young": 8.24452986,
     "charliewoerner": 8.22989234,
     "charlie woerner": 8.22989234,
-    "cadeklubnik": 8.22358552,
-    "cade klubnik": 8.22358552,
     "johnnymundt": 8.22215839,
     "johnny mundt": 8.22215839,
+    "cadeklubnik": 8.22358552,
+    "cade klubnik": 8.22358552,
     "carsenryan": 8.18327516,
     "carsen ryan": 8.18327516,
     "reggievirgil": 8.08482569,
@@ -8243,6 +8241,8 @@
     "patrick ricard": 7.36064474,
     "gardnerminshewii": 7.13276175,
     "gardner minshew": 7.13276175,
+    "coreykiner": 4.72295391,
+    "corey kiner": 4.72295391,
     "chrismanhertz": 4.1312248,
     "chris manhertz": 4.1312248,
     "kadenwetjen": 4.06577223,
@@ -8267,16 +8267,14 @@
     "devin duvernay": 1.72141591,
     "nikkoremigio": 1.41915173,
     "nikko remigio": 1.41915173,
+    "cooperrush": 0.79390832,
+    "cooper rush": 0.79390832,
     "skyymoore": 0.39934945,
     "skyy moore": 0.39934945,
     "jalenbrooks": 0.28747999,
     "jalen brooks": 0.28747999,
     "roberttonyan": 0,
     "robert tonyan": 0,
-    "ray-raymccloudiii": 0,
-    "rayray mccloud": 0,
-    "cooperrush": 0.79390832,
-    "cooper rush": 0.79390832,
     "masonrudolph": 0,
     "mason rudolph": 0,
     "jeremymcnichols": 0,
@@ -8339,8 +8337,6 @@
     "ty chandler": 0,
     "skylarthompson": 0,
     "skylar thompson": 0,
-    "chrisoladokun": 0,
-    "chris oladokun": 0,
     "brittainbrown": 0,
     "brittain brown": 0,
     "juliuschestnut": 0,
@@ -8367,8 +8363,6 @@
     "scott matlock": 0,
     "aidano'connell": 0,
     "aidan oconnell": 0,
-    "braydenwillis": 0,
-    "brayden willis": 0,
     "julianhill": 0,
     "julian hill": 0,
     "irvcharles": 0,
@@ -8439,14 +8433,10 @@
     "caleb lohner": 0,
     "molikimatavao": 0,
     "moliki matavao": 0,
-    "devinneal": 0,
-    "devin neal": 0,
     "robbieouzts": 0,
     "robbie ouzts": 0,
     "willhoward": 0,
     "will howard": 0,
-    "coreykiner": 4.72295391,
-    "corey kiner": 4.72295391,
     "raheimsanders": 0,
     "raheim sanders": 0,
     "beauxcollins": 0,
@@ -8539,6 +8529,8 @@
     "justin watson": 0,
     "c.j.ham": 0,
     "cj ham": 0,
+    "ray-raymccloudiii": 0,
+    "rayray mccloud": 0,
     "russellgagejr.": 0,
     "russell gage": 0,
     "trenttaylor": 0,
@@ -8585,6 +8577,8 @@
     "cordarrelle patterson": 0,
     "taysomhill": 0,
     "taysom hill": 0,
+    "dariusslayton": 80.08587629,
+    "darius slayton": 80.08587629,
     "marcedeslewis": 0,
     "marcedes lewis": 0,
     "trayveonwilliams": 0,
@@ -8937,6 +8931,8 @@
     "montrell washington": 0,
     "samoritoure": 0,
     "samori toure": 0,
+    "chrisoladokun": 0,
+    "chris oladokun": 0,
     "brandonsmith": 0,
     "brandon smith": 0,
     "justynross": 0,
@@ -9031,6 +9027,8 @@
     "trey palmer": 0,
     "claytontune": 0,
     "clayton tune": 0,
+    "braydenwillis": 0,
+    "brayden willis": 0,
     "maxduggan": 0,
     "max duggan": 0,
     "dewaynemcbride": 0,
@@ -9253,6 +9251,8 @@
     "dominic lovett": 0,
     "juniorbergen": 0,
     "junior bergen": 0,
+    "devinneal": 0,
+    "devin neal": 0,
     "nicknash": 0,
     "nick nash": 0,
     "xavierrestrepo": 0,
