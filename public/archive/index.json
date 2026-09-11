@@ -1,6 +1,15 @@
 {
-  "updated_at": "2026-09-10T04:08:24.405Z",
+  "updated_at": "2026-09-11T04:08:04.207Z",
   "archives": [
+    {
+      "date": "2026-09-11",
+      "created_at": "2026-09-11T04:08:04.207Z",
+      "season": 2026,
+      "manifest": "manifest_2026-09-11.json",
+      "files": 19,
+      "partial_update": false,
+      "stale_sources": []
+    },
     {
       "date": "2026-09-10",
       "created_at": "2026-09-10T04:08:24.405Z",
