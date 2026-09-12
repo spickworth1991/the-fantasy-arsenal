@@ -16,6 +16,17 @@ const SleeperContext = createContext();
 export const useSleeper = () => useContext(SleeperContext);
 const projectionIndexMemory = new Map();
 const projectionLoadPromises = new Map();
+const emptyProjectionIndexes = () => ({
+  FFA: null,
+  ESPN: null,
+  CBS: null,
+  SLEEPER: null,
+  FANTASYSHARKS: null,
+  DRAFTSHARKS: null,
+  ARSENAL: null,
+  ARSENAL_MODEL: null,
+  FANTASYPROS: null,
+});
 const PROJECTION_URLS = {
   FFA: PROJ_JSON_URL,
   ESPN: PROJ_ESPN_JSON_URL,
@@ -616,17 +627,9 @@ export const SleeperProvider = ({ children }) => {
   const recoveringRef = useRef(false);
 
   // ===== Projections state (in context) =====
-  const [projectionIndexes, setProjectionIndexes] = useState({
-    FFA: null,
-    ESPN: null,
-    CBS: null,
-    SLEEPER: null,
-    FANTASYSHARKS: null,
-    DRAFTSHARKS: null,
-    ARSENAL: null,
-    ARSENAL_MODEL: null,
-    FANTASYPROS: null,
-  });
+  const [projectionIndexes, setProjectionIndexes] = useState(emptyProjectionIndexes);
+  const projectionCacheVersionRef = useRef(null);
+  const projectionIndexVersionsRef = useRef({});
 
   // Hydrate browser-only preferences after the first render. Keeping the
   // server and initial client state identical prevents a full hydration reset.
@@ -795,6 +798,8 @@ export const SleeperProvider = ({ children }) => {
       setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null, ARSENAL_MODEL: null });
     setActiveLeague(null);
     preloadCalled.current = false;
+    projectionCacheVersionRef.current = null;
+    projectionIndexVersionsRef.current = {};
   };
 
   // ===== Projections caching =====
@@ -895,15 +900,41 @@ export const SleeperProvider = ({ children }) => {
     if (!src && String(sourceKey || "").startsWith("proj:")) src = projectionSourceFromKey(sourceKey);
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
     if (!PROJECTION_URLS[src]) return null;
-    if (projectionIndexes[src]) return projectionIndexes[src];
-    if (projectionIndexMemory.has(src)) {
-      const index = projectionIndexMemory.get(src);
+    let publishedVersion = "unversioned";
+    try {
+      const versionResponse = await fetch("/value-cache-version.json", {
+        cache: "no-store",
+      });
+      if (versionResponse.ok) {
+        const manifest = await versionResponse.json();
+        if (manifest?.version) publishedVersion = String(manifest.version);
+      }
+    } catch {}
+    const versionChanged =
+      projectionCacheVersionRef.current !== null &&
+      projectionCacheVersionRef.current !== publishedVersion;
+    if (versionChanged) {
+      projectionIndexVersionsRef.current = {};
+      setProjectionIndexes(emptyProjectionIndexes());
+    }
+    projectionCacheVersionRef.current = publishedVersion;
+
+    const memoryKey = `${publishedVersion}:${src}`;
+    if (
+      projectionIndexes[src] &&
+      projectionIndexVersionsRef.current[src] === publishedVersion
+    )
+      return projectionIndexes[src];
+    if (projectionIndexMemory.has(memoryKey)) {
+      const index = projectionIndexMemory.get(memoryKey);
+      projectionIndexVersionsRef.current[src] = publishedVersion;
       setProjectionIndexes((current) => ({ ...current, [src]: index }));
       return index;
     }
-    if (projectionLoadPromises.has(src)) return projectionLoadPromises.get(src);
+    if (projectionLoadPromises.has(memoryKey))
+      return projectionLoadPromises.get(memoryKey);
 
-    const cacheKey = `projIndex_v2:${PROJECTION_DATA_SEASON}:${src}`;
+    const cacheKey = `projIndex_v3:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
     const promise = (async () => {
       try {
         let raw = await get(cacheKey).catch(() => null);
@@ -914,17 +945,18 @@ export const SleeperProvider = ({ children }) => {
         }
         if (!raw || !Object.keys(raw).length) return null;
         const index = createProjectionIndex(raw);
-        projectionIndexMemory.set(src, index);
+        projectionIndexMemory.set(memoryKey, index);
+        projectionIndexVersionsRef.current[src] = publishedVersion;
         setProjectionIndexes((current) => ({ ...current, [src]: index }));
         return index;
       } catch (error) {
         console.error(`Projection source ${src} could not be loaded:`, error);
         return null;
       } finally {
-        projectionLoadPromises.delete(src);
+        projectionLoadPromises.delete(memoryKey);
       }
     })();
-    projectionLoadPromises.set(src, promise);
+    projectionLoadPromises.set(memoryKey, promise);
     return promise;
   };
 

@@ -177,6 +177,10 @@ const CBS_PROJ_OUT_PATH = path.join(
   __dirname,
   `../public/projections_cbs_${CURRENT_SEASON}.json`,
 );
+const CBS_WEEKLY_PROJ_OUT_PATH = path.join(
+  __dirname,
+  `../public/projections_cbs_weekly_${CURRENT_SEASON}.json`,
+);
 const SLEEPER_PROJ_OUT_PATH = path.join(
   __dirname,
   `../public/projections_sleeper_${CURRENT_SEASON}.json`,
@@ -252,6 +256,7 @@ function archiveUpdatedValues(failures = []) {
     PROJ_OUT_PATH,
     ESPN_PROJ_OUT_PATH,
     CBS_PROJ_OUT_PATH,
+    CBS_WEEKLY_PROJ_OUT_PATH,
     SLEEPER_PROJ_OUT_PATH,
     FANTASYSHARKS_PROJ_OUT_PATH,
     DRAFTSHARKS_PROJ_OUT_PATH,
@@ -4248,6 +4253,10 @@ async function fetchCBSProjectionRows(position, url) {
   const pointsIndex = headers.findIndex((label) =>
     label.split(/\s+/).includes("fpts"),
   );
+  const passingTouchdownIndex =
+    String(position).toUpperCase() === "QB"
+      ? headers.findIndex((label) => label.split(/\s+/).includes("td"))
+      : -1;
   if (pointsIndex < 0)
     throw new Error("CBS Fantasy Points column was not found.");
   const rows = [];
@@ -4278,56 +4287,130 @@ async function fetchCBSProjectionRows(position, url) {
         )?.[1],
       ) || position,
     );
-    const points =
+    const sourcePoints =
       Number(decodeCBSHtml(cells[pointsIndex]).replace(/,/g, "")) || 0;
+    const passingTouchdowns =
+      passingTouchdownIndex >= 0
+        ? Number(
+            decodeCBSHtml(cells[passingTouchdownIndex]).replace(/,/g, ""),
+          ) || 0
+        : 0;
+    // CBS' displayed PPR total awards six points per passing touchdown. The
+    // shared projection contract uses the common four-point passing-TD score,
+    // so normalize quarterbacks before CBS joins consensus or accuracy.
+    const points =
+      String(position).toUpperCase() === "QB"
+        ? Number((sourcePoints - passingTouchdowns * 2).toFixed(3))
+        : sourcePoints;
     if (name)
       rows.push({
         name,
         team,
         position: parsedPosition === "DST" ? "DEF" : parsedPosition,
         points,
+        source_points: sourcePoints,
+        scoring_adjustment:
+          String(position).toUpperCase() === "QB"
+            ? "CBS 6pt pass TD normalized to 4pt"
+            : null,
       });
   }
   return rows;
 }
 
 async function updateCBSProjections() {
-  console.log("\nScraping CBS PPR season projections…");
+  const savedSchedule = (() => {
+    try {
+      return JSON.parse(
+        fs.readFileSync(
+          path.join(
+            __dirname,
+            `../public/stats/projections/${CURRENT_SEASON}/schedule.json`,
+          ),
+          "utf8",
+        ),
+      );
+    } catch {
+      return null;
+    }
+  })();
+  const now = Date.now();
+  const scheduledWeeks = savedSchedule?.weeks || [];
+  const projectionWeek =
+    scheduledWeeks.find((entry) =>
+      (entry.games || []).some((game) => Date.parse(game.date) > now),
+    )?.week ||
+    Math.max(1, ...scheduledWeeks.map((entry) => Number(entry.week) || 0));
+  console.log(
+    `\nScraping CBS PPR rest-of-season, YTD, and Week ${projectionWeek} projections…`,
+  );
 
   const POS_CFG = {
-    QB: {
-      url: `https://www.cbssports.com/fantasy/football/stats/QB/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 15,
-    },
-    RB: {
-      url: `https://www.cbssports.com/fantasy/football/stats/RB/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 14,
-    },
-    WR: {
-      url: `https://www.cbssports.com/fantasy/football/stats/WR/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 14,
-    },
-    TE: {
-      url: `https://www.cbssports.com/fantasy/football/stats/TE/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 10,
-    },
-    K: {
-      url: `https://www.cbssports.com/fantasy/football/stats/K/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 18,
-    },
-    DEF: {
-      url: `https://www.cbssports.com/fantasy/football/stats/DST/${CURRENT_SEASON}/season/projections/ppr/`,
-      ptsTdIndex1: 15,
-    },
+    QB: "QB",
+    RB: "RB",
+    WR: "WR",
+    TE: "TE",
+    K: "K",
+    DEF: "DST",
   };
-
-  const directRows = [];
-  for (const [position, cfg] of Object.entries(POS_CFG)) {
-    const rows = await fetchCBSProjectionRows(position, cfg.url);
-    directRows.push(...rows);
-    console.log(`  → found ${rows.length} ${position} rows`);
+  const restOfSeasonRows = [];
+  const ytdRows = [];
+  const weeklyRows = [];
+  for (const [position, slug] of Object.entries(POS_CFG)) {
+    // Keep CBS requests sequential. Bursting three pages per position is much
+    // more likely to be reset or throttled in GitHub Actions.
+    const restRows = await fetchCBSProjectionRows(
+      position,
+      `https://www.cbssports.com/fantasy/football/stats/${slug}/${CURRENT_SEASON}/restofseason/projections/ppr/`,
+    );
+    const weekRows = await fetchCBSProjectionRows(
+      position,
+      `https://www.cbssports.com/fantasy/football/stats/${slug}/${CURRENT_SEASON}/${projectionWeek}/projections/ppr/`,
+    );
+    const actualRows = await fetchCBSProjectionRows(
+      position,
+      `https://www.cbssports.com/fantasy/football/stats/${slug}/${CURRENT_SEASON}/ytd/stats/ppr/`,
+    ).catch(() => []);
+    restOfSeasonRows.push(...restRows);
+    ytdRows.push(...actualRows);
+    weeklyRows.push(...weekRows);
+    console.log(
+      `  → ${position}: ${restRows.length} ROS · ${actualRows.length} YTD · ${weekRows.length} Week ${projectionWeek}`,
+    );
   }
-  const directCounts = directRows.reduce(
+  const playerKey = (row) =>
+    `${String(row.name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, "")
+      .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim()}|${String(row.position || "").toUpperCase()}`;
+  const ytdByPlayer = new Map(ytdRows.map((row) => [playerKey(row), row]));
+  const restByPlayer = new Map(
+    restOfSeasonRows.map((row) => [playerKey(row), row]),
+  );
+  const seasonRows = [
+    ...new Set([...restByPlayer.keys(), ...ytdByPlayer.keys()]),
+  ]
+    .map((key) => {
+      const rest = restByPlayer.get(key);
+      const actual = ytdByPlayer.get(key);
+      const identity = rest || actual;
+      const actualPoints = Number(actual?.points) || 0;
+      const remainingPoints = Number(rest?.points) || 0;
+      return {
+        ...identity,
+        points: actualPoints + remainingPoints,
+        source_points:
+          (Number(rest?.source_points) || 0) +
+          (Number(actual?.source_points) || 0),
+        points_ppr: actualPoints + remainingPoints,
+        actual_points_ppr: actualPoints,
+        remaining_points_ppr: remainingPoints,
+      };
+    })
+    .filter((row) => row.name && row.points > 0);
+  const directCounts = restOfSeasonRows.reduce(
     (counts, row) => ({
       ...counts,
       [row.position]: (counts[row.position] || 0) + 1,
@@ -4346,7 +4429,7 @@ async function updateCBSProjections() {
       }). Existing cache preserved.`,
     );
   const directByName = {};
-  directRows.forEach((row) => {
+  seasonRows.forEach((row) => {
     directByName[row.name.toLowerCase().replace(/\s+/g, "")] = row.points;
     directByName[
       row.name
@@ -4364,8 +4447,10 @@ async function updateCBSProjections() {
         updated: new Date().toISOString(),
         season: CURRENT_SEASON,
         source: "CBS",
-        count: directRows.length,
-        rows: directRows.map((row) => ({ player_id: "", ...row })),
+        projection_contract: "ytd_actual_plus_rest_of_season",
+        scoring_contract: "PPR with 4-point passing touchdowns",
+        count: seasonRows.length,
+        rows: seasonRows.map((row) => ({ player_id: "", ...row })),
         by_id: {},
         by_name: directByName,
       },
@@ -4374,7 +4459,38 @@ async function updateCBSProjections() {
     ),
   );
   console.log(
-    `✅ projections_cbs_${CURRENT_SEASON}.json written (${directRows.length} rows).`,
+    `✅ projections_cbs_${CURRENT_SEASON}.json written (${seasonRows.length} season-total rows).`,
+  );
+  const weeklyByName = {};
+  weeklyRows.forEach((row) => {
+    weeklyByName[playerKey(row)] = row.points;
+  });
+  fs.writeFileSync(
+    CBS_WEEKLY_PROJ_OUT_PATH,
+    JSON.stringify(
+      {
+        updated: new Date().toISOString(),
+        season: CURRENT_SEASON,
+        week: Number(projectionWeek),
+        source: "CBS weekly PPR projections",
+        projection_contract: "explicit_week",
+        scoring_contract: "PPR with 4-point passing touchdowns",
+        scoring: "ppr",
+        count: weeklyRows.length,
+        rows: weeklyRows.map((row) => ({
+          player_id: "",
+          ...row,
+          points_ppr: row.points,
+        })),
+        by_id: {},
+        by_name: weeklyByName,
+      },
+      null,
+      2,
+    ),
+  );
+  console.log(
+    `✅ projections_cbs_weekly_${CURRENT_SEASON}.json written (${weeklyRows.length} Week ${projectionWeek} rows).`,
   );
   return;
 

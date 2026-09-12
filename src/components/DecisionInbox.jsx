@@ -6,6 +6,11 @@ import { useSleeper } from "../context/SleeperContext";
 import { useArsenalAccount } from "../context/ArsenalAccountContext";
 import { classifyLeagueFormat } from "../lib/leagueFormat";
 import { fantasyWeekFromNflState } from "../lib/nflSeasonState";
+import {
+  completedTeamsFromGames,
+  normalizeNflTeam,
+  playerGameIsComplete,
+} from "../lib/nflGameLocks";
 
 const n = (value) => Number(value || 0);
 const CACHE_MS = 5 * 60 * 1000;
@@ -522,8 +527,12 @@ export default function DecisionInbox({ full = false }) {
               `/api/nfl-scoreboard?season=${nflState.season || year}&week=${week}`,
             ).catch(() => ({ games: [] }));
       const games = score.games || [];
+      const completedTeams = completedTeamsFromGames(games);
+      const weekComplete = games.length > 0 && games.every((game) =>
+        (game?.statusState === "post" || String(game?.status || "").toLowerCase().startsWith("final")),
+      );
       const gameByTeam = new Map(
-        games.flatMap((game) => (game.teams || []).map((team) => [team, game])),
+        games.flatMap((game) => (game.teams || []).map((team) => [normalizeNflTeam(team), game])),
       );
       const rankedPlayers = Object.entries(players || {})
         .map(([id, player]) => ({ id, player, value: metricForWeek(player) }))
@@ -595,7 +604,7 @@ export default function DecisionInbox({ full = false }) {
               !["pre_draft", "drafting"].includes(leagueStatus) &&
               !isRegularBestBall;
             const empty = starters.filter((id) => !id || id === "0").length;
-            if (empty)
+            if (empty && !weekComplete)
               leagueItems.push({
                 ...base,
                 id: `empty:${leagueId}:${week}`,
@@ -614,6 +623,9 @@ export default function DecisionInbox({ full = false }) {
 
             for (const starterId of starters.filter((id) => id && id !== "0")) {
               const player = players?.[starterId];
+              // Once this player's NFL game is final, an injury/bye/weather
+              // recommendation can no longer change the current matchup.
+              if (weekComplete || playerGameIsComplete(player, completedTeams)) continue;
               const onBye = (
                 byeData?.by_team?.[String(player?.team || "").toUpperCase()] ||
                 []
@@ -677,7 +689,7 @@ export default function DecisionInbox({ full = false }) {
                 )
                 .sort((a, b) => b.value - a.value);
               const replacement = replacements[0];
-              const game = gameByTeam.get(player?.team);
+              const game = gameByTeam.get(normalizeNflTeam(player?.team));
               const impact = replacement
                 ? metricType === "projection"
                   ? `Protects ${replacement.value.toFixed(1)} expected Week ${week} pts`

@@ -2897,6 +2897,10 @@ const modeledPlayers = base.rows
       name: player.name,
       team,
       position,
+      depth_chart_order:
+        num(player.context?.depth_chart_order || player.depth_chart_order) || null,
+      depth_chart_position:
+        player.context?.depth_chart_position || player.depth_chart_position || position,
       confidence,
       confidence_components: {
         source_projection_confidence: round(num(player.confidence), 1),
@@ -3373,6 +3377,8 @@ if (archive) {
       name: player.name,
       team: player.team,
       position: player.position,
+      depth_chart_order: player.depth_chart_order,
+      depth_chart_position: player.depth_chart_position,
       confidence: player.confidence,
       disagreement: player.disagreement,
       stat_sources: player.stat_prior.sources,

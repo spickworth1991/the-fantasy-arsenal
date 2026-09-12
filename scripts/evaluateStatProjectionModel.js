@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { gunzipSync } from "zlib";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const season =
@@ -40,6 +41,7 @@ const outputFile = path.join(
   String(season),
   "accuracy.json",
 );
+const valueArchiveDirectory = path.join(root, "public", "archive");
 const scoringKeys = ["ppr", "half", "std"];
 const projectionLenses = ["safe_expected", "risky"];
 const positions = ["QB", "RB", "WR", "TE", "K"];
@@ -62,6 +64,34 @@ const normalizeName = (value) =>
     .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
+const archivedProjectionSnapshots = (filePrefix, source) => {
+  if (!fs.existsSync(valueArchiveDirectory)) return [];
+  return fs
+    .readdirSync(valueArchiveDirectory)
+    .filter(
+      (file) =>
+        file.startsWith(`${filePrefix}_`) && file.endsWith(".json.gz"),
+    )
+    .map((file) => {
+      try {
+        const payload = JSON.parse(
+          gunzipSync(
+            fs.readFileSync(path.join(valueArchiveDirectory, file)),
+          ).toString("utf8"),
+        );
+        const generatedAt = Date.parse(
+          payload?.updated || payload?.updated_at || payload?.generated_at,
+        );
+        return Number.isFinite(generatedAt)
+          ? { source, file, generatedAt, payload }
+          : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.generatedAt - left.generatedAt);
+};
 const normalizeTeam = (value) => {
   const team = String(value || "").toUpperCase();
   return (
@@ -282,9 +312,11 @@ function scheduledWeeks(schedule) {
 const actual = readJson(actualFile);
 const schedule = readJson(scheduleFile);
 const scheduleByWeek = scheduledWeeks(schedule);
-const actualFinalWeeks = new Set(
-  Array.isArray(actual?.final_weeks)
-    ? actual.final_weeks.map(Number)
+const actualResultsReadyWeeks = new Set(
+  Array.isArray(actual?.results_ready_weeks)
+    ? actual.results_ready_weeks.map(Number)
+    : Array.isArray(actual?.final_weeks)
+      ? actual.final_weeks.map(Number)
     : Array.from(
         { length: number(actual?.completed_weeks) },
         (_, index) => index + 1,
@@ -324,7 +356,7 @@ if (
   Number.isFinite(actualUpdatedAt)
 ) {
   for (const week of snapshotWeeks) {
-    if (!actualFinalWeeks.has(week)) continue;
+    if (!actualResultsReadyWeeks.has(week)) continue;
     const games = scheduleByWeek.get(week) || [];
     if (!games.length) continue;
     const weekSnapshots = snapshots
@@ -369,6 +401,25 @@ if (
       }
     }
     if (!selectedForecasts.size) continue;
+
+    const derivedDepthOrders = new Map();
+    const depthGroups = new Map();
+    for (const [key, selection] of selectedForecasts) {
+      const forecast = selection.forecast;
+      const groupKey = `${normalizeTeam(forecast.team)}:${String(forecast.position || "").toUpperCase()}`;
+      const group = depthGroups.get(groupKey) || [];
+      group.push({ key, forecast });
+      depthGroups.set(groupKey, group);
+    }
+    for (const group of depthGroups.values()) {
+      group
+        .sort(
+          (left, right) =>
+            number(right.forecast.forecast?.projections?.ppr) -
+            number(left.forecast.forecast?.projections?.ppr),
+        )
+        .forEach((entry, index) => derivedDepthOrders.set(entry.key, index + 1));
+    }
 
     const topHundredByScoring = Object.fromEntries(
       scoringKeys.map((scoring) => {
@@ -421,6 +472,28 @@ if (
           ? "normalized_name_position"
           : "unmatched";
       const observedWeek = observed?.weeks?.[String(week)];
+      const observedStats = observed?.weekly_stats?.[String(week)] || {};
+      const defensivePosition = ["DL", "DE", "DT", "LB", "DB", "CB", "S"].includes(
+        String(forecast.position || "").toUpperCase(),
+      );
+      const playerSnaps = finiteNumber(
+        defensivePosition ? observedStats.def_snp : observedStats.off_snp,
+      );
+      const teamSnaps = finiteNumber(
+        defensivePosition ? observedStats.tm_def_snp : observedStats.tm_off_snp,
+      );
+      const snapPercentage =
+        Number.isFinite(playerSnaps) &&
+        Number.isFinite(teamSnaps) &&
+        teamSnaps > 0
+          ? round((playerSnaps / teamSnaps) * 100, 1)
+          : null;
+      const frozenDepthOrder = finiteNumber(forecast.depth_chart_order);
+      const depthChartOrder =
+        frozenDepthOrder || derivedDepthOrders.get(playerKey) || null;
+      const depthChartSource = frozenDepthOrder
+        ? "frozen_sleeper_depth_chart"
+        : "frozen_projection_role";
       for (const scoring of scoringKeys) {
         const projection = finiteNumber(
           forecast.forecast?.projections?.[scoring],
@@ -439,6 +512,20 @@ if (
           input_bundle_sha256:
             snapshot.input_manifest?.bundle_sha256 || null,
           snapshot_generated_at: snapshot.generated_at,
+          player_id: String(forecast.player_id || ""),
+          name: forecast.name,
+          team: forecast.team,
+          opponent:
+            normalizeTeam(forecast.team) === game.home ? game.away : game.home,
+          kickoff: new Date(game.kickoff).toISOString(),
+          position: forecast.position,
+          depth_chart_order: depthChartOrder,
+          depth_chart_position:
+            forecast.depth_chart_position || forecast.position || null,
+          depth_chart_source: depthChartSource,
+          player_snaps: playerSnaps,
+          team_snaps: teamSnaps,
+          snap_percentage: snapPercentage,
           projection,
           top_100: top100,
           identity_match_method: identityMatchMethod,
@@ -462,9 +549,20 @@ if (
           input_bundle_sha256:
             snapshot.input_manifest?.bundle_sha256 || null,
           snapshot_generated_at: snapshot.generated_at,
+          player_id: String(forecast.player_id || ""),
           name: forecast.name,
           team: forecast.team,
+          opponent:
+            normalizeTeam(forecast.team) === game.home ? game.away : game.home,
+          kickoff: new Date(game.kickoff).toISOString(),
           position: forecast.position,
+          depth_chart_order: depthChartOrder,
+          depth_chart_position:
+            forecast.depth_chart_position || forecast.position || null,
+          depth_chart_source: depthChartSource,
+          player_snaps: playerSnaps,
+          team_snaps: teamSnaps,
+          snap_percentage: snapPercentage,
           projection: round(projection, 3),
           actual: round(result, 3),
           error: round(projection - result, 3),
@@ -650,6 +748,89 @@ const cumulativeByModelVersion = Object.fromEntries(
   }),
 );
 
+const publisherSnapshots = {
+  Sleeper: archivedProjectionSnapshots(
+    `projections_sleeper_${season}`,
+    "Sleeper",
+  ),
+  CBS: archivedProjectionSnapshots(
+    `projections_cbs_weekly_${season}`,
+    "CBS",
+  ),
+};
+const publisherProjection = (snapshot, target) => {
+  const rows = Array.isArray(snapshot?.payload?.rows)
+    ? snapshot.payload.rows
+    : [];
+  const targetId = String(target?.player_id || "").trim();
+  const targetNamePosition = namePositionKeyOf(target);
+  const sourceRow =
+    (targetId &&
+      rows.find((row) => String(row?.player_id || "").trim() === targetId)) ||
+    rows.find((row) => namePositionKeyOf(row) === targetNamePosition);
+  if (!sourceRow) return null;
+  if (snapshot.source === "CBS") {
+    if (Number(snapshot.payload?.week) !== Number(target.week)) return null;
+    return finiteNumber(sourceRow.points_ppr ?? sourceRow.points);
+  }
+  if (snapshot.source === "Sleeper")
+    return finiteNumber(
+      sourceRow.weekly?.[String(target.week)]?.ppr ??
+        sourceRow.weekly?.[String(target.week)]?.points_ppr,
+    );
+  return null;
+};
+const sourceComparisonResults = ledger
+  .filter((row) => row.scoring === "ppr")
+  .flatMap((arsenalRow) => {
+    const kickoff = Date.parse(arsenalRow.kickoff);
+    if (!Number.isFinite(kickoff)) return [];
+    const rows = [
+      {
+        ...arsenalRow,
+        source: "The Fantasy Arsenal",
+        source_snapshot_generated_at: arsenalRow.snapshot_generated_at,
+      },
+    ];
+    for (const [source, snapshotsForSource] of Object.entries(
+      publisherSnapshots,
+    )) {
+      for (const snapshot of snapshotsForSource) {
+        if (snapshot.generatedAt >= kickoff) continue;
+        const projection = publisherProjection(snapshot, arsenalRow);
+        if (!Number.isFinite(projection)) continue;
+        rows.push({
+          ...arsenalRow,
+          source,
+          projection: round(projection, 3),
+          error: round(projection - arsenalRow.actual, 3),
+          source_snapshot_generated_at: new Date(
+            snapshot.generatedAt,
+          ).toISOString(),
+          source_snapshot_file: snapshot.file,
+        });
+        break;
+      }
+    }
+    return rows;
+  });
+const sourceComparison = Object.fromEntries(
+  ["The Fantasy Arsenal", "Sleeper", "CBS"].map((source) => {
+    const sourceRows = sourceComparisonResults.filter(
+      (row) => row.source === source,
+    );
+    return [
+      source,
+      {
+        source,
+        scoring: "ppr",
+        ...metrics(sourceRows),
+        frozen_player_games: sourceRows.length,
+      },
+    ];
+  }),
+);
+
 const scheduleAvailable = scheduleByWeek.size > 0;
 const scoredWeeks = weekResults.filter((result) =>
   scoringKeys.some((scoring) => result.scoring?.[scoring]?.sample > 0),
@@ -670,7 +851,7 @@ const output = {
   schedule_source: schedule?.source || null,
   methodology: {
     snapshot:
-      "Each player uses the latest immutable model snapshot created before that player's own scheduled NFL kickoff. Weekly results expose every build used and the snapshot-time range instead of treating a mixed Thursday-to-Monday slate as one freeze point.",
+      "The weekly freeze is assembled player by player. Each player locks to the latest immutable model snapshot created before their own scheduled NFL kickoff, while later-game and future-week forecasts may continue updating. Weekly results retain every exact build used and the snapshot-time range.",
     finality:
       "A player is eligible only after their scheduled NFL game has been past kickoff by at least six hours and the saved results archive was refreshed after that finality window. Missing schedule data is never graded.",
     sample:
@@ -703,6 +884,10 @@ const output = {
   ),
   outcome_calibration: probabilitySummary(outcomeLedger),
   cumulative_by_model_version: cumulativeByModelVersion,
+  player_results: lensLedger,
+  coverage_results: coverageLedger,
+  source_comparison: sourceComparison,
+  source_comparison_results: sourceComparisonResults,
   weeks: weekResults,
 };
 

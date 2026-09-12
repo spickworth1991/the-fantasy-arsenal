@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/arsenalAccountServer";
 import { classifyLeagueFormat } from "../../../../lib/leagueFormat";
 import { fantasyWeekFromNflState } from "../../../../lib/nflSeasonState";
+import { fetchNflWeekStatus } from "../../../../lib/nflGameLocks";
 
 const CACHE_KEY = "tfa:intelligence-server";
 const CACHE_MS = 5 * 60 * 1000;
@@ -95,6 +96,7 @@ async function buildSnapshot(
   const state = await sleeper("/state/nfl").catch(() => ({}));
   const season = number(state.season) || new Date().getFullYear();
   const week = fantasyWeekFromNflState(state);
+  const nflWeekStatus = await fetchNflWeekStatus(season, week);
   const user = await sleeper(
     `/user/${encodeURIComponent(account.sleeper_username)}`,
   );
@@ -167,7 +169,7 @@ async function buildSnapshot(
             teamName,
             generatedBy: "server",
           };
-          if (empty)
+          if (empty && !nflWeekStatus.allComplete)
             collected.push({
               ...base,
               id: `empty:${leagueId}:${week}`,

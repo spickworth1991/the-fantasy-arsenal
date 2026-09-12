@@ -7,7 +7,10 @@ import AvatarImage from "../../components/AvatarImage";
 import { useSleeper } from "../../context/SleeperContext";
 import GuidedTips from "../../components/GuidedTips";
 import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
-import { classifyLeagueFormat } from "../../lib/leagueFormat";
+import {
+  classifyLeagueFormat,
+  classifyQbFormat,
+} from "../../lib/leagueFormat";
 
 const n = (value) => Number(value || 0);
 const getJson = async (url) => {
@@ -84,6 +87,29 @@ const leagueFormat = (league) => {
   if (Number(league?.settings?.type) === 2) return "dynasty";
   if (Number(league?.settings?.type) === 1) return "keeper";
   return classifyLeagueFormat(league, []).key;
+};
+const isBestBallLeague = (league) =>
+  Number(league?.settings?.best_ball) === 1;
+const isChoppedMatchupSet = (matchups = []) => {
+  const matchupSizes = new Map();
+  matchups.forEach((matchup) => {
+    const id = matchup?.matchup_id;
+    if (id == null || id === "") return;
+    matchupSizes.set(String(id), n(matchupSizes.get(String(id))) + 1);
+  });
+  return matchups.length > 2 && ![...matchupSizes.values()].some((size) => size === 2);
+};
+const leagueTags = (league, chopped = false) => {
+  const format = classifyLeagueFormat(league, []);
+  const qb = classifyQbFormat(league);
+  const tags = [];
+  if (chopped) tags.push("Chopped");
+  if (format.flags.bestBall) tags.push("Best Ball");
+  if (Number(league?.settings?.type) === 2) tags.push("Dynasty");
+  else if (Number(league?.settings?.type) === 1) tags.push("Keeper");
+  else tags.push("Redraft");
+  tags.push(qb.label);
+  return [...new Set(tags)];
 };
 const GAME_CENTER_PROJECTION_SOURCES = [
   ...DEFAULT_SOURCES.filter((source) => source.key === "proj:thefantasyarsenal-model"),
@@ -337,9 +363,175 @@ function MatchupRoster({ title, roster, match, league, players }) {
   return <section><div className="flex items-end justify-between gap-3"><h3 className="truncate text-lg font-black">{title}</h3><span className="text-xs text-white/40">{n(match?.points).toFixed(1)} pts</span></div><div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-emerald-100/55">{bestBall ? "Highest scorers" : "Starters"}</div><div className="mt-2 space-y-1.5">{rows(starterIds)}</div><details className="mt-3 rounded-2xl border border-white/[0.07] bg-black/10 p-3"><summary className="cursor-pointer text-xs font-semibold text-white/55">Bench · {benchIds.length}</summary><div className="mt-2 space-y-1.5">{rows(benchIds)}</div></details></section>;
 }
 
+const freshnessAge = (value) => {
+  if (!value) return "Waiting";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Loaded";
+  const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+  if (seconds < 10) return "Just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+};
+
+function FreshnessRibbon({ items }) {
+  return (
+    <div className="mt-3 grid gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.08] sm:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="relative bg-slate-950/80 px-3 py-3 sm:px-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[9px] font-black uppercase tracking-[.16em] text-white/35">
+              {item.label}
+            </span>
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${item.ready ? "bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,.8)]" : "bg-amber-300/70"}`}
+            />
+          </div>
+          <div className="mt-1 text-xs font-black text-white/75">
+            {item.value}
+          </div>
+          <div className="mt-0.5 truncate text-[9px] text-white/30">
+            {item.detail}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RootingInterest({ buckets }) {
+  const groups = [
+    {
+      key: "for",
+      eyebrow: "Rooting for",
+      title: "Your side",
+      accent: "emerald",
+      empty: "No exclusive positive exposure in this view.",
+    },
+    {
+      key: "against",
+      eyebrow: "Rooting against",
+      title: "Opponent side",
+      accent: "rose",
+      empty: "No exclusive opponent exposure in this view.",
+    },
+    {
+      key: "conflict",
+      eyebrow: "Mixed outcome",
+      title: "Conflict zone",
+      accent: "amber",
+      empty: "No players are helping and hurting you at once.",
+    },
+  ];
+  const tone = {
+    emerald: "border-emerald-300/15 bg-emerald-300/[0.045] text-emerald-100",
+    rose: "border-rose-300/15 bg-rose-300/[0.045] text-rose-100",
+    amber: "border-amber-300/15 bg-amber-300/[0.045] text-amber-100",
+  };
+  return (
+    <Panel className="overflow-hidden border-cyan-300/10">
+      <div className="border-b border-white/[0.08] bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.1),transparent_42%)] p-4 sm:p-5">
+        <div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/45">
+          Portfolio rooting map
+        </div>
+        <h3 className="mt-1 text-xl font-black">Know what every score means</h3>
+        <p className="mt-1 text-xs leading-5 text-white/35">
+          A player&apos;s fantasy score appears once. These lanes show where that
+          performance helps, hurts, or creates competing outcomes across your leagues.
+        </p>
+      </div>
+      <div className="grid gap-px bg-white/[0.06] lg:grid-cols-3">
+        {groups.map((group) => {
+          const rows = buckets[group.key] || [];
+          return (
+            <section key={group.key} className="bg-slate-950/90 p-3 sm:p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <div className="text-[8px] font-black uppercase tracking-[.18em] text-white/28">
+                    {group.eyebrow}
+                  </div>
+                  <h4 className="mt-0.5 font-black">{group.title}</h4>
+                </div>
+                <span className={`rounded-full border px-2 py-1 text-[9px] font-black ${tone[group.accent]}`}>
+                  {rows.length} players
+                </span>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {rows.slice(0, 5).map((row) => (
+                  <div key={row.id} className="flex items-center gap-2 rounded-xl bg-white/[0.025] p-2">
+                    <AvatarImage name={row.name} playerId={row.id} size={30} className="rounded-lg" alt="" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold">{row.name}</div>
+                      <div className="text-[8px] text-white/28">
+                        {row.for.length} for · {row.against.length} against
+                      </div>
+                    </div>
+                    <b className={tone[group.accent].split(" ").at(-1)}>{row.points.toFixed(1)}</b>
+                  </div>
+                ))}
+                {!rows.length ? <p className="py-4 text-[10px] leading-4 text-white/28">{group.empty}</p> : null}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+function ChoppedScoreboard({ teams = [] }) {
+  const ranked = [...teams].sort(
+    (a, b) => n(a.match?.points) - n(b.match?.points),
+  );
+  return (
+    <section>
+      <div className="flex items-end justify-between gap-3">
+        <h3 className="text-lg font-black">League scoreboard</h3>
+        <span className="text-xs text-white/40">Lowest score is eliminated</span>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        {ranked.map((team, index) => (
+          <div
+            key={team.match?.roster_id || team.name}
+            className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
+              index === 0
+                ? "border-rose-300/20 bg-rose-300/[0.07]"
+                : team.isMine
+                  ? "border-cyan-300/20 bg-cyan-300/[0.06]"
+                  : "border-white/[0.06] bg-white/[0.025]"
+            }`}
+          >
+            <span className="w-6 text-center text-[10px] font-black text-white/30">
+              {index + 1}
+            </span>
+            <div className="min-w-0 flex-1 truncate text-xs font-semibold">
+              {team.name}
+              {team.isMine ? " · You" : ""}
+            </div>
+            {index === 0 ? (
+              <span className="rounded-full bg-rose-300/10 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-rose-100">
+                Cut line
+              </span>
+            ) : null}
+            <b className="w-16 text-right text-sm text-cyan-100">
+              {n(team.match?.points).toFixed(1)}
+            </b>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function MatchupDetail({ row, players, onClose }) {
   if (!row) return null;
-  return <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/85 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose();}}><section role="dialog" aria-modal="true" aria-label={`${row.league.name} matchup`} className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5"><div><div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100/55">Week matchup</div><h2 className="mt-1 text-2xl font-black">{row.league.name}</h2><p className="mt-1 text-xs text-white/38">{leagueFormat(row.league)==="bestball"?"Best Ball starters are the highest-scoring players for the week.":"Sleeper starters and bench with current player points."}</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-white/60" aria-label="Close">×</button></header><div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2"><MatchupRoster title="Your roster" roster={row.mine} match={row.myMatch} league={row.league} players={players}/><MatchupRoster title={row.opponentName} roster={row.opponentRoster} match={row.opponentMatch} league={row.league} players={players}/></div><footer className="border-t border-white/10 p-4 text-right"><a href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="inline-block rounded-xl bg-emerald-300/10 px-4 py-3 text-xs font-black text-emerald-100">Open matchup in Sleeper ↗</a></footer></section></div>;
+  return <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/85 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose();}}><section role="dialog" aria-modal="true" aria-label={`${row.league.name} matchup`} className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5"><div><div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100/55">{row.chopped ? "Chopped league · weekly survival" : "Week matchup"}</div><h2 className="mt-1 text-2xl font-black">{row.league.name}</h2><div className="mt-2 flex flex-wrap gap-1.5">{(row.tags || leagueTags(row.league, row.chopped)).map((tag)=><span key={tag} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white/50">{tag}</span>)}</div><p className="mt-2 text-xs text-white/38">{row.chopped?"Your complete roster is paired with the full league scoreboard because the lowest weekly score is eliminated.":row.bestBall?"Every unplayed rostered player counts as remaining; Sleeper determines the final optimal lineup.":"Sleeper starters and bench with current player points."}</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-white/60" aria-label="Close">×</button></header><div className={`grid gap-5 p-4 sm:p-5 ${row.chopped ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,.85fr)]" : "lg:grid-cols-2"}`}><MatchupRoster title="Your roster" roster={row.mine} match={row.myMatch} league={row.league} players={players}/>{row.chopped?<ChoppedScoreboard teams={row.leagueTeams}/>:<MatchupRoster title={row.opponentName} roster={row.opponentRoster} match={row.opponentMatch} league={row.league} players={players}/>}</div><footer className="border-t border-white/10 p-4 text-right"><a href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="inline-block rounded-xl bg-emerald-300/10 px-4 py-3 text-xs font-black text-emerald-100">Open matchup in Sleeper ↗</a></footer></section></div>;
 }
 
 export default function GameCenterClient() {
@@ -351,6 +543,8 @@ export default function GameCenterClient() {
     getProjection,
     getWeeklyProjection,
     projectionSource,
+    projectionIndexes,
+    preloadProjections,
     sourceKey,
     setSourceKey,
   } = useSleeper();
@@ -373,8 +567,12 @@ export default function GameCenterClient() {
   const [selectedMatchupLeagueId, setSelectedMatchupLeagueId] = useState("");
   const [liveMode, setLiveMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [scheduleFreshness, setScheduleFreshness] = useState(null);
+  const [statsFreshness, setStatsFreshness] = useState(null);
+  const [projectionFreshness, setProjectionFreshness] = useState(null);
   const [liveEvents, setLiveEvents] = useState([]);
   const priorPoints = useRef(new Map());
+  const priorStatSnapshots = useRef(new Map());
   const priorWinProbabilities = useRef(new Map());
   const scanRunning = useRef(false);
 
@@ -422,6 +620,16 @@ export default function GameCenterClient() {
           rootPromise,
         ]);
         setGames(schedule.games || []);
+        setScheduleFreshness({
+          updatedAt: new Date(),
+          source: schedule.source || "NFL scoreboard",
+          weatherGames: (schedule.games || []).filter(
+            (game) => !game.venue?.indoor && game.weather,
+          ).length,
+          outdoorGames: (schedule.games || []).filter(
+            (game) => !game.venue?.indoor,
+          ).length,
+        });
         if (schedule.games?.length) {
           if (schedule.seasonType && schedule.seasonType !== seasonType) setSeasonType(schedule.seasonType);
           if (n(schedule.week) > 0 && n(schedule.week) !== week) setWeek(n(schedule.week));
@@ -478,6 +686,29 @@ export default function GameCenterClient() {
                     (user) =>
                       String(user.user_id) === String(opponentRoster?.owner_id),
                   );
+                  const chopped = isChoppedMatchupSet(matchups);
+                  const leagueTeams = matchups.map((matchup) => {
+                    const roster = rosters.find(
+                      (candidate) =>
+                        String(candidate.roster_id) ===
+                        String(matchup.roster_id),
+                    );
+                    const user = users.find(
+                      (candidate) =>
+                        String(candidate.user_id) === String(roster?.owner_id),
+                    );
+                    return {
+                      roster,
+                      match: matchup,
+                      name:
+                        user?.metadata?.team_name ||
+                        user?.display_name ||
+                        user?.username ||
+                        `Roster ${matchup.roster_id}`,
+                      isMine:
+                        String(matchup.roster_id) === String(mine.roster_id),
+                    };
+                  });
                   return {
                     league: { ...league, rosters, users },
                     mine,
@@ -489,6 +720,8 @@ export default function GameCenterClient() {
                       opponentUser?.display_name ||
                       opponentUser?.username ||
                       "Opponent",
+                    chopped,
+                    leagueTeams,
                   };
                 } catch {
                   return null;
@@ -535,6 +768,7 @@ export default function GameCenterClient() {
         .then((stats) => {
           if (!active) return;
           setWeeklyStats(stats || {});
+          setStatsFreshness(new Date());
           window.__TFA_LIVE_PLAYER_STATS__ = {
             season: nflSeason,
             week: statsWeek,
@@ -553,6 +787,27 @@ export default function GameCenterClient() {
       if (timer) window.clearInterval(timer);
     };
   }, [nflStateReady, nflSeason, seasonType, week, liveMode]);
+
+  useEffect(() => {
+    let active = true;
+    getJson("/value-cache-version.json")
+      .then((manifest) => {
+        if (active) setProjectionFreshness(manifest?.version || null);
+      })
+      .catch(() => {
+        if (active) setProjectionFreshness(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sourceKey]);
+
+  useEffect(() => {
+    const requested = String(sourceKey || "").startsWith("proj:")
+      ? projectionSource
+      : "ARSENAL_MODEL";
+    preloadProjections?.(requested);
+  }, [projectionSource, sourceKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (seasonType === "preseason" && week > 4) setWeek(1);
@@ -641,41 +896,88 @@ export default function GameCenterClient() {
       preseasonMode
         ? []
         : visibleRows.map((row) => {
-            const actionAlertsEnabled = leagueFormat(row.league) !== "bestball" || bestBallAlertLeagueIds.includes(String(row.league.league_id));
-            const myIds = (row.myMatch?.starters || [])
+            const bestBall = isBestBallLeague(row.league);
+            const actionAlertsEnabled = !bestBall || bestBallAlertLeagueIds.includes(String(row.league.league_id));
+            const myStarterIds = (row.myMatch?.starters || [])
               .map(String)
               .filter((id) => id && id !== "0");
-            const opponentIds = (row.opponentMatch?.starters || [])
+            const opponentStarterIds = (row.opponentMatch?.starters || [])
               .map(String)
               .filter((id) => id && id !== "0");
+            const myIds = bestBall
+              ? (row.mine?.players || []).map(String).filter((id) => id && id !== "0")
+              : myStarterIds;
+            const opponentIds = bestBall
+              ? (row.opponentRoster?.players || []).map(String).filter((id) => id && id !== "0")
+              : opponentStarterIds;
             const remaining = (ids) =>
               ids.filter(
-                (id) =>
-                  !isFinal(gameByTeam.get(normalizeTeam(players?.[id]?.team))),
+                (id) => {
+                  const game = gameByTeam.get(normalizeTeam(players?.[id]?.team));
+                  return game && !isFinal(game);
+                },
               );
             const myRemaining = remaining(myIds);
             const opponentRemaining = remaining(opponentIds);
-            const myRemainingProjection = myRemaining.reduce(
+            // A Best Ball bench player counts as remaining, but adding every
+            // bench projection would wildly overstate the modeled finish.
+            const myProjectionIds = remaining(myStarterIds);
+            const opponentProjectionIds = remaining(opponentStarterIds);
+            const myRemainingProjection = myProjectionIds.reduce(
               (sum, id) => sum + weeklyProjection(id),
               0,
             );
-            const opponentRemainingProjection = opponentRemaining.reduce(
+            const opponentRemainingProjection = opponentProjectionIds.reduce(
               (sum, id) => sum + weeklyProjection(id),
               0,
             );
             const actual = n(row.myMatch?.points);
-            const opponentActual = n(row.opponentMatch?.points);
             const projected = actual + myRemainingProjection;
-            const opponentProjected =
-              opponentActual + opponentRemainingProjection;
+            let opponentActual = n(row.opponentMatch?.points);
+            let opponentProjected = opponentActual + opponentRemainingProjection;
+            let comparisonName = row.opponentName;
+            let comparisonRemaining = opponentRemaining;
+            if (row.chopped) {
+              const otherTeams = (row.leagueTeams || [])
+                .filter((team) => !team.isMine)
+                .map((team) => {
+                  const ids = (team.match?.starters || [])
+                    .map(String)
+                    .filter((id) => id && id !== "0");
+                  const teamRemaining = remaining(ids);
+                  const teamActual = n(team.match?.points);
+                  return {
+                    ...team,
+                    remaining: teamRemaining,
+                    actual: teamActual,
+                    projected:
+                      teamActual +
+                      teamRemaining.reduce(
+                        (sum, id) => sum + weeklyProjection(id),
+                        0,
+                      ),
+                  };
+                })
+                .sort((a, b) => a.projected - b.projected);
+              const cutLine = otherTeams[0];
+              opponentActual = n(cutLine?.actual);
+              opponentProjected = n(cutLine?.projected);
+              comparisonName = cutLine ? `Cut line · ${cutLine.name}` : "Cut line";
+              comparisonRemaining = cutLine?.remaining || [];
+            }
             const winProbability = Math.round(
               100 / (1 + Math.exp(-(projected - opponentProjected) / 12)),
             );
-            const emptySlots = actionAlertsEnabled ? (row.myMatch?.starters || []).filter(
+            const weekComplete = games.length > 0 && games.every(isFinal);
+            const emptySlots = actionAlertsEnabled && !weekComplete ? (row.myMatch?.starters || []).filter(
               (id) => !id || id === "0",
             ).length : 0;
-            const riskyStarters = actionAlertsEnabled ? myIds.filter((id) => isRisk(players?.[id])) : [];
-            const startedSet = new Set(myIds);
+            const riskyStarters = actionAlertsEnabled ? myStarterIds.filter((id) => {
+              if (!isRisk(players?.[id])) return false;
+              const game = gameByTeam.get(normalizeTeam(players?.[id]?.team));
+              return !game || !isFinal(game);
+            }) : [];
+            const startedSet = new Set(myStarterIds);
             const benchIds = (row.mine?.players || [])
               .map(String)
               .filter((id) => !startedSet.has(id));
@@ -721,7 +1023,8 @@ export default function GameCenterClient() {
               projected,
               opponentProjected,
               myRemaining,
-              opponentRemaining,
+              opponentRemaining: comparisonRemaining,
+              opponentName: comparisonName,
               winProbability,
               margin: Math.abs(projected - opponentProjected),
               status,
@@ -729,6 +1032,8 @@ export default function GameCenterClient() {
               riskyStarters,
               lateSwap,
               actionAlertsEnabled,
+              bestBall,
+              tags: leagueTags(row.league, row.chopped),
             };
           }),
     [preseasonMode, visibleRows, gameByTeam, players, weeklyProjection, bestBallAlertLeagueIds],
@@ -748,10 +1053,12 @@ export default function GameCenterClient() {
         current.points = Math.max(current.points, n(points));
         map.set(id, current);
       };
-      (row.myMatch?.starters || [])
+      (row.bestBall ? row.mine?.players || [] : row.myMatch?.starters || [])
         .map(String)
         .forEach((id) => add(id, "for", row.myMatch?.players_points?.[id]));
-      (row.opponentMatch?.starters || [])
+      (row.bestBall
+        ? row.opponentRoster?.players || []
+        : row.opponentMatch?.starters || [])
         .map(String)
         .forEach((id) =>
           add(id, "against", row.opponentMatch?.players_points?.[id]),
@@ -762,6 +1069,11 @@ export default function GameCenterClient() {
         const player = players?.[row.id];
         return {
           ...row,
+          // Timeline scoring is one NFL-week result per player. Exposure is
+          // retained in for/against arrays, never multiplied into the score.
+          points: Object.prototype.hasOwnProperty.call(weeklyStats || {}, row.id)
+            ? pointsFromStats(weeklyStats, row.id)
+            : row.points,
           player,
           name: playerName(players, row.id),
           game: gameByTeam.get(normalizeTeam(player?.team)),
@@ -776,7 +1088,7 @@ export default function GameCenterClient() {
             String(b.game?.date || "9999"),
           ) || b.impact - a.impact,
       );
-  }, [matchupRows, players, gameByTeam, weeklyProjection]);
+  }, [matchupRows, players, gameByTeam, weeklyProjection, weeklyStats]);
 
   const preseasonPlayerRows = useMemo(() => {
     if (!preseasonMode) return [];
@@ -820,25 +1132,61 @@ export default function GameCenterClient() {
       priorPoints.current = new Map(
         playerRows.map((row) => [row.id, row.points]),
       );
+      priorStatSnapshots.current = new Map(
+        playerRows.map((row) => [row.id, weeklyStats?.[row.id] || {}]),
+      );
       return;
     }
     const nextEvents = [];
     playerRows.forEach((row) => {
       const previous = priorPoints.current.get(row.id);
       const delta = previous == null ? 0 : row.points - previous;
-      if (delta >= 1 && row.impact >= 2) {
+      const stats = weeklyStats?.[row.id] || {};
+      const previousStats = priorStatSnapshots.current.get(row.id) || {};
+      const sumStats = (record, keys) =>
+        keys.reduce((sum, key) => sum + n(record?.[key]), 0);
+      const touchdownDelta =
+        sumStats(stats, ["pass_td", "rush_td", "rec_td", "ret_td", "def_td", "st_td"]) -
+        sumStats(previousStats, ["pass_td", "rush_td", "rec_td", "ret_td", "def_td", "st_td"]);
+      const turnoverDelta =
+        sumStats(stats, ["pass_int", "fum_lost"]) -
+        sumStats(previousStats, ["pass_int", "fum_lost"]);
+      if (Math.abs(delta) >= 0.5 || touchdownDelta > 0 || turnoverDelta > 0) {
+        const leagueNames = [
+          ...new Set(
+            [...row.for, ...row.against].map((entry) => entry.league?.name).filter(Boolean),
+          ),
+        ];
+        const kind =
+          touchdownDelta > 0
+            ? "touchdown"
+            : turnoverDelta > 0
+              ? "turnover"
+              : "points";
         nextEvents.push({
           id: `${Date.now()}-${row.id}`,
-          text: `${row.name} added ${delta.toFixed(1)} points and changed ${row.impact} of your matchups.`,
+          kind,
+          title:
+            kind === "touchdown"
+              ? `${row.name} · ${touchdownDelta > 1 ? `${touchdownDelta} touchdowns` : "touchdown"}`
+              : kind === "turnover"
+                ? `${row.name} · turnover`
+                : `${row.name} · ${delta >= 0 ? "+" : ""}${delta.toFixed(1)} points`,
+          detail: `${row.for.length} helping · ${row.against.length} opposing · ${row.impact} affected league${row.impact === 1 ? "" : "s"}`,
+          leagues: leagueNames.slice(0, 4),
+          points: delta,
         });
       }
     });
     priorPoints.current = new Map(
       playerRows.map((row) => [row.id, row.points]),
     );
+    priorStatSnapshots.current = new Map(
+      playerRows.map((row) => [row.id, weeklyStats?.[row.id] || {}]),
+    );
     if (nextEvents.length)
-      setLiveEvents((current) => [...nextEvents, ...current].slice(0, 8));
-  }, [playerRows, liveMode]);
+      setLiveEvents((current) => [...nextEvents, ...current].slice(0, 16));
+  }, [playerRows, liveMode, weeklyStats]);
 
   useEffect(() => {
     if (!liveMode || !matchupRows.length) {
@@ -863,9 +1211,14 @@ export default function GameCenterClient() {
       if (crossed || becameClose)
         alerts.push({
           id: `matchup-${Date.now()}-${id}`,
-          text: crossed
+          kind: crossed ? "lead" : "close",
+          title: crossed
+            ? `${row.league.name} · ${row.chopped ? "survival line flipped" : "lead changed"}`
+            : `${row.league.name} · one-play game`,
+          detail: crossed
             ? `${row.league.name} flipped to ${row.winProbability >= 50 ? "your side" : row.opponentName} (${row.winProbability}% win probability).`
             : `${row.league.name} moved into one-play territory at ${row.winProbability}% win probability.`,
+          leagues: [row.league.name],
         });
     });
     priorWinProbabilities.current = new Map(
@@ -875,7 +1228,7 @@ export default function GameCenterClient() {
       ]),
     );
     if (alerts.length)
-      setLiveEvents((current) => [...alerts, ...current].slice(0, 12));
+      setLiveEvents((current) => [...alerts, ...current].slice(0, 16));
   }, [liveMode, matchupRows]);
 
   const counts = useMemo(
@@ -933,7 +1286,9 @@ export default function GameCenterClient() {
               ? "D"
               : "F";
   const swingPlayers = [...playerRows]
-    .sort((a, b) => b.impact * b.projection - a.impact * a.projection)
+    .sort(
+      (a, b) => b.projection - a.projection || b.impact - a.impact,
+    )
     .slice(0, 10);
   const gameGroups = [...games].sort((a, b) =>
     String(a.date || "").localeCompare(String(b.date || "")),
@@ -960,6 +1315,56 @@ export default function GameCenterClient() {
   );
   const selectedMatchup = matchupRows.find((row) => String(row.league.league_id) === selectedMatchupLeagueId) || null;
   const bestBallLeagues = rows.filter((row) => leagueFormat(row.league) === "bestball");
+  const rootingBuckets = {
+    for: playerRows.filter((row) => row.for.length && !row.against.length),
+    against: playerRows.filter((row) => row.against.length && !row.for.length),
+    conflict: playerRows.filter((row) => row.conflict),
+  };
+  Object.values(rootingBuckets).forEach((bucket) =>
+    bucket.sort(
+      (a, b) => b.impact - a.impact || b.projection - a.projection,
+    ),
+  );
+  const activeProjectionCode = String(sourceKey || "").startsWith("proj:")
+    ? projectionSource
+    : "ARSENAL_MODEL";
+  const activeProjectionKey = String(sourceKey || "").startsWith("proj:")
+    ? sourceKey
+    : "proj:thefantasyarsenal-model";
+  const activeProjectionLabel =
+    GAME_CENTER_PROJECTION_SOURCES.find(
+      (source) => source.key === activeProjectionKey,
+    )?.label || "The Fantasy Arsenal Projections";
+  const freshnessItems = [
+    {
+      label: "Sleeper scores",
+      ready: Boolean(lastUpdated),
+      value: freshnessAge(lastUpdated),
+      detail: `${matchupRows.length} league${matchupRows.length === 1 ? "" : "s"} scanned`,
+    },
+    {
+      label: "NFL games",
+      ready: Boolean(scheduleFreshness?.updatedAt && scheduleFreshness?.source !== "unavailable"),
+      value: freshnessAge(scheduleFreshness?.updatedAt),
+      detail: `${scheduleFreshness?.source || "Waiting for scoreboard"} · ${games.length} games`,
+    },
+    {
+      label: "Projections",
+      ready: Boolean(projectionIndexes?.[activeProjectionCode]),
+      value: projectionIndexes?.[activeProjectionCode]
+        ? freshnessAge(projectionFreshness)
+        : "Loading",
+      detail: activeProjectionLabel,
+    },
+    {
+      label: "Weather",
+      ready: Boolean(scheduleFreshness?.updatedAt),
+      value: freshnessAge(scheduleFreshness?.updatedAt),
+      detail: scheduleFreshness
+        ? `${scheduleFreshness.weatherGames}/${scheduleFreshness.outdoorGames} outdoor forecasts`
+        : "Waiting for NFL schedule",
+    },
+  ];
 
   const shellClass = liveMode
     ? "fixed inset-0 z-[105] h-[100dvh] overflow-y-auto overscroll-contain bg-slate-950 text-white"
@@ -1057,7 +1462,7 @@ export default function GameCenterClient() {
               <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2"><select value={formatFilter} onChange={(event) => setFormatFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="all">All league types</option><option value="dynasty">Dynasty</option><option value="keeper">Keeper</option><option value="redraft">Redraft</option><option value="bestball">Best Ball</option></select><select value={bestBallFilter} onChange={(event) => setBestBallFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="include">Include Best Ball</option><option value="exclude">Exclude Best Ball</option><option value="only">Only Best Ball</option></select></div>{bestBallLeagues.length ? <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Best Ball action-alert overrides</div><p className="mt-1 text-[10px] leading-4 text-white/30">Lineup and injury alerts are off by default. Enable only custom leagues where managers can make moves.</p><div className="mt-2 grid gap-1.5 sm:grid-cols-2">{bestBallLeagues.map((row)=><label key={row.league.league_id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-2 text-xs text-white/55"><input type="checkbox" checked={bestBallAlertLeagueIds.includes(String(row.league.league_id))} onChange={(event)=>setBestBallAlertLeagueIds((current)=>event.target.checked?[...new Set([...current,String(row.league.league_id)])]:current.filter((id)=>id!==String(row.league.league_id)))} />{row.league.name}</label>)}</div></div> : null}
             </details>
           </div>
-          <div className="mt-2 text-right text-[10px] text-white/30">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}` : "Waiting for first scan"}</div>
+          <FreshnessRibbon items={freshnessItems} />
         </header>
 
         {error ? (
@@ -1289,37 +1694,50 @@ export default function GameCenterClient() {
                     <div className="border-b border-white/10 p-4 sm:p-5"><h2 className="text-xl font-black">Late-swap opportunities</h2><p className="mt-1 text-xs text-white/35">Healthy same-position bench options that lock no earlier than the risky starter.</p></div>
                     <div className="grid gap-2 p-3">{lateSwaps.slice(0,12).map(({starterId,replacement,row})=><a key={`${row.league.league_id}-${starterId}`} href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"><div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">{row.league.name}</div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm"><b className="break-words text-amber-100">{playerName(players,starterId)}</b><span className="text-white/20">→</span><b className="break-words text-emerald-100">{playerName(players,replacement)}</b></div><div className="mt-1 break-words text-[10px] text-white/32">{injury(players?.[starterId])} contingency · {weeklyProjection(replacement).toFixed(1)} projected</div></a>)}{!lateSwaps.length?<div className="p-3 text-sm text-white/35">No direct late-swap chain is currently required.</div>:null}</div>
                   </Panel>
-                  {liveMode ? (
-                    <Panel className="overflow-hidden border-emerald-300/15">
-                      <div className="border-b border-white/10 p-4">
-                        <h2 className="font-black text-emerald-100">
-                          Live impact feed
-                        </h2>
-                        <p className="mt-1 text-[10px] text-white/32">
-                          New scoring events affecting multiple matchups.
-                        </p>
+                  <Panel className="overflow-hidden border-emerald-300/15 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.11),transparent_38%),linear-gradient(to_bottom,rgba(15,23,42,.96),rgba(2,6,23,.92))]">
+                    <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/45">Sunday intelligence wire</div>
+                        <h2 className="mt-1 text-xl font-black text-emerald-100">Live scoring impact</h2>
+                        <p className="mt-1 text-[10px] leading-4 text-white/32">Touchdowns, turnovers, lead changes, and every league touched by the play.</p>
                       </div>
-                      <div className="divide-y divide-white/[0.06]">
-                        {liveEvents.map((event) => (
-                          <div
-                            key={event.id}
-                            className="p-3 text-xs leading-5 text-white/60"
-                          >
-                            {event.text}
+                      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[8px] font-black uppercase tracking-wider ${liveMode ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100" : "border-white/10 bg-white/[0.04] text-white/35"}`}>
+                        {liveMode ? `Monitoring · ${liveRefreshSeconds}s` : "Live Mode off"}
+                      </span>
+                    </div>
+                    <div className="max-h-[430px] divide-y divide-white/[0.06] overflow-y-auto">
+                      {liveEvents.map((event) => {
+                        const eventTone = event.kind === "touchdown" ? "bg-emerald-300/10 text-emerald-100" : event.kind === "turnover" ? "bg-rose-300/10 text-rose-100" : event.kind === "lead" ? "bg-cyan-300/10 text-cyan-100" : "bg-amber-300/10 text-amber-100";
+                        return (
+                          <div key={event.id} className="p-3.5">
+                            <div className="flex items-start gap-3">
+                              <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black ${eventTone}`}>
+                                {event.kind === "touchdown" ? "TD" : event.kind === "turnover" ? "↺" : event.kind === "lead" ? "↕" : "+"}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-black text-white/80">{event.title}</div>
+                                <div className="mt-0.5 text-[10px] leading-4 text-white/38">{event.detail}</div>
+                                {event.leagues?.length ? <div className="mt-2 flex flex-wrap gap-1">{event.leagues.map((league) => <span key={league} className="max-w-full truncate rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[8px] text-white/38">{league}</span>)}</div> : null}
+                              </div>
+                              {Number.isFinite(event.points) ? <b className={event.points >= 0 ? "text-emerald-100" : "text-rose-100"}>{event.points >= 0 ? "+" : ""}{event.points.toFixed(1)}</b> : null}
+                            </div>
                           </div>
-                        ))}
-                        {!liveEvents.length ? (
-                          <div className="p-4 text-xs text-white/32">
-                            Watching for portfolio-changing plays…
-                          </div>
-                        ) : null}
-                      </div>
-                    </Panel>
-                  ) : null}
+                        );
+                      })}
+                      {!liveEvents.length ? (
+                        <div className="p-5 text-center">
+                          <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-emerald-300/[0.07] text-emerald-100/60">⌁</div>
+                          <div className="mt-3 text-xs font-bold text-white/48">{liveMode ? "Listening for the next portfolio-changing play" : "Enter Sunday Live Mode to begin the event wire"}</div>
+                          <div className="mt-1 text-[9px] text-white/25">Events appear here without inflating player scores by exposure.</div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </Panel>
                   <Panel className="min-w-0 p-4">
                     <h2 className="font-black">Swing players</h2>
                     <p className="mt-1 text-[10px] text-white/32">
-                      Projection × number of affected matchups.
+                      One projected fantasy score per player. League exposure
+                      is shown separately and never multiplies the score.
                     </p>
                     <div className="mt-3 space-y-2">
                       {swingPlayers.map((row) => (
@@ -1345,10 +1763,10 @@ export default function GameCenterClient() {
                           </div>
                           <div className="text-right">
                             <b className="text-amber-100">
-                              {(row.impact * row.projection).toFixed(1)}
+                              {row.projection.toFixed(1)}
                             </b>
                             <small className="block text-[8px] text-white/25">
-                              impact
+                              projected pts
                             </small>
                           </div>
                         </div>
@@ -1383,6 +1801,9 @@ export default function GameCenterClient() {
                     />
                   </div>
                 </Panel>
+                {!preseasonMode ? (
+                  <RootingInterest buckets={rootingBuckets} />
+                ) : null}
                 {gameGroups.map((game) => {
                   const involved = filteredPlayers.filter(
                     (row) => row.game?.id === game.id,
@@ -1580,13 +2001,25 @@ export default function GameCenterClient() {
                       className={`rounded-[24px] border p-4 text-left transition hover:-translate-y-0.5 ${row.margin <= 10 && row.status !== "completed" ? "border-amber-300/20 bg-amber-300/[0.035]" : "border-white/10 bg-slate-900/80"}`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="truncate font-black">
-                          {row.league.name}
+                        <div className="min-w-0">
+                          <div className="truncate font-black">
+                            {row.league.name}
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {row.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full border border-white/[0.07] bg-white/[0.035] px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-white/40"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                         <span
                           className={`rounded-full px-2 py-1 text-[10px] ${row.winProbability >= 60 ? "bg-emerald-300/10 text-emerald-100" : row.winProbability <= 40 ? "bg-rose-300/10 text-rose-100" : "bg-amber-300/10 text-amber-100"}`}
                         >
-                          {row.winProbability}% win
+                          {row.winProbability}% {row.chopped ? "survive" : "win"}
                         </span>
                       </div>
                       <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
@@ -1596,7 +2029,9 @@ export default function GameCenterClient() {
                             You · {row.projected.toFixed(1)} modeled
                           </small>
                         </div>
-                        <span className="text-xs text-white/20">VS</span>
+                        <span className="text-xs text-white/20">
+                          {row.chopped ? "CUT" : "VS"}
+                        </span>
                         <div>
                           <b className="text-2xl">
                             {row.opponentActual.toFixed(1)}
@@ -1612,7 +2047,9 @@ export default function GameCenterClient() {
                           {row.myRemaining.length} vs{" "}
                           {row.opponentRemaining.length} remaining
                         </span>
-                        <span>View rosters →</span>
+                        <span>
+                          {row.chopped ? "View league scores" : "View rosters"} →
+                        </span>
                       </div>
                       {row.emptySlots || row.riskyStarters.length ? (
                         <div className="mt-3 rounded-xl bg-rose-300/[0.06] px-3 py-2 text-[10px] text-rose-100">

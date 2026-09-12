@@ -9,6 +9,7 @@ import {
 } from "../../../../lib/arsenalAccountServer";
 import { classifyLeagueFormat } from "../../../../lib/leagueFormat";
 import { fantasyWeekFromNflState } from "../../../../lib/nflSeasonState";
+import { fetchNflWeekStatus } from "../../../../lib/nflGameLocks";
 
 const json = async (url) => {
   const r = await fetch(url);
@@ -372,6 +373,7 @@ async function buildDigest(
   week,
   { includeBestBall = false, leagueIds = [] } = {},
 ) {
+  const nflWeekStatus = await fetchNflWeekStatus(season, week);
   const user = await json(
     `https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`,
   );
@@ -442,7 +444,7 @@ async function buildDigest(
             const lineupEmpty = (matchup.starters || []).filter(
               (id) => !id || String(id) === "0",
             ).length;
-            if (lineupEmpty)
+            if (lineupEmpty && !nflWeekStatus.allComplete)
               commissionerSignals.push({
                 leagueId: String(league.league_id),
                 leagueName: league.name,
@@ -476,8 +478,10 @@ async function buildDigest(
           name: league.name,
           points,
           opp: oppPoints,
-          started: points > 0 || oppPoints > 0,
-          empty: (my.starters || []).filter((id) => !id || id === "0").length,
+          started: nflWeekStatus.allComplete || points > 0 || oppPoints > 0,
+          empty: nflWeekStatus.allComplete
+            ? 0
+            : (my.starters || []).filter((id) => !id || id === "0").length,
           playoffWeekStart: num(league.settings?.playoff_week_start) || 15,
           commissionerSignals,
         };
@@ -497,6 +501,7 @@ async function buildDigest(
     points,
     empty,
     close,
+    weekComplete: nflWeekStatus.allComplete,
     commissionerSignals: rows
       .flatMap((row) => row.commissionerSignals || [])
       .sort((a, b) => b.priority - a.priority),

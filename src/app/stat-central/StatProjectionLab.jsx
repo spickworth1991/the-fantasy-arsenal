@@ -15,6 +15,7 @@ const normalize = (value) =>
     .replace(/[^a-z0-9 ]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+const ACCURACY_SOURCES = ["The Fantasy Arsenal", "Sleeper", "CBS"];
 
 const POSITION_STATS = {
   QB: [
@@ -97,6 +98,346 @@ function Kpi({ label, value, detail, tone = "cyan" }) {
       </div>
       <div className="mt-1 text-[10px] leading-4 text-white/35">{detail}</div>
     </div>
+  );
+}
+
+function AccuracyResultsTable({
+  results = [],
+  modelBuildId,
+  scoring,
+  lens,
+  cohort,
+  week,
+}) {
+  const [sortKey, setSortKey] = useState("projection");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const rows = useMemo(() => {
+    const filtered = results
+      .filter(
+        (row) =>
+          (!modelBuildId || row.model_build_id === modelBuildId) &&
+          row.scoring === scoring &&
+          row.lens === lens,
+      )
+      .filter((row) => week === "all" || number(row.week) === number(week))
+      .filter((row) => {
+        if (lens !== "safe_expected" || cohort === "all_matched") return true;
+        if (cohort === "projected_5_plus") return number(row.projection) >= 5;
+        if (cohort === "projected_10_plus") return number(row.projection) >= 10;
+        if (cohort === "top_100_projected") return Boolean(row.top_100);
+        return true;
+      });
+    return filtered.sort((left, right) => {
+      const leftValue =
+        sortKey === "name"
+          ? String(left.name || "")
+          : sortKey === "absolute_error"
+            ? Math.abs(number(left.error))
+            : number(left[sortKey]);
+      const rightValue =
+        sortKey === "name"
+          ? String(right.name || "")
+          : sortKey === "absolute_error"
+            ? Math.abs(number(right.error))
+            : number(right[sortKey]);
+      const comparison =
+        typeof leftValue === "string"
+          ? leftValue.localeCompare(rightValue)
+          : leftValue - rightValue;
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [cohort, lens, modelBuildId, results, scoring, sortDirection, sortKey, week]);
+
+  const changeSort = (key) => {
+    if (sortKey === key) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection(key === "name" || key === "week" ? "asc" : "desc");
+  };
+  const heading = (label, key, align = "left") => (
+    <th
+      className={`px-3 py-2.5 ${align === "right" ? "text-right" : "text-left"}`}
+      scope="col"
+    >
+      <button
+        type="button"
+        onClick={() => changeSort(key)}
+        className="inline-flex items-center gap-1 font-black uppercase tracking-wider text-white/40 hover:text-white/75"
+      >
+        {label}
+        <span className="text-[8px] text-cyan-100/55">
+          {sortKey === key ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+
+  if (!rows.length) return null;
+  return (
+    <details className="mt-4 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/15">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-cyan-100">
+        <span>Inspect projection vs. actual rankings</span>
+        <span className="rounded-full bg-cyan-300/[0.08] px-2.5 py-1 text-[9px] text-cyan-100/70">
+          {rows.length} matched player-games
+        </span>
+      </summary>
+      <div className="border-t border-white/[0.06]">
+        <p className="px-4 py-3 text-[10px] leading-4 text-white/35">
+          Difference is projection minus actual: positive means the model was
+          high, negative means it was low. Select any heading to sort.
+        </p>
+        <div className="max-h-[480px] overflow-auto">
+          <table className="w-full min-w-[650px] text-xs md:min-w-[820px]">
+            <thead className="sticky top-0 z-10 bg-slate-950/95 text-[9px] backdrop-blur">
+              <tr>
+                {heading("Player", "name")}
+                <th className="px-3 py-2.5 text-left font-black uppercase tracking-wider text-white/40">
+                  Matchup
+                </th>
+                <th className="hidden px-3 py-2.5 text-left font-black uppercase tracking-wider text-white/40 md:table-cell">
+                  Frozen build
+                </th>
+                {heading("Snaps", "snap_percentage", "right")}
+                {heading("Projected", "projection", "right")}
+                {heading("Actual", "actual", "right")}
+                {heading("Miss", "absolute_error", "right")}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => {
+                const error = number(row.error);
+                const absoluteError = Math.abs(error);
+                return (
+                  <tr
+                    key={`${row.snapshot_id || row.snapshot_generated_at}-${row.week}-${row.name}-${index}`}
+                    className={`border-t border-white/[0.05] hover:bg-cyan-300/[0.035] ${row.snap_percentage != null && number(row.snap_percentage) < 25 ? "bg-rose-500/[0.13] shadow-[inset_4px_0_0_rgba(251,113,133,.9)]" : "odd:bg-white/[0.015]"}`}
+                  >
+                    <td className="px-3 py-2.5">
+                      <div className="font-semibold text-white/80">{row.name}</div>
+                      <div
+                        className="mt-0.5 text-[9px] text-white/30"
+                        title={
+                          row.depth_chart_source === "frozen_sleeper_depth_chart"
+                            ? "Sleeper depth order frozen with this projection"
+                            : "Historical fallback inferred from the frozen team-position projection order"
+                        }
+                      >
+                        {row.depth_chart_position || row.position}
+                        {row.depth_chart_order ? `${row.depth_chart_order}` : ""}
+                        {row.position === "QB" && number(row.depth_chart_order) > 1
+                          ? " · Backup"
+                          : ""}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-white/45">
+                      {row.team} vs {row.opponent || "—"}
+                    </td>
+                    <td
+                      className="hidden px-3 py-2.5 text-[9px] text-white/35 md:table-cell"
+                      title={`${row.model_build_id || "Unknown build"}${row.snapshot_generated_at ? ` · frozen ${new Date(row.snapshot_generated_at).toLocaleString()}` : ""}`}
+                    >
+                      <div className="font-semibold text-white/50">
+                        {String(row.model_build_id || "unknown").split(".").at(-1)}
+                      </div>
+                      <div className="mt-0.5">
+                        {row.snapshot_generated_at
+                          ? new Date(row.snapshot_generated_at).toLocaleDateString()
+                          : "No timestamp"}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      {row.snap_percentage == null ? (
+                        <span className="text-white/25">—</span>
+                      ) : (
+                        <div>
+                          <div className={`inline-flex rounded-md border px-2 py-1 font-black ${number(row.snap_percentage) < 25 ? "border-rose-300/60 bg-rose-500/30 text-rose-50 shadow-[0_0_14px_rgba(244,63,94,.25)]" : number(row.snap_percentage) < 60 ? "border-amber-300/30 bg-amber-400/10 text-amber-100" : "border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-100"}`}>
+                            {number(row.snap_percentage).toFixed(0)}%
+                          </div>
+                          <div className="mt-0.5 text-[9px] text-white/30">
+                            {number(row.player_snaps)}/{number(row.team_snaps)}
+                          </div>
+                          {number(row.snap_percentage) < 25 ? (
+                            <div className="mt-0.5 text-[8px] font-black uppercase tracking-wide text-rose-100">
+                              Very limited
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-cyan-100">
+                      {number(row.projection).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-white/75">
+                      {number(row.actual).toFixed(2)}
+                    </td>
+                    <td className={`px-3 py-2.5 text-right font-black ${absoluteError <= 2 ? "text-emerald-100" : absoluteError <= 5 ? "text-amber-100" : "text-rose-100"}`}>
+                      {error > 0 ? "+" : ""}{error.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function ProjectionSourceComparison({
+  results = [],
+  modelBuildId,
+  cohort,
+  week,
+}) {
+  const sources = ACCURACY_SOURCES;
+  const [sortSource, setSortSource] = useState("The Fantasy Arsenal");
+  const rows = useMemo(() => {
+    const grouped = new Map();
+    results
+      .filter((row) => !modelBuildId || row.model_build_id === modelBuildId)
+      .filter((row) => week === "all" || number(row.week) === number(week))
+      .forEach((row) => {
+        const key = `${row.week}:${row.player_id || `${normalize(row.name)}:${row.position}`}`;
+        const current = grouped.get(key) || {
+          key,
+          name: row.name,
+          position: row.position,
+          team: row.team,
+          opponent: row.opponent,
+          week: row.week,
+          actual: row.actual,
+          sources: {},
+        };
+        current.sources[row.source] = row;
+        grouped.set(key, current);
+      });
+    return [...grouped.values()]
+      .filter((row) => {
+        const arsenal = row.sources["The Fantasy Arsenal"];
+        if (!arsenal) return false;
+        if (cohort === "projected_5_plus") return number(arsenal.projection) >= 5;
+        if (cohort === "projected_10_plus") return number(arsenal.projection) >= 10;
+        if (cohort === "top_100_projected") return Boolean(arsenal.top_100);
+        return true;
+      })
+      .sort(
+        (left, right) =>
+          Math.abs(number(right.sources[sortSource]?.error)) -
+          Math.abs(number(left.sources[sortSource]?.error)),
+      );
+  }, [cohort, modelBuildId, results, sortSource, week]);
+  const scopedComparison = useMemo(
+    () =>
+      Object.fromEntries(
+        sources.map((source) => {
+          const sourceRows = rows
+            .map((row) => row.sources[source])
+            .filter(Boolean);
+          const sample = sourceRows.length;
+          const bias = sample
+            ? sourceRows.reduce((sum, row) => sum + number(row.error), 0) /
+              sample
+            : null;
+          const mae = sample
+            ? sourceRows.reduce(
+                (sum, row) => sum + Math.abs(number(row.error)),
+                0,
+              ) / sample
+            : null;
+          const rmse = sample
+            ? Math.sqrt(
+                sourceRows.reduce(
+                  (sum, row) => sum + number(row.error) ** 2,
+                  0,
+                ) / sample,
+              )
+            : null;
+          return [source, { sample, bias, mae, rmse }];
+        }),
+      ),
+    [rows],
+  );
+
+  if (!results.length) return null;
+  return (
+    <details className="mt-4 overflow-hidden rounded-2xl border border-violet-300/10 bg-violet-300/[0.025]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-violet-100">
+        <span>Compare frozen projection sources</span>
+        <span className="rounded-full bg-violet-300/[0.08] px-2.5 py-1 text-[9px] text-violet-100/70">
+          PPR · pre-kickoff only
+        </span>
+      </summary>
+      <div className="border-t border-white/[0.06] p-4">
+        <p className="text-[10px] leading-5 text-white/38">
+          Every source is evaluated from its latest saved weekly projection
+          before that player&apos;s kickoff. Select a source card to rank the table
+          by its largest absolute misses.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {sources.map((source) => {
+            const result = scopedComparison[source] || {};
+            const sample = number(result.sample);
+            const active = sortSource === source;
+            return (
+              <button
+                type="button"
+                key={source}
+                onClick={() => setSortSource(source)}
+                className={`rounded-2xl border p-3 text-left transition ${active ? "border-violet-300/35 bg-violet-300/[0.09]" : "border-white/[0.07] bg-black/15 hover:border-white/15"}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <b className="text-xs text-white/80">{source}</b>
+                  <span className="text-[9px] text-white/30">{sample} games</span>
+                </div>
+                {sample ? (
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    <div><b className="block text-base text-emerald-100">{number(result.mae).toFixed(2)}</b><span className="text-[8px] text-white/28">MAE</span></div>
+                    <div><b className="block text-base text-amber-100">{number(result.rmse).toFixed(2)}</b><span className="text-[8px] text-white/28">RMSE</span></div>
+                    <div><b className="block text-base text-violet-100">{number(result.bias).toFixed(2)}</b><span className="text-[8px] text-white/28">Bias</span></div>
+                  </div>
+                ) : (
+                  <div className="mt-3 text-[9px] leading-4 text-white/35">
+                    Begins after the first weekly projection saved before kickoff.
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 max-h-[460px] overflow-auto rounded-xl border border-white/[0.06]">
+          <table className="w-full min-w-[720px] text-xs">
+            <thead className="sticky top-0 z-10 bg-slate-950/95 text-[9px] uppercase tracking-wider text-white/40 backdrop-blur">
+              <tr>
+                <th className="px-3 py-2.5 text-left">Player</th>
+                <th className="px-3 py-2.5 text-right">Actual</th>
+                {sources.map((source) => (
+                  <th key={source} className="px-3 py-2.5 text-right">{source === "The Fantasy Arsenal" ? "Arsenal" : source}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.key} className="border-t border-white/[0.05] odd:bg-white/[0.015]">
+                  <td className="px-3 py-2.5"><b className="text-white/75">{row.name}</b><div className="mt-0.5 text-[9px] text-white/28">{row.position} · {row.team} vs {row.opponent}</div></td>
+                  <td className="px-3 py-2.5 text-right font-black text-white/80">{number(row.actual).toFixed(2)}</td>
+                  {sources.map((source) => {
+                    const result = row.sources[source];
+                    return (
+                      <td key={source} className="px-3 py-2.5 text-right">
+                        {result ? <><b className="block text-cyan-100">{number(result.projection).toFixed(2)}</b><span className={`text-[9px] ${Math.abs(number(result.error)) > 5 ? "text-rose-100" : "text-white/30"}`}>{number(result.error) > 0 ? "+" : ""}{number(result.error).toFixed(2)}</span></> : <span className="text-white/20">—</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -228,7 +569,9 @@ export default function StatProjectionLab({
   const [playerSearchText, setPlayerSearchText] = useState("");
   const [visibleCount, setVisibleCount] = useState(40);
   const [accuracy, setAccuracy] = useState(null);
-  const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
+  const [accuracyCohort, setAccuracyCohort] = useState("all_matched");
+  const [accuracyBuildScope, setAccuracyBuildScope] = useState("rolling");
+  const [accuracyWeek, setAccuracyWeek] = useState("all");
   const [view, setView] = useState(modelOnly ? "model" : "player");
   const choosePlayer = (name) => {
     setSelectedName(name);
@@ -403,21 +746,36 @@ export default function StatProjectionLab({
           selected.position,
         )
       : null;
+  const selectedAccuracyBuild =
+    accuracyBuildScope === "rolling"
+      ? null
+      : accuracyBuildScope || model?.model_build_id || model?.model_version;
+  const exactBuildAccuracy = selectedAccuracyBuild
+    ? accuracy?.cumulative_by_model_version?.[selectedAccuracyBuild]
+    : null;
   const modelAccuracy =
     scoring === "league"
       ? null
       : lens === "safe_expected"
-      ? accuracy?.cumulative_by_model_version?.[
-          model?.model_build_id || model?.model_version
-        ]?.scoring?.[scoring] || null
-      : accuracy?.cumulative_by_model_version?.[
-          model?.model_build_id || model?.model_version
-        ]?.projection_lenses?.[scoring]?.[lens] || null;
+        ? selectedAccuracyBuild
+          ? exactBuildAccuracy?.scoring?.[scoring] || null
+          : accuracy?.cumulative?.[scoring] || null
+        : selectedAccuracyBuild
+          ? exactBuildAccuracy?.projection_lenses?.[scoring]?.[lens] || null
+          : accuracy?.projection_lens_accuracy?.[scoring]?.[lens] || null;
   const accuracyMetrics =
     lens !== "safe_expected"
       ? modelAccuracy
       : modelAccuracy?.cohorts?.[accuracyCohort] ||
         (accuracyCohort === "all_matched" ? modelAccuracy : null);
+  const latestAccuracyWeek = (accuracy?.weeks || []).find(
+    (row) => number(row.week) === number(accuracy?.last_scored_week),
+  );
+  const accuracyStatusLabel = accuracyMetrics?.sample
+    ? latestAccuracyWeek?.schedule?.week_complete
+      ? `Scored through Week ${accuracy.last_scored_week}`
+      : `Week ${accuracy.last_scored_week} live · ${number(latestAccuracyWeek?.schedule?.games_in_saved_results_window)} of ${number(latestAccuracyWeek?.schedule?.games)} games graded`
+    : "Awaiting this model's results";
 
   return (
     <div className="min-w-0 max-w-full space-y-4 overflow-x-clip">
@@ -1363,24 +1721,60 @@ export default function StatProjectionLab({
             <div>
               <b className="text-sm text-emerald-100">Accuracy contract</b>
               <div className="mt-1 text-[9px] text-white/30">
-                Exact build {model.model_build_id || model.model_version}
+                {selectedAccuracyBuild
+                  ? `Exact build ${selectedAccuracyBuild}`
+                  : `Rolling weekly freeze · ${(Object.keys(accuracy?.cumulative_by_model_version || {}).length || 0).toLocaleString()} audited builds`}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={accuracyBuildScope}
+                onChange={(event) => setAccuracyBuildScope(event.target.value)}
+                className="max-w-[240px] rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
+                aria-label="Accuracy build scope"
+              >
+                <option value="rolling">Rolling weekly freeze</option>
+                {Object.keys(accuracy?.cumulative_by_model_version || {}).map(
+                  (buildId) => (
+                    <option key={buildId} value={buildId}>
+                      Exact · {buildId}
+                    </option>
+                  ),
+                )}
+              </select>
+              <select
+                value={accuracyWeek}
+                onChange={(event) => setAccuracyWeek(event.target.value)}
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
+                aria-label="Accuracy table week"
+              >
+                <option value="all">All graded weeks</option>
+                {(accuracy?.weeks || []).map((row) => (
+                  <option key={row.week} value={row.week}>
+                    Week {row.week}
+                  </option>
+                ))}
+              </select>
               <select
                 value={accuracyCohort}
                 onChange={(event) => setAccuracyCohort(event.target.value)}
                 className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
               >
-                <option value="projected_5_plus">5+ point projections</option>
-                <option value="projected_10_plus">10+ point projections</option>
-                <option value="top_100_projected">Weekly top 100</option>
-                <option value="all_matched">All active matches</option>
+                <option value="projected_5_plus">
+                  5+ point projections · {number(modelAccuracy?.cohorts?.projected_5_plus?.sample)} matches
+                </option>
+                <option value="projected_10_plus">
+                  10+ point projections · {number(modelAccuracy?.cohorts?.projected_10_plus?.sample)} matches
+                </option>
+                <option value="top_100_projected">
+                  Weekly top 100 · {number(modelAccuracy?.cohorts?.top_100_projected?.sample)} matches
+                </option>
+                <option value="all_matched">
+                  All active matches · {number(modelAccuracy?.sample)} matches
+                </option>
               </select>
               <span className="rounded-full bg-black/20 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-white/45">
-                {accuracyMetrics?.sample
-                  ? `Scored through Week ${accuracy.last_scored_week}`
-                  : "Awaiting this model's results"}
+                {accuracyStatusLabel}
               </span>
             </div>
           </div>
@@ -1432,15 +1826,38 @@ export default function StatProjectionLab({
                 known DNP/inactive outcomes, so absences cannot silently improve
                 the headline score.
               </p>
+              <p className="mt-2 text-[10px] leading-5 text-white/35">
+                This accuracy population currently covers QB, RB, WR, TE, and
+                K—not team defense or IDP. Snap share is shown as participation
+                evidence: a low rate can explain an injury-shortened game, but
+                can also reflect rotation, an ejection, or another early exit,
+                so it is not labeled as an injury without a reliable event feed.
+              </p>
+              <AccuracyResultsTable
+                results={accuracy?.player_results || []}
+                modelBuildId={selectedAccuracyBuild}
+                scoring={scoring}
+                lens={lens}
+                cohort={accuracyCohort}
+                week={accuracyWeek}
+              />
+              {scoring === "ppr" ? (
+                <ProjectionSourceComparison
+                  results={accuracy?.source_comparison_results || []}
+                  modelBuildId={selectedAccuracyBuild}
+                  cohort={accuracyCohort}
+                  week={accuracyWeek}
+                />
+              ) : null}
             </>
           ) : (
             <p className="mt-2 text-[10px] leading-5 text-white/38">
-              No {model.season} game is graded before it is played. The daily
-              updater freezes a compact pre-kickoff snapshot, records actual
-              active-game results afterward, and then calculates MAE, RMSE,
-              bias, rank correlation, and position-level accuracy. Model
-              versions remain separate, so an update can never rewrite its own
-              history.
+              No {model.season} game is graded before it is played. The weekly
+              freeze grows player by player: each forecast locks before that
+              player&apos;s kickoff, while later games and future weeks may keep
+              updating. Actual active-game results then calculate MAE, RMSE,
+              bias, rank correlation, and position-level accuracy. Every row
+              retains its exact build, so an update can never rewrite history.
             </p>
           )}
         </div>

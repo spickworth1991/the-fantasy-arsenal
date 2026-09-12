@@ -16,6 +16,10 @@ import { useSleeper } from "../../context/SleeperContext";
 import { getTeamByeWeek } from "../../utils/nflByeWeeks";
 import { classifyLeagueFormat } from "../../lib/leagueFormat";
 import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
+import {
+  completedTeamsFromGames,
+  normalizeNflTeam,
+} from "../../lib/nflGameLocks";
 
 // League avatars (Sleeper)
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
@@ -411,6 +415,8 @@ export default function LeagueHubContent() {
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [dismissedActions, setDismissedActions] = useState(() => new Set());
   const [nflState, setNflState] = useState({ season: "", week: 1 });
+  const [completedTeams, setCompletedTeams] = useState(() => new Set());
+  const [currentWeekComplete, setCurrentWeekComplete] = useState(false);
 
   const [scanLeagues, setScanLeagues] = useState([]); // [{id,name,avatar,isBestBall,status,roster_positions}]
   const [leagueCount, setLeagueCount] = useState(0);
@@ -461,6 +467,23 @@ export default function LeagueHubContent() {
     }).catch(() => {});
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    if (!nflState.season || !nflState.week) return;
+    let alive = true;
+    fetch(`/api/nfl-scoreboard?season=${nflState.season}&week=${nflState.week}&seasonType=regular`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (!alive || !payload) return;
+        const games = payload.games || [];
+        setCompletedTeams(completedTeamsFromGames(games));
+        setCurrentWeekComplete(
+          games.length > 0 && games.every((game) => game?.statusState === "post" || String(game?.status || "").toLowerCase().startsWith("final")),
+        );
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [nflState.season, nflState.week]);
 
   useEffect(() => {
     let alive = true;
@@ -1417,7 +1440,7 @@ export default function LeagueHubContent() {
 
     managerIssues.slice(0, 12).forEach((entry) => {
       const relevantIssues = String(nflState.season) === String(yrStr)
-        ? entry.issues.filter((issue) => issue.week >= nflState.week)
+        ? entry.issues.filter((issue) => issue.week >= nflState.week && !(currentWeekComplete && issue.week === nflState.week))
         : entry.issues;
       const worst = [...relevantIssues].sort((a, b) => b.totalMissing - a.totalMissing || a.week - b.week)[0];
       if (!worst) return;
@@ -1435,6 +1458,10 @@ export default function LeagueHubContent() {
     });
 
     injuryRows.slice(0, 8).forEach((row) => {
+      if (
+        String(nflState.season) === String(yrStr) &&
+        completedTeams.has(normalizeNflTeam(row.team))
+      ) return;
       items.push({
         id: `injury-${row.id}`,
         category: "injury",
@@ -1475,7 +1502,7 @@ export default function LeagueHubContent() {
     });
 
     return items.sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title));
-  }, [bestFreeAgents, injuryRows, managerIssues, nflState, transactions, yrStr]);
+  }, [bestFreeAgents, injuryRows, managerIssues, nflState, transactions, yrStr, completedTeams, currentWeekComplete]);
 
   const visibleActionItems = actionItems.filter((item) => {
     if (dismissedActions.has(item.id)) return false;
@@ -2283,6 +2310,9 @@ export default function LeagueHubContent() {
     const leagues = playerLeaguesMap.get(String(row.id)) || [];
     const p = playersMap?.[String(row.id)];
     const bye = p ? getByeWeekForPlayer(p, Number(yrStr) || new Date().getFullYear()) : 0;
+    const currentGameComplete =
+      String(nflState.season) === String(yrStr) &&
+      completedTeams.has(normalizeNflTeam(row.team));
     const replacementsFor = (leagueId) => {
       const rostered = rosterSetsRef.current.get(String(leagueId)) || new Set();
       return playerList
@@ -2325,9 +2355,14 @@ export default function LeagueHubContent() {
           </div>
 
           <div className="mt-4 overflow-y-auto pr-2 -mr-2">
+            {currentGameComplete ? (
+              <div className="mb-3 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.06] p-3 text-xs leading-5 text-emerald-100/70">
+                This player&apos;s game is final. Their injury status remains visible for context, but Week {nflState.week} replacement suggestions have expired.
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {leagues.map((lg) => {
-                const replacements = replacementsFor(lg.id);
+                const replacements = currentGameComplete ? [] : replacementsFor(lg.id);
                 return <a
                   key={lg.id}
                   href={sleeperLeagueUrl(lg.id)}
@@ -2346,7 +2381,7 @@ export default function LeagueHubContent() {
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">{lg.name}</div>
                     <div className="text-[11px] text-white/55 truncate">
-                      Replacements: {replacements.length ? replacements.map(({ candidate }) => candidate.full_name || candidate.search_full_name || candidate.player_id).join(", ") : "none found"}
+                      {currentGameComplete ? "Week action closed · game final" : <>Replacements: {replacements.length ? replacements.map(({ candidate }) => candidate.full_name || candidate.search_full_name || candidate.player_id).join(", ") : "none found"}</>}
                     </div>
                   </div>
                 </a>

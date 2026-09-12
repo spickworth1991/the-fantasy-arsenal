@@ -375,6 +375,19 @@ function finalScheduleWeeks(schedule, now = Date.now()) {
   );
 }
 
+function resultsReadyScheduleWeeks(schedule, now = Date.now()) {
+  return new Set(
+    (schedule?.weeks || [])
+      .filter(({ games }) =>
+        (games || []).some((game) => {
+          const kickoff = Date.parse(game?.date);
+          return Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now;
+        }),
+      )
+      .map(({ week }) => Number(week)),
+  );
+}
+
 const manifestPath = path.join(
   root,
   "public",
@@ -446,6 +459,7 @@ for (const season of seasons) {
       savedSchedule,
     );
     const finalWeeks = finalScheduleWeeks(schedulePayload);
+    const resultsReadyWeeks = resultsReadyScheduleWeeks(schedulePayload);
     const savedFinalWeeks = new Set(
       Array.isArray(savedSleeper?.final_weeks)
         ? savedSleeper.final_weeks.map(Number)
@@ -460,17 +474,24 @@ for (const season of seasons) {
       );
       continue;
     }
-    const sleeperPayload = await sleeper(season, playerDirectory, finalWeeks);
-    const missingFinalWeeks = [...finalWeeks].filter(
+    const sleeperPayload = await sleeper(
+      season,
+      playerDirectory,
+      resultsReadyWeeks,
+    );
+    const missingResultsReadyWeeks = [...resultsReadyWeeks].filter(
       (week) => !sleeperPayload.successful_weeks.includes(week),
     );
-    if (missingFinalWeeks.length) {
+    if (missingResultsReadyWeeks.length) {
       console.warn(
-        `Sleeper did not return complete data for finalized week${missingFinalWeeks.length === 1 ? "" : "s"} ${missingFinalWeeks.join(", ")}; retaining the last good ${season} archive.`,
+        `Sleeper did not return data for results-ready week${missingResultsReadyWeeks.length === 1 ? "" : "s"} ${missingResultsReadyWeeks.join(", ")}; retaining the last good ${season} archive.`,
       );
       continue;
     }
     sleeperPayload.final_weeks = [...finalWeeks].sort((a, b) => a - b);
+    sleeperPayload.results_ready_weeks = [...resultsReadyWeeks].sort(
+      (a, b) => a - b,
+    );
     if (season === currentSeason && sleeperPayload.completed_weeks === 0) {
       console.log(
         `No ${season} regular-season box scores are available yet; leaving the live archive untouched.`,
