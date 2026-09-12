@@ -32,22 +32,10 @@ const WORKSPACES = [
     tabs: [["matchups", "Matchup Lab", "Team, position, and player matchup evidence"]],
   },
   {
-    key: "projections",
-    label: "Projections",
-    detail: "Safe and boom/bust weekly paths",
-    tabs: [["projections", "Projection Center", "Weekly stat forecasts and model evidence"]],
-  },
-  {
     key: "rankings",
     label: "Rankings",
     detail: "Season production leaders",
     tabs: [["leaders", "Leaderboards", "Position ranks, archetypes, and consistency"]],
-  },
-  {
-    key: "guide",
-    label: "Accuracy",
-    detail: "Method, sources, calibration, and results",
-    tabs: [["model", "Accuracy & Method", "Sources, version, calibration, coverage, and frozen results"]],
   },
 ];
 const STAT_GUIDES = {
@@ -99,16 +87,6 @@ const STAT_GUIDES = {
       "The defense summary shows how many more or fewer fantasy points it allows than league average. More points allowed is a better matchup for the offense.",
       "Click a defensive bar or ranked defense to load its complete position profile.",
       "Player-v-defense history is sample-regressed and compared with that player's other opponents.",
-    ],
-  },
-  projections: {
-    title: "How to use Projection Center",
-    summary:
-      "Research one player across the schedule, rank a full weekly slate, or audit the model's frozen accuracy record.",
-    bullets: [
-      "Safe / Expected is the calibrated most-likely path; Risky redistributes the same season expectation into evidence-backed boom and bust weeks.",
-      "Use the arrows, week chips, chart bars, or week dropdown to change weeks while keeping the player pinned.",
-      "Weather is included only when a real kickoff forecast enters the 16-day window.",
     ],
   },
   leaders: {
@@ -3093,13 +3071,9 @@ export default function StatCentralClient() {
   const [position, setPosition] = useState("ALL");
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
-  const [projectionModel, setProjectionModel] = useState(null);
-  const [projectionLoading, setProjectionLoading] = useState(false);
-  const [projectionError, setProjectionError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedKey, setSelectedKey] = useState("");
-  const [focusedPlayerName, setFocusedPlayerName] = useState("");
   const [compareKey, setCompareKey] = useState("");
   const [career, setCareer] = useState([]);
   const [careerLoading, setCareerLoading] = useState(false);
@@ -3202,73 +3176,6 @@ export default function StatCentralClient() {
     selectedScoringLeague?.scoring_settings,
     leagues.length,
   ]);
-  useEffect(() => {
-    if (!["projections", "model"].includes(tab) || projectionModel) return;
-    let live = true;
-    const controller = new AbortController();
-    setProjectionLoading(true);
-    setProjectionError("");
-    fetch("/stats/projections/manifest.json", {
-      cache: "no-cache",
-      signal: controller.signal,
-    })
-      .then(async (manifestResponse) => {
-        const manifest = manifestResponse.ok
-          ? await manifestResponse.json()
-          : null;
-        const modelPath =
-          manifest?.model_path ||
-          `/stats/projections/${new Date().getUTCFullYear()}/current.json`;
-        const response = await fetch(modelPath, {
-          cache: "no-cache",
-          signal: controller.signal,
-        });
-        if (!response.ok)
-          throw new Error(
-            `The ${manifest?.current_season || "current-season"} stat projection model has not been generated yet.`,
-          );
-        const payload = await response.json();
-        if (
-          !payload?.players?.length &&
-          Array.isArray(payload?.player_shards) &&
-          payload.player_shards.length
-        ) {
-          const shards = await Promise.all(
-            payload.player_shards.map(async (shard) => {
-              const shardResponse = await fetch(shard.path, {
-                cache: "no-cache",
-                signal: controller.signal,
-              });
-              if (!shardResponse.ok)
-                throw new Error(
-                  `Projection Lab could not load the ${shard.position || "player"} model data.`,
-                );
-              return shardResponse.json();
-            }),
-          );
-          payload.players = shards.flatMap((shard) =>
-            Array.isArray(shard?.players) ? shard.players : [],
-          );
-        }
-        return payload;
-      })
-      .then((payload) => {
-        if (live) setProjectionModel(payload);
-      })
-      .catch((failure) => {
-        if (live && failure?.name !== "AbortError")
-          setProjectionError(
-            failure?.message || "Projection Lab could not load.",
-          );
-      })
-      .finally(() => {
-        if (live) setProjectionLoading(false);
-      });
-    return () => {
-      live = false;
-      controller.abort();
-    };
-  }, [tab, projectionModel]);
   const seasonPlayers = useMemo(
     () => mergeHistory(data, playerDb),
     [data, playerDb],
@@ -3292,15 +3199,17 @@ export default function StatCentralClient() {
   );
   useEffect(() => {
     if (!allPlayers.length) return;
-    if (!allPlayers.some((player) => player.key === selectedKey))
-      setSelectedKey(allPlayers[0].key);
+    const skillPlayers = allPlayers
+      .filter((player) => ["QB", "RB", "WR", "TE"].includes(String(player.position || "").toUpperCase()))
+      .sort((a, b) => Number(b.points || 0) - Number(a.points || 0));
+    const defaultPlayer = skillPlayers[0] || allPlayers[0];
+    const current = allPlayers.find((player) => player.key === selectedKey);
+    if (!current || (!selectedKey && defaultPlayer))
+      setSelectedKey(defaultPlayer.key);
     if (!allPlayers.some((player) => player.key === compareKey))
       setCompareKey(allPlayers[1]?.key || allPlayers[0].key);
   }, [allPlayers, compareKey, selectedKey]);
   const selected = allPlayers.find((player) => player.key === selectedKey);
-  useEffect(() => {
-    if (selected?.name && tab !== "projections") setFocusedPlayerName(selected.name);
-  }, [selected?.name, tab]);
   const compared = allPlayers.find((player) => player.key === compareKey);
   const positionPlayers = allPlayers.filter(
     (player) => player.position === selected?.position,
@@ -3319,7 +3228,7 @@ export default function StatCentralClient() {
       workspace.tabs.some(([key]) => key === tab),
     ) || WORKSPACES[0];
   const playerWorkspace = ["overview", "advanced", "history", "compare"].includes(tab);
-  const historicalWorkspace = !["projections", "method", "model"].includes(tab);
+  const historicalWorkspace = tab !== "method";
   const showPositionAndSearch = playerWorkspace || tab === "leaders";
 
   async function loadCareer() {
@@ -3373,9 +3282,7 @@ export default function StatCentralClient() {
             volatility, player archetypes, advanced role and tracking data, raw
             production, and direct start/sit history.
           </p>
-          {tab === "projections" ? (
-            null
-          ) : tab === "method" || tab === "model" ? (
+          {tab === "method" ? (
             null
           ) : historicalWorkspace && tab !== "matchups" ? (
             <>
@@ -3594,7 +3501,7 @@ export default function StatCentralClient() {
                 onScoringLeagueChange={(value) => { setScoringLeagueId(value); setCareer([]); }}
               />
             ) : null}
-            {tab === "projections" ? (
+            {false && tab === "projections" ? (
               projectionLoading ? (
                 <LoadingScreen text="Loading the current projection model…" />
               ) : projectionError ? (
@@ -3772,7 +3679,7 @@ export default function StatCentralClient() {
                 </Panel>
               </div>
             ) : null}
-            {tab === "model" ? (
+            {false && tab === "model" ? (
               projectionLoading ? (
                 <LoadingScreen text="Loading the current Arsenal model record…" />
               ) : projectionError ? (

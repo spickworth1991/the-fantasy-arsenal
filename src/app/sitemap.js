@@ -23,6 +23,7 @@ export default function sitemap() {
     "/game-center",
     "/depth-charts",
     "/stat-central",
+    "/projection-center",
     "/intelligence",
     "/leaderboard",
     "/trust-center",

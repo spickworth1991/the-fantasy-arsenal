@@ -715,6 +715,7 @@ function LeagueAccuracySummary({ accuracy, leagues, leagueId, onLeagueChange, on
               <h2 className="text-2xl font-black">League scoring accuracy</h2>
               <Type type="Fact" />
             </div>
+            <a href="/projection-center" className="mt-3 inline-flex rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-100 transition hover:bg-emerald-300/10">Open live Projection Center accuracy</a>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">Choose one of your leagues. The center follows its Sleeper history back to 2025, rebuilds actual player scoring from that season’s scoring settings, and then measures how useful each projection ranking was for that specific league.</p>
           </div>
           <label>

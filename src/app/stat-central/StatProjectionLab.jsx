@@ -101,6 +101,115 @@ function Kpi({ label, value, detail, tone = "cyan" }) {
   );
 }
 
+const pct = (value) =>
+  value == null || !Number.isFinite(Number(value))
+    ? "—"
+    : `${Math.round(Number(value) * 100)}%`;
+
+function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
+  if (!summary && !metrics && !calibration) return null;
+  const topN = summary?.top_n_accuracy || {};
+  const byPosition = summary?.by_position || {};
+  const topPositions = topN?.by_position || {};
+  const positionOrder = ["QB", "RB", "WR", "TE", "K"];
+
+  return (
+    <details className="mt-4 overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-emerald-100">
+        <span>Advanced accuracy diagnostics</span>
+        <span className="rounded-full bg-emerald-300/[0.08] px-2.5 py-1 text-[9px] text-emerald-100/70">
+          MAE · Top-N · calibration
+        </span>
+      </summary>
+      <div className="border-t border-white/[0.06] p-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <Kpi
+            label="Over rate"
+            value={pct(metrics?.over_rate)}
+            detail={`${pct(metrics?.under_rate)} under · ${pct(metrics?.within_5_rate)} within 5`}
+            tone="amber"
+          />
+          <Kpi
+            label="Top-N precision"
+            value={pct(topN?.overall?.precision)}
+            detail={`${number(topN?.overall?.hits)} hits across lineup tiers`}
+            tone="cyan"
+          />
+          <Kpi
+            label="P10-P90 coverage"
+            value={pct(calibration?.p10_p90_coverage)}
+            detail={`${number(calibration?.percentile_sample)} percentile-tested games`}
+            tone="violet"
+          />
+        </div>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-3">
+            <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
+              <DelayedStatHint term="Position-level MAE">
+                Position-level MAE
+              </DelayedStatHint>
+            </div>
+            <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
+              {positionOrder.map((position) => (
+                <div key={position} className="rounded-xl bg-white/[0.03] p-2">
+                  <b className="block text-white/75">
+                    <DelayedStatHint term="Position-level MAE">
+                      {position}
+                    </DelayedStatHint>
+                  </b>
+                  <span className="mt-1 block text-sm font-black text-cyan-100">
+                    {byPosition[position]?.mae == null
+                      ? "—"
+                      : number(byPosition[position].mae).toFixed(2)}
+                  </span>
+                  <span className="text-[8px] text-white/30">
+                    {number(byPosition[position]?.sample)} games
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-3">
+            <div className="text-[9px] font-black uppercase tracking-[.16em] text-white/30">
+              <DelayedStatHint term="Top-N precision">
+                Top-N identification
+              </DelayedStatHint>
+            </div>
+            <div className="mt-2 grid grid-cols-5 gap-2 text-center text-[10px]">
+              {positionOrder.map((position) => (
+                <div key={position} className="rounded-xl bg-white/[0.03] p-2">
+                  <b className="block text-white/75">
+                    <DelayedStatHint term="Top-N precision">
+                      {topPositions[position]?.label?.replace("Top ", "T") || position}
+                    </DelayedStatHint>
+                  </b>
+                  <span className="mt-1 block text-sm font-black text-emerald-100">
+                    {pct(topPositions[position]?.precision)}
+                  </span>
+                  <span className="text-[8px] text-white/30">
+                    {number(topPositions[position]?.hits)}/
+                    {number(topPositions[position]?.projected_count)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {calibration ? (
+          <div className="mt-3 rounded-2xl border border-white/[0.06] bg-black/15 p-3 text-[10px] leading-5 text-white/42">
+            Percentile calibration: actuals finished below p10{" "}
+            <b className="text-rose-100">{pct(calibration.p10_under_rate)}</b>,
+            below median{" "}
+            <b className="text-cyan-100">{pct(calibration.p50_under_rate)}</b>,
+            and above p90{" "}
+            <b className="text-amber-100">{pct(calibration.p90_over_rate)}</b>.
+          </div>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
 function AccuracyResultsTable({
   results = [],
   modelBuildId,
@@ -291,6 +400,7 @@ function ProjectionSourceComparison({
   modelBuildId,
   cohort,
   week,
+  directionalEdge = {},
 }) {
   const sources = ACCURACY_SOURCES;
   const [sortSource, setSortSource] = useState("The Fantasy Arsenal");
@@ -337,27 +447,53 @@ function ProjectionSourceComparison({
             .map((row) => row.sources[source])
             .filter(Boolean);
           const sample = sourceRows.length;
+          const errors = sourceRows.map((row) => number(row.error));
+          const absoluteErrors = errors
+            .map((value) => Math.abs(value))
+            .sort((left, right) => left - right);
+          const medianAbsoluteError = absoluteErrors.length
+            ? absoluteErrors.length % 2
+              ? absoluteErrors[Math.floor(absoluteErrors.length / 2)]
+              : (absoluteErrors[absoluteErrors.length / 2 - 1] +
+                  absoluteErrors[absoluteErrors.length / 2]) /
+                2
+            : null;
           const bias = sample
-            ? sourceRows.reduce((sum, row) => sum + number(row.error), 0) /
-              sample
+            ? errors.reduce((sum, value) => sum + value, 0) / sample
             : null;
           const mae = sample
-            ? sourceRows.reduce(
-                (sum, row) => sum + Math.abs(number(row.error)),
-                0,
-              ) / sample
+            ? absoluteErrors.reduce((sum, value) => sum + value, 0) / sample
             : null;
           const rmse = sample
             ? Math.sqrt(
-                sourceRows.reduce(
-                  (sum, row) => sum + number(row.error) ** 2,
-                  0,
-                ) / sample,
+                errors.reduce((sum, value) => sum + value ** 2, 0) / sample,
               )
             : null;
-          return [source, { sample, bias, mae, rmse }];
+          const overs = errors.filter((value) => value > 0).length;
+          return [
+            source,
+            {
+              sample,
+              bias,
+              mae,
+              rmse,
+              median_absolute_error: medianAbsoluteError,
+              over_rate: sample ? overs / sample : null,
+            },
+          ];
         }),
       ),
+    [rows],
+  );
+  const assumptionNotes = useMemo(
+    () => [
+      ...new Set(
+        rows
+          .flatMap((row) => Object.values(row.sources || {}))
+          .map((row) => row?.source_snapshot_assumption)
+          .filter(Boolean),
+      ),
+    ],
     [rows],
   );
 
@@ -376,9 +512,15 @@ function ProjectionSourceComparison({
           before that player&apos;s kickoff. Select a source card to rank the table
           by its largest absolute misses.
         </p>
+        {assumptionNotes.length ? (
+          <div className="mt-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] leading-5 text-amber-50/75">
+            {assumptionNotes[0]}
+          </div>
+        ) : null}
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {sources.map((source) => {
             const result = scopedComparison[source] || {};
+            const edge = directionalEdge?.[source];
             const sample = number(result.sample);
             const active = sortSource === source;
             return (
@@ -393,16 +535,33 @@ function ProjectionSourceComparison({
                   <span className="text-[9px] text-white/30">{sample} games</span>
                 </div>
                 {sample ? (
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                    <div><b className="block text-base text-emerald-100">{number(result.mae).toFixed(2)}</b><span className="text-[8px] text-white/28">MAE</span></div>
-                    <div><b className="block text-base text-amber-100">{number(result.rmse).toFixed(2)}</b><span className="text-[8px] text-white/28">RMSE</span></div>
-                    <div><b className="block text-base text-violet-100">{number(result.bias).toFixed(2)}</b><span className="text-[8px] text-white/28">Bias</span></div>
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                    <div><b className="block text-base text-emerald-100">{number(result.mae).toFixed(2)}</b><span className="text-[8px] text-white/28"><DelayedStatHint term="MAE">MAE</DelayedStatHint></span></div>
+                    <div><b className="block text-base text-cyan-100">{number(result.median_absolute_error).toFixed(2)}</b><span className="text-[8px] text-white/28"><DelayedStatHint term="Median abs error">Median</DelayedStatHint></span></div>
+                    <div><b className="block text-base text-amber-100">{number(result.rmse).toFixed(2)}</b><span className="text-[8px] text-white/28"><DelayedStatHint term="RMSE">RMSE</DelayedStatHint></span></div>
+                    <div><b className="block text-base text-violet-100">{number(result.bias).toFixed(2)}</b><span className="text-[8px] text-white/28"><DelayedStatHint term="Bias">Bias</DelayedStatHint></span></div>
                   </div>
                 ) : (
                   <div className="mt-3 text-[9px] leading-4 text-white/35">
                     Begins after the first weekly projection saved before kickoff.
                   </div>
                 )}
+                {sample ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black uppercase tracking-wide text-white/35">
+                    <span className="rounded-full bg-white/[0.04] px-2 py-1">
+                      <DelayedStatHint term="Over rate">Over</DelayedStatHint>{" "}
+                      {pct(result.over_rate)}
+                    </span>
+                    {edge?.paired_games ? (
+                      <span className="rounded-full bg-emerald-300/[0.08] px-2 py-1 text-emerald-100/70">
+                        <DelayedStatHint term="Arsenal edge">
+                          Arsenal edge
+                        </DelayedStatHint>{" "}
+                        {pct(edge.arsenal_win_rate)}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
               </button>
             );
           })}
@@ -619,6 +778,9 @@ export default function StatProjectionLab({
         ),
     [leagueScoring, lens, model, position, query, scoring, sort, team, week],
   );
+  // Start the research view on a skill-position player. Kickers/defenses remain
+  // available in rankings, but should not be the first thing a user sees.
+  const defaultPlayer = rows.find((player) => ["QB", "RB", "WR", "TE"].includes(String(player.position).toUpperCase())) || rows[0] || null;
   useEffect(() => setWeek(recommendedWeek(model)), [model]);
   useEffect(
     () => setVisibleCount(40),
@@ -643,8 +805,8 @@ export default function StatProjectionLab({
     if (!modelPlayers.length) return;
     const external = modelPlayers.find((player) => normalize(player.name) === normalize(selectedPlayerName));
     if (external && external.name !== selectedName) setSelectedName(external.name);
-    else if (!modelPlayers.some((player) => player.name === selectedName)) setSelectedName(modelPlayers[0].name);
-  }, [model, selectedName, selectedPlayerName]);
+    else if (!selectedPlayerName && (!modelPlayers.some((player) => player.name === selectedName) || !["QB", "RB", "WR", "TE"].includes(String(modelPlayers.find((player) => player.name === selectedName)?.position || "").toUpperCase()))) setSelectedName(defaultPlayer?.name || modelPlayers[0].name);
+  }, [defaultPlayer, model, rows, selectedName, selectedPlayerName]);
   useEffect(() => {
     if (selectedName) setPlayerSearchText(selectedName);
   }, [selectedName]);
@@ -653,7 +815,7 @@ export default function StatProjectionLab({
   );
   const selected =
     projectionRow(pinnedPlayer, week, scoring, lens, leagueScoring) ||
-    rows[0] ||
+    defaultPlayer ||
     null;
   const seasonSeries = selected
     ? (selected.weeks || [])
@@ -672,6 +834,7 @@ export default function StatProjectionLab({
                   ),
         }))
     : [];
+  const selectedWeekRow = seasonSeries.find((row) => number(row.week) === number(week)) || null;
   const maxProjection = Math.max(
     1,
     ...seasonSeries.map((row) => row.projection),
@@ -703,6 +866,8 @@ export default function StatProjectionLab({
 
   const coverage = model.feature_coverage || {};
   const weeklyStats = selected?.forecast?.stat_line || {};
+  const actualStatLine = selectedWeekRow?.completed ? (selectedWeekRow.stat_line || {}) : null;
+  const projectedPointsForWeek = selectedWeekRow?.projection ?? null;
   const seasonStats =
     selected?.season_outlook_stat_line || selected?.projected_stat_line || {};
   const statRows = POSITION_STATS[selected?.position] || [];
@@ -776,6 +941,32 @@ export default function StatProjectionLab({
       ? `Scored through Week ${accuracy.last_scored_week}`
       : `Week ${accuracy.last_scored_week} live · ${number(latestAccuracyWeek?.schedule?.games_in_saved_results_window)} of ${number(latestAccuracyWeek?.schedule?.games)} games graded`
     : "Awaiting this model's results";
+  const selectedDnaAccuracy =
+    scoring === "league"
+      ? null
+      : (accuracy?.player_results || []).find((row) => {
+          if (number(row.week) !== number(week)) return false;
+          if (String(row.scoring || "").toLowerCase() !== scoring) return false;
+          if (String(row.lens || "safe_expected") !== lens) return false;
+          if (
+            selectedAccuracyBuild &&
+            String(row.model_build_id || row.model_version || "") !==
+              String(selectedAccuracyBuild)
+          )
+            return false;
+          const sameId =
+            selected?.player_id &&
+            row.player_id &&
+            String(row.player_id) === String(selected.player_id);
+          return sameId || normalize(row.name) === normalize(selected?.name);
+        }) || null;
+  const dnaAccuracyTone = selectedDnaAccuracy
+    ? Math.abs(number(selectedDnaAccuracy.error)) <= 3
+      ? "text-emerald-100"
+      : Math.abs(number(selectedDnaAccuracy.error)) <= 7
+        ? "text-amber-100"
+        : "text-rose-100"
+    : "text-white/35";
 
   return (
     <div className="min-w-0 max-w-full space-y-4 overflow-x-clip">
@@ -873,7 +1064,7 @@ export default function StatProjectionLab({
               onClick={() => setView("board")}
               className="min-h-10 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-cyan-100/75 transition hover:bg-cyan-300/[0.08] hover:text-cyan-100"
             >
-              Browse weekly board
+              Open rankings
             </button>
           </div>
           {!rows.length ? (
@@ -949,11 +1140,12 @@ export default function StatProjectionLab({
       </div>
 
       : null}
-      <div data-guide-tip="projection-secondary-tabs" className="sticky top-[108px] z-20 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:gap-2">
+      <div data-guide-tip="projection-secondary-tabs" className="sticky top-[108px] z-20 grid grid-cols-2 gap-1.5 rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl sm:static sm:grid-cols-4 sm:gap-2">
         {[
           ["player", "Player Forecast", "One player across every week"],
-          ["board", "Weekly Board", "Rank the complete slate"],
+          ["board", "Rankings", "Rank the complete weekly slate"],
           ["dna", "Projected Stat DNA", "Inputs behind the point estimate"],
+          ["model", "Accuracy", "Calibration, sources, and frozen audits"],
         ].map(([key, label, detail]) => (
           <button
             type="button"
@@ -1458,6 +1650,84 @@ export default function StatProjectionLab({
               </Filter>
               <button type="button" disabled={selectedWeekIndex < 0 || selectedWeekIndex >= seasonSeries.length - 1} onClick={() => moveSelectedWeek(1)} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white/60 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-30">Next week</button>
             </div>
+            <div className="mt-4 rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.08] via-emerald-300/[0.035] to-transparent p-4 sm:p-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/60">
+                    Stat DNA accuracy
+                  </div>
+                  <h4 className="mt-1 text-lg font-black text-white">
+                    {selected?.name} · Week {week}
+                  </h4>
+                  <p className="mt-1 max-w-2xl text-[10px] leading-5 text-white/42">
+                    This checks the selected player/week against the frozen pre-kickoff projection ledger when that game has been graded.
+                  </p>
+                </div>
+                {selectedDnaAccuracy ? (
+                  <div className="grid gap-2 text-center sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
+                      <div className={`text-2xl font-black ${dnaAccuracyTone}`}>
+                        {number(selectedDnaAccuracy.error) > 0 ? "+" : ""}
+                        {number(selectedDnaAccuracy.error).toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
+                        Miss
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
+                      <div className="text-2xl font-black text-cyan-100">
+                        {number(selectedDnaAccuracy.projection).toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
+                        Frozen
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
+                      <div className="text-2xl font-black text-emerald-100">
+                        {number(selectedDnaAccuracy.actual).toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
+                        Actual
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3 text-sm font-black text-white/45">
+                    Pending graded result
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 text-[10px] leading-5 text-white/35">
+                {selectedDnaAccuracy
+                  ? `Opponent ${selectedDnaAccuracy.opponent || selected?.forecast?.opponent || "unknown"} · ${
+                      selectedDnaAccuracy.snap_percentage == null
+                        ? "snap share unavailable"
+                        : `${number(selectedDnaAccuracy.snap_percentage).toFixed(0)}% snaps`
+                    }. Positive miss means Arsenal projected too high.`
+                  : scoring === "league"
+                    ? "League scoring uses live custom rules here; the frozen accuracy ledger is currently PPR, Half PPR, and Standard."
+                    : "No frozen graded result matched this player, week, scoring, and lens yet."}
+              </div>
+            </div>
+            {actualStatLine ? (
+              <div className="mt-4 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.035] p-4 sm:p-5">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h4 className="text-lg font-black text-emerald-100">Projected vs actual stat line</h4>
+                    <p className="mt-1 text-[10px] leading-5 text-white/42">The forecast is frozen before kickoff; actuals are the recorded box-score stats. Fantasy points use the selected scoring format.</p>
+                  </div>
+                  <div className="text-[10px] font-black text-white/45"><DelayedStatHint term="Difference">Difference = projection minus actual; green is closer.</DelayedStatHint></div>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Projected points">Projected points</DelayedStatHint></div><div className="mt-1 text-xl font-black text-cyan-100">{projectedPointsForWeek == null ? "—" : number(projectedPointsForWeek).toFixed(1)}</div></div>
+                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Actual points">Actual points</DelayedStatHint></div><div className="mt-1 text-xl font-black text-emerald-100">{selectedDnaAccuracy ? number(selectedDnaAccuracy.actual).toFixed(1) : "—"}</div></div>
+                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Difference">Difference</DelayedStatHint></div><div className={`mt-1 text-xl font-black ${dnaAccuracyTone}`}>{selectedDnaAccuracy ? `${number(selectedDnaAccuracy.error) > 0 ? "+" : ""}${number(selectedDnaAccuracy.error).toFixed(1)}` : "—"}</div></div>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {statRows.map(([label, key]) => <div key={key} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2 text-xs"><span className="text-white/55"><DelayedStatHint term={label}>{label}</DelayedStatHint></span><b className="text-emerald-100">{formatStat(key, actualStatLine[key])}</b></div>)}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {statRows.map(([label, key]) => (
                 <div
@@ -1498,6 +1768,45 @@ export default function StatProjectionLab({
                 <div className="mt-2 text-2xl font-black text-emerald-100">{selected.projection.toFixed(1)} {scoringLabel}</div>
                 <p className="mt-2 text-[10px] leading-4 text-white/38">External stat priors are reconciled with Arsenal role allocation, historical regression, matchup learning, availability, and calibrated outcomes.</p>
               </div>
+              <div className="hidden rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4">
+                <div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/60">
+                  DNA accuracy
+                </div>
+                {selectedDnaAccuracy ? (
+                  <>
+                    <div className={`mt-2 text-2xl font-black ${dnaAccuracyTone}`}>
+                      {number(selectedDnaAccuracy.error) > 0 ? "+" : ""}
+                      {number(selectedDnaAccuracy.error).toFixed(1)}
+                    </div>
+                    <p className="mt-2 text-[10px] leading-4 text-white/38">
+                      Frozen projection{" "}
+                      <b className="text-white/70">
+                        {number(selectedDnaAccuracy.projection).toFixed(1)}
+                      </b>{" "}
+                      vs actual{" "}
+                      <b className="text-white/70">
+                        {number(selectedDnaAccuracy.actual).toFixed(1)}
+                      </b>
+                      . Positive means Arsenal projected too high.
+                    </p>
+                    <div className="mt-2 text-[9px] text-white/28">
+                      Week {selectedDnaAccuracy.week} Â· {selectedDnaAccuracy.opponent} Â·{" "}
+                      {selectedDnaAccuracy.snap_percentage == null
+                        ? "snap share unavailable"
+                        : `${number(selectedDnaAccuracy.snap_percentage).toFixed(0)}% snaps`}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-2 text-2xl font-black text-white/35">
+                      Pending
+                    </div>
+                    <p className="mt-2 text-[10px] leading-4 text-white/35">
+                      This player/week has not been graded for the selected scoring and lens yet, or league scoring is using live rules outside the frozen PPR/Half/Standard ledger.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </Card> : null}
         </>
@@ -1509,7 +1818,7 @@ export default function StatProjectionLab({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h3 className="text-xl font-black">
-                Week {week} projection board
+                Week {week} projection rankings
               </h3>
               <p className="mt-1 text-xs text-white/35">
                 Select a player to audit the full stat line and every
@@ -1652,7 +1961,7 @@ export default function StatProjectionLab({
       ) : null}
 
       {view === "model" ? (
-      <Card className="p-5 sm:p-6">
+      <Card data-guide-tip="projection-accuracy" className="p-5 sm:p-6">
         <div className="rounded-3xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.06] via-violet-300/[0.035] to-transparent p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1784,12 +2093,22 @@ export default function StatProjectionLab({
             </p>
           ) : accuracyMetrics?.sample ? (
             <>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 <Kpi
                   label="MAE"
                   value={number(accuracyMetrics.mae).toFixed(2)}
                   detail="Lower is better"
                   tone="emerald"
+                />
+                <Kpi
+                  label="Median abs error"
+                  value={
+                    accuracyMetrics.median_absolute_error == null
+                      ? "-"
+                      : number(accuracyMetrics.median_absolute_error).toFixed(2)
+                  }
+                  detail="Typical miss"
+                  tone="cyan"
                 />
                 <Kpi
                   label="RMSE"
@@ -1833,6 +2152,11 @@ export default function StatProjectionLab({
                 can also reflect rotation, an ejection, or another early exit,
                 so it is not labeled as an injury without a reliable event feed.
               </p>
+              <AdvancedAccuracyPanel
+                summary={modelAccuracy}
+                metrics={accuracyMetrics}
+                calibration={accuracy?.outcome_calibration}
+              />
               <AccuracyResultsTable
                 results={accuracy?.player_results || []}
                 modelBuildId={selectedAccuracyBuild}
@@ -1847,6 +2171,7 @@ export default function StatProjectionLab({
                   modelBuildId={selectedAccuracyBuild}
                   cohort={accuracyCohort}
                   week={accuracyWeek}
+                  directionalEdge={accuracy?.source_directional_edge || {}}
                 />
               ) : null}
             </>

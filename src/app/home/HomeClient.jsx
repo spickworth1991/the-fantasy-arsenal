@@ -225,6 +225,12 @@ export default function HomeClient() {
       badge: "DEVELOPING",
     },
     {
+      name: "Projection Center",
+      link: "/projection-center",
+      description: "Rank weekly projections, inspect Arsenal player forecasts, and audit frozen model accuracy in one dedicated workspace.",
+      badge: "DEVELOPING",
+    },
+    {
       name: "Manager Intelligence",
       link: "/manager-intelligence",
       description: "Research public Sleeper manager networks, league history, player exposure, trades, and draft tendencies.",
@@ -312,7 +318,7 @@ export default function HomeClient() {
     { title:"Fan Favorites", tipTarget:"favorites", eyebrow:"MOST POPULAR", description:"The four most-visited tools: follow player value, monitor live drafts, compare league rosters, and explore Ballsville draft trends.", names:["Player Stock","Draft Monitor","Power Rankings","Ballsville Stats"], favorite:true },
     { title:"Weekly Team Management", tipTarget:"weekly", eyebrow:"MANAGE MY TEAMS", description:"See what needs attention across your leagues, follow matchups, make lineup decisions, and find available players.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Day & Review", tipTarget:"draft", eyebrow:"DRAFT", description:"Use a live, league-aware board while drafting, then grade the picks, roster construction, and every team afterward.", names:["Draft Command Center","Draft Grade Studio"] },
-    { title:"Trades & Player Research", tipTarget:"players", eyebrow:"EVALUATE PLAYERS", description:"Build trades, study player production, understand depth-chart opportunity, and compare regular-season or playoff schedules.", names:["Trade Analyzer","Stat Central","NFL Depth Charts","Strength of Schedule"] },
+    { title:"Trades & Player Research", tipTarget:"players", eyebrow:"EVALUATE PLAYERS", description:"Build trades, study player production, rank weekly projections, audit model accuracy, understand depth-chart opportunity, and compare schedules.", names:["Trade Analyzer","Stat Central","Projection Center","NFL Depth Charts","Strength of Schedule"] },
     { title:"League & Manager Research", tipTarget:"league-research", eyebrow:"KNOW THE COMPETITION", description:"Review prioritized intelligence, research manager behavior and records, explore league history, and model the playoff race.", names:["Arsenal Intelligence","Manager Intelligence","Arsenal Leaderboard","League History","Playoff Odds"] },
     { title:"Commissioner Tools", tipTarget:"commissioner", eyebrow:"RUN THE LEAGUE", description:"Audit settings, participation, competitive balance, and roster quality—then turn the findings into commissioner actions.", names:["Commissioner Dashboard"] },
     { title:"Account & Data Trust", tipTarget:"account-trust", eyebrow:"MY ARSENAL", description:"Manage your Arsenal profile and saved work, then inspect the freshness and accuracy behind Arsenal data.", names:["My Arsenal","Trust & Accuracy Center"] },

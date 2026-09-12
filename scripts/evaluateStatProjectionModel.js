@@ -92,6 +92,27 @@ const archivedProjectionSnapshots = (filePrefix, source) => {
     .filter(Boolean)
     .sort((left, right) => right.generatedAt - left.generatedAt);
 };
+const currentProjectionSnapshot = (relativeFile, source, options = {}) => {
+  const filePath = path.join(root, "public", relativeFile);
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const generatedAt = Date.parse(
+      payload?.updated || payload?.updated_at || payload?.generated_at,
+    );
+    if (!Number.isFinite(generatedAt)) return null;
+    return {
+      source,
+      file: relativeFile.replace(/\\/g, "/"),
+      generatedAt,
+      payload,
+      currentFile: true,
+      ...options,
+    };
+  } catch {
+    return null;
+  }
+};
 const normalizeTeam = (value) => {
   const team = String(value || "").toUpperCase();
   return (
@@ -160,10 +181,21 @@ function ranks(values) {
 function metrics(rows) {
   if (!rows.length) return null;
   const errors = rows.map((row) => row.projection - row.actual);
+  const absoluteErrors = errors
+    .map((value) => Math.abs(value))
+    .sort((left, right) => left - right);
+  const medianAbsoluteError =
+    absoluteErrors.length % 2
+      ? absoluteErrors[Math.floor(absoluteErrors.length / 2)]
+      : (absoluteErrors[absoluteErrors.length / 2 - 1] +
+          absoluteErrors[absoluteErrors.length / 2]) /
+        2;
   const rankCorrelation = correlation(
     ranks(rows.map((row) => row.projection)),
     ranks(rows.map((row) => row.actual)),
   );
+  const overs = errors.filter((value) => value > 0).length;
+  const unders = errors.filter((value) => value < 0).length;
   return {
     sample: rows.length,
     mae: round(
@@ -176,6 +208,100 @@ function metrics(rows) {
     ),
     bias: round(errors.reduce((sum, value) => sum + value, 0) / rows.length),
     rank_correlation: roundNullable(rankCorrelation),
+    median_absolute_error: round(medianAbsoluteError),
+    over_rate: round(overs / rows.length, 4),
+    under_rate: round(unders / rows.length, 4),
+    exact_rate: round((rows.length - overs - unders) / rows.length, 4),
+    within_2_rate: round(
+      absoluteErrors.filter((value) => value <= 2).length / rows.length,
+      4,
+    ),
+    within_5_rate: round(
+      absoluteErrors.filter((value) => value <= 5).length / rows.length,
+      4,
+    ),
+  };
+}
+
+function topNAccuracy(rows) {
+  const thresholds = { QB: 12, RB: 24, WR: 36, TE: 12, K: 12 };
+  const byPosition = {};
+  for (const [position, limit] of Object.entries(thresholds)) {
+    const weekKeys = [
+      ...new Set(
+        rows
+          .filter((row) => row.position === position)
+          .map((row) => Number(row.week)),
+      ),
+    ].sort((left, right) => left - right);
+    const weekly = weekKeys
+      .map((week) => {
+        const weekRows = rows.filter(
+          (row) => row.position === position && Number(row.week) === week,
+        );
+        if (weekRows.length <= limit) return null;
+        const projected = new Set(
+          [...weekRows]
+            .sort((left, right) => right.projection - left.projection)
+            .slice(0, Math.min(limit, weekRows.length))
+            .map((row) => keyOf(row)),
+        );
+        const actual = new Set(
+          [...weekRows]
+            .sort((left, right) => right.actual - left.actual)
+            .slice(0, Math.min(limit, weekRows.length))
+            .map((row) => keyOf(row)),
+        );
+        const hits = [...projected].filter((key) => actual.has(key)).length;
+        return {
+          week,
+          limit: Math.min(limit, weekRows.length),
+          projected_count: projected.size,
+          actual_count: actual.size,
+          hits,
+          precision: projected.size ? round(hits / projected.size, 4) : null,
+          recall: actual.size ? round(hits / actual.size, 4) : null,
+        };
+      })
+      .filter(Boolean);
+    const projectedTotal = weekly.reduce(
+      (sum, row) => sum + row.projected_count,
+      0,
+    );
+    const actualTotal = weekly.reduce((sum, row) => sum + row.actual_count, 0);
+    const hits = weekly.reduce((sum, row) => sum + row.hits, 0);
+    byPosition[position] = {
+      label: `Top ${limit} ${position}`,
+      weeks: weekly.length,
+      hits,
+      projected_count: projectedTotal,
+      actual_count: actualTotal,
+      precision: projectedTotal ? round(hits / projectedTotal, 4) : null,
+      recall: actualTotal ? round(hits / actualTotal, 4) : null,
+      weekly,
+    };
+  }
+  const totals = Object.values(byPosition).reduce(
+    (acc, row) => ({
+      hits: acc.hits + row.hits,
+      projected_count: acc.projected_count + row.projected_count,
+      actual_count: acc.actual_count + row.actual_count,
+    }),
+    { hits: 0, projected_count: 0, actual_count: 0 },
+  );
+  return {
+    by_position: byPosition,
+    overall: {
+      hits: totals.hits,
+      projected_count: totals.projected_count,
+      actual_count: totals.actual_count,
+      precision: totals.projected_count
+        ? round(totals.hits / totals.projected_count, 4)
+        : null,
+      recall: totals.actual_count
+        ? round(totals.hits / totals.actual_count, 4)
+        : null,
+    },
   };
 }
 
@@ -233,6 +359,7 @@ function scoringSummary(rows, coverage, includePositions = true) {
       projected_10_plus: metrics(rows.filter((row) => row.projection >= 10)),
       top_100_projected: metrics(rows.filter((row) => row.top_100)),
     },
+    top_n_accuracy: topNAccuracy(rows),
     coverage: coverageSummary(coverage),
   };
   if (includePositions) {
@@ -255,6 +382,12 @@ function probabilitySummary(rows) {
     ) / rows.length;
   const intervalRows = rows.filter(
     (row) => Number.isFinite(row.floor) && Number.isFinite(row.ceiling),
+  );
+  const percentileRows = rows.filter(
+    (row) =>
+      Number.isFinite(row.p10) &&
+      Number.isFinite(row.p50) &&
+      Number.isFinite(row.p90),
   );
   return {
     sample: rows.length,
@@ -282,6 +415,36 @@ function probabilitySummary(rows) {
           intervalRows.filter(
             (row) => row.actual >= row.floor && row.actual <= row.ceiling,
           ).length / intervalRows.length,
+          4,
+        )
+      : null,
+    percentile_sample: percentileRows.length,
+    p10_under_rate: percentileRows.length
+      ? round(
+          percentileRows.filter((row) => row.actual < row.p10).length /
+            percentileRows.length,
+          4,
+        )
+      : null,
+    p50_under_rate: percentileRows.length
+      ? round(
+          percentileRows.filter((row) => row.actual < row.p50).length /
+            percentileRows.length,
+          4,
+        )
+      : null,
+    p90_over_rate: percentileRows.length
+      ? round(
+          percentileRows.filter((row) => row.actual > row.p90).length /
+            percentileRows.length,
+          4,
+        )
+      : null,
+    p10_p90_coverage: percentileRows.length
+      ? round(
+          percentileRows.filter(
+            (row) => row.actual >= row.p10 && row.actual <= row.p90,
+          ).length / percentileRows.length,
           4,
         )
       : null,
@@ -591,6 +754,9 @@ if (
               bust_result: result <= bustThreshold ? 1 : 0,
               floor: finiteNumber(outcome.floor),
               ceiling: finiteNumber(outcome.ceiling),
+              p10: finiteNumber(outcome.simulation?.p10),
+              p50: finiteNumber(outcome.simulation?.median ?? outcome.median),
+              p90: finiteNumber(outcome.simulation?.p90),
             });
         }
         for (const lens of projectionLenses) {
@@ -753,10 +919,14 @@ const publisherSnapshots = {
     `projections_sleeper_${season}`,
     "Sleeper",
   ),
-  CBS: archivedProjectionSnapshots(
-    `projections_cbs_weekly_${season}`,
-    "CBS",
-  ),
+  CBS: [
+    ...archivedProjectionSnapshots(`projections_cbs_weekly_${season}`, "CBS"),
+    currentProjectionSnapshot(`projections_cbs_weekly_${season}.json`, "CBS", {
+      postKickoffAssumption:
+        "Owner-approved Week 1 bootstrap: current CBS weekly projection file is accepted for already-played Week 1 games because CBS is assumed not to have changed those weekly projections after kickoff.",
+      allowedPostKickoffWeeks: [1],
+    }),
+  ].filter(Boolean),
 };
 const publisherProjection = (snapshot, target) => {
   const rows = Array.isArray(snapshot?.payload?.rows)
@@ -796,7 +966,10 @@ const sourceComparisonResults = ledger
       publisherSnapshots,
     )) {
       for (const snapshot of snapshotsForSource) {
-        if (snapshot.generatedAt >= kickoff) continue;
+        const acceptsPostKickoff =
+          Array.isArray(snapshot.allowedPostKickoffWeeks) &&
+          snapshot.allowedPostKickoffWeeks.includes(Number(arsenalRow.week));
+        if (snapshot.generatedAt >= kickoff && !acceptsPostKickoff) continue;
         const projection = publisherProjection(snapshot, arsenalRow);
         if (!Number.isFinite(projection)) continue;
         rows.push({
@@ -808,6 +981,8 @@ const sourceComparisonResults = ledger
             snapshot.generatedAt,
           ).toISOString(),
           source_snapshot_file: snapshot.file,
+          source_snapshot_current_file: Boolean(snapshot.currentFile),
+          source_snapshot_assumption: snapshot.postKickoffAssumption || null,
         });
         break;
       }
@@ -826,6 +1001,54 @@ const sourceComparison = Object.fromEntries(
         scoring: "ppr",
         ...metrics(sourceRows),
         frozen_player_games: sourceRows.length,
+      },
+    ];
+  }),
+);
+const sourceDirectionalEdge = Object.fromEntries(
+  ["Sleeper", "CBS"].map((source) => {
+    const paired = new Map();
+    sourceComparisonResults.forEach((row) => {
+      const key = `${row.week}:${row.player_id || namePositionKeyOf(row)}`;
+      const current = paired.get(key) || {};
+      current[row.source] = row;
+      paired.set(key, current);
+    });
+    const pairs = [...paired.values()]
+      .map((group) => ({
+        arsenal: group["The Fantasy Arsenal"],
+        source: group[source],
+      }))
+      .filter((group) => group.arsenal && group.source);
+    const wins = pairs.filter(
+      (pair) =>
+        Math.abs(pair.arsenal.error) < Math.abs(pair.source.error),
+    ).length;
+    const losses = pairs.filter(
+      (pair) =>
+        Math.abs(pair.arsenal.error) > Math.abs(pair.source.error),
+    ).length;
+    const ties = pairs.length - wins - losses;
+    return [
+      source,
+      {
+        source,
+        paired_games: pairs.length,
+        arsenal_wins: wins,
+        source_wins: losses,
+        ties,
+        arsenal_win_rate: pairs.length ? round(wins / pairs.length, 4) : null,
+        average_absolute_edge: pairs.length
+          ? round(
+              pairs.reduce(
+                (sum, pair) =>
+                  sum +
+                  (Math.abs(pair.source.error) -
+                    Math.abs(pair.arsenal.error)),
+                0,
+              ) / pairs.length,
+            )
+          : null,
       },
     ];
   }),
@@ -860,6 +1083,8 @@ const output = {
       "Reports all matched active games, projections of at least 5 points, projections of at least 10 points, and the top 100 projections selected independently for each week and scoring format.",
     model_versions:
       "Cumulative accuracy is separated by the exact model build ID stored in each immutable forecast snapshot; release-version labels remain attached separately.",
+    source_comparison:
+      "Publisher comparison uses the latest saved weekly projection before each player's kickoff. CBS Week 1 may include a clearly labeled owner-approved bootstrap from the current weekly file when no pre-kickoff CBS archive exists.",
     mae: "Mean absolute error; lower is better.",
     rmse: "Root mean squared error; lower is better and penalizes large misses.",
     bias: "Average projection minus actual result; positive means the model projected too high.",
@@ -888,6 +1113,7 @@ const output = {
   coverage_results: coverageLedger,
   source_comparison: sourceComparison,
   source_comparison_results: sourceComparisonResults,
+  source_directional_edge: sourceDirectionalEdge,
   weeks: weekResults,
 };
 
