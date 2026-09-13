@@ -653,18 +653,18 @@ export default function BallsvilleStatsClient() {
                   {data.coverage.missingLeagues.length === 1 ? "" : "s"}
                 </div>
                 <p className="mt-1 text-xs leading-5 text-amber-50/60">
-                  Those leagues are excluded from player counts, ADP, manager
-                  totals, and team rankings until they are added to the
-                  Ballsville Draft Compare feed.
+                  The update still published every league it could process. These leagues are excluded from player
+                  counts, ADP, manager totals, and team rankings until their Draft Compare feed or Sleeper data is
+                  available.
                 </p>
                 <details className="mt-3">
                   <summary className="cursor-pointer text-xs font-bold text-amber-100/75">
                     Show missing leagues
                   </summary>
                   <div className="mt-2 grid gap-1 text-[10px] text-white/45 sm:grid-cols-2">
-                    {data.coverage.missingLeagues.map((row) => (
+                    {data.coverage.missingLeagues.map((row, index) => (
                       <div
-                        key={row.leagueId}
+                        key={`${row.leagueId || "missing"}:${row.draftId || index}`}
                         className="rounded-lg bg-black/15 px-3 py-2"
                       >
                         {row.name || row.leagueId} · {row.mode}
@@ -679,7 +679,8 @@ export default function BallsvilleStatsClient() {
                 <div>
                   <h2 className="text-xl font-black">Game-mode population</h2>
                   <p className="mt-1 text-xs text-white/38">
-                    Unique manager IDs versus total draft seats.
+                    Unique manager IDs versus total draft seats. Manager counts overlap between modes, so the mode
+                    figures should not be added together; the page total deduplicates them across all modes.
                   </p>
                 </div>
                 <button

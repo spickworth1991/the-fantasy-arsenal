@@ -329,7 +329,7 @@ function RecommendationCard({ item, state, update, compact = false }) {
   );
 }
 
-export default function DecisionInbox({ full = false }) {
+export default function DecisionInbox({ full = false, scopeLeagueIds = null }) {
   const {
     username,
     leagues = [],
@@ -387,6 +387,8 @@ export default function DecisionInbox({ full = false }) {
     [leagues],
   );
   const targetLeagues = useMemo(() => {
+    const hubScope = Array.isArray(scopeLeagueIds) ? new Set(scopeLeagueIds.map(String)) : null;
+    if (hubScope) return leagues.filter((league) => hubScope.has(String(league.league_id)));
     const selected = new Set((leagueScope.leagueIds || []).map(String));
     return selected.size
       ? leagues.filter((league) => selected.has(String(league.league_id)))
@@ -395,7 +397,7 @@ export default function DecisionInbox({ full = false }) {
             leagueScope.includeBestBall ||
             !classifyLeagueFormat(league).flags.bestBall,
         );
-  }, [leagueScope.includeBestBall, leagueScope.leagueIds, leagues]);
+  }, [leagueScope.includeBestBall, leagueScope.leagueIds, leagues, scopeLeagueIds]);
   const targetLeagueIds = useMemo(
     () => targetLeagues.map((league) => String(league.league_id)),
     [targetLeagues],

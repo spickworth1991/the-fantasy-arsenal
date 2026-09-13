@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { useSleeper } from "../../context/SleeperContext";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 const Navbar = dynamic(() => import("../../components/Navbar"), { ssr: false });
 const BackgroundParticles = dynamic(() => import("../../components/BackgroundParticles"), { ssr: false });
@@ -30,7 +32,46 @@ function resultPoints(row) {
   return custom != null ? number(custom) : number(row?.points);
 }
 
-function buildSeasonSummary({ league, users, rosters, matchups, transactions, bracket, regularEnd, drafts = [], draftPicks = [] }) {
+function hasResult(row) {
+  if (row?.custom_points != null) return true;
+  if (row?.points == null) return false;
+  // Sleeper commonly returns zeroes for a matchup that has been scheduled but
+  // has not started. A non-zero published score (or starter total) is evidence
+  // that the matchup has actually completed.
+  if (number(row.points) !== 0) return true;
+  const starterPoints = Array.isArray(row?.starters_points) ? row.starters_points.reduce((sum, value) => sum + number(value), 0) : 0;
+  return starterPoints !== 0;
+}
+
+function seasonNarrative(season) {
+  if (!season) return "";
+  const champion = season.champion?.name || "the eventual champion";
+  const high = season.awards.highGame;
+  const blowout = season.awards.blowout;
+  const heartbreak = season.awards.heartbreak;
+  const active = season.awards.active;
+  const phrases = [
+    `The ${season.season} campaign belonged to ${champion}, but the path there had plenty of texture.`,
+    `${champion} finished on top in ${season.season}, in a season shaped by big swings and small margins.`,
+    `${season.season} closed with ${champion} holding the crown after a season of memorable turns.`,
+  ];
+  const parts = [phrases[number(season.season) % phrases.length]];
+  if (high) {
+    const highPhrases = [
+      `${high.name} authored the week’s scoring masterpiece, posting ${points(high.score)} in Week ${high.week}.`,
+      `The signature scoring performance came from ${high.name}: ${points(high.score)} points in Week ${high.week}.`,
+      `Week ${high.week} produced the season’s peak when ${high.name} reached ${points(high.score)} points.`,
+    ];
+    parts.push(highPhrases[number(season.season) % highPhrases.length]);
+  }
+  if (blowout) parts.push(`The widest result was a ${points(blowout.margin)}-point separation between ${blowout.nameA} and ${blowout.nameB} in Week ${blowout.week}.`);
+  if (heartbreak) parts.push(`${heartbreak.name} delivered ${points(heartbreak.score)} points in Week ${heartbreak.week} but still left that matchup with the heartbreak award.`);
+  if (active) parts.push(`${active.name} kept the league moving with ${active.transactionCount} recorded transactions.`);
+  parts.push(`${season.transactions.length} observable transactions and ${season.games.filter((game) => game.played !== false).length} completed matchups give the year its statistical backbone.`);
+  return parts.join(" ");
+}
+
+function buildSeasonSummary({ league, users, rosters, matchups, transactions, bracket, regularEnd, drafts = [], draftPicks = [], nflState = null }) {
   const usersById = new Map((users || []).map((user) => [String(user.user_id), user]));
   const teams = new Map();
   (rosters || []).forEach((roster) => {
@@ -56,6 +97,8 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
   });
 
   const weeklyGames = [];
+  const currentWeek = String(nflState?.season || "") === String(league?.season || "") ? fantasyWeekFromNflState(nflState) : 0;
+  const provisionalWeeks = new Set();
   (matchups || []).forEach(({ week, rows }) => {
     const groups = new Map();
     (rows || []).forEach((row) => {
@@ -63,6 +106,8 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
       if (!groups.has(row.matchup_id)) groups.set(row.matchup_id, []);
       groups.get(row.matchup_id).push(row);
     });
+    const weekGroups = [...groups.values()].filter((group) => group.length === 2);
+    const weekComplete = weekGroups.length > 0 && weekGroups.every((group) => group.every(hasResult));
     groups.forEach((group) => {
       if (group.length !== 2) return;
       const [a, b] = group;
@@ -70,16 +115,25 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
       const tb = teams.get(String(b.roster_id));
       const scoreA = resultPoints(a);
       const scoreB = resultPoints(b);
+      const played = hasResult(a) || hasResult(b);
+      const provisional = played && String(league?.status).toLowerCase() === "in_season" && Number(week) === currentWeek && !weekComplete;
+      if (provisional) provisionalWeeks.add(Number(week));
       const isPlayoff = week > regularEnd;
-      if (!isPlayoff) {
+      if (!isPlayoff && played) {
         ta.pointsFor += scoreA; ta.pointsAgainst += scoreB;
         tb.pointsFor += scoreB; tb.pointsAgainst += scoreA;
       }
-      ta.highScore = Math.max(ta.highScore, scoreA); tb.highScore = Math.max(tb.highScore, scoreB);
-      ta.lowScore = ta.lowScore == null ? scoreA : Math.min(ta.lowScore, scoreA);
-      tb.lowScore = tb.lowScore == null ? scoreB : Math.min(tb.lowScore, scoreB);
+      if (played) {
+        ta.highScore = Math.max(ta.highScore, scoreA); tb.highScore = Math.max(tb.highScore, scoreB);
+        ta.lowScore = ta.lowScore == null ? scoreA : Math.min(ta.lowScore, scoreA);
+        tb.lowScore = tb.lowScore == null ? scoreB : Math.min(tb.lowScore, scoreB);
+      }
       const margin = Math.abs(scoreA - scoreB);
-      if (scoreA > scoreB) {
+      if (!played) {
+        // A scheduled matchup without a published result is not a result yet.
+        // It must not affect wins, losses, ties, or scoring until Sleeper posts
+        // the completed points.
+      } else if (scoreA > scoreB) {
         if (isPlayoff) ta.playoffWins += 1; else { ta.wins += 1; tb.losses += 1; }
         ta.biggestWin = Math.max(ta.biggestWin, margin);
         ta.closestWin = ta.closestWin == null ? margin : Math.min(ta.closestWin, margin);
@@ -90,7 +144,7 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
       } else {
         if (!isPlayoff) { ta.ties += 1; tb.ties += 1; }
       }
-      weeklyGames.push({ week, isPlayoff, a: ta.userId, b: tb.userId, nameA: ta.name, nameB: tb.name, scoreA, scoreB, margin });
+      weeklyGames.push({ week, isPlayoff, played, provisional, a: ta.userId, b: tb.userId, nameA: ta.name, nameB: tb.name, scoreA, scoreB, margin: played ? margin : 0 });
     });
   });
 
@@ -106,9 +160,9 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
   }
   const champion = teams.get(championRosterId) || null;
   const standings = [...teams.values()].sort((a, b) => b.wins - a.wins || b.pointsFor - a.pointsFor);
-  const highGame = [...weeklyGames].flatMap((game) => [{ name: game.nameA, score: game.scoreA, week: game.week }, { name: game.nameB, score: game.scoreB, week: game.week }]).sort((a, b) => b.score - a.score)[0] || null;
-  const heartbreak = weeklyGames.filter((game) => game.scoreA !== game.scoreB).map((game) => game.scoreA < game.scoreB ? { name: game.nameA, score: game.scoreA, opponent: game.nameB, week: game.week } : { name: game.nameB, score: game.scoreB, opponent: game.nameA, week: game.week }).sort((a, b) => b.score - a.score)[0] || null;
-  const blowout = [...weeklyGames].sort((a, b) => b.margin - a.margin)[0] || null;
+  const highGame = weeklyGames.filter((game) => game.played).flatMap((game) => [{ name: game.nameA, score: game.scoreA, week: game.week }, { name: game.nameB, score: game.scoreB, week: game.week }]).sort((a, b) => b.score - a.score)[0] || null;
+  const heartbreak = weeklyGames.filter((game) => game.played && game.scoreA !== game.scoreB).map((game) => game.scoreA < game.scoreB ? { name: game.nameA, score: game.scoreA, opponent: game.nameB, week: game.week } : { name: game.nameB, score: game.scoreB, opponent: game.nameA, week: game.week }).sort((a, b) => b.score - a.score)[0] || null;
+  const blowout = weeklyGames.filter((game) => game.played).sort((a, b) => b.margin - a.margin)[0] || null;
   const active = [...teams.values()].sort((a, b) => b.transactionCount - a.transactionCount)[0] || null;
 
   return {
@@ -127,6 +181,8 @@ function buildSeasonSummary({ league, users, rosters, matchups, transactions, br
     drafts,
     draftPicks,
     awards: { highGame, heartbreak, blowout, active },
+    currentWeek,
+    provisionalWeeks: [...provisionalWeeks],
   };
 }
 
@@ -134,18 +190,19 @@ async function fetchSeason(league) {
   const regularEnd = Math.max(1, Math.min(18, number(league?.settings?.playoff_week_start || 15) - 1 || 14));
   const weekNumbers = Array.from({ length: 18 }, (_, index) => index + 1);
   const txWeeks = Array.from(new Set([0, ...weekNumbers, regularEnd + 1, regularEnd + 2, regularEnd + 3])).filter((week) => week <= 18);
-  const [users, rosters, bracket, matchupRows, transactionRows, drafts] = await Promise.all([
+  const [users, rosters, bracket, matchupRows, transactionRows, drafts, nflState] = await Promise.all([
     getJson(`https://api.sleeper.app/v1/league/${league.league_id}/users`).catch(() => []),
     getJson(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`).catch(() => []),
     getJson(`https://api.sleeper.app/v1/league/${league.league_id}/winners_bracket`).catch(() => []),
     Promise.all(weekNumbers.map((week) => getJson(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`).then((rows) => ({ week, rows })).catch(() => ({ week, rows: [] })))),
     Promise.all(txWeeks.map((week) => getJson(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week}`).catch(() => []))),
     getJson(`https://api.sleeper.app/v1/league/${league.league_id}/drafts`).catch(() => []),
+    getJson("https://api.sleeper.app/v1/state/nfl").catch(() => null),
   ]);
   const draftPicks = (await Promise.all((drafts || []).map((draft) => getJson(`https://api.sleeper.app/v1/draft/${draft.draft_id}/picks`).catch(() => [])))).flat();
   const transactionMap = new Map();
   transactionRows.flat().forEach((tx) => transactionMap.set(String(tx.transaction_id || `${tx.created}-${tx.type}`), tx));
-  return buildSeasonSummary({ league, users, rosters, matchups: matchupRows, transactions: [...transactionMap.values()], bracket, regularEnd, drafts, draftPicks });
+  return buildSeasonSummary({ league, users, rosters, matchups: matchupRows, transactions: [...transactionMap.values()], bracket, regularEnd, drafts, draftPicks, nflState });
 }
 
 function aggregateHistory(seasons) {
@@ -161,14 +218,15 @@ function aggregateHistory(seasons) {
     season.games.forEach((game) => {
       const ids = [game.a, game.b].sort();
       const key = ids.join("|");
-      if (!rivalries.has(key)) rivalries.set(key, { key, a: ids[0], b: ids[1], names: {}, wins: {}, ties: 0, games: 0, points: {}, playoffGames: 0, closest: null, largest: 0 });
+      if (!rivalries.has(key)) rivalries.set(key, { key, a: ids[0], b: ids[1], names: {}, wins: {}, losses: {}, ties: 0, games: 0, points: {}, playoffGames: 0, closest: null, largest: 0 });
       const rivalry = rivalries.get(key);
       rivalry.names[game.a] = game.nameA; rivalry.names[game.b] = game.nameB;
       rivalry.games += 1; rivalry.points[game.a] = number(rivalry.points[game.a]) + game.scoreA; rivalry.points[game.b] = number(rivalry.points[game.b]) + game.scoreB;
       if (game.isPlayoff) rivalry.playoffGames += 1;
       rivalry.closest = rivalry.closest == null ? game.margin : Math.min(rivalry.closest, game.margin); rivalry.largest = Math.max(rivalry.largest, game.margin);
-      if (game.scoreA > game.scoreB) rivalry.wins[game.a] = number(rivalry.wins[game.a]) + 1;
-      else if (game.scoreB > game.scoreA) rivalry.wins[game.b] = number(rivalry.wins[game.b]) + 1;
+      if (!game.played) return;
+      if (game.scoreA > game.scoreB) { rivalry.wins[game.a] = number(rivalry.wins[game.a]) + 1; rivalry.losses[game.b] = number(rivalry.losses[game.b]) + 1; }
+      else if (game.scoreB > game.scoreA) { rivalry.wins[game.b] = number(rivalry.wins[game.b]) + 1; rivalry.losses[game.a] = number(rivalry.losses[game.a]) + 1; }
       else rivalry.ties += 1;
     });
   });
@@ -182,13 +240,87 @@ function Shell({ children, className = "" }) {
 }
 
 function Metric({ label, value, hint }) {
-  return <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/38">{label}</div><div className="mt-1.5 text-xl font-black text-white">{value}</div>{hint ? <div className="mt-1 text-[11px] text-white/42">{hint}</div> : null}</div>;
+  const notes = { "Score of the year": "The highest completed fantasy score recorded in the season.", "Heartbreak award": "The highest-scoring team that still lost its matchup.", "Biggest blowout": "The largest completed margin of victory.", "Most active": "The manager with the most observable roster transactions." };
+  return <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/38" title={notes[label] || undefined}>{label}</div><div className="mt-1.5 text-xl font-black text-white">{value}</div>{hint ? <div className="mt-1 text-[11px] text-white/42">{hint}</div> : null}</div>;
+}
+
+function RivalryMatchupList({ rivalry, games }) {
+  const matchups = (games || []).filter((game) => {
+    const ids = [game.a, game.b].sort();
+    return ids[0] === rivalry.a && ids[1] === rivalry.b;
+  });
+  return <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-left"><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-white/40">Matchup ledger</div><div className="mt-1 text-xs text-white/40">Every meeting behind the all-time point totals.</div><div className="mt-3 space-y-2">{matchups.map((game, index) => { const aFirst = game.a === rivalry.a; const left = aFirst ? game.scoreA : game.scoreB; const right = aFirst ? game.scoreB : game.scoreA; return <div key={`${game.season}-${game.week}-${index}`} className="flex items-center gap-3 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-xs"><span className="w-16 shrink-0 text-white/35">{game.season} · W{game.week}</span><span className={`min-w-0 flex-1 truncate ${left > right ? "font-bold text-cyan-100" : "text-white/65"}`}>{rivalry.names[rivalry.a]}</span><b className="tabular-nums text-white">{game.played === false ? "Unplayed" : `${points(left)} – ${points(right)}`}</b><span className={`min-w-0 flex-1 truncate text-right ${right > left ? "font-bold text-violet-100" : "text-white/65"}`}>{rivalry.names[rivalry.b]}</span></div>; })}</div></div>;
+}
+
+function RivalryMatchupLedger({ rivalry, games }) {
+  const matchups = (games || []).filter((game) => {
+    const ids = [game.a, game.b].sort();
+    return ids[0] === rivalry.a && ids[1] === rivalry.b;
+  });
+  return <details open className="mt-5 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-left lg:ml-[350px] lg:-mt-5"><summary className="cursor-pointer list-none"><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-white/40">Matchup ledger</div><div className="mt-1 text-xs text-white/40">Every meeting behind the all-time point totals · {matchups.length} matchups</div></summary><div className="mt-3 max-h-[26rem] space-y-2 overflow-y-auto pr-1">{matchups.map((game, index) => { const aFirst = game.a === rivalry.a; const left = aFirst ? game.scoreA : game.scoreB; const right = aFirst ? game.scoreB : game.scoreA; return <div key={`${game.season}-${game.week}-${index}`} className="flex items-center gap-3 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-xs"><span className="w-16 shrink-0 text-white/35">{game.season} · W{game.week}</span><span className={`min-w-0 flex-1 truncate ${left > right ? "font-bold text-cyan-100" : "text-white/65"}`}>{rivalry.names[rivalry.a]}</span><b className="tabular-nums text-white">{game.played === false ? "Unplayed" : `${points(left)} – ${points(right)}`}</b><span className={`min-w-0 flex-1 truncate text-right ${right > left ? "font-bold text-violet-100" : "text-white/65"}`}>{rivalry.names[rivalry.b]}</span></div>; })}</div></details>;
+}
+
+function RivalryMatchupPortal({ rivalry, games }) {
+  const [target, setTarget] = useState(null);
+  useEffect(() => {
+    const panel = [...document.querySelectorAll(".relative.overflow-hidden.p-6")].find((element) => element.textContent.includes("Head to head"));
+    setTarget(panel || null);
+  }, [rivalry?.key]);
+  if (!target) return null;
+  const matchups = (games || []).filter((game) => {
+    const ids = [game.a, game.b].sort();
+    return ids[0] === rivalry.a && ids[1] === rivalry.b;
+  });
+  return createPortal(<details open className="mt-5 border-t border-white/10 pt-5 text-left"><summary className="cursor-pointer list-none"><div className="text-[11px] font-semibold uppercase tracking-[.2em] text-white/40">Matchup ledger</div><div className="mt-1 text-xs text-white/40">Every meeting behind the all-time point totals · {matchups.length} matchups</div></summary><div className="mt-3 max-h-[26rem] space-y-2 overflow-y-auto pr-1">{matchups.map((game, index) => { const aFirst = game.a === rivalry.a; const left = aFirst ? game.scoreA : game.scoreB; const right = aFirst ? game.scoreB : game.scoreA; return <div key={`${game.season}-${game.week}-${index}`} className="flex items-center gap-3 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-xs"><span className="w-16 shrink-0 text-white/35">{game.season} · W{game.week}</span><span className={`min-w-0 flex-1 truncate ${left > right ? "font-bold text-cyan-100" : "text-white/65"}`}>{rivalry.names[rivalry.a]}</span><b className="tabular-nums text-white">{game.played === false ? "Unplayed" : `${points(left)} – ${points(right)}`}</b><span className={`min-w-0 flex-1 truncate text-right ${right > left ? "font-bold text-violet-100" : "text-white/65"}`}>{rivalry.names[rivalry.b]}</span></div>; })}</div></details>, target);
 }
 
 function YearbookPrintDocument({ season, players }) {
   if (!season) return null;
   const draftRows=season.draftPicks||[];
   return <article className="yearbook-print-only"><header className="print-cover"><div className="print-kicker">THE FANTASY ARSENAL · OFFICIAL YEARBOOK</div><h1>{season.season}</h1><h2>{season.name}</h2><div className="print-summary"><div><small>Champion</small><b>{season.champion?.name||"Unavailable"}</b></div><div><small>Teams</small><b>{season.teamCount||season.standings.length}</b></div><div><small>Matchups</small><b>{season.games.length}</b></div><div><small>Transactions</small><b>{season.transactions.length}</b></div></div></header><section className="print-section"><h2>Season honors</h2><div className="print-summary"><div><small>High score</small><b>{season.awards.highGame?`${season.awards.highGame.name} · ${points(season.awards.highGame.score)}`:"—"}</b></div><div><small>Heartbreak</small><b>{season.awards.heartbreak?`${season.awards.heartbreak.name} · ${points(season.awards.heartbreak.score)}`:"—"}</b></div><div><small>Largest margin</small><b>{season.awards.blowout?points(season.awards.blowout.margin):"—"}</b></div><div><small>Most active</small><b>{season.awards.active?.name||"—"}</b></div></div></section><section className="print-section"><h2>Final standings</h2><table><thead><tr><th>Rank</th><th>Team</th><th>Record</th><th>Points for</th><th>High score</th></tr></thead><tbody>{season.standings.map((team,index)=><tr key={team.rosterId}><td>{index+1}</td><td>{team.name}{season.champion?.rosterId===team.rosterId?" · Champion":""}</td><td>{team.wins}-{team.losses}-{team.ties}</td><td>{points(team.pointsFor)}</td><td>{points(team.highScore)}</td></tr>)}</tbody></table></section><section className="print-section print-page-break"><h2>Complete rosters</h2><div className="print-rosters">{season.standings.map(team=><div key={team.rosterId} className="print-roster"><h3>{team.name}</h3><p>{(team.playerIds||[]).map(id=>players?.[id]?.full_name||id).join(" · ")||"Roster unavailable"}</p></div>)}</div></section>{draftRows.length?<section className="print-section print-page-break"><h2>Complete draft</h2><table><thead><tr><th>Pick</th><th>Player</th><th>Position</th><th>NFL team</th></tr></thead><tbody>{draftRows.map(row=>{const player=players?.[row.player_id];return <tr key={`${row.draft_id}-${row.pick_no}`}><td>#{row.pick_no}</td><td>{player?.full_name||row.player_id}</td><td>{player?.position||"—"}</td><td>{player?.team||"—"}</td></tr>})}</tbody></table></section>:null}<footer>Generated by The Fantasy Arsenal · Sleeper data is read-only.</footer></article>;
+}
+
+function SeasonStoryPrintPage({ season }) {
+  if (!season) return null;
+  return <article className="yearbook-print-only print-story-page"><header className="print-cover"><div className="print-kicker">THE FANTASY ARSENAL · SEASON STORY</div><h1>{season.season}</h1><h2>{season.name}</h2></header><section className="print-section"><h2>Season honors</h2><p className="print-award-note">Honors are calculated from completed matchups and observable league activity.</p><div className="print-summary"><div><small>Score of the year</small><b>{season.awards.highGame ? `${season.awards.highGame.name} · ${points(season.awards.highGame.score)}` : "—"}</b></div><div><small>Heartbreak award</small><b>{season.awards.heartbreak ? `${season.awards.heartbreak.name} · ${points(season.awards.heartbreak.score)}` : "—"}</b></div><div><small>Biggest blowout</small><b>{season.awards.blowout ? points(season.awards.blowout.margin) : "—"}</b></div><div><small>Most active</small><b>{season.awards.active?.name || "—"}</b></div></div></section><section className="print-section"><h2>The season in words</h2><p className="print-narrative">{seasonNarrative(season)}</p></section><footer>Generated by The Fantasy Arsenal · Sleeper data is read-only.</footer></article>;
+}
+
+function YearbookPrintDocumentV2({ season, players }) {
+  if (!season) return null;
+  const draftRows = season.draftPicks || [];
+  const high = season.awards.highGame;
+  const heartbreak = season.awards.heartbreak;
+  const blowout = season.awards.blowout;
+  const active = season.awards.active;
+  return <article className="yearbook-print-only yearbook-print-v2"><section className="print-cover print-cover-with-story"><div className="print-kicker">THE FANTASY ARSENAL · OFFICIAL YEARBOOK</div><h1>{season.season}</h1><h2>{season.name}</h2><div className="print-summary"><div><small>Champion</small><b>{season.champion?.name || "Unavailable"}</b></div><div><small>Teams</small><b>{season.teamCount || season.standings.length}</b></div><div><small>Completed matchups</small><b>{season.games.filter((game) => game.played).length}</b></div><div><small>Transactions</small><b>{season.transactions.length}</b></div></div><div className="print-first-page-story"><h2>Season honors</h2><p className="print-award-note">Awards reflect completed matchups and observable league activity. Scheduled games without scores are recorded as losses until Sleeper posts a final result.</p><div className="print-summary"><div><small>Score of the year</small><b>{high ? `${high.name} · ${points(high.score)}` : "—"}</b></div><div><small>Heartbreak award</small><b>{heartbreak ? `${heartbreak.name} · ${points(heartbreak.score)}` : "—"}</b></div><div><small>Biggest blowout</small><b>{blowout ? `${points(blowout.margin)} points` : "—"}</b></div><div><small>Most active</small><b>{active?.name || "—"}</b></div></div><h2 className="print-story-heading">The season in words</h2><p className="print-narrative">{seasonNarrative(season)}</p></div></section><section className="print-section print-page-break"><h2>Final standings</h2><table><thead><tr><th>Rank</th><th>Team</th><th>Record</th><th>Points for</th><th>High score</th></tr></thead><tbody>{season.standings.map((team, index) => <tr key={team.rosterId}><td>{index + 1}</td><td>{team.name}{season.champion?.rosterId === team.rosterId ? " · Champion" : ""}</td><td>{team.wins}-{team.losses}-{team.ties}</td><td>{points(team.pointsFor)}</td><td>{points(team.highScore)}</td></tr>)}</tbody></table></section><section className="print-section print-page-break"><h2>Complete rosters</h2><div className="print-rosters">{season.standings.map((team) => <div key={team.rosterId} className="print-roster"><h3>{team.name}</h3><p>{(team.playerIds || []).map((id) => players?.[id]?.full_name || id).join(" · ") || "Roster unavailable"}</p></div>)}</div></section>{draftRows.length ? <section className="print-section print-page-break"><h2>Complete draft</h2><table><thead><tr><th>Pick</th><th>Player</th><th>Position</th><th>NFL team</th></tr></thead><tbody>{draftRows.map((row) => { const player = players?.[row.player_id]; return <tr key={`${row.draft_id}-${row.pick_no}`}><td>#{row.pick_no}</td><td>{player?.full_name || row.player_id}</td><td>{player?.position || "—"}</td><td>{player?.team || "—"}</td></tr>; })}</tbody></table></section> : null}<footer>Generated by The Fantasy Arsenal · Sleeper data is read-only.</footer></article>;
+}
+
+function PdfCreator() {
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState({ rosters: true, draft: true, standings: true, honors: true });
+  const toggle = (key) => setOptions((current) => ({ ...current, [key]: !current[key] }));
+  const create = () => {
+    Object.entries(options).forEach(([key, enabled]) => { document.body.dataset[`pdfHide${key[0].toUpperCase()}${key.slice(1)}`] = enabled ? "false" : "true"; });
+    setOpen(false);
+    window.setTimeout(() => window.print(), 50);
+    window.addEventListener("afterprint", () => Object.keys(options).forEach((key) => { delete document.body.dataset[`pdfHide${key[0].toUpperCase()}${key.slice(1)}`]; }), { once: true });
+  };
+  return <div className="mb-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-cyan-200/60">PDF creator</div><div className="mt-1 text-sm text-white/55">Choose the sections for your printable yearbook.</div></div><button type="button" onClick={() => setOpen((current) => !current)} className="rounded-xl bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100">{open ? "Close selections" : "Create PDF"}</button></div>{open ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{[["rosters", "Complete rosters"], ["draft", "Complete draft"], ["standings", "Final standings"], ["honors", "Season honors"]].map(([key, label]) => <button key={key} type="button" onClick={() => toggle(key)} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-sm ${options[key] ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-50" : "border-white/10 bg-white/[0.03] text-white/40"}`}><span>{label}</span><span>{options[key] ? "Included" : "Excluded"}</span></button>)}<button type="button" onClick={create} className="mt-2 rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950 sm:col-span-2">Generate selected PDF</button></div> : null}</div>;
+}
+
+function SeasonStoryInline({ season }) {
+  if (!season) return null;
+  const awardNotes = {
+    "Score of the year": "Highest completed fantasy score.",
+    "Heartbreak award": "Highest score in a losing matchup.",
+    "Biggest blowout": "Largest completed margin of victory.",
+    "Most active": "Most observable transactions.",
+    "Most painful loss": "A high-scoring loss that became the season’s toughest what-if.",
+    "Quietest season": "Fewest observable transactions among the season’s managers.",
+  };
+  const quiet = [...(season.standings || [])].sort((a, b) => a.transactionCount - b.transactionCount)[0];
+  const awards = [["Score of the year", season.awards.highGame ? `${season.awards.highGame.name} · ${points(season.awards.highGame.score)}` : "—"], ["Heartbreak award", season.awards.heartbreak?.name || "—"], ["Biggest blowout", season.awards.blowout ? `${points(season.awards.blowout.margin)} points` : "—"], ["Most active", season.awards.active?.name || "—"], ["Most painful loss", season.awards.heartbreak ? `${season.awards.heartbreak.name} · ${points(season.awards.heartbreak.score)}` : "—"], ["Quietest season", quiet?.name || "—"]];
+  return <section className="mt-5 rounded-[28px] border border-amber-200/15 bg-gradient-to-br from-amber-300/[0.08] to-violet-300/[0.04] p-5"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-amber-100/60">Season story engine</div><h3 className="mt-2 text-2xl font-black">The moments that shaped the season</h3><p className="mt-3 max-w-4xl text-sm leading-6 text-white/60">{seasonNarrative(season)}</p><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{awards.map(([label, value]) => <div key={label} title={awardNotes[label]} className="rounded-2xl border border-white/10 bg-black/10 p-3"><div className="text-[10px] font-semibold uppercase tracking-[.16em] text-white/40">{label}</div><div className="mt-1 font-bold text-white">{value}</div></div>)}</div></section>;
 }
 
 function LegacyExpansion({ seasons, selectedSeason, history, players, getPlayerValue }) {
@@ -198,11 +330,11 @@ function LegacyExpansion({ seasons, selectedSeason, history, players, getPlayerV
   const highest=games.flatMap(game=>[{name:game.nameA,score:game.scoreA,week:game.week,season:game.season},{name:game.nameB,score:game.scoreB,week:game.week,season:game.season}]).sort((a,b)=>b.score-a.score)[0];
   const draftRows=(selectedSeason.draftPicks||[]).map(pick=>{const player=players?.[pick.player_id];return{...pick,player,name:player?.full_name||player?.search_full_name||pick.player_id,value:Number(getPlayerValue?.(player)||0)};});
   const draftBest=[...draftRows].sort((a,b)=>b.value-a.value).slice(0,8);const draftReaches=[...draftRows].filter(row=>row.value>0).sort((a,b)=>(a.value/(Number(a.pick_no)||1))-(b.value/(Number(b.pick_no)||1))).slice(0,6);
-  const tradeRows=(selectedSeason.transactions||[]).filter(tx=>tx.type==="trade").map(tx=>({tx,assets:Object.keys(tx.adds||{}).length+Object.keys(tx.drops||{}).length+(tx.draft_picks||[]).length})).sort((a,b)=>b.assets-a.assets);
+  const tradeRows=(selectedSeason.transactions||[]).map(tx=>({tx,assets:Object.keys(tx.adds||{}).length+Object.keys(tx.drops||{}).length+(tx.draft_picks||[]).length})).filter(({tx,assets})=>tx.type==="trade"||(assets>1&&(tx.roster_ids||[]).length>=2)).sort((a,b)=>b.assets-a.assets);
   const continuity=history.managers.map(manager=>({manager,seasons:seasons.filter(season=>season.standings.some(team=>team.userId===manager.userId)).map(season=>season.season)})).sort((a,b)=>b.seasons.length-a.seasons.length);
   const valueTimeline=seasons.map(season=>({season:season.season,total:season.standings.reduce((sum,team)=>sum+(team.playerIds||[]).reduce((s,id)=>s+Number(getPlayerValue?.(players?.[id])||0),0),0)}));const maxValue=Math.max(1,...valueTimeline.map(row=>row.total));
   const awards=[{label:"Regular-season powerhouse",team:[...selectedSeason.standings].sort((a,b)=>b.wins-a.wins||b.pointsFor-a.pointsFor)[0]?.name},{label:"Points machine",team:[...selectedSeason.standings].sort((a,b)=>b.pointsFor-a.pointsFor)[0]?.name},{label:"Iron manager",team:selectedSeason.awards.active?.name},{label:"Cardiac season",team:selectedSeason.awards.heartbreak?.name}];
-  const story=`${selectedSeason.season} belonged to ${selectedSeason.champion?.name||"the eventual champion"}. ${selectedSeason.awards.highGame?`${selectedSeason.awards.highGame.name} set the scoring standard with ${points(selectedSeason.awards.highGame.score)} in Week ${selectedSeason.awards.highGame.week}.`:""} ${selectedSeason.awards.blowout?`The widest margin arrived in Week ${selectedSeason.awards.blowout.week}, when ${selectedSeason.awards.blowout.nameA} and ${selectedSeason.awards.blowout.nameB} produced a ${points(selectedSeason.awards.blowout.margin)}-point gap.`:""} The league completed ${selectedSeason.transactions.length} observable transactions across the season.`;
+  const story=seasonNarrative(selectedSeason);
   const share=async(text)=>{try{await navigator.clipboard.writeText(text);}catch{}};
   return <div className="mt-6 space-y-5"><Shell className="p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-amber-200/55">Season story engine</div><h2 className="mt-1 text-2xl font-black">Awards, narrative, and share cards</h2></div><div className="flex gap-2"><button onClick={()=>share(`🏆 ${selectedSeason.season} Champion: ${selectedSeason.champion?.name||"—"} · ${selectedSeason.name}`)} className="rounded-xl bg-amber-300/10 px-3 py-2 text-xs text-amber-100">Copy champion card</button><button onClick={()=>share(story)} className="rounded-xl bg-white/[0.05] px-3 py-2 text-xs text-white/60">Copy season story</button></div></div><p className="mt-4 rounded-2xl bg-white/[0.025] p-4 text-sm leading-6 text-white/55">{story}</p><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{awards.map(award=><Metric key={award.label} label={award.label} value={award.team||"—"}/>)}</div></Shell><div className="grid gap-5 xl:grid-cols-2"><Shell className="p-5"><h3 className="text-xl font-black">Draft-class retrospective</h3><p className="mt-1 text-xs text-white/38">Current selected-market value applied to the historical draft class.</p><div className="mt-4 space-y-2">{draftBest.map(row=><div key={`${row.draft_id}-${row.pick_no}`} className="flex items-center gap-3 rounded-xl bg-white/[0.025] p-3"><b className="text-xs text-violet-100">#{row.pick_no}</b><span className="min-w-0 flex-1 truncate text-sm font-semibold">{row.name}</span><span className="text-xs text-white/40">{Math.round(row.value).toLocaleString()}</span></div>)}{!draftBest.length?<div className="text-sm text-white/35">No historical draft picks were returned.</div>:null}</div>{draftReaches.length?<details className="mt-3 rounded-xl bg-rose-300/[0.035] p-3"><summary className="cursor-pointer text-xs font-semibold text-rose-100/70">Review lowest current-value selections</summary><div className="mt-2 text-xs leading-5 text-white/40">{draftReaches.map(row=>`#${row.pick_no} ${row.name}`).join(" · ")}</div></details>:null}</Shell><Shell className="p-5"><h3 className="text-xl font-black">Trade trees</h3><p className="mt-1 text-xs text-white/38">The season’s largest asset exchanges, ready for deeper lineage review.</p><div className="mt-4 space-y-2">{tradeRows.slice(0,10).map(({tx,assets},index)=><details key={tx.transaction_id||index} className="rounded-xl bg-white/[0.025] p-3"><summary className="cursor-pointer text-sm font-semibold">Trade {index+1} · {assets} assets · Week {tx.leg||tx.week||"—"}</summary><div className="mt-2 text-xs leading-5 text-white/40">Players moved: {Object.keys(tx.adds||{}).map(id=>players?.[id]?.full_name||id).join(" · ")||"None"}<br/>Picks moved: {(tx.draft_picks||[]).map(pick=>`${pick.season} R${pick.round}`).join(" · ")||"None"}</div></details>)}{!tradeRows.length?<div className="text-sm text-white/35">No trades returned for this season.</div>:null}</div></Shell></div><div className="grid gap-5 xl:grid-cols-2"><Shell className="p-5"><div className="flex items-center justify-between"><h3 className="text-xl font-black">Expanded record book</h3><select value={recordScope} onChange={event=>setRecordScope(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-xs"><option value="all">All games</option><option value="regular">Regular season</option><option value="playoffs">Playoffs</option></select></div><div className="mt-4 grid grid-cols-2 gap-3"><Metric label="Highest score" value={highest?points(highest.score):"—"} hint={highest?`${highest.name} · ${highest.season} W${highest.week}`:""}/><Metric label="Games indexed" value={games.length}/></div><div className="mt-4 text-xs leading-5 text-white/45">Records can now be isolated to regular season or playoffs instead of mixing both contexts.</div></Shell><Shell className="p-5"><h3 className="text-xl font-black">Franchise continuity</h3><div className="mt-4 space-y-2">{continuity.slice(0,10).map(row=><div key={row.manager.userId} className="flex justify-between rounded-xl bg-white/[0.025] p-3 text-xs"><b>{row.manager.name}</b><span className="text-white/35">{row.seasons.length} seasons · {row.seasons.join(", ")}</span></div>)}</div></Shell></div><Shell className="p-5"><h3 className="text-xl font-black">Historical roster-value timeline</h3><p className="mt-1 text-xs text-white/38">A current-market retrospective of the rosters preserved by Sleeper—not the value those assets held at the time.</p><div className="mt-4 space-y-3">{valueTimeline.map(row=><div key={row.season}><div className="flex justify-between text-xs"><b>{row.season}</b><span className="text-white/35">{Math.round(row.total).toLocaleString()}</span></div><div className="mt-1 h-2 rounded bg-white/[0.04]"><div className="h-full rounded bg-gradient-to-r from-cyan-300 to-violet-300" style={{width:`${row.total/maxValue*100}%`}}/></div></div>)}</div></Shell><Shell className="yearbook-print p-5"><h3 className="text-xl font-black">Full season appendix</h3><p className="mt-1 text-xs text-white/38">Included when printing the yearbook.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{selectedSeason.standings.map(team=><div key={team.rosterId} className="rounded-2xl border border-white/10 p-3"><b>{team.name}</b><div className="mt-2 text-xs leading-5 text-white/42">{(team.playerIds||[]).map(id=>players?.[id]?.full_name||id).join(" · ")||"Roster unavailable"}</div></div>)}</div>{draftRows.length?<div className="mt-5"><h4 className="font-black">Complete draft</h4><div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{draftRows.map(row=><div key={`${row.draft_id}-${row.pick_no}`} className="rounded-xl bg-white/[0.025] p-2 text-xs">#{row.pick_no} · {row.name}</div>)}</div></div>:null}</Shell></div>;
 }
@@ -253,7 +385,7 @@ export default function LeagueHistoryClient() {
   useEffect(() => {
     let active = true;
     if (!selectedLeagueId) { setSeasons([]); return; }
-    const cacheKey = `league-history:v2:${selectedLeagueId}`;
+    const cacheKey = `league-history:v6:${selectedLeagueId}`;
     try {
       const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
       if (cached?.seasons?.length && Date.now() - number(cached.ts) < 30 * 60 * 1000) {
@@ -290,6 +422,14 @@ export default function LeagueHistoryClient() {
   const history = useMemo(() => aggregateHistory(seasons), [seasons]);
   const selectedRivalry = history.rivalries.find((row) => row.key === rivalryKey) || history.rivalries[0] || null;
   const selectedYearbook = seasons.find((season) => String(season.season) === String(yearbookSeason)) || seasons[0] || null;
+  useEffect(() => {
+    if (tab !== "rivalries" || !rivalryKey) return;
+    const timer = window.setTimeout(() => {
+      const panel = [...document.querySelectorAll(".relative.overflow-hidden.p-6")].find((element) => element.textContent.includes("Head to head"));
+      panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+    return () => window.clearTimeout(timer);
+  }, [rivalryKey, tab]);
   const totalGames = seasons.reduce((sum, season) => sum + season.games.length, 0);
   const totalTransactions = seasons.reduce((sum, season) => sum + season.transactions.length, 0);
   const allGames = seasons.flatMap((season) => season.games.map((game) => ({ ...game, season: season.season })));
@@ -337,6 +477,7 @@ export default function LeagueHistoryClient() {
         {loadingHistory ? <div className="mt-5 flex items-center gap-3 rounded-2xl border border-violet-300/15 bg-violet-400/[0.07] p-4 text-sm text-violet-100"><span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200/25 border-t-violet-200" />{progress || "Building league history…"}</div> : null}
 
         {seasons.length ? <>
+          {seasons.some((season) => season.provisionalWeeks?.length) ? <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] px-4 py-3 text-sm text-amber-100/80">Current-week results are provisional while matchups are still being played. Completed scores are shown immediately and may be corrected when the week closes.</div> : null}
           <nav className="sticky top-16 z-30 -mx-4 mt-6 overflow-x-auto border-y border-white/10 bg-slate-950/90 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-2xl sm:border">
             <div className="flex w-max gap-1 sm:w-full">{TABS.map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition sm:flex-1 ${tab === key ? "bg-white/10 text-white shadow-inner" : "text-white/50 hover:bg-white/5 hover:text-white/80"}`}>{label}</button>)}</div>
           </nav>
@@ -362,9 +503,12 @@ export default function LeagueHistoryClient() {
               <section className="border-t border-white/10 bg-black/15 px-5 py-10 sm:px-10"><div className="mx-auto max-w-4xl"><div className="mb-5 text-center"><div className="text-[11px] font-semibold uppercase tracking-[.28em] text-cyan-200/55">Final table</div><h3 className="mt-2 text-2xl font-black">How the league finished</h3></div><div className="grid gap-2 sm:grid-cols-2">{selectedYearbook.standings.map((team, index) => <div key={team.rosterId} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.025] p-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-white/[0.06] font-black text-white/40">{index + 1}</div><div className="min-w-0 flex-1"><div className="truncate font-semibold">{team.name}</div><div className="text-xs text-white/42">{team.wins}-{team.losses}-{team.ties} · {points(team.pointsFor)} PF</div></div>{selectedYearbook.champion?.rosterId === team.rosterId ? <span title="Champion">🏆</span> : null}</div>)}</div></div></section>
             </div>
           </div> : null}
+          {tab === "yearbook" && selectedYearbook ? <SeasonStoryInline season={selectedYearbook} /> : null}
+          {tab === "yearbook" && selectedYearbook ? <PdfCreator /> : null}
           {tab === "yearbook" ? <LegacyExpansion seasons={seasons} selectedSeason={selectedYearbook} history={history} players={players} getPlayerValue={getPlayerValue}/> : null}
+          {tab === "rivalries" && selectedRivalry ? <RivalryMatchupPortal rivalry={selectedRivalry} games={allGames} /> : null}
         </> : null}
-        <YearbookPrintDocument season={selectedYearbook} players={players}/>
+        <YearbookPrintDocumentV2 season={selectedYearbook} players={players}/>
       </div>
     </main>
   );

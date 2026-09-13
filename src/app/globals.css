@@ -205,6 +205,16 @@ body {
   display: none;
 }
 
+/* The season story is read in place and exported through the PDF; keep its
+   redundant copy actions out of the focused story surface. */
+.mt-6.space-y-5 > .rounded-\[28px\]:first-child > div:first-child > div:last-child {
+  display: none;
+}
+
+.mt-6.space-y-5 > .rounded-\[28px\]:first-child {
+  display: none;
+}
+
 .draft-grade-print-only {
   display: none;
 }
@@ -253,6 +263,69 @@ body {
     line-height: 1.35;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  .yearbook-print-only.print-story-page {
+    position: relative;
+    inset: auto;
+    min-height: 9.2in;
+    padding: 0.2in;
+    break-after: page;
+  }
+
+  .yearbook-print-only.yearbook-print-v2 {
+    position: absolute;
+    inset: 0 auto auto 0;
+  }
+
+  .yearbook-print-v2 .print-cover-with-story {
+    min-height: 9.2in;
+    break-after: auto;
+    justify-content: flex-start;
+    padding-top: 0.25in;
+  }
+
+  .yearbook-print-v2 .print-first-page-story {
+    margin-top: 0.32in;
+    text-align: left;
+  }
+
+  .yearbook-print-v2 .print-first-page-story h2 {
+    margin: 0 0 0.12in;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 0.06in;
+    font-size: 18pt;
+  }
+
+  .yearbook-print-v2 .print-first-page-story .print-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .yearbook-print-v2 .print-story-heading {
+    margin-top: 0.25in !important;
+  }
+
+  body[data-pdf-hide-honors="true"] .yearbook-print-v2 .print-first-page-story { display: none !important; }
+  body[data-pdf-hide-standings="true"] .yearbook-print-v2 > .print-section:nth-child(2) { display: none !important; }
+  body[data-pdf-hide-rosters="true"] .yearbook-print-v2 > .print-section:nth-child(3) { display: none !important; }
+  body[data-pdf-hide-draft="true"] .yearbook-print-v2 > .print-section:nth-child(4) { display: none !important; }
+  .yearbook-print-v2 > .print-section:nth-child(4) { break-before: auto !important; }
+
+  .print-story-page .print-cover {
+    min-height: 2.4in;
+    break-after: auto;
+  }
+
+  .print-story-page .print-award-note {
+    margin: -0.06in 0 0.16in;
+    color: #64748b !important;
+    font-size: 8.5pt;
+  }
+
+  .print-story-page .print-narrative {
+    color: #334155 !important;
+    font-size: 11pt;
+    line-height: 1.55;
   }
 
   .yearbook-print-only .print-cover {

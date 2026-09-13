@@ -1,20 +1,23 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "season": 2026,
   "previousSeason": 2025,
-  "generatedAt": "2026-09-13T06:34:27.097Z",
+  "generatedAt": "2026-09-13T06:52:40.605Z",
   "source": {
     "ballsville": "Published draft-compare mode boards",
     "sleeper": "League users, rosters, and draft picks",
     "leaderboards": "Published Ballsville leaderboard league directory"
   },
   "coverage": {
+    "complete": true,
     "leaderboardLeagues": 342,
     "includedLeagues": 342,
-    "missingLeagues": []
+    "missingLeagues": [],
+    "missingDraftFeedLeagues": [],
+    "unavailableSleeperDrafts": []
   },
   "summary": {
-    "totalOwners": 401,
+    "totalOwners": 405,
     "totalSeats": 4088,
     "uniqueRosterSeats": 3872,
     "totalLeagues": 342,
@@ -55,7 +58,7 @@
       "order": 3,
       "leagues": 48,
       "drafts": 48,
-      "owners": 174,
+      "owners": 178,
       "seats": 576,
       "picks": 2304,
       "players": 76

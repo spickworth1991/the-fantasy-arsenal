@@ -179,12 +179,6 @@ export default function HomeClient() {
 
   const tools = [
     {
-      name: "Arsenal Intelligence",
-      link: "/intelligence",
-      description: "Turn lineup, waiver, trade, draft, playoff, portfolio, and commissioner signals into one prioritized action list.",
-      badge: "NEW",
-    },
-    {
       name: "Trade Analyzer",
       link: "/trade",
       description: "Analyze trades and generate mutually useful, roster-aware packages with Trade Partner Finder 2.0.",
@@ -319,7 +313,7 @@ export default function HomeClient() {
     { title:"Weekly Team Management", tipTarget:"weekly", eyebrow:"MANAGE MY TEAMS", description:"See what needs attention across your leagues, follow matchups, make lineup decisions, and find available players.", names:["League Hub","Fantasy Game Center","Lineup Optimizer","Player Availability"] },
     { title:"Draft Day & Review", tipTarget:"draft", eyebrow:"DRAFT", description:"Use a live, league-aware board while drafting, then grade the picks, roster construction, and every team afterward.", names:["Draft Command Center","Draft Grade Studio"] },
     { title:"Trades & Player Research", tipTarget:"players", eyebrow:"EVALUATE PLAYERS", description:"Build trades, study player production, rank weekly projections, audit model accuracy, understand depth-chart opportunity, and compare schedules.", names:["Trade Analyzer","Stat Central","Projection Center","NFL Depth Charts","Strength of Schedule"] },
-    { title:"League & Manager Research", tipTarget:"league-research", eyebrow:"KNOW THE COMPETITION", description:"Review prioritized intelligence, research manager behavior and records, explore league history, and model the playoff race.", names:["Arsenal Intelligence","Manager Intelligence","Arsenal Leaderboard","League History","Playoff Odds"] },
+    { title:"League & Manager Research", tipTarget:"league-research", eyebrow:"KNOW THE COMPETITION", description:"Research manager behavior and records, explore league history, and model the playoff race.", names:["Manager Intelligence","Arsenal Leaderboard","League History","Playoff Odds"] },
     { title:"Commissioner Tools", tipTarget:"commissioner", eyebrow:"RUN THE LEAGUE", description:"Audit settings, participation, competitive balance, and roster quality—then turn the findings into commissioner actions.", names:["Commissioner Dashboard"] },
     { title:"Account & Data Trust", tipTarget:"account-trust", eyebrow:"MY ARSENAL", description:"Manage your Arsenal profile and saved work, then inspect the freshness and accuracy behind Arsenal data.", names:["My Arsenal","Trust & Accuracy Center"] },
   ].map(group=>({...group,tools:group.names.map(name=>tools.find(tool=>tool.name===name)).filter(Boolean)}));

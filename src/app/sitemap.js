@@ -24,7 +24,6 @@ export default function sitemap() {
     "/depth-charts",
     "/stat-central",
     "/projection-center",
-    "/intelligence",
     "/leaderboard",
     "/trust-center",
     "/league-hub",
