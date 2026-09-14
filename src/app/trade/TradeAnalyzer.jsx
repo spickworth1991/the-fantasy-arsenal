@@ -48,7 +48,6 @@ export default function TradeAnalyzer() {
     setSourceKey,
     getProjection,
     hasProjection,
-    getWeeklyProjection,
     projectionScoring,
     preloadProjections,
   } = useSleeper();
@@ -337,9 +336,10 @@ export default function TradeAnalyzer() {
   }, [getMetric, sideA, sideB, sourceKey, tradeValueA, tradeValueB]);
   const getWeeklyMetric = useMemo(() => {
     if (metricMode !== "projections") return (p) => Math.sqrt(Math.max(0, getMetric(p)));
-    if (projectionSource === "ARSENAL_MODEL") return (p, currentWeek) => getWeeklyProjection?.(p, projectionSource, currentWeek) || 0;
+    // Partner Finder compares durable roster strength, not this week's lineup.
+    // A bye or one difficult matchup must not make a season-long asset expendable.
     return (p) => getMetric(p) / 17;
-  }, [getMetric, getWeeklyProjection, metricMode, projectionSource]);
+  }, [getMetric, metricMode]);
 
   useEffect(() => {
     const diff = Math.abs(tradeValueA - tradeValueB);

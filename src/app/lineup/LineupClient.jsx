@@ -1,4 +1,5 @@
 "use client";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
@@ -72,6 +73,10 @@ function normalizePos(x) {
 }
 function gameHasStarted(game) {
   if (!game) return false;
+  // The internal scoreboard route exposes ESPN's state as `pre` / `in` /
+  // `post`; completed games often do not also carry a text `status`.
+  if (["in", "post"].includes(String(game.statusState || "").toLowerCase()))
+    return true;
   const status = String(game.status || "").toLowerCase();
   if (
     status.startsWith("final") ||
@@ -244,6 +249,24 @@ function inferQbTypeFromLeague(league) {
 function inferFormatFromLeague(league) {
   return classifyLeagueFormat(league).key === "dynasty" ? "dynasty" : "redraft";
 }
+function gameIsFinal(game) {
+  return (
+    game?.statusState === "post" ||
+    String(game?.status || "").toLowerCase().startsWith("final")
+  );
+}
+function formatFantasyPoints(value) {
+  const points = Number(value);
+  if (!Number.isFinite(points)) return "—";
+  return points.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+function inferProjectionScoringFromLeague(league) {
+  const settings = league?.scoring_settings || {};
+  const receptions = Number(settings.rec || 0);
+  if (receptions >= 0.75) return "ppr";
+  if (receptions >= 0.25) return "half";
+  return "std";
+}
 
 /* ---------- Optimal lineup (bye-aware) ---------- */
 function solveOptimalLineup({
@@ -256,6 +279,8 @@ function solveOptimalLineup({
   byeMap,
   weatherMap = {},
   kickoffMap = {},
+  actualPointsById = {},
+  frozenProjectionById = {},
   strategy = "median",
   lockedIds = new Set(),
   excludedIds = new Set(),
@@ -296,10 +321,15 @@ function solveOptimalLineup({
       const p = players?.[pid];
       if (!p) return null;
       const pos = String(p?.position || "").toUpperCase();
-      const team = (p?.team || "").toUpperCase();
+      const team = normalizeTeamAbbr(p?.team);
       const byeWeeks = byeMap?.by_team?.[team] || [];
       const isOnBye = Array.isArray(byeWeeks) && byeWeeks.includes(week);
-      const rawMedian = isOnBye ? 0 : getWeeklyMetric(p) || 0;
+      // Keep a separate, pre-kickoff forecast for display and auditability.
+      // `proj` below can become the live score for lineup math, but this value
+      // must never move with the game.
+      const frozenProj = isOnBye
+        ? 0
+        : Number(frozenProjectionById[String(pid)] ?? getWeeklyMetric(p) ?? 0);
       const injury = String(p?.injury_status || "").toUpperCase();
       const inactive = String(p?.status || "").toLowerCase() === "inactive";
       const unavailable =
@@ -311,7 +341,6 @@ function solveOptimalLineup({
           : injury === "QUESTIONABLE"
             ? 0.9
             : 1;
-      const median = rawMedian * availabilityMultiplier;
       const injuryPenalty =
         injury === "OUT" || injury === "IR"
           ? 0.55
@@ -323,6 +352,16 @@ function solveOptimalLineup({
       const weather = weatherMap?.[team] || null;
       const game = kickoffMap?.[team] || null;
       const gameStarted = gameHasStarted(game);
+      const gameCompleted = gameIsFinal(game);
+      const hasLivePoints =
+        gameStarted &&
+        Object.prototype.hasOwnProperty.call(actualPointsById, String(pid));
+      const livePoints = hasLivePoints
+        ? Number(actualPointsById[String(pid)]) || 0
+        : null;
+      const median = gameStarted
+        ? (livePoints ?? 0)
+        : frozenProj * availabilityMultiplier;
       const currentStarter = currentStarterIds.has(String(pid));
       const started = currentStarter && gameStarted;
       const lockedOnBench = !currentStarter && gameStarted;
@@ -336,8 +375,10 @@ function solveOptimalLineup({
           injuryPenalty +
           weatherPenalty,
       );
-      const floor = Math.max(0, median * (1 - volatility));
-      const ceiling = median * (1 + volatility);
+      const floor = gameStarted
+        ? median
+        : Math.max(0, median * (1 - volatility));
+      const ceiling = gameStarted ? median : median * (1 + volatility);
       const stackBonus =
         strategy === "aggressive" &&
         ["WR", "TE", "RB"].includes(pos) &&
@@ -357,7 +398,7 @@ function solveOptimalLineup({
         pos: pos === "DST" ? "DEF" : pos,
         team,
         proj: median,
-        rawProj: rawMedian,
+        frozenProj,
         floor,
         ceiling,
         selectionScore,
@@ -370,6 +411,9 @@ function solveOptimalLineup({
         weather,
         game,
         gameStarted,
+        gameCompleted,
+        hasLivePoints,
+        livePoints,
         started,
         lockedOnBench,
       };
@@ -412,7 +456,10 @@ function solveOptimalLineup({
   takeBestFor(["DEF"], slots.strict.DEF);
   (slots.flexGroups || []).forEach((g) => takeBestFor(g, 1));
 
-  const bench = candidates.filter((c) => !used.has(c.pid));
+  // Keep every non-starting rostered player visible, including players whose
+  // games have already begun on the bench. They cannot enter the optimized
+  // lineup, but hiding them makes the live roster impossible to audit.
+  const bench = allCandidates.filter((c) => !used.has(c.pid));
   const score = starters.reduce((s, x) => s + (x.proj || 0), 0);
   const floorScore = starters.reduce((s, x) => s + (x.floor || 0), 0);
   const ceilingScore = starters.reduce(
@@ -443,6 +490,9 @@ function buildDecisionRows(result, opponentScore, metricMode) {
   if (!result) return [];
   return result.starters
     .map((starter) => {
+      // A player who has kicked off is locked. Never frame an already-locked
+      // bench player as a possible alternative to an unstarted starter.
+      if (starter.gameStarted) return null;
       const alternative = result.bench
         .filter(
           (player) =>
@@ -614,9 +664,11 @@ function LineupPersonalization({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {player.proj.toFixed(1)} ·{" "}
+                    {player.pos} · {formatFantasyPoints(player.proj)} ·{" "}
                     {player.started
-                      ? "Started / locked"
+                      ? player.gameCompleted
+                        ? "Final / locked"
+                        : "Live / locked"
                       : player.injury || "Active"}
                   </div>
                 </div>
@@ -724,6 +776,10 @@ function LineupPersonalizationPremium({
     }))
     .filter((row) => row.replacement);
   const startedCount = controls.filter((player) => player.started).length;
+  const completedCount = controls.filter(
+    (player) => player.started && player.gameCompleted,
+  ).length;
+  const liveCount = startedCount - completedCount;
 
   return (
     <div className="mb-4 rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-400/[0.06] to-slate-950/60 p-4">
@@ -795,13 +851,15 @@ function LineupPersonalizationPremium({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {player.proj.toFixed(1)}
-                    {player.rawProj !== player.proj
-                      ? ` (${player.rawProj.toFixed(1)} before availability)`
+                    {player.pos} · {formatFantasyPoints(player.proj)}
+                    {player.gameStarted
+                      ? ` (${formatFantasyPoints(player.frozenProj)} frozen projection)`
                       : ""}{" "}
                     ·{" "}
                     {player.started
-                      ? "Started in lineup / locked"
+                      ? player.gameCompleted
+                        ? "Final score / locked"
+                        : "Live score / locked"
                       : player.lockedOnBench
                         ? "Game started on bench / locked"
                         : player.injury ||
@@ -835,8 +893,8 @@ function LineupPersonalizationPremium({
       </details>
       <div className="mt-3 rounded-xl bg-emerald-300/[0.04] p-3 text-xs text-white/45">
         <b className="text-emerald-100">Late-swap protection:</b> {startedCount}{" "}
-        players have begun and are automatically protected. The solver will
-        never recommend moving or excluding them.
+        {liveCount} live and {completedCount} final starters are automatically
+        protected. The solver will never recommend moving or excluding them.
       </div>
       {replacements.length ? (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -885,9 +943,10 @@ function findCloseAlternatives(
   // Only suggest same-position bench players with >0 and within ±2.0 of the starter.
   const out = {};
   starters.forEach((s) => {
-    if (!s || s.proj <= 0) return; // never suggest against a zero/negative base
+    // Late swaps are only meaningful while *both* players are still eligible.
+    if (!s || s.proj <= 0 || s.gameStarted) return;
     const cands = bench
-      .filter((b) => b.pos === s.pos && b.proj > 0)
+      .filter((b) => b.pos === s.pos && b.proj > 0 && !b.gameStarted)
       .map((b) => ({ ...b, delta: b.proj - s.proj }))
       .filter((x) => Math.abs(x.delta) <= windowAbs)
       .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
@@ -957,7 +1016,7 @@ export default function LineupTool() {
     qbType,
     fetchLeagueRostersSilent,
     projectionScoring,
-    getWeeklyProjection,
+    setProjectionScoring,
   } = useSleeper();
 
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
@@ -992,6 +1051,7 @@ export default function LineupTool() {
 
   const [week, setWeek] = useState(1);
   const [season, setSeason] = useState(new Date().getFullYear());
+  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(projectionSource, { enabled: metricMode === "projections", season });
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
@@ -1013,6 +1073,8 @@ export default function LineupTool() {
   const [savedLineups, setSavedLineups] = useState({});
   const [weatherMap, setWeatherMap] = useState({});
   const [kickoffMap, setKickoffMap] = useState({});
+  const [actualPointsById, setActualPointsById] = useState({});
+  const [frozenProjectionById, setFrozenProjectionById] = useState({});
 
   const routeHandoffApplied = useRef(false);
   const tourSelectedLeagueRef = useRef(false);
@@ -1031,19 +1093,59 @@ export default function LineupTool() {
     } catch {}
   }, [leagues, setActiveLeague]);
   useEffect(() => {
-    fetch(`/api/nfl-scoreboard?season=${season}&week=${week}`)
+    let active = true;
+    const loadScoreboard = () => fetch(`/api/nfl-scoreboard?season=${season}&week=${week}`)
       .then((response) => (response.ok ? response.json() : { games: [] }))
       .then((data) => {
+        if (!active) return;
         const map = {};
         (data.games || []).forEach((game) =>
           (game.teams || []).forEach((team) => {
-            map[team] = game;
+            map[normalizeTeamAbbr(team)] = game;
           }),
         );
         setKickoffMap(map);
       })
-      .catch(() => setKickoffMap({}));
+      .catch(() => {
+        if (active) setKickoffMap({});
+      });
+    loadScoreboard();
+    const timer = window.setInterval(loadScoreboard, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, [season, week]);
+
+  useEffect(() => {
+    let active = true;
+    if (!activeLeague || !week) {
+      setActualPointsById({});
+      return undefined;
+    }
+    setActualPointsById({});
+    const loadMatchupPoints = () =>
+      fetch(`https://api.sleeper.app/v1/league/${activeLeague}/matchups/${week}`)
+        .then((response) => (response.ok ? response.json() : []))
+        .then((rows) => {
+          if (!active) return;
+          const next = {};
+          (rows || []).forEach((row) => {
+            Object.entries(row?.players_points || {}).forEach(([id, points]) => {
+              const value = Number(points);
+              if (Number.isFinite(value)) next[String(id)] = value;
+            });
+          });
+          setActualPointsById(next);
+        })
+        .catch(() => {});
+    loadMatchupPoints();
+    const timer = window.setInterval(loadMatchupPoints, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [activeLeague, week]);
 
   const [ownerA, setOwnerA] = useState("");
   const [ownerB, setOwnerB] = useState("");
@@ -1296,6 +1398,7 @@ export default function LineupTool() {
   useEffect(() => {
     if (!league) return;
     setOwnerB(""); // reset opponent when switching leagues
+    setProjectionScoring(inferProjectionScoringFromLeague(league));
     if (!myUserId) return;
     if (rosterByOwnerId[myUserId]) setOwnerA(myUserId);
     setFormatLocal(inferFormatFromLeague(league));
@@ -1360,46 +1463,14 @@ export default function LineupTool() {
 
   const getWeeklyProj = useMemo(() => {
     if (metricMode !== "projections") return null;
-    if (projectionSource === "ARSENAL_MODEL") {
-      return (p) => getWeeklyProjection?.(p, "ARSENAL_MODEL", week) || 0;
-    }
-    const chosen =
-      projectionSource === "ESPN"
-        ? projMaps.ESPN
-        : projectionSource === "CBS"
-          ? projMaps.CBS
-          : projectionSource === "SLEEPER"
-            ? projMaps.SLEEPER
-            : projectionSource === "FANTASYSHARKS"
-              ? projMaps.FANTASYSHARKS
-              : projectionSource === "DRAFTSHARKS"
-                ? projMaps.DRAFTSHARKS
-                : projectionSource === "FANTASYPROS"
-                  ? projMaps.FANTASYPROS
-                  : projectionSource === "ARSENAL"
-                    ? projMaps.ARSENAL
-                    : projectionSource === "ARSENAL_MODEL"
-                      ? projMaps.ARSENAL_MODEL
-                      : projMaps.CSV;
-    if (!chosen) return null;
-
-    return (p) => {
-      const seasonPts = getSeasonPointsForPlayer(chosen, p);
-      const team = (p?.team || "").toUpperCase();
-      const byeWeeks = Array.isArray(byeMap?.by_team?.[team])
-        ? byeMap.by_team[team]
-        : [];
-      const games = Math.max(1, REG_SEASON_WEEKS - byeWeeks.length);
-      return seasonPts / games;
-    };
-  }, [
-    metricMode,
-    projectionSource,
-    projMaps,
-    byeMap,
-    getWeeklyProjection,
-    week,
-  ]);
+    return (player) =>
+      getWeekPoints(player, week, {
+        byeMap,
+        qbType: qbLocal,
+        scoring: inferProjectionScoringFromLeague(league),
+        scoringSettings: league?.scoring_settings || null,
+      });
+  }, [metricMode, getWeekPoints, week, byeMap, qbLocal, league]);
 
   const getWeeklyMetric = useMemo(() => {
     if (metricMode === "projections")
@@ -1407,10 +1478,57 @@ export default function LineupTool() {
     return (p) => getValueMetric(p) || 0;
   }, [metricMode, getWeeklyProj, getValueMetric]);
 
+  const frozenProjectionScope = useMemo(
+    () =>
+      `${activeLeague || "none"}:${season}:${week}:${projectionSource}:${projectionScoring}`,
+    [activeLeague, season, week, projectionSource, projectionScoring],
+  );
+  useEffect(() => {
+    if (metricMode !== "projections" || !activeLeague || !week) {
+      setFrozenProjectionById({});
+      return;
+    }
+    let saved = {};
+    try {
+      saved = JSON.parse(
+        localStorage.getItem(`lineup-frozen-projections:${frozenProjectionScope}`) || "{}",
+      );
+    } catch {}
+    const next = { ...saved };
+    // Snapshot every available pre-kickoff roster forecast. That makes a
+    // browser revisit retain the same prediction after scores begin arriving.
+    rosters.forEach((roster) => {
+      (roster?.players || []).forEach((id) => {
+        const player = players?.[id];
+        if (!player || next[String(id)] != null) return;
+        const team = normalizeTeamAbbr(player.team);
+        if (gameHasStarted(kickoffMap?.[team])) return;
+        const value = Number(getWeeklyMetric(player));
+        if (Number.isFinite(value)) next[String(id)] = value;
+      });
+    });
+    try {
+      localStorage.setItem(
+        `lineup-frozen-projections:${frozenProjectionScope}`,
+        JSON.stringify(next),
+      );
+    } catch {}
+    setFrozenProjectionById(next);
+  }, [
+    activeLeague,
+    frozenProjectionScope,
+    getWeeklyMetric,
+    kickoffMap,
+    metricMode,
+    players,
+    rosters,
+    week,
+  ]);
+
   const startedIdsFor = (uid) =>
     new Set(
       (rosterByOwnerId[uid]?.starters || []).map(String).filter((id) => {
-        const team = String(players?.[id]?.team || "").toUpperCase();
+        const team = normalizeTeamAbbr(players?.[id]?.team);
         return gameHasStarted(kickoffMap?.[team]);
       }),
     );
@@ -1418,7 +1536,7 @@ export default function LineupTool() {
     if (!ownerA) return;
     const immutable = new Set(
       (rosterByOwnerId[ownerA]?.players || []).map(String).filter((id) => {
-        const team = String(players?.[id]?.team || "").toUpperCase();
+        const team = normalizeTeamAbbr(players?.[id]?.team);
         return gameHasStarted(kickoffMap?.[team]);
       }),
     );
@@ -1441,6 +1559,8 @@ export default function LineupTool() {
       byeMap,
       weatherMap,
       kickoffMap,
+      actualPointsById,
+      frozenProjectionById,
       strategy: lineupStrategy,
       lockedIds: startedIdsFor(uid),
       excludedIds: new Set(),
@@ -1522,6 +1642,8 @@ export default function LineupTool() {
     byeMap,
     weatherMap,
     kickoffMap,
+    actualPointsById,
+    frozenProjectionById,
     metricMode,
     projectionSource,
     projLoading,
@@ -1535,7 +1657,17 @@ export default function LineupTool() {
     [matchup, metricMode],
   );
 
-  const metricLabel = metricMode === "projections" ? "Proj" : "Value";
+  const hasScoredGames =
+    Object.keys(actualPointsById).length > 0 &&
+    Object.values(kickoffMap).some(gameHasStarted);
+  const hasLiveScores =
+    hasScoredGames &&
+    Object.values(kickoffMap).some(
+      (game) => gameHasStarted(game) && !gameIsFinal(game),
+    );
+  const hasFinalScores =
+    hasScoredGames && Object.values(kickoffMap).some(gameIsFinal);
+  const metricLabel = metricMode === "projections" ? "Lineup total" : "Value";
   useEffect(() => {
     try {
       setSavedLineups(
@@ -1611,7 +1743,7 @@ export default function LineupTool() {
         (id) =>
           valid.has(id) &&
           !gameHasStarted(
-            kickoffMap?.[String(players?.[id]?.team || "").toUpperCase()],
+            kickoffMap?.[normalizeTeamAbbr(players?.[id]?.team)],
           ),
       );
     setLockedPlayerIds(new Set(selected));
@@ -1664,6 +1796,7 @@ export default function LineupTool() {
                 </summary>
                 <div className="mt-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-950 p-3">
                   <SourceSelector
+                    projectionHorizon="week"
                     sources={DEFAULT_SOURCES}
                     value={sourceKey}
                     onChange={setSourceKey}
@@ -1678,8 +1811,15 @@ export default function LineupTool() {
                       setUserTouchedQB(true);
                       setQbLocal(v);
                     }}
+                    showScoring={false}
                     layout="inline"
                   />
+                  {league ? (
+                    <div className="mt-2 rounded-xl border border-emerald-300/10 bg-emerald-300/[0.045] px-3 py-2 text-xs text-white/55">
+                      <b className="text-emerald-100">League scoring active.</b>{" "}
+                      Pregame forecasts use the closest published scoring profile; once a game starts, the player switches to Sleeper&apos;s exact live points for this league.
+                    </div>
+                  ) : null}
                   {!byeDataAvailable ? (
                     <div className="mt-2 text-xs text-amber-200/80">
                       Bye weeks are not available yet for this season, so the
@@ -1943,7 +2083,7 @@ export default function LineupTool() {
                   <TeamBox
                     title={
                       ownerA
-                        ? `${ownerLabel(ownerA)} — Best Projected Lineup`
+                        ? `${ownerLabel(ownerA)} — Optimized Lineup`
                         : "Owner A"
                     }
                     res={ownerA ? compute(ownerA) : null}
@@ -1954,7 +2094,7 @@ export default function LineupTool() {
                   <TeamBox
                     title={
                       ownerB
-                        ? `${ownerLabel(ownerB)} — Best Projected Lineup`
+                        ? `${ownerLabel(ownerB)} — Optimized Lineup`
                         : "Owner B"
                     }
                     res={ownerB ? compute(ownerB) : null}
@@ -1968,7 +2108,7 @@ export default function LineupTool() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
                         <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          Projected edge
+                          Live + projected edge
                         </div>
                         <div className="mt-1 font-bold">
                           {matchup?.delta >= 0
@@ -2189,7 +2329,7 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
       ) : (
         <>
           <div className="text-sm mb-2">
-            Total {metricLabel}: <b>{Math.round(res.score)}</b>
+            Total {metricLabel}: <b>{formatFantasyPoints(res.score)}</b>
           </div>
 
           <Section
@@ -2217,7 +2357,7 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
           <tr className="text-left opacity-70">
             <th className="py-1">Pos</th>
             <th className="py-1">Player</th>
-            <th className="py-1 text-right">{metricLabel}</th>
+            <th className="py-1 text-right">Points</th>
           </tr>
         </thead>
         <tbody>
@@ -2229,6 +2369,11 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                 <td className="py-1">
                   {x.name}{" "}
                   <span className="opacity-60 text-xs">({x.team})</span>
+                  {x.gameStarted ? (
+                    <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${x.gameCompleted ? "bg-white/[0.08] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}>
+                      {x.gameCompleted ? "Final" : "Live"}
+                    </span>
+                  ) : null}
                   {alts.length > 0 && (
                     <div className="mt-0.5 text-[11px] text-amber-300">
                       Close call:&nbsp;
@@ -2244,7 +2389,20 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                     </div>
                   )}
                 </td>
-                <td className="py-1 text-right">{Math.round(x.proj)}</td>
+                <td className="py-1 text-right">
+                  {x.gameStarted ? (
+                    <>
+                      <b className="block text-emerald-100">
+                        {formatFantasyPoints(x.livePoints ?? 0)}
+                      </b>
+                      <span className="block text-[9px] text-white/35">
+                        {formatFantasyPoints(x.frozenProj)} proj
+                      </span>
+                    </>
+                  ) : (
+                    <b>{formatFantasyPoints(x.frozenProj)}</b>
+                  )}
+                </td>
               </tr>
             );
           })}

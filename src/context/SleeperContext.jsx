@@ -3,6 +3,8 @@
 import { createContext, useRef, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
+import { isWeeklyProjectionFeed, projectionPoints, projectionWeeks, resolveWeeklyProjection } from "../lib/projectionHorizon";
+import { scoreSleeperStats } from "../lib/sleeperScoring";
 import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
@@ -16,6 +18,8 @@ const SleeperContext = createContext();
 export const useSleeper = () => useContext(SleeperContext);
 const projectionIndexMemory = new Map();
 const projectionLoadPromises = new Map();
+const weeklyProjectionMemory = new Map();
+const weeklyProjectionPromises = new Map();
 const emptyProjectionIndexes = () => ({
   FFA: null,
   ESPN: null,
@@ -496,19 +500,19 @@ function createProjectionIndex(seedByName) {
       pos: normalizePos(pos),
       team: normalizeTeamAbbr(team),
       pts: safeNum(pts),
-      pointsStd: safeNum(pointsStd),
-      pointsHalf: safeNum(pointsHalf),
-      pointsPpr: safeNum(pointsPpr),
-      pointsTep: safeNum(pointsTep),
-      pointsStdSf: safeNum(pointsStdSf),
-      pointsHalfSf: safeNum(pointsHalfSf),
-      pointsPprSf: safeNum(pointsPprSf),
-      pointsTepSf: safeNum(pointsTepSf),
+      pointsStd: pointsStd == null ? null : safeNum(pointsStd),
+      pointsHalf: pointsHalf == null ? null : safeNum(pointsHalf),
+      pointsPpr: pointsPpr == null ? null : safeNum(pointsPpr),
+      pointsTep: pointsTep == null ? null : safeNum(pointsTep),
+      pointsStdSf: pointsStdSf == null ? null : safeNum(pointsStdSf),
+      pointsHalfSf: pointsHalfSf == null ? null : safeNum(pointsHalfSf),
+      pointsPprSf: pointsPprSf == null ? null : safeNum(pointsPprSf),
+      pointsTepSf: pointsTepSf == null ? null : safeNum(pointsTepSf),
       weeks: Array.isArray(weeks) ? weeks : [],
       confidence: safeNum(confidence),
       projectionBasis: String(projectionBasis || ""),
     };
-    if (!(cand.pts > 0)) return;
+    if (!Number.isFinite(Number(pts))) return;
 
     if (!byName[nn]) byName[nn] = [];
     byName[nn].push(cand);
@@ -555,7 +559,8 @@ function createProjectionIndex(seedByName) {
   return { add, pickBest, raw: byName };
 }
 
-function buildProjectionIndexFromJSON(json) {
+function buildProjectionIndexFromJSON(json, horizon = "season") {
+  if (horizon === "season" && isWeeklyProjectionFeed(json)) return null;
   const rows = Array.isArray(json) ? json : json?.rows || [];
   const idx = createProjectionIndex();
 
@@ -572,15 +577,15 @@ function buildProjectionIndexFromJSON(json) {
     if (!name) return;
     idx.add({
       name, pos, team, pts,
-      pointsStd: r.points_std ?? r.pointsStd,
-      pointsHalf: r.points_half ?? r.pointsHalf,
+      pointsStd: r.points_std ?? r.pointsStd ?? r.points_standard,
+      pointsHalf: r.points_half ?? r.pointsHalf ?? r.points_half_ppr,
       pointsPpr: r.points_ppr ?? r.pointsPpr,
       pointsTep: r.points_tep ?? r.pointsTep,
       pointsStdSf: r.points_std_sf ?? r.pointsStdSf,
       pointsHalfSf: r.points_half_sf ?? r.pointsHalfSf,
       pointsPprSf: r.points_ppr_sf ?? r.pointsPprSf,
       pointsTepSf: r.points_tep_sf ?? r.pointsTepSf,
-      weeks: r.weeks,
+      weeks: projectionWeeks(r, horizon === "week" ? json.week : null),
       confidence: r.confidence,
       projectionBasis: r.projection_basis,
     });
@@ -601,6 +606,7 @@ async function fetchProjectionIndex(url) {
 }
 
 export const SleeperProvider = ({ children }) => {
+  const [weeklyProjectionData, setWeeklyProjectionData] = useState({});
   const [username, setUsername] = useState(null);
   const [year, setYear] = useState(new Date().getFullYear());
   const [storageReady, setStorageReady] = useState(false);
@@ -795,6 +801,7 @@ export const SleeperProvider = ({ children }) => {
     setUsername(null);
     setLeagues([]);
     setPlayers({});
+    setWeeklyProjectionData({});
       setProjectionIndexes({ FFA: null, ESPN: null, CBS: null, SLEEPER: null, FANTASYSHARKS: null, DRAFTSHARKS: null, FANTASYPROS: null, ARSENAL: null, ARSENAL_MODEL: null });
     setActiveLeague(null);
     preloadCalled.current = false;
@@ -919,7 +926,7 @@ export const SleeperProvider = ({ children }) => {
     }
     projectionCacheVersionRef.current = publishedVersion;
 
-    const memoryKey = `${publishedVersion}:${src}`;
+    const memoryKey = `${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
     if (
       projectionIndexes[src] &&
       projectionIndexVersionsRef.current[src] === publishedVersion
@@ -934,7 +941,7 @@ export const SleeperProvider = ({ children }) => {
     if (projectionLoadPromises.has(memoryKey))
       return projectionLoadPromises.get(memoryKey);
 
-    const cacheKey = `projIndex_v3:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
+    const cacheKey = `projIndex_v4:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
     const promise = (async () => {
       try {
         let raw = await get(cacheKey).catch(() => null);
@@ -960,6 +967,43 @@ export const SleeperProvider = ({ children }) => {
     return promise;
   };
 
+  const preloadWeeklyProjections = async (requestedSource = "ARSENAL_MODEL", requestedSeason = PROJECTION_DATA_SEASON) => {
+    const season = Number(requestedSeason);
+    if (season !== PROJECTION_DATA_SEASON) return null;
+    const src = String(requestedSource).startsWith("proj:")
+      ? projectionSourceFromKey(requestedSource)
+      : requestedSource === "CSV" ? "FFA" : requestedSource;
+    const index = await preloadProjections(src);
+    const version = projectionCacheVersionRef.current || "unversioned";
+    const key = `${season}:${version}:${src}`;
+    const stateKey = `${season}:${src}`;
+    const hydrate = (data) => ({ ...data, index, weeklyIndex: data.raw ? createProjectionIndex(data.raw) : null });
+    if (weeklyProjectionMemory.has(key)) {
+      const data = hydrate(weeklyProjectionMemory.get(key));
+      setWeeklyProjectionData((current) => current[stateKey]?.version === version ? current : { ...current, [stateKey]: data });
+      return data;
+    }
+    if (!weeklyProjectionPromises.has(key)) {
+      weeklyProjectionPromises.set(key, (async () => {
+        const [byes, weekly] = await Promise.all([
+          fetch(`/byes/${season}.json`).then((res) => res.ok ? res.json() : null).catch(() => null),
+          src === "CBS"
+            ? fetch(`/projections_cbs_weekly_${season}.json`, { cache: "no-store" }).then((res) => res.ok ? res.json() : null).catch(() => null)
+            : null,
+        ]);
+        const weeklyIndex = weekly && Number(weekly.season) === season && isWeeklyProjectionFeed(weekly)
+          ? buildProjectionIndexFromJSON(weekly, "week") : null;
+        const normalizedByes = Object.fromEntries(Object.entries(byes?.by_team || {}).map(([team, weeks]) => [normalizeTeamAbbr(team), weeks]));
+        const data = { version, season, byes: normalizedByes, raw: weeklyIndex?.raw || null };
+        weeklyProjectionMemory.set(key, data);
+        return data;
+      })().finally(() => weeklyProjectionPromises.delete(key)));
+    }
+    const data = hydrate(await weeklyProjectionPromises.get(key));
+    setWeeklyProjectionData((current) => ({ ...current, [stateKey]: data }));
+    return data;
+  };
+
   useEffect(() => {
     if (!storageReady || !String(sourceKey || "").startsWith("proj:")) return;
     preloadProjections(projectionSourceFromKey(sourceKey));
@@ -967,7 +1011,7 @@ export const SleeperProvider = ({ children }) => {
   }, [sourceKey, storageReady]);
 
   // Single helper: matches your value-style candidate rules (pos required; pos+team preferred)
-  const getProjection = (p, source = "FFA") => {
+  const getProjection = useCallback((p, source = "FFA") => {
     // Accept either legacy codes (FFA/ESPN/CBS) or SourceSelector keys (proj:ffa/proj:espn/proj:cbs)
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
@@ -1007,13 +1051,13 @@ export const SleeperProvider = ({ children }) => {
     const best = idx.pickBest({ name: fullName, pos, team });
     if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL" || src === "ARSENAL_MODEL") {
       const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
-      if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) || best?.pts);
-      if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) || best?.pts);
-      if (projectionScoring === "tep") return safeNum((sf ? best?.pointsTepSf : best?.pointsTep) || (sf ? best?.pointsPprSf : best?.pointsPpr) || best?.pts);
-      return safeNum((sf ? best?.pointsPprSf : best?.pointsPpr) || best?.pts);
+      if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) ?? best?.pts);
+      if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) ?? best?.pts);
+      if (projectionScoring === "tep") return safeNum((sf ? best?.pointsTepSf : best?.pointsTep) ?? (sf ? best?.pointsPprSf : best?.pointsPpr) ?? best?.pts);
+      return safeNum((sf ? best?.pointsPprSf : best?.pointsPpr) ?? best?.pts);
     }
     return safeNum(best?.pts);
-  };
+  }, [projectionIndexes, projectionScoring, qbType]);
 
   const hasProjection = (p, source = "FFA") => {
     let src = String(source || "FFA");
@@ -1029,23 +1073,47 @@ export const SleeperProvider = ({ children }) => {
     }));
   };
 
-  const getWeeklyProjection = (p, source = "FFA", week = null) => {
+  const getWeeklyProjectionDetails = useCallback((p, source = "FFA", week = null, options = {}) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
-    if (src !== "ARSENAL_MODEL" || !Number.isFinite(Number(week))) return getProjection(p, src);
-
+    if (src === "CSV") src = "FFA";
+    const season = Number(options.season ?? PROJECTION_DATA_SEASON);
+    const data = options.data || weeklyProjectionData[`${season}:${src}`];
     const fullName = p?.full_name || p?.search_full_name || `${p?.first_name || ""} ${p?.last_name || ""}`.trim();
-    const best = projectionIndexes.ARSENAL_MODEL?.pickBest({
+    const lookup = {
       name: fullName,
       pos: getSleeperPosForProj(p),
       team: getSleeperTeamForProj(p),
+    };
+    const best = (data?.index || projectionIndexes[src])?.pickBest(lookup);
+    const weekly = data?.weeklyIndex?.pickBest(lookup);
+    const hasRequestedWeek = weekly?.weeks?.some((row) => Number(row.week) === Number(week));
+    const requestedRow = (hasRequestedWeek ? weekly : best)?.weeks?.find(
+      (row) => Number(row.week) === Number(week),
+    );
+    if (options.scoringSettings && requestedRow?.stat_line) {
+      return {
+        points: scoreSleeperStats(
+          requestedRow.stat_line,
+          options.scoringSettings,
+          lookup.pos,
+        ),
+        basis: "weekly_league_scoring",
+      };
+    }
+    const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
+    const seasonEntry = src === "DRAFTSHARKS" && String(options.qbType || qbType).toLowerCase() === "sf" && best
+      ? { ...best, pointsStd: best.pointsStdSf ?? best.pointsStd, pointsHalf: best.pointsHalfSf ?? best.pointsHalf, pointsPpr: best.pointsPprSf ?? best.pointsPpr, pointsTep: best.pointsTepSf ?? best.pointsTep }
+      : best;
+    return resolveWeeklyProjection({
+      row: hasRequestedWeek ? weekly : best,
+      week, scoring: options.scoring || projectionScoring, position: lookup.pos,
+      seasonPoints: seasonEntry ? projectionPoints(seasonEntry, options.scoring || projectionScoring, lookup.pos) ?? seasonEntry.pts : null,
+      byeWeeks, season, dataSeason: PROJECTION_DATA_SEASON,
     });
-    const row = best?.weeks?.find((item) => Number(item?.week) === Number(week));
-    if (!row || row.bye) return row?.bye ? 0 : getProjection(p, src) / 17;
-    if (projectionScoring === "std") return safeNum(row.points_std ?? row.pointsStd);
-    if (projectionScoring === "half") return safeNum(row.points_half ?? row.pointsHalf);
-    return safeNum(row.points_ppr ?? row.pointsPpr ?? row.points);
-  };
+  }, [weeklyProjectionData, projectionIndexes, projectionScoring, qbType]);
+  const getWeeklyProjection = useCallback((p, source = "FFA", week = null, options = {}) =>
+    getWeeklyProjectionDetails(p, source, week, options).points ?? 0, [getWeeklyProjectionDetails]);
 
   // Auto-recover if storage/IDB gets cleared while UI still has a username.
   useEffect(() => {
@@ -1792,9 +1860,11 @@ export const SleeperProvider = ({ children }) => {
       projectionScoring,
       setProjectionScoring,
       preloadProjections,
+      preloadWeeklyProjections,
       getProjection,
       hasProjection,
       getWeeklyProjection,
+      getWeeklyProjectionDetails,
 
       // ✅ Back-compat: single getter that returns the "active metric"
       // - if proj:* => returns projection points

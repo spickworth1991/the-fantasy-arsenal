@@ -1,4 +1,5 @@
 "use client";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -519,6 +520,7 @@ export default function PlayoffOddsPage() {
   }, [leagues]);
 
   const leagueSeason = Number(league?.season || 0) || stateSeason || new Date().getFullYear();
+  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(projectionSource, { enabled: metricMode === "projections", season: leagueSeason });
   const regularSeasonEnd = useMemo(() => {
     const playoffStart = Number(league?.settings?.playoff_week_start || 0);
     return playoffStart > 1 ? clamp(playoffStart - 1, 1, 18) : 14;
@@ -722,30 +724,7 @@ export default function PlayoffOddsPage() {
 
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
-      if (projectionSource === "ARSENAL_MODEL") return (player, currentWeek) =>
-        getWeeklyProjection?.(player, "ARSENAL_MODEL", currentWeek) || 0;
-      if (projectionSource === "ARSENAL") return (player, currentWeek, currentByeMap) => {
-        const team = String(player?.team || "").toUpperCase();
-        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
-        return byes.includes(currentWeek) ? 0 : (getProjection(player, "ARSENAL") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
-      };
-      if (projectionSource === "FANTASYPROS") return (player, currentWeek, currentByeMap) => {
-        if (!player) return 0;
-        const team = String(player.team || "").toUpperCase();
-        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
-        return byes.includes(currentWeek) ? 0 : (getProjection(player, "FANTASYPROS") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
-      };
-      const chosen = projectionSource === "ESPN" ? projMaps.ESPN : projectionSource === "CBS" ? projMaps.CBS : projectionSource === "SLEEPER" ? projMaps.SLEEPER : projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS : projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS : projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL : projectionSource === "ARSENAL" ? projMaps.ARSENAL : projMaps.CSV;
-      if (!chosen) return () => 0;
-      return (player, currentWeek, currentByeMap) => {
-        if (!player) return 0;
-        const team = (player.team || "").toUpperCase();
-        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
-        if (byes.includes(currentWeek)) return 0;
-        const seasonPts = getSeasonPointsForPlayer(chosen, player);
-        const games = Math.max(1, REG_SEASON_WEEKS - byes.length);
-        return seasonPts / games;
-      };
+      return (player, currentWeek, currentByeMap) => getWeekPoints(player, currentWeek, { byeMap: currentByeMap, qbType: qbLocal });
     }
     return (player, currentWeek, currentByeMap) => {
       if (!player) return 0;
@@ -754,7 +733,7 @@ export default function PlayoffOddsPage() {
       if (byes.includes(currentWeek)) return 0;
       return getValue(player) || 0;
     };
-  }, [getValue, getProjection, getWeeklyProjection, metricMode, projMaps, projectionSource]);
+  }, [getValue, getWeekPoints, metricMode, qbLocal]);
 
   const loadWeek = async (currentWeek) => {
     if (!activeLeague) return { groups: [], hasRealMatchups: false };
@@ -1215,6 +1194,7 @@ export default function PlayoffOddsPage() {
           {playoffLensOpen ? (
             <div id="playoff-lens-panel" data-guide-tip="playoff-settings">
               <SourceSelector
+                projectionHorizon="week"
                 sources={DEFAULT_SOURCES}
                 value={sourceKey}
                 onChange={setSourceKey}

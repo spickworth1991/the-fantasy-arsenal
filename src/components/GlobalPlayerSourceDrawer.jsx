@@ -18,6 +18,21 @@ const TABS = [
   ["research", "News"],
 ];
 let ballsvilleDraftersPromise;
+const currentSourcePayloadPromises = new Map();
+const loadCurrentSourcePayload = (file) => {
+  if (!currentSourcePayloadPromises.has(file)) {
+    currentSourcePayloadPromises.set(
+      file,
+      fetch(`/${file}`, { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error(`Source HTTP ${response.status}`);
+          return response.json();
+        })
+        .catch(() => null),
+    );
+  }
+  return currentSourcePayloadPromises.get(file);
+};
 const loadBallsvilleDrafters = () => {
   if (!ballsvilleDraftersPromise) {
     const season = new Date().getFullYear();
@@ -117,17 +132,22 @@ const archiveSourceFile = {
     `projections_thefantasyarsenal_model_${season}.json`,
 };
 
-function archivedSourceAmount(payload, sourceKey, { name, position, format, qbType }) {
+function archivedSourceAmount(payload, sourceKey, { name, position, format, qbType, scoring = "ppr" }) {
   if (!payload) return 0;
   const targetName = normalizedName(name);
   const targetPosition = positionFamily(position);
   const matches = (row) =>
     row &&
-    normalizedName(row.name) === targetName &&
-    (!targetPosition || !row.position || positionFamily(row.position) === targetPosition);
+    normalizedName(row.name || row.player?.name) === targetName &&
+    (!targetPosition || !(row.position || row.pos || row.player?.position) || positionFamily(row.position || row.pos || row.player?.position) === targetPosition);
   const bucket = `${format === "redraft" ? "Redraft" : "Dynasty"}_${qbType === "sf" ? "SF" : "1QB"}`;
   const findIn = (rows) => (Array.isArray(rows) ? rows.find(matches) : null);
 
+  if (sourceKey === "val:fantasycalc") {
+    const match = findIn(payload?.[bucket]);
+    const profile = String(scoring || "ppr").toLowerCase();
+    return n(match?.variant_values?.[profile] ?? match?.value);
+  }
   if (sourceKey === "val:dynastyprocess") {
     const match = Object.entries(payload).find(([rowName, row]) =>
       normalizedName(rowName) === targetName &&
@@ -139,10 +159,18 @@ function archivedSourceAmount(payload, sourceKey, { name, position, format, qbTy
     return n(findIn(payload?.[qbType === "sf" ? "Superflex" : "OneQB"])?.value);
   }
   if (sourceKey === "val:fantasypros-ecr") {
-    return n(findIn(payload?.formats?.[bucket])?.value);
+    const score = ["std", "half", "ppr"].includes(String(scoring).toLowerCase())
+      ? String(scoring).toUpperCase()
+      : "PPR";
+    const ecrBucket = format === "redraft" ? `${bucket}_${score}` : bucket;
+    return n(findIn(payload?.formats?.[ecrBucket])?.value);
   }
   if (sourceKey === "val:idynastyp") {
     return n(findIn(payload)?.[qbType === "sf" ? "superflex" : "one_qb"]);
+  }
+  if (sourceKey === "val:fantasypros") {
+    const match = findIn(payload?.[bucket]);
+    return n(String(scoring).toLowerCase().includes("tep") ? match?.tep_value ?? match?.value : match?.value);
   }
   if (sourceKey.startsWith("proj:")) return n(findIn(payload?.rows)?.points);
   return n(findIn(payload?.[bucket])?.value);
@@ -338,6 +366,7 @@ export default function GlobalPlayerSourceDrawer() {
     setSourceKey,
     format,
     qbType,
+    projectionScoring,
   } = useSleeper();
   const [playerId, setPlayerId] = useState("");
   const [tab, setTab] = useState("overview");
@@ -353,6 +382,8 @@ export default function GlobalPlayerSourceDrawer() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [sourceMovement, setSourceMovement] = useState({});
   const [projectionSourcesLoading, setProjectionSourcesLoading] = useState(false);
+  const [valueSourcesLoading, setValueSourcesLoading] = useState(false);
+  const [currentSourceFallbacks, setCurrentSourceFallbacks] = useState({});
   const [ballsvilleDrafters, setBallsvilleDrafters] = useState([]);
   const [portfolioExposure, setPortfolioExposure] = useState({
     loading: false,
@@ -426,6 +457,58 @@ export default function GlobalPlayerSourceDrawer() {
     };
   }, [playerId]);
 
+  useEffect(() => {
+    let active = true;
+    setCurrentSourceFallbacks({});
+    setValueSourcesLoading(false);
+    if (tab !== "sources" || !playerId || !player) return undefined;
+    const missingSources = DEFAULT_SOURCES.filter((source) => {
+      if (source.type !== "value" || source.supports?.[format] === false)
+        return false;
+      return (
+        n(getPlayerValue(player, {
+          sourceKey: source.key,
+          format,
+          qbType,
+        })) <= 0
+      );
+    });
+    if (!missingSources.length) return undefined;
+    setValueSourcesLoading(true);
+    Promise.all(
+      missingSources.map(async (source) => {
+        const file = archiveSourceFile[source.key];
+        if (typeof file !== "string") return [source.key, 0];
+        const payload = await loadCurrentSourcePayload(file);
+        return [
+          source.key,
+          archivedSourceAmount(payload, source.key, {
+            name,
+            position: player.position,
+            format,
+            qbType,
+            scoring: projectionScoring,
+          }),
+        ];
+      }),
+    )
+      .then((amounts) => {
+        if (active)
+          setCurrentSourceFallbacks(
+            Object.fromEntries(amounts.filter(([, amount]) => amount > 0)),
+          );
+      })
+      .finally(() => {
+        if (active) setValueSourcesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+    // The value getter is provider-owned and recreated during renders; the
+    // player/source inputs are the stable triggers for this direct fallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, playerId, format, qbType, projectionScoring]);
+
   const rows = useMemo(
     () =>
       player
@@ -433,11 +516,16 @@ export default function GlobalPlayerSourceDrawer() {
             const supported =
               source.type === "projection" ||
               source.supports?.[format] !== false;
-            const amount = supported ? n(source.type === "projection" ? getProjection(player, source.key) : getPlayerValue(player, { sourceKey:source.key, format, qbType })) : 0;
+            const resolvedAmount = source.type === "projection"
+              ? getProjection(player, source.key)
+              : getPlayerValue(player, { sourceKey:source.key, format, qbType });
+            const amount = supported
+              ? n(resolvedAmount) || n(currentSourceFallbacks[source.key])
+              : 0;
             return { ...source, supported, amount };
           })
         : [],
-    [format, getPlayerValue, getProjection, player, qbType],
+    [currentSourceFallbacks, format, getPlayerValue, getProjection, player, qbType],
   );
   const valueRows = rows.filter((row) => row.type === "value");
   const projectionRows = rows.filter((row) => row.type === "projection");
@@ -1158,6 +1246,11 @@ export default function GlobalPlayerSourceDrawer() {
                 movement={sourceMovement}
                 suffix=" pts"
               />
+              {valueSourcesLoading ? (
+                <p className="-mt-1 text-[10px] text-cyan-100/55">
+                  Verifying missing values against current publisher files…
+                </p>
+              ) : null}
               {projectionSourcesLoading ? (
                 <p className="-mt-1 text-[10px] text-cyan-100/55">
                   Loading current publisher projections…

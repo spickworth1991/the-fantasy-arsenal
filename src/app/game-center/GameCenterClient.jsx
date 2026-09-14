@@ -1,4 +1,5 @@
 "use client";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
@@ -6,13 +7,28 @@ import BackgroundParticles from "../../components/BackgroundParticles";
 import AvatarImage from "../../components/AvatarImage";
 import { useSleeper } from "../../context/SleeperContext";
 import GuidedTips from "../../components/GuidedTips";
-import SourceSelector, { DEFAULT_SOURCES } from "../../components/SourceSelector";
+import { DEFAULT_SOURCES } from "../../components/SourceSelector";
 import {
   classifyLeagueFormat,
   classifyQbFormat,
 } from "../../lib/leagueFormat";
+import { scoreSleeperStats } from "../../lib/sleeperScoring";
 
 const n = (value) => Number(value || 0);
+const scoreText = (value) =>
+  Number.isFinite(Number(value)) ? Number(value).toFixed(2) : "—";
+const matchupScore = (match) => {
+  if (
+    match?.points !== null &&
+    match?.points !== undefined &&
+    Number.isFinite(Number(match.points))
+  )
+    return Number(match.points);
+  return Object.values(match?.players_points || {}).reduce(
+    (sum, points) => sum + n(points),
+    0,
+  );
+};
 const getJson = async (url) => {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -48,8 +64,18 @@ const isRisk = (player) =>
     injury(player),
   ) || String(player?.status || "").toLowerCase() === "inactive";
 const isUnavailable = (player) =>
-  ["OUT", "DOUBTFUL", "IR", "PUP", "SUSPENDED"].includes(injury(player)) ||
+  ["OUT", "IR", "PUP", "SUSPENDED", "NA"].includes(injury(player)) ||
   String(player?.status || "").toLowerCase() === "inactive";
+const injuryProjectionMultiplier = (player) => {
+  if (isUnavailable(player)) return 0;
+  if (injury(player) === "DOUBTFUL") return 0.15;
+  if (injury(player) === "QUESTIONABLE") return 0.75;
+  return 1;
+};
+const leagueScoringKey = (league) => {
+  const receptions = n(league?.scoring_settings?.rec);
+  return receptions >= 0.75 ? "ppr" : receptions >= 0.25 ? "half" : "std";
+};
 const isFinal = (game) =>
   game?.statusState === "post" ||
   String(game?.status || "")
@@ -73,10 +99,71 @@ const isGameActive = (game) => {
       ].some((value) => status.includes(value)))
   );
 };
+const eligibleForLineupSlot = (slot, player) => {
+  const key = String(slot || "").toUpperCase();
+  const pos = position(player);
+  if (pos === key) return true;
+  if (["QB", "RB", "WR", "TE", "K"].includes(key)) return pos === key;
+  if (["DEF", "DST"].includes(key)) return ["DEF", "DST"].includes(pos);
+  if (key === "FLEX") return ["RB", "WR", "TE"].includes(pos);
+  if (["SUPER_FLEX", "SUPERFLEX", "SF", "OP", "Q/W/R/T"].includes(key))
+    return ["QB", "RB", "WR", "TE"].includes(pos);
+  if (key === "REC_FLEX") return ["WR", "TE"].includes(pos);
+  if (key === "WRRB_FLEX") return ["WR", "RB"].includes(pos);
+  if (key === "IDP_FLEX") return ["DL", "DE", "DT", "LB", "DB", "CB", "S"].includes(pos);
+  return false;
+};
+const projectedOptimalTotal = (league, rosterIds, players, forecasts) => {
+  const slots = (league?.roster_positions || [])
+    .map((slot) => String(slot || "").toUpperCase())
+    .filter((slot) => !["BN", "IR", "TAXI"].includes(slot))
+    .sort((a, b) => {
+      const count = (slot) => rosterIds.filter((id) => eligibleForLineupSlot(slot, players?.[id])).length;
+      return count(a) - count(b);
+    });
+  const used = new Set();
+  return slots.reduce((sum, slot) => {
+    const choice = rosterIds
+      .filter((id) => !used.has(id) && eligibleForLineupSlot(slot, players?.[id]))
+      .sort((a, b) => n(forecasts[b]?.liveFinish) - n(forecasts[a]?.liveFinish))[0];
+    if (!choice) return sum;
+    used.add(choice);
+    return sum + n(forecasts[choice]?.liveFinish);
+  }, 0);
+};
+const projectionPaceTone = ({ actual, frozen, game, player }) => {
+  if (!frozen || !game) return "text-white/32";
+  if (isUnavailable(player) && !isFinal(game)) return "text-rose-100";
+  if (isFinal(game)) {
+    const ratio = actual / frozen;
+    return ratio >= 1.1 ? "text-emerald-100" : ratio <= 0.75 ? "text-rose-100" : "text-amber-100";
+  }
+  if (!isGameActive(game)) return "text-white/32";
+  const [minutes, seconds] = String(game.clock || "15:00").split(":").map(Number);
+  const elapsed = Math.max(0.05, Math.min(1, (((n(game.period) - 1) * 15) + (15 - n(minutes)) - n(seconds) / 60) / 60));
+  const pace = actual / Math.max(0.5, frozen * elapsed);
+  return pace >= 1.15 ? "text-emerald-100" : pace <= 0.7 ? "text-rose-100" : "text-amber-100";
+};
 const normalizeTeam = (value) =>
   ({ WSH: "WAS", JAX: "JAC", OAK: "LV", SD: "LAC", STL: "LAR" })[
     String(value || "").toUpperCase()
   ] || String(value || "").toUpperCase();
+const gameWindow = (game) => {
+  if (!game?.date) return "other";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(new Date(game?.date || 0));
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+  const hour = n(parts.find((part) => part.type === "hour")?.value);
+  if (weekday === "Thu") return "thursday";
+  if (weekday === "Mon") return "monday";
+  if (weekday === "Sun" && hour < 16) return "sunday-early";
+  if (weekday === "Sun") return "sunday-late";
+  return "other";
+};
 const sleeperSeasonType = (value) => {
   const type = String(value || "").toLowerCase();
   if (type.startsWith("pre")) return "preseason";
@@ -143,6 +230,73 @@ function Panel({ children, className = "", ...props }) {
     >
       {children}
     </div>
+  );
+}
+
+function LiveScoringImpact({ events, leaders, liveMode, refreshSeconds, minimized, onMinimize, onClose }) {
+  const showingLiveEvents = liveMode && events.length > 0;
+  const frameRef = useRef(null);
+  const dragRef = useRef(null);
+  const [position, setPosition] = useState(null);
+  useEffect(() => {
+    const move = (event) => {
+      if (!dragRef.current || !frameRef.current) return;
+      const rect = frameRef.current.getBoundingClientRect();
+      setPosition({
+        left: Math.max(4, Math.min(window.innerWidth - rect.width - 4, event.clientX - dragRef.current.x)),
+        top: Math.max(4, Math.min(window.innerHeight - 52, event.clientY - dragRef.current.y)),
+      });
+    };
+    const stop = () => { dragRef.current = null; };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+  }, []);
+  const beginDrag = (event) => {
+    if (event.button !== 0 || !frameRef.current) return;
+    const rect = frameRef.current.getBoundingClientRect();
+    dragRef.current = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    setPosition({ left: rect.left, top: rect.top });
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const resetFrame = () => {
+    setPosition(null);
+    if (frameRef.current) {
+      frameRef.current.style.removeProperty("width");
+      frameRef.current.style.removeProperty("height");
+    }
+  };
+  return (
+    <aside ref={frameRef} style={{ ...(position ? { left: position.left, top: position.top, right: "auto", bottom: "auto" } : {}), resize: minimized ? "none" : "both" }} data-guide-tip="game-center-live-impact" className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-[130] w-[calc(100vw-1.5rem)] overflow-hidden rounded-[24px] border border-emerald-300/20 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.16),transparent_42%),linear-gradient(to_bottom,rgba(15,23,42,.98),rgba(2,6,23,.98))] shadow-[0_28px_90px_-30px_rgba(16,185,129,.75)] backdrop-blur-xl sm:right-5 sm:min-h-[190px] sm:min-w-[320px] sm:w-[390px] ${minimized ? "" : "max-h-[min(760px,85dvh)]"}`}>
+      <div className={`flex items-start justify-between gap-3 ${minimized ? "p-3" : "border-b border-white/10 p-4"}`}>
+        <button type="button" onClick={onMinimize} className="min-w-0 flex-1 text-left" aria-expanded={!minimized}>
+          <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/45">Sunday intelligence wire</div>
+          <h2 className={`${minimized ? "mt-0.5 text-base" : "mt-1 text-xl"} truncate font-black text-emerald-100`}>{showingLiveEvents ? "Live scoring impact" : "Portfolio impact now"}</h2>
+          {!minimized ? <p className="mt-1 text-[10px] leading-4 text-white/32">{showingLiveEvents ? "New scoring plays and lead changes since Live Mode began." : "Your highest-scoring players, opponents, and conflicted exposure right now."}</p> : null}
+        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" onPointerDown={beginDrag} aria-label="Drag scoring impact window" title="Drag window" className="grid h-8 w-8 cursor-move touch-none place-items-center rounded-xl bg-white/[0.055] text-xs text-white/45 hover:bg-white/10">⠿</button>
+          {!minimized ? <button type="button" onClick={resetFrame} aria-label="Reset scoring impact window" title="Reset window position and size" className="hidden h-8 w-8 place-items-center rounded-xl bg-white/[0.055] text-[10px] text-white/45 hover:bg-white/10 sm:grid">↘</button> : null}
+          {!minimized ? <span className={`hidden rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-wider sm:inline-flex ${liveMode ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100" : "border-white/10 bg-white/[0.04] text-white/35"}`}>{liveMode ? `Monitoring · ${refreshSeconds}s` : "Snapshot"}</span> : null}
+          <button type="button" onClick={onMinimize} aria-label={minimized ? "Expand scoring impact" : "Minimize scoring impact"} title={`${minimized ? "Expand" : "Minimize"} · Shift+L`} className="grid h-8 w-8 place-items-center rounded-xl bg-white/[0.055] text-sm text-white/60 hover:bg-white/10">{minimized ? "↑" : "—"}</button>
+          <button type="button" onClick={onClose} aria-label="Close scoring impact" className="grid h-8 w-8 place-items-center rounded-xl bg-white/[0.055] text-sm text-white/45 hover:bg-rose-300/10 hover:text-rose-100">×</button>
+        </div>
+      </div>
+      {!minimized ? <div className="max-h-[min(430px,55dvh)] divide-y divide-white/[0.06] overflow-y-auto overscroll-contain">
+        {showingLiveEvents ? events.map((event) => {
+          const eventTone = event.kind === "touchdown" ? "bg-emerald-300/10 text-emerald-100" : event.kind === "turnover" ? "bg-rose-300/10 text-rose-100" : event.kind === "lead" ? "bg-cyan-300/10 text-cyan-100" : "bg-amber-300/10 text-amber-100";
+          return <div key={event.id} className="p-3.5"><div className="flex items-start gap-3"><span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-black ${eventTone}`}>{event.kind === "touchdown" ? "TD" : event.kind === "turnover" ? "↺" : event.kind === "lead" ? "↕" : "+"}</span><div className="min-w-0 flex-1"><div className="text-sm font-black text-white/80">{event.title}</div><div className="mt-0.5 text-[10px] leading-4 text-white/38">{event.statDetail || event.detail}</div>{event.leagues?.length ? <details className="mt-2"><summary className="w-fit cursor-pointer list-none rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[8px] font-bold text-white/38">{event.leagues.length} affected league{event.leagues.length === 1 ? "" : "s"} · Show</summary><div className="mt-1.5 flex flex-wrap gap-1">{event.leagues.map((league) => <span key={league} className="max-w-full truncate rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[8px] text-white/38">{league}</span>)}</div></details> : null}</div><div className="shrink-0 text-right">{Number.isFinite(event.points) ? <b className={`block ${event.points >= 0 ? "text-emerald-100" : "text-rose-100"}`}>{event.points >= 0 ? "+" : ""}{scoreText(event.points)}</b> : null}{Number.isFinite(event.totalPoints) ? <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-wider text-white/28">{scoreText(event.totalPoints)} total</span> : null}</div></div></div>;
+        }) : leaders.map((row, index) => {
+          const role = row.conflict ? "Conflict" : row.for.length ? "For you" : "Against you";
+          const roleTone = row.conflict ? "bg-amber-300/10 text-amber-100" : row.for.length ? "bg-emerald-300/10 text-emerald-100" : "bg-rose-300/10 text-rose-100";
+          return <div key={row.id} className="p-3.5"><div className="flex items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.045] text-xs font-black text-white/38">{index + 1}</span><AvatarImage name={row.name} playerId={row.id} size={36} className="rounded-xl" alt="" /><div className="min-w-0 flex-1"><div className="truncate text-sm font-black text-white/80">{row.name}</div><div className="mt-1 flex flex-wrap items-center gap-1.5"><span className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider ${roleTone}`}>{role}</span><span className="text-[9px] text-white/28">{row.impact} affected league{row.impact === 1 ? "" : "s"}</span></div></div><div className="shrink-0 text-right"><b className="block text-lg text-cyan-100">{scoreText(row.points)}</b><span className="block text-[8px] text-white/28">{scoreText(row.projection)} projected</span></div></div></div>;
+        })}
+        {!showingLiveEvents && !leaders.length ? <div className="p-5 text-center"><div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-emerald-300/[0.07] text-emerald-100/60">⌁</div><div className="mt-3 text-xs font-bold text-white/48">Waiting for portfolio scores</div><div className="mt-1 text-[9px] text-white/25">Current scoring impact will appear as games begin.</div></div> : null}
+      </div> : null}
+    </aside>
   );
 }
 
@@ -349,7 +503,7 @@ function matchupHref(leagueId) {
   return `https://sleeper.com/leagues/${leagueId}/matchup`;
 }
 
-function MatchupRoster({ title, roster, match, league, players }) {
+function MatchupRoster({ title, roster, match, league, players, forecasts = {}, projectedTotal }) {
   const ids = (roster?.players || []).map(String).filter((id) => id && id !== "0");
   const points = match?.players_points || {};
   const bestBall = leagueFormat(league) === "bestball";
@@ -359,8 +513,28 @@ function MatchupRoster({ title, roster, match, league, players }) {
     : (match?.starters || []).map(String).filter((id) => id && id !== "0");
   const starterSet = new Set(starterIds);
   const benchIds = ids.filter((id) => !starterSet.has(id)).sort((a, b) => n(points[b]) - n(points[a]));
-  const rows = (playerIds) => playerIds.map((id) => { const status=injury(players?.[id]); return <div key={id} className="flex items-center gap-2 rounded-xl bg-white/[0.03] p-2.5"><AvatarImage name={playerName(players, id)} playerId={id} size={32} className="rounded-lg" alt=""/><div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-2"><div className="truncate text-xs font-semibold">{playerName(players, id)}</div>{status?<span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${["OUT","IR","PUP","NFI","SUSPENDED","NA"].includes(status)?"bg-rose-300/10 text-rose-100":"bg-amber-300/10 text-amber-100"}`}>{status}</span>:null}</div><div className="text-[9px] text-white/30">{position(players?.[id])} · {players?.[id]?.team || "FA"}</div></div><b className="text-sm text-cyan-100">{n(points[id]).toFixed(1)}</b></div>; });
-  return <section><div className="flex items-end justify-between gap-3"><h3 className="truncate text-lg font-black">{title}</h3><span className="text-xs text-white/40">{n(match?.points).toFixed(1)} pts</span></div><div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-emerald-100/55">{bestBall ? "Highest scorers" : "Starters"}</div><div className="mt-2 space-y-1.5">{rows(starterIds)}</div><details className="mt-3 rounded-2xl border border-white/[0.07] bg-black/10 p-3"><summary className="cursor-pointer text-xs font-semibold text-white/55">Bench · {benchIds.length}</summary><div className="mt-2 space-y-1.5">{rows(benchIds)}</div></details></section>;
+  const rows = (playerIds) => playerIds.map((id) => { const status=injury(players?.[id]); const actual=n(points[id]); const projected=n(forecasts[id]?.frozenProjection); const paceTone=forecasts[id]?.paceTone || "text-white/32"; return <div key={id} className="flex items-center gap-2 rounded-xl bg-white/[0.03] p-2.5"><AvatarImage name={playerName(players, id)} playerId={id} size={32} className="rounded-lg" alt=""/><div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-2"><div className="truncate text-xs font-semibold">{playerName(players, id)}</div>{status?<span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${["OUT","IR","PUP","NFI","SUSPENDED","NA"].includes(status)?"bg-rose-300/10 text-rose-100":"bg-amber-300/10 text-amber-100"}`}>{status}</span>:null}</div><div className="text-[9px] text-white/30">{position(players?.[id])} · {players?.[id]?.team || "FA"}</div></div><div className="shrink-0 text-right"><b className={`block text-sm ${paceTone}`}>{scoreText(actual)}</b><span className="block text-[8px] text-white/28">{scoreText(projected)} pregame projection</span></div></div>; });
+  const projectedTeam = n(projectedTotal);
+  return <section><div className="flex items-end justify-between gap-3"><h3 className="truncate text-lg font-black">{title}</h3><div className="text-right"><b className="block text-lg text-cyan-100">{scoreText(matchupScore(match))} <small className="text-[8px] font-semibold uppercase tracking-wider text-cyan-100/45">actual</small></b><span className="block text-[9px] text-white/32">{scoreText(projectedTeam)} projected final</span></div></div><div className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-emerald-100/55">{bestBall ? "Highest scorers" : "Starters"}</div><div className="mt-2 space-y-1.5">{rows(starterIds)}</div><details className="mt-3 rounded-2xl border border-white/[0.07] bg-black/10 p-3"><summary className="cursor-pointer text-xs font-semibold text-white/55">Bench · {benchIds.length}</summary><div className="mt-2 space-y-1.5">{rows(benchIds)}</div></details></section>;
+}
+
+function PortfolioTicker({ summary, liveMode }) {
+  const items = [
+    ["Projected W", summary.ahead, "text-emerald-100"],
+    ["Projected L", summary.behind, "text-rose-100"],
+    ["Close", summary.close, "text-amber-100"],
+    ["Chopped danger", summary.choppedDanger, "text-orange-100"],
+  ];
+  return <div data-guide-tip="game-center-portfolio-ticker" className="sticky top-0 z-40 mt-3 overflow-hidden rounded-2xl border border-cyan-300/15 bg-slate-950/95 shadow-[0_16px_50px_-35px_rgba(34,211,238,.8)] backdrop-blur-xl"><div className="flex min-h-12 items-stretch overflow-x-auto"><div className="flex shrink-0 items-center gap-2 border-r border-white/10 px-3 text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55"><span className={`h-2 w-2 rounded-full ${liveMode ? "animate-pulse bg-emerald-300" : "bg-cyan-300/50"}`} />Portfolio</div>{items.map(([label,value,tone])=><div key={label} className="flex min-w-[112px] flex-1 items-center justify-center gap-2 border-r border-white/[0.07] px-3"><b className={`text-lg ${tone}`}>{value}</b><span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider text-white/30">{label}</span></div>)}</div></div>;
+}
+
+function WindowRecaps({ recaps }) {
+  return <Panel data-guide-tip="game-center-window-recaps" className="overflow-hidden"><div className="border-b border-white/10 p-4 sm:p-5"><div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/50">Game-window journal</div><h2 className="mt-1 text-xl font-black">End-of-window recaps</h2><p className="mt-1 text-[10px] leading-4 text-white/32">Each recap closes when every game in that window is final.</p></div><div className="grid gap-px bg-white/[0.06] md:grid-cols-2 xl:grid-cols-4">{recaps.map((recap)=><section key={recap.key} className="bg-slate-950/90 p-4"><div className="flex items-center justify-between gap-2"><b className="text-sm">{recap.label}</b><span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-wider ${recap.complete ? "bg-emerald-300/10 text-emerald-100" : recap.live ? "bg-amber-300/10 text-amber-100" : "bg-white/[0.05] text-white/30"}`}>{recap.complete ? "Final" : recap.live ? "Live" : "Upcoming"}</span></div><div className="mt-3 grid grid-cols-3 gap-1.5"><Stat label="Games" value={recap.games} /><Stat label="Players" value={recap.players} /><Stat label="Leagues" value={recap.leagues} /></div>{recap.leader ? <div className="mt-3 rounded-xl bg-white/[0.035] p-2.5"><div className="text-[8px] font-black uppercase tracking-wider text-white/25">Portfolio leader</div><div className="mt-1 flex items-center justify-between gap-2 text-xs"><b className="truncate">{recap.leader.name}</b><b className="text-cyan-100">{scoreText(recap.leader.points)}</b></div><div className="mt-0.5 text-[8px] text-white/25">{scoreText(recap.leader.projection)} projected</div></div> : <p className="mt-3 text-[10px] text-white/25">No portfolio scoring yet.</p>}</section>)}</div></Panel>;
+}
+
+function TelevisionMode({ games, matchups, summary, recaps, leaders, onExit }) {
+  const featured = [...matchups].sort((a,b)=>Math.abs(a.winProbability-50)-Math.abs(b.winProbability-50)).slice(0,6);
+  return <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-950 p-4 text-white sm:p-7"><div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,.16),transparent_36%)]"/><div className="relative"><header className="flex items-center justify-between gap-5"><div><div className="text-[10px] font-black uppercase tracking-[.28em] text-emerald-100/50">The Fantasy Arsenal · live television view</div><h1 className="mt-1 text-3xl font-black sm:text-5xl">Portfolio Game Day</h1></div><button type="button" onClick={onExit} className="rounded-2xl bg-rose-300/10 px-5 py-3 text-xs font-black text-rose-100">Exit TV mode</button></header><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4"><Stat label="Ahead" value={summary.ahead} tone="emerald"/><Stat label="Behind" value={summary.behind} tone="rose"/><Stat label="Close" value={summary.close} tone="amber"/><Stat label="Chopped danger" value={summary.choppedDanger} tone="rose"/></div><div className="mt-5 grid gap-5 2xl:grid-cols-[1.15fr_.85fr]"><section><h2 className="text-lg font-black">Closest portfolio matchups</h2><div className="mt-3 grid gap-3 lg:grid-cols-2">{featured.map((row)=><div key={row.league.league_id} className="rounded-3xl border border-white/10 bg-white/[0.035] p-4"><div className="flex justify-between gap-3"><b className="truncate">{row.league.name}</b><span className="text-xs font-black text-amber-100">{row.winProbability}%</span></div><div className="mt-4 grid grid-cols-2 gap-4"><div><b className="text-3xl text-cyan-100">{scoreText(row.actual)}</b><span className="block text-[9px] text-white/30">{scoreText(row.projected)} projected</span></div><div className="text-right"><b className="text-3xl">{scoreText(row.opponentActual)}</b><span className="block text-[9px] text-white/30">{scoreText(row.opponentProjected)} projected</span></div></div></div>)}</div></section><section><h2 className="text-lg font-black">Highest portfolio scores</h2><div className="mt-3 space-y-2">{leaders.slice(0,8).map((row,index)=><div key={row.id} className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3"><span className="w-5 text-center text-xs text-white/25">{index+1}</span><AvatarImage name={row.name} playerId={row.id} size={36} className="rounded-xl" alt=""/><b className="min-w-0 flex-1 truncate">{row.name}</b><div className="text-right"><b className="block text-xl text-cyan-100">{scoreText(row.points)}</b><span className="text-[8px] text-white/25">{scoreText(row.projection)} projected</span></div></div>)}</div></section></div><div className="mt-5"><WindowRecaps recaps={recaps}/></div><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{games.filter((game)=>isGameActive(game)).map((game)=><div key={game.id} className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-3"><div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/45">{game.status}</div><div className="mt-2 flex justify-between gap-3">{(game.competitors||[]).map((team)=><span key={team.team}><b>{team.team}</b> {team.score}</span>)}</div></div>)}</div></div></div>;
 }
 
 const freshnessAge = (value) => {
@@ -472,7 +646,7 @@ function RootingInterest({ buckets }) {
                         {row.for.length} for · {row.against.length} against
                       </div>
                     </div>
-                    <b className={tone[group.accent].split(" ").at(-1)}>{row.points.toFixed(1)}</b>
+                    <b className={tone[group.accent].split(" ").at(-1)}>{scoreText(row.points)}</b>
                   </div>
                 ))}
                 {!rows.length ? <p className="py-4 text-[10px] leading-4 text-white/28">{group.empty}</p> : null}
@@ -519,9 +693,7 @@ function ChoppedScoreboard({ teams = [] }) {
                 Cut line
               </span>
             ) : null}
-            <b className="w-16 text-right text-sm text-cyan-100">
-              {n(team.match?.points).toFixed(1)}
-            </b>
+            <div className="w-20 shrink-0 text-right"><b className="block text-sm text-cyan-100">{scoreText(matchupScore(team.match))}</b><span className="block text-[8px] text-white/28">{scoreText(team.projected)} projected</span></div>
           </div>
         ))}
       </div>
@@ -529,9 +701,9 @@ function ChoppedScoreboard({ teams = [] }) {
   );
 }
 
-function MatchupDetail({ row, players, onClose }) {
+function MatchupDetail({ row, players, projectionLabel, onClose }) {
   if (!row) return null;
-  return <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/85 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose();}}><section role="dialog" aria-modal="true" aria-label={`${row.league.name} matchup`} className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5"><div><div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100/55">{row.chopped ? "Chopped league · weekly survival" : "Week matchup"}</div><h2 className="mt-1 text-2xl font-black">{row.league.name}</h2><div className="mt-2 flex flex-wrap gap-1.5">{(row.tags || leagueTags(row.league, row.chopped)).map((tag)=><span key={tag} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white/50">{tag}</span>)}</div><p className="mt-2 text-xs text-white/38">{row.chopped?"Your complete roster is paired with the full league scoreboard because the lowest weekly score is eliminated.":row.bestBall?"Every unplayed rostered player counts as remaining; Sleeper determines the final optimal lineup.":"Sleeper starters and bench with current player points."}</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-white/60" aria-label="Close">×</button></header><div className={`grid gap-5 p-4 sm:p-5 ${row.chopped ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,.85fr)]" : "lg:grid-cols-2"}`}><MatchupRoster title="Your roster" roster={row.mine} match={row.myMatch} league={row.league} players={players}/>{row.chopped?<ChoppedScoreboard teams={row.leagueTeams}/>:<MatchupRoster title={row.opponentName} roster={row.opponentRoster} match={row.opponentMatch} league={row.league} players={players}/>}</div><footer className="border-t border-white/10 p-4 text-right"><a href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="inline-block rounded-xl bg-emerald-300/10 px-4 py-3 text-xs font-black text-emerald-100">Open matchup in Sleeper ↗</a></footer></section></div>;
+  return <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/85 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose();}}><section role="dialog" aria-modal="true" aria-label={`${row.league.name} matchup`} className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5"><div><div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100/55">{row.chopped ? "Chopped league · weekly survival" : "Week matchup"}</div><h2 className="mt-1 text-2xl font-black">{row.league.name}</h2><div className="mt-2 flex flex-wrap gap-1.5">{(row.tags || leagueTags(row.league, row.chopped)).map((tag)=><span key={tag} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white/50">{tag}</span>)}</div><p className="mt-2 text-xs text-white/38">The smaller player number is the frozen pregame projection from {projectionLabel}; it never changes with the game. Live-score color reflects scoring pace and confirmed availability. Team projected finals remain live and power the win estimate.</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-white/60" aria-label="Close">×</button></header><div className={`grid gap-5 p-4 sm:p-5 ${row.chopped ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,.85fr)]" : "lg:grid-cols-2"}`}><MatchupRoster title="Your roster" roster={row.mine} match={row.myMatch} league={row.league} players={players} forecasts={row.myForecasts} projectedTotal={row.projected}/>{row.chopped?<ChoppedScoreboard teams={row.projectedLeagueTeams}/>:<MatchupRoster title={row.opponentName} roster={row.opponentRoster} match={row.opponentMatch} league={row.league} players={players} forecasts={row.opponentForecasts} projectedTotal={row.opponentProjected}/>}</div><footer className="border-t border-white/10 p-4 text-right"><a href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="inline-block rounded-xl bg-emerald-300/10 px-4 py-3 text-xs font-black text-emerald-100">Open matchup in Sleeper ↗</a></footer></section></div>;
 }
 
 export default function GameCenterClient() {
@@ -564,6 +736,7 @@ export default function GameCenterClient() {
   const [formatFilter, setFormatFilter] = useState("all");
   const [bestBallFilter, setBestBallFilter] = useState("include");
   const [bestBallAlertLeagueIds, setBestBallAlertLeagueIds] = useState([]);
+  const [scoringLeagueId, setScoringLeagueId] = useState("");
   const [selectedMatchupLeagueId, setSelectedMatchupLeagueId] = useState("");
   const [liveMode, setLiveMode] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -571,10 +744,32 @@ export default function GameCenterClient() {
   const [statsFreshness, setStatsFreshness] = useState(null);
   const [projectionFreshness, setProjectionFreshness] = useState(null);
   const [liveEvents, setLiveEvents] = useState([]);
+  const [gradedFrozenProjections, setGradedFrozenProjections] = useState([]);
+  const [impactVisible, setImpactVisible] = useState(true);
+  const [impactMinimized, setImpactMinimized] = useState(false);
   const priorPoints = useRef(new Map());
   const priorStatSnapshots = useRef(new Map());
   const priorWinProbabilities = useRef(new Map());
+  const liveSessionSeeded = useRef(false);
   const scanRunning = useRef(false);
+  const observedProjectionBaselines = useRef(new Map());
+
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (!event.shiftKey || event.key.toLowerCase() !== "l") return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      )
+        return;
+      event.preventDefault();
+      setImpactVisible((visible) => !visible);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     const requestedLeague = new URLSearchParams(window.location.search).get(
@@ -586,6 +781,19 @@ export default function GameCenterClient() {
     );
     if (league) setQuery(league.name || String(requestedLeague));
   }, [leagues]);
+
+  useEffect(() => {
+    if (!leagues.length) return;
+    const saved = window.localStorage.getItem("tfa:game-center:scoring-league");
+    const next = leagues.some((league) => String(league.league_id) === String(scoringLeagueId || saved))
+      ? String(scoringLeagueId || saved)
+      : String(leagues[0].league_id);
+    if (next !== scoringLeagueId) setScoringLeagueId(next);
+  }, [leagues, scoringLeagueId]);
+  const selectScoringLeague = (id) => {
+    setScoringLeagueId(String(id));
+    window.localStorage.setItem("tfa:game-center:scoring-league", String(id));
+  };
 
   useEffect(() => {
     getJson("https://api.sleeper.app/v1/state/nfl")
@@ -877,17 +1085,62 @@ export default function GameCenterClient() {
     };
   }, [liveMode, liveRefreshSeconds, scan]);
 
+  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(
+    String(sourceKey || "").startsWith("proj:") ? projectionSource : "ARSENAL_MODEL",
+    { season: Number(nflSeason) || new Date().getFullYear(), enabled: seasonType !== "preseason" },
+  );
+  useEffect(() => {
+    let active = true;
+    fetch(`/stats/projections/${nflSeason || year || new Date().getFullYear()}/accuracy.json`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (active) setGradedFrozenProjections(payload?.source_comparison_results || []);
+      })
+      .catch(() => {
+        if (active) setGradedFrozenProjections([]);
+      });
+    return () => { active = false; };
+  }, [nflSeason, year]);
+  const selectedFrozenSource =
+    sourceKey === "proj:sleeper"
+      ? "Sleeper"
+      : sourceKey === "proj:cbs"
+        ? "CBS"
+        : ["proj:thefantasyarsenal", "proj:thefantasyarsenal-model"].includes(sourceKey) || !String(sourceKey || "").startsWith("proj:")
+          ? "The Fantasy Arsenal"
+          : null;
+  const scoringLensLeague =
+    leagues.find((league) => String(league.league_id) === String(scoringLeagueId)) ||
+    leagues[0] ||
+    null;
   const weeklyProjection = useCallback(
-    (id) => {
-      const selectedProjectionSource = String(sourceKey || "").startsWith("proj:")
-        ? projectionSource
-        : "ARSENAL_MODEL";
-      if (selectedProjectionSource === "ARSENAL_MODEL") {
-        return n(getWeeklyProjection?.(players?.[id], selectedProjectionSource, week));
+    (id, scoringLeague = scoringLensLeague) => {
+      const player = players?.[id];
+      const game = gameByTeam.get(normalizeTeam(player?.team));
+      const scoring = leagueScoringKey(scoringLeague);
+      const key = `${sourceKey || "arsenal"}:${nflSeason || year}:${week}:${scoringLeague?.league_id || scoring}:${id}`;
+      const graded = gradedFrozenProjections.find(
+        (row) =>
+          n(row.week) === n(week) &&
+          String(row.player_id) === String(id) &&
+          row.scoring === scoring &&
+          selectedFrozenSource && row.source === selectedFrozenSource,
+      );
+      if (n(graded?.projection) > 0) {
+        observedProjectionBaselines.current.set(key, n(graded.projection));
+        return n(graded.projection);
       }
-      return n(getProjection?.(players?.[id], selectedProjectionSource)) / 17;
+      const current = Math.max(0, getWeekPoints(player, week, {
+        scoring: scoring,
+        scoringSettings: scoringLeague?.scoring_settings,
+      }));
+      if (!game || !isGameActive(game) && !isFinal(game)) {
+        if (current > 0) observedProjectionBaselines.current.set(key, current);
+        return current;
+      }
+      return n(observedProjectionBaselines.current.get(key)) || current;
     },
-    [getProjection, getWeeklyProjection, players, projectionSource, sourceKey, week],
+    [gameByTeam, getWeekPoints, gradedFrozenProjections, nflSeason, players, scoringLensLeague, selectedFrozenSource, sourceKey, week, year],
   );
 
   const preseasonMode = seasonType === "preseason";
@@ -919,45 +1172,88 @@ export default function GameCenterClient() {
               );
             const myRemaining = remaining(myIds);
             const opponentRemaining = remaining(opponentIds);
+            const forecastPlayers = (ids, points = {}) =>
+              Object.fromEntries(
+                ids.map((id) => {
+                  const actualPoints = n(points?.[id]);
+                  const player = players?.[id];
+                  const game = gameByTeam.get(normalizeTeam(player?.team));
+                  const frozenProjection = Math.max(0, weeklyProjection(id, row.league));
+                  const sourceProjection = frozenProjection * injuryProjectionMultiplier(player);
+                  const remainingPoints =
+                    !game || isFinal(game) || sourceProjection <= 0
+                      ? 0
+                      : isGameActive(game)
+                        ? Math.max(0, sourceProjection - actualPoints)
+                        : sourceProjection;
+                  return [
+                    id,
+                    {
+                      actual: actualPoints,
+                      remaining: remainingPoints,
+                      frozenProjection,
+                      liveFinish: actualPoints + remainingPoints,
+                      paceTone: projectionPaceTone({ actual: actualPoints, frozen: frozenProjection, game, player }),
+                    },
+                  ];
+                }),
+              );
             // A Best Ball bench player counts as remaining, but adding every
             // bench projection would wildly overstate the modeled finish.
             const myProjectionIds = remaining(myStarterIds);
             const opponentProjectionIds = remaining(opponentStarterIds);
+            const myForecasts = forecastPlayers(
+              (row.mine?.players || []).map(String).filter((id) => id && id !== "0"),
+              row.myMatch?.players_points,
+            );
+            const opponentForecasts = forecastPlayers(
+              (row.opponentRoster?.players || []).map(String).filter((id) => id && id !== "0"),
+              row.opponentMatch?.players_points,
+            );
             const myRemainingProjection = myProjectionIds.reduce(
-              (sum, id) => sum + weeklyProjection(id),
+              (sum, id) => sum + n(myForecasts[id]?.remaining),
               0,
             );
             const opponentRemainingProjection = opponentProjectionIds.reduce(
-              (sum, id) => sum + weeklyProjection(id),
+              (sum, id) => sum + n(opponentForecasts[id]?.remaining),
               0,
             );
-            const actual = n(row.myMatch?.points);
-            const projected = actual + myRemainingProjection;
-            let opponentActual = n(row.opponentMatch?.points);
-            let opponentProjected = opponentActual + opponentRemainingProjection;
+            const actual = matchupScore(row.myMatch);
+            const projected = bestBall
+              ? projectedOptimalTotal(row.league, Object.keys(myForecasts), players, myForecasts)
+              : actual + myRemainingProjection;
+            let opponentActual = matchupScore(row.opponentMatch);
+            let opponentProjected = bestBall
+              ? projectedOptimalTotal(row.league, Object.keys(opponentForecasts), players, opponentForecasts)
+              : opponentActual + opponentRemainingProjection;
             let comparisonName = row.opponentName;
             let comparisonRemaining = opponentRemaining;
+            let projectedLeagueTeams = row.leagueTeams || [];
             if (row.chopped) {
-              const otherTeams = (row.leagueTeams || [])
-                .filter((team) => !team.isMine)
-                .map((team) => {
+              projectedLeagueTeams = (row.leagueTeams || []).map((team) => {
                   const ids = (team.match?.starters || [])
                     .map(String)
                     .filter((id) => id && id !== "0");
                   const teamRemaining = remaining(ids);
-                  const teamActual = n(team.match?.points);
+                  const teamActual = matchupScore(team.match);
+                  const teamForecasts = forecastPlayers(
+                    ids,
+                    team.match?.players_points,
+                  );
                   return {
                     ...team,
                     remaining: teamRemaining,
                     actual: teamActual,
-                    projected:
-                      teamActual +
-                      teamRemaining.reduce(
-                        (sum, id) => sum + weeklyProjection(id),
-                        0,
-                      ),
+                    projected: bestBall
+                      ? projectedOptimalTotal(row.league, ids, players, teamForecasts)
+                      : teamActual + teamRemaining.reduce(
+                          (sum, id) => sum + n(teamForecasts[id]?.remaining),
+                          0,
+                        ),
                   };
-                })
+                });
+              const otherTeams = projectedLeagueTeams
+                .filter((team) => !team.isMine)
                 .sort((a, b) => a.projected - b.projected);
               const cutLine = otherTeams[0];
               opponentActual = n(cutLine?.actual);
@@ -965,10 +1261,19 @@ export default function GameCenterClient() {
               comparisonName = cutLine ? `Cut line · ${cutLine.name}` : "Cut line";
               comparisonRemaining = cutLine?.remaining || [];
             }
-            const winProbability = Math.round(
-              100 / (1 + Math.exp(-(projected - opponentProjected) / 12)),
-            );
             const weekComplete = games.length > 0 && games.every(isFinal);
+            const projectedMargin = projected - opponentProjected;
+            const uncertainty = Math.max(
+              7,
+              5 + Math.sqrt(myRemainingProjection + opponentRemainingProjection) * 1.8,
+            );
+            const winProbability = weekComplete
+              ? projectedMargin > 0
+                ? 100
+                : projectedMargin < 0
+                  ? 0
+                  : 50
+              : Math.round(100 / (1 + Math.exp(-projectedMargin / uncertainty)));
             const emptySlots = actionAlertsEnabled && !weekComplete ? (row.myMatch?.starters || []).filter(
               (id) => !id || id === "0",
             ).length : 0;
@@ -1004,7 +1309,7 @@ export default function GameCenterClient() {
                         new Date(starterGame?.date || 0).getTime()
                     );
                   })
-                  .sort((a, b) => weeklyProjection(b) - weeklyProjection(a))[0];
+                  .sort((a, b) => weeklyProjection(b, row.league) - weeklyProjection(a, row.league))[0];
                 return replacement ? { starterId, replacement } : null;
               })
               .filter(Boolean) : [];
@@ -1022,6 +1327,9 @@ export default function GameCenterClient() {
               opponentActual,
               projected,
               opponentProjected,
+              myForecasts,
+              opponentForecasts,
+              projectedLeagueTeams,
               myRemaining,
               opponentRemaining: comparisonRemaining,
               opponentName: comparisonName,
@@ -1072,7 +1380,9 @@ export default function GameCenterClient() {
           // Timeline scoring is one NFL-week result per player. Exposure is
           // retained in for/against arrays, never multiplied into the score.
           points: Object.prototype.hasOwnProperty.call(weeklyStats || {}, row.id)
-            ? pointsFromStats(weeklyStats, row.id)
+            ? scoringLensLeague
+              ? scoreSleeperStats(weeklyStats?.[row.id] || {}, scoringLensLeague.scoring_settings || {}, position(player))
+              : pointsFromStats(weeklyStats, row.id)
             : row.points,
           player,
           name: playerName(players, row.id),
@@ -1088,7 +1398,7 @@ export default function GameCenterClient() {
             String(b.game?.date || "9999"),
           ) || b.impact - a.impact,
       );
-  }, [matchupRows, players, gameByTeam, weeklyProjection, weeklyStats]);
+  }, [matchupRows, players, gameByTeam, weeklyProjection, weeklyStats, scoringLensLeague]);
 
   const preseasonPlayerRows = useMemo(() => {
     if (!preseasonMode) return [];
@@ -1128,13 +1438,25 @@ export default function GameCenterClient() {
   }, [gameByTeam, players, preseasonMode, visibleRows, weeklyStats]);
 
   useEffect(() => {
-    if (!liveMode || !playerRows.length) {
+    if (!liveMode) {
+      liveSessionSeeded.current = false;
       priorPoints.current = new Map(
         playerRows.map((row) => [row.id, row.points]),
       );
       priorStatSnapshots.current = new Map(
         playerRows.map((row) => [row.id, weeklyStats?.[row.id] || {}]),
       );
+      return;
+    }
+    if (!playerRows.length) return;
+    if (!liveSessionSeeded.current) {
+      priorPoints.current = new Map(
+        playerRows.map((row) => [row.id, row.points]),
+      );
+      priorStatSnapshots.current = new Map(
+        playerRows.map((row) => [row.id, weeklyStats?.[row.id] || {}]),
+      );
+      liveSessionSeeded.current = true;
       return;
     }
     const nextEvents = [];
@@ -1163,6 +1485,14 @@ export default function GameCenterClient() {
             : turnoverDelta > 0
               ? "turnover"
               : "points";
+        const changedStats = [
+          ["pass_td", "pass TD"], ["rush_td", "rush TD"], ["rec_td", "receiving TD"],
+          ["pass_yd", "passing yards"], ["rush_yd", "rushing yards"], ["rec_yd", "receiving yards"],
+          ["rec", "receptions"], ["pass_int", "interception"], ["fum_lost", "fumble lost"],
+          ["fgm", "field goal"], ["xpm", "extra point"],
+        ].map(([key, label]) => ({ label, change: n(stats[key]) - n(previousStats[key]) }))
+          .filter((item) => item.change !== 0)
+          .map((item) => `${item.change > 0 ? "+" : ""}${item.change} ${item.label}${Math.abs(item.change) === 1 ? "" : "s"}`);
         nextEvents.push({
           id: `${Date.now()}-${row.id}`,
           kind,
@@ -1171,10 +1501,12 @@ export default function GameCenterClient() {
               ? `${row.name} · ${touchdownDelta > 1 ? `${touchdownDelta} touchdowns` : "touchdown"}`
               : kind === "turnover"
                 ? `${row.name} · turnover`
-                : `${row.name} · ${delta >= 0 ? "+" : ""}${delta.toFixed(1)} points`,
+                : `${row.name} · ${delta >= 0 ? "+" : ""}${scoreText(delta)} points`,
           detail: `${row.for.length} helping · ${row.against.length} opposing · ${row.impact} affected league${row.impact === 1 ? "" : "s"}`,
-          leagues: leagueNames.slice(0, 4),
+          statDetail: changedStats.slice(0, 3).join(" · ") || "Scoring total changed",
+          leagues: leagueNames,
           points: delta,
+          totalPoints: row.points,
         });
       }
     });
@@ -1187,6 +1519,11 @@ export default function GameCenterClient() {
     if (nextEvents.length)
       setLiveEvents((current) => [...nextEvents, ...current].slice(0, 16));
   }, [playerRows, liveMode, weeklyStats]);
+
+  useEffect(() => {
+    setLiveEvents([]);
+    liveSessionSeeded.current = false;
+  }, [nflSeason, seasonType, week]);
 
   useEffect(() => {
     if (!liveMode || !matchupRows.length) {
@@ -1290,6 +1627,43 @@ export default function GameCenterClient() {
       (a, b) => b.projection - a.projection || b.impact - a.impact,
     )
     .slice(0, 10);
+  const impactLeaders = [...playerRows]
+    .filter((row) => row.points !== 0)
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        Number(b.conflict) - Number(a.conflict) ||
+        b.impact - a.impact,
+    )
+    .slice(0, 10);
+  const portfolioTicker = {
+    ahead: matchupRows.filter((row) => row.projected > row.opponentProjected).length,
+    behind: matchupRows.filter((row) => row.projected < row.opponentProjected).length,
+    close: counts.close,
+    choppedDanger: matchupRows.filter((row) => row.chopped && row.winProbability <= 40).length,
+  };
+  const windowRecaps = [
+    ["thursday", "Thursday night"],
+    ["sunday-early", "Sunday early"],
+    ["sunday-late", "Sunday late"],
+    ["monday", "Monday night"],
+  ].map(([key, label]) => {
+    const windowGames = games.filter((game) => gameWindow(game) === key);
+    const windowPlayers = playerRows.filter((row) => gameWindow(row.game) === key);
+    const leagueIds = new Set(
+      windowPlayers.flatMap((row) => [...row.for, ...row.against].map((entry) => entry.league?.league_id)).filter(Boolean),
+    );
+    return {
+      key,
+      label,
+      games: windowGames.length,
+      players: windowPlayers.length,
+      leagues: leagueIds.size,
+      complete: windowGames.length > 0 && windowGames.every(isFinal),
+      live: windowGames.some(isGameActive),
+      leader: [...windowPlayers].sort((a, b) => b.points - a.points)[0] || null,
+    };
+  });
   const gameGroups = [...games].sort((a, b) =>
     String(a.date || "").localeCompare(String(b.date || "")),
   );
@@ -1458,12 +1832,13 @@ export default function GameCenterClient() {
             </select>
             <details data-guide-tip="game-center-settings" className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">
               <summary data-guide-tip="game-center-settings-summary" className="flex min-h-7 cursor-pointer list-none items-center justify-between text-xs font-semibold text-white/55"><span>League & model settings</span><span className="text-[10px] font-normal text-white/30">{GAME_CENTER_PROJECTION_SOURCES.find((source) => source.key === (String(sourceKey || "").startsWith("proj:") ? sourceKey : "proj:thefantasyarsenal-model"))?.label || "The Fantasy Arsenal Projections"} · {formatFilter === "all" ? "All types" : formatFilter}</span></summary>
-              <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Win-probability model</div><p className="mt-1 text-[10px] leading-4 text-white/35">Projected finishes, win chances, close-matchup labels, swing players, and late-swap rankings use this projection source. Player market values are intentionally excluded because they do not predict a single week's score.</p><SourceSelector sources={GAME_CENTER_PROJECTION_SOURCES} value={String(sourceKey || "").startsWith("proj:") ? sourceKey : "proj:thefantasyarsenal-model"} onChange={setSourceKey} layout="inline" showToggles={false} className="mt-2" /></div>
-              <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2"><select value={formatFilter} onChange={(event) => setFormatFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="all">All league types</option><option value="dynasty">Dynasty</option><option value="keeper">Keeper</option><option value="redraft">Redraft</option><option value="bestball">Best Ball</option></select><select value={bestBallFilter} onChange={(event) => setBestBallFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="include">Include Best Ball</option><option value="exclude">Exclude Best Ball</option><option value="only">Only Best Ball</option></select></div>{bestBallLeagues.length ? <div className="mt-3 border-t border-white/10 pt-3"><div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Best Ball action-alert overrides</div><p className="mt-1 text-[10px] leading-4 text-white/30">Lineup and injury alerts are off by default. Enable only custom leagues where managers can make moves.</p><div className="mt-2 grid gap-1.5 sm:grid-cols-2">{bestBallLeagues.map((row)=><label key={row.league.league_id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-2 text-xs text-white/55"><input type="checkbox" checked={bestBallAlertLeagueIds.includes(String(row.league.league_id))} onChange={(event)=>setBestBallAlertLeagueIds((current)=>event.target.checked?[...new Set([...current,String(row.league.league_id)])]:current.filter((id)=>id!==String(row.league.league_id)))} />{row.league.name}</label>)}</div></div> : null}
+              <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 lg:grid-cols-2"><label><span className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Win-probability projection source</span><select value={String(sourceKey || "").startsWith("proj:") ? sourceKey : "proj:thefantasyarsenal-model"} onChange={(event)=>setSourceKey(event.target.value)} className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm">{GAME_CENTER_PROJECTION_SOURCES.map((source)=><option key={source.key} value={source.key}>{source.label}</option>)}</select></label><label><span className="text-[10px] font-semibold uppercase tracking-wider text-white/35">Player-feed scoring league</span><select value={scoringLeagueId} onChange={(event)=>selectScoringLeague(event.target.value)} className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm">{leagues.map((league)=><option key={league.league_id} value={league.league_id}>{league.name}</option>)}</select></label><p className="text-[10px] leading-4 text-white/35 lg:col-span-2">Every matchup uses that league&apos;s own scoring. The selected scoring league gives player timelines and the Sunday Intelligence Wire one consistent scoring lens.</p></div>
+              <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2"><select value={formatFilter} onChange={(event) => setFormatFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="all">All league types</option><option value="dynasty">Dynasty</option><option value="keeper">Keeper</option><option value="redraft">Redraft</option><option value="bestball">Best Ball</option></select><select value={bestBallFilter} onChange={(event) => setBestBallFilter(event.target.value)} className="min-h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm"><option value="include">Include Best Ball</option><option value="exclude">Exclude Best Ball</option><option value="only">Only Best Ball</option></select></div>{bestBallLeagues.length ? <details className="mt-3 border-t border-white/10 pt-3"><summary className="flex cursor-pointer list-none items-center justify-between rounded-xl bg-white/[0.035] px-3 py-2.5 text-xs font-semibold text-white/55"><span>Best Ball alert exceptions</span><span className="text-[9px] text-white/30">{bestBallAlertLeagueIds.length} enabled · {bestBallLeagues.length} leagues</span></summary><p className="mt-2 text-[10px] leading-4 text-white/30">Enable only custom Best Ball leagues where managers can still make lineup moves.</p><div className="mt-2 grid max-h-56 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">{bestBallLeagues.map((row)=><label key={row.league.league_id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-2 text-xs text-white/55"><input type="checkbox" checked={bestBallAlertLeagueIds.includes(String(row.league.league_id))} onChange={(event)=>setBestBallAlertLeagueIds((current)=>event.target.checked?[...new Set([...current,String(row.league.league_id)])]:current.filter((id)=>id!==String(row.league.league_id)))} /> <span className="truncate">{row.league.name}</span></label>)}</div></details> : null}
             </details>
           </div>
           <FreshnessRibbon items={freshnessItems} />
         </header>
+        {!preseasonMode && username ? <PortfolioTicker summary={portfolioTicker} liveMode={liveMode} /> : null}
 
         {error ? (
           <div className="mt-4 rounded-2xl border border-rose-300/15 bg-rose-300/[0.07] p-4 text-sm text-rose-100">
@@ -1495,12 +1870,10 @@ export default function GameCenterClient() {
                 />
                 <Stat
                   label="Fantasy points"
-                  value={preseasonPlayerRows
-                    .reduce(
-                      (sum, row) => sum + pointsFromStats(weeklyStats, row.id),
-                      0,
-                    )
-                    .toFixed(1)}
+                  value={scoreText(preseasonPlayerRows.reduce(
+                    (sum, row) => sum + pointsFromStats(weeklyStats, row.id),
+                    0,
+                  ))}
                   detail={`${preseasonPlayerRows.filter((row) => pointsFromStats(weeklyStats, row.id) !== 0).length} scoring portfolio players`}
                 />
                 <Stat
@@ -1531,14 +1904,14 @@ export default function GameCenterClient() {
               <section data-guide-tip="game-center-scoreboard" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
                 <Stat
                   label="Actual points"
-                  value={totalActual.toFixed(1)}
+                  value={scoreText(totalActual)}
                   detail={`${matchupRows.length} leagues`}
                   tone="cyan"
                 />
                 <Stat
                   label="Projected finish"
-                  value={totalProjected.toFixed(1)}
-                  detail={`+${Math.max(0, totalProjected - totalActual).toFixed(1)} remaining`}
+                  value={scoreText(totalProjected)}
+                  detail={`+${scoreText(Math.max(0, totalProjected - totalActual))} remaining`}
                   tone="emerald"
                 />
                 <Stat label="Winning" value={counts.winning} tone="emerald" />
@@ -1610,6 +1983,7 @@ export default function GameCenterClient() {
             {tab === "command" && !preseasonMode ? (
               <div data-guide-tip="game-center-command" className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
                 <div className="space-y-4">
+                  <WindowRecaps recaps={windowRecaps} />
                   <Panel data-guide-tip="game-center-command-summary" className="p-4">
                     <h2 className="font-black">Weekly recap</h2>
                     <p className="mt-2 break-words text-xs leading-5 text-white/42">
@@ -1692,9 +2066,9 @@ export default function GameCenterClient() {
                 <div className="space-y-4">
                   <Panel data-guide-tip="game-center-late-swap" className="overflow-hidden">
                     <div className="border-b border-white/10 p-4 sm:p-5"><h2 className="text-xl font-black">Late-swap opportunities</h2><p className="mt-1 text-xs text-white/35">Healthy same-position bench options that lock no earlier than the risky starter.</p></div>
-                    <div className="grid gap-2 p-3">{lateSwaps.slice(0,12).map(({starterId,replacement,row})=><a key={`${row.league.league_id}-${starterId}`} href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"><div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">{row.league.name}</div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm"><b className="break-words text-amber-100">{playerName(players,starterId)}</b><span className="text-white/20">→</span><b className="break-words text-emerald-100">{playerName(players,replacement)}</b></div><div className="mt-1 break-words text-[10px] text-white/32">{injury(players?.[starterId])} contingency · {weeklyProjection(replacement).toFixed(1)} projected</div></a>)}{!lateSwaps.length?<div className="p-3 text-sm text-white/35">No direct late-swap chain is currently required.</div>:null}</div>
+                    <div className="grid gap-2 p-3">{lateSwaps.slice(0,12).map(({starterId,replacement,row})=><a key={`${row.league.league_id}-${starterId}`} href={matchupHref(row.league.league_id)} target="_blank" rel="noreferrer" className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.055]"><div className="break-words text-[9px] font-semibold uppercase tracking-wider text-white/30">{row.league.name}</div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm"><b className="break-words text-amber-100">{playerName(players,starterId)}</b><span className="text-white/20">→</span><b className="break-words text-emerald-100">{playerName(players,replacement)}</b></div><div className="mt-1 break-words text-[10px] text-white/32">{injury(players?.[starterId])} contingency · {scoreText(weeklyProjection(replacement, row.league))} projected</div></a>)}{!lateSwaps.length?<div className="p-3 text-sm text-white/35">No direct late-swap chain is currently required.</div>:null}</div>
                   </Panel>
-                  <Panel className="overflow-hidden border-emerald-300/15 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.11),transparent_38%),linear-gradient(to_bottom,rgba(15,23,42,.96),rgba(2,6,23,.92))]">
+                  {false ? <Panel className="overflow-hidden border-emerald-300/15 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.11),transparent_38%),linear-gradient(to_bottom,rgba(15,23,42,.96),rgba(2,6,23,.92))]">
                     <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
                       <div>
                         <div className="text-[9px] font-black uppercase tracking-[.2em] text-emerald-100/45">Sunday intelligence wire</div>
@@ -1719,7 +2093,7 @@ export default function GameCenterClient() {
                                 <div className="mt-0.5 text-[10px] leading-4 text-white/38">{event.detail}</div>
                                 {event.leagues?.length ? <div className="mt-2 flex flex-wrap gap-1">{event.leagues.map((league) => <span key={league} className="max-w-full truncate rounded-full border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[8px] text-white/38">{league}</span>)}</div> : null}
                               </div>
-                              {Number.isFinite(event.points) ? <b className={event.points >= 0 ? "text-emerald-100" : "text-rose-100"}>{event.points >= 0 ? "+" : ""}{event.points.toFixed(1)}</b> : null}
+                              {Number.isFinite(event.points) ? <b className={event.points >= 0 ? "text-emerald-100" : "text-rose-100"}>{event.points >= 0 ? "+" : ""}{scoreText(event.points)}</b> : null}
                             </div>
                           </div>
                         );
@@ -1732,7 +2106,7 @@ export default function GameCenterClient() {
                         </div>
                       ) : null}
                     </div>
-                  </Panel>
+                  </Panel> : null}
                   <Panel className="min-w-0 p-4">
                     <h2 className="font-black">Swing players</h2>
                     <p className="mt-1 text-[10px] text-white/32">
@@ -1763,7 +2137,7 @@ export default function GameCenterClient() {
                           </div>
                           <div className="text-right">
                             <b className="text-amber-100">
-                              {row.projection.toFixed(1)}
+                              {scoreText(row.projection)}
                             </b>
                             <small className="block text-[8px] text-white/25">
                               projected pts
@@ -1873,16 +2247,16 @@ export default function GameCenterClient() {
                               </div>
                             ) : null}
                             <div className="text-right">
-                              <b>
+                              <b className="block text-cyan-100">
                                 {preseasonMode
-                                  ? pointsFromStats(
+                                  ? scoreText(pointsFromStats(
                                       weeklyStats,
                                       row.id,
-                                    ).toFixed(1)
-                                  : row.points.toFixed(1)}
+                                    ))
+                                  : scoreText(row.points)}
                               </b>
                               <small className="block text-[8px] text-white/25">
-                                fantasy pts
+                                {preseasonMode ? "fantasy pts" : `${scoreText(row.projection)} projected`}
                               </small>
                             </div>
                           </div>
@@ -1939,10 +2313,8 @@ export default function GameCenterClient() {
                           <div className="text-right">
                             <b>
                               {preseasonMode
-                                ? pointsFromStats(weeklyStats, row.id).toFixed(
-                                    1,
-                                  )
-                                : row.points.toFixed(1)}
+                                ? scoreText(pointsFromStats(weeklyStats, row.id))
+                                : scoreText(row.points)}
                             </b>
                             <small className="block text-[8px] text-white/25">
                               fantasy pts
@@ -2024,9 +2396,9 @@ export default function GameCenterClient() {
                       </div>
                       <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
                         <div>
-                          <b className="text-2xl">{row.actual.toFixed(1)}</b>
+                          <b className="text-2xl">{scoreText(row.actual)}</b>
                           <small className="block text-[9px] text-white/30">
-                            You · {row.projected.toFixed(1)} modeled
+                            actual · {scoreText(row.projected)} projected
                           </small>
                         </div>
                         <span className="text-xs text-white/20">
@@ -2034,11 +2406,10 @@ export default function GameCenterClient() {
                         </span>
                         <div>
                           <b className="text-2xl">
-                            {row.opponentActual.toFixed(1)}
+                            {scoreText(row.opponentActual)}
                           </b>
                           <small className="block truncate text-[9px] text-white/30">
-                            {row.opponentName} ·{" "}
-                            {row.opponentProjected.toFixed(1)}
+                            actual · {scoreText(row.opponentProjected)} projected
                           </small>
                         </div>
                       </div>
@@ -2062,10 +2433,37 @@ export default function GameCenterClient() {
                 </div>
               </div>
             ) : null}
-            <MatchupDetail row={selectedMatchup} players={players} onClose={()=>setSelectedMatchupLeagueId("")} />
+            <MatchupDetail row={selectedMatchup} players={players} projectionLabel={activeProjectionLabel} onClose={()=>setSelectedMatchupLeagueId("")} />
           </>
         ) : null}
       </div>
+      {username && !preseasonMode && !selectedMatchup ? (
+        impactVisible ? (
+          <LiveScoringImpact
+            events={liveEvents}
+            leaders={impactLeaders}
+            liveMode={liveMode}
+            refreshSeconds={liveRefreshSeconds}
+            minimized={impactMinimized}
+            onMinimize={() => setImpactMinimized((value) => !value)}
+            onClose={() => setImpactVisible(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setImpactVisible(true);
+              setImpactMinimized(false);
+            }}
+            title="Open Live Scoring Impact · Shift+L"
+            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-[130] flex min-h-11 items-center gap-2 rounded-2xl border border-emerald-300/20 bg-slate-950/95 px-4 py-3 text-xs font-black text-emerald-100 shadow-[0_20px_60px_-20px_rgba(16,185,129,.8)] backdrop-blur-xl sm:right-5"
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,.9)]" />
+            Live impact
+            <kbd className="rounded-md border border-white/10 bg-white/[0.05] px-1.5 py-0.5 text-[8px] text-white/35">Shift L</kbd>
+          </button>
+        )
+      ) : null}
       {username && !liveMode ? (
         <GuidedTips
           storageKey="tfa:tips:game-center"
@@ -2119,7 +2517,7 @@ export default function GameCenterClient() {
             {
               target: "game-center-settings-summary",
               title: "Choose what drives the win percentages",
-              detail: "Game Center adds the selected source's remaining-player projections to each live score, compares the two modeled finishes, and converts that margin into win probability. This menu also controls scoring format, league filters, and Best Ball alert exceptions. Player values are excluded because dynasty or trade value does not predict one week's fantasy points.",
+              detail: "Choose the weekly projection source used for live finishes and win percentages. Each matchup uses its own league rules; the scoring-league selector gives cross-league player views and the Sunday Intelligence Wire one consistent scoring lens. League-type filters and Best Ball alert exceptions are compacted here too.",
               onEnter: () => { const menu = document.querySelector('[data-guide-tip="game-center-settings"]'); if (menu) menu.open = true; return () => { if (menu) menu.open = false; }; },
             },
             {
@@ -2162,6 +2560,15 @@ export default function GameCenterClient() {
               title: "Protect flexibility after early games lock",
               detail: "Late-swap opportunities pair a risky starter with a healthy same-position bench option whose game locks no earlier. Treat these as contingency paths: verify the injury news and your league's eligibility rules before making the swap.",
               onEnter: () => setTab("command"),
+            },
+            {
+              target: "game-center-live-impact",
+              title: "Keep the impact wire with you",
+              detail: "The Sunday Intelligence Wire floats above every Game Center tab with live events or a current scoring snapshot. Drag it from the handle, resize it on desktop, reset its placement, minimize or close it, or press Shift+L to hide and reopen it.",
+              onEnter: () => {
+                setImpactVisible(true);
+                setImpactMinimized(false);
+              },
             },
             {
               target: "game-center-live-controls",

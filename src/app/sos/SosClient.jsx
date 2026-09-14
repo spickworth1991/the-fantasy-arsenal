@@ -1,4 +1,5 @@
 "use client";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
@@ -213,20 +214,6 @@ function getSeasonPointsForPlayer(map, p) {
   if (k2 && map.byName[k2] != null) return map.byName[k2];
 
   return 0;
-}
-
-/** Weekly projection: seasonPts / (17 - byeCountForTeam), but **0** on bye week(s). */
-function makeWeeklyProjectionGetter(map) {
-  if (!map) return () => 0;
-  return (p, week, byeMap) => {
-    if (!p) return 0;
-    const team = (p.team || "").toUpperCase();
-    const byes = Array.isArray(byeMap?.by_team?.[team]) ? byeMap.by_team[team] : [];
-    if (byes.includes(week)) return 0;
-    const seasonPts = getSeasonPointsForPlayer(map, p);
-    const games = Math.max(1, REG_SEASON_WEEKS - byes.length);
-    return seasonPts / games;
-  };
 }
 
 /** Wrap a values getter to the same signature (p, week, byeMap) and zero out on bye. */
@@ -474,28 +461,15 @@ export default function SOSPage() {
   }, []);
 
 
+  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(projectionSource, {
+    enabled: metricMode === "projections", season: Number(league?.season) || new Date().getFullYear(),
+  });
   const getMetricWeekly = useMemo(() => {
     if (metricMode === "projections") {
-      if (projectionSource === "ARSENAL_MODEL") return (p, currentWeek) => getWeeklyProjection?.(p, "ARSENAL_MODEL", currentWeek) || 0;
-      if (projectionSource === "ARSENAL") return (p, currentWeek, currentByeMap) => {
-        const team = String(p?.team || "").toUpperCase();
-        const byes = Array.isArray(currentByeMap?.by_team?.[team]) ? currentByeMap.by_team[team] : [];
-        return byes.includes(currentWeek) ? 0 : (getProjection(p, "ARSENAL") || 0) / Math.max(1, REG_SEASON_WEEKS - byes.length);
-      };
-      if (projectionSource === "FANTASYPROS") return (p) => (getProjection(p, "FANTASYPROS") || 0) / 17;
-      const chosen =
-        projectionSource === "ESPN" ? projMaps.ESPN :
-        projectionSource === "CBS"  ? projMaps.CBS  :
-        projectionSource === "SLEEPER" ? projMaps.SLEEPER :
-        projectionSource === "FANTASYSHARKS" ? projMaps.FANTASYSHARKS :
-        projectionSource === "DRAFTSHARKS" ? projMaps.DRAFTSHARKS :
-        projectionSource === "ARSENAL_MODEL" ? projMaps.ARSENAL_MODEL :
-        projectionSource === "ARSENAL" ? projMaps.ARSENAL :
-        projMaps.CSV;
-      if (chosen) return makeWeeklyProjectionGetter(chosen);
+      return (player, currentWeek, currentByeMap) => getWeekPoints(player, currentWeek, { byeMap: currentByeMap, qbType: qbLocal });
     }
     return wrapValuesAsWeekly(getValueRaw);
-  }, [metricMode, projectionSource, projMaps, getValueRaw, getProjection, getWeeklyProjection]);
+  }, [metricMode, getValueRaw, getWeekPoints, qbLocal]);
 
 
 
@@ -815,6 +789,7 @@ export default function SOSPage() {
             <summary>Model Settings <span className="ml-auto text-xs font-normal text-white/45">{metricMode === "projections" ? "Projections" : "Values"}</span></summary>
           <div className="mt-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950 p-3">
             <SourceSelector
+              projectionHorizon="week"
               sources={DEFAULT_SOURCES}
               value={sourceKey}
               onChange={setSourceKey}

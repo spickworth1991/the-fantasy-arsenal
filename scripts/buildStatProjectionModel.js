@@ -3273,6 +3273,7 @@ const compactModelRows = modeledPlayers.map((player) => ({
     points_ppr: round(week.projections?.ppr),
     points_half: round(week.projections?.half),
     points_std: round(week.projections?.std),
+    stat_line: sparseLine(week.stat_line),
     confidence: player.confidence,
   })),
 }));

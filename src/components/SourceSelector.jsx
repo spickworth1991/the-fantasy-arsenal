@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSleeper } from "../context/SleeperContext";
+import { WEEKLY_PROJECTION_NOTE } from "../lib/projectionHorizon";
 
 /**
  * Reusable, premium source selector.
@@ -189,7 +190,7 @@ export const DEFAULT_SOURCES = [
   },
 
   { key: "proj:espn", type: "projection", label: "ESPN Projections", logoKey: "ESPN" },
-  { key: "proj:cbs", type: "projection", label: "CBS Projections", logoKey: "CBS" },
+  { key: "proj:cbs", type: "projection", label: "CBS Projections", logoKey: "CBS", supports: { scoring: ["ppr"] } },
   { key: "proj:ffa", type: "projection", label: "FFA Projections", logoKey: "FFA" },
   { key: "proj:sleeper", type: "projection", label: "Sleeper Projections", logoKey: "Sleeper", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:fantasysharks", type: "projection", label: "FantasySharks Projections", logoKey: "FantasySharks" },
@@ -399,7 +400,9 @@ export default function SourceSelector({
   onModeChange,
   onQbTypeChange,
   showToggles = true,
+  showScoring = true,
   layout = "stacked",
+  projectionHorizon = "season",
 }) {
   const { projectionScoring = "ppr", setProjectionScoring } = useSleeper();
   const [open, setOpen] = useState(false);
@@ -418,9 +421,9 @@ export default function SourceSelector({
       : selected?.supports?.scoring || [];
 
   useEffect(() => {
-    if (scoringOptions.length < 1 || scoringOptions.includes(projectionScoring)) return;
+    if (!showScoring || scoringOptions.length < 1 || scoringOptions.includes(projectionScoring)) return;
     setProjectionScoring?.(scoringOptions.includes("ppr") ? "ppr" : scoringOptions[0]);
-  }, [selected?.key, mode, projectionScoring, scoringOptions, setProjectionScoring]);
+  }, [selected?.key, mode, projectionScoring, scoringOptions, setProjectionScoring, showScoring]);
 
   useEffect(() => setMounted(true), []);
 
@@ -562,9 +565,15 @@ export default function SourceSelector({
               <div className="flex flex-col items-center justify-center">
                 <LogoOnly source={selected} variant="button" />
                 <div className="mt-1 text-center text-[11px] text-white/45">
-                  {selected.type === "projection" ? "Projections" : "Values"}
+                  {selected.type === "projection" ? projectionHorizon === "week" ? "Weekly projections" : "Season projections" : "Values"}
                 </div>
+                {selected.type === "projection" && projectionHorizon === "week" ? (
+                  <span title={WEEKLY_PROJECTION_NOTE} className="mt-1 max-w-[220px] text-center text-[10px] leading-4 text-white/50">
+                    Week-specific when available; otherwise a season-based estimate.
+                  </span>
+                ) : null}
                 <ProductLabel source={selected} />
+                {selected.key === "proj:cbs" ? <span className="mt-1 text-[10px] text-white/50">PPR feed</span> : null}
               </div>
 
               {/* keep label hidden but accessible */}
@@ -600,7 +609,7 @@ export default function SourceSelector({
           inline={inline}
         />
       ) : null}
-      {scoringOptions.length > 1 ? (
+      {showScoring && scoringOptions.length > 1 ? (
         <div className={`${layout === "inline" ? "mt-2" : "mt-2"} rounded-2xl border border-white/10 bg-black/20 p-3`}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Scoring</span>

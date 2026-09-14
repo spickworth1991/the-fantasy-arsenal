@@ -1,4 +1,5 @@
 "use client";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -426,6 +427,9 @@ export default function LeagueHubContent() {
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [dismissedActions, setDismissedActions] = useState(() => new Set());
   const [nflState, setNflState] = useState({ season: "", week: 1 });
+  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(projectionSource, {
+    enabled: metricType === "projection", season: Number(nflState.season) || new Date().getFullYear(),
+  });
   const [completedTeams, setCompletedTeams] = useState(() => new Set());
   const [currentWeekComplete, setCurrentWeekComplete] = useState(false);
 
@@ -1048,9 +1052,7 @@ export default function LeagueHubContent() {
         const team = String(p.team || "").toUpperCase();
 
         const value = getValueForPlayer(p);
-        const proj = projectionSource === "ARSENAL_MODEL"
-          ? getWeeklyProjection(p, projectionSource, nflState.week)
-          : getProjection(p, projectionSource);
+        const proj = getWeekPoints(p, nflState.week);
         const injuryTag = String(
           p.injury_status || p.status || p.practice_participation || ""
         ).trim();
@@ -1088,7 +1090,7 @@ export default function LeagueHubContent() {
     out.sort((a, b) => (metric(b) || 0) - (metric(a) || 0) || a.name.localeCompare(b.name));
 
     return out.slice(0, 40);
-  }, [visibleLeaguesList, playersMap, getValueForPlayer, getProjection, getWeeklyProjection, projectionSource, bestMetric, nflState.week]);
+  }, [visibleLeaguesList, playersMap, getValueForPlayer, getWeekPoints, bestMetric, nflState.week]);
 
   const filteredInjuryRows = useMemo(() => injuryStatusFilter.has("ALL")
     ? injuryRows
@@ -2355,7 +2357,7 @@ export default function LeagueHubContent() {
           !isInjuredOrLimited(candidate) &&
           !rostered.has(String(candidate.player_id))
         )
-        .map((candidate) => ({ candidate, score: bestMetric === "projection" ? (projectionSource === "ARSENAL_MODEL" ? getWeeklyProjection(candidate, projectionSource, nflState.week) : getProjection(candidate, projectionSource)) : getValueForPlayer(candidate) }))
+        .map((candidate) => ({ candidate, score: bestMetric === "projection" ? getWeekPoints(candidate, nflState.week) : getValueForPlayer(candidate) }))
         .filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
@@ -3257,7 +3259,7 @@ export default function LeagueHubContent() {
                           <th className="py-2 pr-2">Tag</th>
                           <th className="py-2 pr-2">Leagues</th>
                           <th className="py-2 pr-2">
-                            {bestMetric === "projection" ? "Proj" : "Value"}
+                            {bestMetric === "projection" ? `Week ${nflState.week} proj` : "Value"}
                           </th>
                           <th className="py-2 pr-2">Memory</th>
                         </tr>

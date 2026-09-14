@@ -337,6 +337,7 @@ export default function DecisionInbox({ full = false, scopeLeagueIds = null }) {
     year,
     getPlayerValue,
     getWeeklyProjection,
+    preloadWeeklyProjections,
     metricType,
     projectionSource,
     sourceKey,
@@ -516,11 +517,14 @@ export default function DecisionInbox({ full = false, scopeLeagueIds = null }) {
         })),
       ]);
       const week = fantasyWeekFromNflState(nflState);
+      const weeklyData = metricType === "projection"
+        ? await preloadWeeklyProjections(projectionSource, Number(nflState.season || year))
+        : null;
       const metricForWeek = (player) => {
         if (metricType !== "projection") return n(getPlayerValue(player));
-        if (projectionSource === "ARSENAL_MODEL")
-          return n(getWeeklyProjection?.(player, projectionSource, week));
-        return n(getPlayerValue(player)) / 17;
+        return n(getWeeklyProjection(player, projectionSource, week, {
+          season: Number(nflState.season || year), data: weeklyData, byeMap: byeData,
+        }));
       };
       const score =
         week === 1
