@@ -461,6 +461,10 @@ function solveOptimalLineup({
   // lineup, but hiding them makes the live roster impossible to audit.
   const bench = allCandidates.filter((c) => !used.has(c.pid));
   const score = starters.reduce((s, x) => s + (x.proj || 0), 0);
+  const liveScore = starters.reduce(
+    (sum, player) => sum + (player.gameStarted ? player.livePoints ?? 0 : 0),
+    0,
+  );
   const floorScore = starters.reduce((s, x) => s + (x.floor || 0), 0);
   const ceilingScore = starters.reduce(
     (s, x) =>
@@ -474,6 +478,7 @@ function solveOptimalLineup({
     bench,
     allCandidates,
     score,
+    liveScore,
     floorScore,
     ceilingScore,
     strategy,
@@ -2328,8 +2333,19 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
         <div className="text-sm opacity-70">Pick an owner.</div>
       ) : (
         <>
-          <div className="text-sm mb-2">
-            Total {metricLabel}: <b>{formatFantasyPoints(res.score)}</b>
+          <div className="mb-3 grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-lg bg-black/15 px-2 py-1.5">
+              <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
+                Live total
+              </div>
+              <b className="text-emerald-100">{formatFantasyPoints(res.liveScore)}</b>
+            </div>
+            <div className="rounded-lg bg-black/15 px-2 py-1.5">
+              <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
+                Projected final
+              </div>
+              <b>{formatFantasyPoints(res.score)}</b>
+            </div>
           </div>
 
           <Section
