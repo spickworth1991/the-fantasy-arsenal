@@ -25,6 +25,15 @@ const matchupPoints = (matchup) => {
     0,
   );
 };
+const isChoppedMatchupSet = (matchups = []) => {
+  const matchupSizes = new Map();
+  matchups.forEach((matchup) => {
+    if (matchup?.matchup_id == null || matchup.matchup_id === "") return;
+    const key = String(matchup.matchup_id);
+    matchupSizes.set(key, num(matchupSizes.get(key)) + 1);
+  });
+  return matchups.length > 2 && ![...matchupSizes.values()].some((size) => size === 2);
+};
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -379,7 +388,7 @@ async function buildDigest(
   username,
   season,
   week,
-  { includeBestBall = false, leagueIds = [] } = {},
+  { includeBestBall = true, leagueIds = [] } = {},
 ) {
   const nflWeekStatus = await fetchNflWeekStatus(season, week);
   const user = await json(
@@ -432,6 +441,21 @@ async function buildDigest(
         if (!my) return null;
         const points = matchupPoints(my),
           oppPoints = matchupPoints(opp);
+        const chopped = isChoppedMatchupSet(matchups);
+        const leagueScores = matchups.map(matchupPoints);
+        const cutline = chopped && leagueScores.length ? Math.min(...leagueScores) : null;
+        const started = nflWeekStatus.allComplete || points > 0 || oppPoints > 0;
+        const survival = !chopped
+          ? null
+          : !started
+            ? "Not started"
+            : nflWeekStatus.allComplete
+              ? points <= cutline
+                ? "Chopped"
+                : "Alive"
+              : points <= cutline
+                ? "At cut line"
+                : "Alive";
         const managerName = (rosterId) => {
           const roster = rosters.find(
             (row) => String(row.roster_id) === String(rosterId),
@@ -486,7 +510,15 @@ async function buildDigest(
           name: league.name,
           points,
           opp: oppPoints,
-          started: nflWeekStatus.allComplete || points > 0 || oppPoints > 0,
+          started,
+          chopped,
+          cutline,
+          survival,
+          leagueType: chopped
+            ? "Chopped"
+            : classifyLeagueFormat(league).flags.bestBall
+              ? "Best Ball"
+              : "Head-to-head",
           empty: nflWeekStatus.allComplete
             ? 0
             : (my.starters || []).filter((id) => !id || id === "0").length,
@@ -496,7 +528,8 @@ async function buildDigest(
       }),
     )
   ).filter(Boolean);
-  const active = rows.filter((r) => r.started);
+  const active = rows.filter((r) => r.started && !r.chopped);
+  const choppedRows = rows.filter((r) => r.chopped);
   const wins = active.filter((r) => r.points > r.opp).length,
     losses = active.filter((r) => r.points < r.opp).length,
     points = rows.reduce((s, r) => s + r.points, 0),
@@ -509,6 +542,8 @@ async function buildDigest(
     points,
     empty,
     close,
+    choppedAlive: choppedRows.filter((r) => r.survival === "Alive").length,
+    choppedOut: choppedRows.filter((r) => r.survival === "Chopped").length,
     weekComplete: nflWeekStatus.allComplete,
     commissionerSignals: rows
       .flatMap((row) => row.commissionerSignals || [])
@@ -523,8 +558,8 @@ async function buildDigest(
 }
 
 function digestEmail({ d, manager, season, week, news = [] }) {
-  const active = d.rows.filter((r) => r.started),
-    notStarted = d.rows.length - active.length;
+  const active = d.rows.filter((r) => r.started && !r.chopped),
+    notStarted = d.rows.filter((r) => !r.started).length;
   const ties = active.length - d.wins - d.losses;
   const winRate = active.length ? (d.wins + ties * 0.5) / active.length : 0;
   const gradedEmpty = active.reduce((sum, r) => sum + r.empty, 0);
@@ -642,7 +677,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     ],
     5,
   );
-  const phaseBanner = d.playoffLeagues
+  const defaultPhaseBanner = d.playoffLeagues
     ? `🏆 <b>${d.playoffLeagues} league playoff${d.playoffLeagues === 1 ? " is" : "s are"} active.</b> Survival, advancement, and championship paths now outweigh ordinary margin chasing.`
     : d.playoffPushLeagues
       ? `🔥 <b>Playoff push alert in ${d.playoffPushLeagues} league${d.playoffPushLeagues === 1 ? "" : "s"}.</b> Seeding leverage is rising; close matchups and empty slots carry extra cost.`
@@ -653,6 +688,28 @@ function digestEmail({ d, manager, season, week, news = [] }) {
           : week <= 4
             ? `🚀 <b>Opening-phase report.</b> Early results matter, but roster process is more trustworthy than a small record sample.`
             : `🧭 <b>Season-building phase.</b> Protect weekly points while keeping waiver and trade flexibility intact.`;
+  const phaseBanner = d.choppedOut
+    ? choose([
+        `<b>Chopped-league reset.</b> ${d.choppedOut} portfolio seat${d.choppedOut === 1 ? " was" : "s were"} eliminated at the weekly cut line. Review the score path before the next survival slate.`,
+        `<b>Survival format changes the read.</b> ${d.choppedOut} chopped result${d.choppedOut === 1 ? " is" : "s are"} separate from your head-to-head record; the next priority is preserving floor in the remaining chopped rooms.`,
+      ], 17)
+    : d.choppedAlive
+      ? choose([
+          `<b>Chopped survival board:</b> ${d.choppedAlive} team${d.choppedAlive === 1 ? " is" : "s are"} still alive. Staying above the cut line matters more than beating one named opponent.`,
+          `<b>Survival secured for now.</b> ${d.choppedAlive} chopped portfolio seat${d.choppedAlive === 1 ? " remains" : "s remain"} alive; preserve reliable volume before chasing ceiling.`,
+        ], 17)
+      : week <= 4
+        ? choose([
+            `<b>Early-season signal check.</b> One week can identify role changes and injuries, but it cannot settle a roster’s season-long quality. Prioritize actionable usage and confirmed opportunity.`,
+            `<b>Small-sample discipline.</b> Early records matter, yet the better question is whether workload, routes, and lineup construction support repeating the result.`,
+            `<b>Opening-week review.</b> Bank the wins, investigate the losses, and avoid overreacting to one outlier score unless the underlying role changed with it.`,
+          ], 17)
+        : week >= 8 && !d.playoffLeagues && !d.playoffPushLeagues
+          ? choose([
+              `<b>Midseason focus.</b> Put attention on close standings, thin positions, and managers whose behavior has changed—not every league equally.`,
+              `<b>Portfolio maintenance week.</b> Strong waiver depth, lineup coverage, and role monitoring create options when the standings tighten.`,
+            ], 17)
+          : defaultPhaseBanner;
   const briefing = !active.length
     ? `${opening} Your slate is staged and waiting for kickoff. No matchup has been graded, so the portfolio remains neutral.`
     : `${opening} The live record is ${d.wins}-${d.losses}${ties ? `-${ties}` : ""} through ${active.length} matchup${active.length === 1 ? "" : "s"}. ${best ? choose([`${esc(best.name)} sets the pace at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `${esc(best.name)} is carrying the strongest live margin: ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `The current portfolio leader is ${esc(best.name)} at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`], 9) : ""} ${danger && danger !== best ? choose([`${esc(danger.name)} is the pressure point at ${(danger.points - danger.opp).toFixed(1)}.`, `${esc(danger.name)} needs the closest attention with a ${(danger.points - danger.opp).toFixed(1)} margin.`, `The rescue board starts with ${esc(danger.name)} at ${(danger.points - danger.opp).toFixed(1)}.`], 13) : ""}`;
@@ -664,6 +721,10 @@ function digestEmail({ d, manager, season, week, news = [] }) {
   if (d.close)
     actions.push(
       `<b style="color:#fde68a">Watch ${d.close} close matchup${d.close === 1 ? "" : "s"}.</b> These are the leagues where one decision has the most leverage.`,
+    );
+  if (d.choppedOut || d.choppedAlive)
+    actions.push(
+      `<b style="color:${d.choppedOut ? "#fda4af" : "#a7f3d0"}">Chopped survival:</b> ${d.choppedAlive || 0} alive${d.choppedOut ? ` Â· ${d.choppedOut} chopped` : ""}. Chopped leagues are tracked against their weekly cut line, not as head-to-head wins or losses.`,
     );
   if (d.playoffLeagues || d.playoffPushLeagues)
     actions.push(
@@ -696,8 +757,13 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     })
     .join("");
   const games = [...d.rows]
-    .sort((a, b) => Math.abs(a.points - a.opp) - Math.abs(b.points - b.opp))
+    .sort((a, b) => Number(b.chopped) - Number(a.chopped) || Math.abs(a.points - a.opp) - Math.abs(b.points - b.opp))
     .map((r) => {
+      if (r.chopped) {
+        const color = r.survival === "Chopped" ? "#fb7185" : r.survival === "Alive" ? "#34d399" : "#fbbf24";
+        const status = !r.started ? "NOT STARTED" : String(r.survival || "CUT LINE").toUpperCase();
+        return `<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #26354d;border-radius:16px;background:#101b2d"><tr><td style="padding:15px 16px"><div style="font-size:14px;font-weight:800;color:#f8fafc">${esc(r.name)}</div><div style="padding-top:5px;font-size:11px;color:#a78bfa">CHOPPED LEAGUE Â· lowest weekly score is eliminated</div></td><td align="right" style="padding:15px 16px;white-space:nowrap"><div style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:${color}">${status}</div><div style="padding-top:4px;font-size:18px;font-weight:900;color:#f8fafc">${r.points.toFixed(1)}</div><div style="padding-top:3px;font-size:10px;color:${color}">${r.started ? "Weekly survival result" : "Waiting for kickoff"}</div></td></tr></table></td></tr>`;
+      }
       const margin = r.points - r.opp,
         winning = margin > 0,
         tied = r.started && margin === 0;
@@ -715,7 +781,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     `<td class="metric${last ? " metric-last" : ""}" width="25%" align="center" style="padding:17px 8px"><div style="font-size:24px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.2px;color:#718198">${label}</div></td>`;
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark only"><meta name="supported-color-schemes" content="dark"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${d.wins}-${d.losses} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#050b16" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#091321" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
   <tr><td class="hero" bgcolor="#101c31" style="padding:34px;background-color:#101c31;background-image:linear-gradient(135deg,#101c31,#10263a 58%,#241b49)"><table role="presentation" width="100%"><tr><td><span style="display:inline-block;border-radius:12px;background:#f8fafc;padding:8px 11px"><img src="https://thefantasyarsenal.com/icons/TFA.png" width="190" alt="The Fantasy Arsenal" style="display:block;width:190px;max-width:100%;height:auto"></span></td><td align="right" style="font-size:10px;font-weight:900;letter-spacing:2px;color:#bae6fd">WEEK ${week} · ${season}</td></tr></table><div style="padding-top:22px;font-size:11px;font-weight:900;letter-spacing:2px;color:${mood[2]}">${mood[0]}</div><h1 style="margin:7px 0 0;font-size:32px;line-height:1.08;color:#ffffff!important;-webkit-text-fill-color:#ffffff;text-shadow:0 1px 1px #000000">The Weekly Arsenal</h1><p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#e6eef8!important;-webkit-text-fill-color:#e6eef8">Hey ${esc(manager)} — ${mood[1]}</p></td></tr>
-  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #34445e;border-radius:16px;background:#0d192a"><tr>${metric(`${d.wins}-${d.losses}`, "LIVE RECORD", mood[2])}${metric(d.points.toFixed(1), "POINTS")}${metric(letter, "LIVE GRADE", score == null ? "#8292aa" : "#c4b5fd")}${metric(d.empty, "EMPTY SLOTS", d.empty ? "#fb7185" : "#34d399", true)}</tr></table></td></tr>
+  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #34445e;border-radius:16px;background:#0d192a"><tr>${metric(`${d.wins}-${d.losses}`, "H2H RECORD", mood[2])}${metric(d.points.toFixed(1), "ALL-LEAGUE POINTS")}${metric(letter, "H2H GRADE", score == null ? "#8292aa" : "#c4b5fd")}${metric(d.empty, "EMPTY SLOTS", d.empty ? "#fb7185" : "#34d399", true)}</tr></table></td></tr>
   <tr><td style="padding:28px 24px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #31415c;border-radius:18px;background:#101a30"><tr><td style="padding:20px"><div style="font-size:10px;font-weight:900;letter-spacing:1.8px;color:#67e8f9">ARSENAL INTELLIGENCE BRIEFING</div><h2 style="margin:7px 0 8px;font-size:20px;color:#fff">What the week is saying</h2><p style="margin:0;font-size:13px;line-height:21px;color:#b9c8dc">${briefing}</p><div style="margin-top:15px;border:1px solid #4c3f75;border-radius:12px;background:#211b3a;padding:12px;font-size:12px;line-height:19px;color:#ddd6fe">${phaseBanner}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;border-top:1px solid #26354d;padding-top:13px">${actionRows}</table></td></tr></table></td></tr>
   <tr><td style="padding:28px 24px 8px"><div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#a78bfa">MATCHUP RADAR</div><h2 style="margin:5px 0 7px;font-size:21px;color:#fff">Closest decisions first</h2><p style="margin:0;font-size:12px;line-height:19px;color:#718198">The tightest margins rise to the top so you can focus where a move matters most.</p></td></tr>
   <tr><td style="padding:12px 24px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${games || `<tr><td style="padding:22px;text-align:center;color:#8292aa">No scored matchups were available yet.</td></tr>`}</table></td></tr>
@@ -727,8 +793,8 @@ function digestEmail({ d, manager, season, week, news = [] }) {
 }
 
 function addDeliveryNotice(html, message) {
-  const notice = `<div style="margin:22px auto 0;max-width:630px;border:1px solid #67e8f944;border-radius:16px;background:#0d2133;padding:16px 18px;color:#c9d8e8;font:12px/19px Arial,sans-serif"><div style="font-weight:900;letter-spacing:1px;color:#67e8f9">A QUICK CORRECTION</div><div style="padding-top:6px">${esc(message)}</div></div>`;
-  return String(html || "").replace("</body>", `${notice}</body>`);
+  const notice = `<div style="margin:0 auto 16px;max-width:630px;border:1px solid #67e8f944;border-radius:16px;background:#0d2133;padding:16px 18px;color:#c9d8e8;font:12px/19px Arial,sans-serif"><div style="font-weight:900;letter-spacing:1px;color:#67e8f9">A QUICK CORRECTION</div><div style="padding-top:6px">${esc(message)}</div><div style="padding-top:8px">Have a suggestion or spot anything else? Reply directly to this email—we read every note.</div></div>`;
+  return String(html || "").replace(/<body([^>]*)>/i, `<body$1>${notice}`);
 }
 
 function newsBriefEmail({
@@ -1019,7 +1085,12 @@ export async function GET(request) {
         if (Array.isArray(parsed)) leagueIds = parsed.map(String);
       } catch {}
       const digestOptions = {
-        includeBestBall: Number(row.include_best_ball || 0) === 1,
+        // Test and correction editions should show the complete portfolio.
+        // Normal delivery preserves a member's saved league-scope preference.
+        includeBestBall:
+          testMode ||
+          manualWeeklyCorrection ||
+          Number(row.include_best_ball || 0) === 1,
         leagueIds,
       };
       const weekday = localWeekday(row.timezone || "America/New_York"),
