@@ -17,6 +17,14 @@ const json = async (url) => {
   return r.json();
 };
 const num = (v) => Number(v || 0);
+const matchupPoints = (matchup) => {
+  const published = Number(matchup?.points);
+  if (Number.isFinite(published)) return published;
+  return Object.values(matchup?.players_points || {}).reduce(
+    (total, points) => total + num(points),
+    0,
+  );
+};
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -422,8 +430,8 @@ async function buildDigest(
             String(m.roster_id) !== String(mine?.roster_id),
         );
         if (!my) return null;
-        const points = num(my.points),
-          oppPoints = num(opp?.points);
+        const points = matchupPoints(my),
+          oppPoints = matchupPoints(opp);
         const managerName = (rosterId) => {
           const roster = rosters.find(
             (row) => String(row.roster_id) === String(rosterId),
@@ -718,6 +726,11 @@ function digestEmail({ d, manager, season, week, news = [] }) {
   </table></td></tr></table></body></html>`;
 }
 
+function addDeliveryNotice(html, message) {
+  const notice = `<div style="margin:22px auto 0;max-width:630px;border:1px solid #67e8f944;border-radius:16px;background:#0d2133;padding:16px 18px;color:#c9d8e8;font:12px/19px Arial,sans-serif"><div style="font-weight:900;letter-spacing:1px;color:#67e8f9">A QUICK CORRECTION</div><div style="padding-top:6px">${esc(message)}</div></div>`;
+  return String(html || "").replace("</body>", `${notice}</body>`);
+}
+
 function newsBriefEmail({
   news,
   insiders,
@@ -960,22 +973,39 @@ export async function GET(request) {
     const state = await json("https://api.sleeper.app/v1/state/nfl");
     const season = num(state.season) || new Date().getUTCFullYear(),
       week = fantasyWeekFromNflState(state);
-    const testParam = new URL(request.url).searchParams.get("test") || "";
+    const params = new URL(request.url).searchParams;
+    const testParam = params.get("test") || "";
+    const testUser = String(params.get("testUser") || "").trim();
+    const manualParam = params.get("manual") || "";
+    const manualWeeklyCorrection = manualParam === "weekly-correction";
+    const testWeeklyCorrection = testParam === "correction";
     const testMode =
-      testParam === "1" || testParam === "digest" || testParam === "news";
+      testParam === "1" ||
+      testParam === "digest" ||
+      testParam === "news" ||
+      testWeeklyCorrection;
     const testKind = testParam === "news" ? "news" : "digest";
-    const due = testMode
+    const due = manualWeeklyCorrection
       ? await db
           .prepare(
-            `SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id ORDER BY s.updated_at DESC LIMIT 1`,
+            `SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 LIMIT 250`,
           )
+          .all()
+      : testMode
+      ? await db
+          .prepare(
+            testUser
+              ? `SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE LOWER(a.sleeper_username)=LOWER(?) LIMIT 1`
+              : `SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id ORDER BY s.updated_at DESC LIMIT 1`,
+          )
+          .bind(...(testUser ? [testUser] : []))
           .all()
       : await db
           .prepare(
             `SELECT s.*,a.sleeper_username,a.display_name FROM arsenal_digest_subscriptions s JOIN arsenal_accounts a ON a.account_id=s.account_id WHERE s.enabled=1 OR s.news_enabled=1 LIMIT 250`,
           )
           .all();
-    const newsResult = (due.results || []).length
+    const newsResult = (due.results || []).length && !manualWeeklyCorrection
       ? await dailyNews(env)
       : { articles: [], insiders: { posts: [], profiles: [] }, sources: [] };
     const news = newsResult.articles;
@@ -1001,7 +1031,9 @@ export async function GET(request) {
         if (Array.isArray(parsed) && parsed.length)
           newsDays = parsed.map(num).filter((day) => day >= 0 && day <= 6);
       } catch {}
-      const digestDue = testMode
+      const digestDue = manualWeeklyCorrection
+        ? true
+        : testMode
         ? testKind === "digest"
         : Number(row.enabled) === 1 &&
           weekday === num(row.delivery_day) &&
@@ -1013,26 +1045,36 @@ export async function GET(request) {
           (!row.news_last_sent_at || num(row.news_last_sent_at) < newsCooldown);
       if (digestDue)
         try {
+          // A weekly digest is an end-of-week recap. Sleeper advances its
+          // state to the upcoming week before the scheduled recap runs.
+          const digestWeek = Math.max(1, week - 1);
           const d = (digestData = await buildDigest(
             row.sleeper_username,
             season,
-            week,
+            digestWeek,
             digestOptions,
           ));
-          const html = digestEmail({
+          const baseHtml = digestEmail({
             d,
             manager: row.display_name || row.sleeper_username,
             season,
-            week,
+            week: digestWeek,
             news: Number(row.include_news ?? 1) === 1 ? news : [],
           });
+          const correctionNotice = manualWeeklyCorrection || testWeeklyCorrection;
+          const html = correctionNotice
+            ? addDeliveryNotice(
+                baseHtml,
+                "We’re sorry: the first scheduled recap used the upcoming week label and did not reliably show all final matchup totals. This corrected edition is labeled for the completed week and uses Sleeper’s player scoring whenever a published matchup total is unavailable.",
+              )
+            : baseHtml;
           await gmail(
             env,
             testMode ? DIGEST_TEST_EMAIL : row.email,
-            `Week ${week} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`,
+            `${correctionNotice ? "Correction: " : ""}Week ${digestWeek} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`,
             html,
           );
-          if (!testMode)
+          if (!testMode && !manualWeeklyCorrection)
             await db
               .prepare(
                 "UPDATE arsenal_digest_subscriptions SET last_sent_at=? WHERE account_id=?",
@@ -1090,10 +1132,14 @@ export async function GET(request) {
     return NextResponse.json({
       ok: true,
       testMode,
+      manualWeeklyCorrection,
+      testWeeklyCorrection,
       testKind: testMode ? testKind : undefined,
       testRecipient: testMode ? DIGEST_TEST_EMAIL : undefined,
+      testUser: testMode && testUser ? testUser : undefined,
       season,
       week,
+      digestWeek: Math.max(1, week - 1),
       news: news.length,
       newsSources: newsResult.sources,
       sent,
