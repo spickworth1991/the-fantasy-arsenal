@@ -1000,6 +1000,7 @@ async function ready(db) {
 
 export async function POST(request) {
   try {
+    const env = arsenalEnv();
     const db = arsenalDb();
     await ready(db);
     const account = await authenticateArsenal(request, db);
@@ -1008,6 +1009,31 @@ export async function POST(request) {
         status: 401,
       });
     const body = await request.json();
+    if (body?.action === "preview") {
+      const kind = body?.kind === "daily" ? "daily" : "weekly";
+      const subscription = await db
+        .prepare("SELECT email FROM arsenal_digest_subscriptions WHERE account_id=?")
+        .bind(account.account_id)
+        .first();
+      const recipient = String(subscription?.email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient))
+        return new NextResponse("Save a valid digest email before sending a preview.", { status: 400 });
+      const state = await json("https://api.sleeper.app/v1/state/nfl");
+      const season = num(state.season) || new Date().getUTCFullYear();
+      const week = fantasyWeekFromNflState(state);
+      if (kind === "weekly") {
+        const digestWeek = Math.max(1, week - 1);
+        const d = await buildDigest(account.sleeper_username, season, digestWeek, { includeBestBall: true, leagueIds: [] });
+        await gmail(env, recipient, `Preview: Week ${digestWeek} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`, digestEmail({ d, manager: account.display_name || account.sleeper_username, season, week: digestWeek, news: [] }));
+      } else {
+        const [d, newsResult] = await Promise.all([
+          buildDigest(account.sleeper_username, season, week, { includeBestBall: true, leagueIds: [] }),
+          dailyNews(env),
+        ]);
+        await gmail(env, recipient, `Preview: Week ${week} Fantasy Arsenal Daily Intelligence`, newsBriefEmail({ news: newsResult.articles, insiders: newsResult.insiders, d, manager: account.display_name || account.sleeper_username, season, week }));
+      }
+      return NextResponse.json({ ok: true, preview: kind, recipient });
+    }
     const email = String(body?.email || "")
       .trim()
       .toLowerCase()

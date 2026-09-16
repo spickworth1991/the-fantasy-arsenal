@@ -57,6 +57,7 @@ export default function WeeklyPortfolioDigest() {
   const [includeBestBall, setIncludeBestBall] = useState(false);
   const [digestLeagueIds, setDigestLeagueIds] = useState([]);
   const [message, setMessage] = useState("");
+  const [previewing, setPreviewing] = useState("");
   const season = new Date().getFullYear();
   const [nflState, setNflState] = useState(null);
   const currentWeek = nflState
@@ -341,6 +342,27 @@ export default function WeeklyPortfolioDigest() {
         ? "Email preferences saved."
         : "Email delivery disabled.",
     );
+  };
+  const sendPreview = async (kind) => {
+    if (!email.includes("@")) {
+      setMessage("Add and save a valid email address before requesting a preview.");
+      return;
+    }
+    setPreviewing(kind);
+    setMessage("");
+    try {
+      await saveEmail();
+      const result = await accountRequest("/api/arsenal/digest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview", kind }),
+      });
+      setMessage(`${kind === "weekly" ? "Weekly Digest" : "Daily Intelligence Wire"} preview sent to ${result.recipient}.`);
+    } catch (error) {
+      setMessage(error?.message || "Preview could not be sent.");
+    } finally {
+      setPreviewing("");
+    }
   };
   return (
     <Panel className="overflow-hidden">
@@ -654,6 +676,14 @@ export default function WeeklyPortfolioDigest() {
         >
           Save email preferences
         </button>
+        <div className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3">
+          <div className="text-xs font-black">Try a private email preview</div>
+          <p className="mt-1 text-[10px] leading-4 text-white/35">Save your address, then sample either edition. Previews can only be delivered to this account’s saved digest email.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <button type="button" onClick={() => sendPreview("weekly")} disabled={!account || !!previewing || !email.includes("@")} className="rounded-xl bg-cyan-300/10 px-4 py-3 text-xs font-black text-cyan-100 disabled:opacity-35">{previewing === "weekly" ? "Sending weekly preview…" : "Send weekly preview"}</button>
+            <button type="button" onClick={() => sendPreview("daily")} disabled={!account || !!previewing || !email.includes("@")} className="rounded-xl bg-amber-300/10 px-4 py-3 text-xs font-black text-amber-100 disabled:opacity-35">{previewing === "daily" ? "Sending daily preview…" : "Send daily preview"}</button>
+          </div>
+        </div>
         {message ? (
           <div className="mt-2 text-xs text-emerald-100">{message}</div>
         ) : null}
