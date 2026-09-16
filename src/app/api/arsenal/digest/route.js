@@ -37,7 +37,7 @@ const isChoppedMatchupSet = (matchups = [], league = {}) => {
   // otherwise there is no H2H result to invent.
   return matchups.length > 2
     && ![...matchupSizes.values()].some((size) => size === 2)
-    && /chopp?(?:ed|ing)?/i.test(String(league?.name || ""));
+    && /(?:chopp?(?:ed|ing)?|guillotine|loser\s*mania)/i.test(String(league?.name || ""));
 };
 const esc = (value) =>
   String(value ?? "").replace(

@@ -181,7 +181,7 @@ export default function WeeklyPortfolioDigest() {
           const chopped =
             matchups.length > 2 &&
             !hasHeadToHeadPair &&
-            /chopp?(?:ed|ing)?/i.test(String(league.name || ""));
+            /(?:chopp?(?:ed|ing)?|guillotine|loser\s*mania)/i.test(String(league.name || ""));
           const cutline = chopped ? Math.min(...matchups.map((matchup) => n(matchup.points))) : null;
           const empty = (my?.starters || []).filter(
             (id) => !id || id === "0",
