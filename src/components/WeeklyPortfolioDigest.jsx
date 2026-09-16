@@ -200,7 +200,7 @@ export default function WeeklyPortfolioDigest() {
             : scores.length % 2
               ? scores[(scores.length - 1) / 2]
               : (scores[scores.length / 2 - 1] + scores[scores.length / 2]) / 2;
-          const medianResult = !started || chopped || !medianEnabled || median == null
+          const medianResult = !started || chopped || !opp || !medianEnabled || median == null
             ? null
             : points > median ? "win" : points < median ? "loss" : "tie";
           return {
@@ -215,6 +215,11 @@ export default function WeeklyPortfolioDigest() {
             result,
             median,
             medianResult,
+            seasonRecord: {
+              wins: n(mine.settings?.wins),
+              losses: n(mine.settings?.losses),
+              ties: n(mine.settings?.ties),
+            },
             empty,
             opponent: oppUser?.display_name || oppUser?.username || "Opponent",
           };
@@ -230,19 +235,20 @@ export default function WeeklyPortfolioDigest() {
   }, [username, leagues, week]);
   const summary = useMemo(() => {
     const active = rows.filter((r) => r.result),
-      allResults = active.flatMap((r) => [r.result, r.medianResult].filter(Boolean)),
-      wins = allResults.filter((result) => result === "win").length,
-      losses = allResults.filter((result) => result === "loss").length,
-      ties = allResults.filter((result) => result === "tie").length,
+      wins = rows.reduce((sum, row) => sum + n(row.seasonRecord?.wins), 0),
+      losses = rows.reduce((sum, row) => sum + n(row.seasonRecord?.losses), 0),
+      ties = rows.reduce((sum, row) => sum + n(row.seasonRecord?.ties), 0),
       points = rows.reduce((s, r) => s + r.points, 0),
       close = active.filter((r) => !r.chopped && Math.abs(r.margin) <= 10).length,
       empty = rows.reduce((s, r) => s + r.empty, 0),
       gradedEmpty = active.reduce((s, r) => s + r.empty, 0);
-    if (!active.length)
+    const officialResults = wins + losses + ties;
+    if (!active.length && !officialResults)
       return {
         wins: 0,
         losses: 0,
         ties: 0,
+        hasRecord: false,
         started: 0,
         points,
         close: 0,
@@ -252,7 +258,7 @@ export default function WeeklyPortfolioDigest() {
         best: null,
         worst: null,
       };
-    const winRate = (wins + ties * 0.5) / allResults.length;
+    const winRate = (wins + ties * 0.5) / Math.max(1, officialResults);
     const score = Math.round(
       Math.max(0, Math.min(100, 76 + winRate * 22 - gradedEmpty * 4)),
     );
@@ -260,6 +266,7 @@ export default function WeeklyPortfolioDigest() {
       wins,
       losses,
       ties,
+      hasRecord: officialResults > 0,
       started: active.length,
       points,
       close,
@@ -373,9 +380,9 @@ export default function WeeklyPortfolioDigest() {
           <>
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-6">
               <Metric
-                label="Live record"
+                label="Portfolio record"
                 value={
-                  summary.started
+                  summary.hasRecord
                     ? `${summary.wins}-${summary.losses}${summary.ties ? `-${summary.ties}` : ""}`
                     : "Not started"
                 }

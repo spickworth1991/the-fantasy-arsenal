@@ -485,7 +485,7 @@ async function buildDigest(
             : !opp
               ? null
               : outcome(points, oppPoints);
-        const medianResult = !started || chopped || !medianEnabled || medianScore == null
+        const medianResult = !started || chopped || !opp || !medianEnabled || medianScore == null
           ? null
           : outcome(points, medianScore);
         const record = [primaryResult, medianResult].filter(Boolean).reduce(
@@ -553,6 +553,11 @@ async function buildDigest(
           medianEnabled,
           medianScore,
           medianResult,
+          seasonRecord: {
+            wins: num(mine.settings?.wins),
+            losses: num(mine.settings?.losses),
+            ties: num(mine.settings?.ties),
+          },
           record,
           leagueType: chopped
             ? "Chopped"
@@ -570,9 +575,9 @@ async function buildDigest(
   ).filter(Boolean);
   const active = rows.filter((r) => r.started);
   const choppedRows = rows.filter((r) => r.chopped);
-  const wins = active.reduce((sum, row) => sum + num(row.record?.wins), 0),
-    losses = active.reduce((sum, row) => sum + num(row.record?.losses), 0),
-    ties = active.reduce((sum, row) => sum + num(row.record?.ties), 0),
+  const wins = rows.reduce((sum, row) => sum + num(row.seasonRecord?.wins), 0),
+    losses = rows.reduce((sum, row) => sum + num(row.seasonRecord?.losses), 0),
+    ties = rows.reduce((sum, row) => sum + num(row.seasonRecord?.ties), 0),
     points = rows.reduce((s, r) => s + r.points, 0),
     empty = rows.reduce((s, r) => s + r.empty, 0),
     close = active.filter((r) => !r.chopped && Math.abs(r.points - r.opp) <= 10).length;
