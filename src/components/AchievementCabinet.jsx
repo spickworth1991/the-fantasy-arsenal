@@ -46,7 +46,7 @@ function ProgressCard({ title, current, target, detail, tone = "cyan" }) {
   );
 }
 
-export default function AchievementCabinet({ account, busy, scan }) {
+export default function AchievementCabinet({ account }) {
   const career = account.career || {};
   const earned = [...(account.badges || [])].sort((a, b) => {
     const tiers = ["mythic", "platinum", "gold", "silver", "bronze"];
@@ -72,9 +72,12 @@ export default function AchievementCabinet({ account, busy, scan }) {
           <div>
             <div className="text-[10px] font-black uppercase tracking-[.22em] text-violet-200/55">Earned, never reset</div>
             <h2 className="mt-1 text-3xl font-black">Achievement cabinet</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/42">Every badge below is retained from your current Arsenal history. Verified badges come from Sleeper league data; Arsenal badges come from account milestones.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/42">Every badge below is retained from your Arsenal history. Verified record progress refreshes once a day from Sleeper; Arsenal badges come from account milestones.</p>
           </div>
-          <button type="button" onClick={scan} disabled={busy} className="rounded-2xl bg-violet-300/12 px-4 py-3 text-xs font-black text-violet-100 disabled:opacity-40">{busy ? "Refreshing history…" : career.updatedAt ? "Refresh verification" : "Verify career history"}</button>
+          <div className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.07] px-4 py-3 text-right text-[10px] leading-4 text-violet-100">
+            <b className="block text-xs">Updated daily</b>
+            {career.updatedAt ? `Last record refresh: ${new Date(career.updatedAt).toLocaleDateString()}` : "Your first scheduled refresh is pending."}
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-px bg-white/[0.06] sm:grid-cols-4">
@@ -93,7 +96,7 @@ export default function AchievementCabinet({ account, busy, scan }) {
       </Panel>
       <div className="space-y-5">
         <Panel className="p-5"><div className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-200/55">Next milestones</div><h3 className="mt-1 text-xl font-black">What you are building toward</h3><div className="mt-4 space-y-3">{nextMilestones.length ? nextMilestones.map((milestone, index) => <ProgressCard key={milestone.key} {...milestone} tone={index % 2 ? "violet" : "cyan"} />) : <p className="rounded-xl bg-emerald-300/[0.05] p-4 text-xs leading-5 text-emerald-100">Every tracked starter milestone is already earned. More achievement paths will appear as your verified history grows.</p>}</div></Panel>
-        <Panel className="p-5"><div className="text-[10px] font-black uppercase tracking-[.18em] text-white/35">How it works</div><p className="mt-2 text-xs leading-5 text-white/42">A refresh reads public Sleeper rosters and playoff brackets. It can add newly qualified badges, but it never takes away an earned badge because a league later becomes unavailable.</p></Panel>
+        <Panel className="p-5"><div className="text-[10px] font-black uppercase tracking-[.18em] text-white/35">How it works</div><p className="mt-2 text-xs leading-5 text-white/42">The daily record refresh checks your Sleeper portfolio and updates current-season career progress. It can add newly qualified badges, but it never takes away an earned badge when older league data changes.</p></Panel>
       </div>
     </div>
   </div>;

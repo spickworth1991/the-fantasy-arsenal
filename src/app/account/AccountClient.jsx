@@ -96,7 +96,7 @@ export default function AccountClient({initialTab="home"}){
     {tab==="home"?<Home account={account} data={data} counts={counts} leagues={leagues} toggleLeague={toggleLeague} syncNow={syncNow}/>:null}
     {tab==="profile"?<div className="mt-5"><ProfileClient embedded showSitePreferences={false} showPortfolioRecord={false} showSyncDetails={false}/></div>:null}
     {tab==="digest"?<div className="mt-5 space-y-5"><WeeklyPortfolioDigest/><CommissionerDigestPreference/></div>:null}
-    {tab==="career"?<AchievementCabinet account={account} busy={careerBusy} scan={scanCareer}/>:null}
+    {tab==="career"?<AchievementCabinet account={account}/>:null}
     {tab==="collection"?<ArsenalLibrary data={data} save={save} log={log} leagues={leagues} toggleLeague={toggleLeague} username={account.sleeperUsername}/>:null}
     {tab==="privacy"?<><AccountTrustNote/><Privacy account={account} data={data} save={save} updateProfile={updateProfile} disconnect={disconnect} accountRequest={(url,options)=>{if(url==="/api/arsenal/data"&&options?.method==="DELETE"){const body=JSON.parse(options.body||"{}");return clearAccountData(body.mode,body.password);}return accountRequest(url,options);}}/></>:null}
   </div></main>;

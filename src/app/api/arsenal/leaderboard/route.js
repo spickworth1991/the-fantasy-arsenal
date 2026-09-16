@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 import { arsenalDb, arsenalEnv, authenticateArsenal, ensureArsenalSchema, publicAccount, publicProfile } from "../../../../lib/arsenalAccountServer";
 
 const number = (value) => Number(value || 0);
+const json = (value, fallback) => {
+  try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+};
 const ownsRoster = (roster, userId) => String(roster?.owner_id || "") === String(userId)
   || (Array.isArray(roster?.co_owners) && roster.co_owners.some((ownerId) => String(ownerId) === String(userId)));
 const pause = (milliseconds) =>
@@ -67,9 +70,42 @@ const refreshVerifiedRecord = async (db, account, season) => {
     });
   }
   const now = Date.now();
+  // The scheduled leaderboard refresh is also the authoritative daily source
+  // for current-season Career & badges progress. Preserve historical scans and
+  // every earned badge; only reconcile the season that was just refreshed.
+  const career = json(account.career_json, {}) || {};
+  const years = Array.isArray(career.years) ? [...career.years] : [];
+  let currentYear = years.find((year) => number(year?.season) === number(season));
+  if (!currentYear) {
+    currentYear = { season, wins: 0, losses: 0, ties: 0, points: 0, leagues: 0, championships: 0, playoffs: 0 };
+    years.push(currentYear);
+  }
+  const oldWins = number(currentYear.wins), oldLosses = number(currentYear.losses), oldTies = number(currentYear.ties);
+  const oldLeagueCount = number(currentYear.leagues), oldPoints = number(currentYear.points);
+  currentYear.wins = wins;
+  currentYear.losses = losses;
+  currentYear.ties = ties;
+  currentYear.points = pointsFor;
+  currentYear.leagues = leagueCount;
+  const nextCareer = {
+    ...career,
+    updatedAt: now,
+    seasons: Math.max(number(career.seasons), years.length),
+    leagueSeasons: Math.max(0, number(career.leagueSeasons) - oldLeagueCount) + leagueCount,
+    wins: Math.max(0, number(career.wins) - oldWins + wins),
+    losses: Math.max(0, number(career.losses) - oldLosses + losses),
+    ties: Math.max(0, number(career.ties) - oldTies + ties),
+    points: Math.max(0, number(career.points) - oldPoints) + pointsFor,
+    years,
+  };
+  const priorBadges = json(account.badges_json, []) || [];
+  const badgeKeys = new Set(priorBadges.map((badge) => badge?.key));
+  const addBadge = (badge) => { if (!badgeKeys.has(badge.key)) { priorBadges.push(badge); badgeKeys.add(badge.key); } };
+  if (nextCareer.wins >= 100) addBadge({ key:"century-club", label:"Century Club", reason:`${nextCareer.wins} verified career wins found.`, verified:true, visible:true, tier:"gold" });
+  if (nextCareer.wins >= 500) addBadge({ key:"five-hundred", label:"The 500 Club", reason:`${nextCareer.wins} verified career wins found.`, verified:true, visible:true, tier:"mythic" });
   await db
     .prepare(
-      `UPDATE arsenal_accounts SET record_season=?, record_wins=?, record_losses=?, record_ties=?, record_points_for=?, record_leagues=?, record_updated_at=?, updated_at=? WHERE account_id=?`,
+      `UPDATE arsenal_accounts SET record_season=?, record_wins=?, record_losses=?, record_ties=?, record_points_for=?, record_leagues=?, record_updated_at=?, career_json=?, badges_json=?, updated_at=? WHERE account_id=?`,
     )
     .bind(
       season,
@@ -79,6 +115,8 @@ const refreshVerifiedRecord = async (db, account, season) => {
       pointsFor,
       leagueCount,
       now,
+      JSON.stringify(nextCareer),
+      JSON.stringify(priorBadges),
       now,
       account.account_id,
     )
@@ -95,6 +133,10 @@ const leaderboardRows = async (db, season) =>
     .bind(season)
     .all();
 
+const refreshableAccounts = async (db) =>
+  db.prepare(`SELECT * FROM arsenal_accounts
+    WHERE sleeper_username IS NOT NULL AND TRIM(sleeper_username)<>''`).all();
+
 export async function GET(request) {
   try {
     const db = arsenalDb();
@@ -110,7 +152,7 @@ export async function GET(request) {
     )
       return new NextResponse("Unauthorized.", { status: 401 });
     const refreshAfter = 6 * 60 * 60 * 1000;
-    const candidates = (initial?.results || [])
+    const candidates = (weeklyRefresh ? (await refreshableAccounts(db))?.results || [] : initial?.results || [])
       .filter(
         (row) =>
           weeklyRefresh ||

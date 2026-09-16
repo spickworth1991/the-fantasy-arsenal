@@ -156,7 +156,7 @@ export default function WeeklyPortfolioDigest() {
           );
           const opp = matchups.find(
             (m) =>
-              m.matchup_id === my?.matchup_id &&
+              String(m.matchup_id ?? "") === String(my?.matchup_id ?? "") &&
               String(m.roster_id) !== String(mine.roster_id),
           );
           const oppRoster = rosters.find(
@@ -167,10 +167,42 @@ export default function WeeklyPortfolioDigest() {
           );
           const points = n(my?.points),
             oppPoints = n(opp?.points);
+          const matchupSizes = new Map();
+          matchups.forEach((matchup) => {
+            if (matchup?.matchup_id == null || matchup.matchup_id === "") return;
+            const id = String(matchup.matchup_id);
+            matchupSizes.set(id, n(matchupSizes.get(id)) + 1);
+          });
+          // A missing paired matchup ID alone does not mean a league is Chopped:
+          // Sleeper uses that shape for other total-points formats too. Keep this
+          // deliberately conservative so a points league can never create a fake win.
+          const hasHeadToHeadPair = [...matchupSizes.values()].some((size) => size === 2);
+          const chopped =
+            matchups.length > 2 &&
+            !hasHeadToHeadPair &&
+            /chopp?(?:ed|ing)?/i.test(String(league.name || ""));
+          const cutline = chopped ? Math.min(...matchups.map((matchup) => n(matchup.points))) : null;
           const empty = (my?.starters || []).filter(
             (id) => !id || id === "0",
           ).length;
           const started = points > 0 || oppPoints > 0;
+          const result = !started
+            ? null
+            : chopped
+              ? points > cutline ? "win" : "loss"
+              : !opp
+                ? null
+                : points > oppPoints ? "win" : points < oppPoints ? "loss" : "tie";
+          const medianEnabled = n(league.settings?.league_average_match) === 1;
+          const scores = matchups.map((matchup) => n(matchup.points)).sort((a, b) => a - b);
+          const median = !scores.length
+            ? null
+            : scores.length % 2
+              ? scores[(scores.length - 1) / 2]
+              : (scores[scores.length / 2 - 1] + scores[scores.length / 2]) / 2;
+          const medianResult = !started || chopped || !medianEnabled || median == null
+            ? null
+            : points > median ? "win" : points < median ? "loss" : "tie";
           return {
             id: league.league_id,
             name: league.name,
@@ -178,13 +210,11 @@ export default function WeeklyPortfolioDigest() {
             oppPoints,
             margin: points - oppPoints,
             started,
-            result: !started
-              ? "Not started"
-              : points > oppPoints
-                ? "Winning"
-                : points < oppPoints
-                  ? "Losing"
-                  : "Tied",
+            chopped,
+            cutline,
+            result,
+            median,
+            medianResult,
             empty,
             opponent: oppUser?.display_name || oppUser?.username || "Opponent",
           };
@@ -199,12 +229,13 @@ export default function WeeklyPortfolioDigest() {
     };
   }, [username, leagues, week]);
   const summary = useMemo(() => {
-    const active = rows.filter((r) => r.started),
-      wins = active.filter((r) => r.margin > 0).length,
-      losses = active.filter((r) => r.margin < 0).length,
-      ties = active.length - wins - losses,
+    const active = rows.filter((r) => r.result),
+      allResults = active.flatMap((r) => [r.result, r.medianResult].filter(Boolean)),
+      wins = allResults.filter((result) => result === "win").length,
+      losses = allResults.filter((result) => result === "loss").length,
+      ties = allResults.filter((result) => result === "tie").length,
       points = rows.reduce((s, r) => s + r.points, 0),
-      close = active.filter((r) => Math.abs(r.margin) <= 10).length,
+      close = active.filter((r) => !r.chopped && Math.abs(r.margin) <= 10).length,
       empty = rows.reduce((s, r) => s + r.empty, 0),
       gradedEmpty = active.reduce((s, r) => s + r.empty, 0);
     if (!active.length)
@@ -221,7 +252,7 @@ export default function WeeklyPortfolioDigest() {
         best: null,
         worst: null,
       };
-    const winRate = (wins + ties * 0.5) / active.length;
+    const winRate = (wins + ties * 0.5) / allResults.length;
     const score = Math.round(
       Math.max(0, Math.min(100, 76 + winRate * 22 - gradedEmpty * 4)),
     );
@@ -385,27 +416,28 @@ export default function WeeklyPortfolioDigest() {
                     href={`/league-hub?league=${r.id}`}
                     className="rounded-2xl border border-white/[0.07] bg-black/15 p-3 transition hover:bg-white/[0.04]"
                   >
-                    <div className="flex justify-between gap-3">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <b className="truncate">{r.name}</b>
                       <span
                         className={
-                          !r.started
+                          !r.result
                             ? "text-white/35"
-                            : r.margin >= 0
+                            : r.result === "win"
                               ? "text-emerald-100"
                               : "text-rose-100"
                         }
                       >
-                        {r.started
-                          ? `${r.margin >= 0 ? "+" : ""}${r.margin.toFixed(1)}`
+                        {r.result
+                          ? r.chopped ? (r.result === "win" ? "SURVIVING" : "CHOPPED") : `${r.margin >= 0 ? "+" : ""}${r.margin.toFixed(1)}`
                           : "Not started"}
                       </span>
                     </div>
                     <div className="mt-1 text-[10px] text-white/32">
-                      {r.started
-                        ? `${r.points.toFixed(1)}–${r.oppPoints.toFixed(1)}`
-                        : "0–0"}{" "}
-                      vs {r.opponent}
+                      {r.chopped
+                        ? `${r.points.toFixed(1)}${r.cutline != null ? ` · cut line ${r.cutline.toFixed(1)}` : ""}`
+                        : r.started
+                          ? `${r.points.toFixed(1)}–${r.oppPoints.toFixed(1)} vs ${r.opponent}`
+                          : "Not started"}
                       {r.empty ? ` · ${r.empty} empty slot` : ""}
                     </div>
                   </Link>
