@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import BackgroundParticles from "../../components/BackgroundParticles";
 import DecisionInbox from "../../components/DecisionInbox";
@@ -38,13 +39,14 @@ function AccountFocusBoard({account,data,save}){
 export default function AccountClient({initialTab="home"}){
   const {account,isConnected,updateProfile,syncNow,disconnect,clearAccountData,accountRequest}=useArsenalAccount();
   const {username}=useSleeper();
-  const [tab,setTab]=useState(initialTab);
+  const pathname=usePathname();
+  const router=useRouter();
+  const tab=pathname==="/account/profile"?"profile":pathname==="/account/digest"?"digest":pathname==="/account/library"?"collection":pathname==="/account/privacy"?"privacy":pathname==="/account/career"?"career":initialTab;
   const [data,setData]=useState(fresh);
   const [leagues,setLeagues]=useState([]);
   const [careerBusy,setCareerBusy]=useState(false);
   const [message,setMessage]=useState("");
   const [counts,setCounts]=useState({trades:0,scenarios:0,watch:0,reports:0});
-  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("tab");if(requested)setTab(requested);else setTab(initialTab);},[initialTab]);
   useEffect(()=>{const restore=()=>setData({...fresh(),...json(localStorage.getItem(KEY),{})});restore();setCounts({trades:storageCount(k=>k.startsWith("tfa:trade-workspaces:")),scenarios:storageCount(k=>k.startsWith("playoff-scenarios:")),watch:storageCount(k=>k==="draft-helper-watchlist"||k==="leagueHubWatchlist"),reports:storageCount(k=>k.includes("report")||k.includes("yearbook"))});window.addEventListener("tfa:cloud-sync-applied",restore);return()=>window.removeEventListener("tfa:cloud-sync-applied",restore);},[]);
   useEffect(()=>{if(!username)return;get(`https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`).then(user=>get(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${new Date().getFullYear()}`)).then(setLeagues).catch(()=>setLeagues([]));},[username]);
   const save=async(next,note="Account workspace saved.")=>{setData(next);localStorage.setItem(KEY,JSON.stringify(next));await syncNow();setMessage(note);};
@@ -90,8 +92,8 @@ export default function AccountClient({initialTab="home"}){
   useEffect(()=>{if(!account)return;const next=earnedBadges(account,account.career||{},data);const before=(account.badges||[]).map(b=>b.key).sort().join("|"),after=next.map(b=>b.key).sort().join("|");if(before!==after)updateProfile({badges:next}).catch(()=>{});},[account,data,updateProfile]);
   if(!isConnected)return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="My Arsenal"/><div className="mx-auto max-w-6xl px-4 pb-20 pt-20"><ProfileClient embedded/></div></main>;
   return <main className="min-h-screen text-white"><BackgroundParticles/><Navbar pageTitle="My Arsenal"/><div className="mx-auto max-w-7xl px-4 pb-20 pt-20">
-    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_0%_100%,rgba(139,92,246,.16),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><img src={accountAvatar(account)} alt="" className="h-20 w-20 rounded-3xl object-contain"/><div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase tracking-[.25em] text-cyan-200/55">Personal fantasy operating system</div><h1 className="mt-1 truncate text-3xl font-black sm:text-5xl">{account.displayName}’s Arsenal</h1><p className="mt-2 text-sm text-white/42">@{account.sleeperUsername} · {completion}% profile ready · cloud synchronized</p></div><button type="button" onClick={()=>setTab("profile")} className="rounded-2xl bg-white/[0.06] px-4 py-3 text-center text-sm font-bold">Edit profile</button></div></header>
-    <nav className="mt-5 flex snap-x gap-2 overflow-x-auto pb-2" aria-label="My Arsenal sections">{[["home","/account","Overview"],["profile","/account/profile","Profile"],["digest","/account/digest","Digest"],["collection","/account/library","Library"],["career","/account?tab=career","Career & badges"],["privacy","/account/privacy","Account & privacy"]].map(([key,href,label])=><Link key={key} href={href} className={`min-h-11 shrink-0 rounded-xl px-4 py-3 text-xs font-black ${tab===key?"bg-cyan-300 text-slate-950":"bg-white/[0.05] text-white/50"}`}>{label}</Link>)}</nav>
+    <header className="overflow-hidden rounded-[34px] border border-cyan-300/15 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.18),transparent_36%),radial-gradient(circle_at_0%_100%,rgba(139,92,246,.16),transparent_34%),linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.96))] p-5 sm:p-8"><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><img src={accountAvatar(account)} alt="" className="h-20 w-20 rounded-3xl object-contain"/><div className="min-w-0 flex-1"><div className="text-[10px] font-black uppercase tracking-[.25em] text-cyan-200/55">Personal fantasy operating system</div><h1 className="mt-1 truncate text-3xl font-black sm:text-5xl">{account.displayName}’s Arsenal</h1><p className="mt-2 text-sm text-white/42">@{account.sleeperUsername} · {completion}% profile ready · cloud synchronized</p></div><button type="button" onClick={()=>router.push("/account/profile")} className="rounded-2xl bg-white/[0.06] px-4 py-3 text-center text-sm font-bold">Edit profile</button></div></header>
+    <nav className="mt-5 flex snap-x gap-2 overflow-x-auto pb-2" aria-label="My Arsenal sections">{[["home","/account","Overview"],["profile","/account/profile","Profile"],["digest","/account/digest","Digest"],["collection","/account/library","Library"],["career","/account/career","Career & badges"],["privacy","/account/privacy","Account & privacy"]].map(([key,href,label])=><Link key={key} href={href} className={`min-h-11 shrink-0 rounded-xl px-4 py-3 text-xs font-black ${tab===key?"bg-cyan-300 text-slate-950":"bg-white/[0.05] text-white/50"}`}>{label}</Link>)}</nav>
     {message?<div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-3 text-xs text-cyan-100">{message}</div>:null}
     {tab==="home"?<Home account={account} data={data} counts={counts} leagues={leagues} toggleLeague={toggleLeague} syncNow={syncNow}/>:null}
     {tab==="profile"?<div className="mt-5"><ProfileClient embedded showSitePreferences={false} showPortfolioRecord={false} showSyncDetails={false}/></div>:null}

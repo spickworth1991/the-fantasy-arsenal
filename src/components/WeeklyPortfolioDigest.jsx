@@ -414,17 +414,17 @@ export default function WeeklyPortfolioDigest() {
                   <Link
                     key={r.id}
                     href={`/league-hub?league=${r.id}`}
-                    className="rounded-2xl border border-white/[0.07] bg-black/15 p-3 transition hover:bg-white/[0.04]"
+                    className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/15 p-3 transition hover:bg-white/[0.04]"
                   >
-                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                       <b className="truncate">{r.name}</b>
                       <span
                         className={
-                          !r.result
+                          `max-w-full break-words text-xs sm:shrink-0 ${!r.result
                             ? "text-white/35"
                             : r.result === "win"
                               ? "text-emerald-100"
-                              : "text-rose-100"
+                              : "text-rose-100"}`
                         }
                       >
                         {r.result
@@ -432,7 +432,7 @@ export default function WeeklyPortfolioDigest() {
                           : "Not started"}
                       </span>
                     </div>
-                    <div className="mt-1 text-[10px] text-white/32">
+                    <div className="mt-1 break-words text-[10px] leading-4 text-white/32">
                       {r.chopped
                         ? `${r.points.toFixed(1)}${r.cutline != null ? ` · cut line ${r.cutline.toFixed(1)}` : ""}`
                         : r.started

@@ -25,14 +25,19 @@ const matchupPoints = (matchup) => {
     0,
   );
 };
-const isChoppedMatchupSet = (matchups = []) => {
+const isChoppedMatchupSet = (matchups = [], league = {}) => {
   const matchupSizes = new Map();
   matchups.forEach((matchup) => {
     if (matchup?.matchup_id == null || matchup.matchup_id === "") return;
     const key = String(matchup.matchup_id);
     matchupSizes.set(key, num(matchupSizes.get(key)) + 1);
   });
-  return matchups.length > 2 && ![...matchupSizes.values()].some((size) => size === 2);
+  // Sleeper also omits paired matchup IDs for some ordinary total-points
+  // formats. Treat only an explicitly named Chopped league as survival mode;
+  // otherwise there is no H2H result to invent.
+  return matchups.length > 2
+    && ![...matchupSizes.values()].some((size) => size === 2)
+    && /chopp?(?:ed|ing)?/i.test(String(league?.name || ""));
 };
 const esc = (value) =>
   String(value ?? "").replace(
@@ -441,7 +446,7 @@ async function buildDigest(
         if (!my) return null;
         const points = matchupPoints(my),
           oppPoints = matchupPoints(opp);
-        const chopped = isChoppedMatchupSet(matchups);
+        const chopped = isChoppedMatchupSet(matchups, league);
         const leagueScores = matchups.map(matchupPoints);
         const cutline = chopped && leagueScores.length ? Math.min(...leagueScores) : null;
         const started = nflWeekStatus.allComplete || points > 0 || oppPoints > 0;
@@ -477,8 +482,10 @@ async function buildDigest(
               : survival === "Chopped"
                 ? "loss"
                 : null
-            : outcome(points, oppPoints);
-        const medianResult = !started || !medianEnabled || medianScore == null
+            : !opp
+              ? null
+              : outcome(points, oppPoints);
+        const medianResult = !started || chopped || !medianEnabled || medianScore == null
           ? null
           : outcome(points, medianScore);
         const record = [primaryResult, medianResult].filter(Boolean).reduce(
