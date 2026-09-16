@@ -1,0 +1,3 @@
+export default function AccountTrustNote() {
+  return <section className="mt-5 rounded-[28px] border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.07] to-slate-950 p-5 sm:p-6"><div className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-200/55">Cloud workspace</div><h2 className="mt-1 text-xl font-black">What follows your Arsenal account</h2><p className="mt-2 max-w-3xl text-xs leading-5 text-white/45">Your saved decisions, tool preferences, digest delivery settings, pinned leagues, bookmarks, and profile identity synchronize across devices. Live Sleeper responses, player databases, and short-lived page caches stay local so tools remain fast and do not create unnecessary account data.</p></section>;
+}

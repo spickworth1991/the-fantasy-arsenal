@@ -1168,7 +1168,7 @@ export async function GET(request) {
             row.sleeper_username,
             season,
             digestWeek,
-            digestOptions,
+            { includeBestBall: true, leagueIds: [] },
           ));
           const baseHtml = digestEmail({
             d,

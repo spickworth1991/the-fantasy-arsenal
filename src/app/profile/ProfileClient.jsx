@@ -88,7 +88,7 @@ function PasswordField({ label, visible, onToggle, ...props }) {
   );
 }
 
-export default function ProfileClient({ embedded = false }) {
+export default function ProfileClient({ embedded = false, showSitePreferences = true, showPortfolioRecord = true, showSyncDetails = true }) {
   const router = useRouter();
   const { username } = useSleeper();
   const accountState = useArsenalAccount();
@@ -112,6 +112,7 @@ export default function ProfileClient({ embedded = false }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [favoriteTeam, setFavoriteTeam] = useState("");
   const [fantasyStyle, setFantasyStyle] = useState("balanced");
   const [experienceLevel, setExperienceLevel] = useState("veteran");
@@ -464,7 +465,7 @@ export default function ProfileClient({ embedded = false }) {
               </div>
             </Panel>
             <div className="space-y-5">
-              <Panel className="overflow-hidden">
+              {showPortfolioRecord ? <Panel className="overflow-hidden">
                 <div className="border-b border-white/10 bg-[radial-gradient(circle_at_100%_0%,rgba(34,211,238,.12),transparent_42%)] p-5 sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -517,7 +518,7 @@ export default function ProfileClient({ embedded = false }) {
                     </div>
                   ))}
                 </div>
-              </Panel>
+              </Panel> : null}
               <Panel className="p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -705,7 +706,7 @@ export default function ProfileClient({ embedded = false }) {
                   the Cloudflare PROFILE_MEDIA R2 bucket.
                 </p>
               </Panel>
-              <Panel className="p-5 sm:p-6">
+              {showSitePreferences ? <Panel className="p-5 sm:p-6">
                 <h2 className="text-xl font-black">Intelligence preferences</h2>
                 <p className="mt-1 text-xs text-white/38">
                   These choices follow your account and control how
@@ -779,8 +780,8 @@ export default function ProfileClient({ embedded = false }) {
                 >
                   Save intelligence preferences
                 </button>
-              </Panel>
-              <Panel className="p-5 sm:p-6">
+              </Panel> : null}
+              {showSyncDetails ? <Panel className="p-5 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wider text-violet-200/45">
@@ -819,7 +820,7 @@ export default function ProfileClient({ embedded = false }) {
                     </div>
                   ))}
                 </div>
-              </Panel>
+              </Panel> : null}
               <Panel className="p-5 sm:p-6">
                 <h2 className="text-xl font-black">Account sign-in</h2>
                 <p className="mt-2 text-xs leading-5 text-white/40">
@@ -846,6 +847,14 @@ export default function ProfileClient({ embedded = false }) {
                     onToggle={() => togglePassword("settings")}
                     autoComplete="new-password"
                   />
+                  <PasswordField
+                    label="Retype new password"
+                    value={confirmNewPassword}
+                    onChange={(event) => setConfirmNewPassword(event.target.value)}
+                    visible={!!visiblePasswords.settingsConfirm}
+                    onToggle={() => togglePassword("settingsConfirm")}
+                    autoComplete="new-password"
+                  />
                 </div>
                 <button
                   type="button"
@@ -853,7 +862,8 @@ export default function ProfileClient({ embedded = false }) {
                     busy ||
                     !loginName.trim() ||
                     (!account.hasPassword && newPassword.length < 10) ||
-                    (!!newPassword && newPassword.length < 10)
+                    (!!newPassword && newPassword.length < 10) ||
+                    (!!newPassword && newPassword !== confirmNewPassword)
                   }
                   onClick={saveCredentials}
                   className="mt-3 rounded-xl bg-violet-300/10 px-4 py-3 text-xs font-black text-violet-100"

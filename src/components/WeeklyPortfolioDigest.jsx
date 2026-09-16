@@ -59,13 +59,15 @@ export default function WeeklyPortfolioDigest() {
   const [message, setMessage] = useState("");
   const season = new Date().getFullYear();
   const [nflState, setNflState] = useState(null);
-  const week = nflState
+  const currentWeek = nflState
     ? fantasyWeekFromNflState(nflState)
     : Math.max(1, n(leagues[0]?.settings?.leg) || 1);
+  const [viewWeek, setViewWeek] = useState(null);
+  const week = viewWeek || currentWeek;
   const weekContext = nflState ? nflWeekContext(nflState) : null;
-  const weekLabel = weekContext?.seasonType === "preseason"
+  const weekLabel = weekContext?.seasonType === "preseason" && week === currentWeek
     ? "Preseason · regular-season Week 1 preview"
-    : weekContext?.label || `Week ${week}`;
+    : `Week ${week}`;
   useEffect(() => {
     let active = true;
     get("https://api.sleeper.app/v1/state/nfl")
@@ -133,7 +135,7 @@ export default function WeeklyPortfolioDigest() {
         `https://api.sleeper.app/v1/user/${encodeURIComponent(username)}`,
       );
       const data = await Promise.all(
-        digestLeagues.map(async (league) => {
+        leagues.map(async (league) => {
           const [rosters, users, matchups] = await Promise.all([
             get(
               `https://api.sleeper.app/v1/league/${league.league_id}/rosters`,
@@ -195,7 +197,7 @@ export default function WeeklyPortfolioDigest() {
     return () => {
       live = false;
     };
-  }, [username, digestLeagues, week]);
+  }, [username, leagues, week]);
   const summary = useMemo(() => {
     const active = rows.filter((r) => r.started),
       wins = active.filter((r) => r.margin > 0).length,
@@ -327,6 +329,7 @@ export default function WeeklyPortfolioDigest() {
             </div>
           </div>
         </div>
+        <div className="mt-4 max-w-md"><label className="block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-[.16em] text-cyan-100/45">Viewing week</span><select value={week} onChange={(event) => setViewWeek(n(event.target.value))} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-cyan-300/40">{Array.from({length:Math.max(1,currentWeek)},(_,index)=>index+1).map((value)=><option key={value} value={value}>Week {value}{value===currentWeek?" · current":""}</option>)}</select></label></div>
       </div>
       <div className="p-4 sm:p-5">
         {loading ? (
@@ -527,11 +530,10 @@ export default function WeeklyPortfolioDigest() {
         </div>
         <details className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3">
           <summary className="cursor-pointer text-xs font-black">
-            League delivery scope · {digestLeagues.length} of {leagues.length}
+            Daily Intelligence alert scope · {digestLeagues.length} of {leagues.length}
           </summary>
           <p className="mt-2 text-[10px] text-white/32">
-            Standard leagues are included by default. Add only the Best Ball
-            leagues you want, or customize any league individually.
+            This affects Daily Intelligence warnings and commissioner alerts only. Weekly portfolio statistics and your verified record always use every league.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
