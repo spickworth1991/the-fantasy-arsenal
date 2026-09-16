@@ -1,8 +1,8 @@
 {
-  "updated": "2026-09-15T04:07:47.835Z",
+  "updated": "2026-09-16T04:08:02.065Z",
   "season": 2026,
   "source": "ESPN",
-  "count": 1041,
+  "count": 1042,
   "rows": [
     {
       "player_id": "",
@@ -1017,7 +1017,7 @@
       "name": "Dylan Sampson",
       "team": "CLE",
       "position": "RB",
-      "points": 88.19143058
+      "points": 0
     },
     {
       "player_id": "",
@@ -2123,7 +2123,7 @@
       "name": "Bam Knight",
       "team": "ARI",
       "position": "RB",
-      "points": 0.81781294
+      "points": 0
     },
     {
       "player_id": "",
@@ -2135,9 +2135,9 @@
     {
       "player_id": "",
       "name": "Tyler Badie",
-      "team": "DEN",
+      "team": "",
       "position": "RB",
-      "points": 0.35321889
+      "points": 0
     },
     {
       "player_id": "",
@@ -2690,7 +2690,7 @@
       "name": "Savion Williams",
       "team": "GB",
       "position": "WR",
-      "points": 40.1316029
+      "points": 0
     },
     {
       "player_id": "",
@@ -2926,9 +2926,9 @@
     {
       "player_id": "",
       "name": "Jimmy Horn Jr.",
-      "team": "CAR",
+      "team": "",
       "position": "WR",
-      "points": 21.20330894
+      "points": 0
     },
     {
       "player_id": "",
@@ -2998,14 +2998,14 @@
       "name": "Jalen Royals",
       "team": "KC",
       "position": "WR",
-      "points": 18.37322675
+      "points": 0
     },
     {
       "player_id": "",
       "name": "KeAndre Lambert-Smith",
       "team": "LAC",
       "position": "WR",
-      "points": 18.18346187
+      "points": 0
     },
     {
       "player_id": "",
@@ -3215,7 +3215,7 @@
       "name": "Tai Felton",
       "team": "MIN",
       "position": "WR",
-      "points": 9.01853725
+      "points": 0
     },
     {
       "player_id": "",
@@ -3619,7 +3619,7 @@
     {
       "player_id": "",
       "name": "Lil'Jordan Humphrey",
-      "team": "",
+      "team": "DEN",
       "position": "WR",
       "points": 0
     },
@@ -3955,7 +3955,7 @@
     {
       "player_id": "",
       "name": "Jared Wiley",
-      "team": "KC",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -4312,7 +4312,7 @@
     {
       "player_id": "",
       "name": "Garrett Nussmeier",
-      "team": "KC",
+      "team": "",
       "position": "QB",
       "points": 0
     },
@@ -4326,7 +4326,7 @@
     {
       "player_id": "",
       "name": "Dallen Bentley",
-      "team": "DEN",
+      "team": "",
       "position": "TE",
       "points": 0
     },
@@ -6104,7 +6104,7 @@
     {
       "player_id": "",
       "name": "Israel Abanikanda",
-      "team": "DAL",
+      "team": "",
       "position": "RB",
       "points": 0
     },
@@ -6202,7 +6202,7 @@
     {
       "player_id": "",
       "name": "Brayden Willis",
-      "team": "",
+      "team": "SF",
       "position": "TE",
       "points": 0
     },
@@ -6272,7 +6272,7 @@
     {
       "player_id": "",
       "name": "Jaleel McLaughlin",
-      "team": "",
+      "team": "CLE",
       "position": "RB",
       "points": 0
     },
@@ -6384,7 +6384,7 @@
     {
       "player_id": "",
       "name": "Tyler Goodson",
-      "team": "",
+      "team": "DAL",
       "position": "RB",
       "points": 0
     },
@@ -7105,7 +7105,7 @@
     {
       "player_id": "",
       "name": "Dalen Cambre",
-      "team": "NYG",
+      "team": "",
       "position": "WR",
       "points": 0
     },
@@ -7289,6 +7289,13 @@
       "name": "DJ Herman",
       "team": "MIA",
       "position": "RB",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "Jake Briningstool",
+      "team": "KC",
+      "position": "TE",
       "points": 0
     }
   ],
@@ -7582,8 +7589,8 @@
     "tyler allgeier": 93.58087783,
     "travishunter": 103.01457132,
     "travis hunter": 103.01457132,
-    "dylansampson": 88.19143058,
-    "dylan sampson": 88.19143058,
+    "dylansampson": 0,
+    "dylan sampson": 0,
     "keatonmitchell": 93.93817887,
     "keaton mitchell": 93.93817887,
     "hunterhenry": 156.22462688,
@@ -7898,12 +7905,12 @@
     "shedeur sanders": 145.0111963,
     "kirkcousins": 39.57437331,
     "kirk cousins": 39.57437331,
-    "bamknight": 0.81781294,
-    "bam knight": 0.81781294,
+    "bamknight": 0,
+    "bam knight": 0,
     "dylanlaube": 0.66575231,
     "dylan laube": 0.66575231,
-    "tylerbadie": 0.35321889,
-    "tyler badie": 0.35321889,
+    "tylerbadie": 0,
+    "tyler badie": 0,
     "ameerabdullah": 0,
     "ameer abdullah": 0,
     "adamrandall": 0,
@@ -8060,8 +8067,8 @@
     "elijah higgins": 43.05050187,
     "brycelance": 42.93856206,
     "bryce lance": 42.93856206,
-    "savionwilliams": 40.1316029,
-    "savion williams": 40.1316029,
+    "savionwilliams": 0,
+    "savion williams": 0,
     "jonnusmith": 41.0129646,
     "jonnu smith": 41.0129646,
     "willkacmarek": 39.57064076,
@@ -8128,8 +8135,8 @@
     "jordan whittington": 42.78142116,
     "tezjohnson": 9.21263054,
     "tez johnson": 9.21263054,
-    "jimmyhornjr.": 21.20330894,
-    "jimmy horn": 21.20330894,
+    "jimmyhornjr.": 0,
+    "jimmy horn": 0,
     "barionbrown": 21.22060135,
     "barion brown": 21.22060135,
     "davisallen": 28.68698386,
@@ -8148,10 +8155,10 @@
     "nate boerkircher": 18.47382663,
     "lukemccaffrey": 0,
     "luke mccaffrey": 0,
-    "jalenroyals": 18.37322675,
-    "jalen royals": 18.37322675,
-    "keandrelambert-smith": 18.18346187,
-    "keandre lambertsmith": 18.18346187,
+    "jalenroyals": 0,
+    "jalen royals": 0,
+    "keandrelambert-smith": 0,
+    "keandre lambertsmith": 0,
     "paynedurham": 18.03143984,
     "payne durham": 18.03143984,
     "oscardelp": 16.93769446,
@@ -8210,8 +8217,8 @@
     "ko kieft": 9.07533575,
     "kennypickett": 0,
     "kenny pickett": 0,
-    "taifelton": 9.01853725,
-    "tai felton": 9.01853725,
+    "taifelton": 0,
+    "tai felton": 0,
     "joshcameron": 8.96619213,
     "josh cameron": 8.96619213,
     "spencerrattler": 0,
@@ -9373,6 +9380,8 @@
     "chrismyarick": 0,
     "chris myarick": 0,
     "djherman": 0,
-    "dj herman": 0
+    "dj herman": 0,
+    "jakebriningstool": 0,
+    "jake briningstool": 0
   }
 }
