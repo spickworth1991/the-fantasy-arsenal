@@ -121,10 +121,12 @@ const STAT_GUIDES = {
   },
 };
 const CORE_POSITIONS = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"];
+const IDP_POSITIONS = ["LB", "DE", "DT", "DB", "CB", "S"];
 const SCORING = [
   ["PPR", "PPR"],
   ["HALF", "Half PPR"],
   ["STD", "Standard"],
+  ["IDP", "IDP (Sleeper default)"],
   ["LEAGUE", "League scoring"],
 ];
 const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -144,6 +146,19 @@ const quantile = (values, percentile) => {
   return sorted[low] + (sorted[high] - sorted[low]) * (index - low);
 };
 const round = (value, places = 1) => Number(num(value).toFixed(places));
+// Sleeper's DEF row contains team totals such as tackles, returns and snaps.
+// Those fields are useful context, but must never be fed into an IDP league's
+// scoring rules or a team defense can incorrectly score 100+ points.
+const TEAM_DEFENSE_SCORING_FIELDS = new Set([
+  "sack", "int", "int_ret_yd", "ff", "fum_rec", "fum_ret_yd", "def_td",
+  "def_st_td", "def_st_ff", "def_st_fum_rec", "safe", "blk_kick", "blocked_kick",
+  "pts_allow", "pts_allow_0", "pts_allow_1_6", "pts_allow_7_13",
+  "pts_allow_14_20", "pts_allow_21_27", "pts_allow_28_34", "pts_allow_35p",
+]);
+const teamDefenseScoringStats = (stats = {}) =>
+  Object.fromEntries(
+    Object.entries(stats).filter(([key]) => TEAM_DEFENSE_SCORING_FIELDS.has(key)),
+  );
 
 function Panel({ children, className = "", ...props }) {
   return (
@@ -216,6 +231,41 @@ function PlayerName({ player }) {
       </div>
     </div>
   );
+}
+function PlayerAvatar({ player, size = "h-11 w-11" }) {
+  const name = String(player?.name || "?");
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const sleeperId = String(player?.sleeper_id || player?.id || "");
+  const avatarUrl = /^\d+$/.test(sleeperId)
+    ? `https://sleepercdn.com/content/nfl/players/thumb/${sleeperId}.jpg`
+    : "";
+  return (
+    <div
+      className={`relative ${size} shrink-0 overflow-hidden rounded-2xl border border-cyan-200/15 bg-gradient-to-br from-cyan-300/25 via-sky-400/10 to-violet-500/20 shadow-[0_8px_22px_rgba(8,145,178,.16)]`}
+      aria-hidden="true"
+    >
+      <span className="absolute inset-0 grid place-items-center text-xs font-black text-cyan-50/80">
+        {player?.position === "DST" ? player?.team || "DST" : initials}
+      </span>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(event) => event.currentTarget.remove()}
+        />
+      ) : null}
+    </div>
+  );
+}
+function PlayerGroupToggle({ idp, onChange }) {
+  return <div className="min-w-0"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">Player pool</span><div className="grid grid-cols-2 rounded-xl border border-white/10 bg-slate-950/80 p-1 shadow-inner shadow-black/20"><button type="button" onClick={() => onChange(false)} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${!idp ? "bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-400/20" : "text-white/40 hover:text-white/70"}`}>Offense</button><button type="button" onClick={() => onChange(true)} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide transition ${idp ? "bg-violet-300 text-slate-950 shadow-lg shadow-violet-400/20" : "text-white/40 hover:text-white/70"}`}>IDP</button></div></div>;
 }
 function Select({ label, value, onChange, children, preference }) {
   const comparison = label === "Comparison player";
@@ -378,10 +428,13 @@ function mergeHistory(payload, playerDb) {
       return {
         ...row,
         key: `fp:${row.player_id || index}:${normalize(row.name)}`,
-        sleeper_id: context?.sleeper_id || "",
+        // Historical Sleeper rows supply an ID even while the live player
+        // directory is still loading locally, which keeps player imagery
+        // available for the rankings desk.
+        sleeper_id: context?.sleeper_id || raw?.player_id || "",
         gsis_id: context?.gsis_id || raw?.gsis_id || "",
         team: row.team || context?.team || "",
-        position: row.position || context?.position || "",
+        position: String(row.position || context?.position || "").toUpperCase() === "DEF" ? "DST" : (row.position || context?.position || ""),
         age: context?.age || null,
         years_exp: context?.years_exp || null,
         injury_status: context?.injury_status || null,
@@ -403,9 +456,10 @@ function mergeHistory(payload, playerDb) {
     return {
       ...row,
       key: `sl:${row.player_id}`,
+      sleeper_id: context.sleeper_id || row.player_id || "",
       name: context.name || row.name || row.player_id,
       team: context.team || row.team || "",
-      position: context.position || row.position || "",
+      position: String(context.position || row.position || "").toUpperCase() === "DEF" ? "DST" : (context.position || row.position || ""),
       age: context.age || null,
       years_exp: context.years_exp || null,
       injury_status: context.injury_status || null,
@@ -436,6 +490,14 @@ function weeklySummary(stats, position) {
   if (num(stats.rec_td)) parts.push(`${num(stats.rec_td)} rec TD`);
   if (String(position).toUpperCase() === "K" && num(stats.fgm))
     parts.push(`${num(stats.fgm)}/${num(stats.fga)} FG`);
+  if (["DEF", "DST"].includes(String(position).toUpperCase())) {
+    if (num(stats.sack)) parts.push(`${num(stats.sack)} sack${num(stats.sack) === 1 ? "" : "s"}`);
+    if (num(stats.int)) parts.push(`${num(stats.int)} INT${num(stats.int) === 1 ? "" : "s"}`);
+    if (num(stats.ff)) parts.push(`${num(stats.ff)} forced fumble${num(stats.ff) === 1 ? "" : "s"}`);
+    if (num(stats.fum_rec)) parts.push(`${num(stats.fum_rec)} fumble recovery${num(stats.fum_rec) === 1 ? "" : "ies"}`);
+    if (num(stats.def_td)) parts.push(`${num(stats.def_td)} defensive TD${num(stats.def_td) === 1 ? "" : "s"}`);
+    if (stats.pts_allow != null) parts.push(`${num(stats.pts_allow)} points allowed`);
+  }
   return parts.slice(0, 5).join(" · ") || "Additional box-score stats saved";
 }
 
@@ -684,7 +746,7 @@ async function loadSavedSeason(
   const scoreKey = String(scoring || "PPR").toLowerCase();
   const customScoring = scoring === "LEAGUE" && leagueScoring;
   const fantasyProsPlayers = (
-    customScoring || !Array.isArray(fantasyPros?.players)
+    customScoring || scoring === "IDP" || !Array.isArray(fantasyPros?.players)
       ? []
       : fantasyPros.players
   )
@@ -712,7 +774,7 @@ async function loadSavedSeason(
     Array.isArray(sleeper?.players) ? sleeper.players : []
   ).map((player) => {
     const field =
-      scoring === "STD" ? "std" : scoring === "HALF" ? "half" : "ppr";
+      scoring === "STD" ? "std" : scoring === "HALF" ? "half" : scoring === "IDP" ? "idp" : "ppr";
     const weekKeys = new Set([
       ...Object.keys(player?.weeks || {}),
       ...Object.keys(player?.weekly_stats || {}),
@@ -722,18 +784,23 @@ async function loadSavedSeason(
       customScoring
         ? round(
             scoreSleeperStats(
-              player?.weekly_stats?.[week] || {},
+              ["DEF", "DST"].includes(String(player?.position || "").toUpperCase())
+                ? teamDefenseScoringStats(player?.weekly_stats?.[week] || {})
+                : (player?.weekly_stats?.[week] || {}),
               leagueScoring,
               player.position,
             ),
             3,
           )
-        : num(player?.weeks?.[week]?.[field]),
+        : scoring === "IDP"
+          ? num(player?.weekly_stats?.[week]?.pts_idp)
+          : num(player?.weeks?.[week]?.[field]),
     ]));
     const values = Object.values(weeks);
     const points = values.reduce((sum, value) => sum + value, 0);
     return {
       ...player,
+      position: String(player?.position || "").toUpperCase() === "DEF" ? "DST" : player?.position,
       weeks,
       games: values.length,
       points: round(points, 3),
@@ -3057,15 +3124,41 @@ function CareerStatTrends({ rows, position }) {
   );
 }
 
+function GameStatPopup({ player, onClose, seasonSummary = false, season }) {
+  if (!player) return null;
+  const labels = {
+    pass_att: "Pass attempts", pass_cmp: "Completions", pass_yd: "Pass yards", pass_td: "Pass TD", pass_int: "Interceptions", pass_sack: "Sacks taken", rush_att: "Rush attempts", rush_yd: "Rush yards", rush_td: "Rush TD", rec_tgt: "Targets", rec: "Receptions", rec_yd: "Receiving yards", rec_td: "Receiving TD", fum: "Fumbles", fum_lost: "Fumbles lost", fgm: "Field goals", fga: "FG attempts", xpm: "Extra points", xpa: "XP attempts", sack: "Sacks", int: "Interceptions", ff: "Forced fumbles", fum_rec: "Fumble recoveries", def_td: "Defensive TD", pts_allow: "Points allowed", idp_tkl: "Total tackles", idp_tkl_solo: "Solo tackles", idp_tkl_ast: "Assisted tackles", idp_tkl_loss: "Tackles for loss", idp_sack: "Sacks", idp_qb_hit: "QB hits", idp_pass_def: "Pass defenses", idp_int: "Interceptions", idp_ff: "Forced fumbles", idp_fum_rec: "Fumble recoveries", idp_def_td: "Defensive TD",
+  };
+  const keysByPosition = {
+    QB: ["pass_cmp", "pass_att", "pass_yd", "pass_td", "pass_int", "pass_sack", "rush_att", "rush_yd", "rush_td", "fum_lost"],
+    RB: ["rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fum_lost"],
+    WR: ["rec_tgt", "rec", "rec_yd", "rec_td", "rush_att", "rush_yd", "rush_td", "fum_lost"],
+    TE: ["rec_tgt", "rec", "rec_yd", "rec_td", "fum_lost"],
+    K: ["fgm", "fga", "xpm", "xpa"],
+    DST: ["sack", "int", "ff", "fum_rec", "def_td", "blk_kick", "pts_allow"],
+  };
+  const weeks = Object.entries(player.weeks || {}).map(([week, points]) => ({ week: num(week), points: num(points), stats: player.weekly_stats?.[week] || {} })).sort((a, b) => b.week - a.week);
+  const keys = IDP_POSITIONS.includes(String(player.position || "").toUpperCase())
+    ? ["idp_tkl", "idp_tkl_solo", "idp_tkl_ast", "idp_tkl_loss", "idp_sack", "idp_qb_hit", "idp_pass_def", "idp_int", "idp_ff", "idp_fum_rec", "idp_def_td"]
+    : (keysByPosition[player.position] || []);
+  if (seasonSummary) {
+    const stats = player.stats || {};
+    const visible = keys.filter((key) => stats[key] != null);
+    return <div className="fixed inset-0 z-[120] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section role="dialog" aria-modal="true" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5 sm:p-6"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/55">Season production summary</div><h2 className="mt-1 text-2xl font-black">{player.name}</h2><p className="mt-1 text-xs text-white/38">{player.team} · {player.position} · {season} season</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60" aria-label="Close player stats">×</button></header><article className="p-5 sm:p-6"><div className="flex items-end justify-between gap-4"><div><div className="text-[9px] font-black uppercase tracking-[.16em] text-white/35">Total fantasy points</div><b className="mt-1 block text-4xl text-cyan-100">{num(player.points).toFixed(2)}</b></div><div className="text-right text-xs text-white/42"><b className="text-white">{num(player.games)}</b> games<br />{num(player.average).toFixed(2)} per game</div></div><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">{visible.map((key) => <div key={key} className="rounded-xl bg-white/[0.035] p-3"><div className="text-[8px] font-black uppercase tracking-wider text-white/30">{labels[key] || key}</div><b className="mt-1 block text-base">{num(stats[key]).toLocaleString()}</b></div>)}{!visible.length ? <p className="col-span-full text-xs text-white/35">Raw production totals were not saved for this season.</p> : null}</div></article></section></div>;
+  }
+  return <div className="fixed inset-0 z-[120] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section role="dialog" aria-modal="true" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-white/12 bg-slate-950 shadow-2xl"><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5 sm:p-6"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/55">Observed game ledger</div><h2 className="mt-1 text-2xl font-black">{player.name}</h2><p className="mt-1 text-xs text-white/38">{player.team} · {player.position} · {num(player.points).toFixed(2)} season points</p></div><button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60" aria-label="Close player stats">×</button></header><div className="divide-y divide-white/[0.06]">{weeks.map((row) => <article key={row.week} className="p-4 sm:p-5"><div className="flex items-center justify-between gap-4"><b>Week {row.week}</b><b className="text-xl text-cyan-100">{row.points.toFixed(2)} <span className="text-[9px] uppercase tracking-wider text-white/35">points</span></b></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">{keys.filter((key) => row.stats[key] != null).map((key) => <div key={key} className="rounded-xl bg-white/[0.035] p-2.5"><div className="text-[8px] font-black uppercase tracking-wider text-white/30">{labels[key] || key}</div><b className="mt-1 block text-sm">{num(row.stats[key]).toLocaleString()}</b></div>)}{!keys.some((key) => row.stats[key] != null) ? <p className="col-span-full text-xs text-white/35">Raw play statistics were not saved for this game.</p> : null}</div></article>)}{!weeks.length ? <p className="p-6 text-sm text-white/40">No completed game ledger is available yet.</p> : null}</div></section></div>;
+}
+
 export default function StatCentralClient() {
   const {
     players: playerDb = {},
     leagues = [],
     activeLeague,
   } = useSleeper();
-  const completedSeason = new Date().getFullYear() - 1;
-  const [tab, setTab] = useState("overview");
-  const [season, setSeason] = useState(completedSeason);
+  const currentSeason = new Date().getFullYear();
+  const completedSeason = currentSeason - 1;
+  const [tab, setTab] = useState("leaders");
+  const [season, setSeason] = useState(currentSeason);
   const [scoring, setScoring] = useState("PPR");
   const [scoringLeagueId, setScoringLeagueId] = useState("");
   const [position, setPosition] = useState("ALL");
@@ -3080,6 +3173,14 @@ export default function StatCentralClient() {
   const [careerProgress, setCareerProgress] = useState(0);
   const [availableSeasons, setAvailableSeasons] = useState([completedSeason]);
   const [reloadToken, setReloadToken] = useState(0);
+  const [leaderTeam, setLeaderTeam] = useState("ALL");
+  const [leaderMinimumGames, setLeaderMinimumGames] = useState(0);
+  const [leaderSort, setLeaderSort] = useState("points");
+  const [leaderDirection, setLeaderDirection] = useState("desc");
+  const [leaderWeek, setLeaderWeek] = useState("ALL");
+  const [leaderPage, setLeaderPage] = useState(1);
+  const [showIdp, setShowIdp] = useState(false);
+  const [statPopupKey, setStatPopupKey] = useState("");
   const selectedScoringLeague = useMemo(
     () =>
       leagues.find(
@@ -3177,15 +3278,34 @@ export default function StatCentralClient() {
     leagues.length,
   ]);
   const seasonPlayers = useMemo(
-    () => mergeHistory(data, playerDb),
+    // Sleeper also publishes a synthetic TEAM_{abbreviation} aggregate for
+    // each offense. It is not a fantasy player or a D/ST, so keep it out while
+    // retaining the legitimate DEF records used by fantasy leagues.
+    () => mergeHistory(data, playerDb).filter((player) => !String(player?.player_id || "").startsWith("TEAM_")),
     [data, playerDb],
   );
+  const selectablePositions = showIdp
+    ? ["ALL", ...IDP_POSITIONS]
+    : CORE_POSITIONS;
+
+  useEffect(() => {
+    if ((showIdp && !IDP_POSITIONS.includes(position) && position !== "ALL") || (!showIdp && IDP_POSITIONS.includes(position))) setPosition("ALL");
+  }, [position, showIdp]);
+  const setPlayerGroup = (nextIdp) => {
+    if (nextIdp === showIdp) return;
+    setShowIdp(nextIdp);
+    setPosition("ALL");
+    if (nextIdp && scoring !== "LEAGUE") setScoring("IDP");
+    if (!nextIdp && scoring === "IDP") setScoring("PPR");
+  };
   const allPlayers = useMemo(
     () =>
       seasonPlayers.filter(
-        (player) => position === "ALL" || player.position === position,
+        (player) =>
+          (showIdp === IDP_POSITIONS.includes(String(player.position || "").toUpperCase())) &&
+          (position === "ALL" || player.position === position),
       ),
-    [position, seasonPlayers],
+    [position, seasonPlayers, showIdp],
   );
   const filtered = useMemo(
     () =>
@@ -3197,6 +3317,53 @@ export default function StatCentralClient() {
         .sort((a, b) => b.points - a.points),
     [allPlayers, query],
   );
+  const leaderTeams = useMemo(
+    () => [...new Set(allPlayers.map((player) => player.team).filter(Boolean))].sort(),
+    [allPlayers],
+  );
+  const leaderWeeks = useMemo(
+    () => [...new Set(allPlayers.flatMap((player) => Object.keys(player.weeks || {}).map(num)).filter(Boolean))].sort((a, b) => a - b),
+    [allPlayers],
+  );
+  const leaderRows = useMemo(() => {
+    const leaderPool = leaderWeek === "ALL"
+      ? allPlayers
+      : allPlayers
+          .filter((player) => Object.prototype.hasOwnProperty.call(player.weeks || {}, String(leaderWeek)))
+          .map((player) => ({
+            ...player,
+            points: num(player.weeks?.[leaderWeek]),
+            average: num(player.weeks?.[leaderWeek]),
+            games: 1,
+            weeks: { [leaderWeek]: num(player.weeks?.[leaderWeek]) },
+            weekly_stats: { [leaderWeek]: player.weekly_stats?.[leaderWeek] || {} },
+          }));
+    const valueFor = (player) => {
+      if (leaderSort === "average") return num(player.average);
+      if (leaderSort === "games") return num(player.games);
+      if (leaderSort === "ceiling" || leaderSort === "floor" || leaderSort === "consistency")
+        return num(playerMetrics(player, leaderPool.filter((row) => row.position === player.position))[leaderSort]);
+      return num(player.points);
+    };
+    return leaderPool
+      .filter((player) => !String(player?.player_id || "").startsWith("TEAM_"))
+      .filter((player) => !query || normalize(player.name).includes(normalize(query)))
+      .filter((player) => leaderTeam === "ALL" || player.team === leaderTeam)
+      .filter((player) => num(player.games) >= leaderMinimumGames)
+      .sort((a, b) => {
+        const result = valueFor(b) - valueFor(a) || num(b.points) - num(a.points);
+        return leaderDirection === "desc" ? result : -result;
+      });
+  }, [allPlayers, leaderDirection, leaderMinimumGames, leaderSort, leaderTeam, leaderWeek, query]);
+  const leaderPageSize = 50;
+  const leaderPageCount = Math.max(1, Math.ceil(leaderRows.length / leaderPageSize));
+  const visibleLeaderRows = leaderRows.slice(
+    (Math.min(leaderPage, leaderPageCount) - 1) * leaderPageSize,
+    Math.min(leaderPage, leaderPageCount) * leaderPageSize,
+  );
+  useEffect(() => {
+    setLeaderPage(1);
+  }, [season, scoring, position, leaderWeek, leaderTeam, leaderMinimumGames, leaderSort, leaderDirection, query]);
   useEffect(() => {
     if (!allPlayers.length) return;
     const skillPlayers = allPlayers
@@ -3210,6 +3377,12 @@ export default function StatCentralClient() {
       setCompareKey(allPlayers[1]?.key || allPlayers[0].key);
   }, [allPlayers, compareKey, selectedKey]);
   const selected = allPlayers.find((player) => player.key === selectedKey);
+  // The Rankings popup follows its view: a selected week is a single-game
+  // explainer, while All weeks retains the complete season ledger.
+  const statPopupPlayer =
+    (tab === "leaders" && leaderWeek !== "ALL"
+      ? leaderRows.find((player) => player.key === statPopupKey)
+      : allPlayers.find((player) => player.key === statPopupKey)) || null;
   const compared = allPlayers.find((player) => player.key === compareKey);
   const positionPlayers = allPlayers.filter(
     (player) => player.position === selected?.position,
@@ -3284,7 +3457,7 @@ export default function StatCentralClient() {
           </p>
           {tab === "method" ? (
             null
-          ) : historicalWorkspace && tab !== "matchups" ? (
+          ) : historicalWorkspace && tab !== "matchups" && tab !== "leaders" ? (
             <>
               <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${showPositionAndSearch ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
                 <Select
@@ -3317,10 +3490,11 @@ export default function StatCentralClient() {
                 {showPositionAndSearch ? (
                   <>
                     <Select label="Position" value={position} onChange={setPosition}>
-                      {CORE_POSITIONS.map((value) => (
+                      {selectablePositions.map((value) => (
                         <option key={value}>{value}</option>
                       ))}
                     </Select>
+                    <PlayerGroupToggle idp={showIdp} onChange={setPlayerGroup} />
                     <label className="hidden">
                       <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">
                         Find a player
@@ -3523,41 +3697,55 @@ export default function StatCentralClient() {
             ) : null}
             {tab === "leaders" ? (
               <Panel className="overflow-hidden">
-                <div className="border-b border-white/10 p-5">
-                  <h2 className="text-xl font-black">
-                    {season} scoring leaderboard
-                  </h2>
-                  <p className="mt-1 text-xs text-white/38">
-                    Position rank, total, average, floor, ceiling, consistency
-                    and archetype.
-                  </p>
+                <div className="border-b border-white/10 p-5 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/50">Stream desk</div><h2 className="mt-1 text-2xl font-black">{season} production rankings</h2><p className="mt-1 text-xs leading-5 text-white/38">Full-season totals or any completed week, all from one filter deck.</p></div><div className="rounded-xl bg-cyan-300/[0.06] px-3 py-2 text-xs font-black text-cyan-100">{leaderRows.length} matching players</div></div>
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <Select label="Season" value={season} onChange={(value) => { setSeason(num(value)); setCareer([]); }}>{availableSeasons.map((year) => <option key={year}>{year}</option>)}</Select>
+                    <Select label="Scoring" value={scoring} onChange={(value) => { setScoring(value); setCareer([]); }}>{SCORING.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>
+                    {scoring === "LEAGUE" && leagues.length ? <Select label="Scoring league" value={scoringLeagueId} onChange={setScoringLeagueId}>{leagues.map((league) => <option key={league.league_id} value={league.league_id}>{league.name}</option>)}</Select> : null}
+                    <Select label="View" value={leaderWeek} onChange={setLeaderWeek}><option value="ALL">All weeks</option>{leaderWeeks.map((week) => <option key={week} value={week}>Week {week}</option>)}</Select>
+                    <Select label="Position" value={position} onChange={setPosition}>{selectablePositions.map((value) => <option key={value}>{value}</option>)}</Select>
+                    <PlayerGroupToggle idp={showIdp} onChange={setPlayerGroup} />
+                    <Select label="Team" value={leaderTeam} onChange={setLeaderTeam}><option>ALL</option>{leaderTeams.map((team) => <option key={team}>{team}</option>)}</Select>
+                    <Select label="Minimum games" value={leaderMinimumGames} onChange={(value) => setLeaderMinimumGames(num(value))}>{[0,1,2,3,4].map((value) => <option key={value} value={value}>{value === 0 ? "Any sample" : `${value}+ games`}</option>)}</Select>
+                    <Select label="Sort by" value={leaderSort} onChange={setLeaderSort}>{[["points","Total points"],["average","Points / game"],["ceiling","Ceiling"],["floor","Floor"],["consistency","Consistency"],["games","Games played"]].map(([value,label]) => <option key={value} value={value}>{label}</option>)}</Select>
+                    <label className="sm:col-span-2 xl:col-span-4"><span className="mb-1 block text-[9px] font-black uppercase tracking-wider text-white/30">Find a player</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the selected player pool…" className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm shadow-inner shadow-black/20 transition focus:border-cyan-200/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/10" /></label>
+                  </div>
+                  <div className="mt-3 flex justify-end"><button type="button" onClick={() => setLeaderDirection((current) => current === "desc" ? "asc" : "desc")} className="rounded-xl bg-white/[0.05] px-3 py-2 text-[10px] font-black text-white/60">{leaderDirection === "desc" ? "Highest first ↓" : "Lowest first ↑"}</button></div>
                 </div>
-                <div className="divide-y divide-white/[0.06]">
-                  {filtered.slice(0, 100).map((player, index) => {
+                <div className="divide-y divide-white/[0.06] bg-[linear-gradient(180deg,rgba(8,47,73,.18),transparent_18%)]">
+                  {visibleLeaderRows.map((player, index) => {
                     const m = playerMetrics(
                       player,
                       allPlayers.filter(
                         (row) => row.position === player.position,
                       ),
                     );
+                    const latestWeek = Math.max(
+                      ...Object.keys(player.weeks || {}).map(num),
+                      0,
+                    );
+                    const latestSummary = latestWeek
+                      ? weeklySummary(player.weekly_stats?.[latestWeek], player.position)
+                      : "No completed game yet";
                     return (
                       <button
                         key={player.key}
                         onClick={() => {
                           setSelectedKey(player.key);
-                          setTab("overview");
+                          setStatPopupKey(player.key);
                         }}
-                        className="grid w-full grid-cols-[32px_minmax(0,1fr)_60px_60px] items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.035] sm:grid-cols-[42px_minmax(0,1fr)_80px_80px_100px]"
+                        className="group grid w-full grid-cols-[36px_minmax(0,1fr)_62px_58px] items-center gap-2.5 border-l-2 border-transparent px-4 py-3.5 text-left transition hover:border-cyan-200/60 hover:bg-cyan-300/[0.055] sm:grid-cols-[44px_minmax(0,1fr)_84px_74px_104px] sm:gap-3"
                       >
-                        <b className="text-white/25">#{index + 1}</b>
-                        <PlayerName player={player} />
+                        <b className={`grid h-8 w-8 place-items-center rounded-xl text-[11px] ${((leaderPage - 1) * leaderPageSize + index) === 0 ? "bg-amber-300/20 text-amber-100 ring-1 ring-amber-200/25" : ((leaderPage - 1) * leaderPageSize + index) === 1 ? "bg-slate-200/15 text-slate-100 ring-1 ring-slate-100/20" : ((leaderPage - 1) * leaderPageSize + index) === 2 ? "bg-orange-300/15 text-orange-100 ring-1 ring-orange-200/20" : "bg-white/[0.045] text-white/35"}`}>#{(leaderPage - 1) * leaderPageSize + index + 1}</b>
+                        <div className="flex min-w-0 items-center gap-3"><PlayerAvatar player={player} /><div className="min-w-0"><PlayerName player={player} /><div className="mt-1 hidden truncate text-[9px] font-medium text-white/32 sm:block">W{latestWeek || "—"}: {latestSummary}</div></div></div>
                         <div className="text-right">
-                          <b>{player.points.toFixed(1)}</b>
-                          <div className="text-[8px] text-white/25">POINTS</div>
+                          <b className="text-base text-cyan-100 sm:text-lg">{player.points.toFixed(1)}</b>
+                          <div className="text-[8px] font-black tracking-wider text-cyan-100/35">POINTS</div>
                         </div>
                         <div className="text-right">
                           <b>{m.average.toFixed(1)}</b>
-                          <div className="text-[8px] text-white/25">AVG</div>
+                          <div className="text-[8px] font-black tracking-wider text-white/25">AVG / GAME</div>
                         </div>
                         <div className="hidden text-right sm:block">
                           <b>{m.consistency.toFixed(0)}%</b>
@@ -3567,8 +3755,9 @@ export default function StatCentralClient() {
                         </div>
                       </button>
                     );
-                  })}
+                  })}{!leaderRows.length ? <div className="p-8 text-center text-sm text-white/40">No players match those filters.</div> : null}
                 </div>
+                {leaderRows.length > leaderPageSize ? <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-4"><span className="text-[10px] font-black uppercase tracking-wider text-white/35">{(leaderPage - 1) * leaderPageSize + 1}–{Math.min(leaderPage * leaderPageSize, leaderRows.length)} of {leaderRows.length}</span><div className="flex items-center gap-2"><button type="button" disabled={leaderPage <= 1} onClick={() => setLeaderPage((page) => Math.max(1, page - 1))} className="rounded-lg bg-white/[0.05] px-3 py-2 text-[10px] font-black text-white/65 disabled:opacity-30">Previous</button><span className="min-w-16 text-center text-[10px] font-black text-cyan-100/70">Page {leaderPage} / {leaderPageCount}</span><button type="button" disabled={leaderPage >= leaderPageCount} onClick={() => setLeaderPage((page) => Math.min(leaderPageCount, page + 1))} className="rounded-lg bg-white/[0.05] px-3 py-2 text-[10px] font-black text-white/65 disabled:opacity-30">Next</button></div></div> : null}
               </Panel>
             ) : null}
             {tab === "history" ? (
@@ -3706,6 +3895,7 @@ export default function StatCentralClient() {
           </div>
         </div>
       </div>
+      <GameStatPopup player={statPopupPlayer} onClose={() => setStatPopupKey("")} season={season} seasonSummary={tab === "leaders" && leaderWeek === "ALL"} />
     </main>
   );
 }
