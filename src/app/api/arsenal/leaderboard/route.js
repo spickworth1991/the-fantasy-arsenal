@@ -151,8 +151,19 @@ export async function GET(request) {
         `Bearer ${arsenalEnv().DIGEST_CRON_SECRET}`
     )
       return new NextResponse("Unauthorized.", { status: 401 });
+    const requestedAccountId = new URL(request.url).searchParams.get("accountId");
+    const mode = new URL(request.url).searchParams.get("mode");
+    if (weeklyRefresh && mode === "candidates") {
+      const accounts = (await refreshableAccounts(db))?.results || [];
+      return NextResponse.json({
+        ok: true,
+        season,
+        accounts: accounts.map((account) => ({ accountId: account.account_id })),
+      });
+    }
     const refreshAfter = 6 * 60 * 60 * 1000;
     const candidates = (weeklyRefresh ? (await refreshableAccounts(db))?.results || [] : initial?.results || [])
+      .filter((row) => !requestedAccountId || String(row.account_id) === String(requestedAccountId))
       .filter(
         (row) =>
           weeklyRefresh ||

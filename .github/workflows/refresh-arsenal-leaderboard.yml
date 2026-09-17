@@ -1,0 +1,50 @@
+name: Refresh Arsenal leaderboard
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: arsenal-leaderboard-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      ARSENAL_ORIGIN: https://thefantasyarsenal.com
+      DIGEST_CRON_SECRET: ${{ secrets.DIGEST_CRON_SECRET }}
+    steps:
+      - name: Verify refresh credential
+        run: |
+          test -n "$DIGEST_CRON_SECRET" || { echo "DIGEST_CRON_SECRET GitHub Actions secret is required."; exit 1; }
+
+      - name: Fetch eligible Arsenal accounts
+        run: |
+          curl --fail-with-body --retry 3 --retry-delay 3 --max-time 60 \
+            -H "Authorization: Bearer $DIGEST_CRON_SECRET" \
+            "$ARSENAL_ORIGIN/api/arsenal/leaderboard?refresh=weekly&mode=candidates" \
+            -o "$RUNNER_TEMP/leaderboard-candidates.json"
+          jq -r '.accounts[]?.accountId' "$RUNNER_TEMP/leaderboard-candidates.json" > "$RUNNER_TEMP/leaderboard-account-ids.txt"
+          echo "Queued $(wc -l < "$RUNNER_TEMP/leaderboard-account-ids.txt") Arsenal accounts for isolated refreshes."
+
+      - name: Refresh portfolios one at a time
+        run: |
+          failures=0
+          while IFS= read -r account_id; do
+            [ -z "$account_id" ] && continue
+            echo "Refreshing $account_id"
+            if ! curl --fail-with-body --retry 2 --retry-all-errors --retry-delay 5 --max-time 240 \
+              -H "Authorization: Bearer $DIGEST_CRON_SECRET" \
+              "$ARSENAL_ORIGIN/api/arsenal/leaderboard?refresh=weekly&accountId=$account_id"; then
+              echo "Refresh failed for $account_id; continuing with remaining accounts."
+              failures=$((failures + 1))
+            fi
+          done < "$RUNNER_TEMP/leaderboard-account-ids.txt"
+          if [ "$failures" -gt 0 ]; then
+            echo "$failures account refresh(es) failed."
+            exit 1
+          fi

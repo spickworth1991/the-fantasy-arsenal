@@ -40,6 +40,11 @@ async function dispatchUpdate(request) {
 
   if (!response.ok) {
     const requestId = response.headers.get("x-github-request-id");
+    let githubMessage = "";
+    try {
+      const body = await response.json();
+      githubMessage = String(body?.message || "");
+    } catch {}
     console.error("Unable to dispatch values workflow", {
       status: response.status,
       requestId,
@@ -50,6 +55,7 @@ async function dispatchUpdate(request) {
         error: "GitHub did not accept the update request.",
         status: response.status,
         request_id: requestId,
+        github_message: githubMessage || null,
       },
       502,
     );
