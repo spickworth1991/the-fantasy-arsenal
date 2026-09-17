@@ -3188,6 +3188,13 @@ export default function StatCentralClient() {
       ) || null,
     [leagues, scoringLeagueId],
   );
+  const resolvedSeason = num(season) >= 2012
+    ? num(season)
+    : (availableSeasons.find((year) => num(year) >= 2012) || currentSeason);
+
+  useEffect(() => {
+    if (num(season) !== resolvedSeason) setSeason(resolvedSeason);
+  }, [resolvedSeason, season]);
 
   useEffect(() => {
     if (!leagues.length || scoringLeagueId) return;
@@ -3246,7 +3253,7 @@ export default function StatCentralClient() {
     setLoading(true);
     setError("");
     loadSavedSeason(
-      season,
+      resolvedSeason,
       scoring,
       position,
       controller.signal,
@@ -3269,7 +3276,7 @@ export default function StatCentralClient() {
       controller.abort();
     };
   }, [
-    season,
+    resolvedSeason,
     scoring,
     position,
     reloadToken,

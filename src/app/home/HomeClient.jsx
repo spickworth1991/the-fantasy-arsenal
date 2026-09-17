@@ -110,7 +110,7 @@ export default function HomeClient() {
             { title: "Load a Sleeper portfolio", detail: "Enter any public Sleeper username. No Sleeper password is needed—the Arsenal only reads public league and draft data.", target: "access" },
             { title: "Portfolio or Arsenal account?", detail: "Loading a portfolio is the quickest start. An optional Arsenal account adds cross-device preferences and saved work.", target: "access" },
             { title: "Explore the toolkit", detail: "After a portfolio loads, the homepage changes into goal-based shortcuts and clearly grouped tool collections.", target: "about" },
-            { title: "Open tips anytime", detail: "The Tips button stays in the corner. Turn automatic tips off now and reopen them only when you want a reminder.", target: "menu" },
+            { title: "Open tips anytime", detail: "The Tips button stays in the corner. Turn tips off here for this device, or use My Arsenal → Overview with an Arsenal account to turn them off and sync that preference across devices.", target: "tips" },
             { title: "Search Sleeper profiles", detail: "The control in the top right opens account and portfolio access. Use it to load your own portfolio or search another Sleeper manager's public profile.", target: "portfolio" },
           ],
     [isLoggedIn],
@@ -479,7 +479,7 @@ export default function HomeClient() {
           </div>
         )}
       </main>
-      <button type="button" onClick={() => { setTipStep(0); setTipsOpen(true); }} className={`fixed z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10 ${embedded ? "bottom-20 left-5 right-auto" : "bottom-5 right-5"}`} aria-label="Open homepage tips">
+      <button type="button" data-home-tip="tips" onClick={() => { setTipStep(0); setTipsOpen(true); }} className={`fixed z-[70] rounded-full border border-cyan-300/25 bg-slate-950/95 px-4 py-3 text-xs font-black text-cyan-100 shadow-2xl backdrop-blur hover:bg-cyan-300/10 ${embedded ? "bottom-20 left-5 right-auto" : "bottom-5 right-5"}`} aria-label="Open homepage tips">
         ? Tips
       </button>
       {tipsOpen ? (
