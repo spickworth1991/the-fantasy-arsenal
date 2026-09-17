@@ -42,7 +42,7 @@ export function accountAvatar(account) {
 
 const isSyncKey = (key) => key && (SYNC_EXACT.has(key) || SYNC_PREFIXES.some((prefix) => key.startsWith(prefix)));
 const accountApiUrl = (url) => {
-  if (typeof window === "undefined" || !String(url).startsWith("/api/arsenal/")) return url;
+  if (typeof window === "undefined" || !String(url).startsWith("/api/")) return url;
   return window.location.pathname === "/tools/app" || window.location.pathname.startsWith("/tools/app/")
     ? `/tools/app${url}`
     : url;
@@ -54,7 +54,10 @@ const request = async (url, options = {}, token = "") => {
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(detail || `${options.method || "GET"} ${url} returned HTTP ${response.status}`);
+    const safeDetail = /^\s*<!doctype|^\s*<html/i.test(detail)
+      ? `Account API route returned HTTP ${response.status}.`
+      : detail;
+    throw new Error(safeDetail || `${options.method || "GET"} ${url} returned HTTP ${response.status}`);
   }
   return response.json();
 };

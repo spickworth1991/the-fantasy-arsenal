@@ -119,6 +119,42 @@ test("weekly stat lines use the selected league's exact scoring rules", () => {
   assert.equal(result.points, 17);
   assert.equal(result.basis, "weekly_league_scoring");
 });
+test("FantasyPros raw season stats can be rescored for six-point passing touchdowns", () => {
+  const ctx = context();
+  const quarterback = { ...player, position: "QB" };
+  ctx.projectionIndexes.FANTASYPROS = ctx.buildProjectionIndexFromJSON({
+    rows: [{
+      name: player.full_name,
+      position: "QB",
+      team: "BUF",
+      points_ppr: 340,
+      stats: { pass_yds: 4250, pass_tds: 34, pass_ints: 12, rush_yds: 510, rush_tds: 7 },
+    }],
+  });
+  const result = ctx.getWeeklyProjectionDetails(quarterback, "FANTASYPROS", 1, {
+    scoringSettings: { pass_yd: 0.04, pass_td: 6, pass_int: -2, rush_yd: 0.1, rush_td: 6 },
+  });
+  assert.equal(result.points, 443 / 17);
+  assert.equal(result.basis, "fantasypros_league_scoring_estimate");
+});
+test("DraftSharks raw season stats can be rescored for six-point passing touchdowns", () => {
+  const ctx = context();
+  const quarterback = { ...player, position: "QB" };
+  ctx.projectionIndexes.DRAFTSHARKS = ctx.buildProjectionIndexFromJSON({
+    rows: [{
+      name: player.full_name,
+      position: "QB",
+      team: "BUF",
+      points_ppr: 340,
+      projections: { pass_yds: 4250, pass_tds: 34, pass_int: 12, rush_yds: 510, rush_tds: 7 },
+    }],
+  });
+  const result = ctx.getWeeklyProjectionDetails(quarterback, "DRAFTSHARKS", 1, {
+    scoringSettings: { pass_yd: 0.04, pass_td: 6, pass_int: -2, rush_yd: 0.1, rush_td: 6 },
+  });
+  assert.equal(result.points, 443 / 17);
+  assert.equal(result.basis, "draftsharks_league_scoring_estimate");
+});
 test("a tool can use freshly loaded data before the provider has rerendered", () => {
   const ctx = context();
   const data = { index: ctx.buildProjectionIndexFromJSON(seasonFeed) };

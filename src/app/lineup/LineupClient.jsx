@@ -37,6 +37,15 @@ import {
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
 
+const LINEUP_PROJECTION_SOURCES = DEFAULT_SOURCES.filter((source) =>
+  [
+    "proj:thefantasyarsenal-model",
+    "proj:fantasypros",
+    "proj:draftsharks",
+    "proj:sleeper",
+  ].includes(source.key),
+);
+
 /* ---------- Projections setup ---------- */
 const REG_SEASON_WEEKS = 17;
 
@@ -268,6 +277,31 @@ function inferProjectionScoringFromLeague(league) {
   return "std";
 }
 
+function isChoppedLeague(league, matchups = []) {
+  const sizes = new Map();
+  matchups.forEach((row) => {
+    if (row?.matchup_id == null || row.matchup_id === "") return;
+    const key = String(row.matchup_id);
+    sizes.set(key, (sizes.get(key) || 0) + 1);
+  });
+  return (
+    matchups.length > 2 &&
+    ![...sizes.values()].some((size) => size === 2) &&
+    /(?:chopp?(?:ed|ing)?|guillotine|loser\s*mania)/i.test(
+      String(league?.name || ""),
+    )
+  );
+}
+
+function publishedMatchupPoints(row) {
+  const total = Number(row?.points);
+  if (Number.isFinite(total)) return total;
+  return Object.values(row?.players_points || {}).reduce(
+    (sum, value) => sum + (Number(value) || 0),
+    0,
+  );
+}
+
 /* ---------- Optimal lineup (bye-aware) ---------- */
 function solveOptimalLineup({
   roster,
@@ -290,6 +324,7 @@ function solveOptimalLineup({
       starters: [],
       bench: [],
       score: 0,
+      projectedScore: 0,
       floorScore: 0,
       ceilingScore: 0,
     };
@@ -461,6 +496,12 @@ function solveOptimalLineup({
   // lineup, but hiding them makes the live roster impossible to audit.
   const bench = allCandidates.filter((c) => !used.has(c.pid));
   const score = starters.reduce((s, x) => s + (x.proj || 0), 0);
+  // Preserve the pre-kickoff total independently from the live-adjusted score.
+  // A completed game must not turn a projected total into the final score.
+  const projectedScore = starters.reduce(
+    (sum, player) => sum + (player.frozenProj || 0),
+    0,
+  );
   const liveScore = starters.reduce(
     (sum, player) => sum + (player.gameStarted ? player.livePoints ?? 0 : 0),
     0,
@@ -478,6 +519,7 @@ function solveOptimalLineup({
     bench,
     allCandidates,
     score,
+    projectedScore,
     liveScore,
     floorScore,
     ceilingScore,
@@ -669,7 +711,7 @@ function LineupPersonalization({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {formatFantasyPoints(player.proj)} ·{" "}
+                    {player.pos} · {formatFantasyPoints(player.frozenProj)} projected ·{" "}
                     {player.started
                       ? player.gameCompleted
                         ? "Final / locked"
@@ -856,9 +898,9 @@ function LineupPersonalizationPremium({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {formatFantasyPoints(player.proj)}
+                    {player.pos} · {formatFantasyPoints(player.frozenProj)} projected
                     {player.gameStarted
-                      ? ` (${formatFantasyPoints(player.frozenProj)} frozen projection)`
+                      ? ` (${formatFantasyPoints(player.livePoints ?? 0)} ${player.gameCompleted ? "final" : "live"})`
                       : ""}{" "}
                     ·{" "}
                     {player.started
@@ -1029,6 +1071,8 @@ export default function LineupTool() {
   const [userTouchedFormat, setUserTouchedFormat] = useState(false);
   const [userTouchedQB, setUserTouchedQB] = useState(false);
   const [sourceKey, setSourceKey] = useState("proj:thefantasyarsenal-model");
+  const [sourceNotice, setSourceNotice] = useState("");
+  const [lineupView, setLineupView] = useState("optimizer");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("ARSENAL_MODEL");
@@ -1056,7 +1100,7 @@ export default function LineupTool() {
 
   const [week, setWeek] = useState(1);
   const [season, setSeason] = useState(new Date().getFullYear());
-  const { getPoints: getWeekPoints } = useWeeklyProjectionSource(projectionSource, { enabled: metricMode === "projections", season });
+  const { details: getWeekDetails, loading: weeklyProjectionLoading, ready: weeklyProjectionReady } = useWeeklyProjectionSource(projectionSource, { enabled: metricMode === "projections", season });
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
@@ -1079,6 +1123,7 @@ export default function LineupTool() {
   const [weatherMap, setWeatherMap] = useState({});
   const [kickoffMap, setKickoffMap] = useState({});
   const [actualPointsById, setActualPointsById] = useState({});
+  const [weeklyMatchups, setWeeklyMatchups] = useState([]);
   const [frozenProjectionById, setFrozenProjectionById] = useState({});
 
   const routeHandoffApplied = useRef(false);
@@ -1126,6 +1171,7 @@ export default function LineupTool() {
     let active = true;
     if (!activeLeague || !week) {
       setActualPointsById({});
+      setWeeklyMatchups([]);
       return undefined;
     }
     setActualPointsById({});
@@ -1134,6 +1180,7 @@ export default function LineupTool() {
         .then((response) => (response.ok ? response.json() : []))
         .then((rows) => {
           if (!active) return;
+          setWeeklyMatchups(Array.isArray(rows) ? rows : []);
           const next = {};
           (rows || []).forEach((row) => {
             Object.entries(row?.players_points || {}).forEach(([id, points]) => {
@@ -1143,7 +1190,9 @@ export default function LineupTool() {
           });
           setActualPointsById(next);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (active) setWeeklyMatchups([]);
+        });
     loadMatchupPoints();
     const timer = window.setInterval(loadMatchupPoints, 15000);
     return () => {
@@ -1220,6 +1269,18 @@ export default function LineupTool() {
   }, [rosters]);
 
   const slots = useMemo(() => parseLeagueSlots(league), [league]);
+  const isBestBall = Number(league?.settings?.best_ball || 0) === 1;
+  const choppedMode = useMemo(
+    () => isChoppedLeague(league, weeklyMatchups),
+    [league, weeklyMatchups],
+  );
+  const matchupByRosterId = useMemo(
+    () =>
+      Object.fromEntries(
+        weeklyMatchups.map((row) => [String(row.roster_id), row]),
+      ),
+    [weeklyMatchups],
+  );
 
   const ownerLabel = (uid) => {
     const u = users.find((x) => x.user_id === uid);
@@ -1403,6 +1464,8 @@ export default function LineupTool() {
   useEffect(() => {
     if (!league) return;
     setOwnerB(""); // reset opponent when switching leagues
+    setSourceKey("proj:thefantasyarsenal-model");
+    setSourceNotice("");
     setProjectionScoring(inferProjectionScoringFromLeague(league));
     if (!myUserId) return;
     if (rosterByOwnerId[myUserId]) setOwnerA(myUserId);
@@ -1412,6 +1475,30 @@ export default function LineupTool() {
     setUserTouchedQB(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league, myUserId]);
+
+  const chooseSource = (nextSource) => {
+    const leagueScoringSources = new Set([
+      "proj:thefantasyarsenal-model",
+      "proj:fantasypros",
+      "proj:draftsharks",
+      "proj:sleeper",
+    ]);
+    if (league && !leagueScoringSources.has(nextSource)) {
+      setSourceNotice(
+        "League scoring requires a source with underlying projected stats. Choose The Fantasy Arsenal Safe Model for matchup-adjusted weekly forecasts or FantasyPros for a rescored season-average estimate.",
+      );
+      setSourceKey("proj:thefantasyarsenal-model");
+      return;
+    }
+    setSourceNotice(
+      nextSource === "proj:sleeper"
+        ? "Sleeper supplies weekly Standard, Half-PPR, and PPR totals. The optimizer uses the closest reception-scoring profile, but Sleeper cannot be exactly rescored for custom settings such as 6-point passing touchdowns or yardage bonuses."
+        : nextSource === "proj:draftsharks"
+          ? "DraftSharks is recalculated from its raw season stat projections using your league settings, then converted to a weekly average. It is not a matchup-specific weekly forecast."
+          : "",
+    );
+    setSourceKey(nextSource);
+  };
 
   // NFL state + bye map
   useEffect(() => {
@@ -1469,13 +1556,13 @@ export default function LineupTool() {
   const getWeeklyProj = useMemo(() => {
     if (metricMode !== "projections") return null;
     return (player) =>
-      getWeekPoints(player, week, {
+      getWeekDetails(player, week, {
         byeMap,
         qbType: qbLocal,
         scoring: inferProjectionScoringFromLeague(league),
         scoringSettings: league?.scoring_settings || null,
-      });
-  }, [metricMode, getWeekPoints, week, byeMap, qbLocal, league]);
+      }).points;
+  }, [metricMode, getWeekDetails, week, byeMap, qbLocal, league]);
 
   const getWeeklyMetric = useMemo(() => {
     if (metricMode === "projections")
@@ -1489,14 +1576,14 @@ export default function LineupTool() {
     [activeLeague, season, week, projectionSource, projectionScoring],
   );
   useEffect(() => {
-    if (metricMode !== "projections" || !activeLeague || !week) {
+    if (metricMode !== "projections" || !activeLeague || !week || weeklyProjectionLoading || !weeklyProjectionReady) {
       setFrozenProjectionById({});
       return;
     }
     let saved = {};
     try {
       saved = JSON.parse(
-        localStorage.getItem(`lineup-frozen-projections:${frozenProjectionScope}`) || "{}",
+        localStorage.getItem(`lineup-frozen-projections:v2:${frozenProjectionScope}`) || "{}",
       );
     } catch {}
     const next = { ...saved };
@@ -1514,7 +1601,7 @@ export default function LineupTool() {
     });
     try {
       localStorage.setItem(
-        `lineup-frozen-projections:${frozenProjectionScope}`,
+          `lineup-frozen-projections:v2:${frozenProjectionScope}`,
         JSON.stringify(next),
       );
     } catch {}
@@ -1528,6 +1615,8 @@ export default function LineupTool() {
     players,
     rosters,
     week,
+    weeklyProjectionLoading,
+    weeklyProjectionReady,
   ]);
 
   const startedIdsFor = (uid) =>
@@ -1553,9 +1642,19 @@ export default function LineupTool() {
       return next.size === current.size ? current : next;
     });
   }, [kickoffMap, ownerA, players, rosterByOwnerId]);
-  const compute = (uid) =>
-    solveOptimalLineup({
-      roster: rosterByOwnerId[uid],
+  const compute = (uid) => {
+    const currentRoster = rosterByOwnerId[uid];
+    const weekRoster = matchupByRosterId[String(currentRoster?.roster_id)];
+    const scoringRoster =
+      isBestBall && weekRoster?.players?.length
+        ? {
+            ...currentRoster,
+            players: weekRoster.players,
+            starters: weekRoster.starters || currentRoster?.starters,
+          }
+        : currentRoster;
+    return solveOptimalLineup({
+      roster: scoringRoster,
       players,
       getWeeklyMetric,
       getMarketValue: getValueMetric,
@@ -1570,12 +1669,67 @@ export default function LineupTool() {
       lockedIds: startedIdsFor(uid),
       excludedIds: new Set(),
     });
+  };
+
+  const overviewGroups = useMemo(() => {
+    const entries = weeklyMatchups
+      .map((row) => {
+        const roster = rosterByRosterId[row.roster_id];
+        const uid = roster?.owner_id || "";
+        if (!uid) return null;
+        const result = compute(uid);
+        const activePlayers = result?.starters || [];
+        const scoreState =
+          activePlayers.length && activePlayers.every((player) => player.gameCompleted)
+            ? "Final"
+            : activePlayers.some((player) => player.gameStarted)
+              ? "Live"
+              : "Score";
+        return {
+          row,
+          uid,
+          rosterId: row.roster_id,
+          label: ownerLabel(uid),
+          live: publishedMatchupPoints(row),
+          projected: result?.projectedScore || 0,
+          scoreState,
+          result,
+        };
+      })
+      .filter(Boolean);
+    if (choppedMode) {
+      return entries
+        .sort((a, b) => a.projected - b.projected)
+        .map((entry) => ({ id: `solo:${entry.rosterId}`, teams: [entry] }));
+    }
+    const groups = new Map();
+    entries.forEach((entry) => {
+      const key = entry.row?.matchup_id == null
+        ? `solo:${entry.rosterId}`
+        : `matchup:${entry.row.matchup_id}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(entry);
+    });
+    return [...groups.entries()].map(([id, teams]) => ({ id, teams }));
+    // compute and ownerLabel intentionally follow the current league calculation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeklyMatchups, rosterByRosterId, choppedMode, players, projectionSource, projectionScoring, kickoffMap, actualPointsById, frozenProjectionById]);
+
+  const openOverviewTeam = (first, second = null) => {
+    setOwnerA(first?.uid || "");
+    setOwnerB(second?.uid || "");
+    setLineupView("optimizer");
+  };
 
   /* ----- Auto-select opponent when week changes (and on init) ----- */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!activeLeague || !ownerA || !rosterByOwnerId[ownerA]) return;
+      if (choppedMode) {
+        setOwnerB("");
+        return;
+      }
       const myRid = rosterByOwnerId[ownerA].roster_id;
       try {
         const oppRid = await findOpponentForWeek(activeLeague, week, myRid);
@@ -1615,6 +1769,7 @@ export default function LineupTool() {
     formatLocal,
     qbLocal,
     byeMap,
+    choppedMode,
   ]);
 
   /* ----- If user manually picks Owner B, jump to their H2H week (if exists) ----- */
@@ -1802,9 +1957,9 @@ export default function LineupTool() {
                 <div className="mt-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-950 p-3">
                   <SourceSelector
                     projectionHorizon="week"
-                    sources={DEFAULT_SOURCES}
+                    sources={LINEUP_PROJECTION_SOURCES}
                     value={sourceKey}
-                    onChange={setSourceKey}
+                    onChange={chooseSource}
                     className="w-full"
                     mode={formatLocal}
                     qbType={qbLocal}
@@ -1820,9 +1975,23 @@ export default function LineupTool() {
                     layout="inline"
                   />
                   {league ? (
-                    <div className="mt-2 rounded-xl border border-emerald-300/10 bg-emerald-300/[0.045] px-3 py-2 text-xs text-white/55">
-                      <b className="text-emerald-100">League scoring active.</b>{" "}
-                      Pregame forecasts use the closest published scoring profile; once a game starts, the player switches to Sleeper&apos;s exact live points for this league.
+                    <div className="mt-3 rounded-xl border border-emerald-300/30 bg-emerald-300/[0.09] px-4 py-3 text-sm text-white/70">
+                      <b className="text-emerald-100">Why only these sources?</b>{" "}
+                      The optimizer only offers feeds with weekly projections or
+                      enough underlying stats to apply league scoring. Arsenal
+                      Safe is an exact, matchup-adjusted weekly model.
+                      FantasyPros and DraftSharks are rescored from raw season
+                      stats and shown as weekly averages. Sleeper supplies weekly
+                      Standard, Half-PPR, and PPR totals, but cannot reproduce
+                      unusual custom bonuses or passing-TD values. Other feeds
+                      only provide finished point totals, so using them here
+                      would misrepresent your league scoring. Live scores always
+                      come directly from Sleeper.
+                    </div>
+                  ) : null}
+                  {sourceNotice ? (
+                    <div role="alert" className="mt-3 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm font-semibold leading-5 text-amber-100">
+                      {sourceNotice}
                     </div>
                   ) : null}
                   {!byeDataAvailable ? (
@@ -2022,8 +2191,64 @@ export default function LineupTool() {
               </div>
             </Card>
 
+            <div className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
+              <button type="button" onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+                {choppedMode ? "Survival lineup" : "Lineup optimizer"}
+              </button>
+              <button type="button" onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+                {choppedMode ? "Chopped overview" : "Matchup overview"}
+              </button>
+            </div>
+
+            {lineupView === "overview" ? (
+              <>
+                <SectionTitle subtitle={choppedMode ? "Every active roster ranked against the weekly elimination line." : "Every league matchup with Sleeper's live score and the Arsenal Safe projected final."}>
+                  {choppedMode ? "Chopped Survival Board" : "Matchup Overview"}
+                </SectionTitle>
+                {!activeLeague || !rosters.length ? (
+                  <Card className="p-6 text-sm text-white/60">Choose a league above to load this week&apos;s board.</Card>
+                ) : !overviewGroups.length ? (
+                  <Card className="p-6 text-sm text-white/60">No Week {week} matchup rows are available from Sleeper yet.</Card>
+                ) : (
+                  choppedMode ? (
+                    <ChoppedLeaderboard groups={overviewGroups} myUserId={myUserId} onOpen={openOverviewTeam} />
+                  ) : (
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {overviewGroups.map((group, index) => {
+                      const cutline = choppedMode
+                        ? Math.min(...overviewGroups.map((item) => item.teams[0]?.projected || 0))
+                        : null;
+                      return (
+                        <button key={group.id} type="button" onClick={() => openOverviewTeam(group.teams[0], group.teams[1])} className="rounded-3xl border border-white/10 bg-slate-900/90 p-4 text-left transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]">
+                          {choppedMode ? (
+                            <div className="mb-3 flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Survival rank #{index + 1}</span>
+                              {Math.abs((group.teams[0]?.projected || 0) - cutline) < 0.01 ? <span className="rounded-full bg-rose-400/10 px-2 py-1 text-[10px] font-bold text-rose-200">Projected chop</span> : <span className="text-[10px] text-emerald-200">+{((group.teams[0]?.projected || 0) - cutline).toFixed(1)} above cut</span>}
+                            </div>
+                          ) : null}
+                          <div className="space-y-2">
+                            {group.teams.map((team) => (
+                              <div key={team.rosterId} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl bg-black/20 px-3 py-3">
+                                <div className="min-w-0"><div className="truncate font-bold">{team.label}</div><div className="text-[10px] text-white/35">{String(team.uid) === String(myUserId) ? "Your team · " : ""}{isBestBall ? "Best Ball roster" : "Managed lineup"}</div></div>
+                                <div className="text-right"><div className="text-[9px] uppercase text-white/30">{team.scoreState}</div><b className="text-emerald-100">{formatFantasyPoints(team.live)}</b></div>
+                                <div className="text-right"><div className="text-[9px] uppercase text-white/30">Projected</div><b>{formatFantasyPoints(team.projected)}</b></div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-3 text-right text-xs font-semibold text-cyan-200/70">Open lineup details →</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  )
+                )}
+              </>
+            ) : null}
+
+            {lineupView === "optimizer" ? <>
+
             <SectionTitle subtitle="Left = you (locked). Right = your opponent for the selected week.">
-              Matchup Preview
+              {choppedMode ? "Weekly Survival Lineup" : "Matchup Preview"}
             </SectionTitle>
 
             {!activeLeague || !rosters.length ? (
@@ -2034,11 +2259,17 @@ export default function LineupTool() {
               </Card>
             ) : (
               <Card className="p-4" data-guide-tip="lineup-results">
+                {ownerA && myUserId && String(ownerA) !== String(myUserId) ? (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-300/20 bg-violet-300/[0.06] p-3">
+                    <div className="text-sm text-white/65">Viewing {ownerLabel(ownerA)}&apos;s {choppedMode ? "survival lineup" : "matchup"}.</div>
+                    <button type="button" onClick={() => { setOwnerA(myUserId); setOwnerB(""); }} className="rounded-xl bg-violet-300/15 px-3 py-2 text-xs font-bold text-violet-100">Return to my own {choppedMode ? "lineup" : "matchup"}</button>
+                  </div>
+                ) : null}
                 <div className="grid sm:grid-cols-3 gap-3 mb-4" data-guide-tip="lineup-matchup">
                   {/* Owner A locked */}
                   <div>
                     <div className="block text-sm font-medium mb-1">
-                      Owner A (you)
+                      {String(ownerA) === String(myUserId) ? "Your team" : "Selected team"}
                     </div>
                     <div className="w-full rounded bg-gray-800 text-white p-2">
                       {ownerA ? ownerLabel(ownerA) : "—"}
@@ -2049,7 +2280,7 @@ export default function LineupTool() {
                   </div>
 
                   {/* Owner B selectable; changing it will jump to the week you face them (if scheduled) */}
-                  <div>
+                  {!choppedMode ? <div>
                     <label className="block text-sm font-medium mb-1">
                       Owner B (opponent)
                     </label>
@@ -2070,7 +2301,11 @@ export default function LineupTool() {
                     <div className="text-[11px] text-gray-400 mt-1">
                       Auto-follows your opponent when week changes.
                     </div>
-                  </div>
+                  </div> : (
+                    <div className="rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-3 text-xs leading-5 text-white/55">
+                      <b className="text-rose-100">No head-to-head opponent.</b> This league is scored as a weekly survival field; the lowest team total is the elimination line.
+                    </div>
+                  )}
 
                   <div className="self-end text-sm opacity-70">
                     Slots:{" "}
@@ -2084,7 +2319,7 @@ export default function LineupTool() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4" data-guide-tip="lineup-teams">
+                <div className={`grid gap-4 ${choppedMode ? "" : "md:grid-cols-2"}`} data-guide-tip="lineup-teams">
                   <TeamBox
                     title={
                       ownerA
@@ -2096,7 +2331,7 @@ export default function LineupTool() {
                     // show suggestions ONLY in projections mode
                     enableSuggestions={metricMode === "projections"}
                   />
-                  <TeamBox
+                  {!choppedMode ? <TeamBox
                     title={
                       ownerB
                         ? `${ownerLabel(ownerB)} — Optimized Lineup`
@@ -2105,7 +2340,7 @@ export default function LineupTool() {
                     res={ownerB ? compute(ownerB) : null}
                     metricLabel={metricLabel}
                     enableSuggestions={false}
-                  />
+                  /> : null}
                 </div>
 
                 {ownerA && ownerB && (
@@ -2272,6 +2507,7 @@ export default function LineupTool() {
                 ) : null}
               </Card>
             )}
+            </> : null}
           </>
         )}
       </div>
@@ -2317,6 +2553,65 @@ export default function LineupTool() {
 }
 
 /* ---------- display helpers ---------- */
+function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
+  const cutline = groups[0]?.teams?.[0]?.projected || 0;
+  return (
+    <Card className="overflow-hidden">
+      <div className="border-b border-white/10 bg-gradient-to-r from-rose-400/[0.08] to-transparent p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div><div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200/55">Week elimination leaderboard</div><h3 className="mt-1 text-xl font-black">Lowest projected total is on the block</h3></div>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-white/45">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Cut line
+              <span className="h-2.5 w-2.5 rounded-full bg-orange-400" /> Within 7
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" /> Within 15
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Safer
+            </div>
+            <div className="rounded-xl bg-rose-300/10 px-4 py-2 text-right"><div className="text-[9px] uppercase text-rose-100/55">Projected cut line</div><b className="text-xl text-rose-100">{formatFantasyPoints(cutline)}</b></div>
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto p-2">
+        <div className="min-w-[620px]">
+          <div className="grid grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] gap-3 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white/28"><span>Rank</span><span>Franchise</span><span className="text-right">Live</span><span className="text-right">Projected</span><span className="text-right">Safety</span></div>
+          {groups.map((group, index) => {
+            const team = group.teams[0];
+            const mine = String(team?.uid) === String(myUserId);
+            const cushion = Math.max(0, (team?.projected || 0) - cutline);
+            const heat = index === 0 ? "cut" : cushion <= 7 ? "hot" : cushion <= 15 ? "close" : "safe";
+            const rowTone = {
+              cut: "border-rose-300/20 bg-rose-400/[0.045]",
+              hot: "border-orange-300/15 bg-orange-400/[0.035]",
+              close: "border-amber-200/15 bg-amber-300/[0.025]",
+              safe: "border-white/[0.06] bg-white/[0.015]",
+            }[heat];
+            const badgeTone = {
+              cut: "bg-rose-300/20 text-rose-100",
+              hot: "bg-orange-300/15 text-orange-100",
+              close: "bg-amber-300/15 text-amber-100",
+              safe: "bg-emerald-300/10 text-emerald-100",
+            }[heat];
+            const textTone = {
+              cut: "text-rose-200",
+              hot: "text-orange-200",
+              close: "text-amber-100",
+              safe: "text-emerald-200",
+            }[heat];
+            const safetyLabel = heat === "cut" ? "PROJECTED CHOP" : heat === "hot" ? `+${cushion.toFixed(1)} DANGER` : heat === "close" ? `+${cushion.toFixed(1)} CLOSE` : `+${cushion.toFixed(1)} SAFE`;
+            return <button key={group.id} type="button" onClick={() => onOpen(team)} className={`mb-1 grid w-full grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] items-center gap-3 rounded-xl border px-3 py-3 text-left transition hover:brightness-125 ${rowTone} ${mine ? "ring-1 ring-inset ring-cyan-300/35" : ""}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-lg text-xs font-black ${badgeTone}`}>#{index + 1}</span>
+              <span className="min-w-0"><b className="block truncate">{team?.label}</b><small className="text-[9px] font-bold uppercase tracking-wider text-white/35">{mine ? "You · " : ""}{heat === "cut" ? "Current cut line" : "Open lineup"}</small></span>
+              <b className="text-right text-emerald-100">{formatFantasyPoints(team?.live)}</b>
+              <b className="text-right">{formatFantasyPoints(team?.projected)}</b>
+              <span className={`text-right text-[10px] font-black ${textTone}`}>{safetyLabel}</span>
+            </button>;
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function TeamBox({ title, res, metricLabel, enableSuggestions }) {
   const suggestions = useMemo(() => {
     if (!enableSuggestions || !res) return {};
@@ -2344,7 +2639,7 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
               <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
                 Projected final
               </div>
-              <b>{formatFantasyPoints(res.score)}</b>
+              <b>{formatFantasyPoints(res.projectedScore)}</b>
             </div>
           </div>
 

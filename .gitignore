@@ -39,4 +39,6 @@ backup.zip
 !/scripts/updateBallsvilleStats.js
 !/scripts/git-sync.mjs
 !/scripts/buildPlayerStockDrafters.js
+!/scripts/fetchOddsSnapshot.js
+!/scripts/fetchSportsGameOddsSnapshot.js
 /docs/

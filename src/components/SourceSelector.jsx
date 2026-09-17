@@ -160,13 +160,8 @@ export const DEFAULT_SOURCES = [
     logoKey: "FantasyPros",
     supports: { dynasty: true, redraft: false, qbToggle: true, scoring: ["base", "tep"] },
   },
-  {
-    key: "val:fantasypros-ecr",
-    type: "value",
-    label: "FantasyPros ECR Rank Score",
-    logoKey: "FantasyProsECR",
-    supports: { dynasty: true, redraft: true, qbToggle: true, scoring: ["std", "half", "ppr"] },
-  },
+  // FantasyPros ECR remains supported by the data layer for old saved
+  // preferences, but is intentionally not offered as a selectable source.
   {
     key: "val:idynastyp",
     type: "value",

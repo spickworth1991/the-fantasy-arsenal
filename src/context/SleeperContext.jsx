@@ -4,7 +4,7 @@ import { createContext, useRef, useContext, useState, useEffect, useMemo, useCal
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
 import { isWeeklyProjectionFeed, projectionPoints, projectionWeeks, resolveWeeklyProjection } from "../lib/projectionHorizon";
-import { scoreSleeperStats } from "../lib/sleeperScoring";
+import { draftSharksStatsToSleeper, fantasyProsStatsToSleeper, scoreSleeperStats } from "../lib/sleeperScoring";
 import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
@@ -492,7 +492,7 @@ function getSleeperPosForProj(p) {
 function createProjectionIndex(seedByName) {
   const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
 
-  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf, weeks, confidence, projectionBasis }) {
+  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf, weeks, confidence, projectionBasis, stats }) {
     const nn = keyName(name);
     if (!nn) return;
 
@@ -511,6 +511,7 @@ function createProjectionIndex(seedByName) {
       weeks: Array.isArray(weeks) ? weeks : [],
       confidence: safeNum(confidence),
       projectionBasis: String(projectionBasis || ""),
+      stats: stats && typeof stats === "object" ? stats : null,
     };
     if (!Number.isFinite(Number(pts))) return;
 
@@ -588,6 +589,7 @@ function buildProjectionIndexFromJSON(json, horizon = "season") {
       weeks: projectionWeeks(r, horizon === "week" ? json.week : null),
       confidence: r.confidence,
       projectionBasis: r.projection_basis,
+      stats: r.stats ?? r.projections,
     });
   });
 
@@ -811,7 +813,7 @@ export const SleeperProvider = ({ children }) => {
 
   // ===== Projections caching =====
   // ✅ Bump version + add validation so we do NOT get stuck with a null/empty cached payload.
-    const PROJ_CACHE_KEY = `projIndex_v1.111:${PROJECTION_DATA_SEASON}`;
+    const PROJ_CACHE_KEY = `projIndex_v1.113:${PROJECTION_DATA_SEASON}`;
 
   const preloadAllProjectionsLegacy = async () => {
     try {
@@ -941,7 +943,7 @@ export const SleeperProvider = ({ children }) => {
     if (projectionLoadPromises.has(memoryKey))
       return projectionLoadPromises.get(memoryKey);
 
-    const cacheKey = `projIndex_v4:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
+    const cacheKey = `projIndex_v5:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
     const promise = (async () => {
       try {
         let raw = await get(cacheKey).catch(() => null);
@@ -1099,6 +1101,36 @@ export const SleeperProvider = ({ children }) => {
           lookup.pos,
         ),
         basis: "weekly_league_scoring",
+      };
+    }
+    if (src === "FANTASYPROS" && options.scoringSettings && best?.stats) {
+      const rescoredSeason = scoreSleeperStats(
+        fantasyProsStatsToSleeper(best.stats),
+        options.scoringSettings,
+        lookup.pos,
+      );
+      const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
+      if (byeWeeks.map(Number).includes(Number(week))) {
+        return { points: 0, basis: "bye" };
+      }
+      const games = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      return {
+        points: rescoredSeason / Math.max(1, games),
+        basis: "fantasypros_league_scoring_estimate",
+      };
+    }
+    if (src === "DRAFTSHARKS" && options.scoringSettings && best?.stats) {
+      const rescoredSeason = scoreSleeperStats(
+        draftSharksStatsToSleeper(best.stats, lookup.pos),
+        options.scoringSettings,
+        lookup.pos,
+      );
+      const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
+      if (byeWeeks.map(Number).includes(Number(week))) return { points: 0, basis: "bye" };
+      const games = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      return {
+        points: rescoredSeason / Math.max(1, games),
+        basis: "draftsharks_league_scoring_estimate",
       };
     }
     const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
