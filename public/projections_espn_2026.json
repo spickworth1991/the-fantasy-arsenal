@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-16T04:08:02.065Z",
+  "updated": "2026-09-17T04:08:05.148Z",
   "season": 2026,
   "source": "ESPN",
   "count": 1042,
@@ -842,7 +842,7 @@
       "name": "De'Zhaun Stribling",
       "team": "SF",
       "position": "WR",
-      "points": 108.10755823
+      "points": 0
     },
     {
       "player_id": "",
@@ -2179,7 +2179,7 @@
       "name": "Jake Tonges",
       "team": "SF",
       "position": "TE",
-      "points": 14.96823577
+      "points": 0
     },
     {
       "player_id": "",
@@ -7258,15 +7258,15 @@
     },
     {
       "player_id": "",
-      "name": "Mark Redman",
-      "team": "GB",
+      "name": "Tanner Arkin",
+      "team": "NE",
       "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
-      "name": "Tanner Arkin",
-      "team": "NE",
+      "name": "Mark Redman",
+      "team": "GB",
       "position": "TE",
       "points": 0
     },
@@ -7286,16 +7286,16 @@
     },
     {
       "player_id": "",
-      "name": "DJ Herman",
-      "team": "MIA",
-      "position": "RB",
+      "name": "Jake Briningstool",
+      "team": "KC",
+      "position": "TE",
       "points": 0
     },
     {
       "player_id": "",
-      "name": "Jake Briningstool",
-      "team": "KC",
-      "position": "TE",
+      "name": "DJ Herman",
+      "team": "MIA",
+      "position": "RB",
       "points": 0
     }
   ],
@@ -7539,8 +7539,8 @@
     "jayden reed": 173.86969769,
     "markandrews": 168.92589268,
     "mark andrews": 168.92589268,
-    "de'zhaunstribling": 108.10755823,
-    "dezhaun stribling": 108.10755823,
+    "de'zhaunstribling": 0,
+    "dezhaun stribling": 0,
     "kylermurray": 293.02745151,
     "kyler murray": 293.02745151,
     "xavierworthy": 173.45085773,
@@ -7921,8 +7921,8 @@
     "eli heidenreich": 0,
     "michaelpenixjr.": 226.67212316,
     "michael penix": 226.67212316,
-    "jaketonges": 14.96823577,
-    "jake tonges": 14.96823577,
+    "jaketonges": 0,
+    "jake tonges": 0,
     "colbyparkinson": 116.11803358,
     "colby parkinson": 116.11803358,
     "erickalljr.": 70.64309949,
@@ -9371,17 +9371,17 @@
     "michael trigg": 0,
     "ajhenning": 0,
     "aj henning": 0,
-    "markredman": 0,
-    "mark redman": 0,
     "tannerarkin": 0,
     "tanner arkin": 0,
+    "markredman": 0,
+    "mark redman": 0,
     "cjdonaldson": 0,
     "cj donaldson": 0,
     "chrismyarick": 0,
     "chris myarick": 0,
-    "djherman": 0,
-    "dj herman": 0,
     "jakebriningstool": 0,
-    "jake briningstool": 0
+    "jake briningstool": 0,
+    "djherman": 0,
+    "dj herman": 0
   }
 }
