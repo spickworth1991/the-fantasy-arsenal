@@ -103,7 +103,9 @@ export default function AdvancedStatsLab({ selected, season, onSelectPlayer }) {
   );
   const [explorerTeam, setExplorerTeam] = useState("ALL");
   const [explorerQuery, setExplorerQuery] = useState("");
-  const [minimumGames, setMinimumGames] = useState(3);
+  // Early in a season, hiding every one-game sample makes the Explorer look
+  // broken. Users can raise the threshold as the sample matures.
+  const [minimumGames, setMinimumGames] = useState(1);
   const [sortKey, setSortKey] = useState("snap");
   const [sortDirection, setSortDirection] = useState("desc");
 

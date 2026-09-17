@@ -4,8 +4,10 @@ import { fileURLToPath } from "url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const historyRoot = path.join(root, "public", "stats", "history");
+const advancedRoot = path.join(root, "public", "stats", "advanced");
 const outputDirectory = path.join(root, "public", "stats", "derived");
 const outputFile = path.join(outputDirectory, "opponent-splits.json");
+const teamPositionOutputFile = path.join(outputDirectory, "team-position-weeks.json");
 const positions = new Set(["QB", "RB", "WR", "TE"]);
 const scoringKeys = ["ppr", "half", "std"];
 const additiveStats = new Set([
@@ -130,6 +132,8 @@ const opponentSplits = new Map();
 const defenseTotals = new Map();
 const playerGameSamples = new Map();
 const stablePlayerKeyByName = new Map();
+const teamPositionWeeks = new Map();
+const playerPositionGames = new Map();
 let gameRows = 0;
 let statMatchedRows = 0;
 
@@ -140,6 +144,15 @@ for (const season of seasons) {
   });
   const sleeper = readJson(path.join(folder, "sleeper.json"), { players: [] });
   const schedule = readJson(path.join(folder, "schedule.json"), { weeks: [] });
+  const advanced = readJson(path.join(advancedRoot, String(season), "context.json"), { player_weeks: [] });
+  const weeklyContextByPlayer = new Map(
+    (advanced.player_weeks || [])
+      .filter((row) => row.name && row.position && row.team && row.opponent)
+      .map((row) => [
+        `${normalizeName(row.name)}|${String(row.position).toUpperCase()}|${row.week}`,
+        { team: normalizeTeam(row.team), opponent: normalizeTeam(row.opponent) },
+      ]),
+  );
   const rawByName = new Map(
     (sleeper.players || [])
       .filter((row) => row.name)
@@ -211,8 +224,7 @@ for (const season of seasons) {
 
   for (const player of scoringPlayers) {
     const position = String(player.position || "").toUpperCase();
-    const team = normalizeTeam(player.team);
-    if (!positions.has(position) || !team || !player.name) continue;
+    if (!positions.has(position) || !player.name) continue;
     const raw = findRawPlayer(player);
     const weekNumbers = new Set(
       scoringKeys.flatMap((key) =>
@@ -220,7 +232,11 @@ for (const season of seasons) {
       ),
     );
     for (const week of weekNumbers) {
-      const opponent = opponentByWeek.get(`${week}:${team}`);
+      const weeklyContext = weeklyContextByPlayer.get(
+        `${normalizeName(player.name)}|${position}|${week}`,
+      );
+      const team = weeklyContext?.team || normalizeTeam(player.team);
+      const opponent = weeklyContext?.opponent || opponentByWeek.get(`${week}:${team}`);
       if (!opponent) continue;
       const points = Object.fromEntries(
         scoringKeys.map((key) => [
@@ -230,12 +246,53 @@ for (const season of seasons) {
       );
       const stats = raw?.weekly_stats?.[String(week)] || {};
       const hasRawStats = Object.keys(stats).length > 0;
+      const teamPositionKey = `${season}|${week}|${team}|${position}`;
+      const teamPosition = teamPositionWeeks.get(teamPositionKey) || {
+        season,
+        week,
+        team,
+        opponent,
+        position,
+        players: 0,
+        raw_players: 0,
+        points: { ppr: 0, half: 0, std: 0 },
+        stats: {},
+        attribution: weeklyContext ? "weekly_context" : "season_team_fallback",
+      };
+      // A positional room is safe to treat as weekly-attributed when at least
+      // one member has a verified weekly team/opponent record. Previously the
+      // first processed player could lock an otherwise verified room into the
+      // fallback label, hiding real completed games from the Defense Board.
+      if (weeklyContext) teamPosition.attribution = "weekly_context";
+      teamPosition.players += 1;
+      scoringKeys.forEach((key) => {
+        teamPosition.points[key] += points[key];
+      });
+      if (hasRawStats) {
+        teamPosition.raw_players += 1;
+        addStats(teamPosition.stats, stats);
+      }
+      teamPositionWeeks.set(teamPositionKey, teamPosition);
       const namePositionKey = `${normalizeName(player.name)}|${position}`;
       const playerKey = player.player_id
         ? `fp:${player.player_id}|${position}`
         : stablePlayerKeyByName.get(namePositionKey) || namePositionKey;
       if (player.player_id)
         stablePlayerKeyByName.set(namePositionKey, playerKey);
+      const playerGames = playerPositionGames.get(position) || [];
+      playerGames.push({
+        season,
+        week,
+        name: player.name,
+        player_key: playerKey,
+        position,
+        team,
+        opponent,
+        points,
+        stats: hasRawStats ? Object.fromEntries(Object.entries(stats).filter(([key, value]) => additiveStats.has(key) && Number.isFinite(Number(value)) && number(value) !== 0).map(([key, value]) => [key, round(value)])) : {},
+        attribution: weeklyContext ? "weekly_context" : "season_team_fallback",
+      });
+      playerPositionGames.set(position, playerGames);
       const splitKey = `${playerKey}|${opponent}`;
       const defenseKey = `${opponent}|${position}`;
       const identity = {
@@ -437,6 +494,11 @@ for (const position of positions) {
     players: positionOutput.players.length,
     splits: positionOutput.splits.length,
   };
+  const games = playerPositionGames.get(position) || [];
+  fs.writeFileSync(
+    path.join(outputDirectory, `player-games-${position.toLowerCase()}.json`),
+    JSON.stringify({ source: "The Fantasy Arsenal saved historical datasets", generated_at: new Date().toISOString(), position, seasons, rows: games }),
+  );
 }
 fs.writeFileSync(
   outputFile,
@@ -444,6 +506,33 @@ fs.writeFileSync(
     ...shared,
     minimum_split_games: 2,
     files,
+  }),
+);
+const teamPositionRows = [...teamPositionWeeks.values()]
+  .map((row) => ({
+    ...row,
+    points: Object.fromEntries(scoringKeys.map((key) => [key, round(row.points[key])])),
+    stats: Object.fromEntries(
+      Object.entries(row.stats).filter(([, value]) => number(value) !== 0).map(([key, value]) => [key, round(value)]),
+    ),
+  }))
+  .sort((a, b) => b.season - a.season || b.week - a.week || a.team.localeCompare(b.team) || a.position.localeCompare(b.position));
+fs.writeFileSync(
+  teamPositionOutputFile,
+  JSON.stringify({
+    source: "The Fantasy Arsenal saved historical datasets",
+    generated_at: new Date().toISOString(),
+    seasons,
+    methodology: {
+      unit: "One NFL team, position, and completed week. All players at the selected position are summed before any per-game average is calculated.",
+      attribution: "weekly_context uses archived weekly team/opponent context. season_team_fallback uses the archived season team and schedule and is labeled for review.",
+    },
+    coverage: {
+      rows: teamPositionRows.length,
+      weekly_context_rows: teamPositionRows.filter((row) => row.attribution === "weekly_context").length,
+      fallback_rows: teamPositionRows.filter((row) => row.attribution === "season_team_fallback").length,
+    },
+    rows: teamPositionRows,
   }),
 );
 console.log(

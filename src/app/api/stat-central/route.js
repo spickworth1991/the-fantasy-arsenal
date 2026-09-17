@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { arsenalEnv } from "../../../lib/arsenalAccountServer";
 
 export const runtime = "edge";
 
@@ -34,6 +35,18 @@ async function readSaved(request, path) {
 
 export async function GET(request) {
   const url = request.nextUrl;
+  if (url.searchParams.get("artifact") === "team-position") {
+    const key = "stats/team-position-weeks.json";
+    try {
+      const object = await arsenalEnv().PROFILE_MEDIA?.get?.(key);
+      if (object) {
+        return new Response(object.body, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" } });
+      }
+    } catch {}
+    const fallback = await readSaved(request, "/stats/derived/team-position-weeks.json");
+    if (fallback) return NextResponse.json(fallback, { headers: { "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" } });
+    return NextResponse.json({ ok: false, message: "Team-position history is unavailable." }, { status: 404 });
+  }
   const currentSeason = new Date().getUTCFullYear();
   const requestedSeason = number(url.searchParams.get("season"));
   const season = requestedSeason >= 2012 && requestedSeason <= currentSeason ? requestedSeason : currentSeason - 1;
