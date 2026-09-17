@@ -1709,7 +1709,7 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
           </button>
         ))}
       </div>
-      {matchupView === "weekly" ? <Panel className="overflow-hidden">
+      {matchupView === "weekly" ? <Panel data-guide-tip="matchup-weekly-schedule" className="overflow-hidden">
         <div className="border-b border-white/10 p-5 sm:p-6"><div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">Week {activeWeek} schedule</div><h3 className="mt-1 text-xl font-black">Open any NFL game for its two-sided matchup read</h3><p className="mt-2 text-xs leading-5 text-white/42">Each card represents one real game. The matchup view compares both teams&apos; full {position} rooms against the opposing defense, with current production and prior-season context visible together.</p></div>
         <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2">{weeklyGames.map((game) => { const home = normalizeTeam(game.home); const away = normalizeTeam(game.away); return <button type="button" key={`${home}:${away}`} onClick={() => setSelectedWeeklyGame({ home, away })} className="group rounded-2xl border border-white/[0.09] bg-[linear-gradient(135deg,rgba(8,47,73,.16),rgba(2,6,23,.5))] p-4 text-left transition hover:border-cyan-200/35 hover:bg-cyan-300/[0.055] hover:shadow-lg hover:shadow-cyan-950/20"><div className="flex items-center justify-between gap-3"><span className="rounded-lg bg-cyan-300/10 px-2 py-1 text-[9px] font-black text-cyan-50">{game.time || `Week ${activeWeek}`}</span><span className="text-[10px] font-bold text-white/35 transition group-hover:text-cyan-100">Open matchup →</span></div><div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3"><b className="text-right text-lg">{away}</b><span className="rounded-full border border-violet-200/15 bg-violet-300/[0.08] px-2 py-1 text-[10px] font-black text-violet-100">VS</span><b className="text-lg">{home}</b></div><p className="mt-3 text-center text-xs text-white/42">{position} room production · defense allowed · football-stat evidence</p></button>; })}</div>
       </Panel> : null}
@@ -1720,7 +1720,7 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
         </section>
       </div> : null}
       {matchupView === "teams" ? <StatTeamProfiles data={teamPositionData} season={season} scoring={scoring} /> : null}
-      {matchupView === "overview" ? <Panel className="overflow-hidden border-cyan-200/15">
+      {matchupView === "overview" ? <Panel data-guide-tip="matchup-defense-board" className="overflow-hidden border-cyan-200/15">
         <div className="border-b border-white/10 bg-[radial-gradient(circle_at_95%_0%,rgba(34,211,238,.12),transparent_38%)] p-5 sm:p-6">
           <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">League-wide reference</div>
           <h3 className="mt-1 text-xl font-black">{position} defense board</h3>

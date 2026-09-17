@@ -16,16 +16,16 @@ jobs:
     timeout-minutes: 55
     env:
       ARSENAL_ORIGIN: https://thefantasyarsenal.com
-      DIGEST_CRON_SECRET: ${{ secrets.DIGEST_CRON_SECRET }}
+      CRON_TRIGGER_SECRET: ${{ secrets.CRON_TRIGGER_SECRET }}
     steps:
       - name: Verify refresh credential
         run: |
-          test -n "$DIGEST_CRON_SECRET" || { echo "DIGEST_CRON_SECRET GitHub Actions secret is required."; exit 1; }
+          test -n "$CRON_TRIGGER_SECRET" || { echo "CRON_TRIGGER_SECRET GitHub Actions secret is required."; exit 1; }
 
       - name: Fetch eligible Arsenal accounts
         run: |
           curl --fail-with-body --retry 3 --retry-delay 3 --max-time 60 \
-            -H "Authorization: Bearer $DIGEST_CRON_SECRET" \
+            -H "Authorization: Bearer $CRON_TRIGGER_SECRET" \
             "$ARSENAL_ORIGIN/api/arsenal/leaderboard?refresh=weekly&mode=candidates" \
             -o "$RUNNER_TEMP/leaderboard-candidates.json"
           jq -r '.accounts[]?.accountId' "$RUNNER_TEMP/leaderboard-candidates.json" > "$RUNNER_TEMP/leaderboard-account-ids.txt"
@@ -38,7 +38,7 @@ jobs:
             [ -z "$account_id" ] && continue
             echo "Refreshing $account_id"
             if ! curl --fail-with-body --retry 2 --retry-all-errors --retry-delay 5 --max-time 240 \
-              -H "Authorization: Bearer $DIGEST_CRON_SECRET" \
+              -H "Authorization: Bearer $CRON_TRIGGER_SECRET" \
               "$ARSENAL_ORIGIN/api/arsenal/leaderboard?refresh=weekly&accountId=$account_id"; then
               echo "Refresh failed for $account_id; continuing with remaining accounts."
               failures=$((failures + 1))

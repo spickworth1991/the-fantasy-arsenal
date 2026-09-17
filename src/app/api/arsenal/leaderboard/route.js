@@ -145,10 +145,12 @@ export async function GET(request) {
     const initial = await leaderboardRows(db, season);
     const weeklyRefresh =
       new URL(request.url).searchParams.get("refresh") === "weekly";
+    const automationSecrets = [arsenalEnv().DIGEST_CRON_SECRET, arsenalEnv().CRON_TRIGGER_SECRET]
+      .filter(Boolean)
+      .map((secret) => `Bearer ${secret}`);
     if (
       weeklyRefresh &&
-      request.headers.get("authorization") !==
-        `Bearer ${arsenalEnv().DIGEST_CRON_SECRET}`
+      !automationSecrets.includes(request.headers.get("authorization"))
     )
       return new NextResponse("Unauthorized.", { status: 401 });
     const requestedAccountId = new URL(request.url).searchParams.get("accountId");

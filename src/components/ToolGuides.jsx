@@ -157,6 +157,55 @@ const GUIDES = {
   ],
 };
 
+// Stat Central changed from the old player-first / Team Profiles layout to a
+// rankings-first workspace with actual weekly-game evidence. Keep this tour
+// beside the guide registry so its steps cannot silently drift with legacy UI.
+GUIDES["/stat-central"] = [
+  s('[data-guide-tip="stat-workspaces"] button:nth-of-type(1)', "Start with the season leaders", "Rankings is the fastest way to find standout performers, disappointments, archetypes, and consistency outliers. Use its filters to define the player pool, then open any player for the evidence behind the result.", tab("Rankings")),
+  s('[data-guide-tip="stat-workspaces"] button:nth-of-type(2)', "Matchups begin with the NFL schedule", "Open Matchups to choose a week and position, then select one real NFL game. Its modal compares both teams against the opposing defense using observed positional-room data.", tab("Matchups")),
+  s('[data-guide-tip="matchup-shared-controls"]', "Set the evidence lens", "Season, scoring, position, and week control the Matchup Lab. League scoring recalculates the fantasy-point totals with that league’s Sleeper rules; it does not alter the underlying football stats."),
+  s('[data-guide-tip="matchup-secondary-tabs"] button:nth-of-type(1)', "Weekly Matchups compare both sides", "Each card is one scheduled NFL game, not a player recommendation. Open it to see both position rooms, each opponent’s allowance, coverage, and the box-score evidence behind the totals.", tab("Weekly Matchups")),
+  s('[data-guide-tip="matchup-weekly-schedule"]', "Open the actual game you want", "Choose the matchup—not a generic team pairing. The modal lets you move directly into player history for either side after you understand the team-level context."),
+  s('[data-guide-tip="matchup-secondary-tabs"] button:nth-of-type(2)', "Defense Board is a season-to-date ledger", "This is total fantasy scoring allowed to the entire opposing position room per game. It is never divided by roster spots and it is not a prediction. Click a defense to inspect the completed games and stats that created its number.", tab("Defense Board")),
+  s('[data-guide-tip="matchup-defense-board"]', "Verify the number before using it", "The board ranks every defense from least to most permissive for the selected position. Its game count is current-season coverage; the drill-in ledger shows the opponent, points, and key box-score stats for every logged game."),
+  s('[data-guide-tip="matchup-secondary-tabs"] button:nth-of-type(3)', "Player History answers the individual question", "Choose an offense and defense, then inspect either best one-week performances or repeated player results against that opponent. Treat it as evidence, not a promise that history will repeat.", tab("Player History")),
+  s('[data-guide-tip="matchup-player-history-toggle"]', "Choose the history view deliberately", "Best weekly performances is a searchable game log. Repeated opponent performance compares multi-game results with that player’s other-opponent baseline and reports confidence from the evidence."),
+  s('[data-guide-tip="stat-workspaces"] button:nth-of-type(3)', "Player Lab explains the player behind the result", "Player Research, Advanced Stats, Career History, and Compare Players share your selected player, moving from box score to role to longer-term context without repeated searching.", tab("Player Lab")),
+  s('[data-guide-tip="stat-player-picker"]', "Search once, keep the player context", "Type a player name and select the result. The same player stays selected through Player Research, Advanced Stats, Career History, and Compare Players when that player exists in the chosen view."),
+  s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(2)', "Use Advanced Stats to test repeatability", "Snaps, opportunity share, targets, carries, high-value work, efficiency, and EPA help distinguish a sustainable role from a one-week box-score spike.", tab("Advanced Stats")),
+  s('[data-guide-tip="stat-secondary-tabs"] button:nth-of-type(4)', "Compare like-for-like players", "Choose a primary player, then compare someone at the same position. Season and scoring changes preserve each selection where possible, so direct comparisons do not force unnecessary re-searching.", () => { tab("Compare Players")(); return () => tab("Rankings")(); }),
+];
+
+GUIDES["/account"] = [
+  s("main header", "My Arsenal is your account-level home", "This is where personal preferences, saved research, digest choices, career recognition, and account controls live. Your Sleeper portfolio remains the source for leagues and rosters; an Arsenal account keeps your personal layer synchronized across devices."),
+  s('nav[aria-label="My Arsenal sections"]', "Use these sections by purpose", "Overview is your season snapshot and tool-tour control. Profile manages identity. Digest controls communications. Library holds saved work. Career & badges records verified progress. Account & privacy manages visibility, data, and sessions."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(1)', "Overview keeps the season in view", "Use this as the landing page for current portfolio context, manager bookmarks, and the universal Tool Tours switch. It is not a second League Hub or an intelligence inbox."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(3)', "Digest controls delivery, not your record", "Digest settings determine which leagues can create daily lineup and news alerts. Portfolio records and season statistics still use every eligible league, including median-game results where applicable."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(4)', "Library is for intentional saves", "Use Library for favorite leagues and saved research you want to keep. It is separate from League Hub&apos;s operational memory, which is for snoozed or completed weekly decisions."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(5)', "Career & badges update from verified records", "Badges preserve previously earned recognition. The scheduled leaderboard refresh updates current-season record and badge progress; it does not require every manager to sign in again."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(6)', "Account & privacy stays in your control", "Review profile visibility, leaderboard eligibility, connected devices, downloaded account data, and deletion controls here. These settings affect Arsenal data, never Sleeper league data."),
+];
+GUIDES["/account/profile"] = [
+  s("main header", "Edit the identity people see", "Profile controls the public Arsenal identity attached to your account. It is separate from your Sleeper username and never changes your Sleeper profile."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(2)', "Profile settings are deliberate", "Update display details and account preferences here. Save before leaving; an Arsenal account synchronizes these choices across signed-in devices."),
+];
+GUIDES["/account/digest"] = [
+  s("main header", "Digest preferences control useful delivery", "Choose how Arsenal communicates with you without changing the underlying portfolio record. Daily intelligence uses the delivery scope; season stats and records continue to reflect all eligible leagues."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(3)', "Return here to tune delivery", "Use the Digest tab whenever you want to change delivery day, alert preferences, or the leagues that can create daily actionable notices."),
+];
+GUIDES["/account/library"] = [
+  s("main header", "Library is your cloud-synced reference shelf", "Save intentional research and favorite leagues here so it follows your Arsenal account. This is for longer-lived reference, not automatic weekly alerts."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(4)', "Keep saved work organized", "Favorite leagues and saved items are account-level. League Hub memory remains the place for operational snoozes and completed injury or lineup reviews."),
+];
+GUIDES["/account/career"] = [
+  s("main header", "Career & badges are evidence-based", "Your record and achievements use verified Sleeper portfolio data. The scheduled leaderboard workflow refreshes current-season progress; historical coverage is shown only where it can be confirmed."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(5)', "Badges keep their earned status", "An already-earned badge is preserved. New badge progress is reconciled during the scheduled refresh rather than guessed from a local visit."),
+];
+GUIDES["/account/privacy"] = [
+  s("main header", "Account & privacy keeps ownership clear", "Control public visibility, leaderboard eligibility, sessions, downloads, and deletion from one place. These controls change Arsenal account data—not Sleeper leagues, rosters, or transactions."),
+  s('nav[aria-label="My Arsenal sections"] a:nth-of-type(6)', "Review destructive actions carefully", "Signing out or clearing synced data can be reversed only by signing in and rebuilding it. Account deletion is permanent for Arsenal data, while your Sleeper account remains untouched."),
+];
+
 export default function ToolGuides() {
   const pathname = usePathname();
   const steps = GUIDES[pathname];
