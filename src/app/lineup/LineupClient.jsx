@@ -1032,18 +1032,28 @@ function findCloseAlternatives(
 }
 
 /* ---------- Find opponent & H2H week ---------- */
+function opponentRosterIdFromMatchups(matchups, myRosterId) {
+  const myRosterKey = String(myRosterId);
+  const myRow = matchups.find(
+    (row) => String(row?.roster_id) === myRosterKey,
+  );
+  if (myRow?.matchup_id == null || myRow.matchup_id === "") return null;
+  const matchupKey = String(myRow.matchup_id);
+  const opponent = matchups.find(
+    (row) =>
+      String(row?.matchup_id) === matchupKey &&
+      String(row?.roster_id) !== myRosterKey,
+  );
+  return opponent?.roster_id ?? null;
+}
+
 async function findOpponentForWeek(leagueId, week, myRosterId) {
   const res = await fetch(
     `https://api.sleeper.app/v1/league/${leagueId}/matchups/${week}`,
   );
   if (!res.ok) return null;
   const data = await res.json();
-  const myRow = data.find((r) => r.roster_id === myRosterId);
-  if (!myRow || !myRow.matchup_id) return null;
-  const opp = data.find(
-    (r) => r.matchup_id === myRow.matchup_id && r.roster_id !== myRosterId,
-  );
-  return opp?.roster_id ?? null;
+  return opponentRosterIdFromMatchups(data, myRosterId);
 }
 async function findWeekForHeadToHead(
   leagueId,
@@ -1064,11 +1074,14 @@ async function findWeekForHeadToHead(
         );
         if (!res.ok) return null;
         const data = await res.json();
-        const mine = data.find((r) => r.roster_id === myRosterId);
-        if (!mine?.matchup_id) return null;
+        const mine = data.find(
+          (r) => String(r?.roster_id) === String(myRosterId),
+        );
+        if (mine?.matchup_id == null || mine.matchup_id === "") return null;
         const hit = data.find(
           (r) =>
-            r.matchup_id === mine.matchup_id && r.roster_id === oppRosterId,
+            String(r?.matchup_id) === String(mine.matchup_id) &&
+            String(r?.roster_id) === String(oppRosterId),
         );
         return hit ? w : null;
       } catch {
@@ -1914,7 +1927,9 @@ export default function LineupTool() {
       }
       const myRid = rosterByOwnerId[ownerA].roster_id;
       try {
-        const oppRid = await findOpponentForWeek(activeLeague, week, myRid);
+        const oppRid = weeklyMatchups.length
+          ? opponentRosterIdFromMatchups(weeklyMatchups, myRid)
+          : await findOpponentForWeek(activeLeague, week, myRid);
         if (cancelled) return;
         if (oppRid) {
           const oppOwner = rosterByRosterId[oppRid]?.owner_id || "";
@@ -1944,6 +1959,7 @@ export default function LineupTool() {
     activeLeague,
     ownerA,
     week,
+    weeklyMatchups,
     users,
     metricMode,
     projectionSource,
