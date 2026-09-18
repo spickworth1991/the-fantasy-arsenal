@@ -1101,11 +1101,14 @@ export const SleeperProvider = ({ children }) => {
           lookup.pos,
         ),
         basis: "weekly_league_scoring",
+        statLine: requestedRow.stat_line,
+        projectionRow: requestedRow,
       };
     }
     if (src === "FANTASYPROS" && options.scoringSettings && best?.stats) {
+      const seasonStatLine = fantasyProsStatsToSleeper(best.stats);
       const rescoredSeason = scoreSleeperStats(
-        fantasyProsStatsToSleeper(best.stats),
+        seasonStatLine,
         options.scoringSettings,
         lookup.pos,
       );
@@ -1117,11 +1120,18 @@ export const SleeperProvider = ({ children }) => {
       return {
         points: rescoredSeason / Math.max(1, games),
         basis: "fantasypros_league_scoring_estimate",
+        statLine: Object.fromEntries(
+          Object.entries(seasonStatLine).map(([key, value]) => [
+            key,
+            Number(value) / Math.max(1, games),
+          ]),
+        ),
       };
     }
     if (src === "DRAFTSHARKS" && options.scoringSettings && best?.stats) {
+      const seasonStatLine = draftSharksStatsToSleeper(best.stats, lookup.pos);
       const rescoredSeason = scoreSleeperStats(
-        draftSharksStatsToSleeper(best.stats, lookup.pos),
+        seasonStatLine,
         options.scoringSettings,
         lookup.pos,
       );
@@ -1131,18 +1141,29 @@ export const SleeperProvider = ({ children }) => {
       return {
         points: rescoredSeason / Math.max(1, games),
         basis: "draftsharks_league_scoring_estimate",
+        statLine: Object.fromEntries(
+          Object.entries(seasonStatLine).map(([key, value]) => [
+            key,
+            Number(value) / Math.max(1, games),
+          ]),
+        ),
       };
     }
     const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
     const seasonEntry = src === "DRAFTSHARKS" && String(options.qbType || qbType).toLowerCase() === "sf" && best
       ? { ...best, pointsStd: best.pointsStdSf ?? best.pointsStd, pointsHalf: best.pointsHalfSf ?? best.pointsHalf, pointsPpr: best.pointsPprSf ?? best.pointsPpr, pointsTep: best.pointsTepSf ?? best.pointsTep }
       : best;
-    return resolveWeeklyProjection({
+    const resolved = resolveWeeklyProjection({
       row: hasRequestedWeek ? weekly : best,
       week, scoring: options.scoring || projectionScoring, position: lookup.pos,
       seasonPoints: seasonEntry ? projectionPoints(seasonEntry, options.scoring || projectionScoring, lookup.pos) ?? seasonEntry.pts : null,
       byeWeeks, season, dataSeason: PROJECTION_DATA_SEASON,
     });
+    return {
+      ...resolved,
+      statLine: requestedRow?.stat_line || null,
+      projectionRow: requestedRow || null,
+    };
   }, [weeklyProjectionData, projectionIndexes, projectionScoring, qbType]);
   const getWeeklyProjection = useCallback((p, source = "FFA", week = null, options = {}) =>
     getWeeklyProjectionDetails(p, source, week, options).points ?? 0, [getWeeklyProjectionDetails]);

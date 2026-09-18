@@ -119,6 +119,8 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const season = searchParams.get("season") || String(new Date().getFullYear());
   const week = searchParams.get("week") || "1";
+  const useLiveWeatherFallback =
+    searchParams.get("weatherFallback") !== "stored";
   const requestedSeasonType = String(searchParams.get("seasonType") || "regular").toLowerCase();
   const seasonTypeCode = requestedSeasonType === "preseason" || requestedSeasonType === "pre" || requestedSeasonType === "1"
     ? 1
@@ -182,7 +184,7 @@ export async function GET(request) {
     const returnedWeek = Number(games[0]?.week || week);
     const returnedSeason = Number(games[0]?.season || season);
     return NextResponse.json(
-      { season:returnedSeason, week:returnedWeek, seasonType:returnedSeasonType, seasonTypeCode:returnedSeasonTypeCode, requested:{ season:Number(season), week:Number(week), seasonType }, source, games:await addForecasts(games) },
+      { season:returnedSeason, week:returnedWeek, seasonType:returnedSeasonType, seasonTypeCode:returnedSeasonTypeCode, requested:{ season:Number(season), week:Number(week), seasonType }, source, games:useLiveWeatherFallback ? await addForecasts(games) : games },
       { headers:{ "Cache-Control":"no-store, max-age=0" } },
     );
   } catch (error) {

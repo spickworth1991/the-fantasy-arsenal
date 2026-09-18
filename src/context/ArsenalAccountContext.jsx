@@ -184,11 +184,30 @@ export function ArsenalAccountProvider({ children }) {
       if (!eligible(element)) return;
       const store = readStore();
       const key = identity(element);
+      const updatedAt = Date.now();
+      if (
+        element.matches("button[aria-pressed]") &&
+        element.getAttribute("aria-pressed") === "true"
+      ) {
+        element.parentElement
+          ?.querySelectorAll?.("button[aria-pressed]")
+          .forEach((sibling) => {
+            if (sibling === element || !eligible(sibling)) return;
+            const siblingKey = identity(sibling);
+            store.controls[siblingKey] = {
+              ...(store.controls[siblingKey] || {}),
+              type: "pressed-button",
+              value: String(sibling.value ?? ""),
+              checked: false,
+              updatedAt,
+            };
+          });
+      }
       store.controls[key] = {
         type:element instanceof HTMLSelectElement ? "select" : element.matches("button[aria-pressed]") ? "pressed-button" : element.type,
         value:String(element.value ?? ""),
         checked:element.matches("button[aria-pressed]") ? element.getAttribute("aria-pressed") === "true" : "checked" in element ? !!element.checked : undefined,
-        updatedAt:Date.now(),
+        updatedAt,
       };
       localStorage.setItem(UI_PREFERENCES_KEY, JSON.stringify(store));
       clearTimeout(syncTimer);
@@ -217,8 +236,26 @@ export function ArsenalAccountProvider({ children }) {
         }
         if (element.matches("button[aria-pressed]") && typeof saved.checked === "boolean") {
           const pressed = element.getAttribute("aria-pressed") === "true";
-          const groupSize = element.parentElement?.querySelectorAll?.("button[aria-pressed]").length || 1;
-          if (pressed !== saved.checked && (groupSize === 1 || saved.checked)) element.click();
+          const group = [
+            ...(element.parentElement?.querySelectorAll?.(
+              "button[aria-pressed]",
+            ) || []),
+          ].filter(eligible);
+          const savedTrue = group
+            .map((button) => ({
+              button,
+              preference: controls[identity(button)],
+            }))
+            .filter((entry) => entry.preference?.checked === true)
+            .sort(
+              (left, right) =>
+                Number(right.preference.updatedAt || 0) -
+                Number(left.preference.updatedAt || 0),
+            );
+          const selectedButton = savedTrue[0]?.button;
+          const shouldPress =
+            group.length <= 1 ? saved.checked : selectedButton === element;
+          if (pressed !== shouldPress && shouldPress) element.click();
         }
         if (changed) {
           element.dispatchEvent(new Event("input", { bubbles:true }));

@@ -37,6 +37,7 @@ import {
   projectionSourceFromKey,
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
+import { scoreSleeperStats } from "../../lib/sleeperScoring";
 
 const LINEUP_SOURCE_KEYS = new Set([
   "proj:thefantasyarsenal-model",
@@ -325,6 +326,7 @@ function solveOptimalLineup({
   roster,
   players,
   getWeeklyMetric,
+  getWeeklyDetails,
   getMarketValue,
   slots,
   week,
@@ -384,6 +386,7 @@ function solveOptimalLineup({
       const frozenProj = isOnBye
         ? 0
         : Number(frozenProjectionById[String(pid)] ?? getWeeklyMetric(p) ?? 0);
+      const projectionDetails = isOnBye ? null : getWeeklyDetails?.(p) || null;
       const injury = String(p?.injury_status || "").toUpperCase();
       const inactive = String(p?.status || "").toLowerCase() === "inactive";
       const unavailable =
@@ -453,6 +456,7 @@ function solveOptimalLineup({
         team,
         proj: median,
         frozenProj,
+        projectionDetails,
         floor,
         ceiling,
         selectionScore,
@@ -1147,8 +1151,10 @@ export default function LineupTool() {
   const [weatherMap, setWeatherMap] = useState({});
   const [kickoffMap, setKickoffMap] = useState({});
   const [actualPointsById, setActualPointsById] = useState({});
+  const [weeklyStatsById, setWeeklyStatsById] = useState({});
   const [weeklyMatchups, setWeeklyMatchups] = useState([]);
   const [frozenProjectionById, setFrozenProjectionById] = useState({});
+  const [selectedPlayerBreakdown, setSelectedPlayerBreakdown] = useState(null);
 
   const routeHandoffApplied = useRef(false);
   const tourSelectedLeagueRef = useRef(false);
@@ -1168,20 +1174,84 @@ export default function LineupTool() {
   }, [leagues, setActiveLeague]);
   useEffect(() => {
     let active = true;
-    const loadScoreboard = () => fetch(`/api/nfl-scoreboard?season=${season}&week=${week}`)
-      .then((response) => (response.ok ? response.json() : { games: [] }))
-      .then((data) => {
+    const loadScoreboard = () =>
+      Promise.all([
+        fetch(
+          `/api/nfl-scoreboard?season=${season}&week=${week}&weatherFallback=stored`,
+        ).then((response) =>
+          response.ok ? response.json() : { games: [] },
+        ),
+        fetch(`/stats/projections/${season}/schedule.json`, {
+          cache: "no-store",
+        })
+          .then((response) => (response.ok ? response.json() : null))
+          .catch(() => null),
+      ])
+      .then(([data, savedSchedule]) => {
         if (!active) return;
         const map = {};
+        const conditions = {};
+        const savedGames =
+          savedSchedule?.weeks?.find(
+            (entry) => Number(entry.week) === Number(week),
+          )?.games || [];
+        const savedByTeam = new Map();
+        savedGames.forEach((game) => {
+          if (game?.home) savedByTeam.set(normalizeTeamAbbr(game.home), game);
+          if (game?.away) savedByTeam.set(normalizeTeamAbbr(game.away), game);
+        });
         (data.games || []).forEach((game) =>
           (game.teams || []).forEach((team) => {
-            map[normalizeTeamAbbr(team)] = game;
+            const normalizedTeam = normalizeTeamAbbr(team);
+            const savedGame = savedByTeam.get(normalizedTeam);
+            map[normalizedTeam] = game;
+            const indoor =
+              Boolean(game?.venue?.indoor) ||
+              game?.venue?.roofType === "fixed" ||
+              savedGame?.venue?.roofType === "fixed" ||
+              savedGame?.weather?.indoor === true;
+            const savedWeather = savedGame?.weather || null;
+            const embeddedWeather = game?.weather || null;
+            conditions[normalizedTeam] = indoor
+              ? {
+                  source: "venue",
+                  summary: "Indoor",
+                    indoor: true,
+                    stored: Boolean(savedGame),
+                    stadium:
+                      game?.venue?.name || savedGame?.venue?.name || null,
+                }
+              : savedWeather || embeddedWeather
+                ? {
+                    ...(embeddedWeather || {}),
+                    ...(savedWeather || {}),
+                    summary:
+                      savedWeather?.summary ||
+                      embeddedWeather?.summary ||
+                      null,
+                    indoor: false,
+                    stored: Boolean(savedWeather),
+                    stadium:
+                      game?.venue?.name || savedGame?.venue?.name || null,
+                  }
+                : {
+                    source: null,
+                    summary: null,
+                    indoor: false,
+                    unavailable: true,
+                    stadium:
+                      game?.venue?.name || savedGame?.venue?.name || null,
+                  };
           }),
         );
         setKickoffMap(map);
+        setWeatherMap(conditions);
       })
       .catch(() => {
-        if (active) setKickoffMap({});
+        if (active) {
+          setKickoffMap({});
+          setWeatherMap({});
+        }
       });
     loadScoreboard();
     const timer = window.setInterval(loadScoreboard, 30000);
@@ -1195,16 +1265,26 @@ export default function LineupTool() {
     let active = true;
     if (!activeLeague || !week) {
       setActualPointsById({});
+      setWeeklyStatsById({});
       setWeeklyMatchups([]);
       return undefined;
     }
     setActualPointsById({});
     const loadMatchupPoints = () =>
-      fetch(`https://api.sleeper.app/v1/league/${activeLeague}/matchups/${week}`)
-        .then((response) => (response.ok ? response.json() : []))
-        .then((rows) => {
+      Promise.all([
+        fetch(
+          `https://api.sleeper.app/v1/league/${activeLeague}/matchups/${week}`,
+        ).then((response) => (response.ok ? response.json() : [])),
+        fetch(
+          `https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`,
+        )
+          .then((response) => (response.ok ? response.json() : {}))
+          .catch(() => ({})),
+      ])
+        .then(([rows, stats]) => {
           if (!active) return;
           setWeeklyMatchups(Array.isArray(rows) ? rows : []);
+          setWeeklyStatsById(stats || {});
           const next = {};
           (rows || []).forEach((row) => {
             Object.entries(row?.players_points || {}).forEach(([id, points]) => {
@@ -1215,7 +1295,10 @@ export default function LineupTool() {
           setActualPointsById(next);
         })
         .catch(() => {
-          if (active) setWeeklyMatchups([]);
+          if (active) {
+            setWeeklyMatchups([]);
+            setWeeklyStatsById({});
+          }
         });
     loadMatchupPoints();
     const timer = window.setInterval(loadMatchupPoints, 15000);
@@ -1223,7 +1306,7 @@ export default function LineupTool() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [activeLeague, week]);
+  }, [activeLeague, season, week]);
 
   const [ownerA, setOwnerA] = useState("");
   const [ownerB, setOwnerB] = useState("");
@@ -1331,23 +1414,7 @@ export default function LineupTool() {
     return () => window.removeEventListener("tfa:cloud-sync-applied", load);
   }, [activeLeague]);
   const changeTreatAsChopped = (checked) => {
-    const next = Boolean(checked);
-    setTreatAsChopped(next);
-    if (!activeLeague || lineupSettingsScope !== String(activeLeague)) return;
-    try {
-      const key = `lineup-settings:${activeLeague}`;
-      const saved = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          ...saved,
-          treatAsChopped: next,
-          updatedAt: Date.now(),
-        }),
-      );
-      if (arsenalConnected)
-        window.setTimeout(() => syncArsenal({ quiet: true }), 100);
-    } catch {}
+    setTreatAsChopped(Boolean(checked));
   };
   useEffect(() => {
     if (!activeLeague || lineupSettingsScope !== String(activeLeague)) return;
@@ -1534,39 +1601,6 @@ export default function LineupTool() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionScoring, qbLocal]);
-
-  useEffect(() => {
-    let mounted = true;
-    fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${week}&year=${season}`,
-    )
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!mounted || !data) return;
-        const next = {};
-        (data.events || []).forEach((event) => {
-          const competition = event?.competitions?.[0];
-          const weather = competition?.weather;
-          if (!weather) return;
-          const payload = {
-            summary:
-              weather.displayValue || weather.conditionId || "Weather watch",
-            temperature: weather.temperature ?? null,
-          };
-          (competition.competitors || []).forEach((competitor) => {
-            const team = normalizeTeamAbbr(competitor?.team?.abbreviation);
-            if (team) next[team] = payload;
-          });
-        });
-        setWeatherMap(next);
-      })
-      .catch(() => {
-        if (mounted) setWeatherMap({});
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [season, week]);
 
   // auto-infer scoring on league change
   useEffect(() => {
@@ -1788,6 +1822,16 @@ export default function LineupTool() {
       roster: scoringRoster,
       players,
       getWeeklyMetric,
+      getWeeklyDetails:
+        metricMode === "projections"
+          ? (player) =>
+              getWeekDetails(player, week, {
+                byeMap,
+                qbType: qbLocal,
+                scoring: inferProjectionScoringFromLeague(league),
+                scoringSettings: league?.scoring_settings || null,
+              })
+          : null,
       getMarketValue: getValueMetric,
       slots,
       week,
@@ -2361,10 +2405,10 @@ export default function LineupTool() {
             </Card>
 
             <div className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
-              <button type="button" aria-pressed={lineupView === "optimizer"} data-account-preference="lineup-view-optimizer" onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+              <button type="button" aria-pressed={lineupView === "optimizer"} data-no-account-persist onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
                 {choppedMode ? "Survival lineup" : "Lineup optimizer"}
               </button>
-              <button type="button" aria-pressed={lineupView === "overview"} data-account-preference="lineup-view-overview" onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+              <button type="button" aria-pressed={lineupView === "overview"} data-no-account-persist onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
                 {choppedMode ? "Chopped overview" : "Matchup overview"}
               </button>
             </div>
@@ -2504,6 +2548,7 @@ export default function LineupTool() {
                     }
                     res={ownerA ? compute(ownerA) : null}
                     metricLabel={metricLabel}
+                    onPlayerSelect={setSelectedPlayerBreakdown}
                     // show suggestions ONLY in projections mode
                     enableSuggestions={metricMode === "projections"}
                   />
@@ -2515,6 +2560,7 @@ export default function LineupTool() {
                     }
                     res={ownerB ? compute(ownerB) : null}
                     metricLabel={metricLabel}
+                    onPlayerSelect={setSelectedPlayerBreakdown}
                     enableSuggestions={false}
                   /> : null}
                 </div>
@@ -2687,6 +2733,13 @@ export default function LineupTool() {
           </>
         )}
       </div>
+      <PlayerBreakdownModal
+        player={selectedPlayerBreakdown}
+        actualStats={weeklyStatsById?.[String(selectedPlayerBreakdown?.pid)] || {}}
+        metricMode={metricMode}
+        scoringSettings={league?.scoring_settings || {}}
+        onClose={() => setSelectedPlayerBreakdown(null)}
+      />
       {showSourceHelp ? (
         <div
           className="fixed inset-0 z-[220] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm"
@@ -2849,6 +2902,58 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
   );
 }
 
+function weatherVisual(weather, completed = false) {
+  if (weather?.indoor)
+    return {
+      icon: "🏟️",
+      label: "Indoor stadium",
+      detail: "Weather will not affect play.",
+    };
+  const summary = String(weather?.summary || "").toLowerCase();
+  const precipitation = Number(weather?.precipitationProbability);
+  const wind = Math.max(
+    Number(weather?.windSpeed) || 0,
+    Number(weather?.windGusts) || 0,
+  );
+  const hasStoredForecast =
+    weather?.stored &&
+    (Number.isFinite(Number(weather?.temperature)) ||
+      Number.isFinite(precipitation) ||
+      wind > 0);
+  if (!summary && hasStoredForecast)
+    return {
+      icon: precipitation >= 45 ? "🌧️" : wind >= 15 ? "💨" : "🌤️",
+      label: "Saved kickoff forecast",
+      detail: "",
+    };
+  if (!summary)
+    return {
+      icon: completed ? "—" : "🕒",
+      label: completed
+        ? "Weather report unavailable"
+        : "Forecast not available yet",
+      detail: completed
+        ? "No game-weather report was returned for this matchup."
+        : "The forecast feed has not published conditions for kickoff yet.",
+    };
+  const icon = /thunder|storm/.test(summary)
+    ? "⛈️"
+    : /snow|sleet|ice/.test(summary)
+      ? "❄️"
+      : /rain|drizzle|shower/.test(summary)
+        ? "🌧️"
+        : /fog|mist/.test(summary)
+          ? "🌫️"
+          : /wind/.test(summary)
+            ? "💨"
+            : /partly/.test(summary)
+              ? "🌤️"
+              : /cloud|overcast/.test(summary)
+                ? "☁️"
+                : "☀️";
+  return { icon, label: weather.summary, detail: "" };
+}
+
 function GameConditions({ results = [] }) {
   const players = results
     .filter(Boolean)
@@ -2873,47 +2978,260 @@ function GameConditions({ results = [] }) {
   const rows = [...games.values()];
   if (!rows.length) return null;
   return (
-    <div className="mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <details className="group mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[9px] font-black uppercase tracking-[0.18em] text-sky-100/50">
             Central game conditions
           </div>
           <div className="mt-0.5 text-xs text-white/42">
-            Forecasts for games represented in the optimized lineup
+            See the forecast for every game in this optimized lineup
           </div>
         </div>
-        <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">
-          ESPN weather
+        <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-white/30">
+          Open-Meteo forecast · live ESPN status
+          <span className="text-sm transition group-open:rotate-180">⌄</span>
         </span>
-      </div>
+      </summary>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((row, index) => {
           const matchup = row.teams.length
             ? row.teams.join(" vs ")
             : row.team || "NFL game";
           const temperature = Number(row.weather?.temperature);
+          const precipitation = Number(row.weather?.precipitationProbability);
+          const wind = Number(row.weather?.windSpeed);
+          const visual = weatherVisual(row.weather, row.completed);
           return (
-            <div key={`${matchup}:${index}`} className="rounded-xl bg-black/20 px-3 py-2.5">
+            <div key={`${matchup}:${index}`} className="rounded-xl border border-white/[0.06] bg-black/20 px-3 py-3">
               <div className="flex items-center justify-between gap-2">
-                <b className="truncate text-xs text-white/75">{matchup}</b>
+                <b className="truncate text-xs text-white/75">{matchup}{row.weather?.stadium ? ` · ${row.weather.stadium}` : ""}</b>
                 <span className="shrink-0 text-[8px] font-bold uppercase text-white/30">
                   {row.completed ? "Final" : row.started ? "Live" : "Forecast"}
                 </span>
               </div>
               <div className="mt-1 text-[10px] leading-4 text-sky-100/65">
-                {row.weather?.summary || "Indoor or no outdoor forecast reported"}
+                <span className="mr-1 text-base" aria-hidden>{visual.icon}</span>
+                {visual.label}
                 {Number.isFinite(temperature) ? ` · ${temperature}°` : ""}
               </div>
+              {visual.detail ? <div className="mt-1 text-[9px] leading-4 text-white/35">{visual.detail}</div> : null}
+              {!row.weather?.indoor && (Number.isFinite(precipitation) || Number.isFinite(wind)) ? <div className="mt-1 text-[9px] text-white/38">{Number.isFinite(precipitation) ? `${Math.round(precipitation)}% precipitation` : ""}{Number.isFinite(precipitation) && Number.isFinite(wind) ? " · " : ""}{Number.isFinite(wind) ? `${Math.round(wind)} mph wind` : ""}</div> : null}
             </div>
           );
         })}
       </div>
+    </details>
+  );
+}
+
+const PLAYER_STAT_LABELS = {
+  pass_cmp: "Completions",
+  pass_att: "Pass attempts",
+  pass_yd: "Passing yards",
+  pass_td: "Passing TD",
+  pass_int: "Interceptions",
+  rush_att: "Carries",
+  rush_yd: "Rushing yards",
+  rush_td: "Rushing TD",
+  rec_tgt: "Targets",
+  rec: "Receptions",
+  rec_yd: "Receiving yards",
+  rec_td: "Receiving TD",
+  fum_lost: "Fumbles lost",
+  fgm: "Field goals",
+  fga: "FG attempts",
+  xpm: "Extra points",
+  xpa: "XP attempts",
+  sack: "Sacks",
+  int: "Interceptions",
+  fum_rec: "Fumble recoveries",
+  def_td: "Defensive TD",
+  pts_allow: "Points allowed",
+};
+const statKeysForPlayer = (position) => {
+  const pos = String(position || "").toUpperCase();
+  if (pos === "QB")
+    return ["pass_cmp", "pass_att", "pass_yd", "pass_td", "pass_int", "rush_att", "rush_yd", "rush_td", "fum_lost"];
+  if (pos === "RB")
+    return ["rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fum_lost"];
+  if (["WR", "TE"].includes(pos))
+    return ["rec_tgt", "rec", "rec_yd", "rec_td", "rush_att", "rush_yd", "rush_td", "fum_lost"];
+  if (pos === "K") return ["fgm", "fga", "xpm", "xpa"];
+  return ["sack", "int", "fum_rec", "def_td", "pts_allow"];
+};
+
+const DEFAULT_ANALYSIS_SCORING = {
+  pass_yd: 0.04,
+  pass_td: 4,
+  pass_int: -2,
+  rush_yd: 0.1,
+  rush_td: 6,
+  rec: 1,
+  rec_yd: 0.1,
+  rec_td: 6,
+  fum_lost: -2,
+  fgm: 3,
+  xpm: 1,
+  sack: 1,
+  int: 2,
+  fum_rec: 2,
+  def_td: 6,
+};
+const statNumber = (stats, key) =>
+  Number.isFinite(Number(stats?.[key])) ? Number(stats[key]) : 0;
+const compactStat = (value) =>
+  Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+function buildPlayerProjectionAnalysis(
+  player,
+  actualStats,
+  projectedStats,
+  scoringSettings,
+) {
+  if (!player?.hasLivePoints) return null;
+  const pos = String(player.pos || "").toUpperCase();
+  const scoring = Object.keys(scoringSettings || {}).length
+    ? scoringSettings
+    : DEFAULT_ANALYSIS_SCORING;
+  const pointDelta = Number(player.livePoints || 0) - Number(player.frozenProj || 0);
+  const state = player.gameCompleted ? "finished" : "is currently";
+  const direction =
+    Math.abs(pointDelta) < 1
+      ? "almost exactly on its pregame expectation"
+      : `${Math.abs(pointDelta).toFixed(2)} points ${pointDelta > 0 ? "above" : "below"} its pregame expectation`;
+  const relevant = statKeysForPlayer(pos);
+  const drivers = relevant
+    .map((key) => {
+      const actual = statNumber(actualStats, key);
+      const projected = statNumber(projectedStats, key);
+      const actualPoints = scoreSleeperStats(
+        { [key]: actual },
+        scoring,
+        pos,
+      );
+      const projectedPoints = scoreSleeperStats(
+        { [key]: projected },
+        scoring,
+        pos,
+      );
+      return {
+        key,
+        label: PLAYER_STAT_LABELS[key] || key,
+        actual,
+        projected,
+        impact: actualPoints - projectedPoints,
+        relativeMiss:
+          Math.abs(actual - projected) / Math.max(1, Math.abs(projected)),
+      };
+    })
+    .filter((row) => Math.abs(row.actual - row.projected) >= 0.05)
+    .sort((left, right) => Math.abs(right.impact) - Math.abs(left.impact));
+  const meaningful = drivers.filter((row) => Math.abs(row.impact) >= 0.35);
+  const aligned = [...drivers]
+    .filter((row) => row.projected > 0 && row.relativeMiss <= 0.18)
+    .sort((left, right) => left.relativeMiss - right.relativeMiss)[0];
+  const driverText = meaningful.slice(0, 2).map((row) =>
+    `${compactStat(row.actual)} ${row.label.toLowerCase()} versus ${compactStat(row.projected)} projected`,
+  );
+  const actualTouchdowns =
+    statNumber(actualStats, "pass_td") +
+    statNumber(actualStats, "rush_td") +
+    statNumber(actualStats, "rec_td");
+  const projectedTouchdowns =
+    statNumber(projectedStats, "pass_td") +
+    statNumber(projectedStats, "rush_td") +
+    statNumber(projectedStats, "rec_td");
+  const volumeKey =
+    pos === "QB"
+      ? "pass_att"
+      : pos === "RB"
+        ? "rush_att"
+        : ["WR", "TE"].includes(pos)
+          ? "rec_tgt"
+          : null;
+  const volumeActual = volumeKey ? statNumber(actualStats, volumeKey) : 0;
+  const volumeProjected = volumeKey ? statNumber(projectedStats, volumeKey) : 0;
+  const volumeClose =
+    volumeKey &&
+    volumeProjected > 0 &&
+    Math.abs(volumeActual - volumeProjected) / volumeProjected <= 0.2;
+  let gameScript = "";
+  if (
+    ["QB", "RB", "WR", "TE"].includes(pos) &&
+    Math.abs(actualTouchdowns - projectedTouchdowns) >= 0.75
+  ) {
+    gameScript = `${actualTouchdowns.toFixed(actualTouchdowns % 1 ? 1 : 0)} total TD versus ${projectedTouchdowns.toFixed(2)} expected made scoring efficiency the defining swing${volumeClose ? ", while opportunity volume stayed close to forecast" : ""}.`;
+  } else if (volumeKey && volumeProjected > 0) {
+    const volumeLabel = PLAYER_STAT_LABELS[volumeKey]?.toLowerCase() || "opportunities";
+    gameScript = `${compactStat(volumeActual)} ${volumeLabel} versus ${compactStat(volumeProjected)} projected made workload ${volumeActual >= volumeProjected ? "a positive" : "a limiting"} factor.`;
+  } else if (pos === "K") {
+    gameScript = `${compactStat(statNumber(actualStats, "fgm"))} made field goals versus ${compactStat(statNumber(projectedStats, "fgm"))} projected drove most of the kicking result.`;
+  } else if (["DEF", "DST"].includes(pos)) {
+    gameScript = "Turnovers, sacks, touchdowns, and points allowed can make team-defense scoring move sharply even when the matchup expectation was reasonable.";
+  }
+  const accuracyText = aligned
+    ? `${aligned.label} was close: ${compactStat(aligned.actual)} live versus ${compactStat(aligned.projected)} projected.`
+    : "The largest difference came from game outcomes that are more volatile than pregame opportunity estimates.";
+  return {
+    headline: `${player.name} ${state} ${direction}.`,
+    drivers:
+      driverText.length > 0
+        ? `The largest scoring drivers were ${driverText.join(" and ")}.`
+        : "No single tracked category explains most of the difference on its own.",
+    gameScript,
+    accuracyText,
+  };
+}
+
+function PlayerBreakdownModal({ player, actualStats = {}, metricMode, scoringSettings = {}, onClose }) {
+  if (!player) return null;
+  const projectedStats = player.projectionDetails?.statLine || {};
+  const scoringBasis = String(player.projectionDetails?.basis || "");
+  const leagueScored = [
+    "weekly_league_scoring",
+    "fantasypros_league_scoring_estimate",
+    "draftsharks_league_scoring_estimate",
+  ].includes(scoringBasis);
+  const analysis = buildPlayerProjectionAnalysis(
+    player,
+    actualStats,
+    projectedStats,
+    scoringSettings,
+  );
+  const keys = statKeysForPlayer(player.pos).filter(
+    (key) =>
+      Number.isFinite(Number(projectedStats?.[key])) ||
+      Number.isFinite(Number(actualStats?.[key])),
+  );
+  return (
+    <div className="fixed inset-0 z-[230] overflow-y-auto bg-slate-950/88 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="lineup-player-breakdown-title" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-cyan-200/20 bg-slate-950 shadow-2xl shadow-black/60">
+        <header className="border-b border-white/10 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.16),transparent_46%)] p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-100/55">Weekly scoring anatomy</div>
+              <h2 id="lineup-player-breakdown-title" className="mt-1 text-2xl font-black sm:text-3xl">{player.name}</h2>
+              <p className="mt-1 text-xs text-white/42">{player.team} · {player.pos} · Week breakdown</p>
+            </div>
+            <button type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60" aria-label="Close player breakdown">×</button>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/50">Live fantasy points</div><b className="mt-1 block text-3xl text-emerald-100">{player.hasLivePoints ? formatFantasyPoints(player.livePoints) : "—"}</b><small className="text-white/32">Sleeper game stats</small></div>
+            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/50">{metricMode === "values" ? "Redraft value" : leagueScored ? "League-scored expected points" : "Frozen projection"}</div><b className="mt-1 block text-3xl text-cyan-100">{formatFantasyPoints(player.frozenProj)}</b><small className="text-white/32">{metricMode === "values" ? "Season-long ranking scale" : `${leagueScored ? "Your league settings · " : ""}saved before kickoff`}</small>{metricMode === "projections" ? <div className="mt-2 text-[9px] text-cyan-100/45">Expected range {formatFantasyPoints(player.floor)}–{formatFantasyPoints(player.ceiling)} · not a maximum</div> : null}</div>
+          </div>
+          {metricMode === "projections" && analysis ? <div className="mt-3 rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.07] to-violet-300/[0.045] p-4 text-xs leading-5 text-white/58"><div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/65">Arsenal AI analysis</div><p className="mt-1 font-semibold text-white/78">{analysis.headline}</p><p className="mt-1">{analysis.drivers}</p>{analysis.gameScript ? <p className="mt-1">{analysis.gameScript}</p> : null}<p className="mt-1 text-white/42">{analysis.accuracyText}</p></div> : null}
+        </header>
+        <div className="p-5 sm:p-7">
+          {metricMode === "values" ? <div className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.05] p-4 text-xs leading-5 text-white/55">Value mode ranks season-long player strength; it does not contain a projected football stat line. Switch to a projection source to compare projected attempts, yards, receptions, and touchdowns with live production.</div> : keys.length ? <><div className="grid grid-cols-[minmax(0,1fr)_90px_90px] gap-2 px-3 pb-2 text-[9px] font-black uppercase tracking-wider text-white/30"><span>Football stat</span><span className="text-right">Live</span><span className="text-right">Projected</span></div><div className="space-y-1">{keys.map((key) => <div key={key} className="grid grid-cols-[minmax(0,1fr)_90px_90px] items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-3 text-xs"><span className="font-semibold text-white/65">{PLAYER_STAT_LABELS[key] || key}</span><b className="text-right text-emerald-100">{Number.isFinite(Number(actualStats?.[key])) ? Number(actualStats[key]).toLocaleString(undefined,{maximumFractionDigits:2}) : "—"}</b><b className="text-right text-cyan-100">{Number.isFinite(Number(projectedStats?.[key])) ? Number(projectedStats[key]).toLocaleString(undefined,{maximumFractionDigits:2}) : "—"}</b></div>)}</div></> : <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-6 text-white/45">This source supplies a fantasy-point total but does not expose the underlying projected football stat line for this player.</div>}
+          <div className="mt-4 flex flex-wrap gap-2 text-[10px]"><span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">{player.injury || (player.inactive ? "Inactive" : "Active")}</span>{player.weather?.summary ? <span className="rounded-full bg-sky-300/[0.07] px-3 py-1.5 text-sky-100/65">{player.weather.summary}</span> : null}<span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">{player.projectionDetails?.basis?.replaceAll("_", " ") || "Published source total"}</span></div>
+        </div>
+      </section>
     </div>
   );
 }
 
-function TeamBox({ title, res, metricLabel, enableSuggestions }) {
+function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect }) {
   const suggestions = useMemo(() => {
     if (!enableSuggestions || !res) return {};
     return findCloseAlternatives(res.starters, res.bench, {
@@ -2951,18 +3269,20 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
             items={res.starters}
             metricLabel={metricLabel}
             suggestions={suggestions}
+            onPlayerSelect={onPlayerSelect}
           />
           <Section
             label="Bench (top 10)"
             items={res.bench.slice(0, 10)}
             metricLabel={metricLabel}
+            onPlayerSelect={onPlayerSelect}
           />
         </>
       )}
     </div>
   );
 }
-function Section({ label, items, metricLabel, suggestions = {} }) {
+function Section({ label, items, metricLabel, suggestions = {}, onPlayerSelect }) {
   return (
     <div className="mb-3">
       <div className="text-xs font-semibold mb-1">{label}</div>
@@ -2981,10 +3301,22 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
           {items.map((x) => {
             const alts = suggestions[x.pid] || [];
             return (
-              <tr key={x.pid} className="border-t border-white/10 align-top">
+              <tr
+                key={x.pid}
+                role="button"
+                tabIndex={0}
+                onClick={() => onPlayerSelect?.(x)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onPlayerSelect?.(x);
+                  }
+                }}
+                className="cursor-pointer border-t border-white/10 align-top transition hover:bg-cyan-300/[0.045] focus:bg-cyan-300/[0.06] focus:outline-none"
+              >
                 <td className="py-1">{x.pos}</td>
                 <td className="py-1">
-                  {x.name}{" "}
+                  <span className="font-semibold text-white/90">{x.name}</span>{" "}
                   <span className="opacity-60 text-xs">({x.team})</span>
                   {x.gameStarted && metricLabel !== "Value" ? (
                     <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${x.gameCompleted ? "bg-white/[0.08] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}>
