@@ -416,9 +416,10 @@ function solveOptimalLineup({
       const livePoints = hasLivePoints
         ? Number(actualPointsById[String(pid)]) || 0
         : null;
+      const expectedMedian = frozenProj * availabilityMultiplier;
       const median = gameStarted && useLiveScoring
         ? (livePoints ?? 0)
-        : frozenProj * availabilityMultiplier;
+        : expectedMedian;
       const currentStarter = currentStarterIds.has(String(pid));
       const started = currentStarter && gameStarted;
       const lockedOnBench = !currentStarter && gameStarted;
@@ -436,6 +437,8 @@ function solveOptimalLineup({
         ? median
         : Math.max(0, median * (1 - volatility));
       const ceiling = gameStarted ? median : median * (1 + volatility);
+      const expectedFloor = Math.max(0, expectedMedian * (1 - volatility));
+      const expectedCeiling = expectedMedian * (1 + volatility);
       const stackBonus =
         strategy === "aggressive" &&
         ["WR", "TE", "RB"].includes(pos) &&
@@ -459,6 +462,8 @@ function solveOptimalLineup({
         projectionDetails,
         floor,
         ceiling,
+        expectedFloor,
+        expectedCeiling,
         selectionScore,
         marketValue: getMarketValue?.(p) || 0,
         injury,
@@ -1158,6 +1163,7 @@ export default function LineupTool() {
 
   const routeHandoffApplied = useRef(false);
   const tourSelectedLeagueRef = useRef(false);
+  const tourLineupViewRef = useRef("optimizer");
   useEffect(() => {
     if (routeHandoffApplied.current) return;
     try {
@@ -2150,7 +2156,7 @@ export default function LineupTool() {
                     showScoring={false}
                     layout="inline"
                   />
-                  <div className="mt-3 flex justify-end">
+                  <div className="mt-3 flex justify-end" data-guide-tip="lineup-source-explained">
                     <button
                       type="button"
                       onClick={() => setShowSourceHelp(true)}
@@ -2181,7 +2187,7 @@ export default function LineupTool() {
                     </div>
                   ) : null}
                   {league ? (
-                    <label className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3">
+                    <label data-guide-tip="lineup-chopped-override" className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3">
                       <span className="min-w-0">
                         <span className="flex items-center gap-2 text-sm font-bold text-white/80">
                           Treat this league as chopped
@@ -2404,7 +2410,7 @@ export default function LineupTool() {
               </div>
             </Card>
 
-            <div className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
+            <div data-guide-tip="lineup-view-toggle" className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
               <button type="button" aria-pressed={lineupView === "optimizer"} data-no-account-persist onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
                 {choppedMode ? "Survival lineup" : "Lineup optimizer"}
               </button>
@@ -2804,35 +2810,87 @@ export default function LineupTool() {
         <GuidedTips
           storageKey="tfa:tips:lineup-optimizer"
           label="Lineup Optimizer tips"
-          onTourStart={()=>{if(!activeLeague&&leagues?.[0]?.league_id){tourSelectedLeagueRef.current=true;setActiveLeague(String(leagues[0].league_id));}}}
-          onTourEnd={()=>{if(tourSelectedLeagueRef.current){tourSelectedLeagueRef.current=false;setActiveLeague(null);}}}
+          onTourStart={() => {
+            tourLineupViewRef.current = lineupView;
+            if (!activeLeague && leagues?.[0]?.league_id) {
+              tourSelectedLeagueRef.current = true;
+              setActiveLeague(String(leagues[0].league_id));
+            }
+          }}
+          onTourEnd={() => {
+            setLineupView(tourLineupViewRef.current);
+            if (tourSelectedLeagueRef.current) {
+              tourSelectedLeagueRef.current = false;
+              setActiveLeague(null);
+            }
+          }}
           steps={[
             {
               target: "lineup-week-controls",
-              title: "Choose your league and week",
-              detail: "Pick the Sleeper league you want to manage, then choose the NFL week. Try it now so the remaining tips have real lineups to show. If no league was selected, the tour temporarily chooses one and restores the empty state when you finish or close it. A sidebar league change also updates this screen.",
+              title: "Set the exact weekly context",
+              detail: "Choose a Sleeper league and NFL week. Arsenal reads that league's roster slots and scoring rules, follows the scheduled opponent, and saves your lineup preferences so you do not have to rebuild the workspace on every visit. If needed, this tour temporarily loads your first league and restores the empty state when it closes.",
             },
             {
               target: "lineup-source",
-              title: "Choose what drives the lineup",
-              detail: "The default is The Fantasy Arsenal Projections—the Safe / Expected weekly model. Open Model Settings if you want another projection source or need to confirm the league's scoring format. Changing the source can change both the recommended starters and matchup totals.",
+              focusSelector: '[data-guide-tip="lineup-source-explained"]',
+              title: "Choose the right decision model",
+              detail: "Projection mode is the weekly start/sit lens. Arsenal Safe is the default, and sources with underlying football stats can be recalculated with your league's scoring. Compatible published-total feeds use their closest supported scoring profile. Redraft values are for roster-strength context; dynasty values are intentionally excluded from a one-week decision.",
+              onEnter: () => {
+                const details = document.querySelector('[data-guide-tip="lineup-source"]');
+                if (details) details.open = true;
+              },
+            },
+            {
+              target: "lineup-chopped-override",
+              title: "Correct custom survival leagues once",
+              detail: "If a commissioner runs a chopped or guillotine format that Sleeper does not label, turn on this league-specific override. Both views immediately switch from head-to-head logic to survival logic, and the choice follows your Arsenal account across signed-in devices.",
+              onEnter: () => {
+                const details = document.querySelector('[data-guide-tip="lineup-source"]');
+                if (details) details.open = true;
+              },
+            },
+            {
+              target: "lineup-view-toggle",
+              title: "Move from the league board to the decision",
+              detail: "Matchup Overview shows every matchup's live or final score beside its projected finish. Best Ball uses the week's active roster, while chopped mode becomes a heat-mapped survival board around the elimination line. Open any team there for its optimized lineup, then return to your own matchup with one tap.",
+              onEnter: () => setLineupView("overview"),
             },
             {
               target: "lineup-matchup",
-              title: "The matchup follows your schedule",
-              detail: "Your Sleeper roster is locked on the left. When you change weeks, the optimizer finds that week's opponent automatically. Selecting another opponent does the reverse: it jumps to the week when you play them.",
+              title: choppedMode ? "Optimize against the cut line" : "Follow the real matchup",
+              detail: choppedMode
+                ? "Survival mode removes the artificial head-to-head opponent and builds the strongest legal lineup against the week's elimination field."
+                : "The optimizer locks your roster on the left and follows the scheduled opponent for the selected week. Choosing another opponent jumps to the week when you face them.",
+              onEnter: () => setLineupView("optimizer"),
+            },
+            {
+              target: "lineup-weather",
+              title: "Audit the game environment",
+              detail: "Open Game Conditions for stadium, indoor status, forecast icon, temperature, precipitation, wind, and live or final ESPN game status. Forecasts are stored by the projection update, so opening this panel does not spend a weather request.",
+              onEnter: () => {
+                setLineupView("optimizer");
+                window.setTimeout(() => {
+                  const details = document.querySelector('[data-guide-tip="lineup-weather"]');
+                  if (details) details.open = true;
+                }, 0);
+              },
             },
             {
               target: "lineup-teams",
               scrollBlock: "start",
-              title: "Read the recommended lineups",
-              detail: "Your best projected starters are on the left and your opponent's are on the right. Bench players are ranked below them. A Close call note means a bench option is within two projected points, so that decision deserves a closer look.",
+              title: "Read every row as a scoring decision",
+              detail: "Starters and bench options are ranked within the league's legal slots. Injury and bye labels stay visible, and mobile rows show Live or Final / Projected together. Tap anywhere on a player row to open scoring anatomy: league-scored expected points, frozen pregame projection, live and projected football stats, expected range, and Arsenal AI analysis.",
             },
             {
-              target: "lineup-explainer",
+              target: choppedMode ? "lineup-teams" : "lineup-explainer",
               scrollBlock: "start",
-              title: "Understand the difficult decisions",
-              detail: "Use the Decision Explainer when two players are close. It compares their expected points and range, then adds injury status, weather, and estimated win-probability impact. These ranges describe uncertainty—they are not guaranteed scores.",
+              title: choppedMode
+                ? "Build margin above the elimination line"
+                : "Finish with the decisions that can swing the week",
+              detail: choppedMode
+                ? "The survival lineup maximizes the selected weekly model within your legal slots. Use close-call notes, injury tags, weather, and each player's scoring anatomy to judge how much risk you want while protecting your margin above the chop line."
+                : "Decision Explainer prioritizes the closest legal alternatives and combines projected points, modeled range, injury designation, weather context, and estimated win-probability impact. Treat the range as uncertainty—not a promised minimum or maximum—and use the player popup to inspect which football stats created the recommendation.",
+              onEnter: () => setLineupView("optimizer"),
             },
           ]}
         />
@@ -2978,7 +3036,7 @@ function GameConditions({ results = [] }) {
   const rows = [...games.values()];
   if (!rows.length) return null;
   return (
-    <details className="group mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
+    <details data-guide-tip="lineup-weather" className="group mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[9px] font-black uppercase tracking-[0.18em] text-sky-100/50">
@@ -3206,7 +3264,7 @@ function PlayerBreakdownModal({ player, actualStats = {}, metricMode, scoringSet
   );
   return (
     <div className="fixed inset-0 z-[230] overflow-y-auto bg-slate-950/88 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section role="dialog" aria-modal="true" aria-labelledby="lineup-player-breakdown-title" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-cyan-200/20 bg-slate-950 shadow-2xl shadow-black/60">
+      <section data-guide-tip="lineup-player-breakdown" role="dialog" aria-modal="true" aria-labelledby="lineup-player-breakdown-title" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-cyan-200/20 bg-slate-950 shadow-2xl shadow-black/60">
         <header className="border-b border-white/10 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.16),transparent_46%)] p-5 sm:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -3218,7 +3276,7 @@ function PlayerBreakdownModal({ player, actualStats = {}, metricMode, scoringSet
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/50">Live fantasy points</div><b className="mt-1 block text-3xl text-emerald-100">{player.hasLivePoints ? formatFantasyPoints(player.livePoints) : "—"}</b><small className="text-white/32">Sleeper game stats</small></div>
-            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/50">{metricMode === "values" ? "Redraft value" : leagueScored ? "League-scored expected points" : "Frozen projection"}</div><b className="mt-1 block text-3xl text-cyan-100">{formatFantasyPoints(player.frozenProj)}</b><small className="text-white/32">{metricMode === "values" ? "Season-long ranking scale" : `${leagueScored ? "Your league settings · " : ""}saved before kickoff`}</small>{metricMode === "projections" ? <div className="mt-2 text-[9px] text-cyan-100/45">Expected range {formatFantasyPoints(player.floor)}–{formatFantasyPoints(player.ceiling)} · not a maximum</div> : null}</div>
+            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/50">{metricMode === "values" ? "Redraft value" : leagueScored ? "League-scored expected points" : "Frozen projection"}</div><b className="mt-1 block text-3xl text-cyan-100">{formatFantasyPoints(player.frozenProj)}</b><small className="text-white/32">{metricMode === "values" ? "Season-long ranking scale" : `${leagueScored ? "Your league settings · " : ""}saved before kickoff`}</small>{metricMode === "projections" ? <div className="mt-2 text-[9px] text-cyan-100/45">Expected range {formatFantasyPoints(player.expectedFloor ?? player.floor)}–{formatFantasyPoints(player.expectedCeiling ?? player.ceiling)}</div> : null}</div>
           </div>
           {metricMode === "projections" && analysis ? <div className="mt-3 rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.07] to-violet-300/[0.045] p-4 text-xs leading-5 text-white/58"><div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/65">Arsenal AI analysis</div><p className="mt-1 font-semibold text-white/78">{analysis.headline}</p><p className="mt-1">{analysis.drivers}</p>{analysis.gameScript ? <p className="mt-1">{analysis.gameScript}</p> : null}<p className="mt-1 text-white/42">{analysis.accuracyText}</p></div> : null}
         </header>
