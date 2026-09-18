@@ -38,13 +38,30 @@ import {
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
 
+const LINEUP_SOURCE_KEYS = new Set([
+  "proj:thefantasyarsenal-model",
+  "proj:fantasypros",
+  "proj:draftsharks",
+  "proj:sleeper",
+  "val:fantasycalc",
+  "val:fantasynav",
+  "val:thefantasyarsenal",
+]);
 const LINEUP_PROJECTION_SOURCES = DEFAULT_SOURCES.filter((source) =>
-  [
-    "proj:thefantasyarsenal-model",
-    "proj:fantasypros",
-    "proj:draftsharks",
-    "proj:sleeper",
-  ].includes(source.key),
+  LINEUP_SOURCE_KEYS.has(source.key),
+).map((source) =>
+  source.type === "value"
+    ? {
+        ...source,
+        productLabel: "Redraft / current-season value",
+        supports: {
+          ...(source.supports || {}),
+          dynasty: false,
+          redraft: true,
+          qbToggle: true,
+        },
+      }
+    : source,
 );
 
 /* ---------- Projections setup ---------- */
@@ -316,6 +333,7 @@ function solveOptimalLineup({
   kickoffMap = {},
   actualPointsById = {},
   frozenProjectionById = {},
+  useLiveScoring = true,
   strategy = "median",
   lockedIds = new Set(),
   excludedIds = new Set(),
@@ -395,7 +413,7 @@ function solveOptimalLineup({
       const livePoints = hasLivePoints
         ? Number(actualPointsById[String(pid)]) || 0
         : null;
-      const median = gameStarted
+      const median = gameStarted && useLiveScoring
         ? (livePoints ?? 0)
         : frozenProj * availabilityMultiplier;
       const currentStarter = currentStarterIds.has(String(pid));
@@ -1075,6 +1093,7 @@ export default function LineupTool() {
   const [userTouchedQB, setUserTouchedQB] = useState(false);
   const [sourceKey, setSourceKey] = useState("proj:thefantasyarsenal-model");
   const [sourceNotice, setSourceNotice] = useState("");
+  const [showSourceHelp, setShowSourceHelp] = useState(false);
   const [lineupView, setLineupView] = useState("optimizer");
   const [treatAsChopped, setTreatAsChopped] = useState(false);
   const [lineupSettingsScope, setLineupSettingsScope] = useState("");
@@ -1296,6 +1315,12 @@ export default function LineupTool() {
           localStorage.getItem(`lineup-settings:${scope}`) || "{}",
         );
         setTreatAsChopped(saved.treatAsChopped === true);
+        if (LINEUP_SOURCE_KEYS.has(saved.sourceKey)) setSourceKey(saved.sourceKey);
+        if (["redraft", "dynasty"].includes(saved.formatLocal))
+          setFormatLocal(saved.formatLocal);
+        if (["1qb", "sf"].includes(saved.qbLocal)) setQbLocal(saved.qbLocal);
+        if (["optimizer", "overview"].includes(saved.lineupView))
+          setLineupView(saved.lineupView);
       } catch {
         setTreatAsChopped(false);
       }
@@ -1324,6 +1349,39 @@ export default function LineupTool() {
         window.setTimeout(() => syncArsenal({ quiet: true }), 100);
     } catch {}
   };
+  useEffect(() => {
+    if (!activeLeague || lineupSettingsScope !== String(activeLeague)) return;
+    const timer = window.setTimeout(() => {
+      try {
+        const key = `lineup-settings:${activeLeague}`;
+        const saved = JSON.parse(localStorage.getItem(key) || "{}");
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            ...saved,
+            sourceKey,
+            formatLocal,
+            qbLocal,
+            lineupView,
+            treatAsChopped,
+            updatedAt: Date.now(),
+          }),
+        );
+        if (arsenalConnected) syncArsenal({ quiet: true });
+      } catch {}
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeLeague,
+    arsenalConnected,
+    formatLocal,
+    lineupSettingsScope,
+    lineupView,
+    qbLocal,
+    sourceKey,
+    syncArsenal,
+    treatAsChopped,
+  ]);
   const matchupByRosterId = useMemo(
     () =>
       Object.fromEntries(
@@ -1513,26 +1571,43 @@ export default function LineupTool() {
   // auto-infer scoring on league change
   useEffect(() => {
     if (!league) return;
+    let saved = {};
+    try {
+      saved = JSON.parse(
+        localStorage.getItem(`lineup-settings:${league.league_id}`) || "{}",
+      );
+    } catch {}
     setOwnerB(""); // reset opponent when switching leagues
-    setSourceKey("proj:thefantasyarsenal-model");
+    setSourceKey(
+      LINEUP_SOURCE_KEYS.has(saved.sourceKey)
+        ? saved.sourceKey
+        : "proj:thefantasyarsenal-model",
+    );
     setSourceNotice("");
     setProjectionScoring(inferProjectionScoringFromLeague(league));
     if (!myUserId) return;
     if (rosterByOwnerId[myUserId]) setOwnerA(myUserId);
-    setFormatLocal(inferFormatFromLeague(league));
-    setQbLocal(inferQbTypeFromLeague(league));
+    setFormatLocal(
+      String(saved.sourceKey || "").startsWith("val:")
+        ? "redraft"
+        : ["redraft", "dynasty"].includes(saved.formatLocal)
+          ? saved.formatLocal
+          : inferFormatFromLeague(league),
+    );
+    setQbLocal(
+      ["1qb", "sf"].includes(saved.qbLocal)
+        ? saved.qbLocal
+        : inferQbTypeFromLeague(league),
+    );
+    if (["optimizer", "overview"].includes(saved.lineupView))
+      setLineupView(saved.lineupView);
     setUserTouchedFormat(false);
     setUserTouchedQB(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league, myUserId]);
 
   const chooseSource = (nextSource) => {
-    const leagueScoringSources = new Set([
-      "proj:thefantasyarsenal-model",
-      "proj:fantasypros",
-      "proj:draftsharks",
-      "proj:sleeper",
-    ]);
+    const leagueScoringSources = LINEUP_SOURCE_KEYS;
     if (league && !leagueScoringSources.has(nextSource)) {
       setSourceNotice(
         "League scoring requires a source with underlying projected stats. Choose The Fantasy Arsenal Safe Model for matchup-adjusted weekly forecasts or FantasyPros for a rescored season-average estimate.",
@@ -1540,8 +1615,14 @@ export default function LineupTool() {
       setSourceKey("proj:thefantasyarsenal-model");
       return;
     }
+    if (String(nextSource).startsWith("val:")) {
+      setFormatLocal("redraft");
+      setUserTouchedFormat(true);
+    }
     setSourceNotice(
-      nextSource === "proj:sleeper"
+      String(nextSource).startsWith("val:")
+        ? "Value mode uses current-season redraft rankings to order lineup choices. It can identify the strongest season-long player, but it does not model this week's opponent, weather, or expected fantasy points, so matchup totals and win probability are unavailable."
+        : nextSource === "proj:sleeper"
         ? "Sleeper supplies weekly Standard, Half-PPR, and PPR totals. The optimizer uses the closest reception-scoring profile, but Sleeper cannot be exactly rescored for custom settings such as 6-point passing touchdowns or yardage bonuses."
         : nextSource === "proj:draftsharks"
           ? "DraftSharks is recalculated from its raw season stat projections using your league settings, then converted to a weekly average. It is not a matchup-specific weekly forecast."
@@ -1715,6 +1796,7 @@ export default function LineupTool() {
       kickoffMap,
       actualPointsById,
       frozenProjectionById,
+      useLiveScoring: metricMode === "projections",
       strategy: lineupStrategy,
       lockedIds: startedIdsFor(uid),
       excludedIds: new Set(),
@@ -2024,19 +2106,23 @@ export default function LineupTool() {
                     showScoring={false}
                     layout="inline"
                   />
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowSourceHelp(true)}
+                      className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100"
+                    >
+                      Projections &amp; values explained
+                    </button>
+                  </div>
                   {league ? (
                     <div className="mt-3 rounded-xl border border-emerald-300/30 bg-emerald-300/[0.09] px-4 py-3 text-sm text-white/70">
                       <b className="text-emerald-100">Why only these sources?</b>{" "}
-                      The optimizer only offers feeds with weekly projections or
-                      enough underlying stats to apply league scoring. Arsenal
-                      Safe is an exact, matchup-adjusted weekly model.
-                      FantasyPros and DraftSharks are rescored from raw season
-                      stats and shown as weekly averages. Sleeper supplies weekly
-                      Standard, Half-PPR, and PPR totals, but cannot reproduce
-                      unusual custom bonuses or passing-TD values. Other feeds
-                      only provide finished point totals, so using them here
-                      would misrepresent your league scoring. Live scores always
-                      come directly from Sleeper.
+                      Weekly projection feeds must support a defensible scoring
+                      conversion. Value mode is limited to current-season
+                      redraft boards; dynasty markets are intentionally excluded
+                      because age and multi-year trade value should not decide a
+                      one-week lineup. Live scores always come from Sleeper.
                     </div>
                   ) : null}
                   {sourceNotice ? (
@@ -2402,6 +2488,13 @@ export default function LineupTool() {
                   </div>
                 </div>
 
+                <GameConditions
+                  results={[
+                    ownerA ? compute(ownerA) : null,
+                    !choppedMode && ownerB ? compute(ownerB) : null,
+                  ]}
+                />
+
                 <div className={`grid gap-4 ${choppedMode ? "" : "md:grid-cols-2"}`} data-guide-tip="lineup-teams">
                   <TeamBox
                     title={
@@ -2431,7 +2524,7 @@ export default function LineupTool() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
                         <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          Live + projected edge
+                          {metricMode === "projections" ? "Live + projected edge" : "Optimized value edge"}
                         </div>
                         <div className="mt-1 font-bold">
                           {matchup?.delta >= 0
@@ -2457,7 +2550,7 @@ export default function LineupTool() {
                             : "Requires projection mode"}
                         </div>
                       </div>
-                      <div>
+                      <div className={metricMode === "projections" ? "" : "hidden"}>
                         <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                           Your range
                         </div>
@@ -2469,7 +2562,7 @@ export default function LineupTool() {
                           Floor to ceiling
                         </div>
                       </div>
-                      <div>
+                      <div className={metricMode === "projections" ? "" : "hidden"}>
                         <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                           Opponent range
                         </div>
@@ -2594,6 +2687,66 @@ export default function LineupTool() {
           </>
         )}
       </div>
+      {showSourceHelp ? (
+        <div
+          className="fixed inset-0 z-[220] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lineup-source-help-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowSourceHelp(false);
+          }}
+        >
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-cyan-300/20 bg-slate-950 p-5 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-200/55">
+                  Lineup source guide
+                </div>
+                <h2 id="lineup-source-help-title" className="mt-1 text-2xl font-black">
+                  Projections and values answer different questions
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSourceHelp(false)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60"
+                aria-label="Close source explanation"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4">
+                <h3 className="font-black text-emerald-100">Weekly projections</h3>
+                <p className="mt-2 text-xs leading-5 text-white/55">
+                  Best for start/sit decisions. They estimate this week&apos;s
+                  fantasy points and can support projected totals, ranges, and
+                  win probability. Arsenal Safe also models opponent, venue,
+                  weather, and current-week availability.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.05] p-4">
+                <h3 className="font-black text-violet-100">Redraft values</h3>
+                <p className="mt-2 text-xs leading-5 text-white/55">
+                  Useful as a season-long strength tiebreaker. They rank players
+                  for the current season but are not forecasts for this specific
+                  game, so value mode does not claim a matchup total or win
+                  probability.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 rounded-2xl bg-white/[0.035] p-4 text-xs leading-5 text-white/48">
+              Only FantasyCalc Redraft, FantasyNavigator Redraft, and Arsenal
+              Redraft are offered as values. Dynasty sources are excluded because
+              age, future seasons, and trade-market demand can favor a player who
+              is not the better start this week. The current data library does
+              not contain a dedicated best-ball value board, so the optimizer
+              does not label a redraft source as best-ball data.
+            </div>
+          </div>
+        </div>
+      ) : null}
       {username ? (
         <GuidedTips
           storageKey="tfa:tips:lineup-optimizer"
@@ -2696,6 +2849,70 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
   );
 }
 
+function GameConditions({ results = [] }) {
+  const players = results
+    .filter(Boolean)
+    .flatMap((result) => result?.starters || []);
+  const games = new Map();
+  players.forEach((player) => {
+    const teams = Array.isArray(player?.game?.teams)
+      ? player.game.teams.map(normalizeTeamAbbr).filter(Boolean)
+      : [];
+    const key =
+      player?.game?.id ||
+      (teams.length ? [...teams].sort().join(":") : player?.team || "unknown");
+    if (games.has(key)) return;
+    games.set(key, {
+      teams,
+      team: player?.team,
+      weather: player?.weather || null,
+      started: player?.gameStarted,
+      completed: player?.gameCompleted,
+    });
+  });
+  const rows = [...games.values()];
+  if (!rows.length) return null;
+  return (
+    <div className="mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[9px] font-black uppercase tracking-[0.18em] text-sky-100/50">
+            Central game conditions
+          </div>
+          <div className="mt-0.5 text-xs text-white/42">
+            Forecasts for games represented in the optimized lineup
+          </div>
+        </div>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">
+          ESPN weather
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map((row, index) => {
+          const matchup = row.teams.length
+            ? row.teams.join(" vs ")
+            : row.team || "NFL game";
+          const temperature = Number(row.weather?.temperature);
+          return (
+            <div key={`${matchup}:${index}`} className="rounded-xl bg-black/20 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <b className="truncate text-xs text-white/75">{matchup}</b>
+                <span className="shrink-0 text-[8px] font-bold uppercase text-white/30">
+                  {row.completed ? "Final" : row.started ? "Live" : "Forecast"}
+                </span>
+              </div>
+              <div className="mt-1 text-[10px] leading-4 text-sky-100/65">
+                {row.weather?.summary || "Indoor or no outdoor forecast reported"}
+                {Number.isFinite(temperature) ? ` · ${temperature}°` : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function TeamBox({ title, res, metricLabel, enableSuggestions }) {
   const suggestions = useMemo(() => {
     if (!enableSuggestions || !res) return {};
@@ -2712,16 +2929,16 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
         <div className="text-sm opacity-70">Pick an owner.</div>
       ) : (
         <>
-          <div className="mb-3 grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-lg bg-black/15 px-2 py-1.5">
+          <div className={`mb-3 grid gap-2 text-center ${metricLabel === "Value" ? "grid-cols-1" : "grid-cols-2"}`}>
+            {metricLabel !== "Value" ? <div className="rounded-lg bg-black/15 px-2 py-1.5">
               <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
                 Live total
               </div>
               <b className="text-emerald-100">{formatFantasyPoints(res.liveScore)}</b>
-            </div>
+            </div> : null}
             <div className="rounded-lg bg-black/15 px-2 py-1.5">
               <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
-                Projected total
+                {metricLabel === "Value" ? "Optimized lineup value" : "Projected total"}
               </div>
               <b className="text-cyan-100">
                 {formatFantasyPoints(res.projectedScore)}
@@ -2755,8 +2972,8 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
             <th className="py-1">Pos</th>
             <th className="py-1">Player</th>
             <th className="py-1 text-right">
-              <span className="sm:hidden">Live / Proj</span>
-              <span className="hidden sm:inline">Points</span>
+              <span className="sm:hidden">{metricLabel === "Value" ? "Value" : "Live / Proj"}</span>
+              <span className="hidden sm:inline">{metricLabel === "Value" ? "Value" : "Points"}</span>
             </th>
           </tr>
         </thead>
@@ -2769,9 +2986,21 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                 <td className="py-1">
                   {x.name}{" "}
                   <span className="opacity-60 text-xs">({x.team})</span>
-                  {x.gameStarted ? (
+                  {x.gameStarted && metricLabel !== "Value" ? (
                     <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${x.gameCompleted ? "bg-white/[0.08] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}>
                       {x.gameCompleted ? "Final" : "Live"}
+                    </span>
+                  ) : null}
+                  {x.injury || x.inactive || x.isOnBye ? (
+                    <span
+                      className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${x.isOnBye || x.inactive || ["OUT", "IR", "PUP", "SUSPENDED"].includes(x.injury) ? "bg-rose-300/12 text-rose-100" : x.injury === "DOUBTFUL" ? "bg-orange-300/12 text-orange-100" : "bg-amber-300/12 text-amber-100"}`}
+                      title="Sleeper player availability status used by the lineup optimizer"
+                    >
+                      {x.isOnBye
+                        ? "BYE"
+                        : x.inactive
+                          ? "INACTIVE"
+                          : x.injury}
                     </span>
                   ) : null}
                   {alts.length > 0 && (
@@ -2790,7 +3019,7 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                   )}
                 </td>
                 <td className="min-w-[82px] py-1.5 text-right tabular-nums">
-                  {x.gameStarted ? (
+                  {x.gameStarted && metricLabel !== "Value" ? (
                     <div className="inline-flex flex-col items-end">
                       <div className="whitespace-nowrap text-sm font-black">
                         <span className={x.gameCompleted ? "text-white/75" : "text-emerald-100"}>
@@ -2811,7 +3040,7 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                         {formatFantasyPoints(x.frozenProj)}
                       </b>
                       <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
-                        Projected
+                        {metricLabel === "Value" ? "Redraft value" : "Projected"}
                       </span>
                     </div>
                   )}
