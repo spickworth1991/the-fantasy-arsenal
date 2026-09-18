@@ -11,6 +11,7 @@ const BackgroundParticles = dynamic(
 import LoadingScreen from "../../components/LoadingScreen";
 import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import { useSleeper } from "../../context/SleeperContext";
+import { useArsenalAccount } from "../../context/ArsenalAccountContext";
 import SourceSelector, {
   DEFAULT_SOURCES,
 } from "../../components/SourceSelector";
@@ -1065,6 +1066,8 @@ export default function LineupTool() {
     projectionScoring,
     setProjectionScoring,
   } = useSleeper();
+  const { isConnected: arsenalConnected, syncNow: syncArsenal } =
+    useArsenalAccount();
 
   const [formatLocal, setFormatLocal] = useState(format || "dynasty");
   const [qbLocal, setQbLocal] = useState(qbType || "sf");
@@ -1073,6 +1076,8 @@ export default function LineupTool() {
   const [sourceKey, setSourceKey] = useState("proj:thefantasyarsenal-model");
   const [sourceNotice, setSourceNotice] = useState("");
   const [lineupView, setLineupView] = useState("optimizer");
+  const [treatAsChopped, setTreatAsChopped] = useState(false);
+  const [lineupSettingsScope, setLineupSettingsScope] = useState("");
 
   const [metricMode, setMetricMode] = useState("projections"); // projections | values
   const [projectionSource, setProjectionSource] = useState("ARSENAL_MODEL");
@@ -1270,10 +1275,55 @@ export default function LineupTool() {
 
   const slots = useMemo(() => parseLeagueSlots(league), [league]);
   const isBestBall = Number(league?.settings?.best_ball || 0) === 1;
-  const choppedMode = useMemo(
+  const detectedChoppedLeague = useMemo(
     () => isChoppedLeague(league, weeklyMatchups),
     [league, weeklyMatchups],
   );
+  const choppedMode = useMemo(
+    () => detectedChoppedLeague || treatAsChopped,
+    [detectedChoppedLeague, treatAsChopped],
+  );
+  useEffect(() => {
+    if (!activeLeague) {
+      setTreatAsChopped(false);
+      setLineupSettingsScope("");
+      return undefined;
+    }
+    const scope = String(activeLeague);
+    const load = () => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(`lineup-settings:${scope}`) || "{}",
+        );
+        setTreatAsChopped(saved.treatAsChopped === true);
+      } catch {
+        setTreatAsChopped(false);
+      }
+      setLineupSettingsScope(scope);
+    };
+    load();
+    window.addEventListener("tfa:cloud-sync-applied", load);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", load);
+  }, [activeLeague]);
+  const changeTreatAsChopped = (checked) => {
+    const next = Boolean(checked);
+    setTreatAsChopped(next);
+    if (!activeLeague || lineupSettingsScope !== String(activeLeague)) return;
+    try {
+      const key = `lineup-settings:${activeLeague}`;
+      const saved = JSON.parse(localStorage.getItem(key) || "{}");
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...saved,
+          treatAsChopped: next,
+          updatedAt: Date.now(),
+        }),
+      );
+      if (arsenalConnected)
+        window.setTimeout(() => syncArsenal({ quiet: true }), 100);
+    } catch {}
+  };
   const matchupByRosterId = useMemo(
     () =>
       Object.fromEntries(
@@ -2000,6 +2050,39 @@ export default function LineupTool() {
                       lineup tool is running without bye penalties for now.
                     </div>
                   ) : null}
+                  {league ? (
+                    <label className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3">
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2 text-sm font-bold text-white/80">
+                          Treat this league as chopped
+                          <span
+                            className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/15 text-[10px] text-white/45"
+                            title="Some commissioners run custom chopped or guillotine leagues that Sleeper does not label automatically. Turn this on to use survival lineups and the chopped leaderboard for this league."
+                            aria-label="About the chopped league override"
+                          >
+                            ?
+                          </span>
+                        </span>
+                        <span className="mt-1 block text-[10px] leading-4 text-white/38">
+                          Forces survival lineup and chopped overview behavior
+                          for custom leagues. Saved for this league
+                          {arsenalConnected
+                            ? " and synced to your Arsenal account"
+                            : " on this device"}
+                          .
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={treatAsChopped}
+                        onChange={(event) =>
+                          changeTreatAsChopped(event.target.checked)
+                        }
+                        data-account-persist="off"
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-rose-400"
+                      />
+                    </label>
+                  ) : null}
                 </div>
               </details>
 
@@ -2192,10 +2275,10 @@ export default function LineupTool() {
             </Card>
 
             <div className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
-              <button type="button" onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+              <button type="button" aria-pressed={lineupView === "optimizer"} data-account-preference="lineup-view-optimizer" onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
                 {choppedMode ? "Survival lineup" : "Lineup optimizer"}
               </button>
-              <button type="button" onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
+              <button type="button" aria-pressed={lineupView === "overview"} data-account-preference="lineup-view-overview" onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
                 {choppedMode ? "Chopped overview" : "Matchup overview"}
               </button>
             </div>
@@ -2571,9 +2654,9 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto p-2">
-        <div className="min-w-[620px]">
-          <div className="grid grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] gap-3 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white/28"><span>Rank</span><span>Franchise</span><span className="text-right">Live</span><span className="text-right">Projected</span><span className="text-right">Safety</span></div>
+      <div className="p-2">
+        <div className="min-w-0">
+          <div className="grid grid-cols-[36px_minmax(0,1fr)_76px] gap-2 px-2 py-2 text-[8px] font-bold uppercase tracking-[0.12em] text-white/28 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:text-[9px] sm:tracking-[0.16em]"><span>Rank</span><span>Franchise</span><span className="text-right sm:hidden">Live / Proj</span><span className="hidden text-right sm:block">Live</span><span className="hidden text-right sm:block">Projected</span><span className="hidden text-right sm:block">Safety</span></div>
           {groups.map((group, index) => {
             const team = group.teams[0];
             const mine = String(team?.uid) === String(myUserId);
@@ -2598,12 +2681,13 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
               safe: "text-emerald-200",
             }[heat];
             const safetyLabel = heat === "cut" ? "PROJECTED CHOP" : heat === "hot" ? `+${cushion.toFixed(1)} DANGER` : heat === "close" ? `+${cushion.toFixed(1)} CLOSE` : `+${cushion.toFixed(1)} SAFE`;
-            return <button key={group.id} type="button" onClick={() => onOpen(team)} className={`mb-1 grid w-full grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] items-center gap-3 rounded-xl border px-3 py-3 text-left transition hover:brightness-125 ${rowTone} ${mine ? "ring-1 ring-inset ring-cyan-300/35" : ""}`}>
-              <span className={`grid h-8 w-8 place-items-center rounded-lg text-xs font-black ${badgeTone}`}>#{index + 1}</span>
+            return <button key={group.id} type="button" onClick={() => onOpen(team)} className={`mb-1 grid w-full grid-cols-[36px_minmax(0,1fr)_76px] items-center gap-2 rounded-xl border px-2 py-2.5 text-left transition hover:brightness-125 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:py-3 ${rowTone} ${mine ? "ring-1 ring-inset ring-cyan-300/35" : ""}`}>
+              <span className={`grid h-7 w-7 place-items-center rounded-lg text-[10px] font-black sm:h-8 sm:w-8 sm:text-xs ${badgeTone}`}>#{index + 1}</span>
               <span className="min-w-0"><b className="block truncate">{team?.label}</b><small className="text-[9px] font-bold uppercase tracking-wider text-white/35">{mine ? "You · " : ""}{heat === "cut" ? "Current cut line" : "Open lineup"}</small></span>
-              <b className="text-right text-emerald-100">{formatFantasyPoints(team?.live)}</b>
-              <b className="text-right">{formatFantasyPoints(team?.projected)}</b>
-              <span className={`text-right text-[10px] font-black ${textTone}`}>{safetyLabel}</span>
+              <b className="text-right text-[11px] tabular-nums sm:hidden"><span className="text-emerald-100">{formatFantasyPoints(team?.live)}</span><span className="px-0.5 text-white/25">/</span>{formatFantasyPoints(team?.projected)}</b>
+              <b className="hidden text-right text-emerald-100 sm:block">{formatFantasyPoints(team?.live)}</b>
+              <b className="hidden text-right sm:block">{formatFantasyPoints(team?.projected)}</b>
+              <span className={`hidden text-right text-[10px] font-black sm:block ${textTone}`}>{safetyLabel}</span>
             </button>;
           })}
         </div>

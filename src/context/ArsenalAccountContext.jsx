@@ -19,7 +19,7 @@ const SYNC_EXACT = new Set([
 const SYNC_PREFIXES = [
   "tfa:tips:",
   "tfa:league-hub:",
-  "commissioner-", "orphan-recruiting:", "lineup-saves:", "lineup-controls:",
+  "commissioner-", "orphan-recruiting:", "lineup-saves:", "lineup-controls:", "lineup-settings:",
   "draft-helper-queue:", "playoff-scenarios:",
   "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",
   "ps:guard:", "ps:ballsville:",
