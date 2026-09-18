@@ -2637,9 +2637,11 @@ function TeamBox({ title, res, metricLabel, enableSuggestions }) {
             </div>
             <div className="rounded-lg bg-black/15 px-2 py-1.5">
               <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
-                Projected final
+                Projected total
               </div>
-              <b>{formatFantasyPoints(res.projectedScore)}</b>
+              <b className="text-cyan-100">
+                {formatFantasyPoints(res.projectedScore)}
+              </b>
             </div>
           </div>
 
@@ -2668,7 +2670,10 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
           <tr className="text-left opacity-70">
             <th className="py-1">Pos</th>
             <th className="py-1">Player</th>
-            <th className="py-1 text-right">Points</th>
+            <th className="py-1 text-right">
+              <span className="sm:hidden">Live / Proj</span>
+              <span className="hidden sm:inline">Points</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -2700,18 +2705,31 @@ function Section({ label, items, metricLabel, suggestions = {} }) {
                     </div>
                   )}
                 </td>
-                <td className="py-1 text-right">
+                <td className="min-w-[82px] py-1.5 text-right tabular-nums">
                   {x.gameStarted ? (
-                    <>
-                      <b className="block text-emerald-100">
+                    <div className="inline-flex flex-col items-end">
+                      <div className="whitespace-nowrap text-sm font-black">
+                        <span className={x.gameCompleted ? "text-white/75" : "text-emerald-100"}>
                         {formatFantasyPoints(x.livePoints ?? 0)}
-                      </b>
-                      <span className="block text-[9px] text-white/35">
-                        {formatFantasyPoints(x.frozenProj)} proj
+                        </span>
+                        <span className="mx-1 text-white/20">/</span>
+                        <span className="text-cyan-100/80">
+                          {formatFantasyPoints(x.frozenProj)}
+                        </span>
+                      </div>
+                      <span className="block text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
+                        {x.gameCompleted ? "Final" : "Live"} / Projected
                       </span>
-                    </>
+                    </div>
                   ) : (
-                    <b>{formatFantasyPoints(x.frozenProj)}</b>
+                    <div className="inline-flex flex-col items-end">
+                      <b className="text-cyan-100/90">
+                        {formatFantasyPoints(x.frozenProj)}
+                      </b>
+                      <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
+                        Projected
+                      </span>
+                    </div>
                   )}
                 </td>
               </tr>

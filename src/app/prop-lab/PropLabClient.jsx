@@ -39,6 +39,7 @@ const decimalToAmerican = (decimal) => Math.round(decimal >= 2 ? (decimal - 1) *
 const authError = (error) => /unauthorized/i.test(String(error?.message || error));
 const nameKey = (value) => String(value || "").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\.?\b/g, "").replace(/[^a-z0-9]/g, "");
 const impliedProbability = (odds) => odds > 0 ? 100 / (odds + 100) : Math.abs(odds) / (Math.abs(odds) + 100);
+const displayLegLine = (leg) => leg.direction === "over" ? `${Math.floor(Number(leg.line)) + 1}+` : `Under ${leg.line}`;
 
 function Panel({ children, className = "" }) {
   return <section className={`rounded-3xl border border-white/10 bg-slate-950/80 ${className}`}>{children}</section>;
@@ -67,7 +68,7 @@ function RecommendationCard({ prop, index, tracked, busy, onSave }) {
           <div className="mt-0.5 text-xs text-white/45">{leg.statLabel}</div>
         </div>
         <div className="text-right">
-          <div className={`text-base font-black ${leg.direction === "over" ? "text-emerald-200" : "text-violet-200"}`}>{leg.direction.toUpperCase()} {leg.line}</div>
+          <div className={`text-base font-black ${leg.direction === "over" ? "text-emerald-200" : "text-violet-200"}`}>{displayLegLine(leg)}</div>
           <div className="text-[10px] text-white/35">Proj. {leg.projection}{Number.isFinite(leg.lineCushionPercent) ? ` · ${leg.lineCushionPercent}% cushion` : ""}</div>
         </div>
       </div>)}
@@ -90,6 +91,9 @@ export default function PropLabClient() {
   const [week, setWeek] = useState(1);
   const [selectedGames, setSelectedGames] = useState(new Set());
   const [amount, setAmount] = useState(12);
+  const [interfaceMode, setInterfaceMode] = useState("easy");
+  const [easyConfidence, setEasyConfidence] = useState(75);
+  const [easyPayout, setEasyPayout] = useState(45);
   const [minLegs, setMinLegs] = useState(1);
   const [maxLegs, setMaxLegs] = useState(3);
   const [recommendationMode, setRecommendationMode] = useState("balanced");
@@ -108,6 +112,18 @@ export default function PropLabClient() {
   const [bets, setBets] = useState([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const effectiveRecommendationMode = interfaceMode === "easy"
+    ? easyConfidence >= 70 ? "safest" : easyPayout >= 70 ? "edge" : "balanced"
+    : recommendationMode;
+  const effectiveMinProbability = interfaceMode === "easy"
+    ? Math.max(50, Math.min(95, 50 + easyConfidence * 0.4 - easyPayout * 0.12))
+    : minProbability;
+  const effectiveMinLineCushion = interfaceMode === "easy"
+    ? Math.max(0, (easyConfidence - 45) * 0.3)
+    : minLineCushion;
+  const effectiveMinEdge = interfaceMode === "easy" ? -35 + easyPayout * 0.25 : minEdge;
+  const effectiveLineStyle = interfaceMode === "easy" ? "safer" : lineStyle;
 
   const loadBets = async () => {
     if (!isConnected) return;
@@ -184,13 +200,14 @@ export default function PropLabClient() {
             if (direction !== "both" && direction !== side) return;
             const cushion = side === "over" ? mean - line : line - mean;
             const cushionPercent = mean > 0 ? (cushion / mean) * 100 : 0;
-            if (lineStyle === "safer" && cushion <= 0) return;
-            if (lineStyle === "lower-overs" && (side !== "over" || cushion <= 0)) return;
-            if (lineStyle === "higher-unders" && (side !== "under" || cushion <= 0)) return;
-            if (lineStyle !== "any" && cushionPercent < minLineCushion) return;
+            if (prop.key === "rec" && side === "over" && line < 1.5) return;
+            if (effectiveLineStyle === "safer" && cushion <= 0) return;
+            if (effectiveLineStyle === "lower-overs" && (side !== "over" || cushion <= 0)) return;
+            if (effectiveLineStyle === "higher-unders" && (side !== "under" || cushion <= 0)) return;
+            if (effectiveLineStyle !== "any" && cushionPercent < effectiveMinLineCushion) return;
             const odds = americanOdds(probability);
             const edge = probability - impliedProbability(offer.sportsbookOdds);
-          if (odds < minOdds || odds > maxOdds || probability * 100 < minProbability || probability * 100 > maxProbability || edge * 100 < minEdge) return;
+          if (odds < minOdds || odds > maxOdds || probability * 100 < effectiveMinProbability || probability * 100 > maxProbability || edge * 100 < effectiveMinEdge) return;
             rows.push({
               id: `${player.player_id}:${week}:${prop.key}:${side}:${Number(line)}`,
               trackingId: `${player.player_id}:${week}:${prop.key}:${side}:${Number(line)}`,
@@ -207,12 +224,12 @@ export default function PropLabClient() {
       });
     });
     const seen = new Set();
-    const score = (row) => recommendationMode === "safest" ? row.probability : recommendationMode === "edge" ? row.edge : row.probability * 0.6 + Math.max(-0.25, row.edge) * 0.4;
+    const score = (row) => effectiveRecommendationMode === "safest" ? row.probability : effectiveRecommendationMode === "edge" ? row.edge : row.probability * 0.6 + Math.max(-0.25, row.edge) * 0.4;
     return rows
       .sort((a, b) => score(b) - score(a))
       .filter((row) => !seen.has(row.id) && seen.add(row.id))
       .slice(0, 200);
-  }, [availableOdds, direction, enabledBooks, enabledMarkets, feed, lineStyle, maxOdds, maxProbability, minEdge, minLineCushion, minOdds, minProbability, recommendationMode, selectedGames, week]);
+  }, [availableOdds, direction, effectiveLineStyle, effectiveMinEdge, effectiveMinLineCushion, effectiveMinProbability, effectiveRecommendationMode, enabledBooks, enabledMarkets, feed, maxOdds, maxProbability, minOdds, selectedGames, week]);
 
   const candidates = useMemo(() => {
     const recommendations = [];
@@ -244,9 +261,9 @@ export default function PropLabClient() {
         });
       }
     });
-    const score = (row) => recommendationMode === "safest" ? row.probability : recommendationMode === "edge" ? row.edge : row.probability * 0.6 + Math.max(-0.25, row.edge) * 0.4;
+    const score = (row) => effectiveRecommendationMode === "safest" ? row.probability : effectiveRecommendationMode === "edge" ? row.edge : row.probability * 0.6 + Math.max(-0.25, row.edge) * 0.4;
     return recommendations.sort((a, b) => score(b) - score(a)).slice(0, amount);
-  }, [amount, betStructure, maxLegs, maxLegsPerPlayer, minLegs, recommendationMode, straightCandidates]);
+  }, [amount, betStructure, effectiveRecommendationMode, maxLegs, maxLegsPerPlayer, minLegs, straightCandidates]);
 
   const trackedIds = useMemo(() => new Set(bets.map((bet) => `${bet.player_id}:${bet.week}:${bet.stat_key}:${bet.direction}:${Number(bet.line)}`)), [bets]);
   const settled = bets.filter((bet) => ["won", "lost"].includes(bet.result));
@@ -285,7 +302,23 @@ export default function PropLabClient() {
       </div>
       {!ready ? <Panel className="p-6 text-white/50">Checking Arsenal account…</Panel> : !isConnected ? <Panel className="p-6"><h2 className="text-xl font-black">Arsenal account required</h2><p className="mt-2 text-sm text-white/50">Sign in from My Arsenal, then return here. Tracked bets and results are stored with your account and are never saved locally.</p><a href="/account" className="mt-4 inline-block rounded-xl bg-amber-300/15 px-4 py-2 text-sm font-bold text-amber-100">Open My Arsenal</a></Panel> : <>
         <Panel className="p-5">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-5 flex rounded-2xl border border-white/10 bg-black/20 p-1">
+            <button type="button" onClick={() => setInterfaceMode("easy")} className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition ${interfaceMode === "easy" ? "bg-cyan-300/15 text-cyan-100" : "text-white/40"}`}>Easy Mode <span className="ml-1 text-[9px] uppercase tracking-wider opacity-60">Preview</span></button>
+            <button type="button" onClick={() => setInterfaceMode("advanced")} className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition ${interfaceMode === "advanced" ? "bg-amber-300/15 text-amber-100" : "text-white/40"}`}>Advanced Mode</button>
+          </div>
+          {interfaceMode === "easy" ? <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="text-xs text-white/50">Fantasy week<select value={week} onChange={(e) => setWeek(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white">{Array.from({ length: 18 }, (_, i) => <option key={i + 1} value={i + 1}>Week {i + 1}</option>)}</select></label>
+              <label className="text-xs text-white/50">Minimum legs<input type="number" min="1" max="20" value={minLegs} onChange={(e) => { const value = Math.max(1, Math.min(20, Number(e.target.value))); setMinLegs(value); setMaxLegs((current) => Math.max(current, value)); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
+              <label className="text-xs text-white/50">Maximum legs<input type="number" min="1" max="20" value={maxLegs} onChange={(e) => { const value = Math.max(1, Math.min(20, Number(e.target.value))); setMaxLegs(value); setMinLegs((current) => Math.min(current, value)); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
+            </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <label className="text-sm font-bold text-white/75"><span className="flex justify-between"><span>Leg confidence</span><span className="text-cyan-200">{easyConfidence}%</span></span><input type="range" min="0" max="100" value={easyConfidence} onChange={(e) => setEasyConfidence(Number(e.target.value))} className="mt-3 w-full accent-cyan-300" /><span className="mt-1 flex justify-between text-[9px] font-normal uppercase tracking-wider text-white/30"><span>Flexible</span><span>More selective</span></span></label>
+              <label className="text-sm font-bold text-white/75"><span className="flex justify-between"><span>Payout ambition</span><span className="text-amber-200">{easyPayout}%</span></span><input type="range" min="0" max="100" value={easyPayout} onChange={(e) => setEasyPayout(Number(e.target.value))} className="mt-3 w-full accent-amber-300" /><span className="mt-1 flex justify-between text-[9px] font-normal uppercase tracking-wider text-white/30"><span>Steadier</span><span>Bigger upside</span></span></label>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-white/35">Easy Mode automatically chooses line cushion, probability, and value thresholds from these preferences.</p>
+          </div> : null}
+          <div className={`${interfaceMode === "advanced" ? "grid" : "hidden"} gap-4 md:grid-cols-2 xl:grid-cols-4`}>
             <label className="text-xs text-white/50">Fantasy week<select value={week} onChange={(e) => setWeek(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white">{Array.from({ length: 18 }, (_, i) => <option key={i + 1} value={i + 1}>Week {i + 1}</option>)}</select></label>
             <label className="text-xs text-white/50">Number of props<input type="number" min="1" max="50" value={amount} onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
             <label className="text-xs text-white/50">Minimum legs per bet<input type="number" min="1" max="20" value={minLegs} onChange={(e) => { const value = Math.max(1, Math.min(20, Number(e.target.value))); setMinLegs(value); setMaxLegs((current) => Math.max(current, value)); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
@@ -302,7 +335,7 @@ export default function PropLabClient() {
             <label className="text-xs text-white/50">Maximum leg probability<input type="number" min="1" max="99" value={maxProbability} onChange={(e) => setMaxProbability(Math.max(1, Math.min(99, Number(e.target.value))))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
             <label className="text-xs text-white/50">Direction<select value={direction} onChange={(e) => setDirection(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white"><option value="both">Overs + unders</option><option value="over">Overs only</option><option value="under">Unders only</option></select></label>
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className={`${interfaceMode === "advanced" ? "grid" : "hidden"} mt-5 gap-4 md:grid-cols-2`}>
             <div><div className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">Allowed prop markets</div><div className="flex flex-wrap gap-2">{PROPS.filter((prop) => prop.market).map((prop) => <button type="button" key={prop.market} onClick={() => setEnabledMarkets((current) => { const next = new Set(current); next.has(prop.market) ? next.delete(prop.market) : next.add(prop.market); return next; })} className={`rounded-lg border px-3 py-1.5 text-xs ${enabledMarkets.has(prop.market) ? "border-cyan-300/25 bg-cyan-300/10 text-cyan-100" : "border-white/10 text-white/35"}`}>{prop.label}</button>)}</div></div>
             <div><div className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">Sportsbooks</div><div className="flex flex-wrap gap-2">{[...new Set(availableOdds.map((row) => row.sportsbook))].map((book) => <button type="button" key={book} onClick={() => setEnabledBooks((current) => { const next = new Set(current); next.has(book) ? next.delete(book) : next.add(book); return next; })} className={`rounded-lg border px-3 py-1.5 text-xs ${enabledBooks.has(book) ? "border-amber-300/25 bg-amber-300/10 text-amber-100" : "border-white/10 text-white/35"}`}>{book}</button>)}</div></div>
           </div>
