@@ -29,7 +29,7 @@ const scheduleFile = path.join(
   root,
   "public",
   "stats",
-  "projections",
+  "history",
   String(season),
   "schedule.json",
 );
@@ -45,7 +45,7 @@ const valueArchiveDirectory = path.join(root, "public", "archive");
 const scoringKeys = ["ppr", "half", "std"];
 const projectionLenses = ["safe_expected", "risky"];
 const positions = ["QB", "RB", "WR", "TE", "K"];
-const finalWindowMs = 6 * 60 * 60 * 1000;
+const fallbackFinalWindowMs = 6 * 60 * 60 * 1000;
 const evaluationTime = Date.now();
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const clamp = (value, minimum, maximum) =>
@@ -463,7 +463,15 @@ function scheduledWeeks(schedule) {
             home: normalizeTeam(game.home),
             away: normalizeTeam(game.away),
             kickoff,
-            finalAt: kickoff + finalWindowMs,
+            // Current schedule archives carry ESPN's final status. Older
+            // archives fall back to the conservative kickoff-plus-six-hours
+            // estimate used before final status was persisted.
+            finalAt:
+              game.completed === true
+                ? kickoff
+                : game.completed === false
+                  ? Number.POSITIVE_INFINITY
+                  : kickoff + fallbackFinalWindowMs,
           };
         })
         .filter(Boolean);
@@ -1076,7 +1084,7 @@ const output = {
     snapshot:
       "The weekly freeze is assembled player by player. Each player locks to the latest immutable model snapshot created before their own scheduled NFL kickoff, while later-game and future-week forecasts may continue updating. Weekly results retain every exact build used and the snapshot-time range.",
     finality:
-      "A player is eligible only after their scheduled NFL game has been past kickoff by at least six hours and the saved results archive was refreshed after that finality window. Missing schedule data is never graded.",
+      "A player becomes eligible after ESPN marks the scheduled NFL game final and the saved Sleeper results archive is refreshed. Later refreshes regrade prior games so stat corrections are incorporated. Older schedules without a final-status field use a conservative six-hour post-kickoff fallback; missing schedule data is never graded.",
     sample:
       "Accuracy metrics are active-game conditional: only players with both a pre-kickoff projection and a saved active-game result are graded. Forecasts without an active result remain visible in coverage and DNP/inactive-miss counts.",
     cohorts:

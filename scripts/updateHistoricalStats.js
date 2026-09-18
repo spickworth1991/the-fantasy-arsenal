@@ -315,8 +315,16 @@ async function nflSchedule(season) {
               ?.abbreviation;
             const away = teams.find((team) => team.homeAway === "away")?.team
               ?.abbreviation;
+            const status = event?.status?.type || {};
             return home && away
-              ? { home, away, date: event.date || null }
+              ? {
+                  home,
+                  away,
+                  date: event.date || null,
+                  completed: Boolean(status.completed),
+                  status: status.name || status.state || null,
+                  status_detail: status.detail || status.shortDetail || null,
+                }
               : null;
           })
           .filter(Boolean);
@@ -365,6 +373,8 @@ function finalScheduleWeeks(schedule, now = Date.now()) {
         ({ games }) =>
           (games || []).length > 0 &&
           games.every((game) => {
+            if (game?.completed === true) return true;
+            if (game?.completed === false) return false;
             const kickoff = Date.parse(game?.date);
             return (
               Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now
@@ -380,6 +390,8 @@ function resultsReadyScheduleWeeks(schedule, now = Date.now()) {
     (schedule?.weeks || [])
       .filter(({ games }) =>
         (games || []).some((game) => {
+          if (game?.completed === true) return true;
+          if (game?.completed === false) return false;
           const kickoff = Date.parse(game?.date);
           return Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now;
         }),
