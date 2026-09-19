@@ -2520,6 +2520,7 @@ export default function LineupTool() {
                       Owner B (opponent)
                     </label>
                     <select
+                      data-account-persist="off"
                       className="w-full rounded bg-gray-800 text-white p-2"
                       value={ownerB}
                       onChange={(e) => onChangeOwnerB(e.target.value)}
