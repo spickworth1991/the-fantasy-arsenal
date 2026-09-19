@@ -3347,8 +3347,8 @@ function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect })
             onPlayerSelect={onPlayerSelect}
           />
           <Section
-            label="Bench (top 10)"
-            items={res.bench.slice(0, 10)}
+            label="Bench"
+            items={res.bench}
             metricLabel={metricLabel}
             onPlayerSelect={onPlayerSelect}
           />
