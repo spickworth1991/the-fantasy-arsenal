@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-18T06:28:46.981Z",
+  "updated": "2026-09-19T04:07:56.755Z",
   "season": 2026,
   "source": "ESPN",
   "count": 1042,
@@ -7265,8 +7265,15 @@
     },
     {
       "player_id": "",
-      "name": "CJ Donaldson",
-      "team": "NO",
+      "name": "Jake Briningstool",
+      "team": "KC",
+      "position": "TE",
+      "points": 0
+    },
+    {
+      "player_id": "",
+      "name": "DJ Herman",
+      "team": "MIA",
       "position": "RB",
       "points": 0
     },
@@ -7279,23 +7286,16 @@
     },
     {
       "player_id": "",
+      "name": "CJ Donaldson",
+      "team": "NO",
+      "position": "RB",
+      "points": 0
+    },
+    {
+      "player_id": "",
       "name": "Chris Myarick",
       "team": "LV",
       "position": "TE",
-      "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "Jake Briningstool",
-      "team": "KC",
-      "position": "TE",
-      "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "DJ Herman",
-      "team": "MIA",
-      "position": "RB",
       "points": 0
     }
   ],
@@ -9373,15 +9373,15 @@
     "aj henning": 0,
     "tannerarkin": 0,
     "tanner arkin": 0,
-    "cjdonaldson": 0,
-    "cj donaldson": 0,
-    "markredman": 0,
-    "mark redman": 0,
-    "chrismyarick": 0,
-    "chris myarick": 0,
     "jakebriningstool": 0,
     "jake briningstool": 0,
     "djherman": 0,
-    "dj herman": 0
+    "dj herman": 0,
+    "markredman": 0,
+    "mark redman": 0,
+    "cjdonaldson": 0,
+    "cj donaldson": 0,
+    "chrismyarick": 0,
+    "chris myarick": 0
   }
 }
