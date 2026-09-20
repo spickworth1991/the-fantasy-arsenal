@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T04:07:56.755Z",
+  "updated": "2026-09-20T04:07:53.824Z",
   "season": 2026,
   "source": "ESPN",
   "count": 1042,
@@ -1409,7 +1409,7 @@
       "name": "Ja'Kobi Lane",
       "team": "BAL",
       "position": "WR",
-      "points": 110.34708722
+      "points": 0
     },
     {
       "player_id": "",
@@ -5159,7 +5159,7 @@
     {
       "player_id": "",
       "name": "Josh Johnson",
-      "team": "",
+      "team": "CIN",
       "position": "QB",
       "points": 0
     },
@@ -7224,7 +7224,7 @@
     {
       "player_id": "",
       "name": "Lewis Bond",
-      "team": "",
+      "team": "HOU",
       "position": "WR",
       "points": 0
     },
@@ -7265,6 +7265,13 @@
     },
     {
       "player_id": "",
+      "name": "CJ Donaldson",
+      "team": "NO",
+      "position": "RB",
+      "points": 0
+    },
+    {
+      "player_id": "",
       "name": "Jake Briningstool",
       "team": "KC",
       "position": "TE",
@@ -7282,13 +7289,6 @@
       "name": "Mark Redman",
       "team": "GB",
       "position": "TE",
-      "points": 0
-    },
-    {
-      "player_id": "",
-      "name": "CJ Donaldson",
-      "team": "NO",
-      "position": "RB",
       "points": 0
     },
     {
@@ -7701,8 +7701,8 @@
     "justice hill": 120.01715155,
     "kaelonblack": 113.78227518,
     "kaelon black": 113.78227518,
-    "ja'kobilane": 110.34708722,
-    "jakobi lane": 110.34708722,
+    "ja'kobilane": 0,
+    "jakobi lane": 0,
     "c.j.stroud": 254.37551473,
     "cj stroud": 254.37551473,
     "samdarnold": 234.50894356,
@@ -9373,14 +9373,14 @@
     "aj henning": 0,
     "tannerarkin": 0,
     "tanner arkin": 0,
+    "cjdonaldson": 0,
+    "cj donaldson": 0,
     "jakebriningstool": 0,
     "jake briningstool": 0,
     "djherman": 0,
     "dj herman": 0,
     "markredman": 0,
     "mark redman": 0,
-    "cjdonaldson": 0,
-    "cj donaldson": 0,
     "chrismyarick": 0,
     "chris myarick": 0
   }
