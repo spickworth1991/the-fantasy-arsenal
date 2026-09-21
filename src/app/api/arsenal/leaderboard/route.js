@@ -172,8 +172,8 @@ export async function GET(request) {
           Number(row.record_season) !== season ||
           Date.now() - Number(row.record_updated_at || 0) > refreshAfter,
       );
-    // Public page loads only repair a few stale rows. The protected Tuesday
-    // job intentionally refreshes every opted-in profile after MNF.
+    // Public page loads only repair a few stale rows. The protected scheduled
+    // job refreshes every opted-in profile; Cron-job.org controls its cadence.
     const stale = weeklyRefresh ? candidates : candidates.slice(0, 4);
     let refreshed = 0;
     let refreshFailed = 0;

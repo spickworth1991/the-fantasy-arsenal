@@ -3351,16 +3351,15 @@ function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect })
             items={res.bench}
             metricLabel={metricLabel}
             onPlayerSelect={onPlayerSelect}
+            collapsible
           />
         </>
       )}
     </div>
   );
 }
-function Section({ label, items, metricLabel, suggestions = {}, onPlayerSelect }) {
-  return (
-    <div className="mb-3">
-      <div className="text-xs font-semibold mb-1">{label}</div>
+function Section({ label, items, metricLabel, suggestions = {}, onPlayerSelect, collapsible = false }) {
+  const table = (
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left opacity-70">
@@ -3457,6 +3456,22 @@ function Section({ label, items, metricLabel, suggestions = {}, onPlayerSelect }
           })}
         </tbody>
       </table>
+  );
+  if (collapsible) {
+    return (
+      <details className="group mb-3 rounded-xl border border-white/[0.07] bg-black/10">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-white/75">
+          <span>{label} <span className="text-white/35">({items.length})</span></span>
+          <span className="text-white/35 transition group-open:rotate-180" aria-hidden="true">⌄</span>
+        </summary>
+        <div className="border-t border-white/[0.07] px-3 pb-2">{table}</div>
+      </details>
+    );
+  }
+  return (
+    <div className="mb-3">
+      <div className="text-xs font-semibold mb-1">{label}</div>
+      {table}
     </div>
   );
 }

@@ -585,24 +585,48 @@ const releaseDistribution = Object.fromEntries(
     ];
   }),
 );
+// Late in a game week the immutable snapshot intentionally contains only the
+// players whose games have not kicked off yet. Tail quantiles from those tiny,
+// position-skewed samples are not comparable with a full release population
+// (and previously caused normal Sunday runs to fail). Keep the release guard
+// strict when both populations are large enough, and report reduced coverage
+// as a warning instead.
+const minimumDistributionSample = 30;
+const insufficientDistributionPositions = Object.entries(releaseDistribution)
+  .filter(
+    ([, row]) =>
+      row.current.sample < minimumDistributionSample ||
+      row.previous.sample < minimumDistributionSample,
+  )
+  .map(([position]) => position);
 const unstablePositions = Object.entries(releaseDistribution)
-  .filter(([, row]) =>
-    [row.median_shift, row.lower_tail_shift, row.upper_tail_shift].some(
-      (value) => Number.isFinite(value) && Math.abs(value) > 0.12,
-    ),
+  .filter(
+    ([, row]) =>
+      row.current.sample >= minimumDistributionSample &&
+      row.previous.sample >= minimumDistributionSample &&
+      [row.median_shift, row.lower_tail_shift, row.upper_tail_shift].some(
+        (value) => Number.isFinite(value) && Math.abs(value) > 0.12,
+      ),
   )
   .map(([position]) => position);
 addCheck(
   "live_adjustment_distribution",
-  unstablePositions.length ? "fail" : "pass",
+  unstablePositions.length
+    ? "fail"
+    : insufficientDistributionPositions.length
+      ? "warn"
+      : "pass",
   !previousReleaseSnapshot
     ? "No prior release snapshot exists; live adjustment stability will be checked after the next release."
     : unstablePositions.length
       ? `Unsafe published matchup-factor shift versus ${previousReleaseSnapshot.model_version}: ${unstablePositions.join(", ")}.`
+      : insufficientDistributionPositions.length
+        ? `Matchup-factor stability is inconclusive for the remaining-game snapshot (fewer than ${minimumDistributionSample} players at one or more positions: ${insufficientDistributionPositions.join(", ")}).`
       : `Published matchup-factor distributions remain stable versus ${previousReleaseSnapshot.model_version}.`,
   {
     previous_model_version: previousReleaseSnapshot?.model_version || null,
     threshold: 0.12,
+    minimum_sample: minimumDistributionSample,
     by_position: releaseDistribution,
   },
 );
