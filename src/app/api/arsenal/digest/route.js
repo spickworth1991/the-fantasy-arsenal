@@ -576,6 +576,9 @@ async function buildDigest(
   ).filter(Boolean);
   const active = rows.filter((r) => r.started);
   const choppedRows = rows.filter((r) => r.chopped);
+  const weeklyWins = rows.reduce((sum, row) => sum + num(row.record?.wins), 0),
+    weeklyLosses = rows.reduce((sum, row) => sum + num(row.record?.losses), 0),
+    weeklyTies = rows.reduce((sum, row) => sum + num(row.record?.ties), 0);
   const wins = rows.reduce((sum, row) => sum + num(row.seasonRecord?.wins), 0),
     losses = rows.reduce((sum, row) => sum + num(row.seasonRecord?.losses), 0),
     ties = rows.reduce((sum, row) => sum + num(row.seasonRecord?.ties), 0),
@@ -587,6 +590,9 @@ async function buildDigest(
     wins,
     losses,
     ties,
+    weeklyWins,
+    weeklyLosses,
+    weeklyTies,
     points,
     empty,
     close,
@@ -609,9 +615,14 @@ function digestEmail({ d, manager, season, week, news = [] }) {
   const active = d.rows.filter((r) => r.started),
     h2hActive = active.filter((r) => r.isHeadToHead),
     notStarted = d.rows.filter((r) => !r.started).length;
-  const ties = d.ties || 0;
-  const officialResults = d.wins + d.losses + ties;
-  const winRate = officialResults ? (d.wins + ties * 0.5) / officialResults : 0;
+  const seasonTies = d.ties || 0;
+  const weeklyWins = d.weeklyWins || 0;
+  const weeklyLosses = d.weeklyLosses || 0;
+  const weeklyTies = d.weeklyTies || 0;
+  const officialResults = weeklyWins + weeklyLosses + weeklyTies;
+  const winRate = officialResults
+    ? (weeklyWins + weeklyTies * 0.5) / officialResults
+    : 0;
   const gradedEmpty = active.reduce((sum, r) => sum + r.empty, 0);
   const score = active.length
     ? Math.round(
@@ -646,7 +657,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
   )[0];
   const seed = [...String(manager)].reduce(
     (sum, char) => sum + char.charCodeAt(0),
-    week * 37 + d.wins * 11 + d.losses * 7,
+    week * 37 + weeklyWins * 11 + weeklyLosses * 7,
   );
   const choose = (items, offset = 0) => items[(seed + offset) % items.length];
   const winningLines = [
@@ -680,7 +691,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     "The portfolio is waiting for a hero matchup.",
   ];
   const mood =
-    d.wins > d.losses
+    weeklyWins > weeklyLosses
       ? [
           choose(
             [
@@ -694,7 +705,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
           choose(winningLines, 3),
           "#34d399",
         ]
-      : d.wins < d.losses
+      : weeklyWins < weeklyLosses
         ? [
             choose(
               [
@@ -762,7 +773,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
           : defaultPhaseBanner;
   const briefing = !officialResults
     ? `${opening} Your slate is staged and waiting for kickoff. No matchup has been graded, so the portfolio remains neutral.`
-    : `${opening} The live record is ${d.wins}-${d.losses}${ties ? `-${ties}` : ""} through ${officialResults} official weekly result${officialResults === 1 ? "" : "s"}. ${best ? choose([`${esc(best.name)} sets the pace at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `${esc(best.name)} is carrying the strongest live margin: ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `The current portfolio leader is ${esc(best.name)} at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`], 9) : ""} ${danger && danger !== best ? choose([`${esc(danger.name)} is the pressure point at ${(danger.points - danger.opp).toFixed(1)}.`, `${esc(danger.name)} needs the closest attention with a ${(danger.points - danger.opp).toFixed(1)} margin.`, `The rescue board starts with ${esc(danger.name)} at ${(danger.points - danger.opp).toFixed(1)}.`], 13) : ""}`;
+    : `${opening} The Week ${week} record is ${weeklyWins}-${weeklyLosses}${weeklyTies ? `-${weeklyTies}` : ""} through ${officialResults} official result${officialResults === 1 ? "" : "s"}; the combined season record is ${d.wins}-${d.losses}${seasonTies ? `-${seasonTies}` : ""}. ${best ? choose([`${esc(best.name)} sets the pace at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `${esc(best.name)} is carrying the strongest live margin: ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`, `The current portfolio leader is ${esc(best.name)} at ${best.points - best.opp >= 0 ? "+" : ""}${(best.points - best.opp).toFixed(1)}.`], 9) : ""} ${danger && danger !== best ? choose([`${esc(danger.name)} is the pressure point at ${(danger.points - danger.opp).toFixed(1)}.`, `${esc(danger.name)} needs the closest attention with a ${(danger.points - danger.opp).toFixed(1)} margin.`, `The rescue board starts with ${esc(danger.name)} at ${(danger.points - danger.opp).toFixed(1)}.`], 13) : ""}`;
   const actions = [];
   if (d.empty)
     actions.push(
@@ -836,10 +847,10 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     })
     .join("");
   const metric = (value, label, color = "#f8fafc", last = false) =>
-    `<td class="metric${last ? " metric-last" : ""}" width="25%" align="center" style="padding:17px 8px"><div style="font-size:24px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.2px;color:#718198">${label}</div></td>`;
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark only"><meta name="supported-color-schemes" content="dark"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}.match-name,.match-score{display:block!important;box-sizing:border-box!important;width:100%!important;height:auto!important;text-align:left!important}.match-name{padding-bottom:6px!important}.match-score{padding-top:6px!important;white-space:normal!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${d.wins}-${d.losses} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#050b16" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#091321" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
+    `<td class="metric${last ? " metric-last" : ""}" width="20%" align="center" style="padding:17px 6px"><div style="font-size:22px;font-weight:900;color:${color}">${value}</div><div style="font-size:9px;font-weight:800;letter-spacing:1.1px;color:#718198">${label}</div></td>`;
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark only"><meta name="supported-color-schemes" content="dark"><style>@media(max-width:520px){.wrap{padding:12px!important}.hero{padding:24px 18px!important}.metric{display:block!important;width:auto!important;border-bottom:1px solid #26354d}.metric-last{border-bottom:0!important}.match-name,.match-score{display:block!important;box-sizing:border-box!important;width:100%!important;height:auto!important;text-align:left!important}.match-name{padding-bottom:6px!important}.match-score{padding-top:6px!important;white-space:normal!important}}</style></head><body style="margin:0;background:#050b16;color:#f8fafc;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">Week ${week}: ${weeklyWins}-${weeklyLosses}${weeklyTies ? `-${weeklyTies}` : ""}; season ${d.wins}-${d.losses}${seasonTies ? `-${seasonTies}` : ""} across ${d.rows.length} leagues · ${d.points.toFixed(1)} portfolio points.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#050b16" style="background:#050b16"><tr><td align="center" class="wrap" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#091321" style="width:100%;max-width:680px;border:1px solid #24324a;border-radius:24px;background:#091321;overflow:hidden">
   <tr><td class="hero" bgcolor="#101c31" style="padding:34px;background-color:#101c31;background-image:linear-gradient(135deg,#101c31,#10263a 58%,#241b49)"><table role="presentation" width="100%"><tr><td><span style="display:inline-block;border-radius:12px;background:#f8fafc;padding:8px 11px"><img src="https://thefantasyarsenal.com/icons/TFA.png" width="190" alt="The Fantasy Arsenal" style="display:block;width:190px;max-width:100%;height:auto"></span></td><td align="right" style="font-size:10px;font-weight:900;letter-spacing:2px;color:#bae6fd">WEEK ${week} · ${season}</td></tr></table><div style="padding-top:22px;font-size:11px;font-weight:900;letter-spacing:2px;color:${mood[2]}">${mood[0]}</div><h1 style="margin:7px 0 0;font-size:32px;line-height:1.08;color:#ffffff!important;-webkit-text-fill-color:#ffffff;text-shadow:0 1px 1px #000000">The Weekly Arsenal</h1><p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#e6eef8!important;-webkit-text-fill-color:#e6eef8">Hey ${esc(manager)} — ${mood[1]}</p></td></tr>
-  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #34445e;border-radius:16px;background:#0d192a;table-layout:fixed"><tr>${metric(`${d.wins}-${d.losses}${ties ? `-${ties}` : ""}`, "RECORD", mood[2])}${metric(d.points.toFixed(1), "ALL-LEAGUE POINTS")}${metric(letter, "GRADE", score == null ? "#8292aa" : "#c4b5fd")}${metric(d.empty, "EMPTY SLOTS", d.empty ? "#fb7185" : "#34d399", true)}</tr></table></td></tr>
+  <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #34445e;border-radius:16px;background:#0d192a;table-layout:fixed"><tr>${metric(`${weeklyWins}-${weeklyLosses}${weeklyTies ? `-${weeklyTies}` : ""}`, `WEEK ${week}`, mood[2])}${metric(`${d.wins}-${d.losses}${seasonTies ? `-${seasonTies}` : ""}`, "SEASON RECORD")}${metric(d.points.toFixed(1), "WEEK POINTS")}${metric(letter, "WEEK GRADE", score == null ? "#8292aa" : "#c4b5fd")}${metric(d.empty, "EMPTY SLOTS", d.empty ? "#fb7185" : "#34d399", true)}</tr></table></td></tr>
   <tr><td style="padding:28px 24px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #31415c;border-radius:18px;background:#101a30"><tr><td style="padding:20px"><div style="font-size:10px;font-weight:900;letter-spacing:1.8px;color:#67e8f9">ARSENAL INTELLIGENCE BRIEFING</div><h2 style="margin:7px 0 8px;font-size:20px;color:#fff">What the week is saying</h2><p style="margin:0;font-size:13px;line-height:21px;color:#b9c8dc">${briefing}</p><div style="margin-top:15px;border:1px solid #4c3f75;border-radius:12px;background:#211b3a;padding:12px;font-size:12px;line-height:19px;color:#ddd6fe">${phaseBanner}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;border-top:1px solid #26354d;padding-top:13px">${actionRows}</table></td></tr></table></td></tr>
   <tr><td style="padding:28px 24px 8px"><div style="font-size:11px;font-weight:900;letter-spacing:1.6px;color:#a78bfa">MATCHUP RADAR</div><h2 style="margin:5px 0 7px;font-size:21px;color:#fff">Closest decisions first</h2><p style="margin:0;font-size:12px;line-height:19px;color:#718198">The tightest margins rise to the top so you can focus where a move matters most.</p></td></tr>
   <tr><td style="padding:12px 24px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${games || `<tr><td style="padding:22px;text-align:center;color:#8292aa">No scored matchups were available yet.</td></tr>`}</table></td></tr>
@@ -1024,7 +1035,7 @@ export async function POST(request) {
       if (kind === "weekly") {
         const digestWeek = Math.max(1, week - 1);
         const d = await buildDigest(account.sleeper_username, season, digestWeek, { includeBestBall: true, leagueIds: [] });
-        await gmail(env, recipient, `Preview: Week ${digestWeek} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`, digestEmail({ d, manager: account.display_name || account.sleeper_username, season, week: digestWeek, news: [] }));
+        await gmail(env, recipient, `Preview: Week ${digestWeek} Fantasy Arsenal | Week ${d.weeklyWins}-${d.weeklyLosses}${d.weeklyTies ? `-${d.weeklyTies}` : ""} | Season ${d.wins}-${d.losses}${d.ties ? `-${d.ties}` : ""}`, digestEmail({ d, manager: account.display_name || account.sleeper_username, season, week: digestWeek, news: [] }));
       } else {
         const [d, newsResult] = await Promise.all([
           buildDigest(account.sleeper_username, season, week, { includeBestBall: true, leagueIds: [] }),
@@ -1226,7 +1237,7 @@ export async function GET(request) {
           await gmail(
             env,
             testMode ? DIGEST_TEST_EMAIL : row.email,
-            `${correctionNotice ? "Correction: " : ""}Week ${digestWeek} Fantasy Arsenal | ${d.wins}-${d.losses} | ${d.points.toFixed(1)} points`,
+            `${correctionNotice ? "Correction: " : ""}Week ${digestWeek} Fantasy Arsenal | Week ${d.weeklyWins}-${d.weeklyLosses}${d.weeklyTies ? `-${d.weeklyTies}` : ""} | Season ${d.wins}-${d.losses}${d.ties ? `-${d.ties}` : ""}`,
             html,
           );
           if (!testMode && !manualWeeklyCorrection)
