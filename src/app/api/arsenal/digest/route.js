@@ -470,22 +470,17 @@ async function buildDigest(
               : points <= cutline
                 ? "At cut line"
                 : "Alive";
-        // Mirror Sleeper's combined season record convention: a median-game
-        // result is another official W/L/T, not a second record to display.
+        // Mirror Sleeper's official record convention. Chopped survival is
+        // shown separately and must not be invented as an ordinary W/L/T.
+        // A league-median result is an additional official result.
         const outcome = (left, right) =>
           left > right ? "win" : left < right ? "loss" : "tie";
         const primaryResult = !started
           ? null
-          : chopped
-            ? survival === "Alive"
-              ? "win"
-              : survival === "Chopped"
-                ? "loss"
-                : null
-            : !opp
-              ? null
-              : outcome(points, oppPoints);
-        const medianResult = !started || chopped || !opp || !medianEnabled || medianScore == null
+          : !opp
+            ? null
+            : outcome(points, oppPoints);
+        const medianResult = !started || !opp || !medianEnabled || medianScore == null
           ? null
           : outcome(points, medianScore);
         const record = [primaryResult, medianResult].filter(Boolean).reduce(
@@ -789,7 +784,7 @@ function digestEmail({ d, manager, season, week, news = [] }) {
     );
   if (d.choppedOut || d.choppedAlive)
     actions.push(
-      `<b style="color:${d.choppedOut ? "#fda4af" : "#a7f3d0"}">Chopped survival:</b> ${d.choppedAlive || 0} alive${d.choppedOut ? ` &middot; ${d.choppedOut} chopped` : ""}. Survival outcomes are included in your combined weekly record.`,
+      `<b style="color:${d.choppedOut ? "#fda4af" : "#a7f3d0"}">Chopped survival:</b> ${d.choppedAlive || 0} alive${d.choppedOut ? ` &middot; ${d.choppedOut} chopped` : ""}. Survival outcomes are tracked separately from the official Sleeper W-L-T record.`,
     );
   if (d.playoffLeagues || d.playoffPushLeagues)
     actions.push(
