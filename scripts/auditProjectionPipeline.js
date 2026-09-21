@@ -88,6 +88,19 @@ if (!current?.players?.length)
     `Missing ${relative(currentFile)}. Build the stat model before auditing it.`,
   );
 const calibration = readJson(calibrationFile, { by_position: {} });
+const sleeperPlayers = Object.values(
+  readJson(path.join(root, "public", "sleeper_players_cache.json"), {
+    players: {},
+  })?.players || {},
+);
+const sleeperPlayersByName = new Map();
+for (const player of sleeperPlayers) {
+  const name = normalizeName(player?.full_name || player?.name);
+  if (!name) continue;
+  const candidates = sleeperPlayersByName.get(name) || [];
+  candidates.push(player);
+  sleeperPlayersByName.set(name, candidates);
+}
 
   const sourceSpecs = [
     {
@@ -295,8 +308,35 @@ const actionableUnmatchedAliases = unmatchedAliases.filter(
   (row) =>
     scheduledTeams.has(row.team) &&
     Number.isFinite(row.projected_points) &&
-    row.projected_points >= 50,
+    row.projected_points >= 50 &&
+    !sleeperPlayersByName.has(normalizeName(row.name)),
 );
+const knownUnmodeledSourceRows = unmatchedAliases
+  .filter(
+    (row) =>
+      scheduledTeams.has(row.team) &&
+      Number.isFinite(row.projected_points) &&
+      row.projected_points >= 50 &&
+      sleeperPlayersByName.has(normalizeName(row.name)),
+  )
+  .map((row) => {
+    const players = sleeperPlayersByName.get(normalizeName(row.name)) || [];
+    return {
+      ...row,
+      sleeper_players: players.map((player) => ({
+        player_id: player.player_id || null,
+        name: player.full_name || player.name || null,
+        team: normalizeTeam(player.team),
+        position: String(player.position || "").toUpperCase(),
+        depth_chart_position: String(
+          player.depth_chart_position || "",
+        ).toUpperCase() || null,
+        active: player.active !== false,
+        status: player.status || null,
+        injury_status: player.injury_status || null,
+      })),
+    };
+  });
 const duplicateSourceMappings = sourceReports.flatMap((source) =>
   source.duplicate_canonical_rows.map((row) => ({
     source: source.key,
@@ -414,6 +454,7 @@ addCheck(
     : `${unmatchedAliases.length} unmatched depth/free-agent rows were retained for review; none crossed the actionable threshold.`,
   {
     actionable_unmatched: actionableUnmatchedAliases.slice(0, 100),
+    known_unmodeled: knownUnmodeledSourceRows.slice(0, 100),
     total_unmatched: unmatchedAliases.length,
   },
 );
@@ -652,6 +693,7 @@ const identityOutput = {
   common_populations: commonPopulations,
   unmatched_alias_count: unmatchedAliases.length,
   actionable_unmatched_alias_count: actionableUnmatchedAliases.length,
+  known_unmodeled_source_row_count: knownUnmodeledSourceRows.length,
   ambiguous_alias_count: ambiguousAliases.length,
   unmatched_aliases: unmatchedAliases,
   ambiguous_aliases: ambiguousAliases,

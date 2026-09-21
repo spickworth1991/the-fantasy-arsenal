@@ -3575,25 +3575,66 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
   }
 
   const sleeperPlayers = await fetchSleeperPlayersMap();
+  const projectionOverrides = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, "../data/player-projection-overrides.json"),
+      "utf8",
+    ),
+  );
+  const projectionOverridesById = new Map(
+    (projectionOverrides.players || [])
+      .filter((player) => player?.sleeper_id)
+      .map((player) => [String(player.sleeper_id), player]),
+  );
   const sleeperContext = new Map();
   const sleeperByTeamPositionSurname = new Map();
   Object.values(sleeperPlayers || {}).forEach((player) => {
+    const reviewedOverride = projectionOverridesById.get(
+      String(player?.player_id || ""),
+    );
+    const resolvedPlayer = reviewedOverride
+      ? {
+          ...player,
+          team: reviewedOverride.team || player.team,
+          position: reviewedOverride.position || player.position,
+          projection_context_override: reviewedOverride.reason || null,
+        }
+      : player;
     const name = String(
-      player?.full_name ||
-        `${player?.first_name || ""} ${player?.last_name || ""}`,
+      resolvedPlayer?.full_name ||
+        `${resolvedPlayer?.first_name || ""} ${resolvedPlayer?.last_name || ""}`,
     ).trim();
     const position = normalizePos(
-      player?.position || player?.fantasy_positions?.[0] || "",
+      resolvedPlayer?.position || resolvedPlayer?.fantasy_positions?.[0] || "",
     );
     if (!name || !position) return;
-    sleeperContext.set(`${normNameForMap(name)}|${position}`, player);
+    sleeperContext.set(`${normNameForMap(name)}|${position}`, resolvedPlayer);
+    // Sleeper occasionally retains a player's college/defensive position even
+    // after an NFL team moves him to offense. Its depth-chart position is the
+    // better identity signal in that case (for example Miami FB DJ Herman is
+    // listed as LB with an RB depth-chart position).
+    const depthChartPosition = normalizePos(
+      resolvedPlayer?.depth_chart_position || "",
+    );
+    if (depthChartPosition && depthChartPosition !== position)
+      sleeperContext.set(
+        `${normNameForMap(name)}|${depthChartPosition}`,
+        resolvedPlayer,
+      );
     const surname = normNameForMap(name).split(" ").at(-1);
-    const team = normalizeFantasyTeamAbbr(player?.team || "");
+    const team = normalizeFantasyTeamAbbr(resolvedPlayer?.team || "");
     if (team && surname) {
       const surnameKey = `${team}|${position}|${surname}`;
       const candidates = sleeperByTeamPositionSurname.get(surnameKey) || [];
-      candidates.push(player);
+      candidates.push(resolvedPlayer);
       sleeperByTeamPositionSurname.set(surnameKey, candidates);
+      if (depthChartPosition && depthChartPosition !== position) {
+        const depthSurnameKey = `${team}|${depthChartPosition}|${surname}`;
+        const depthCandidates =
+          sleeperByTeamPositionSurname.get(depthSurnameKey) || [];
+        depthCandidates.push(resolvedPlayer);
+        sleeperByTeamPositionSurname.set(depthSurnameKey, depthCandidates);
+      }
     }
   });
   const resolveSleeperContext = (name, position, team) => {
