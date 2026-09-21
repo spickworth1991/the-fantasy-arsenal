@@ -484,7 +484,10 @@ async function buildDigest(
           ? null
           : outcome(points, medianScore);
         const record = [primaryResult, medianResult].filter(Boolean).reduce(
-          (totals, result) => ({ ...totals, [`${result}s`]: totals[`${result}s`] + 1 }),
+          (totals, result) => {
+            const key = result === "win" ? "wins" : result === "loss" ? "losses" : "ties";
+            return { ...totals, [key]: totals[key] + 1 };
+          },
           { wins: 0, losses: 0, ties: 0 },
         );
         const managerName = (rosterId) => {
