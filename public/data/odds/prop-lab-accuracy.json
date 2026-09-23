@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-22T17:03:19.517Z",
+  "generatedAt": "2026-09-23T04:09:16.720Z",
   "methodology": "Latest frozen pre-kickoff prediction per exact offer. Alternate lines share one player-game-market evaluation group and receive equal group weight.",
   "overall": {
-    "observations": 0,
+    "observations": 224,
     "settled": 0,
     "groups": 0,
     "hitRate": null,
@@ -14,7 +14,7 @@
   "markets": {},
   "evidence": {},
   "highEstimatedChance": {
-    "observations": 0,
+    "observations": 24,
     "settled": 0,
     "groups": 0,
     "hitRate": null,
@@ -22,7 +22,7 @@
     "averageMarketImplied": null,
     "calibrationError": null
   },
-  "pending": 0,
+  "pending": 224,
   "pushes": 0,
   "voids": 0
 }
