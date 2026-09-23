@@ -15,9 +15,11 @@
     "preview:cf": "next-on-pages",
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
-    "update:daily": "node --no-warnings ./scripts/updateValues.js --daily --defer-archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/updateAdvancedStats.js --current && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
+    "update:daily": "node --no-warnings ./scripts/updateValues.js --daily --defer-archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/updateAdvancedStats.js --current && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js && node --no-warnings ./scripts/evaluatePropLab.js",
     "update:stat-model": "node --no-warnings ./scripts/updateValues.js --only=projection_anchor && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
     "audit:stat-model": "node --no-warnings ./scripts/auditProjectionPipeline.js",
+    "bets:update": "node --no-warnings ./scripts/updatePropLab.js",
+    "bets:evaluate": "node --no-warnings ./scripts/evaluatePropLab.js",
     "capture:pre-kickoff": "node --no-warnings ./scripts/capturePreKickoffSnapshot.js",
     "update:advanced": "node --no-warnings ./scripts/updateAdvancedStats.js",
     "evaluate:stat-model": "node --no-warnings ./scripts/evaluateStatProjectionModel.js",
@@ -29,7 +31,7 @@
     "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
     "git": "git add . && git commit -m \"DraftCommand_SearchLeague\" && git push origin main",
-    "sync": "node ./scripts/git-sync.mjs \"lineupOP\""
+    "sync": "node ./scripts/git-sync.mjs \"Prop-lab\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

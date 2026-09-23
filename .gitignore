@@ -41,4 +41,8 @@ backup.zip
 !/scripts/buildPlayerStockDrafters.js
 !/scripts/fetchOddsSnapshot.js
 !/scripts/fetchSportsGameOddsSnapshot.js
+!/scripts/propLabModel.js
+!/scripts/buildPropBoard.js
+!/scripts/updatePropLab.js
+!/scripts/evaluatePropLab.js
 /docs/
