@@ -192,7 +192,7 @@ export default function HomeClient() {
       name: "Draft Command Center",
       link: "/draft-helper",
       description: "Draft from a live league-aware board with traded-pick ownership, team needs, and contextual recommendations.",
-      badge: "NEW",
+
     },
     {
       name: "Draft Monitor",
@@ -204,7 +204,7 @@ export default function HomeClient() {
       name: "Draft Grade Studio",
       link: "/draft-grades",
       description: "Grade every team and selection with source-aware value, roster fit, construction, awards, and a printable league report.",
-      badge: "NEW",
+
     },
     {
       name: "Trust & Accuracy Center",
@@ -228,7 +228,6 @@ export default function HomeClient() {
       name: "Manager Intelligence",
       link: "/manager-intelligence",
       description: "Research public Sleeper manager networks, league history, player exposure, trades, and draft tendencies.",
-      badge: "NEW",
     },
     {
       name: "Fantasy Game Center",
@@ -240,6 +239,7 @@ export default function HomeClient() {
       name: "Player Availability",
       link: "/player-availability",
       description: "Search once to see every loaded league where a player is available to add.",
+      badge: "UPDATED",
     },
     {
       name: "League Hub",
@@ -251,7 +251,6 @@ export default function HomeClient() {
       name: "League History",
       link: "/league-history",
       description: "Relive champions, rivalries, records, season awards, and your league yearbook.",
-      badge: "NEW",
     },
     {
       name: "Commissioner Dashboard",
@@ -263,7 +262,6 @@ export default function HomeClient() {
       name: "NFL Depth Charts",
       link: "/depth-charts",
       description: "Explore NFL position trees with values, projections, injuries, handcuffs, contracts, rookies, and portfolio exposure.",
-      badge: "NEW",
     },
     {
       name: "Power Rankings",
@@ -279,6 +277,7 @@ export default function HomeClient() {
       name: "Lineup Optimizer",
       link: "/lineup",
       description: "Explain start/sit choices with safe, median, and aggressive lineups plus win-impact analysis.",
+      badge: "UPDATED",
     },
     {
       name: "Playoff Odds",
