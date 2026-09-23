@@ -1,4 +1,4 @@
-name: Daily values and projections
+name: Daily values, projections, and availability
 
 on:
   workflow_dispatch:

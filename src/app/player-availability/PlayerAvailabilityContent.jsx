@@ -15,8 +15,10 @@ import ExportButtons from "../../components/ExportButtons";
 import SourceSelector, {
   DEFAULT_SOURCES,
 } from "../../components/SourceSelector";
+import { useArsenalAccount } from "../../context/ArsenalAccountContext";
 import { useSleeper } from "../../context/SleeperContext";
 import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
+import { useWeeklyProjectionSource } from "../../lib/useWeeklyProjectionSource";
 
 /** Helpers for league avatars (matches Player Stock) */
 const DEFAULT_LEAGUE_IMG = "/avatars/league-default.webp";
@@ -26,6 +28,20 @@ const leagueAvatarUrl = (avatarId) =>
     : DEFAULT_LEAGUE_IMG;
 const sleeperLeagueUrl = (leagueId) =>
   `https://sleeper.com/leagues/${leagueId}`;
+const SAFE_WEEKLY_SOURCE_KEY = "proj:thefantasyarsenal-model";
+const WEEKLY_AVAILABILITY_SOURCE_ORDER = [
+  SAFE_WEEKLY_SOURCE_KEY,
+  "proj:sleeper",
+  "proj:cbs",
+  "proj:draftsharks",
+  "proj:fantasypros",
+  "val:fantasycalc",
+  "val:fantasynav",
+  "val:thefantasyarsenal",
+];
+const WEEKLY_AVAILABILITY_SOURCE_KEYS = new Set(
+  WEEKLY_AVAILABILITY_SOURCE_ORDER,
+);
 
 // Real player avatars come directly from Sleeper; local files are defaults only.
 const DEFAULT_PLAYER_IMG = "/avatars/default.webp";
@@ -82,6 +98,44 @@ function extractRosterIds(rosters) {
     }
   }
   return ids;
+}
+
+const INJURY_STATUS_LABELS = {
+  Q: "Questionable",
+  QUESTIONABLE: "Questionable",
+  D: "Doubtful",
+  DOUBTFUL: "Doubtful",
+  O: "Out",
+  OUT: "Out",
+  IR: "Injured reserve",
+  "INJURED RESERVE": "Injured reserve",
+  PUP: "PUP",
+  NFI: "NFI",
+};
+
+function playerInjuryLabel(player) {
+  const injury = String(player?.injury_status || "").trim().toUpperCase();
+  const status = String(player?.status || "").trim().toUpperCase();
+  const practice = String(player?.practice_participation || "").trim();
+  const code =
+    injury ||
+    (["IR", "INJURED RESERVE", "PUP", "NFI"].includes(status) ? status : "");
+  const limitedPractice = /limited|did not|dnp/i.test(practice);
+  if (!code && !limitedPractice) return "";
+  const label = INJURY_STATUS_LABELS[code] || code || "Injury watch";
+  return practice && !label.toLowerCase().includes(practice.toLowerCase())
+    ? `${label} · ${practice}`
+    : label;
+}
+
+function isUsableReplacement(player) {
+  if (playerInjuryLabel(player)) return false;
+  const injury = String(player?.injury_status || "").trim().toUpperCase();
+  const status = String(player?.status || "").trim().toUpperCase();
+  return (
+    !["D", "O", "IR", "PUP", "NFI"].includes(injury) &&
+    !["IR", "PUP", "NFI", "INACTIVE"].includes(status)
+  );
 }
 
 /** One-input inline name picker with disambiguation */
@@ -513,6 +567,8 @@ function PlayerOpenLeaguesModal({
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               <AvatarImage
+                playerId={player?.id}
+                name={player?.name}
                 src={localPlayerAvatarUrl({
                   player_id: player?.id,
                   full_name: player?.name,
@@ -698,6 +754,8 @@ function PlayerOpenLeaguesModal({
 // Page
 // =====================
 export default function PlayerAvailabilityContent() {
+  const { isConnected: arsenalAccountConnected, syncNow } =
+    useArsenalAccount();
   const {
     username,
     players,
@@ -731,8 +789,22 @@ export default function PlayerAvailabilityContent() {
 
   // Filters (match Player Stock style)
   const [onlyBestBall, setOnlyBestBall] = useState(false);
-  const [excludeBestBall, setExcludeBestBall] = useState(false);
+  const [excludeBestBall, setExcludeBestBall] = useState(true);
   const [includeDrafting, setIncludeDrafting] = useState(true);
+  const [excludeTeamDefense, setExcludeTeamDefense] = useState(true);
+  const [excludeKickers, setExcludeKickers] = useState(false);
+  const [sourceKey, setSourceKey] = useState(
+    "proj:thefantasyarsenal-model",
+  );
+  const [projectionHorizon, setProjectionHorizon] = useState("week");
+  const [availabilityWeek, setAvailabilityWeek] = useState(null);
+  const [availabilitySeason, setAvailabilitySeason] = useState(
+    Number(year || new Date().getFullYear()),
+  );
+  const [availabilityView, setAvailabilityView] = useState("best"); // best | under25 | injuries
+  const [availabilitySettingsLoadedKey, setAvailabilitySettingsLoadedKey] =
+    useState("");
+  const availabilitySyncTimer = useRef(null);
 
   // Players & results for your manual selections
   const [selectedPlayers, setSelectedPlayers] = useState([]); // [{ id, name, pos, team }]
@@ -751,15 +823,114 @@ export default function PlayerAvailabilityContent() {
 
   // Cache key (per user + season)
   const yrStr = String(year || new Date().getFullYear());
-  const cacheKey = username ? `pa:${username}:${yrStr}:SCAN` : null;
+  // v3 guarantees cached leagues include the user's roster/reserve identity
+  // fields required by the injuries view.
+  const cacheKey = username ? `pa:${username}:${yrStr}:SCAN:v3` : null;
+  const availabilitySettingsKey = username
+    ? `tfa:availability:settings:v4:${String(username).toLowerCase()}:${yrStr}`
+    : null;
+
+  useEffect(() => {
+    if (!availabilitySettingsKey) return undefined;
+    const restore = () => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(availabilitySettingsKey) || "null",
+        );
+        if (saved && typeof saved === "object") {
+          if (["best", "under25", "injuries"].includes(saved.view))
+            setAvailabilityView(saved.view);
+          if (typeof saved.onlyBestBall === "boolean")
+            setOnlyBestBall(saved.onlyBestBall);
+          if (typeof saved.excludeBestBall === "boolean")
+            setExcludeBestBall(saved.excludeBestBall);
+          if (typeof saved.includeDrafting === "boolean")
+            setIncludeDrafting(saved.includeDrafting);
+          if (typeof saved.excludeTeamDefense === "boolean")
+            setExcludeTeamDefense(saved.excludeTeamDefense);
+          if (typeof saved.excludeKickers === "boolean")
+            setExcludeKickers(saved.excludeKickers);
+          if (DEFAULT_SOURCES.some((source) => source.key === saved.sourceKey))
+            setSourceKey(saved.sourceKey);
+          if (["week", "season"].includes(saved.projectionHorizon))
+            setProjectionHorizon(saved.projectionHorizon);
+        }
+      } catch {}
+      setAvailabilitySettingsLoadedKey(availabilitySettingsKey);
+    };
+    restore();
+    window.addEventListener("tfa:cloud-sync-applied", restore);
+    return () => window.removeEventListener("tfa:cloud-sync-applied", restore);
+  }, [availabilitySettingsKey]);
+
+  useEffect(() => {
+    if (
+      !availabilitySettingsKey ||
+      availabilitySettingsLoadedKey !== availabilitySettingsKey
+    )
+      return;
+    try {
+      localStorage.setItem(
+        availabilitySettingsKey,
+        JSON.stringify({
+          view: availabilityView,
+          onlyBestBall,
+          excludeBestBall,
+          includeDrafting,
+          excludeTeamDefense,
+          excludeKickers,
+          sourceKey,
+          projectionHorizon,
+        }),
+      );
+    } catch {}
+    if (arsenalAccountConnected) {
+      clearTimeout(availabilitySyncTimer.current);
+      availabilitySyncTimer.current = window.setTimeout(
+        () => syncNow({ quiet: true }),
+        900,
+      );
+      return () => clearTimeout(availabilitySyncTimer.current);
+    }
+    return undefined;
+  }, [
+    arsenalAccountConnected,
+    availabilitySettingsKey,
+    availabilitySettingsLoadedKey,
+    availabilityView,
+    excludeTeamDefense,
+    excludeKickers,
+    excludeBestBall,
+    includeDrafting,
+    onlyBestBall,
+    projectionHorizon,
+    sourceKey,
+    syncNow,
+  ]);
 
   // Values + Projections sources (match Trade Analyzer)
-  const [sourceKey, setSourceKey] = useState("val:thefantasyarsenal");
   const activeSource = useMemo(
     () =>
       DEFAULT_SOURCES.find((s) => s.key === sourceKey) || DEFAULT_SOURCES[0],
     [sourceKey],
   );
+  const availabilitySources = useMemo(
+    () =>
+      projectionHorizon === "week"
+        ? WEEKLY_AVAILABILITY_SOURCE_ORDER.map((key) =>
+            DEFAULT_SOURCES.find((source) => source.key === key),
+          ).filter(Boolean)
+        : DEFAULT_SOURCES,
+    [projectionHorizon],
+  );
+
+  useEffect(() => {
+    if (
+      projectionHorizon === "week" &&
+      !WEEKLY_AVAILABILITY_SOURCE_KEYS.has(sourceKey)
+    )
+      setSourceKey(SAFE_WEEKLY_SOURCE_KEY);
+  }, [projectionHorizon, sourceKey]);
 
   // Keep existing downstream logic (valueSource + projSource) but drive them from ONE selector.
   const [valueSource, setValueSource] = useState("TheFantasyArsenal");
@@ -771,9 +942,46 @@ export default function PlayerAvailabilityContent() {
     SLEEPER: null,
     FANTASYSHARKS: null,
     DRAFTSHARKS: null,
+    FANTASYPROS: null,
     ARSENAL: null,
     ARSENAL_MODEL: null,
   });
+  const weeklyProjectionSource = projSource === "CSV" ? "FFA" : projSource;
+  const {
+    details: getAvailabilityWeekDetails,
+    loading: weeklyProjectionLoading,
+    ready: weeklyProjectionReady,
+  } = useWeeklyProjectionSource(weeklyProjectionSource, {
+    enabled:
+      activeSource.type === "projection" && projectionHorizon === "week",
+    season: availabilitySeason,
+  });
+
+  useEffect(() => {
+    let active = true;
+    const loadNflState = () =>
+      fetch("https://api.sleeper.app/v1/state/nfl")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((nflState) => {
+          if (!active || !nflState) return;
+          setAvailabilityWeek(fantasyWeekFromNflState(nflState));
+          if (nflState.season) setAvailabilitySeason(Number(nflState.season));
+        })
+        .catch(() => {
+          if (active) setAvailabilityWeek((current) => current || 1);
+        });
+    loadNflState();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") loadNflState();
+    };
+    const timer = window.setInterval(loadNflState, 60 * 60 * 1000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
 
   // Drive legacy source state from the single selector
   useEffect(() => {
@@ -785,6 +993,7 @@ export default function PlayerAvailabilityContent() {
         "proj:sleeper": "SLEEPER",
         "proj:fantasysharks": "FANTASYSHARKS",
         "proj:draftsharks": "DRAFTSHARKS",
+        "proj:fantasypros": "FANTASYPROS",
         "proj:thefantasyarsenal": "ARSENAL",
         "proj:thefantasyarsenal-model": "ARSENAL_MODEL",
       };
@@ -813,6 +1022,16 @@ export default function PlayerAvailabilityContent() {
   const [bestLimit, setBestLimit] = useState(25);
   const [bestMinOpenPct, setBestMinOpenPct] = useState(0);
   const [minOpenSlots, setMinOpenSlots] = useState(1);
+  const [injuryWeek, setInjuryWeek] = useState(null);
+  const [starterIdsByLeague, setStarterIdsByLeague] = useState(new Map());
+  const [injuryViewLoading, setInjuryViewLoading] = useState(false);
+  const [injuryViewError, setInjuryViewError] = useState("");
+  const [sleeperRosterPercent, setSleeperRosterPercent] = useState(new Map());
+  const [sleeperResearchLoading, setSleeperResearchLoading] = useState(false);
+  const [sleeperResearchError, setSleeperResearchError] = useState("");
+  const [sleeperResearchLabel, setSleeperResearchLabel] = useState("");
+  const [sleeperResearchUpdatedAt, setSleeperResearchUpdatedAt] =
+    useState(null);
   const [requestedLeagueId, setRequestedLeagueId] = useState("");
   const requestedPlayerId = useRef(
     typeof window !== "undefined"
@@ -973,8 +1192,18 @@ export default function PlayerAvailabilityContent() {
 
   const activeProjMap = useMemo(() => {
     return {
-      fantasyProsGetter: (player) =>
-        getProjection(player, projSource === "CSV" ? "FFA" : projSource),
+      fantasyProsGetter: (player) => {
+        if (projectionHorizon === "week") {
+          if (!availabilityWeek || !weeklyProjectionReady) return 0;
+          return (
+            getAvailabilityWeekDetails(player, availabilityWeek, {
+              scoring: projectionScoring,
+              qbType: qb,
+            }).points || 0
+          );
+        }
+        return getProjection(player, weeklyProjectionSource);
+      },
     };
     /* Kept as a compatibility fallback for older cached sessions.
     if (
@@ -1004,7 +1233,17 @@ export default function PlayerAvailabilityContent() {
                 : projSource === "ARSENAL"
                   ? projectionMaps.ARSENAL
                   : projectionMaps.CSV; */
-  }, [projSource, projectionMaps, getProjection]);
+  }, [
+    availabilityWeek,
+    getAvailabilityWeekDetails,
+    getProjection,
+    projectionHorizon,
+    projectionMaps,
+    projectionScoring,
+    qb,
+    weeklyProjectionReady,
+    weeklyProjectionSource,
+  ]);
 
   // ---------- Scan leagues with cache ----------
   useEffect(() => {
@@ -1116,6 +1355,13 @@ export default function PlayerAvailabilityContent() {
                       avatar: lg.avatar || null,
                       isBestBall: lg?.settings?.best_ball === 1,
                       status: lg?.status || "",
+                      myRosterId: mine?.roster_id ?? null,
+                      myPlayerIds: Array.isArray(mine?.players)
+                        ? mine.players.map(String)
+                        : [],
+                      myReserveIds: Array.isArray(mine?.reserve)
+                        ? mine.reserve.map(String)
+                        : [],
                       roster_positions: Array.isArray(lg?.roster_positions)
                         ? lg.roster_positions
                         : [],
@@ -1192,55 +1438,129 @@ export default function PlayerAvailabilityContent() {
     [scanLeagues, visibleLeagueIds],
   );
 
-  // ---------- Included leagues for "Best Available" list ----------
-  const includeKey = cacheKey
-    ? `availabilityIncludedLeagues:${cacheKey}`
+  // ---------- Included leagues for all availability views ----------
+  const includeKey = username
+    ? `tfa:availability:included:${String(username).toLowerCase()}:${yrStr}`
     : null;
   const [showIncludedLeaguesModal, setShowIncludedLeaguesModal] =
     useState(false);
-
-  const [includedLeagueIds, setIncludedLeagueIds] = useState(() => {
-    if (!includeKey) return new Set();
-    try {
-      const raw = sessionStorage.getItem(includeKey);
-      const arr = raw ? JSON.parse(raw) : null;
-      return new Set(Array.isArray(arr) ? arr : []);
-    } catch {
-      return new Set();
-    }
-  });
+  const [includedLeagueIds, setIncludedLeagueIds] = useState(new Set());
+  const [includedSelectionLoadedKey, setIncludedSelectionLoadedKey] =
+    useState("");
 
   useEffect(() => {
-    if (!scanLeagues || scanLeagues.length === 0) return;
+    if (!includeKey || !scanLeagues.length) return;
     if (requestedLeagueId && visibleLeagueIds.has(requestedLeagueId)) {
       setIncludedLeagueIds(new Set([requestedLeagueId]));
+      setIncludedSelectionLoadedKey(includeKey);
       return;
     }
-    setIncludedLeagueIds((prev) => {
-      const vis = visibleLeagueIds;
-      if (!prev || prev.size === 0) return new Set([...vis]);
-
-      const next = new Set([...prev].filter((id) => vis.has(id)));
-      if (next.size === 0) for (const id of vis) next.add(id);
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleLeagueCount, requestedLeagueId]);
+    try {
+      const raw = localStorage.getItem(includeKey);
+      const legacyKey = cacheKey
+        ? `availabilityIncludedLeagues:${cacheKey.replace(/:v\d+$/, "")}`
+        : "";
+      const legacy = legacyKey ? sessionStorage.getItem(legacyKey) : null;
+      const parsed = JSON.parse(raw ?? legacy ?? "null");
+      const known = new Set(scanLeagues.map((league) => String(league.id)));
+      const selected = Array.isArray(parsed)
+        ? parsed.map(String).filter((id) => known.has(id))
+        : scanLeagues.map((league) => String(league.id));
+      setIncludedLeagueIds(new Set(selected));
+    } catch {
+      setIncludedLeagueIds(
+        new Set(scanLeagues.map((league) => String(league.id))),
+      );
+    }
+    setIncludedSelectionLoadedKey(includeKey);
+  }, [cacheKey, includeKey, requestedLeagueId, scanLeagues]);
 
   useEffect(() => {
-    if (!includeKey) return;
+    if (!includeKey || includedSelectionLoadedKey !== includeKey) return;
     try {
-      sessionStorage.setItem(
-        includeKey,
-        JSON.stringify([...includedLeagueIds]),
-      );
+      localStorage.setItem(includeKey, JSON.stringify([...includedLeagueIds]));
     } catch {}
-  }, [includeKey, includedLeagueIds]);
+    if (arsenalAccountConnected) {
+      clearTimeout(availabilitySyncTimer.current);
+      availabilitySyncTimer.current = window.setTimeout(
+        () => syncNow({ quiet: true }),
+        900,
+      );
+      return () => clearTimeout(availabilitySyncTimer.current);
+    }
+    return undefined;
+  }, [
+    arsenalAccountConnected,
+    includeKey,
+    includedLeagueIds,
+    includedSelectionLoadedKey,
+    syncNow,
+  ]);
+
+  useEffect(() => {
+    if (!includeKey) return undefined;
+    const applySyncedSelection = () => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(includeKey) || "null");
+        if (Array.isArray(parsed))
+          setIncludedLeagueIds(new Set(parsed.map(String)));
+      } catch {}
+    };
+    window.addEventListener("tfa:cloud-sync-applied", applySyncedSelection);
+    return () =>
+      window.removeEventListener(
+        "tfa:cloud-sync-applied",
+        applySyncedSelection,
+      );
+  }, [includeKey]);
 
   const includedLeaguesList = useMemo(
     () => visibleLeaguesList.filter((lg) => includedLeagueIds.has(lg.id)),
     [visibleLeaguesList, includedLeagueIds],
   );
+
+  // "Exclude Best Ball" is a bulk removal, not just a visibility filter.
+  // That lets a manager clear every Best Ball league, then add back only the
+  // specific exceptions they want.
+  useEffect(() => {
+    if (
+      !excludeBestBall ||
+      !scanLeagues.length ||
+      includedSelectionLoadedKey !== includeKey
+    )
+      return;
+    const bestBallIds = new Set(
+      scanLeagues
+        .filter((league) => league.isBestBall)
+        .map((league) => String(league.id)),
+    );
+    setIncludedLeagueIds((previous) => {
+      const next = new Set(
+        [...previous].filter((id) => !bestBallIds.has(String(id))),
+      );
+      return next.size === previous.size ? previous : next;
+    });
+  }, [
+    excludeBestBall,
+    includeKey,
+    includedSelectionLoadedKey,
+    scanLeagues,
+  ]);
+
+  const toggleIncludedLeague = (league, on) => {
+    if (on) {
+      if (league.isBestBall && excludeBestBall) setExcludeBestBall(false);
+      if (!league.isBestBall && onlyBestBall) setOnlyBestBall(false);
+      if (league.status === "drafting" && !includeDrafting)
+        setIncludeDrafting(true);
+    }
+    setIncludedLeagueIds((previous) => {
+      const next = new Set(previous);
+      if (on) next.add(String(league.id));
+      else next.delete(String(league.id));
+      return next;
+    });
+  };
 
   // ---------- Restore last player selection ----------
   useEffect(() => {
@@ -1368,6 +1688,13 @@ export default function PlayerAvailabilityContent() {
                       avatar: lg.avatar || null,
                       isBestBall: lg?.settings?.best_ball === 1,
                       status: lg?.status || "",
+                      myRosterId: mine?.roster_id ?? null,
+                      myPlayerIds: Array.isArray(mine?.players)
+                        ? mine.players.map(String)
+                        : [],
+                      myReserveIds: Array.isArray(mine?.reserve)
+                        ? mine.reserve.map(String)
+                        : [],
                       roster_positions: Array.isArray(lg?.roster_positions)
                         ? lg.roster_positions
                         : [],
@@ -1419,7 +1746,7 @@ export default function PlayerAvailabilityContent() {
     })();
   };
 
-  // ---------- Compute availability over *visible* leagues only (NO rostered output) ----------
+  // ---------- Compute availability over included leagues only (NO rostered output) ----------
   async function computeAvailability(
     playersToCheck = selectedPlayers,
     { merge = false } = {},
@@ -1433,7 +1760,7 @@ export default function PlayerAvailabilityContent() {
     const out = {};
     for (const p of list) {
       const availableLeagues = [];
-      for (const lg of visibleLeaguesList) {
+      for (const lg of includedLeaguesList) {
         const set = rosterSetsRef.current.get(lg.id);
         if (!set || set.size === 0) continue;
         if (!set.has(String(p.id))) availableLeagues.push(lg);
@@ -1448,20 +1775,78 @@ export default function PlayerAvailabilityContent() {
     if (scanLoading) return;
     computeAvailability(selectedPlayers, { merge: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleLeagueCount, scanLoading]);
+  }, [includedLeaguesList, scanLoading]);
 
   const anySelected = selectedPlayers.length > 0;
 
   // ---------- Best Available Players ----------
   const playerList = useMemo(
     () =>
-      Object.values(playersMap || {}).filter((p) => !isPickPos(p?.position)),
-    [playersMap],
+      Object.values(playersMap || {}).filter((player) => {
+        const position = String(player?.position || "").toUpperCase();
+        if (isPickPos(position)) return false;
+        if (excludeTeamDefense && ["DEF", "DST"].includes(position))
+          return false;
+        if (excludeKickers && position === "K") return false;
+        return true;
+      }),
+    [excludeKickers, excludeTeamDefense, playersMap],
   );
   const getPlayerValue = useMemo(
     () => makeGetPlayerValue(valueSource, mode, qb, projectionScoring),
     [valueSource, mode, qb, projectionScoring],
   );
+
+  useEffect(() => {
+    if (availabilityView !== "under25") return;
+    let cancelled = false;
+    const loadSleeperResearch = async () => {
+      setSleeperResearchLoading(true);
+      setSleeperResearchError("");
+      try {
+        const response = await fetch(
+          "/data/sleeper-roster-percentages.json",
+          { cache: "no-store" },
+        );
+        if (!response.ok)
+          throw new Error(`Roster snapshot returned ${response.status}`);
+        const snapshot = await response.json();
+        if (cancelled) return;
+        const percentages = new Map();
+        for (const [playerId, row] of Object.entries(snapshot?.players || {})) {
+          const rostered = Number(row?.rostered);
+          if (Number.isFinite(rostered))
+            percentages.set(String(playerId), rostered);
+        }
+        if (percentages.size < 100)
+          throw new Error("Published roster snapshot is incomplete");
+        setSleeperRosterPercent(percentages);
+        setSleeperResearchLabel(
+          snapshot?.seasonType === "regular" && snapshot?.week
+            ? `${snapshot.season} Week ${snapshot.week}`
+            : `${snapshot?.season || "Current"} ${snapshot?.seasonType || "season"}`,
+        );
+        setSleeperResearchUpdatedAt(
+          snapshot?.generatedAt ? new Date(snapshot.generatedAt) : null,
+        );
+      } catch (researchError) {
+        if (!cancelled) {
+          console.error(researchError);
+          setSleeperRosterPercent(new Map());
+          setSleeperResearchUpdatedAt(null);
+          setSleeperResearchError(
+            "Sleeper roster percentages are temporarily unavailable.",
+          );
+        }
+      } finally {
+        if (!cancelled) setSleeperResearchLoading(false);
+      }
+    };
+    loadSleeperResearch();
+    return () => {
+      cancelled = true;
+    };
+  }, [availabilityView]);
 
   const bestAvailablePlayers = useMemo(() => {
     const leagues = includedLeaguesList;
@@ -1523,6 +1908,16 @@ export default function PlayerAvailabilityContent() {
       const openPct = eligibleLeagues.length
         ? Math.round((availableLeagues.length / eligibleLeagues.length) * 100)
         : 0;
+      const rosteredCount = Math.max(
+        0,
+        eligibleLeagues.length - availableLeagues.length,
+      );
+      const sleeperOwned = sleeperRosterPercent.get(pid);
+      if (
+        availabilityView === "under25" &&
+        (!Number.isFinite(sleeperOwned) || sleeperOwned >= 25)
+      )
+        continue;
       if (openPct < bestMinOpenPct) continue;
 
       const pos = String(p.position || "").toUpperCase();
@@ -1544,7 +1939,14 @@ export default function PlayerAvailabilityContent() {
         value,
         score,
         openPct,
+        rosteredPct: eligibleLeagues.length
+          ? Math.round((rosteredCount / eligibleLeagues.length) * 100)
+          : 0,
+        sleeperRosteredPct: Number.isFinite(sleeperOwned)
+          ? sleeperOwned
+          : null,
         openCount: availableLeagues.length,
+        eligibleCount: eligibleLeagues.length,
         availableLeagues,
       });
 
@@ -1586,18 +1988,168 @@ export default function PlayerAvailabilityContent() {
     bestSort,
     bestLimit,
     bestMinOpenPct,
+    availabilityView,
+    sleeperRosterPercent,
     minOpenSlots,
     activeProjMap,
     getPlayerValue,
   ]);
 
   // ---------- Row click → open leagues modal ----------
-  const openPlayerModal = async (player, openLeagues) => {
+  useEffect(() => {
+    if (availabilityView !== "injuries" || !includedLeaguesList.length) return;
+    let cancelled = false;
+    const loadCurrentLineups = async () => {
+      setInjuryViewLoading(true);
+      setInjuryViewError("");
+      try {
+        const nflState = await fetch("https://api.sleeper.app/v1/state/nfl")
+          .then((response) => (response.ok ? response.json() : {}))
+          .catch(() => ({}));
+        const week = fantasyWeekFromNflState(nflState);
+        const entries = await Promise.all(
+          includedLeaguesList.map(async (league) => {
+            const key = `tfa:availability:lineup:${league.id}:${week}`;
+            try {
+              const cached = JSON.parse(sessionStorage.getItem(key) || "null");
+              if (
+                cached?.at &&
+                Date.now() - Number(cached.at) < 5 * 60 * 1000 &&
+                Array.isArray(cached.starters)
+              ) {
+                return [league.id, cached.starters.map(String)];
+              }
+            } catch {}
+            let starters = [];
+            try {
+              const response = await fetch(
+                `https://api.sleeper.app/v1/league/${league.id}/matchups/${week}`,
+              );
+              const matchups = response.ok ? await response.json() : [];
+              const mine = Array.isArray(matchups)
+                ? matchups.find(
+                    (row) =>
+                      String(row?.roster_id) === String(league.myRosterId),
+                  )
+                : null;
+              starters = (mine?.starters || [])
+                .map(String)
+                .filter((id) => id && id !== "0");
+            } catch {}
+            try {
+              sessionStorage.setItem(
+                key,
+                JSON.stringify({ at: Date.now(), starters }),
+              );
+            } catch {}
+            return [league.id, starters];
+          }),
+        );
+        if (cancelled) return;
+        setInjuryWeek(week);
+        setStarterIdsByLeague(
+          new Map(entries.map(([id, ids]) => [String(id), new Set(ids)])),
+        );
+      } catch (loadError) {
+        if (!cancelled) {
+          console.error(loadError);
+          setInjuryViewError("Current lineups could not be loaded.");
+        }
+      } finally {
+        if (!cancelled) setInjuryViewLoading(false);
+      }
+    };
+    loadCurrentLineups();
+    return () => {
+      cancelled = true;
+    };
+  }, [availabilityView, includedLeaguesList]);
+
+  const injuryReplacementRows = useMemo(() => {
+    if (availabilityView !== "injuries") return [];
+    const metricFor = (player) =>
+      Number(
+        bestMetric === "projection"
+          ? getSeasonPointsForPlayer(activeProjMap, player)
+          : getPlayerValue(player),
+      ) || 0;
+    const rankedByPosition = new Map();
+    for (const player of playerList) {
+      const position = String(player?.position || "").toUpperCase();
+      if (!position || isPickPos(position) || !isUsableReplacement(player))
+        continue;
+      const metric = metricFor(player);
+      if (metric <= 0) continue;
+      if (!rankedByPosition.has(position)) rankedByPosition.set(position, []);
+      rankedByPosition.get(position).push({ player, metric });
+    }
+    rankedByPosition.forEach((rows) =>
+      rows.sort((a, b) => b.metric - a.metric),
+    );
+
+    const output = [];
+    for (const league of includedLeaguesList) {
+      const allRostered = rosterSetsRef.current.get(String(league.id));
+      const starters = starterIdsByLeague.get(String(league.id)) || new Set();
+      const reserves = new Set((league.myReserveIds || []).map(String));
+      for (const playerId of league.myPlayerIds || []) {
+        const player = playersMap?.[String(playerId)];
+        const injury = playerInjuryLabel(player);
+        if (!player || !injury) continue;
+        const position = String(player.position || "").toUpperCase();
+        const replacements = (rankedByPosition.get(position) || [])
+          .filter(({ player: candidate }) => {
+            const id = String(candidate.player_id);
+            return id !== String(playerId) && !allRostered?.has(id);
+          })
+          .slice(0, 3)
+          .map(({ player: candidate, metric }) => ({
+            id: String(candidate.player_id),
+            name:
+              candidate.full_name || candidate.search_full_name || "Unknown",
+            team: String(candidate.team || "").toUpperCase(),
+            metric,
+          }));
+        output.push({
+          id: `${league.id}:${playerId}`,
+          league,
+          playerId: String(playerId),
+          name: player.full_name || player.search_full_name || String(playerId),
+          position,
+          team: String(player.team || "").toUpperCase(),
+          injury,
+          isStarter: starters.has(String(playerId)),
+          isReserve: reserves.has(String(playerId)),
+          replacements,
+        });
+      }
+    }
+    return output.sort(
+      (a, b) =>
+        Number(b.isStarter) - Number(a.isStarter) ||
+        a.league.name.localeCompare(b.league.name) ||
+        a.name.localeCompare(b.name),
+    );
+  }, [
+    availabilityView,
+    includedLeaguesList,
+    starterIdsByLeague,
+    playerList,
+    playersMap,
+    bestMetric,
+    activeProjMap,
+    getPlayerValue,
+  ]);
+
+  const openPlayerModal = async (player, openLeagues, leagueScope = null) => {
     setModalPlayer(player);
     setModalLeagues(openLeagues || []);
     setModalOpen(true);
     setAcquisitionRows([]);
-    const acquisitionKey = `tfa:acquisition:v2:${cacheKey}:${activeSource.key}:${mode}:${qb}:${player?.id}`;
+    const scopeKey = Array.isArray(leagueScope)
+      ? leagueScope.map((league) => league.id).sort().join(",")
+      : "all";
+    const acquisitionKey = `tfa:acquisition:v2:${cacheKey}:${activeSource.key}:${mode}:${qb}:${player?.id}:${scopeKey}`;
     try {
       const cached = JSON.parse(
         sessionStorage.getItem(acquisitionKey) || "null",
@@ -1616,7 +2168,7 @@ export default function PlayerAvailabilityContent() {
     const targetPosition = String(
       targetPlayer?.position || player?.pos || "",
     ).toUpperCase();
-    const leagueRows = includedLeaguesList.filter((league) =>
+    const leagueRows = (leagueScope || includedLeaguesList).filter((league) =>
       leagueAllowsPosition(league, targetPosition),
     );
     const output = new Array(leagueRows.length);
@@ -1905,7 +2457,7 @@ export default function PlayerAvailabilityContent() {
     const row = { id, name:player.full_name || player.search_full_name || id, pos:String(player.position || player.fantasy_positions?.[0] || "").toUpperCase(), team:String(player.team || "").toUpperCase() };
     requestedPlayerApplied.current = true;
     addResolved(row, { scrollToMatrix:true });
-    const availableLeagues = visibleLeaguesList.filter((league) => {
+    const availableLeagues = includedLeaguesList.filter((league) => {
       const rosterSet = rosterSetsRef.current.get(String(league.id));
       return rosterSet?.size && !rosterSet.has(id);
     });
@@ -1913,7 +2465,7 @@ export default function PlayerAvailabilityContent() {
       row,
       availableLeagues,
     );
-  }, [playersMap, scanLoading, visibleLeagueCount]);
+  }, [playersMap, scanLoading, includedLeaguesList]);
 
   // ---------- Trending (Sleeper Hot/Cold) ----------
   useEffect(() => {
@@ -1943,6 +2495,8 @@ export default function PlayerAvailabilityContent() {
           p.search_full_name ||
           `${p.first_name || ""} ${p.last_name || ""}`.trim();
         const pos = String(p.position || "").toUpperCase();
+        if (excludeTeamDefense && ["DEF", "DST"].includes(pos)) continue;
+        if (excludeKickers && pos === "K") continue;
         const team = String(p.team || "").toUpperCase();
 
         const proj = getSeasonPointsForPlayer(activeProjMap, p);
@@ -2017,6 +2571,8 @@ export default function PlayerAvailabilityContent() {
     trendHours,
     trendLimit,
     activeProjMap,
+    excludeKickers,
+    excludeTeamDefense,
     getPlayerValue,
   ]);
 
@@ -2025,7 +2581,7 @@ export default function PlayerAvailabilityContent() {
     if (!anySelected) return [];
 
     const scored = [];
-    for (const lg of visibleLeaguesList) {
+    for (const lg of includedLeaguesList) {
       let availableCount = 0;
       for (const p of selectedPlayers) {
         const isAvailableHere = results[p.id]?.availableLeagues?.some(
@@ -2043,7 +2599,7 @@ export default function PlayerAvailabilityContent() {
     });
 
     return scored.map((s) => s.lg);
-  }, [anySelected, visibleLeaguesList, selectedPlayers, results]);
+  }, [anySelected, includedLeaguesList, selectedPlayers, results]);
 
   const availabilityExportRows = useMemo(
     () =>
@@ -2057,6 +2613,7 @@ export default function PlayerAvailabilityContent() {
         openLeagues: row.openCount,
         leaguesScanned: includedLeaguesList.length,
         openPercent: row.openPct,
+        sleeperRosteredPercent: row.sleeperRosteredPct,
         availableIn: (row.availableLeagues || []).map((league) => league.name),
       })),
     [bestAvailablePlayers, bestMetric, includedLeaguesList.length],
@@ -2075,6 +2632,7 @@ export default function PlayerAvailabilityContent() {
     { key: "openLeagues", label: "Open Leagues" },
     { key: "leaguesScanned", label: "Leagues Scanned" },
     { key: "openPercent", label: "Open Percent" },
+    { key: "sleeperRosteredPercent", label: "Sleeper Rostered Percent" },
     { key: "availableIn", label: "Available In" },
   ];
 
@@ -2103,47 +2661,6 @@ export default function PlayerAvailabilityContent() {
             </p>
           </div>
 
-          {/* Scan summary */}
-          <div data-guide-tip="availability-scan" className="rounded-3xl border border-white/10 bg-gray-900/60 backdrop-blur p-4 md:p-5 mb-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <StatPill
-                label="Scanned"
-                value={leagueCount}
-                onClick={() => setShowLeaguesModal(true)}
-                title="All leagues included in this scan"
-              />
-              <StatPill
-                label="Showing"
-                value={visibleLeagueCount}
-                onClick={() => setShowVisibleLeaguesModal(true)}
-                title="Leagues currently visible by filters"
-              />
-
-              {lastUpdated && (
-                <div
-                  className="ml-1 text-xs text-white/45"
-                  suppressHydrationWarning
-                >
-                  Last scan: {lastUpdated.toLocaleTimeString()}
-                </div>
-              )}
-
-              <div className="ml-auto flex items-center gap-2">
-                {scanningError ? (
-                  <span className="text-sm text-red-400">{scanningError}</span>
-                ) : null}
-                <button
-                  className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
-                  onClick={refreshScan}
-                  title="Rescan now"
-                >
-                  Refresh
-                </button>
-              </div>
-            </div>
-
-          </div>
-
           {!username ? (
             <p className="text-red-400">Please log in on the Home page.</p>
           ) : Object.keys(playersMap).length === 0 ? (
@@ -2166,10 +2683,96 @@ export default function PlayerAvailabilityContent() {
                     </span>
                   </summary>
                   <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={onlyBestBall} onChange={() => setOnlyBestBall((v) => (excludeBestBall ? true : !v))} />Only Best Ball</label>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={excludeBestBall} onChange={() => setExcludeBestBall((v) => (onlyBestBall ? true : !v))} />Exclude Best Ball</label>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75"><input type="checkbox" className="accent-cyan-400" checked={includeDrafting} onChange={() => setIncludeDrafting((v) => !v)} />Include drafting leagues</label>
-                    <button type="button" className="ml-auto rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] px-3 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/10" onClick={() => setShowIncludedLeaguesModal(true)}>Included leagues ({includedLeaguesList.length})</button>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75">
+                      <input
+                        data-account-preference="availability-only-best-ball"
+                        type="checkbox"
+                        className="accent-cyan-400"
+                        checked={onlyBestBall}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setOnlyBestBall(checked);
+                          if (checked) setExcludeBestBall(false);
+                        }}
+                      />
+                      Only Best Ball
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75">
+                      <input
+                        data-account-preference="availability-exclude-best-ball-v2"
+                        type="checkbox"
+                        className="accent-cyan-400"
+                        checked={excludeBestBall}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setExcludeBestBall(checked);
+                          if (checked) setOnlyBestBall(false);
+                        }}
+                      />
+                      Exclude Best Ball
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75">
+                      <input
+                        data-account-preference="availability-include-drafting"
+                        type="checkbox"
+                        className="accent-cyan-400"
+                        checked={includeDrafting}
+                        onChange={(event) =>
+                          setIncludeDrafting(event.target.checked)
+                        }
+                      />
+                      Include drafting leagues
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75">
+                      <input
+                        data-account-preference="availability-exclude-team-defense"
+                        type="checkbox"
+                        className="accent-cyan-400"
+                        checked={excludeTeamDefense}
+                        onChange={(event) =>
+                          setExcludeTeamDefense(event.target.checked)
+                        }
+                      />
+                      Exclude team defenses
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-white/75">
+                      <input
+                        data-account-preference="availability-exclude-kickers"
+                        type="checkbox"
+                        className="accent-cyan-400"
+                        checked={excludeKickers}
+                        onChange={(event) =>
+                          setExcludeKickers(event.target.checked)
+                        }
+                      />
+                      Exclude kickers
+                    </label>
+                    <div
+                      data-guide-tip="availability-scan"
+                      className="ml-auto flex flex-wrap items-center gap-2"
+                    >
+                      <StatPill
+                        label="Scanned"
+                        value={leagueCount}
+                        onClick={() => setShowLeaguesModal(true)}
+                        title="All leagues found in the latest roster scan"
+                      />
+                      <StatPill
+                        label="Included"
+                        value={includedLeaguesList.length}
+                        onClick={() => setShowIncludedLeaguesModal(true)}
+                        title="Leagues currently used by availability results"
+                      />
+                    </div>
+                    <div className="w-full text-right text-[11px] text-white/40">
+                      {scanningError ? (
+                        <span className="text-red-300">{scanningError}</span>
+                      ) : lastUpdated ? (
+                        <span suppressHydrationWarning>
+                          Last roster scan: {lastUpdated.toLocaleTimeString()}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="mt-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 p-3">
                     <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
@@ -2178,9 +2781,17 @@ export default function PlayerAvailabilityContent() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <div className="relative z-[80] min-w-0 sm:min-w-[280px] flex-1">
                         <SourceSelector
-                          sources={DEFAULT_SOURCES}
+                          projectionHorizon={projectionHorizon}
+                          sources={availabilitySources}
                           value={sourceKey}
-                          onChange={setSourceKey}
+                          onChange={(nextSource) => {
+                            setSourceKey(nextSource);
+                            if (
+                              projectionHorizon === "week" &&
+                              String(nextSource).startsWith("val:")
+                            )
+                              setMode("redraft");
+                          }}
                           className="w-full"
                           mode={mode}
                           qbType={qb}
@@ -2189,9 +2800,34 @@ export default function PlayerAvailabilityContent() {
                           layout="inline"
                         />
                       </div>
+                      <div className="inline-flex rounded-xl border border-white/10 bg-black/20 p-1">
+                          {[
+                            ["week", `Week ${availabilityWeek || "…"}`],
+                            ["season", "Season"],
+                          ].map(([horizon, label]) => (
+                            <button
+                              key={horizon}
+                              type="button"
+                              data-account-persist="off"
+                              aria-pressed={projectionHorizon === horizon}
+                              onClick={() => {
+                                if (horizon === "week")
+                                  setSourceKey(SAFE_WEEKLY_SOURCE_KEY);
+                                setProjectionHorizon(horizon);
+                              }}
+                              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                                projectionHorizon === horizon
+                                  ? "bg-cyan-300/15 text-cyan-50"
+                                  : "text-white/55 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                      </div>
                       <button
                         type="button"
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
+                        className="hidden"
                         onClick={() => setFiltersOpen(true)}
                       >
                         <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/10">
@@ -2210,6 +2846,53 @@ export default function PlayerAvailabilityContent() {
                       </button>
 
                     </div>
+                    {bestMetric === "projection" &&
+                    projectionHorizon === "season" ? (
+                      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3 py-3 text-xs leading-5 text-amber-100/80 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <b>Weekly projections are recommended for waiver decisions.</b>{" "}
+                          Season projections are the long-term view and can rank
+                          a player highly even when he is on bye, injured, or
+                          facing a poor matchup this week.
+                        </div>
+                        <button
+                          type="button"
+                          data-account-persist="off"
+                          onClick={() => {
+                            setSourceKey(SAFE_WEEKLY_SOURCE_KEY);
+                            setProjectionHorizon("week");
+                          }}
+                          className="shrink-0 rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 font-semibold text-cyan-50 hover:bg-cyan-300/15"
+                        >
+                          Use Arsenal Safe weekly
+                        </button>
+                      </div>
+                    ) : null}
+                    {projectionHorizon === "week" &&
+                    ["proj:draftsharks", "proj:fantasypros"].includes(
+                      sourceKey,
+                    ) ? (
+                      <div className="mt-3 rounded-xl border border-violet-300/20 bg-violet-300/[0.06] px-3 py-2 text-xs leading-5 text-violet-100/80">
+                        <b>
+                          {sourceKey === "proj:draftsharks"
+                            ? "DraftSharks"
+                            : "FantasyPros"}{" "}
+                          weekly estimate:
+                        </b>{" "}
+                        its raw season stat projections are recalculated for the
+                        selected scoring format, spread across active games, and
+                        set to zero for known byes. It is not a matchup-specific
+                        weekly forecast.
+                      </div>
+                    ) : null}
+                    {projectionHorizon === "week" && bestMetric === "value" ? (
+                      <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-3 py-2 text-xs leading-5 text-amber-100/80">
+                        <b>Redraft value is a secondary waiver lens.</b> It ranks
+                        current-season roster strength, not this week&apos;s matchup
+                        or projected fantasy points. Use Arsenal Safe for the
+                        primary weekly ranking.
+                      </div>
+                    ) : null}
                     <div className="mt-2 text-[11px] text-white/45">
                       Best Available ranks players from the selected projection or value source, then measures availability across{" "}
                       <span className="text-white/70 font-semibold">
@@ -2219,6 +2902,44 @@ export default function PlayerAvailabilityContent() {
                     </div>
                   </div>
                 </details>
+
+                <div className="mb-4 rounded-2xl border border-white/10 bg-black/20 p-1.5">
+                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                    {[
+                      ["best", "Best available", "Highest-ranked open players"],
+                      [
+                        "under25",
+                        "Under 25% rostered",
+                        "Top players rostered in fewer than 25% of Sleeper leagues",
+                      ],
+                      [
+                        "injuries",
+                        "Injuries & replacements",
+                        "Current-week injury risks with waiver options",
+                      ],
+                    ].map(([key, label, description]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        data-account-persist="off"
+                        aria-pressed={availabilityView === key}
+                        onClick={() => setAvailabilityView(key)}
+                        className={`rounded-xl px-3 py-2 text-left transition ${
+                          availabilityView === key
+                            ? "border border-cyan-300/30 bg-cyan-300/10 text-cyan-50"
+                            : "border border-transparent text-white/65 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold">
+                          {label}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] leading-4 text-white/45">
+                          {description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="space-y-4">
                   <div data-guide-tip="availability-player-picker">
@@ -2270,19 +2991,6 @@ export default function PlayerAvailabilityContent() {
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
-                        onClick={() =>
-                          computeAvailability(selectedPlayers, { merge: false })
-                        }
-                        className="px-4 py-2 rounded-2xl bg-cyan-500 hover:bg-cyan-600 transition font-semibold disabled:opacity-40 disabled:hover:bg-cyan-500"
-                        disabled={!anySelected}
-                        title={
-                          anySelected ? "Re-check all" : "Add a player first"
-                        }
-                      >
-                        Check
-                      </button>
-
-                      <button
                         onClick={refreshScan}
                         className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition"
                         title="Rescan all leagues"
@@ -2299,14 +3007,28 @@ export default function PlayerAvailabilityContent() {
                       </button>
 
 
-                      <div className="ml-auto text-xs text-white/60">
-                        Selected:{" "}
+                      <div className="hidden">
+                        Selected players:{" "}
                         <span className="text-white font-semibold">
                           {selectedPlayers.length}
                         </span>{" "}
                         • Visible leagues:{" "}
                         <span className="text-white font-semibold">
-                          {visibleLeagueCount}
+                          {leagueCount} / {includedLeaguesList.length}
+                        </span>
+                      </div>
+                      <div className="ml-auto text-xs text-white/60">
+                        Selected players:{" "}
+                        <span className="font-semibold text-white">
+                          {selectedPlayers.length}
+                        </span>{" "}
+                        · Scanned:{" "}
+                        <span className="font-semibold text-white">
+                          {leagueCount}
+                        </span>{" "}
+                        · Included:{" "}
+                        <span className="font-semibold text-white">
+                          {includedLeaguesList.length}
                         </span>
                       </div>
                     </div>
@@ -2564,6 +3286,8 @@ export default function PlayerAvailabilityContent() {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
+                                      playerId={r.id}
+                                      name={r.name}
                                       src={localPlayerAvatarUrl({
                                         player_id: r.id,
                                         full_name: r.name,
@@ -2606,34 +3330,152 @@ export default function PlayerAvailabilityContent() {
                   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-bold text-white">
-                        Best Available Players
+                        {availabilityView === "injuries"
+                          ? `Week ${injuryWeek || "—"} Injuries & Replacements`
+                          : availabilityView === "under25"
+                            ? "Top Players Under 25% Rostered"
+                            : "Best Available Players"}
                       </h2>
                       <div className="text-sm text-white/70 mt-1">
-                        Click a row to see open leagues.
+                        {availabilityView === "injuries"
+                          ? "Injured players on your rosters, with the best same-position options available in that league."
+                          : availabilityView === "under25"
+                            ? `Sleeper platform roster rate${sleeperResearchLabel ? ` · ${sleeperResearchLabel}` : ""}. Portfolio availability remains league-specific.`
+                            : "Click a row to see open leagues."}
                       </div>
                       <div className="text-xs text-white/50 mt-1">
                         Scanning {includedLeaguesList.length} league(s) in this
                         list.
                       </div>
+                      {availabilityView === "under25" &&
+                        sleeperResearchUpdatedAt && (
+                          <div
+                            className="mt-1 text-xs text-cyan-100/55"
+                            suppressHydrationWarning
+                          >
+                            Sleeper roster data updated:{" "}
+                            {sleeperResearchUpdatedAt.toLocaleString()}
+                          </div>
+                        )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <ExportButtons
-                        rows={availabilityExportRows}
-                        columns={availabilityExportColumns}
-                        filename="player-availability"
-                      />
-                      <button
-                        className="text-xs rounded-xl px-3 py-2 border border-white/15 bg-white/5 hover:bg-white/10"
-                        onClick={refreshScan}
-                        title="Rescan rosters (affects open%)"
-                      >
-                        Sync
-                      </button>
+                      {availabilityView !== "injuries" && (
+                        <ExportButtons
+                          rows={availabilityExportRows}
+                          columns={availabilityExportColumns}
+                          filename="player-availability"
+                        />
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-4 overflow-x-auto">
-                    {bestAvailablePlayers.length === 0 ? (
+                    {bestMetric === "projection" &&
+                    projectionHorizon === "week" &&
+                    (!availabilityWeek || weeklyProjectionLoading) ? (
+                      <div className="text-sm text-white/65">
+                        Loading current-week projections…
+                      </div>
+                    ) : availabilityView === "injuries" ? (
+                      injuryViewLoading ? (
+                        <div className="text-sm text-white/65">
+                          Loading Week {injuryWeek || ""} lineups…
+                        </div>
+                      ) : injuryViewError ? (
+                        <div className="text-sm text-amber-200">
+                          {injuryViewError} Roster injury designations are still shown below.
+                        </div>
+                      ) : injuryReplacementRows.length === 0 ? (
+                        <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4 text-sm text-emerald-100/80">
+                          No current injury designations were found on rosters in the included leagues.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {injuryReplacementRows.map((row) => (
+                            <div
+                              key={row.id}
+                              className="rounded-2xl border border-white/10 bg-black/20 p-3 sm:p-4"
+                            >
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <div className="flex min-w-0 items-center gap-3 sm:w-[36%]">
+                                  <AvatarImage
+                                    playerId={row.playerId}
+                                    name={row.name}
+                                    src={localPlayerAvatarUrl({ player_id: row.playerId })}
+                                    fallbackSrc={DEFAULT_PLAYER_IMG}
+                                    alt={row.name}
+                                    className="h-11 w-11 rounded-full border object-cover bg-gray-800"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="truncate font-semibold text-white">{row.name}</div>
+                                    <div className="text-xs text-amber-200">
+                                      {row.position}{row.team ? ` · ${row.team}` : ""} · {row.injury}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="min-w-0 sm:w-[24%]">
+                                  <div className="truncate text-sm text-white/80">{row.league.name}</div>
+                                  <div className="text-[11px] text-white/45">
+                                    {row.league.isBestBall
+                                      ? "Best Ball roster"
+                                      : row.isStarter
+                                        ? "Current starter"
+                                        : row.isReserve
+                                          ? "IR / reserve"
+                                          : "Bench"}
+                                  </div>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100/50">
+                                    Available replacements
+                                  </div>
+                                  {row.replacements.length ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {row.replacements.map((replacement) => (
+                                        <button
+                                          key={replacement.id}
+                                          type="button"
+                                          className="rounded-lg border border-cyan-300/15 bg-cyan-300/[0.06] px-2 py-1 text-left text-xs text-cyan-50 hover:bg-cyan-300/10"
+                                          onClick={() =>
+                                            openPlayerModal(
+                                              {
+                                                id: replacement.id,
+                                                name: replacement.name,
+                                                pos: row.position,
+                                                team: replacement.team,
+                                              },
+                                              [row.league],
+                                              [row.league],
+                                            )
+                                          }
+                                        >
+                                          {replacement.name}
+                                          <span className="ml-1 text-white/40">
+                                            {replacement.metric.toFixed(1)}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-white/45">No ranked same-position option is open.</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    ) : availabilityView === "under25" &&
+                      sleeperResearchLoading ? (
+                      <div className="text-sm text-white/65">
+                        Loading Sleeper roster percentages…
+                      </div>
+                    ) : availabilityView === "under25" &&
+                      sleeperResearchError ? (
+                      <div className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.05] p-4 text-sm text-amber-100/80">
+                        {sleeperResearchError}
+                      </div>
+                    ) : bestAvailablePlayers.length === 0 ? (
                       <div className="text-white/70 text-sm">
                         No players found (try loosening filters, changing
                         position, or switching source).
@@ -2648,18 +3490,28 @@ export default function PlayerAvailabilityContent() {
                             <th className="py-2 pr-2">
                               {bestMetric === "projection" ? "Proj" : "Value"}
                             </th>
-                            <th className="py-2 pr-2">Open</th>
+                            <th className="py-2 pr-2">
+                              {availabilityView === "under25"
+                                ? "Sleeper rostered"
+                                : "Open"}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {bestAvailablePlayers.map((row) => {
                             const openLabel = includedLeaguesList.length
-                              ? `${row.openCount}/${includedLeaguesList.length} (${row.openPct}%)`
+                              ? availabilityView === "under25"
+                                ? `${row.rosteredPct}% rostered · ${row.openCount}/${row.eligibleCount} open`
+                                : `${row.openCount}/${row.eligibleCount} (${row.openPct}%)`
                               : `${row.openCount}`;
                             const metricVal =
                               bestMetric === "projection"
                                 ? row.proj
                                 : row.value;
+                            const displayedAvailability =
+                              availabilityView === "under25"
+                                ? `${row.sleeperRosteredPct?.toFixed(1)}% · ${row.openCount}/${row.eligibleCount} open here`
+                                : openLabel;
                             return (
                               <tr
                                 key={row.id}
@@ -2680,6 +3532,8 @@ export default function PlayerAvailabilityContent() {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
+                                      playerId={row.id}
+                                      name={row.name}
                                       src={localPlayerAvatarUrl({
                                         player_id: row.id,
                                         full_name: row.name,
@@ -2713,11 +3567,17 @@ export default function PlayerAvailabilityContent() {
                                     <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
                                       <div
                                         className="h-full bg-cyan-400/70"
-                                        style={{ width: `${row.openPct}%` }}
+                                        style={{
+                                          width: `${
+                                            availabilityView === "under25"
+                                              ? row.sleeperRosteredPct
+                                              : row.openPct
+                                          }%`,
+                                        }}
                                       />
                                     </div>
                                     <span className="text-white/80 tabular-nums">
-                                      {openLabel}
+                                      {displayedAvailability}
                                     </span>
                                   </div>
                                 </td>
@@ -2787,6 +3647,8 @@ export default function PlayerAvailabilityContent() {
                                 <td className="py-2 pr-2">
                                   <div className="flex items-center gap-2">
                                     <AvatarImage
+                                      playerId={r.id}
+                                      name={r.name}
                                       src={localPlayerAvatarUrl({
                                         player_id: r.id,
                                         full_name: r.name,
@@ -2974,8 +3836,8 @@ export default function PlayerAvailabilityContent() {
               <div>
                 <div className="text-xl font-bold">Included Leagues</div>
                 <div className="text-sm text-white/70">
-                  This only affects the Best Available list (scan filters still
-                  apply).
+                  Choose the leagues used by every availability view. Selecting
+                  a filtered league automatically makes it eligible.
                 </div>
               </div>
               <button
@@ -2990,11 +3852,12 @@ export default function PlayerAvailabilityContent() {
               <button
                 type="button"
                 className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
-                onClick={() =>
-                  setIncludedLeagueIds(
-                    new Set(visibleLeaguesList.map((l) => l.id)),
-                  )
-                }
+                onClick={() => {
+                  setOnlyBestBall(false);
+                  setExcludeBestBall(false);
+                  setIncludeDrafting(true);
+                  setIncludedLeagueIds(new Set(scanLeagues.map((l) => l.id)));
+                }}
               >
                 Select all
               </button>
@@ -3006,30 +3869,24 @@ export default function PlayerAvailabilityContent() {
                 Clear
               </button>
               <div className="ml-auto text-sm text-white/70">
-                {includedLeagueIds.size} / {visibleLeaguesList.length} selected
+                {includedLeaguesList.length} active · {includedLeagueIds.size} / {scanLeagues.length} selected
               </div>
             </div>
 
             <div className="max-h-[60vh] overflow-auto space-y-2 pr-1">
-              {visibleLeaguesList.map((lg) => {
-                const checked = includedLeagueIds.has(lg.id);
+              {scanLeagues.map((lg) => {
+                const checked =
+                  includedLeagueIds.has(lg.id) && visibleLeagueIds.has(lg.id);
                 return (
                   <label
                     key={lg.id}
                     className="flex items-center gap-3 p-3 rounded-2xl border border-white/10 hover:bg-white/5 cursor-pointer"
                   >
                     <input
+                      data-account-persist="off"
                       type="checkbox"
                       checked={checked}
-                      onChange={(e) => {
-                        const on = e.target.checked;
-                        setIncludedLeagueIds((prev) => {
-                          const next = new Set(prev);
-                          if (on) next.add(lg.id);
-                          else next.delete(lg.id);
-                          return next;
-                        });
-                      }}
+                      onChange={(e) => toggleIncludedLeague(lg, e.target.checked)}
                     />
                     <img
                       src={leagueAvatarUrl(lg.avatar || undefined)}
@@ -3077,7 +3934,12 @@ export default function PlayerAvailabilityContent() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="text-xl font-bold">Leagues in this scan</div>
+              <div>
+                <div className="text-xl font-bold">Leagues in this scan</div>
+                <div className="text-sm text-white/65">
+                  Check a league to include it in availability results.
+                </div>
+              </div>
               <button
                 className="rounded-xl px-3 py-2 border border-white/15 hover:bg-white/10"
                 onClick={() => setShowLeaguesModal(false)}
@@ -3095,15 +3957,27 @@ export default function PlayerAvailabilityContent() {
                   return (a.name || "").localeCompare(b.name || "");
                 })
                 .map((lg) => (
-                  <div
+                  <label
                     key={lg.id}
-                    className={`flex items-center gap-3 text-sm px-3 py-2 rounded-2xl border ${
-                      visibleLeagueIds.has(lg.id)
+                    className={`flex cursor-pointer items-center gap-3 text-sm px-3 py-2 rounded-2xl border ${
+                      includedLeaguesList.some((league) => league.id === lg.id)
                         ? "bg-white/5 border-white/10"
                         : "bg-white/3 border-white/5 opacity-70"
                     }`}
                     title={`${lg.name}${lg.isBestBall ? " • Best Ball" : ""}${lg.status ? ` • ${lg.status}` : ""}`}
                   >
+                    <input
+                      data-account-persist="off"
+                      type="checkbox"
+                      checked={
+                        includedLeagueIds.has(lg.id) &&
+                        visibleLeagueIds.has(lg.id)
+                      }
+                      onChange={(event) =>
+                        toggleIncludedLeague(lg, event.target.checked)
+                      }
+                      className="accent-cyan-400"
+                    />
                     <img
                       src={leagueAvatarUrl(lg.avatar || undefined)}
                       alt=""
@@ -3117,7 +3991,7 @@ export default function PlayerAvailabilityContent() {
                       {lg.isBestBall ? "BB" : "STD"}
                       {lg.status ? ` • ${lg.status}` : ""}
                     </span>
-                  </div>
+                  </label>
                 ))}
             </div>
           </div>

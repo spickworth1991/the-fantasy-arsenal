@@ -64,7 +64,7 @@ async function dispatchUpdate(request) {
   return json(
     {
       ok: true,
-      message: "Daily values and projections update queued.",
+      message: "Daily values, projections, and player availability update queued.",
       workflow,
       ref,
     },

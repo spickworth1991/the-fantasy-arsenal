@@ -237,8 +237,19 @@ function createCandidateIndex4(seedByName, valueKeys = VALUE_KEYS) {
     if (!pos0) return null;
 
     const anyCandHasPos = cands.some((c) => !!c.pos);
-    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    let candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
+    // Normalization can collapse suffix or punctuation differences. When more
+    // than one same-name/position row remains, require team evidence rather
+    // than allowing projected points to decide which human this is.
+    if (candidatesToScore.length > 1) {
+      const teamMatches = team0
+        ? candidatesToScore.filter((candidate) => candidate.team === team0)
+        : [];
+      if (teamMatches.length === 0) return null;
+      candidatesToScore = teamMatches;
+    }
 
     let best = null;
     let bestScore = -1;
@@ -331,8 +342,16 @@ function createCandidateIndex2(seedByName) {
     if (!pos0) return null;
 
     const anyCandHasPos = cands.some((c) => !!c.pos);
-    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    let candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
+    if (candidatesToScore.length > 1) {
+      const teamMatches = team0
+        ? candidatesToScore.filter((candidate) => candidate.team === team0)
+        : [];
+      if (teamMatches.length === 0) return null;
+      candidatesToScore = teamMatches;
+    }
 
     let best = null;
     let bestScore = -1;
@@ -485,18 +504,33 @@ function getSleeperPosForProj(p) {
 
 /**
  * Projection candidate index:
- * - Key: normalized name
- * - Candidate: { pos, team, pts }
- * - pickBest requires Sleeper pos (no pos => null) like your value indexes
+ * - Canonical Sleeper player IDs win whenever a source publishes them.
+ * - Name matching is retained for sources without IDs, but requires position.
+ * - Team is a preference because trades can temporarily stale a source row.
  */
 function createProjectionIndex(seedByName) {
   const byName = (seedByName && typeof seedByName === "object") ? seedByName : Object.create(null);
+  const byPlayerId = Object.create(null);
 
-  function add({ name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf, weeks, confidence, projectionBasis, stats }) {
+  const indexPlayerId = (candidate) => {
+    const playerId = String(candidate?.playerId || "").trim();
+    if (!playerId) return;
+    if (!byPlayerId[playerId]) byPlayerId[playerId] = [];
+    byPlayerId[playerId].push(candidate);
+  };
+
+  // Rebuild the ID index when hydrating a cached name index.
+  Object.values(byName).forEach((candidates) => {
+    if (!Array.isArray(candidates)) return;
+    candidates.forEach(indexPlayerId);
+  });
+
+  function add({ playerId, name, pos, team, pts, pointsStd, pointsHalf, pointsPpr, pointsTep, pointsStdSf, pointsHalfSf, pointsPprSf, pointsTepSf, weeks, confidence, projectionBasis, stats }) {
     const nn = keyName(name);
     if (!nn) return;
 
     const cand = {
+      playerId: String(playerId || "").trim(),
       pos: normalizePos(pos),
       team: normalizeTeamAbbr(team),
       pts: safeNum(pts),
@@ -517,24 +551,52 @@ function createProjectionIndex(seedByName) {
 
     if (!byName[nn]) byName[nn] = [];
     byName[nn].push(cand);
+    indexPlayerId(cand);
   }
 
-  function pickBest({ name, pos, team }) {
+  function pickBest({ playerId, name, pos, team }) {
+    const playerId0 = String(playerId || "").trim();
+    const pos0 = normalizePos(pos);
+    const team0 = normalizeTeamAbbr(team);
+
+    if (playerId0 && Array.isArray(byPlayerId[playerId0])) {
+      const idCandidates = byPlayerId[playerId0];
+      const compatible = pos0
+        ? idCandidates.filter((candidate) => !candidate.pos || candidate.pos === pos0)
+        : idCandidates;
+
+      // A position conflict on an exact ID means the source identity is unsafe.
+      // Do not fall through to a name match and potentially attach it elsewhere.
+      if (compatible.length === 0) return null;
+      return compatible.reduce((best, candidate) => {
+        const candidateTeamMatch = Boolean(candidate.team && team0 && candidate.team === team0);
+        const bestTeamMatch = Boolean(best?.team && team0 && best.team === team0);
+        if (candidateTeamMatch !== bestTeamMatch)
+          return candidateTeamMatch ? candidate : best;
+        return (candidate.pts || 0) > (best?.pts || 0) ? candidate : best;
+      }, null);
+    }
+
     const nn = keyName(name);
     if (!nn) return null;
 
     const cands = byName[nn];
     if (!Array.isArray(cands) || cands.length === 0) return null;
 
-    const pos0 = normalizePos(pos);
-    const team0 = normalizeTeamAbbr(team);
-
     // ✅ match the “values” rule: no position => no name matching
     if (!pos0) return null;
 
     const anyCandHasPos = cands.some((c) => !!c.pos);
-    const candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
+    let candidatesToScore = anyCandHasPos ? cands.filter((c) => c.pos === pos0) : cands;
     if (anyCandHasPos && candidatesToScore.length === 0) return null;
+
+    if (candidatesToScore.length > 1) {
+      const teamMatches = team0
+        ? candidatesToScore.filter((candidate) => candidate.team === team0)
+        : [];
+      if (teamMatches.length === 0) return null;
+      candidatesToScore = teamMatches;
+    }
 
     let best = null;
     let bestScore = -1;
@@ -577,6 +639,7 @@ function buildProjectionIndexFromJSON(json, horizon = "season") {
 
     if (!name) return;
     idx.add({
+      playerId: r.player_id ?? r.sleeper_id ?? r.sleeperId,
       name, pos, team, pts,
       pointsStd: r.points_std ?? r.pointsStd ?? r.points_standard,
       pointsHalf: r.points_half ?? r.pointsHalf ?? r.points_half_ppr,
@@ -943,7 +1006,8 @@ export const SleeperProvider = ({ children }) => {
     if (projectionLoadPromises.has(memoryKey))
       return projectionLoadPromises.get(memoryKey);
 
-    const cacheKey = `projIndex_v5:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
+    // v6 retains canonical player IDs in cached projection candidates.
+    const cacheKey = `projIndex_v6:${PROJECTION_DATA_SEASON}:${publishedVersion}:${src}`;
     const promise = (async () => {
       try {
         let raw = await get(cacheKey).catch(() => null);
@@ -1050,7 +1114,12 @@ export const SleeperProvider = ({ children }) => {
     const pos = getSleeperPosForProj(p);
     const team = getSleeperTeamForProj(p);
 
-    const best = idx.pickBest({ name: fullName, pos, team });
+    const best = idx.pickBest({
+      playerId: p.player_id ?? p.id,
+      name: fullName,
+      pos,
+      team,
+    });
     if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL" || src === "ARSENAL_MODEL") {
       const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
       if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) ?? best?.pts);
@@ -1069,6 +1138,7 @@ export const SleeperProvider = ({ children }) => {
     if (!idx) return false;
     const fullName = p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
     return Boolean(idx.pickBest({
+      playerId: p.player_id ?? p.id,
       name: fullName,
       pos: getSleeperPosForProj(p),
       team: getSleeperTeamForProj(p),
@@ -1083,6 +1153,7 @@ export const SleeperProvider = ({ children }) => {
     const data = options.data || weeklyProjectionData[`${season}:${src}`];
     const fullName = p?.full_name || p?.search_full_name || `${p?.first_name || ""} ${p?.last_name || ""}`.trim();
     const lookup = {
+      playerId: p?.player_id ?? p?.id,
       name: fullName,
       pos: getSleeperPosForProj(p),
       team: getSleeperTeamForProj(p),
@@ -1740,6 +1811,9 @@ export const SleeperProvider = ({ children }) => {
         if (keep) {
           finalPlayers[id] = {
             ...p,
+            // The Sleeper directory is keyed by this canonical ID. Preserve it
+            // explicitly even if an upstream player object omits player_id.
+            player_id: String(p.player_id || id),
             position: pos,
             team,
             fc_values,

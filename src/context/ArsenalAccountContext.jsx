@@ -23,6 +23,7 @@ const SYNC_PREFIXES = [
   "draft-helper-queue:", "playoff-scenarios:",
   "tfa:trade-workspaces:", "tfa:trade-block:", "tfa:trade-swipes:",
   "ps:guard:", "ps:ballsville:",
+  "tfa:availability:",
 ];
 const ArsenalAccountContext = createContext(null);
 
