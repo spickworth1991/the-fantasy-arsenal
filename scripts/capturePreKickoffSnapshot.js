@@ -18,6 +18,18 @@ const windowHours = Math.max(
       ?.split("=")[1] || 3,
   ),
 );
+const refreshInputs = process.argv.includes("--refresh-inputs");
+const challengerRoot = path.join(root, "data", "model-challengers");
+const shadowCandidates = fs.existsSync(challengerRoot)
+  ? fs
+      .readdirSync(challengerRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({
+        name: entry.name.replace(/[^a-z0-9_-]/gi, ""),
+        definition: path.join(challengerRoot, entry.name, "definition.json"),
+      }))
+      .filter((entry) => entry.name && fs.existsSync(entry.definition))
+  : [];
 const scheduleFile = path.join(
   root,
   "public",
@@ -69,11 +81,30 @@ const batch = upcoming.filter(
 console.log(
   `Capturing Week ${upcoming[0].week} final-window projections for ${batch.length} game${batch.length === 1 ? "" : "s"} kicking off near ${new Date(earliest).toISOString()}.`,
 );
-for (const [script, args] of [
+const steps = [
+  ...(refreshInputs
+    ? [
+        ["updateHistoricalStats.js", ["--sleeper-only", `--season=${season}`]],
+        ["updateValues.js", ["--only=sleeper_proj,cbs_proj,projection_anchor", "--defer-archive"]],
+      ]
+    : []),
   ["buildStatProjectionModel.js", ["--archive", `--season=${season}`]],
+  ...shadowCandidates.map((candidate) => [
+    "buildStatProjectionModel.js",
+    [
+      `--challenger=${candidate.name}`,
+      `--shadow-definition=${path.relative(root, candidate.definition)}`,
+      `--season=${season}`,
+    ],
+  ]),
   ["auditProjectionPipeline.js", [`--season=${season}`]],
   ["evaluateStatProjectionModel.js", [`--season=${season}`]],
-]) {
+  ...shadowCandidates.map((candidate) => [
+    "evaluateProjectionChallenger.js",
+    [`--challenger=${candidate.name}`, `--season=${season}`],
+  ]),
+];
+for (const [script, args] of steps) {
   const result = spawnSync(
     process.execPath,
     [path.join(root, "scripts", script), ...args],

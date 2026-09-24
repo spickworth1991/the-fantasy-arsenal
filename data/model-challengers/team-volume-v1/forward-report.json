@@ -1,0 +1,55 @@
+{
+  "source": "The Fantasy Arsenal forward challenger evaluator",
+  "generated_at": "2026-09-24T00:01:53.440Z",
+  "challenger": "team-volume-v1",
+  "season": 2026,
+  "definition_sha256": "a6e762449195f250d9c58acd1e99f1a53872eb791e18829080b3904fef6bd43b",
+  "rejected_definition_snapshots": 0,
+  "population": "paired player-games where the incumbent projected at least 5 PPR points",
+  "completed_forward_test_weeks": [],
+  "completed_forward_test_week_count": 0,
+  "required_forward_test_weeks": 4,
+  "remaining_forward_test_weeks": 4,
+  "paired_games": 0,
+  "incumbent": null,
+  "challenger_metrics": null,
+  "mae_improvement": null,
+  "mae_improvement_rate": 0,
+  "rmse_change": null,
+  "rmse_change_rate": 0,
+  "by_position": {
+    "QB": {
+      "incumbent": null,
+      "challenger": null
+    },
+    "RB": {
+      "incumbent": null,
+      "challenger": null
+    },
+    "WR": {
+      "incumbent": null,
+      "challenger": null
+    },
+    "TE": {
+      "incumbent": null,
+      "challenger": null
+    },
+    "K": {
+      "incumbent": null,
+      "challenger": null
+    }
+  },
+  "disclosed_position_regressions": [],
+  "minimum_completed_weeks_met": false,
+  "accuracy_gate_passed": false,
+  "eligible_for_review": false,
+  "recommendation": "keep_incumbent",
+  "gate": {
+    "minimum_mae_improvement_rate": 0.01,
+    "maximum_rmse_deterioration_rate": 0.01,
+    "maximum_position_mae_deterioration_rate": 0.03,
+    "minimum_position_sample": 200,
+    "completed_weeks_must_be_fully_final": true
+  },
+  "note": "0/4 fully final completed weeks captured; 4 remaining."
+}

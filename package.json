@@ -15,7 +15,7 @@
     "preview:cf": "next-on-pages",
     "postinstall": "npx next telemetry disable || true",
     "update": "node ./scripts/updateValues.js",
-    "update:daily": "node --no-warnings ./scripts/updateSleeperResearch.js && node --no-warnings ./scripts/updateValues.js --daily --defer-archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/updateAdvancedStats.js --current && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js && node --no-warnings ./scripts/evaluatePropLab.js",
+    "update:daily": "node --no-warnings ./scripts/updateSleeperResearch.js && node --no-warnings ./scripts/updateValues.js --daily --defer-archive && node --no-warnings ./scripts/updateHistoricalStats.js --sleeper-only && node --no-warnings ./scripts/updateAdvancedStats.js --current && node --no-warnings ./scripts/buildStatInsights.js && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js && node --no-warnings ./scripts/evaluateProjectionChallenger.js --challenger=team-volume-v1 && node --no-warnings ./scripts/evaluatePropLab.js",
     "update:sleeper-research": "node --no-warnings ./scripts/updateSleeperResearch.js",
     "update:stat-model": "node --no-warnings ./scripts/updateValues.js --only=projection_anchor && node --no-warnings ./scripts/buildStatProjectionModel.js --archive && node --no-warnings ./scripts/updateValues.js --only=arsenal_proj --archive && node --no-warnings ./scripts/auditProjectionPipeline.js && node --no-warnings ./scripts/evaluateStatProjectionModel.js",
     "audit:stat-model": "node --no-warnings ./scripts/auditProjectionPipeline.js",
@@ -24,6 +24,13 @@
     "capture:pre-kickoff": "node --no-warnings ./scripts/capturePreKickoffSnapshot.js",
     "update:advanced": "node --no-warnings ./scripts/updateAdvancedStats.js",
     "evaluate:stat-model": "node --no-warnings ./scripts/evaluateStatProjectionModel.js",
+    "model:challenger:train": "node --no-warnings ./scripts/backtest-stat-model.mjs --candidate=current",
+    "model:challenger:capture": "node --no-warnings ./scripts/buildStatProjectionModel.js --challenger=team-volume-v1 --shadow-definition=data/model-challengers/team-volume-v1/definition.json",
+    "model:challenger:evaluate": "node --no-warnings ./scripts/evaluateProjectionChallenger.js --challenger=team-volume-v1",
+    "model:challenger:promote": "node --no-warnings ./scripts/promoteProjectionChallenger.js --challenger=team-volume-v1",
+    "model:backtest:audit": "node --no-warnings ./scripts/backtest-stat-model.mjs --seasons=2023,2024,2025 --skip-saved-sources --output-dir=scripts/_stat_backtests/audits --output-name=latest-audit",
+    "model:replay": "node --no-warnings ./scripts/replayStatProjectionModel.mjs",
+    "model:replay:test": "node --no-warnings ./scripts/testProjectionReplay.mjs",
     "build:stat-insights": "node --no-warnings ./scripts/buildStatInsights.js",
     "update:ballsville-stats": "node --no-warnings ./scripts/updateBallsvilleStats.js && node --no-warnings ./scripts/buildPlayerStockDrafters.js",
     "build:player-stock-drafters": "node --no-warnings ./scripts/buildPlayerStockDrafters.js",
@@ -32,7 +39,7 @@
     "stick": "node ./scripts/sp-editor.js",
     "fetch": "node scripts/fetch.mjs --format=webp --quality=70 --force",
     "git": "git add . && git commit -m \"DraftCommand_SearchLeague\" && git push origin main",
-    "sync": "node ./scripts/git-sync.mjs \"Prop-lab\""
+    "sync": "node ./scripts/git-sync.mjs \"projection_Update\""
   },
   "dependencies": {
     "@pushforge/builder": "^2.0.1",

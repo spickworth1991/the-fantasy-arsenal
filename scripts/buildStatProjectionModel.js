@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
+import { finalScheduleWeeks } from "./lib/projectionFinality.mjs";
+import { trainedAdjustmentFromCalibration } from "./lib/trainedProjectionModel.mjs";
 
 const scriptFile = fileURLToPath(import.meta.url);
 const root = path.join(path.dirname(scriptFile), "..");
@@ -33,7 +35,16 @@ const MODEL_BUILD_HASH = crypto
   .update(fs.readFileSync(scriptFile))
   .digest("hex")
   .slice(0, 12);
-const MODEL_BUILD_ID = `${MODEL_VERSION}.${MODEL_BUILD_HASH}`;
+let MODEL_BUILD_ID = `${MODEL_VERSION}.${MODEL_BUILD_HASH}`;
+const challengerName = String(
+  process.argv.find((argument) => argument.startsWith("--challenger="))?.split("=")[1] || "",
+).replace(/[^a-z0-9_-]/gi, "");
+const calibrationArgument = process.argv
+  .find((argument) => argument.startsWith("--calibration="))
+  ?.slice("--calibration=".length);
+const shadowDefinitionArgument = process.argv
+  .find((argument) => argument.startsWith("--shadow-definition="))
+  ?.slice("--shadow-definition=".length);
 const scoringKeys = ["ppr", "half", "std"];
 const positions = new Set(["QB", "RB", "WR", "TE", "K"]);
 const statFields = [
@@ -307,6 +318,41 @@ async function enrichScheduleWeather(schedule, savedFile) {
   }
 }
 
+function mergeCanonicalFinality(schedule) {
+  const historySchedule = readJson(
+    path.join(root, "public", "stats", "history", String(season), "schedule.json"),
+  );
+  const finality = new Map();
+  (historySchedule?.weeks || []).forEach((entry) =>
+    (entry.games || []).forEach((game) =>
+      finality.set(
+        `${Number(entry.week)}:${normalizeTeam(game.home)}:${normalizeTeam(game.away)}`,
+        game,
+      ),
+    ),
+  );
+  if (!finality.size) return schedule;
+  return {
+    ...schedule,
+    weeks: (schedule?.weeks || []).map((entry) => ({
+      ...entry,
+      games: (entry.games || []).map((game) => {
+        const canonical = finality.get(
+          `${Number(entry.week)}:${normalizeTeam(game.home)}:${normalizeTeam(game.away)}`,
+        );
+        return canonical
+          ? {
+              ...game,
+              completed: canonical.completed,
+              status: canonical.status || game.status || null,
+              status_detail: canonical.status_detail || game.status_detail || null,
+            }
+          : game;
+      }),
+    })),
+  };
+}
+
 async function loadSchedule() {
   const saved = path.join(
     root,
@@ -318,12 +364,20 @@ async function loadSchedule() {
   );
   const existing = readJson(saved);
   const existingUpdatedAt = Date.parse(existing?.updated);
+  const existingGames = (existing?.weeks || []).flatMap((week) => week.games || []);
+  const hasCurrentCompletionStatuses = existingGames
+    .filter((game) => {
+      const kickoff = Date.parse(game?.date);
+      return Number.isFinite(kickoff) && kickoff <= Date.now();
+    })
+    .every((game) => typeof game?.completed === "boolean");
   if (
     existing?.weeks?.some((week) => week.games?.length) &&
     Number.isFinite(existingUpdatedAt) &&
-    Date.now() - existingUpdatedAt < 12 * 60 * 60 * 1000
+    Date.now() - existingUpdatedAt < 12 * 60 * 60 * 1000 &&
+    hasCurrentCompletionStatuses
   )
-    return enrichScheduleWeather(existing, saved);
+    return enrichScheduleWeather(mergeCanonicalFinality(existing), saved);
   const existingByWeek = new Map(
     (existing?.weeks || []).map((week) => [Number(week.week), week]),
   );
@@ -359,11 +413,16 @@ async function loadSchedule() {
                     details: odds?.details || null,
                   }
                 : null;
+              const status = competition.status || event.status || {};
               return home && away
                 ? {
                     home: normalizeTeam(home),
                     away: normalizeTeam(away),
                     date: event.date || null,
+                    completed: status?.type?.completed === true,
+                    status_state: status?.type?.state || null,
+                    status_detail:
+                      status?.type?.description || status?.type?.shortDetail || null,
                     market,
                   }
                 : null;
@@ -384,8 +443,9 @@ async function loadSchedule() {
     updated: new Date().toISOString(),
     weeks,
   };
-  writeJson(saved, result);
-  return enrichScheduleWeather(result, saved);
+  const merged = mergeCanonicalFinality(result);
+  writeJson(saved, merged);
+  return enrichScheduleWeather(merged, saved);
 }
 
 function projectionLine(source, row) {
@@ -1434,6 +1494,32 @@ function standardNormal(random) {
   return Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second);
 }
 
+function normalCdf(value) {
+  const sign = value < 0 ? -1 : 1;
+  const x = Math.abs(value) / Math.sqrt(2);
+  const t = 1 / (1 + 0.3275911 * x);
+  const erf = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x));
+  return 0.5 * (1 + sign * erf);
+}
+
+function calibratedQuantile(profile, probability, mean) {
+  const anchors = [
+    [0, num(profile?.floor ?? profile?.p10 ?? mean * 0.35)],
+    [0.1, num(profile?.p10 ?? profile?.floor ?? mean * 0.45)],
+    [0.25, num(profile?.p25 ?? mean * 0.72)],
+    [0.5, num(profile?.median ?? mean)],
+    [0.75, num(profile?.p75 ?? mean * 1.3)],
+    [0.9, num(profile?.p90 ?? profile?.ceiling ?? mean * 1.65)],
+    [1, num(profile?.ceiling ?? profile?.p90 ?? mean * 1.8)],
+  ];
+  const upperIndex = anchors.findIndex(([quantile]) => probability <= quantile);
+  if (upperIndex <= 0) return anchors[0][1];
+  const [lowerQ, lowerValue] = anchors[upperIndex - 1];
+  const [upperQ, upperValue] = anchors[upperIndex];
+  const weight = (probability - lowerQ) / Math.max(0.0001, upperQ - lowerQ);
+  return lowerValue + (upperValue - lowerValue) * weight;
+}
+
 function correlatedOutcomeSimulation({
   playerKeyValue,
   team,
@@ -1442,37 +1528,47 @@ function correlatedOutcomeSimulation({
   volatility,
   position,
   market,
+  calibratedProfile,
+  teamCorrelation,
 }) {
   const samples = 500;
   const teamRandom = seededGenerator(`${season}|${week}|${team}|team`);
   const playerRandom = seededGenerator(
     `${season}|${week}|${team}|${playerKeyValue}|player`,
   );
-  const correlation = position === "QB" ? 0.5 : position === "K" ? 0.42 : 0.34;
-  const cv = clamp(num(volatility?.cv) || 0.35, 0.16, 0.95);
+  const legacyCorrelation = position === "QB" ? 0.5 : position === "K" ? 0.42 : 0.34;
+  const correlation = teamCorrelation?.value == null
+    ? legacyCorrelation
+    : clamp(num(teamCorrelation.value), 0.05, 0.65);
   const marketScale = market
     ? clamp(num(market.implied_points) / 22.5, 0.72, 1.35)
     : 1;
+  const heldOutCalibration =
+    calibratedProfile?.uncertainty_calibration?.method ===
+    "chronological_holdout";
+  const cv = clamp(num(volatility?.cv) || 0.35, 0.16, 0.95);
   const sigma = clamp(cv * 0.68, 0.13, 0.72);
   const values = [];
-  let booms = 0;
-  let busts = 0;
   for (let index = 0; index < samples; index += 1) {
     const teamZ = standardNormal(teamRandom);
     const playerZ = standardNormal(playerRandom);
     const combined = correlation * teamZ + Math.sqrt(1 - correlation ** 2) * playerZ;
-    const marketTilt = 1 + (marketScale - 1) * 0.35;
-    const value = Math.max(
-      0,
-      num(mean) * marketTilt * Math.exp(sigma * combined - (sigma ** 2) / 2),
-    );
-    values.push(value);
-    if (value >= num(mean) * 1.3) booms += 1;
-    if (value <= num(mean) * 0.7) busts += 1;
+    if (heldOutCalibration) {
+      const marketTilt = num(mean) * (marketScale - 1) * 0.35;
+      values.push(calibratedQuantile(calibratedProfile, normalCdf(combined), mean) + marketTilt);
+    } else {
+      const marketTilt = 1 + (marketScale - 1) * 0.35;
+      values.push(Math.max(0, num(mean) * marketTilt * Math.exp(sigma * combined - (sigma ** 2) / 2)));
+    }
   }
-  values.sort((left, right) => left - right);
+  const rawMean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const centeredValues = values
+    .map((value) => heldOutCalibration ? value + num(mean) - rawMean : value)
+    .sort((left, right) => left - right);
+  const booms = centeredValues.filter((value) => value >= num(mean) * 1.3).length;
+  const busts = centeredValues.filter((value) => value <= num(mean) * 0.7).length;
   const percentile = (value) =>
-    values[Math.min(values.length - 1, Math.max(0, Math.round((values.length - 1) * value)))];
+    centeredValues[Math.min(centeredValues.length - 1, Math.max(0, Math.round((centeredValues.length - 1) * value)))];
   return {
     simulations: samples,
     team_correlation: correlation,
@@ -1481,10 +1577,15 @@ function correlatedOutcomeSimulation({
     median: round(percentile(0.5)),
     p75: round(percentile(0.75)),
     p90: round(percentile(0.9)),
-    mean: round(values.reduce((sum, value) => sum + value, 0) / values.length),
+    mean: round(centeredValues.reduce((sum, value) => sum + value, 0) / centeredValues.length),
     boom_probability: round(booms / samples, 4),
     bust_probability: round(busts / samples, 4),
     market_informed: Boolean(market),
+    calibration_method: heldOutCalibration
+      ? "held_out_empirical_quantiles"
+      : "legacy_lognormal",
+    correlation_sample: num(teamCorrelation?.sample),
+    correlation_provisional: Boolean(teamCorrelation?.provisional),
   };
 }
 
@@ -1788,43 +1889,16 @@ function advancedMatchupFeatures(evidence, offenseTeam, defenseTeam) {
 }
 
 function trainedAdjustment(position, calibration, features) {
-  const positionModel = calibration?.by_position?.[position];
-  if (!positionModel || positionModel.holdout_mae_improvement <= 0)
-    return { factor: 1, raw_delta: 0, available: 0, model: null };
-  let available = 0;
-  const observedFeatures = new Set();
-  Object.entries(positionModel.features || {}).forEach(([feature]) => {
-    const raw = features?.[feature];
-    const observed = raw !== null && Number.isFinite(Number(raw));
-    if (observed) observedFeatures.add(feature);
-  });
-  available = observedFeatures.size;
-  let delta = num(positionModel.intercept);
-  if (positionModel.model_type === "boosted_stumps") {
-    (positionModel.trees || []).forEach((tree) => {
-      const settings = positionModel.features?.[tree.feature] || {};
-      const raw = features?.[tree.feature];
-      const observed = raw !== null && Number.isFinite(Number(raw));
-      const value = observed ? Number(raw) : num(settings.mean);
-      delta += value <= num(tree.threshold) ? num(tree.left) : num(tree.right);
-    });
-  } else {
-    Object.entries(positionModel.features || {}).forEach(([feature, settings]) => {
-      const raw = features?.[feature];
-      const observed = raw !== null && Number.isFinite(Number(raw));
-      const value = observed ? Number(raw) : num(settings.mean);
-      const normalized =
-        (value - num(settings.mean)) /
-        Math.max(0.000001, num(settings.scale) || 1);
-      delta += normalized * num(settings.coefficient);
-    });
-  }
-  const strength = num(positionModel.application_strength);
+  const evaluated = trainedAdjustmentFromCalibration(
+    position,
+    calibration,
+    features,
+  );
   return {
-    factor: clamp(1 + clamp(delta, -0.35, 0.45) * strength, 0.65, 1.45),
-    raw_delta: round(delta, 5),
-    available,
-    model: positionModel,
+    factor: evaluated.factor,
+    raw_delta: round(evaluated.raw_delta, 5),
+    available: evaluated.available_features,
+    model: evaluated.model,
   };
 }
 
@@ -1939,7 +2013,7 @@ function calibratedOutcomeProfile(
       trainedFactor <= num(row.maximum_factor),
   );
   const uncertainty = tier?.uncertainty || positionModel.uncertainty || {};
-  const floor = Math.max(0, expectedPoints * num(uncertainty.p10 || 0.45));
+  const floor = expectedPoints * num(uncertainty.p10 || 0.45);
   const ceiling = expectedPoints * num(uncertainty.p90 || 1.65);
   return {
     ...baseProfile,
@@ -1950,10 +2024,13 @@ function calibratedOutcomeProfile(
     median: round(expectedPoints * num(uncertainty.p50 || 1)),
     p25: round(expectedPoints * num(uncertainty.p25 || 0.72)),
     p75: round(expectedPoints * num(uncertainty.p75 || 1.3)),
+    p10: round(floor),
+    p90: round(ceiling),
     calibration_sample: num(positionModel.final_sample),
     calibration_tier: tier?.key || "all",
     calibration_tier_sample: num(tier?.sample || positionModel.final_sample),
     calibration_source: `${(positionModel.final_fit_seasons || [2023, 2024, 2025]).join("-")} leakage-safe player-games`,
+    uncertainty_calibration: positionModel.uncertainty_calibration || null,
   };
 }
 
@@ -2270,21 +2347,7 @@ const completedEvidenceYears = [season - 3, season - 2, season - 1].filter(
 const liveEvidence = readJson(
   path.join(root, "public", "stats", "history", String(season), "sleeper.json"),
 );
-const scheduleFinalWeeks = new Set(
-  (schedule.weeks || [])
-    .filter(
-      ({ games }) =>
-        (games || []).length > 0 &&
-        games.every((game) => {
-          const kickoff = Date.parse(game?.date);
-          return (
-            Number.isFinite(kickoff) &&
-            kickoff + 6 * 60 * 60 * 1000 < Date.now()
-          );
-        }),
-    )
-    .map(({ week }) => Number(week)),
-);
+const scheduleFinalWeeks = finalScheduleWeeks(schedule);
 const archivedFinalWeeks = new Set(
   Array.isArray(liveEvidence?.final_weeks)
     ? liveEvidence.final_weeks.map(Number)
@@ -2302,16 +2365,35 @@ const evidenceYears = [
 ];
 const evidence = evidenceYears.map(seasonEvidence);
 const currentEvidence = evidence.find((item) => item.year === season) || null;
+const trainedCalibrationFile = calibrationArgument
+  ? path.resolve(root, calibrationArgument)
+  : path.join(root, "public", "stats", "projections", "model-calibration.json");
 const trainedCalibration = readJson(
-  path.join(
-    root,
-    "public",
-    "stats",
-    "projections",
-    "model-calibration.json",
-  ),
+  trainedCalibrationFile,
   { by_position: {} },
 );
+const shadowDefinitionFile = shadowDefinitionArgument
+  ? path.resolve(root, shadowDefinitionArgument)
+  : null;
+const shadowDefinition = shadowDefinitionFile
+  ? readJson(shadowDefinitionFile)
+  : null;
+if (shadowDefinitionFile && !shadowDefinition)
+  throw new Error(`Unreadable shadow definition: ${shadowDefinitionFile}`);
+if (shadowDefinition?.base_calibration_sha256) {
+  const baseCalibrationSha = crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(trainedCalibrationFile))
+    .digest("hex");
+  if (baseCalibrationSha !== shadowDefinition.base_calibration_sha256)
+    throw new Error(
+      `Shadow definition ${shadowDefinition.version || challengerName} requires base calibration ${shadowDefinition.base_calibration_sha256}, but ${baseCalibrationSha} is loaded. Freeze a new shadow definition before capturing it.`,
+    );
+}
+const calibrationBuildHash = fs.existsSync(trainedCalibrationFile)
+  ? crypto.createHash("sha256").update(fs.readFileSync(trainedCalibrationFile)).digest("hex").slice(0, 8)
+  : "uncalibrated";
+MODEL_BUILD_ID = `${MODEL_VERSION}.${MODEL_BUILD_HASH}.${calibrationBuildHash}`;
 const teamUsageEvidence = buildTeamUsageEvidence(evidence);
 const resolveCanonicalKey = buildCanonicalKeyResolver(base.rows);
 const sourceIndexes = projectionStatIndexes(resolveCanonicalKey);
@@ -2775,6 +2857,9 @@ const modeledPlayers = base.rows
         volatility,
         position,
         market: week.market,
+        calibratedProfile: calibratedOutcome,
+        teamCorrelation:
+          trainedCalibration?.by_position?.[position]?.team_outcome_correlation,
       });
       return {
         ...week,
@@ -3051,13 +3136,8 @@ const modelInputFiles = [
   ),
   path.join(root, "src", "data", "nfl-stadiums.json"),
   path.join(root, "data", "player-identity-aliases.json"),
-  path.join(
-    root,
-    "public",
-    "stats",
-    "projections",
-    "model-calibration.json",
-  ),
+  trainedCalibrationFile,
+  ...(shadowDefinitionFile ? [shadowDefinitionFile] : []),
   ...evidenceYears.flatMap((year) =>
     ["sleeper.json", "schedule.json", "fantasypros.json"].map((file) =>
       path.join(root, "public", "stats", "history", String(year), file),
@@ -3083,6 +3163,21 @@ inputManifest.bundle_sha256 = crypto
       .join("\n"),
   )
   .digest("hex");
+const calibrationFingerprint = inputManifest.files.find((file) =>
+  file.path.endsWith("stats/projections/model-calibration.json"),
+);
+const forecastWeek = (schedule.weeks || [])
+  .filter((entry) =>
+    (entry.games || []).some((game) => {
+      const kickoff = Date.parse(game?.date);
+      return Number.isFinite(kickoff) && kickoff > Date.now();
+    }),
+  )
+  .map((entry) => Number(entry.week))
+  .sort((left, right) => left - right)[0] || null;
+const inputFreshness = Object.fromEntries(
+  inputManifest.files.map((file) => [file.path, file.updated || null]),
+);
 
 const output = {
   source: "The Fantasy Arsenal Stat Projection Model",
@@ -3093,6 +3188,16 @@ const output = {
   schema_version: MODEL_SCHEMA,
   feature_version: FEATURE_VERSION,
   input_manifest: inputManifest,
+  forecast_week: forecastWeek,
+  results_included_through_week: finalWeeks.size
+    ? Math.max(...finalWeeks)
+    : null,
+  input_freshness: inputFreshness,
+  model_last_trained_at: trainedCalibration?.generated_at || null,
+  calibration_identity: {
+    version: trainedCalibration?.version || null,
+    sha256: calibrationFingerprint?.sha256 || null,
+  },
   status: "experimental",
   trained_calibration: {
     version: trainedCalibration?.version || null,
@@ -3203,6 +3308,109 @@ const outputDirectory = path.join(
   "projections",
   String(season),
 );
+if (challengerName) {
+  const challengerWeek = output.forecast_week;
+  if (!challengerWeek)
+    throw new Error("No upcoming forecast week is available for challenger capture.");
+  const generatedAtMs = Date.parse(output.generated_at);
+  const baseChallengerPlayers = modeledPlayers
+    .map((player) => ({
+      player_id: player.player_id,
+      name: player.name,
+      team: player.team,
+      position: player.position,
+      forecast: player.weeks.find((row) => Number(row.week) === Number(challengerWeek)) || null,
+    }))
+    .filter((player) => {
+      const kickoff = Date.parse(player.forecast?.kickoff);
+      return player.forecast && !player.forecast.bye && !player.forecast.completed && Number.isFinite(kickoff) && generatedAtMs < kickoff;
+    });
+  const teamOpportunity = new Map();
+  for (const player of baseChallengerPlayers) {
+    if (
+      Number(player.forecast?.projections?.ppr) <
+      Number(shadowDefinition?.group_minimum_ppr ?? 1)
+    )
+      continue;
+    const opportunity = player.forecast?.opportunity_projection || {};
+    const row = teamOpportunity.get(player.team) || { targets: 0, carries: 0 };
+    row.targets += num(opportunity.target_share);
+    row.carries += num(opportunity.carry_share);
+    teamOpportunity.set(player.team, row);
+  }
+  const challengerPlayers = baseChallengerPlayers.map((player) => {
+    if (shadowDefinition?.model_type !== "team_volume_reconciliation")
+      return player;
+    const settings = shadowDefinition.settings_by_position?.[player.position];
+    if (!settings || player.position === "K") return player;
+    const opportunity = player.forecast?.opportunity_projection || {};
+    const group = teamOpportunity.get(player.team) || { targets: 0, carries: 0 };
+    const targetShare = num(opportunity.target_share);
+    const carryShare = num(opportunity.carry_share);
+    const targetScale = group.targets > 1 ? 1 / group.targets : 1;
+    const carryScale = group.carries > 1 ? 1 / group.carries : 1;
+    const shareWeight = targetShare + carryShare;
+    const reconciledShare = shareWeight
+      ? (targetShare * targetScale + carryShare * carryScale) / shareWeight
+      : 1;
+    const shareFactor = 1 +
+      (reconciledShare - 1) * num(settings.share_strength);
+    const teamPlays = num(opportunity.team_plays);
+    const paceDelta = teamPlays > 0
+      ? clamp(teamPlays / 64 - 1, -0.15, 0.15)
+      : 0;
+    const paceFactor = 1 + paceDelta * num(settings.pace_strength);
+    const factor = clamp(shareFactor * paceFactor, 0.8, 1.2);
+    const projections = Object.fromEntries(
+      Object.entries(player.forecast.projections || {}).map(([key, value]) => [
+        key,
+        Number.isFinite(Number(value)) ? round(Number(value) * factor) : value,
+      ]),
+    );
+    return {
+      ...player,
+      forecast: {
+        ...player.forecast,
+        projections,
+        shadow_adjustment: {
+          model_type: shadowDefinition.model_type,
+          factor: round(factor, 5),
+          share_factor: round(shareFactor, 5),
+          pace_factor: round(paceFactor, 5),
+        },
+      },
+    };
+  });
+  const challengerDirectory = path.join(
+    root,
+    "data",
+    "model-challengers",
+    challengerName,
+    "snapshots",
+    String(season),
+    `week-${challengerWeek}`,
+  );
+  const timestamp = output.generated_at.replace(/:/g, "-");
+  writeJson(path.join(challengerDirectory, `${timestamp}.json`), {
+    challenger: challengerName,
+    challenger_definition_sha256:
+      shadowDefinition?.definition_sha256 ||
+      trainedCalibration?.definition_sha256 ||
+      null,
+    site_exposed: false,
+    season,
+    week: challengerWeek,
+    generated_at: output.generated_at,
+    model_version: MODEL_VERSION,
+    model_build_id: MODEL_BUILD_ID,
+    feature_version: FEATURE_VERSION,
+    calibration_identity: output.calibration_identity,
+    input_manifest: inputManifest,
+    players: challengerPlayers,
+  });
+  console.log(`Saved ${challengerName} challenger snapshot for Week ${challengerWeek} (${challengerPlayers.length} pre-kickoff players). Published projections were not changed.`);
+  process.exit(0);
+}
 // Cloudflare Pages rejects individual static assets larger than 25 MiB. Keep
 // the stable current.json URL as a lightweight model manifest and publish the
 // detailed player research rows in position shards. Consumers can reconstruct
@@ -3322,6 +3530,10 @@ const compactOutput = {
   projection_lens: "safe_expected",
   model_version: MODEL_VERSION,
   model_build_id: MODEL_BUILD_ID,
+  forecast_week: output.forecast_week,
+  results_included_through_week: output.results_included_through_week,
+  model_last_trained_at: output.model_last_trained_at,
+  calibration_identity: output.calibration_identity,
   status: output.status,
   supported_model_positions: [...positions],
   fallback_positions: [...new Set(fallbackRows.map((row) => row.position))].sort(),
@@ -3355,6 +3567,8 @@ writeJson(path.join(root, "public", "stats", "projections", "manifest.json"), {
   source_path: `/projections_thefantasyarsenal_model_${season}.json`,
   consensus_anchor_path: `/stats/projections/${season}/consensus-anchor.json`,
   accuracy_path: `/stats/projections/${season}/accuracy.json`,
+  accuracy_summary_path: `/stats/projections/${season}/accuracy-summary.json`,
+  accuracy_results_path: `/stats/projections/${season}/accuracy-results.json`,
   audit_path: `/stats/projections/${season}/audit.json`,
   identity_path: `/stats/projections/${season}/identities.json`,
   calibration_path: "/stats/projections/model-calibration.json",
@@ -3363,6 +3577,11 @@ writeJson(path.join(root, "public", "stats", "projections", "manifest.json"), {
   model_build_id: MODEL_BUILD_ID,
   feature_version: FEATURE_VERSION,
   input_bundle_sha256: inputManifest.bundle_sha256,
+  forecast_week: output.forecast_week,
+  results_included_through_week: output.results_included_through_week,
+  input_freshness: output.input_freshness,
+  model_last_trained_at: output.model_last_trained_at,
+  calibration_identity: output.calibration_identity,
   status: output.status,
 });
 if (archive) {
@@ -3442,6 +3661,14 @@ if (archive) {
     feature_version: FEATURE_VERSION,
     status: output.status,
     input_manifest: inputManifest,
+    input_reconstruction: {
+      mode: "repository_paths_with_content_hashes",
+      note: "Reconstruct by checking out the commit containing this snapshot and verifying every input_manifest file hash before rebuilding.",
+    },
+    forecast_week: output.forecast_week,
+    results_included_through_week: output.results_included_through_week,
+    model_last_trained_at: output.model_last_trained_at,
+    calibration_identity: output.calibration_identity,
     capture: {
       candidate_players: candidatePlayers.length,
       pre_kickoff_players: preKickoffPlayers.length,

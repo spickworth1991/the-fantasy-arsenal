@@ -106,6 +106,118 @@ const pct = (value) =>
     ? "—"
     : `${Math.round(Number(value) * 100)}%`;
 
+function accuracyMetricsFor(rows = []) {
+  if (!rows.length) return null;
+  const errors = rows.map((row) => number(row.projection) - number(row.actual));
+  const absolute = errors.map(Math.abs).sort((left, right) => left - right);
+  const middle = Math.floor(absolute.length / 2);
+  const median = absolute.length % 2
+    ? absolute[middle]
+    : (absolute[middle - 1] + absolute[middle]) / 2;
+  const ranks = (values) => {
+    const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => b.value - a.value);
+    const output = Array(values.length).fill(0);
+    sorted.forEach((row, index) => { output[row.index] = index + 1; });
+    return output;
+  };
+  const projectedRanks = ranks(rows.map((row) => number(row.projection)));
+  const actualRanks = ranks(rows.map((row) => number(row.actual)));
+  const rankMean = (projectedRanks.length + 1) / 2;
+  const rankNumerator = projectedRanks.reduce((sum, value, index) => sum + (value - rankMean) * (actualRanks[index] - rankMean), 0);
+  const rankDenominator = Math.sqrt(
+    projectedRanks.reduce((sum, value) => sum + (value - rankMean) ** 2, 0) *
+    actualRanks.reduce((sum, value) => sum + (value - rankMean) ** 2, 0),
+  );
+  return {
+    sample: rows.length,
+    mae: absolute.reduce((sum, value) => sum + value, 0) / rows.length,
+    median_absolute_error: median,
+    rmse: Math.sqrt(errors.reduce((sum, value) => sum + value ** 2, 0) / rows.length),
+    bias: errors.reduce((sum, value) => sum + value, 0) / rows.length,
+    over_rate: errors.filter((value) => value > 0).length / rows.length,
+    under_rate: errors.filter((value) => value < 0).length / rows.length,
+    within_2_rate: absolute.filter((value) => value <= 2).length / rows.length,
+    within_5_rate: absolute.filter((value) => value <= 5).length / rows.length,
+    rank_correlation: rows.length >= 3 && rankDenominator ? rankNumerator / rankDenominator : null,
+  };
+}
+
+function topNFor(rows = []) {
+  const thresholds = { QB: 12, RB: 24, WR: 36, TE: 12, K: 12 };
+  const byPosition = Object.fromEntries(Object.entries(thresholds).map(([position, limit]) => {
+    const weeks = [...new Set(rows.filter((row) => row.position === position).map((row) => number(row.week)))];
+    let hits = 0;
+    let total = 0;
+    weeks.forEach((week) => {
+      const values = rows.filter((row) => row.position === position && number(row.week) === week);
+      const count = Math.min(limit, values.length);
+      if (!count) return;
+      const key = (row) => row.player_id || `${normalize(row.name)}:${row.position}`;
+      const projected = new Set([...values].sort((a, b) => number(b.projection) - number(a.projection)).slice(0, count).map(key));
+      const actual = new Set([...values].sort((a, b) => number(b.actual) - number(a.actual)).slice(0, count).map(key));
+      hits += [...projected].filter((value) => actual.has(value)).length;
+      total += projected.size;
+    });
+    return [position, { label: `Top ${limit} ${position}`, hits, projected_count: total, actual_count: total, precision: total ? hits / total : null, recall: total ? hits / total : null }];
+  }));
+  const hits = Object.values(byPosition).reduce((sum, row) => sum + row.hits, 0);
+  const total = Object.values(byPosition).reduce((sum, row) => sum + row.projected_count, 0);
+  return { by_position: byPosition, overall: { hits, projected_count: total, actual_count: total, precision: total ? hits / total : null, recall: total ? hits / total : null } };
+}
+
+function closeCallMetricsFor(rows = []) {
+  const comparisons = [];
+  const groups = new Map();
+  rows.forEach((row) => {
+    const key = `${row.week}:${row.position}`;
+    const values = groups.get(key) || [];
+    values.push(row);
+    groups.set(key, values);
+  });
+  groups.forEach((values) => {
+    const sorted = [...values].sort((a, b) => number(b.projection) - number(a.projection));
+    for (let index = 0; index < sorted.length - 1; index += 1) {
+      const higher = sorted[index];
+      const lower = sorted[index + 1];
+      if (number(higher.projection) - number(lower.projection) > 2) continue;
+      comparisons.push({ correct: number(higher.actual) >= number(lower.actual), lost: Math.max(0, number(lower.actual) - number(higher.actual)) });
+    }
+  });
+  return {
+    sample: comparisons.length,
+    winRate: comparisons.length ? comparisons.filter((row) => row.correct).length / comparisons.length : null,
+    pointsLost: comparisons.length ? comparisons.reduce((sum, row) => sum + row.lost, 0) / comparisons.length : null,
+  };
+}
+
+function revisionMetricsFor(rows = []) {
+  const eligible = rows.filter((row) => Number.isFinite(Number(row.first_snapshot_projection)));
+  if (!eligible.length) return null;
+  const first = eligible.reduce((sum, row) => sum + Math.abs(number(row.first_snapshot_projection) - number(row.actual)), 0) / eligible.length;
+  const final = eligible.reduce((sum, row) => sum + Math.abs(number(row.projection) - number(row.actual)), 0) / eligible.length;
+  return { sample: eligible.length, first, final, improvement: first - final };
+}
+
+function probabilityMetricsFor(rows = []) {
+  if (!rows.length) return null;
+  const percentiles = rows.filter((row) =>
+    [row.p10, row.p50, row.p90].every((value) => Number.isFinite(Number(value))),
+  );
+  const brier = (probability, result) =>
+    rows.reduce((sum, row) => sum + (number(row[probability]) - number(row[result])) ** 2, 0) / rows.length;
+  return {
+    sample: rows.length,
+    boom_brier: brier("boom_probability", "boom_result"),
+    bust_brier: brier("bust_probability", "bust_result"),
+    percentile_sample: percentiles.length,
+    p10_under_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) < number(row.p10)).length / percentiles.length : null,
+    p50_under_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) < number(row.p50)).length / percentiles.length : null,
+    p90_over_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) > number(row.p90)).length / percentiles.length : null,
+    p10_p90_coverage: percentiles.length ? percentiles.filter((row) => number(row.actual) >= number(row.p10) && number(row.actual) <= number(row.p90)).length / percentiles.length : null,
+    average_interval_width: percentiles.length ? percentiles.reduce((sum, row) => sum + number(row.p90) - number(row.p10), 0) / percentiles.length : null,
+  };
+}
+
 function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
   if (!summary && !metrics && !calibration) return null;
   const topN = summary?.top_n_accuracy || {};
@@ -128,6 +240,24 @@ function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
             value={pct(metrics?.over_rate)}
             detail={`${pct(metrics?.under_rate)} under · ${pct(metrics?.within_5_rate)} within 5`}
             tone="amber"
+          />
+          <Kpi
+            label="Interval width"
+            value={calibration?.average_interval_width == null ? "—" : number(calibration.average_interval_width).toFixed(1)}
+            detail="Average P10–P90 span"
+            tone="cyan"
+          />
+          <Kpi
+            label="Boom Brier"
+            value={calibration?.boom_brier == null ? "—" : number(calibration.boom_brier).toFixed(3)}
+            detail="Lower probability error is better"
+            tone="emerald"
+          />
+          <Kpi
+            label="Bust Brier"
+            value={calibration?.bust_brier == null ? "—" : number(calibration.bust_brier).toFixed(3)}
+            detail="Lower probability error is better"
+            tone="rose"
           />
           <Kpi
             label="Top-N precision"
@@ -210,6 +340,38 @@ function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
   );
 }
 
+function StatComponentAccuracy({ rows = [] }) {
+  const components = useMemo(() => {
+    const fields = ["pass_att", "pass_yd", "pass_td", "rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fga", "fgm"];
+    return fields.flatMap((field) => {
+      const eligible = rows.flatMap((row) => {
+        const projected = row.stat_line?.[field];
+        const actual = row.actual_stat_line?.[field];
+        return Number.isFinite(Number(projected)) && Number.isFinite(Number(actual))
+          ? [{ projection: Number(projected), actual: Number(actual) }]
+          : [];
+      });
+      const metrics = accuracyMetricsFor(eligible);
+      return metrics ? [{ field, ...metrics }] : [];
+    });
+  }, [rows]);
+  if (!components.length) return null;
+  return (
+    <details className="mt-4 overflow-hidden rounded-2xl border border-amber-300/10 bg-amber-300/[0.025]">
+      <summary className="cursor-pointer list-none px-4 py-3 text-xs font-black text-amber-100">Workload and stat-component error</summary>
+      <div className="grid gap-2 border-t border-white/[0.06] p-4 sm:grid-cols-2 lg:grid-cols-4">
+        {components.map((row) => (
+          <div key={row.field} className="rounded-xl bg-black/20 p-3">
+            <div className="text-[9px] uppercase tracking-wider text-white/35">{row.field.replaceAll("_", " ")}</div>
+            <div className="mt-1 text-lg font-black text-amber-100">{number(row.mae).toFixed(2)} MAE</div>
+            <div className="text-[9px] text-white/30">{row.sample} matched games · bias {number(row.bias).toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function AccuracyResultsTable({
   results = [],
   modelBuildId,
@@ -217,6 +379,7 @@ function AccuracyResultsTable({
   lens,
   cohort,
   week,
+  position,
 }) {
   const [sortKey, setSortKey] = useState("projection");
   const [sortDirection, setSortDirection] = useState("desc");
@@ -229,6 +392,7 @@ function AccuracyResultsTable({
           row.lens === lens,
       )
       .filter((row) => week === "all" || number(row.week) === number(week))
+      .filter((row) => position === "ALL" || row.position === position)
       .filter((row) => {
         if (lens !== "safe_expected" || cohort === "all_matched") return true;
         if (cohort === "projected_5_plus") return number(row.projection) >= 5;
@@ -255,7 +419,7 @@ function AccuracyResultsTable({
           : leftValue - rightValue;
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [cohort, lens, modelBuildId, results, scoring, sortDirection, sortKey, week]);
+  }, [cohort, lens, modelBuildId, position, results, scoring, sortDirection, sortKey, week]);
 
   const changeSort = (key) => {
     if (sortKey === key) {
@@ -400,6 +564,7 @@ function ProjectionSourceComparison({
   modelBuildId,
   cohort,
   week,
+  position,
   directionalEdge = {},
 }) {
   const sources = ACCURACY_SOURCES;
@@ -409,6 +574,7 @@ function ProjectionSourceComparison({
     results
       .filter((row) => !modelBuildId || row.model_build_id === modelBuildId)
       .filter((row) => week === "all" || number(row.week) === number(week))
+      .filter((row) => position === "ALL" || row.position === position)
       .forEach((row) => {
         const key = `${row.week}:${row.player_id || `${normalize(row.name)}:${row.position}`}`;
         const current = grouped.get(key) || {
@@ -438,7 +604,7 @@ function ProjectionSourceComparison({
           Math.abs(number(right.sources[sortSource]?.error)) -
           Math.abs(number(left.sources[sortSource]?.error)),
       );
-  }, [cohort, modelBuildId, results, sortSource, week]);
+  }, [cohort, modelBuildId, position, results, sortSource, week]);
   const scopedComparison = useMemo(
     () =>
       Object.fromEntries(
@@ -485,6 +651,17 @@ function ProjectionSourceComparison({
       ),
     [rows],
   );
+  const pairedComparisons = useMemo(
+    () => Object.fromEntries(["Sleeper", "CBS"].map((source) => {
+      const pairs = rows.filter((row) => row.sources["The Fantasy Arsenal"] && row.sources[source]);
+      const arsenal = pairs.map((row) => row.sources["The Fantasy Arsenal"]);
+      const competitor = pairs.map((row) => row.sources[source]);
+      const arsenalMetrics = accuracyMetricsFor(arsenal);
+      const competitorMetrics = accuracyMetricsFor(competitor);
+      return [source, { sample: pairs.length, arsenal: arsenalMetrics, competitor: competitorMetrics }];
+    })),
+    [rows],
+  );
   const assumptionNotes = useMemo(
     () => [
       ...new Set(
@@ -512,6 +689,19 @@ function ProjectionSourceComparison({
           before that player&apos;s kickoff. Select a source card to rank the table
           by its largest absolute misses.
         </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {["Sleeper", "CBS"].map((source) => {
+            const pair = pairedComparisons[source];
+            return (
+              <div key={source} className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3 text-[10px]">
+                <div className="font-black text-cyan-100">Paired Arsenal vs {source}</div>
+                {pair?.sample ? (
+                  <div className="mt-2 text-white/50">Same {pair.sample} player-games · Arsenal MAE <b className="text-white/80">{number(pair.arsenal?.mae).toFixed(2)}</b> · {source} MAE <b className="text-white/80">{number(pair.competitor?.mae).toFixed(2)}</b></div>
+                ) : <div className="mt-2 text-white/30">No shared frozen forecasts in this filter.</div>}
+              </div>
+            );
+          })}
+        </div>
         {assumptionNotes.length ? (
           <div className="mt-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] leading-5 text-amber-50/75">
             {assumptionNotes[0]}
@@ -728,9 +918,11 @@ export default function StatProjectionLab({
   const [playerSearchText, setPlayerSearchText] = useState("");
   const [visibleCount, setVisibleCount] = useState(40);
   const [accuracy, setAccuracy] = useState(null);
-  const [accuracyCohort, setAccuracyCohort] = useState("all_matched");
+  const [accuracyDetailsLoaded, setAccuracyDetailsLoaded] = useState(false);
+  const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
   const [accuracyBuildScope, setAccuracyBuildScope] = useState("rolling");
   const [accuracyWeek, setAccuracyWeek] = useState("all");
+  const [accuracyPosition, setAccuracyPosition] = useState("ALL");
   const [view, setView] = useState(modelOnly ? "model" : "player");
   const choosePlayer = (name) => {
     setSelectedName(name);
@@ -753,6 +945,16 @@ export default function StatProjectionLab({
       ].sort(),
     [model],
   );
+  const resultsIncludedThrough =
+    model?.results_included_through_week ??
+    (Math.max(
+        0,
+        ...(model?.players || []).flatMap((player) =>
+          (player.weeks || []).filter((row) => row.completed).map((row) => number(row.week)),
+        ),
+      ) || null);
+  const modelLastTrainedAt =
+    model?.model_last_trained_at || model?.trained_calibration?.generated_at || null;
 
   const rows = useMemo(
     () =>
@@ -788,10 +990,15 @@ export default function StatProjectionLab({
   );
   useEffect(() => {
     let live = true;
-    fetch(`/stats/projections/${model?.season || 2026}/accuracy.json`, {
+    setAccuracyDetailsLoaded(false);
+    fetch(`/stats/projections/${model?.season || 2026}/accuracy-summary.json`, {
       cache: "no-cache",
     })
-      .then((response) => (response.ok ? response.json() : null))
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : fetch(`/stats/projections/${model?.season || 2026}/accuracy.json`, { cache: "no-cache" }).then((fallback) => fallback.ok ? fallback.json() : null),
+      )
       .then((payload) => {
         if (live) setAccuracy(payload);
       })
@@ -800,6 +1007,20 @@ export default function StatProjectionLab({
       live = false;
     };
   }, [model?.season]);
+  useEffect(() => {
+    if (view !== "model" || !accuracy?.detail_results_path || accuracyDetailsLoaded || accuracy?.player_results?.length) return;
+    let live = true;
+    fetch(accuracy.detail_results_path, { cache: "no-cache" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (live && payload) {
+          setAccuracy((current) => ({ ...current, ...payload }));
+          setAccuracyDetailsLoaded(true);
+        }
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [accuracy?.detail_results_path, accuracy?.player_results?.length, accuracyDetailsLoaded, view]);
   useEffect(() => {
     const modelPlayers = model?.players || [];
     if (!modelPlayers.length) return;
@@ -928,17 +1149,59 @@ export default function StatProjectionLab({
         : selectedAccuracyBuild
           ? exactBuildAccuracy?.projection_lenses?.[scoring]?.[lens] || null
           : accuracy?.projection_lens_accuracy?.[scoring]?.[lens] || null;
-  const accuracyMetrics =
+  const storedAccuracyMetrics =
     lens !== "safe_expected"
       ? modelAccuracy
       : modelAccuracy?.cohorts?.[accuracyCohort] ||
         (accuracyCohort === "all_matched" ? modelAccuracy : null);
+  const baseAccuracyRows = (accuracy?.player_results || [])
+    .filter((row) => (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) && row.scoring === scoring && row.lens === lens)
+    .filter((row) => accuracyWeek === "all" || number(row.week) === number(accuracyWeek))
+    .filter((row) => accuracyPosition === "ALL" || row.position === accuracyPosition);
+  const filteredAccuracyRows = baseAccuracyRows
+    .filter((row) => {
+      if (lens !== "safe_expected" || accuracyCohort === "all_matched") return true;
+      if (accuracyCohort === "projected_5_plus") return number(row.projection) >= 5;
+      if (accuracyCohort === "projected_10_plus") return number(row.projection) >= 10;
+      if (accuracyCohort === "top_100_projected") return Boolean(row.top_100);
+      return true;
+    });
+  const detailRowsAvailable = accuracyDetailsLoaded ||
+    (!accuracy?.detail_results_path && Boolean(accuracy?.player_results?.length));
+  const accuracyMetrics = detailRowsAvailable
+    ? accuracyMetricsFor(filteredAccuracyRows)
+    : storedAccuracyMetrics;
+  const scopedCalibrationRows = (accuracy?.outcome_results || []).filter((row) =>
+    (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) &&
+    (accuracyWeek === "all" || number(row.week) === number(accuracyWeek)) &&
+    (accuracyPosition === "ALL" || row.position === accuracyPosition) &&
+    (accuracyCohort !== "projected_5_plus" || number(row.projection) >= 5) &&
+    (accuracyCohort !== "projected_10_plus" || number(row.projection) >= 10) &&
+    (accuracyCohort !== "top_100_projected" || Boolean(row.top_100)),
+  );
+  const scopedCalibration = detailRowsAvailable
+    ? probabilityMetricsFor(scopedCalibrationRows)
+    : accuracy?.outcome_calibration;
+  const scopedAccuracySummary = detailRowsAvailable
+    ? {
+        ...modelAccuracy,
+        ...(accuracyMetrics || {}),
+        by_position: Object.fromEntries(["QB", "RB", "WR", "TE", "K"].map((key) => [key, accuracyMetricsFor(filteredAccuracyRows.filter((row) => row.position === key))])),
+        top_n_accuracy: topNFor(filteredAccuracyRows),
+      }
+    : modelAccuracy;
+  const closeCallMetrics = detailRowsAvailable
+    ? closeCallMetricsFor(filteredAccuracyRows)
+    : accuracy?.close_call_accuracy;
+  const revisionMetrics = detailRowsAvailable
+    ? revisionMetricsFor(filteredAccuracyRows)
+    : accuracy?.forecast_revision_value;
   const latestAccuracyWeek = (accuracy?.weeks || []).find(
     (row) => number(row.week) === number(accuracy?.last_scored_week),
   );
   const accuracyStatusLabel = accuracyMetrics?.sample
     ? latestAccuracyWeek?.schedule?.week_complete
-      ? `Scored through Week ${accuracy.last_scored_week}`
+      ? `${(accuracy?.weeks || []).length < 4 ? "Preliminary · " : ""}Scored through Week ${accuracy.last_scored_week}`
       : `Week ${accuracy.last_scored_week} live · ${number(latestAccuracyWeek?.schedule?.games_in_saved_results_window)} of ${number(latestAccuracyWeek?.schedule?.games)} games graded`
     : "Awaiting this model's results";
   const selectedDnaAccuracy =
@@ -986,6 +1249,12 @@ export default function StatProjectionLab({
               weighting, three years of production, matchup context, availability,
               and simulated outcomes are kept separate so every forecast can be audited.
             </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-white/48">
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Forecast Week {model.forecast_week || recommendedWeek(model)}</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Results through Week {resultsIncludedThrough ?? "—"}</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5" title="A build can be newer than one or more source inputs. Open model details for individual source timestamps.">Built {model.generated_at ? new Date(model.generated_at).toLocaleString() : "—"} ⓘ</span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Trained {modelLastTrainedAt ? new Date(modelLastTrainedAt).toLocaleDateString() : "—"}</span>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Filter
@@ -2065,21 +2334,30 @@ export default function StatProjectionLab({
                 ))}
               </select>
               <select
+                value={accuracyPosition}
+                onChange={(event) => setAccuracyPosition(event.target.value)}
+                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
+                aria-label="Accuracy position"
+              >
+                <option value="ALL">All positions</option>
+                {["QB", "RB", "WR", "TE", "K"].map((key) => <option key={key} value={key}>{key}</option>)}
+              </select>
+              <select
                 value={accuracyCohort}
                 onChange={(event) => setAccuracyCohort(event.target.value)}
                 className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
               >
                 <option value="projected_5_plus">
-                  5+ point projections · {number(modelAccuracy?.cohorts?.projected_5_plus?.sample)} matches
+                  5+ point projections · {detailRowsAvailable ? baseAccuracyRows.filter((row) => number(row.projection) >= 5).length : number(modelAccuracy?.cohorts?.projected_5_plus?.sample)} matches
                 </option>
                 <option value="projected_10_plus">
-                  10+ point projections · {number(modelAccuracy?.cohorts?.projected_10_plus?.sample)} matches
+                  10+ point projections · {detailRowsAvailable ? baseAccuracyRows.filter((row) => number(row.projection) >= 10).length : number(modelAccuracy?.cohorts?.projected_10_plus?.sample)} matches
                 </option>
                 <option value="top_100_projected">
-                  Weekly top 100 · {number(modelAccuracy?.cohorts?.top_100_projected?.sample)} matches
+                  Weekly top 100 · {detailRowsAvailable ? baseAccuracyRows.filter((row) => row.top_100).length : number(modelAccuracy?.cohorts?.top_100_projected?.sample)} matches
                 </option>
                 <option value="all_matched">
-                  All active matches · {number(modelAccuracy?.sample)} matches
+                  All active matches · {detailRowsAvailable ? baseAccuracyRows.length : number(modelAccuracy?.sample)} matches
                 </option>
               </select>
               <span className="rounded-full bg-black/20 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-white/45">
@@ -2143,7 +2421,10 @@ export default function StatProjectionLab({
                   modelAccuracy?.coverage?.known_projected_dnp_or_inactive,
                 )}{" "}
                 known DNP/inactive outcomes, so absences cannot silently improve
-                the headline score.
+                the headline score. Another{" "}
+                {number(modelAccuracy?.coverage?.missing_result_unconfirmed)}{" "}
+                have no confirmed active result and remain unscored rather than
+                being guessed as zero.
               </p>
               <p className="mt-2 text-[10px] leading-5 text-white/35">
                 This accuracy population currently covers QB, RB, WR, TE, and
@@ -2153,10 +2434,16 @@ export default function StatProjectionLab({
                 so it is not labeled as an injury without a reliable event feed.
               </p>
               <AdvancedAccuracyPanel
-                summary={modelAccuracy}
+                summary={scopedAccuracySummary}
                 metrics={accuracyMetrics}
-                calibration={accuracy?.outcome_calibration}
+                calibration={scopedCalibration}
               />
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <Kpi label="Close-call wins" value={pct(closeCallMetrics?.winRate ?? closeCallMetrics?.higher_projection_win_rate)} detail={`${number(closeCallMetrics?.sample)} start/sit pairs within 2 points`} tone="cyan" />
+                <Kpi label="Points lost" value={closeCallMetrics?.pointsLost == null && closeCallMetrics?.average_points_lost == null ? "—" : number(closeCallMetrics?.pointsLost ?? closeCallMetrics?.average_points_lost).toFixed(2)} detail="Average downside when the higher projection lost" tone="amber" />
+                <Kpi label="Revision value" value={revisionMetrics?.improvement == null && revisionMetrics?.mae_improvement == null ? "—" : `${number(revisionMetrics?.improvement ?? revisionMetrics?.mae_improvement) >= 0 ? "+" : ""}${number(revisionMetrics?.improvement ?? revisionMetrics?.mae_improvement).toFixed(2)}`} detail={`${number(revisionMetrics?.sample)} forecasts · positive means the later freeze improved`} tone="emerald" />
+              </div>
+              <StatComponentAccuracy rows={filteredAccuracyRows} />
               <AccuracyResultsTable
                 results={accuracy?.player_results || []}
                 modelBuildId={selectedAccuracyBuild}
@@ -2164,6 +2451,7 @@ export default function StatProjectionLab({
                 lens={lens}
                 cohort={accuracyCohort}
                 week={accuracyWeek}
+                position={accuracyPosition}
               />
               {scoring === "ppr" ? (
                 <ProjectionSourceComparison
@@ -2171,6 +2459,7 @@ export default function StatProjectionLab({
                   modelBuildId={selectedAccuracyBuild}
                   cohort={accuracyCohort}
                   week={accuracyWeek}
+                  position={accuracyPosition}
                   directionalEdge={accuracy?.source_directional_edge || {}}
                 />
               ) : null}

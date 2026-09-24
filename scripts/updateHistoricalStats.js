@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  finalScheduleWeeks,
+  resultsReadyScheduleWeeks,
+} from "./lib/projectionFinality.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -364,40 +368,6 @@ function mergeScheduleWithSaved(fresh, saved) {
       .filter((entry) => entry.retained_from_last_good_archive)
       .map((entry) => Number(entry.week)),
   };
-}
-
-function finalScheduleWeeks(schedule, now = Date.now()) {
-  return new Set(
-    (schedule?.weeks || [])
-      .filter(
-        ({ games }) =>
-          (games || []).length > 0 &&
-          games.every((game) => {
-            if (game?.completed === true) return true;
-            if (game?.completed === false) return false;
-            const kickoff = Date.parse(game?.date);
-            return (
-              Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now
-            );
-          }),
-      )
-      .map(({ week }) => Number(week)),
-  );
-}
-
-function resultsReadyScheduleWeeks(schedule, now = Date.now()) {
-  return new Set(
-    (schedule?.weeks || [])
-      .filter(({ games }) =>
-        (games || []).some((game) => {
-          if (game?.completed === true) return true;
-          if (game?.completed === false) return false;
-          const kickoff = Date.parse(game?.date);
-          return Number.isFinite(kickoff) && kickoff + 6 * 60 * 60 * 1000 < now;
-        }),
-      )
-      .map(({ week }) => Number(week)),
-  );
 }
 
 const manifestPath = path.join(

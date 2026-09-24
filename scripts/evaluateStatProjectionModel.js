@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { gunzipSync } from "zlib";
+import { gameFinality } from "./lib/projectionFinality.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const season =
@@ -41,11 +42,26 @@ const outputFile = path.join(
   String(season),
   "accuracy.json",
 );
+const summaryOutputFile = path.join(
+  root,
+  "public",
+  "stats",
+  "projections",
+  String(season),
+  "accuracy-summary.json",
+);
+const resultsOutputFile = path.join(
+  root,
+  "public",
+  "stats",
+  "projections",
+  String(season),
+  "accuracy-results.json",
+);
 const valueArchiveDirectory = path.join(root, "public", "archive");
 const scoringKeys = ["ppr", "half", "std"];
 const projectionLenses = ["safe_expected", "risky"];
 const positions = ["QB", "RB", "WR", "TE", "K"];
-const fallbackFinalWindowMs = 6 * 60 * 60 * 1000;
 const evaluationTime = Date.now();
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const clamp = (value, minimum, maximum) =>
@@ -91,27 +107,6 @@ const archivedProjectionSnapshots = (filePrefix, source) => {
     })
     .filter(Boolean)
     .sort((left, right) => right.generatedAt - left.generatedAt);
-};
-const currentProjectionSnapshot = (relativeFile, source, options = {}) => {
-  const filePath = path.join(root, "public", relativeFile);
-  if (!fs.existsSync(filePath)) return null;
-  try {
-    const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    const generatedAt = Date.parse(
-      payload?.updated || payload?.updated_at || payload?.generated_at,
-    );
-    if (!Number.isFinite(generatedAt)) return null;
-    return {
-      source,
-      file: relativeFile.replace(/\\/g, "/"),
-      generatedAt,
-      payload,
-      currentFile: true,
-      ...options,
-    };
-  } catch {
-    return null;
-  }
 };
 const normalizeTeam = (value) => {
   const team = String(value || "").toUpperCase();
@@ -205,6 +200,9 @@ function metrics(rows) {
       Math.sqrt(
         errors.reduce((sum, value) => sum + value ** 2, 0) / rows.length,
       ),
+    ),
+    mse: round(
+      errors.reduce((sum, value) => sum + value ** 2, 0) / rows.length,
     ),
     bias: round(errors.reduce((sum, value) => sum + value, 0) / rows.length),
     rank_correlation: roundNullable(rankCorrelation),
@@ -316,6 +314,9 @@ function coverageSummary(records) {
   const unmatched = records.filter(
     (record) => record.result === "identity_unmatched_or_not_in_archive",
   );
+  const unconfirmedMissing = records.filter(
+    (record) => record.result === "missing_result_unconfirmed",
+  );
   const projectedFive = records.filter((record) => record.projection >= 5);
   const projectedTen = records.filter((record) => record.projection >= 10);
   const topHundred = records.filter((record) => record.top_100);
@@ -327,6 +328,7 @@ function coverageSummary(records) {
       : null,
     projected_without_active_result: withoutResult.length,
     known_projected_dnp_or_inactive: knownDnp.length,
+    missing_result_unconfirmed: unconfirmedMissing.length,
     identity_unmatched_or_not_in_archive: unmatched.length,
     sleeper_id_matches: records.filter(
       (record) => record.identity_match_method === "sleeper_id",
@@ -389,10 +391,47 @@ function probabilitySummary(rows) {
       Number.isFinite(row.p50) &&
       Number.isFinite(row.p90),
   );
+  const quantileLoss = (quantile, forecast, actual) => {
+    const error = actual - forecast;
+    return Math.max(quantile * error, (quantile - 1) * error);
+  };
+  const calibrationBins = (probabilityKey, resultKey) =>
+    Array.from({ length: 10 }, (_, index) => {
+      const minimum = index / 10;
+      const maximum = (index + 1) / 10;
+      const bin = rows.filter((row) => {
+        const probability = row[probabilityKey];
+        return probability >= minimum &&
+          (index === 9 ? probability <= maximum : probability < maximum);
+      });
+      return {
+        minimum,
+        maximum,
+        sample: bin.length,
+        predicted: bin.length
+          ? round(bin.reduce((sum, row) => sum + row[probabilityKey], 0) / bin.length, 4)
+          : null,
+        observed: bin.length
+          ? round(bin.reduce((sum, row) => sum + row[resultKey], 0) / bin.length, 4)
+          : null,
+      };
+    }).filter((bin) => bin.sample > 0);
+  const boomBase = rows.reduce((sum, row) => sum + row.boom_result, 0) / rows.length;
+  const bustBase = rows.reduce((sum, row) => sum + row.bust_result, 0) / rows.length;
+  const boomBrier = brier("boom_probability", "boom_result");
+  const bustBrier = brier("bust_probability", "bust_result");
+  const boomBaselineBrier = rows.reduce((sum, row) => sum + (boomBase - row.boom_result) ** 2, 0) / rows.length;
+  const bustBaselineBrier = rows.reduce((sum, row) => sum + (bustBase - row.bust_result) ** 2, 0) / rows.length;
   return {
     sample: rows.length,
-    boom_brier: round(brier("boom_probability", "boom_result"), 4),
-    bust_brier: round(brier("bust_probability", "bust_result"), 4),
+    boom_brier: round(boomBrier, 4),
+    bust_brier: round(bustBrier, 4),
+    boom_brier_skill: boomBaselineBrier
+      ? round(1 - boomBrier / boomBaselineBrier, 4)
+      : null,
+    bust_brier_skill: bustBaselineBrier
+      ? round(1 - bustBrier / bustBaselineBrier, 4)
+      : null,
     predicted_boom_rate: round(
       rows.reduce((sum, row) => sum + row.boom_probability, 0) / rows.length,
       4,
@@ -448,6 +487,28 @@ function probabilitySummary(rows) {
           4,
         )
       : null,
+    average_interval_width: percentileRows.length
+      ? round(percentileRows.reduce((sum, row) => sum + (row.p90 - row.p10), 0) / percentileRows.length)
+      : null,
+    p10_quantile_loss: percentileRows.length
+      ? round(percentileRows.reduce((sum, row) => sum + quantileLoss(0.1, row.p10, row.actual), 0) / percentileRows.length)
+      : null,
+    median_quantile_loss: percentileRows.length
+      ? round(percentileRows.reduce((sum, row) => sum + quantileLoss(0.5, row.p50, row.actual), 0) / percentileRows.length)
+      : null,
+    p90_quantile_loss: percentileRows.length
+      ? round(percentileRows.reduce((sum, row) => sum + quantileLoss(0.9, row.p90, row.actual), 0) / percentileRows.length)
+      : null,
+    weighted_interval_score: percentileRows.length
+      ? round(percentileRows.reduce((sum, row) => {
+          const width = row.p90 - row.p10;
+          const under = row.actual < row.p10 ? (2 / 0.2) * (row.p10 - row.actual) : 0;
+          const over = row.actual > row.p90 ? (2 / 0.2) * (row.actual - row.p90) : 0;
+          return sum + width + under + over;
+        }, 0) / percentileRows.length)
+      : null,
+    boom_reliability: calibrationBins("boom_probability", "boom_result"),
+    bust_reliability: calibrationBins("bust_probability", "bust_result"),
   };
 }
 
@@ -466,12 +527,7 @@ function scheduledWeeks(schedule) {
             // Current schedule archives carry ESPN's final status. Older
             // archives fall back to the conservative kickoff-plus-six-hours
             // estimate used before final status was persisted.
-            finalAt:
-              game.completed === true
-                ? kickoff
-                : game.completed === false
-                  ? Number.POSITIVE_INFINITY
-                  : kickoff + fallbackFinalWindowMs,
+            ...gameFinality(game, { now: evaluationTime }),
           };
         })
         .filter(Boolean);
@@ -539,9 +595,7 @@ if (
       gamesByTeam.set(game.home, game);
       gamesByTeam.set(game.away, game);
     }
-    const completedGames = games.filter(
-      (game) => evaluationTime >= game.finalAt,
-    );
+    const completedGames = games.filter((game) => game.final);
     const resultsReadyGames = completedGames.filter(
       (game) => actualUpdatedAt >= game.finalAt,
     );
@@ -644,6 +698,15 @@ if (
           : "unmatched";
       const observedWeek = observed?.weeks?.[String(week)];
       const observedStats = observed?.weekly_stats?.[String(week)] || {};
+      const frozenAvailabilityStatus = String(
+        forecast.forecast?.availability?.status || "",
+      ).toLowerCase();
+      const confirmedNonParticipation =
+        finiteNumber(observedStats.gms_active) === 0 ||
+        finiteNumber(observedStats.gp) === 0 ||
+        ["out", "ir", "pup", "suspended"].includes(
+          frozenAvailabilityStatus,
+        );
       const defensivePosition = ["DL", "DE", "DT", "LB", "DB", "CB", "S"].includes(
         String(forecast.position || "").toUpperCase(),
       );
@@ -665,6 +728,16 @@ if (
       const depthChartSource = frozenDepthOrder
         ? "frozen_sleeper_depth_chart"
         : "frozen_projection_role";
+      const earliestSelection = [...weekSnapshots]
+        .reverse()
+        .flatMap((candidateSnapshot) => {
+          const generatedAt = Date.parse(candidateSnapshot.generated_at);
+          if (!Number.isFinite(generatedAt) || generatedAt >= game.kickoff) return [];
+          const candidate = (candidateSnapshot.players || []).find((row) =>
+            identityKeysOf(row).some((key) => identityKeysOf(forecast).includes(key)),
+          );
+          return candidate ? [{ snapshot: candidateSnapshot, forecast: candidate }] : [];
+        })[0] || null;
       for (const scoring of scoringKeys) {
         const projection = finiteNumber(
           forecast.forecast?.projections?.[scoring],
@@ -702,9 +775,11 @@ if (
           identity_match_method: identityMatchMethod,
           result: Number.isFinite(result)
             ? "active_match"
-            : observed
+            : confirmedNonParticipation
               ? "known_dnp_or_inactive"
-              : "identity_unmatched_or_not_in_archive",
+              : observed
+                ? "missing_result_unconfirmed"
+                : "identity_unmatched_or_not_in_archive",
         };
         coverageByScoring[scoring].push(coverageRecord);
         coverageLedger.push(coverageRecord);
@@ -739,6 +814,12 @@ if (
           error: round(projection - result, 3),
           confidence: number(forecast.confidence),
           top_100: top100,
+          first_snapshot_generated_at: earliestSelection?.snapshot?.generated_at || null,
+          first_snapshot_projection: finiteNumber(
+            earliestSelection?.forecast?.forecast?.projections?.[scoring],
+          ),
+          stat_line: scoring === "ppr" ? forecast.forecast?.stat_line || null : undefined,
+          actual_stat_line: scoring === "ppr" ? observedStats : undefined,
         };
         rowsByScoring[scoring].push(row);
         ledger.push(row);
@@ -929,11 +1010,6 @@ const publisherSnapshots = {
   ),
   CBS: [
     ...archivedProjectionSnapshots(`projections_cbs_weekly_${season}`, "CBS"),
-    currentProjectionSnapshot(`projections_cbs_weekly_${season}.json`, "CBS", {
-      postKickoffAssumption:
-        "Owner-approved Week 1 bootstrap: current CBS weekly projection file is accepted for already-played Week 1 games because CBS is assumed not to have changed those weekly projections after kickoff.",
-      allowedPostKickoffWeeks: [1],
-    }),
   ].filter(Boolean),
 };
 const publisherProjection = (snapshot, target) => {
@@ -974,10 +1050,7 @@ const sourceComparisonResults = ledger
       publisherSnapshots,
     )) {
       for (const snapshot of snapshotsForSource) {
-        const acceptsPostKickoff =
-          Array.isArray(snapshot.allowedPostKickoffWeeks) &&
-          snapshot.allowedPostKickoffWeeks.includes(Number(arsenalRow.week));
-        if (snapshot.generatedAt >= kickoff && !acceptsPostKickoff) continue;
+        if (snapshot.generatedAt >= kickoff) continue;
         const projection = publisherProjection(snapshot, arsenalRow);
         if (!Number.isFinite(projection)) continue;
         rows.push({
@@ -1062,6 +1135,113 @@ const sourceDirectionalEdge = Object.fromEntries(
   }),
 );
 
+function pairedSourceSummary(source) {
+  const grouped = new Map();
+  sourceComparisonResults.forEach((row) => {
+    const key = `${row.week}:${row.player_id || namePositionKeyOf(row)}`;
+    const group = grouped.get(key) || {};
+    group[row.source] = row;
+    grouped.set(key, group);
+  });
+  const pairs = [...grouped.values()]
+    .filter((group) => group["The Fantasy Arsenal"] && group[source])
+    .map((group) => ({
+      arsenal: group["The Fantasy Arsenal"],
+      competitor: group[source],
+    }));
+  const weeklyEdges = new Map();
+  pairs.forEach((pair) => {
+    const edge = Math.abs(pair.competitor.error) - Math.abs(pair.arsenal.error);
+    const values = weeklyEdges.get(pair.arsenal.week) || [];
+    values.push(edge);
+    weeklyEdges.set(pair.arsenal.week, values);
+  });
+  const weekMeans = [...weeklyEdges.values()].map(
+    (values) => values.reduce((sum, value) => sum + value, 0) / values.length,
+  );
+  const mean = weekMeans.length
+    ? weekMeans.reduce((sum, value) => sum + value, 0) / weekMeans.length
+    : null;
+  const variance = weekMeans.length > 1
+    ? weekMeans.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (weekMeans.length - 1)
+    : null;
+  const margin = Number.isFinite(variance)
+    ? 1.96 * Math.sqrt(variance / weekMeans.length)
+    : null;
+  return {
+    source,
+    paired_games: pairs.length,
+    weeks: weekMeans.length,
+    arsenal: metrics(pairs.map((pair) => pair.arsenal)),
+    competitor: metrics(pairs.map((pair) => pair.competitor)),
+    average_absolute_edge: pairs.length
+      ? round(pairs.reduce((sum, pair) => sum + Math.abs(pair.competitor.error) - Math.abs(pair.arsenal.error), 0) / pairs.length)
+      : null,
+    week_clustered_95_percent_interval:
+      margin == null ? null : [round(mean - margin), round(mean + margin)],
+    preliminary: weekMeans.length < 4,
+  };
+}
+
+const pairedSourceComparison = Object.fromEntries(
+  ["Sleeper", "CBS"].map((source) => [source, pairedSourceSummary(source)]),
+);
+
+function statComponentSummary(rows) {
+  const fields = ["pass_att", "pass_yd", "pass_td", "pass_int", "rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fga", "fgm", "xpa", "xpm"];
+  return Object.fromEntries(fields.map((field) => {
+    const values = rows
+      .map((row) => ({ projected: finiteNumber(row.stat_line?.[field]), actual: finiteNumber(row.actual_stat_line?.[field]) }))
+      .filter((row) => row.projected != null && row.actual != null);
+    return [field, values.length ? metrics(values.map((row) => ({ projection: row.projected, actual: row.actual }))) : null];
+  }));
+}
+
+function closeCallSummary(rows) {
+  const comparisons = [];
+  const grouped = new Map();
+  rows.forEach((row) => {
+    const key = `${row.week}:${row.position}`;
+    const values = grouped.get(key) || [];
+    values.push(row);
+    grouped.set(key, values);
+  });
+  grouped.forEach((values) => {
+    const sorted = [...values].sort((left, right) => right.projection - left.projection);
+    for (let index = 0; index < sorted.length - 1; index += 1) {
+      const higher = sorted[index];
+      const lower = sorted[index + 1];
+      if (higher.projection - lower.projection > 2) continue;
+      comparisons.push({
+        correct: higher.actual >= lower.actual,
+        points_lost: Math.max(0, lower.actual - higher.actual),
+      });
+    }
+  });
+  return {
+    sample: comparisons.length,
+    higher_projection_win_rate: comparisons.length
+      ? round(comparisons.filter((row) => row.correct).length / comparisons.length, 4)
+      : null,
+    average_points_lost: comparisons.length
+      ? round(comparisons.reduce((sum, row) => sum + row.points_lost, 0) / comparisons.length)
+      : null,
+  };
+}
+
+function revisionSummary(rows) {
+  const eligible = rows.filter((row) => Number.isFinite(row.first_snapshot_projection));
+  if (!eligible.length) return null;
+  const firstMae = eligible.reduce((sum, row) => sum + Math.abs(row.first_snapshot_projection - row.actual), 0) / eligible.length;
+  const finalMae = eligible.reduce((sum, row) => sum + Math.abs(row.projection - row.actual), 0) / eligible.length;
+  return {
+    sample: eligible.length,
+    first_snapshot_mae: round(firstMae),
+    final_snapshot_mae: round(finalMae),
+    mae_improvement: round(firstMae - finalMae),
+  };
+}
+
 const scheduleAvailable = scheduleByWeek.size > 0;
 const scoredWeeks = weekResults.filter((result) =>
   scoringKeys.some((scoring) => result.scoring?.[scoring]?.sample > 0),
@@ -1092,7 +1272,7 @@ const output = {
     model_versions:
       "Cumulative accuracy is separated by the exact model build ID stored in each immutable forecast snapshot; release-version labels remain attached separately.",
     source_comparison:
-      "Publisher comparison uses the latest saved weekly projection before each player's kickoff. CBS Week 1 may include a clearly labeled owner-approved bootstrap from the current weekly file when no pre-kickoff CBS archive exists.",
+      "Publisher comparison uses the latest saved weekly projection before each player's kickoff. Post-kickoff and retrospective bootstrap files are excluded from verified comparisons.",
     mae: "Mean absolute error; lower is better.",
     rmse: "Root mean squared error; lower is better and penalizes large misses.",
     bias: "Average projection minus actual result; positive means the model projected too high.",
@@ -1120,12 +1300,31 @@ const output = {
   player_results: lensLedger,
   coverage_results: coverageLedger,
   source_comparison: sourceComparison,
+  paired_source_comparison: pairedSourceComparison,
   source_comparison_results: sourceComparisonResults,
   source_directional_edge: sourceDirectionalEdge,
+  stat_component_accuracy: statComponentSummary(ledger.filter((row) => row.scoring === "ppr")),
+  close_call_accuracy: closeCallSummary(ledger.filter((row) => row.scoring === "ppr" && row.projection >= 5)),
+  forecast_revision_value: revisionSummary(ledger.filter((row) => row.scoring === "ppr")),
   weeks: weekResults,
 };
 
 writeJson(outputFile, output);
+writeJson(resultsOutputFile, {
+  season,
+  generated_at: output.generated_at,
+  player_results: lensLedger,
+  coverage_results: coverageLedger,
+  outcome_results: outcomeLedger,
+  source_comparison_results: sourceComparisonResults,
+});
+writeJson(summaryOutputFile, {
+  ...output,
+  player_results: [],
+  coverage_results: [],
+  source_comparison_results: [],
+  detail_results_path: `/stats/projections/${season}/accuracy-results.json`,
+});
 console.log(
   !scheduleAvailable
     ? `No saved ${season} projection schedule is available; no forecasts were graded.`

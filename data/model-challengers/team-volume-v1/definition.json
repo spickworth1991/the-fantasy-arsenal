@@ -1,0 +1,51 @@
+{
+  "source": "The Fantasy Arsenal local historical projection replay",
+  "generated_at": "2026-09-23T23:45:17.117Z",
+  "version": "team-volume-v1",
+  "model_type": "team_volume_reconciliation",
+  "definition_sha256": "a6e762449195f250d9c58acd1e99f1a53872eb791e18829080b3904fef6bd43b",
+  "base_calibration_sha256": "c90d3c29fe5ecb422786c12a8748daa2852261984d6b4a454f0dff8c03862556",
+  "forward_test_required_weeks": 4,
+  "site_exposed": false,
+  "group_minimum_ppr": 1,
+  "settings_by_position": {
+    "QB": {
+      "share_strength": 0.25,
+      "pace_strength": 1
+    },
+    "RB": {
+      "share_strength": 1,
+      "pace_strength": 0.5
+    },
+    "WR": {
+      "share_strength": 1,
+      "pace_strength": 1
+    },
+    "TE": {
+      "share_strength": 1,
+      "pace_strength": 1
+    },
+    "K": {
+      "share_strength": 0,
+      "pace_strength": 0
+    }
+  },
+  "historical_replay": {
+    "evaluation_seasons": [2024, 2025],
+    "paired_player_games": 6727,
+    "incumbent_mae": 5.527,
+    "challenger_mae": 5.449,
+    "mae_improvement_rate": 0.0141,
+    "incumbent_rmse": 7.136,
+    "challenger_rmse": 7.133,
+    "bootstrap_improvement_95": [0.0498, 0.1056],
+    "audit": "PASS"
+  },
+  "rules": {
+    "overallocated_target_and_carry_shares_are_capped": true,
+    "unmodeled_opportunity_is_preserved": true,
+    "team_share_groups_match_the_historical_one_point_minimum": true,
+    "adjustment_factor_bounds": [0.8, 1.2],
+    "promotion_is_automatic": false
+  }
+}

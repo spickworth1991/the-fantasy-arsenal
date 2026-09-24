@@ -33,6 +33,11 @@ backup.zip
 !/scripts/buildStatInsights.js
 !/scripts/buildStatProjectionModel.js
 !/scripts/evaluateStatProjectionModel.js
+!/scripts/evaluateProjectionChallenger.js
+!/scripts/promoteProjectionChallenger.js
+!/scripts/backtest-stat-model.mjs
+!/scripts/replayStatProjectionModel.mjs
+!/scripts/testProjectionReplay.mjs
 !/scripts/auditProjectionPipeline.js
 !/scripts/capturePreKickoffSnapshot.js
 !/scripts/updateAdvancedStats.js
@@ -46,4 +51,7 @@ backup.zip
 !/scripts/buildPropBoard.js
 !/scripts/updatePropLab.js
 !/scripts/evaluatePropLab.js
+!/scripts/lib/
+!/scripts/lib/projectionFinality.mjs
+!/scripts/lib/trainedProjectionModel.mjs
 /docs/
