@@ -1,55 +1,131 @@
 {
   "source": "The Fantasy Arsenal forward challenger evaluator",
-  "generated_at": "2026-09-24T00:01:53.440Z",
+  "generated_at": "2026-09-24T00:45:25.372Z",
   "challenger": "team-volume-v1",
   "season": 2026,
-  "definition_sha256": "a6e762449195f250d9c58acd1e99f1a53872eb791e18829080b3904fef6bd43b",
-  "rejected_definition_snapshots": 0,
-  "population": "paired player-games where the incumbent projected at least 5 PPR points",
+  "definition_sha256": "7c5be545bb27989aa84ed392b681ab28fdf12b51d6eea66c1142404a34fc6707",
+  "rejected_definition_snapshots": 1,
+  "population": "identical frozen player-games where every arm produced a forecast and the incumbent projected at least 5 PPR points",
+  "arms": [
+    "incumbent",
+    "team_volume",
+    "role_redistribution",
+    "combined"
+  ],
   "completed_forward_test_weeks": [],
   "completed_forward_test_week_count": 0,
   "required_forward_test_weeks": 4,
   "remaining_forward_test_weeks": 4,
   "paired_games": 0,
-  "incumbent": null,
-  "challenger_metrics": null,
-  "mae_improvement": null,
-  "mae_improvement_rate": 0,
-  "rmse_change": null,
-  "rmse_change_rate": 0,
+  "metrics_by_arm": {
+    "incumbent": null,
+    "team_volume": null,
+    "role_redistribution": null,
+    "combined": null
+  },
   "by_position": {
     "QB": {
       "incumbent": null,
-      "challenger": null
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
     },
     "RB": {
       "incumbent": null,
-      "challenger": null
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
     },
     "WR": {
       "incumbent": null,
-      "challenger": null
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
     },
     "TE": {
       "incumbent": null,
-      "challenger": null
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
     },
     "K": {
       "incumbent": null,
-      "challenger": null
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
     }
   },
-  "disclosed_position_regressions": [],
+  "role_redistribution_evidence": {
+    "absence_events": [],
+    "absence_event_count": 0,
+    "affected_player_games": 0,
+    "required_absence_events": 8,
+    "required_affected_player_games": 30,
+    "evidence_ready": false,
+    "metrics_by_arm": {
+      "incumbent": null,
+      "team_volume": null,
+      "role_redistribution": null,
+      "combined": null
+    }
+  },
+  "arm_decisions": {
+    "team_volume": {
+      "metrics": null,
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "role_redistribution": {
+      "metrics": null,
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": false,
+      "accuracy_gate_passed": false,
+      "recommendation": "continue_role_collection"
+    },
+    "combined": {
+      "metrics": null,
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": false,
+      "accuracy_gate_passed": false,
+      "recommendation": "continue_role_collection"
+    }
+  },
   "minimum_completed_weeks_met": false,
-  "accuracy_gate_passed": false,
   "eligible_for_review": false,
-  "recommendation": "keep_incumbent",
+  "reviewable_arms": [],
+  "recommendation": "collect_forward_weeks",
   "gate": {
     "minimum_mae_improvement_rate": 0.01,
     "maximum_rmse_deterioration_rate": 0.01,
     "maximum_position_mae_deterioration_rate": 0.03,
     "minimum_position_sample": 200,
-    "completed_weeks_must_be_fully_final": true
+    "completed_weeks_must_be_fully_final": true,
+    "role_arms_require_affected_mae_improvement_rate": 0.01,
+    "minimum_role_absence_events": 8,
+    "minimum_role_affected_player_games": 30
   },
   "note": "0/4 fully final completed weeks captured; 4 remaining."
 }

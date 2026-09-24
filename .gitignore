@@ -38,6 +38,7 @@ backup.zip
 !/scripts/backtest-stat-model.mjs
 !/scripts/replayStatProjectionModel.mjs
 !/scripts/testProjectionReplay.mjs
+!/scripts/testProjectionShadowArms.mjs
 !/scripts/auditProjectionPipeline.js
 !/scripts/capturePreKickoffSnapshot.js
 !/scripts/updateAdvancedStats.js
@@ -54,4 +55,5 @@ backup.zip
 !/scripts/lib/
 !/scripts/lib/projectionFinality.mjs
 !/scripts/lib/trainedProjectionModel.mjs
+!/scripts/lib/projectionShadowArms.mjs
 /docs/

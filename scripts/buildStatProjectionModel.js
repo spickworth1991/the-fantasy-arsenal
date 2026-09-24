@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { finalScheduleWeeks } from "./lib/projectionFinality.mjs";
 import { trainedAdjustmentFromCalibration } from "./lib/trainedProjectionModel.mjs";
+import { buildProjectionShadowArms } from "./lib/projectionShadowArms.mjs";
 
 const scriptFile = fileURLToPath(import.meta.url);
 const root = path.join(path.dirname(scriptFile), "..");
@@ -2378,6 +2379,12 @@ const shadowDefinitionFile = shadowDefinitionArgument
 const shadowDefinition = shadowDefinitionFile
   ? readJson(shadowDefinitionFile)
   : null;
+const shadowImplementationFile = path.join(
+  root,
+  "scripts",
+  "lib",
+  "projectionShadowArms.mjs",
+);
 if (shadowDefinitionFile && !shadowDefinition)
   throw new Error(`Unreadable shadow definition: ${shadowDefinitionFile}`);
 if (shadowDefinition?.base_calibration_sha256) {
@@ -2388,6 +2395,16 @@ if (shadowDefinition?.base_calibration_sha256) {
   if (baseCalibrationSha !== shadowDefinition.base_calibration_sha256)
     throw new Error(
       `Shadow definition ${shadowDefinition.version || challengerName} requires base calibration ${shadowDefinition.base_calibration_sha256}, but ${baseCalibrationSha} is loaded. Freeze a new shadow definition before capturing it.`,
+    );
+}
+if (shadowDefinition?.implementation_sha256) {
+  const implementationSha = crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(shadowImplementationFile))
+    .digest("hex");
+  if (implementationSha !== shadowDefinition.implementation_sha256)
+    throw new Error(
+      `Shadow implementation changed (${implementationSha}); freeze and audit a new definition before capturing it.`,
     );
 }
 const calibrationBuildHash = fs.existsSync(trainedCalibrationFile)
@@ -3138,6 +3155,7 @@ const modelInputFiles = [
   path.join(root, "data", "player-identity-aliases.json"),
   trainedCalibrationFile,
   ...(shadowDefinitionFile ? [shadowDefinitionFile] : []),
+  ...(shadowDefinitionFile ? [shadowImplementationFile] : []),
   ...evidenceYears.flatMap((year) =>
     ["sleeper.json", "schedule.json", "fantasypros.json"].map((file) =>
       path.join(root, "public", "stats", "history", String(year), file),
@@ -3319,68 +3337,16 @@ if (challengerName) {
       name: player.name,
       team: player.team,
       position: player.position,
+      depth_chart_order: player.depth_chart_order,
       forecast: player.weeks.find((row) => Number(row.week) === Number(challengerWeek)) || null,
     }))
     .filter((player) => {
       const kickoff = Date.parse(player.forecast?.kickoff);
       return player.forecast && !player.forecast.bye && !player.forecast.completed && Number.isFinite(kickoff) && generatedAtMs < kickoff;
     });
-  const teamOpportunity = new Map();
-  for (const player of baseChallengerPlayers) {
-    if (
-      Number(player.forecast?.projections?.ppr) <
-      Number(shadowDefinition?.group_minimum_ppr ?? 1)
-    )
-      continue;
-    const opportunity = player.forecast?.opportunity_projection || {};
-    const row = teamOpportunity.get(player.team) || { targets: 0, carries: 0 };
-    row.targets += num(opportunity.target_share);
-    row.carries += num(opportunity.carry_share);
-    teamOpportunity.set(player.team, row);
-  }
-  const challengerPlayers = baseChallengerPlayers.map((player) => {
-    if (shadowDefinition?.model_type !== "team_volume_reconciliation")
-      return player;
-    const settings = shadowDefinition.settings_by_position?.[player.position];
-    if (!settings || player.position === "K") return player;
-    const opportunity = player.forecast?.opportunity_projection || {};
-    const group = teamOpportunity.get(player.team) || { targets: 0, carries: 0 };
-    const targetShare = num(opportunity.target_share);
-    const carryShare = num(opportunity.carry_share);
-    const targetScale = group.targets > 1 ? 1 / group.targets : 1;
-    const carryScale = group.carries > 1 ? 1 / group.carries : 1;
-    const shareWeight = targetShare + carryShare;
-    const reconciledShare = shareWeight
-      ? (targetShare * targetScale + carryShare * carryScale) / shareWeight
-      : 1;
-    const shareFactor = 1 +
-      (reconciledShare - 1) * num(settings.share_strength);
-    const teamPlays = num(opportunity.team_plays);
-    const paceDelta = teamPlays > 0
-      ? clamp(teamPlays / 64 - 1, -0.15, 0.15)
-      : 0;
-    const paceFactor = 1 + paceDelta * num(settings.pace_strength);
-    const factor = clamp(shareFactor * paceFactor, 0.8, 1.2);
-    const projections = Object.fromEntries(
-      Object.entries(player.forecast.projections || {}).map(([key, value]) => [
-        key,
-        Number.isFinite(Number(value)) ? round(Number(value) * factor) : value,
-      ]),
-    );
-    return {
-      ...player,
-      forecast: {
-        ...player.forecast,
-        projections,
-        shadow_adjustment: {
-          model_type: shadowDefinition.model_type,
-          factor: round(factor, 5),
-          share_factor: round(shareFactor, 5),
-          pace_factor: round(paceFactor, 5),
-        },
-      },
-    };
-  });
+  const challengerPlayers = shadowDefinition?.model_type === "projection_experiment_suite"
+    ? buildProjectionShadowArms(baseChallengerPlayers, shadowDefinition)
+    : baseChallengerPlayers;
   const challengerDirectory = path.join(
     root,
     "data",

@@ -31,6 +31,7 @@
     "model:backtest:audit": "node --no-warnings ./scripts/backtest-stat-model.mjs --seasons=2023,2024,2025 --skip-saved-sources --output-dir=scripts/_stat_backtests/audits --output-name=latest-audit",
     "model:replay": "node --no-warnings ./scripts/replayStatProjectionModel.mjs",
     "model:replay:test": "node --no-warnings ./scripts/testProjectionReplay.mjs",
+    "model:shadow:test": "node --no-warnings ./scripts/testProjectionShadowArms.mjs",
     "build:stat-insights": "node --no-warnings ./scripts/buildStatInsights.js",
     "update:ballsville-stats": "node --no-warnings ./scripts/updateBallsvilleStats.js && node --no-warnings ./scripts/buildPlayerStockDrafters.js",
     "build:player-stock-drafters": "node --no-warnings ./scripts/buildPlayerStockDrafters.js",

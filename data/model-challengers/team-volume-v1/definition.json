@@ -1,12 +1,21 @@
 {
-  "source": "The Fantasy Arsenal local historical projection replay",
-  "generated_at": "2026-09-23T23:45:17.117Z",
-  "version": "team-volume-v1",
-  "model_type": "team_volume_reconciliation",
-  "definition_sha256": "a6e762449195f250d9c58acd1e99f1a53872eb791e18829080b3904fef6bd43b",
+  "source": "The Fantasy Arsenal multi-arm forward projection experiment",
+  "generated_at": "2026-09-24T00:00:00.000Z",
+  "version": "projection-suite-v1",
+  "model_type": "projection_experiment_suite",
+  "definition_sha256": "7c5be545bb27989aa84ed392b681ab28fdf12b51d6eea66c1142404a34fc6707",
   "base_calibration_sha256": "c90d3c29fe5ecb422786c12a8748daa2852261984d6b4a454f0dff8c03862556",
+  "implementation_sha256": "a8757250426d5fd6661301585ea0c0dd6be3da9dcccacc66c0d8dd9413985bc0",
   "forward_test_required_weeks": 4,
+  "minimum_role_absence_events": 8,
+  "minimum_role_affected_player_games": 30,
   "site_exposed": false,
+  "arms": [
+    "incumbent",
+    "team_volume",
+    "role_redistribution",
+    "combined"
+  ],
   "group_minimum_ppr": 1,
   "settings_by_position": {
     "QB": {
@@ -30,6 +39,17 @@
       "pace_strength": 0
     }
   },
+  "role_redistribution": {
+    "target_redistribution_rate": 0.65,
+    "carry_redistribution_rate": 0.8,
+    "minimum_vacated_opportunities": 2,
+    "minimum_recipient_targets": 1,
+    "minimum_recipient_carries": 2,
+    "maximum_recipient_increase_factor": 1.35,
+    "confirmed_unavailable_statuses": [
+      "out"
+    ]
+  },
   "historical_replay": {
     "evaluation_seasons": [2024, 2025],
     "paired_player_games": 6727,
@@ -45,6 +65,10 @@
     "overallocated_target_and_carry_shares_are_capped": true,
     "unmodeled_opportunity_is_preserved": true,
     "team_share_groups_match_the_historical_one_point_minimum": true,
+    "role_arm_replaces_the_existing_simple_teammate_multiplier": true,
+    "season_long_ir_and_pup_absences_do_not_create_new_role_treatments": true,
+    "role_evidence_is_evaluated_only_when_a_confirmed_absence_triggers_it": true,
+    "all_arms_share_the_same_frozen_inputs_and_kickoff_cutoff": true,
     "adjustment_factor_bounds": [0.8, 1.2],
     "promotion_is_automatic": false
   }
