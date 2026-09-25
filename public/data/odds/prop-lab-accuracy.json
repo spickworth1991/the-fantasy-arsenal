@@ -1,28 +1,211 @@
 {
-  "generatedAt": "2026-09-24T04:10:18.139Z",
+  "generatedAt": "2026-09-25T04:09:32.652Z",
   "methodology": "Latest frozen pre-kickoff prediction per exact offer. Alternate lines share one player-game-market evaluation group and receive equal group weight.",
   "overall": {
-    "observations": 224,
-    "settled": 0,
-    "groups": 0,
-    "hitRate": null,
-    "averagePredicted": null,
-    "averageMarketImplied": null,
-    "calibrationError": null
+    "observations": 260,
+    "settled": 117,
+    "groups": 37,
+    "hitRate": 0.5436,
+    "averagePredicted": 0.7038,
+    "averageMarketImplied": 0.6525,
+    "calibrationError": 0.1602
   },
-  "probabilityBands": {},
-  "markets": {},
-  "evidence": {},
+  "probabilityBands": {
+    "50-55%": {
+      "observations": 24,
+      "settled": 24,
+      "groups": 16,
+      "hitRate": 0.5208,
+      "averagePredicted": 0.5215,
+      "averageMarketImplied": 0.5725,
+      "calibrationError": 0.0006
+    },
+    "55-60%": {
+      "observations": 19,
+      "settled": 19,
+      "groups": 14,
+      "hitRate": 0.3571,
+      "averagePredicted": 0.5706,
+      "averageMarketImplied": 0.5607,
+      "calibrationError": 0.2134
+    },
+    "60-65%": {
+      "observations": 19,
+      "settled": 19,
+      "groups": 17,
+      "hitRate": 0.6765,
+      "averagePredicted": 0.622,
+      "averageMarketImplied": 0.6392,
+      "calibrationError": 0.0545
+    },
+    "65-70%": {
+      "observations": 14,
+      "settled": 14,
+      "groups": 12,
+      "hitRate": 0.75,
+      "averagePredicted": 0.6775,
+      "averageMarketImplied": 0.7279,
+      "calibrationError": 0.0725
+    },
+    "70-75%": {
+      "observations": 7,
+      "settled": 7,
+      "groups": 7,
+      "hitRate": 0.5714,
+      "averagePredicted": 0.7181,
+      "averageMarketImplied": 0.8127,
+      "calibrationError": 0.1466
+    },
+    "75-80%": {
+      "observations": 8,
+      "settled": 8,
+      "groups": 8,
+      "hitRate": 0.75,
+      "averagePredicted": 0.7722,
+      "averageMarketImplied": 0.8148,
+      "calibrationError": 0.0222
+    },
+    "80-85%": {
+      "observations": 7,
+      "settled": 7,
+      "groups": 6,
+      "hitRate": 1,
+      "averagePredicted": 0.8253,
+      "averageMarketImplied": 0.9079,
+      "calibrationError": 0.1747
+    },
+    "85-90%": {
+      "observations": 8,
+      "settled": 8,
+      "groups": 8,
+      "hitRate": 0.75,
+      "averagePredicted": 0.8718,
+      "averageMarketImplied": 0.8362,
+      "calibrationError": 0.1218
+    },
+    "90-95%": {
+      "observations": 6,
+      "settled": 6,
+      "groups": 6,
+      "hitRate": 0.8333,
+      "averagePredicted": 0.9305,
+      "averageMarketImplied": 0.8054,
+      "calibrationError": 0.0972
+    },
+    "95-100%": {
+      "observations": 5,
+      "settled": 5,
+      "groups": 4,
+      "hitRate": 0.75,
+      "averagePredicted": 0.985,
+      "averageMarketImplied": 0.6309,
+      "calibrationError": 0.235
+    }
+  },
+  "markets": {
+    "player_pass_completions": {
+      "observations": 5,
+      "settled": 5,
+      "groups": 1,
+      "hitRate": 1,
+      "averagePredicted": 0.6593,
+      "averageMarketImplied": 0.707,
+      "calibrationError": 0.3407
+    },
+    "player_pass_tds": {
+      "observations": 2,
+      "settled": 2,
+      "groups": 1,
+      "hitRate": 1,
+      "averagePredicted": 0.8014,
+      "averageMarketImplied": 0.7156,
+      "calibrationError": 0.1986
+    },
+    "player_pass_yds": {
+      "observations": 10,
+      "settled": 10,
+      "groups": 1,
+      "hitRate": 0.8,
+      "averagePredicted": 0.6716,
+      "averageMarketImplied": 0.7364,
+      "calibrationError": 0.1284
+    },
+    "player_reception_yds": {
+      "observations": 42,
+      "settled": 42,
+      "groups": 12,
+      "hitRate": 0.4879,
+      "averagePredicted": 0.6468,
+      "averageMarketImplied": 0.6037,
+      "calibrationError": 0.1589
+    },
+    "player_receptions": {
+      "observations": 26,
+      "settled": 26,
+      "groups": 13,
+      "hitRate": 0.4295,
+      "averagePredicted": 0.7426,
+      "averageMarketImplied": 0.6797,
+      "calibrationError": 0.3131
+    },
+    "player_rush_attempts": {
+      "observations": 13,
+      "settled": 13,
+      "groups": 5,
+      "hitRate": 0.5867,
+      "averagePredicted": 0.7273,
+      "averageMarketImplied": 0.6686,
+      "calibrationError": 0.1407
+    },
+    "player_rush_yds": {
+      "observations": 19,
+      "settled": 19,
+      "groups": 4,
+      "hitRate": 0.7357,
+      "averagePredicted": 0.7145,
+      "averageMarketImplied": 0.64,
+      "calibrationError": 0.0213
+    }
+  },
+  "evidence": {
+    "Moderate": {
+      "observations": 3,
+      "settled": 3,
+      "groups": 2,
+      "hitRate": 1,
+      "averagePredicted": 0.985,
+      "averageMarketImplied": 0.5094,
+      "calibrationError": 0.015
+    },
+    "Provisional": {
+      "observations": 15,
+      "settled": 15,
+      "groups": 4,
+      "hitRate": 0.5774,
+      "averagePredicted": 0.6533,
+      "averageMarketImplied": 0.6385,
+      "calibrationError": 0.0759
+    },
+    "Strong": {
+      "observations": 99,
+      "settled": 99,
+      "groups": 31,
+      "hitRate": 0.5098,
+      "averagePredicted": 0.6922,
+      "averageMarketImplied": 0.6636,
+      "calibrationError": 0.1824
+    }
+  },
   "highEstimatedChance": {
-    "observations": 24,
-    "settled": 0,
-    "groups": 0,
-    "hitRate": null,
-    "averagePredicted": null,
-    "averageMarketImplied": null,
-    "calibrationError": null
+    "observations": 31,
+    "settled": 19,
+    "groups": 17,
+    "hitRate": 0.7647,
+    "averagePredicted": 0.9179,
+    "averageMarketImplied": 0.772,
+    "calibrationError": 0.1532
   },
-  "pending": 224,
+  "pending": 143,
   "pushes": 0,
   "voids": 0
 }
