@@ -151,7 +151,9 @@ function empiricalProbability({ playerValues, groupRatios, projection, line, dir
 
 function offerRows(snapshot) {
   const rows = [];
-  for (const event of snapshot.events || []) for (const bookmaker of event.bookmakers || []) for (const market of bookmaker.markets || []) {
+  const activeEventIDs = new Set((snapshot.active_event_ids || []).map(String));
+  const events = activeEventIDs.size ? (snapshot.events || []).filter((event) => activeEventIDs.has(String(event.id))) : (snapshot.events || []);
+  for (const event of events) for (const bookmaker of event.bookmakers || []) for (const market of bookmaker.markets || []) {
     const baseMarket = String(market.key || "").replace(/_alternate$/, "");
     if (!PROP_MARKETS[baseMarket]) continue;
     for (const outcome of market.outcomes || []) rows.push({
@@ -168,6 +170,7 @@ function offerRows(snapshot) {
       price: number(outcome.price),
       sportsbook: bookmaker.title,
       sportsbookKey: bookmaker.key,
+      capturedAt: event.captured_at || snapshot.fetched_at,
       updatedAt: outcome.updated_at || bookmaker.last_update || snapshot.fetched_at,
       available: outcome.available !== false,
       deeplink: outcome.deeplink || event.links?.bookmakers?.[bookmaker.key] || null,
@@ -227,12 +230,12 @@ export function buildPropBoard({ root = process.cwd(), season = new Date().getUT
       0.1 * Number(player.volatility?.reliability || 0), 0, 1,
     );
     const gameKey = `${offer.eventId || `${offer.away}-${offer.home}-${offer.kickoff}`}`;
-    const id = hash([snapshot.fetched_at, gameKey, player.player_id, definition.stat, offer.side, offer.line, offer.sportsbookKey].join("|"));
+    const id = hash([offer.capturedAt, gameKey, player.player_id, definition.stat, offer.side, offer.line, offer.sportsbookKey].join("|"));
     if (estimate.probability < 0.5) continue;
     predictions.push({
       id, evaluationGroup: `${season}:${forecast.week}:${player.player_id}:${definition.stat}`,
       season, week: Number(forecast.week), gameKey, eventId: offer.eventId,
-      kickoff: forecast.kickoff, capturedAt: snapshot.fetched_at, offerUpdatedAt: offer.updatedAt,
+      kickoff: forecast.kickoff, capturedAt: offer.capturedAt, offerUpdatedAt: offer.updatedAt,
       modelGeneratedAt: model.generated_at, modelVersion: model.model_version, modelBuildId: model.model_build_id,
       playerId: String(player.player_id), providerPlayerId: offer.providerPlayerId, playerName: player.name,
       team: player.team, opponent: forecast.opponent, position: player.position,

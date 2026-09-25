@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 
@@ -81,7 +82,26 @@ const batch = upcoming.filter(
 console.log(
   `Capturing Week ${upcoming[0].week} final-window projections for ${batch.length} game${batch.length === 1 ? "" : "s"} kicking off near ${new Date(earliest).toISOString()}.`,
 );
-const steps = [
+const sha256 = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+const calibrationFile = path.join(root, "public", "stats", "projections", "model-calibration.json");
+const shadowImplementationFile = path.join(root, "scripts", "lib", "projectionShadowArms.mjs");
+const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
+  const definition = readJson(candidate.definition);
+  if (!definition) {
+    console.warn(`Skipping shadow '${candidate.name}': its frozen definition is unreadable. The incumbent capture will continue.`);
+    return false;
+  }
+  if (definition.base_calibration_sha256 && (!fs.existsSync(calibrationFile) || sha256(calibrationFile) !== definition.base_calibration_sha256)) {
+    console.warn(`Skipping shadow '${candidate.name}': its frozen base calibration no longer matches the published calibration. Freeze and audit a new challenger definition before resuming this arm.`);
+    return false;
+  }
+  if (definition.implementation_sha256 && (!fs.existsSync(shadowImplementationFile) || sha256(shadowImplementationFile) !== definition.implementation_sha256)) {
+    console.warn(`Skipping shadow '${candidate.name}': its implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
+    return false;
+  }
+  return true;
+});
+const incumbentSteps = [
   ...(refreshInputs
     ? [
         ["updateHistoricalStats.js", ["--sleeper-only", `--season=${season}`]],
@@ -89,26 +109,31 @@ const steps = [
       ]
     : []),
   ["buildStatProjectionModel.js", ["--archive", `--season=${season}`]],
-  ...shadowCandidates.map((candidate) => [
-    "buildStatProjectionModel.js",
-    [
-      `--challenger=${candidate.name}`,
-      `--shadow-definition=${path.relative(root, candidate.definition)}`,
-      `--season=${season}`,
-    ],
-  ]),
   ["auditProjectionPipeline.js", [`--season=${season}`]],
   ["evaluateStatProjectionModel.js", [`--season=${season}`]],
-  ...shadowCandidates.map((candidate) => [
-    "evaluateProjectionChallenger.js",
-    [`--challenger=${candidate.name}`, `--season=${season}`],
-  ]),
 ];
-for (const [script, args] of steps) {
-  const result = spawnSync(
-    process.execPath,
-    [path.join(root, "scripts", script), ...args],
-    { cwd: root, stdio: "inherit" },
-  );
+const runStep = (script, args) => spawnSync(
+  process.execPath,
+  [path.join(root, "scripts", script), ...args],
+  { cwd: root, stdio: "inherit" },
+);
+for (const [script, args] of incumbentSteps) {
+  const result = runStep(script, args);
   if (result.status !== 0) process.exit(result.status || 1);
 }
+for (const candidate of eligibleShadowCandidates) {
+  const captureResult = runStep("buildStatProjectionModel.js", [
+    `--challenger=${candidate.name}`,
+    `--shadow-definition=${path.relative(root, candidate.definition)}`,
+    `--season=${season}`,
+  ]);
+  if (captureResult.status !== 0) {
+    console.warn(`Shadow '${candidate.name}' failed to capture and was omitted; the valid incumbent snapshot is preserved.`);
+    continue;
+  }
+  const evaluationResult = runStep("evaluateProjectionChallenger.js", [`--challenger=${candidate.name}`, `--season=${season}`]);
+  if (evaluationResult.status !== 0)
+    console.warn(`Shadow '${candidate.name}' was captured, but its report failed to refresh. The frozen snapshot remains available for a later evaluation.`);
+}
+if (shadowCandidates.length && !eligibleShadowCandidates.length)
+  console.warn("No frozen shadow definition matched the current model inputs. Incumbent pre-kickoff capture completed without shadow data.");

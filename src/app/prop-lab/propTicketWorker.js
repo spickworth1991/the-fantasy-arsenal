@@ -159,7 +159,33 @@ function buildForSize(pool, size, lockedIds, excludedIds, model, seed, alternati
     .slice(0, alternatives);
 }
 
+function rescoreTicket(ticket, replacement, replacedLegId, model, seed) {
+  const legs = ticket.legs.map((leg) => leg.id === replacedLegId ? replacement : leg);
+  if (new Set(legs.map((leg) => leg.playerId)).size !== legs.length) return null;
+  const simulation = simulateTicket(legs, model, seed);
+  if (!simulation.supported || !Number.isFinite(simulation.probability)) return null;
+  const signature = legs.map((leg) => leg.id).sort().join("-");
+  const gameCounts = legs.reduce((counts, leg) => ({ ...counts, [leg.gameKey]: (counts[leg.gameKey] || 0) + 1 }), {});
+  return {
+    ...ticket,
+    id: `${legs.length}:${signature}`,
+    recommendationId: `prop-${hashSeed(`${seed}:${legs.length}:${signature}`).toString(16)}`,
+    legs,
+    probability: simulation.probability,
+    supported: simulation.supported,
+    dependencySample: simulation.dependencySample,
+    evidenceScore: legs.reduce((sum, leg) => sum + Number(leg.evidenceScore || 0), 0) / legs.length,
+    gameCounts,
+    maxLegsInGame: Math.max(...Object.values(gameCounts)),
+  };
+}
+
 self.onmessage = (event) => {
+  if (event.data?.type === "rescore") {
+    const { ticket, replacement, replacedLegId, dependencyModel, seed, requestId } = event.data;
+    self.postMessage({ type: "rescored", requestId, ticket: rescoreTicket(ticket, replacement, replacedLegId, dependencyModel, seed) });
+    return;
+  }
   const { predictions, selectedGames, enabledMarkets, minimumProbability, minimumEvidence, minLegs, maxLegs, lockedIds, excludedIds, dependencyModel, seed } = event.data;
   const eligible = predictions.filter((row) => selectedGames.includes(row.gameKey) && enabledMarkets.includes(row.market) && Number(row.probability) >= minimumProbability && Number(row.evidenceScore) >= minimumEvidence && Date.parse(row.kickoff) > Date.now())
     .sort((left, right) => Number(right.probability) - Number(left.probability) || Number(right.evidenceScore) - Number(left.evidenceScore));

@@ -23,7 +23,23 @@ function Evidence({ leg }) {
   return <span className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase ${tone}`}>{leg.evidenceLabel} · n={leg.historicalSample}</span>;
 }
 
-function TicketCard({ ticket, index, stale, trackingAvailable, stake, odds, setOdds, locked, toggleLock, replace, remove, copy, save, busy, tracked }) {
+function LineEditor({ editing, options, onClose, onSelect }) {
+  if (!editing) return null;
+  const { leg } = editing;
+  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/80 p-3 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-labelledby="prop-line-editor-title" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-slate-950 p-5 shadow-2xl">
+      <div className="flex items-start justify-between gap-4"><div><div className="text-[10px] font-bold uppercase tracking-[.2em] text-cyan-200/55">Edit this leg</div><h2 id="prop-line-editor-title" className="mt-1 text-xl font-black">{leg.playerName}</h2><p className="mt-1 text-sm text-white/45">{leg.direction === "over" ? "Over" : "Under"} {leg.statLabel} · projection {leg.projection}</p></div><button type="button" onClick={onClose} aria-label="Close line editor" className="rounded-xl bg-white/[.06] px-3 py-2 text-sm text-white/60">Close</button></div>
+      <p className="mt-4 text-xs leading-5 text-white/45">Choose a quantity currently captured from DraftKings. The leg and entire ticket probability will be recalculated.</p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">{options.map((option) => {
+        const current = option.id === leg.id;
+        return <button key={option.id} type="button" disabled={current} onClick={() => onSelect(option)} className={`rounded-2xl border p-3 text-left ${current ? "border-cyan-300/30 bg-cyan-300/[.08]" : "border-white/10 bg-white/[.025] hover:border-white/20"}`}><b className="block text-sm">{lineText(option)} {option.statLabel}</b><span className="mt-1 block text-xs text-white/45">{pct(option.probability)} estimated · {option.sportsbookOdds > 0 ? "+" : ""}{option.sportsbookOdds} odds</span>{current ? <span className="mt-1 block text-[10px] font-bold uppercase text-cyan-200/60">Current line</span> : null}</button>;
+      })}</div>
+      {options.length <= 1 ? <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[.06] p-3 text-sm text-amber-100/70">No alternate DraftKings quantities were captured for this prop.</div> : null}
+    </div>
+  </div>;
+}
+
+function TicketCard({ ticket, index, stale, trackingAvailable, stake, odds, setOdds, locked, toggleLock, edit, replace, remove, copy, save, busy, tracked }) {
   const groups = new Map();
   ticket.legs.forEach((leg) => { if (!groups.has(leg.gameKey)) groups.set(leg.gameKey, []); groups.get(leg.gameKey).push(leg); });
   const weakest = [...ticket.legs].sort((a, b) => a.probability - b.probability).slice(0, 3);
@@ -36,7 +52,7 @@ function TicketCard({ ticket, index, stale, trackingAvailable, stake, odds, setO
     </div>
     <div className="space-y-4 p-4">{[...groups.entries()].map(([gameKey, legs]) => <div key={gameKey}>
       <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-white/35"><span>{legs[0].team} vs {legs[0].opponent}</span><span>{new Date(legs[0].kickoff).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</span></div>
-      <div className="space-y-2">{legs.map((leg) => <div key={leg.id} className="rounded-xl border border-white/[.07] bg-white/[.025] p-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><b className="text-sm">{leg.playerName}</b><Evidence leg={leg} /></div><div className="mt-1 text-xs text-white/50">{lineText(leg)} {leg.statLabel} · projection {leg.projection} · {pct(leg.probability)}</div><div className="mt-1 text-[10px] text-white/30">{leg.roleConcern || `${leg.position} role stable`} · updated {new Date(leg.offerUpdatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div></div><div className="flex shrink-0 gap-1"><button type="button" onClick={() => toggleLock(leg.id)} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${locked.has(leg.id) ? "bg-cyan-300/15 text-cyan-100" : "bg-white/[.05] text-white/45"}`}>{locked.has(leg.id) ? "Locked" : "Lock"}</button><button type="button" onClick={() => remove(leg.id)} className="rounded-lg bg-white/[.05] px-2 py-1 text-[10px] text-white/45">Remove</button><button type="button" onClick={() => replace(leg.id, ticket)} className="rounded-lg bg-rose-300/[.08] px-2 py-1 text-[10px] font-bold text-rose-100/70">Replace</button></div></div></div>)}</div>
+      <div className="space-y-2">{legs.map((leg) => <div key={leg.id} className="rounded-xl border border-white/[.07] bg-white/[.025] p-3"><div className="flex flex-col gap-3 sm:flex-row sm:items-start"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><b className="text-sm">{leg.playerName}</b><Evidence leg={leg} /></div><div className="mt-1 text-xs text-white/50">{lineText(leg)} {leg.statLabel} · projection {leg.projection} · {pct(leg.probability)}</div><div className="mt-1 text-[10px] text-white/30">{leg.roleConcern || `${leg.position} role stable`} · updated {new Date(leg.offerUpdatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div></div><div className="flex shrink-0 flex-wrap gap-1 sm:justify-end"><button type="button" onClick={() => edit(ticket, leg)} className="rounded-lg bg-cyan-300/[.08] px-2 py-1 text-[10px] font-bold text-cyan-100/70">Edit line</button><button type="button" onClick={() => toggleLock(leg.id)} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${locked.has(leg.id) ? "bg-cyan-300/15 text-cyan-100" : "bg-white/[.05] text-white/45"}`}>{locked.has(leg.id) ? "Locked" : "Lock"}</button><button type="button" onClick={() => remove(leg.id)} className="rounded-lg bg-white/[.05] px-2 py-1 text-[10px] text-white/45">Remove</button><button type="button" onClick={() => replace(leg.id, ticket)} className="rounded-lg bg-rose-300/[.08] px-2 py-1 text-[10px] font-bold text-rose-100/70">Replace</button></div></div></div>)}</div>
     </div>)}
       <div className="rounded-xl bg-white/[.03] p-3 text-xs text-white/45"><b className="text-white/70">Weakest:</b> {weakest.map((leg) => `${leg.playerName} ${pct(leg.probability)}`).join(" · ")}</div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]"><label className="text-[10px] uppercase tracking-wider text-white/35">Actual ticket odds<input value={odds} onChange={(event) => setOdds(event.target.value)} placeholder="Example: +2500" type="number" className="mt-1 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white" /></label><button type="button" onClick={() => copy(ticket)} className="self-end rounded-xl bg-white/[.06] px-4 py-2 text-sm font-bold text-white/70">Copy legs</button><button type="button" disabled={busy || stale || tracked || !enteredOdds || !trackingAvailable} onClick={() => save(ticket)} className="self-end rounded-xl bg-amber-300/15 px-4 py-2 text-sm font-bold text-amber-100 disabled:opacity-35">{tracked ? "Tracked" : !trackingAvailable ? "Preview only" : stale ? "Refresh first" : "I took this bet"}</button></div>
@@ -54,7 +70,7 @@ export default function PropLabClient() {
   const [minimumProbability, setMinimumProbability] = useState(80), [minimumEvidence, setMinimumEvidence] = useState(55);
   const [actualOdds, setActualOdds] = useState({}), [building, setBuilding] = useState(false), [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(""), [buildMeta, setBuildMeta] = useState(null), [now, setNow] = useState(() => Date.now());
-  const [dbUnavailable, setDbUnavailable] = useState(false);
+  const [dbUnavailable, setDbUnavailable] = useState(false), [editing, setEditing] = useState(null);
   const workerRef = useRef(null), recordedRef = useRef("");
 
   const loadHistory = useCallback(async () => {
@@ -84,7 +100,16 @@ export default function PropLabClient() {
 
   useEffect(() => {
     const worker = new Worker(new URL("./propTicketWorker.js", import.meta.url));
-    worker.onmessage = ({ data }) => { setTickets(data.tickets || []); setBuildMeta(data); setBuilding(false); };
+    worker.onmessage = ({ data }) => {
+      if (data.type === "rescored") {
+        if (data.ticket) {
+          setTickets((current) => current.map((ticket) => ticket.id === data.requestId ? data.ticket : ticket));
+          setMessage("Prop quantity updated and ticket probability recalculated.");
+        } else setMessage("That line cannot be scored safely with the other props in this ticket.");
+        return;
+      }
+      setTickets(data.tickets || []); setBuildMeta(data); setBuilding(false);
+    };
     worker.onerror = () => { setMessage("Ticket builder failed. Reload and try again."); setBuilding(false); };
     workerRef.current = worker; return () => { worker.terminate(); workerRef.current = null; };
   }, []);
@@ -101,6 +126,17 @@ export default function PropLabClient() {
   const toggle = (setter, key) => setter((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next; });
   const remove = (id) => { setExcluded((current) => new Set([...current, id])); setLocked((current) => { const next = new Set(current); next.delete(id); return next; }); };
   const replace = (id, ticket) => { setExcluded((current) => new Set([...current, id])); setLocked(new Set(ticket.legs.filter((leg) => leg.id !== id).map((leg) => leg.id))); };
+  const editOptions = useMemo(() => {
+    if (!editing) return [];
+    const { leg } = editing;
+    return (board?.predictions || []).filter((row) => row.gameKey === leg.gameKey && row.playerId === leg.playerId && row.statKey === leg.statKey && row.direction === leg.direction)
+      .sort((left, right) => Number(left.line) - Number(right.line));
+  }, [board, editing]);
+  const applyLineEdit = (replacement) => {
+    if (!editing || !workerRef.current) return;
+    workerRef.current.postMessage({ type: "rescore", ticket: editing.ticket, replacement, replacedLegId: editing.leg.id, dependencyModel: board.dependencyModel, seed: `${board.capturedAt}:${board.modelBuildId}`, requestId: editing.ticket.id });
+    setEditing(null);
+  };
   const copy = async (ticket) => { await navigator.clipboard.writeText(ticket.legs.map((leg, index) => `${index + 1}. ${leg.playerName} — ${lineText(leg)} ${leg.statLabel}`).join("\n")); setMessage("Ticket copied for DraftKings."); };
   const save = async (ticket) => {
     setBusy(true); setMessage("");
@@ -142,11 +178,11 @@ export default function PropLabClient() {
       {message ? <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/[.08] p-3 text-sm text-amber-100">{message}</div> : null}
       <div className="mt-6 flex justify-between"><div><div className="text-[11px] font-bold uppercase tracking-[.2em] text-cyan-200/55">Optimized comparisons</div><h2 className="mt-1 text-2xl font-black">Best available tickets</h2></div><div className="text-xs text-white/40">{building ? "Building…" : `${buildMeta?.eligibleCount || 0} eligible legs`}</div></div>
       {buildMeta?.shortfalls?.length ? <Panel className="mt-4 border-amber-300/20 p-4 text-sm text-amber-100/70">Not enough qualifying props for {buildMeta.shortfalls.join(", ")} legs. Adjust a filter or shorten the ticket.</Panel> : null}
-      <div className="mt-4 grid gap-5 xl:grid-cols-2">{tickets.map((ticket, index) => <TicketCard key={ticket.id} ticket={ticket} index={index} stale={!actionable} trackingAvailable={trackingAvailable} stake={stake} odds={actualOdds[ticket.id] || ""} setOdds={(value) => setActualOdds((current) => ({ ...current, [ticket.id]: value }))} locked={locked} toggleLock={(id) => toggle(setLocked, id)} replace={replace} remove={remove} copy={copy} save={save} busy={busy} tracked={tracked.has(ticket.recommendationId)} />)}</div>
+      <div className="mt-4 grid gap-5 xl:grid-cols-2">{tickets.map((ticket, index) => <TicketCard key={ticket.id} ticket={ticket} index={index} stale={!actionable} trackingAvailable={trackingAvailable} stake={stake} odds={actualOdds[ticket.id] || ""} setOdds={(value) => setActualOdds((current) => ({ ...current, [ticket.id]: value }))} locked={locked} toggleLock={(id) => toggle(setLocked, id)} edit={(nextTicket, leg) => setEditing({ ticket: nextTicket, leg })} replace={replace} remove={remove} copy={copy} save={save} busy={busy} tracked={tracked.has(ticket.recommendationId)} />)}</div>
       {!building && !tickets.length ? <Panel className="mt-4 p-6 text-sm text-white/50">No fully supported ticket fits these settings. Prop Lab will not weaken filters or invent confidence for unsupported same-game combinations.</Panel> : null}
       <div className="mt-10 grid gap-5 lg:grid-cols-2"><Panel className="p-5"><div className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-200/55">Measured accuracy</div><h2 className="mt-1 text-xl font-black">Do high-chance props deliver?</h2>{accuracy?.highEstimatedChance?.settled ? <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white/[.04] p-3"><b className="block text-xl">{Math.round(accuracy.highEstimatedChance.hitRate * 100)}%</b><small className="text-white/35">Actual</small></div><div className="rounded-xl bg-white/[.04] p-3"><b className="block text-xl">{Math.round(accuracy.highEstimatedChance.averagePredicted * 100)}%</b><small className="text-white/35">Predicted</small></div><div className="rounded-xl bg-white/[.04] p-3"><b className="block text-xl">{accuracy.highEstimatedChance.groups}</b><small className="text-white/35">Groups</small></div></div> : <p className="mt-3 text-sm text-white/45">Run npm run bets:evaluate after final stats arrive to build this record.</p>}</Panel><Panel className="p-5"><div className="text-[10px] font-bold uppercase tracking-[.2em] text-amber-200/55">Your results</div><h2 className="mt-1 text-xl font-black">Tracked tickets</h2><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white/[.04] p-3"><b className="block text-xl">{saved.length}</b><small className="text-white/35">Saved</small></div><div className="rounded-xl bg-white/[.04] p-3"><b className="block text-xl">{settled.length ? Math.round(wins / settled.length * 100) : 0}%</b><small className="text-white/35">Hit rate</small></div><div className="rounded-xl bg-white/[.04] p-3"><b className={`block text-xl ${net >= 0 ? "text-emerald-200" : "text-rose-200"}`}>{net >= 0 ? "+" : ""}${net.toFixed(2)}</b><small className="text-white/35">Net</small></div></div></Panel></div>
       {accuracy?.overall?.settled ? <Panel className="mt-5 p-5"><h3 className="font-black">Calibration detail</h3><div className="mt-3 grid gap-5 md:grid-cols-2"><div><div className="mb-2 text-[10px] font-bold uppercase text-white/35">Probability bands</div>{Object.entries(accuracy.probabilityBands || {}).map(([key, row]) => <div key={key} className="flex justify-between border-t border-white/[.06] py-2 text-xs"><span>{key} · {row.groups} groups</span><span>{Math.round(row.hitRate * 100)}% actual / {Math.round(row.averagePredicted * 100)}% model</span></div>)}</div><div><div className="mb-2 text-[10px] font-bold uppercase text-white/35">Markets</div>{Object.entries(accuracy.markets || {}).map(([key, row]) => <div key={key} className="flex justify-between border-t border-white/[.06] py-2 text-xs"><span>{MARKETS[key] || key}</span><span>{Math.round(row.hitRate * 100)}% · n={row.groups}</span></div>)}</div></div></Panel> : null}
       {settled.length ? <Panel className="mt-5 p-5"><h3 className="font-black">Ticket results by construction</h3><div className="mt-3 grid gap-5 md:grid-cols-2"><div><div className="mb-2 text-[10px] font-bold uppercase text-white/35">Leg count</div>{ticketBreakdown((ticket) => `${ticket.leg_count} legs`).map((row) => <div key={row.key} className="flex justify-between border-t border-white/[.06] py-2 text-xs"><span>{row.key} · {row.count} tickets</span><span>{Math.round(row.hitRate * 100)}%</span></div>)}</div><div><div className="mb-2 text-[10px] font-bold uppercase text-white/35">Same-game concentration</div>{ticketBreakdown(concentrationKey).map((row) => <div key={row.key} className="flex justify-between border-t border-white/[.06] py-2 text-xs"><span>{row.key} · {row.count} tickets</span><span>{Math.round(row.hitRate * 100)}%</span></div>)}</div></div></Panel> : null}
       <Panel className="mt-5 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[700px] text-sm"><thead className="bg-white/[.04] text-left text-[10px] uppercase text-white/35"><tr><th className="p-3">Ticket</th><th className="p-3">Chance</th><th className="p-3">Odds</th><th className="p-3">Stake</th><th className="p-3">Result</th></tr></thead><tbody>{saved.map((ticket) => <tr key={ticket.ticket_id} className="border-t border-white/[.06]"><td className="p-3"><b>{ticket.leg_count}-leg DraftKings</b><div className="text-xs text-white/35">Week {ticket.week} · {ticket.legs?.length || 0} legs</div></td><td className="p-3">{pct(ticket.model_probability)}</td><td className="p-3">{ticket.sportsbook_odds > 0 ? "+" : ""}{ticket.sportsbook_odds || "—"}</td><td className="p-3">${n(ticket.stake).toFixed(2)}</td><td className="p-3"><select value={ticket.result} disabled={busy} onChange={(e) => update(ticket, e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option><option value="push">Push</option><option value="void">Void</option></select></td></tr>)}</tbody></table></div>{!saved.length ? <div className="p-6 text-center text-sm text-white/40">No structured tickets yet.{legacy.length ? ` ${legacy.length} legacy prop record${legacy.length === 1 ? " is" : "s are"} preserved.` : ""}</div> : null}</Panel>
-    </>}</main></>;
+    </>}<LineEditor editing={editing} options={editOptions} onClose={() => setEditing(null)} onSelect={applyLineEdit} /></main></>;
 }
