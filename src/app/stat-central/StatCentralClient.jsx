@@ -22,9 +22,9 @@ const WORKSPACES = [
   },
   {
     key: "matchups",
-    label: "Matchups",
-    detail: "Offense, defense, and positional edges",
-    tabs: [["matchups", "Matchup Lab", "Team, position, and player matchup evidence"]],
+    label: "Team Stats",
+    detail: "Production allowed and defensive performance",
+    tabs: [["matchups", "Team Stats", "Team, position, and defensive game evidence"]],
   },
   {
     key: "players",
@@ -80,12 +80,12 @@ const STAT_GUIDES = {
     ],
   },
   matchups: {
-    title: "How to use Matchup Lab",
+    title: "How to use Team Stats",
     summary:
-      "Choose a position, offense, and defense to connect team production with what that defense allowed to the position.",
+      "Separate what offenses produced against each opponent from how each team defense actually performed.",
     bullets: [
-      "The defense summary shows how many more or fewer fantasy points it allows than league average. More points allowed is a better matchup for the offense.",
-      "Click a defensive bar or ranked defense to load its complete position profile.",
+      "Production Allowed by Defense shows what the full opposing position group produced, with per-game and single-week views.",
+      "Team Defense reports the defense's own fantasy scoring and recorded football events.",
       "Player-v-defense history is sample-regressed and compared with that player's other opponents.",
     ],
   },
@@ -1250,8 +1250,125 @@ function PlayerPicker({ label, players, value, onChange, preference = "stat-cent
   return <label data-guide-tip="stat-player-picker" className="min-w-0"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.15em] text-white/30">{label}</span><input list={listId} value={text} onChange={(event) => commit(event.target.value)} onBlur={() => { if (!players.some((player) => normalize(player.name) === normalize(text))) setText(selected?.name || ""); }} placeholder="Type a player name…" data-account-preference={preference} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm" /><datalist id={listId}>{players.slice(0, 1200).map((player) => <option key={player.key} value={player.name}>{player.position} · {player.team || "FA"}</option>)}</datalist></label>;
 }
 
-function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence = [], season, scoring, availableSeasons = [], leagues = [], scoringLeagueId = "", onSeasonChange, onScoringChange, onScoringLeagueChange }) {
-  const [matchupView, setMatchupView] = useState("weekly");
+const POSITION_ALLOWED_COLUMNS = {
+  QB: [["Pass att", "pass_att"], ["Completions", "pass_cmp"], ["Pass yd", "pass_yd"], ["Pass TD", "pass_td"], ["INT", "pass_int"], ["Rush att", "rush_att"], ["Rush yd", "rush_yd"], ["Rush TD", "rush_td"]],
+  RB: [["Carries", "rush_att"], ["Rush yd", "rush_yd"], ["Rush TD", "rush_td"], ["Targets", "rec_tgt"], ["Catches", "rec"], ["Rec yd", "rec_yd"], ["Rec TD", "rec_td"]],
+  WR: [["Targets", "rec_tgt"], ["Catches", "rec"], ["Rec yd", "rec_yd"], ["Rec TD", "rec_td"], ["Rush att", "rush_att"], ["Rush yd", "rush_yd"], ["Rush TD", "rush_td"]],
+  TE: [["Targets", "rec_tgt"], ["Catches", "rec"], ["Rec yd", "rec_yd"], ["Rec TD", "rec_td"]],
+};
+
+const DST_COLUMNS = [["FP", "points"], ["Pts allowed", "pts_allow"], ["Sacks", "sack"], ["INT", "int"], ["Fum rec", "fum_rec"], ["Def TD", "def_td"], ["Forced punts", "def_forced_punts"], ["3 & outs", "def_3_and_out"]];
+
+function sortIndicator(sort, key) {
+  if (sort.key !== key) return "↕";
+  return sort.direction === "asc" ? "↑" : "↓";
+}
+
+function allowedColumnHint(label, key, position, averageMode) {
+  const scope = averageMode
+    ? "This value is the season total divided by completed team-games."
+    : "This value is for the selected week only.";
+  const descriptions = {
+    team: `The NFL defense the opposing ${position} room faced. Click any row to open its week-by-week ledger.`,
+    games: "Completed NFL games included in this row. A position room counts once per team-game, regardless of how many players recorded a stat.",
+    points: `Combined fantasy points scored by every opposing ${position} against this defense. ${scope}`,
+    pass_att: `Combined pass attempts by opposing ${position}s. ${scope}`,
+    pass_cmp: `Combined pass completions by opposing ${position}s. ${scope}`,
+    pass_yd: `Combined passing yards by opposing ${position}s. ${scope}`,
+    pass_td: `Combined passing touchdowns by opposing ${position}s. ${scope}`,
+    pass_int: `Interceptions thrown by opposing ${position}s. A larger number generally benefits the defense. ${scope}`,
+    rush_att: `Combined rushing attempts by the opposing ${position} room. ${scope}`,
+    rush_yd: `Combined rushing yards by the opposing ${position} room. ${scope}`,
+    rush_td: `Combined rushing touchdowns by the opposing ${position} room. ${scope}`,
+    rec_tgt: `Combined targets credited to the opposing ${position} room. ${scope}`,
+    rec: `Combined receptions by the opposing ${position} room. ${scope}`,
+    rec_yd: `Combined receiving yards by the opposing ${position} room. ${scope}`,
+    rec_td: `Combined receiving touchdowns by the opposing ${position} room. ${scope}`,
+  };
+  return descriptions[key] || `${label} produced by the full opposing ${position} room. ${scope}`;
+}
+
+const ESPN_TEAM_CODES = { WAS: "wsh" };
+
+function TeamLogo({ team, size = 40, className = "" }) {
+  const [failed, setFailed] = useState(false);
+  const code = ESPN_TEAM_CODES[team] || String(team || "").toLowerCase();
+  if (!team || failed) {
+    return <span className={`grid shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] font-black text-white/55 ${className}`} style={{ width: size, height: size }}>{String(team || "NFL").slice(0, 3)}</span>;
+  }
+  return <span className={`grid shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] p-1 ${className}`} style={{ width: size, height: size }}><img src={`https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`} alt={`${team} logo`} width={size - 8} height={size - 8} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-contain" /></span>;
+}
+
+function defenseColumnHint(label, key, averageMode) {
+  const scope = averageMode ? "Shown per completed game." : "Shown for the selected week.";
+  const descriptions = {
+    team: "The NFL team defense whose own performance is being measured. Select any row for its weekly game log.",
+    games: "Completed games included in the selected view.",
+    points: `Fantasy points scored by the team defense under the selected scoring format. ${scope}`,
+    pts_allow: `Real NFL points surrendered by the defense. Lower is generally better. ${scope}`,
+    sack: `Quarterback sacks recorded by the defense. ${scope}`,
+    int: `Passes intercepted by the defense. ${scope}`,
+    fum_rec: `Opponent fumbles recovered by the defense. ${scope}`,
+    def_td: `Touchdowns scored by the defense. ${scope}`,
+    def_forced_punts: `Opponent possessions that ended in a forced punt. ${scope}`,
+    def_3_and_out: `Opponent possessions stopped without earning a first down. ${scope}`,
+  };
+  return descriptions[key] || `${label} produced by the team defense. ${scope}`;
+}
+
+function variedAllowedSummary(team, position, row, leagueAverage) {
+  if (!row) return "There is not enough completed-game evidence to summarize this matchup profile yet.";
+  const delta = leagueAverage ? ((row.points / leagueAverage) - 1) * 100 : 0;
+  const lead = [
+    `${team} has been ${delta >= 8 ? "a favorable" : delta <= -8 ? "a difficult" : "a neutral"} matchup for opposing ${position}s.`,
+    `The ${team} game log points to ${delta >= 8 ? "more" : delta <= -8 ? "less" : "roughly league-average"} production for the full opposing ${position} room.`,
+    `Through ${row.games} logged game${row.games === 1 ? "" : "s"}, ${team} sits ${Math.abs(delta).toFixed(0)}% ${delta >= 0 ? "above" : "below"} the league ${position} allowance.`,
+    `${position} rooms facing ${team} have averaged ${row.points.toFixed(1)} fantasy points per game.`,
+  ];
+  const seed = [...`${team}${position}`].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
+  const close = delta >= 8
+    ? "That raises the matchup environment, but the weekly ledger shows whether one spike is driving it."
+    : delta <= -8
+      ? "That suppresses the matchup environment, although player role and game script still matter."
+      : "The defense has not created a strong position-wide edge in either direction so far.";
+  return `${lead[seed % lead.length]} ${close}`;
+}
+
+function AllowedResultsModal({ team, position, season, scoring, leagueScoring, games, columns, totals, leagueAverage, onClose }) {
+  if (!team) return null;
+  const pointsFor = (game) => scoring === "LEAGUE" && leagueScoring
+    ? scoreSleeperStats(game?.stats || {}, leagueScoring, position)
+    : num(game?.points?.[String(scoring || "PPR").toLowerCase()]);
+  const averageRow = totals.games ? { games: totals.games, points: totals.points / totals.games } : null;
+  return <div className="fixed inset-0 z-[130] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" role="dialog" aria-modal="true" aria-label={`${team} ${position} results allowed`} onMouseDown={onClose}>
+    <section className="mx-auto my-4 max-w-6xl overflow-hidden rounded-[30px] border border-violet-100/20 bg-[#07111f] shadow-2xl shadow-black/60" onMouseDown={(event) => event.stopPropagation()}>
+      <header className="flex items-start justify-between gap-4 border-b border-white/10 bg-[radial-gradient(circle_at_92%_0%,rgba(139,92,246,.18),transparent_45%)] p-5 sm:p-7"><div className="flex items-start gap-4"><TeamLogo team={team} size={58} /><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/55">{season} offensive production allowed</div><h3 className="mt-1 text-2xl font-black">What {position}s Produced Against {team}</h3><p className="mt-2 text-xs leading-5 text-white/48">Each row combines every opposing {position} who recorded production against {team} in that NFL game. The footer adds those games, then divides each total by completed games.</p></div></div><button type="button" onClick={onClose} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/60 transition hover:bg-white/10 hover:text-white">Close</button></header>
+      <div className="mx-5 mt-5 rounded-2xl border border-cyan-200/12 bg-cyan-300/[0.045] p-4 text-sm leading-6 text-cyan-50/75 sm:mx-7"><div className="mb-1 text-[9px] font-black uppercase tracking-[.16em] text-cyan-100/50">Arsenal analysis</div>{variedAllowedSummary(team, position, averageRow, leagueAverage)}</div>
+      <div className="overflow-x-auto p-5 sm:p-7"><table className="w-full min-w-[1120px] text-left text-xs"><thead className="border-b border-white/[0.09] text-[9px] uppercase tracking-[.12em] text-white/35"><tr><th className="pb-3 pr-3">Week</th><th className="pb-3 pr-3">Opponent</th><th className="pb-3 pr-3">Fantasy pts</th>{columns.map(([label, key]) => <th key={key} className="pb-3 pr-3">{label}</th>)}</tr></thead><tbody className="divide-y divide-white/[0.06]">{games.map((game) => <tr key={`${game.season}-${game.week}-${game.team}`}><td className="py-3 pr-3 font-bold">W{game.week}</td><td className="py-3 pr-3 font-black">{game.team}</td><td className="py-3 pr-3 text-violet-100">{pointsFor(game).toFixed(1)}</td>{columns.map(([, key]) => <td key={key} className="py-3 pr-3 text-white/72">{num(game.stats?.[key]).toFixed(key.includes("yd") ? 0 : 1)}</td>)}</tr>)}{!games.length ? <tr><td colSpan={3 + columns.length} className="py-8 text-center text-white/40">No saved {position} game ledger is available yet.</td></tr> : null}</tbody>{totals.games ? <tfoot className="border-t-2 border-white/15 bg-white/[0.025] font-black"><tr><td className="py-3 pr-3">Total</td><td className="py-3 pr-3">{totals.games} games</td><td className="py-3 pr-3 text-violet-100">{totals.points.toFixed(1)}</td>{columns.map(([, key]) => <td key={key} className="py-3 pr-3">{num(totals.totals[key]).toFixed(key.includes("yd") ? 0 : 1)}</td>)}</tr><tr className="text-cyan-100"><td className="py-3 pr-3">Per game</td><td className="py-3 pr-3">Average</td><td className="py-3 pr-3">{(totals.points / totals.games).toFixed(1)}</td>{columns.map(([, key]) => <td key={key} className="py-3 pr-3">{(num(totals.totals[key]) / totals.games).toFixed(key.includes("yd") ? 1 : 2)}</td>)}</tr></tfoot> : null}</table></div>
+    </section>
+  </div>;
+}
+
+function TeamDefensePanel({ season, period, onPeriodChange, weeks, rows, sort, onSort, onSelectTeam }) {
+  const points = [...rows].sort((a, b) => num(b.values?.points) - num(a.values?.points));
+  const averagePoints = rows.length ? rows.reduce((sum, row) => sum + num(row.values?.points), 0) / rows.length : 0;
+  return <Panel className="overflow-hidden border-emerald-200/15">
+    <div className="border-b border-white/10 bg-[radial-gradient(circle_at_95%_0%,rgba(16,185,129,.13),transparent_40%)] p-5 sm:p-6"><div className="text-[9px] font-black uppercase tracking-[.18em] text-emerald-100/55">The defense&apos;s own results</div><h3 className="mt-1 text-2xl font-black">How Each NFL Defense Actually Performs</h3><p className="mt-2 max-w-4xl text-sm leading-6 text-white/55">Each row measures the named team defense itself: its fantasy points, NFL points surrendered, sacks, takeaways, touchdowns, forced punts, and three-and-outs. These are defensive results—not statistics accumulated by the opposing offense.</p><div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-emerald-200/10 bg-emerald-300/[0.04] p-3"><div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/45">Rows mean</div><p className="mt-1 text-[11px] text-white/55">The defense producing the statistics.</p></div><div className="rounded-2xl border border-cyan-200/10 bg-cyan-300/[0.04] p-3"><div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/45">Fantasy points</div><p className="mt-1 text-[11px] text-white/55">Scored using your selected format.</p></div><div className="rounded-2xl border border-violet-200/10 bg-violet-300/[0.04] p-3"><div className="text-[9px] font-black uppercase tracking-wider text-violet-100/45">Football stats</div><p className="mt-1 text-[11px] text-white/55">Actual events recorded by that defense.</p></div></div></div>
+    <div className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[9px] font-black uppercase tracking-[.16em] text-white/35">Defense performance table</div><h4 className="mt-1 text-lg font-black">{period === "average" ? `${season} average per game` : `Week ${period} results`}</h4><p className="mt-1 text-[10px] text-white/38">Select any header to sort. Select any row for its weekly game ledger.</p></div><label className="min-w-[210px]"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.14em] text-white/35"><DelayedStatHint term="Results window" hint="Average per game divides every defensive total by completed games. Selecting a week shows only that game's defensive result.">Results window</DelayedStatHint></span><select value={period} onChange={(event) => onPeriodChange(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"><option value="average">Season average per game</option>{weeks.map((week) => <option key={week} value={week}>Week {week} only</option>)}</select></label></div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-white/[0.07] bg-black/15 p-3"><span className="text-[9px] font-black uppercase tracking-wider text-white/30">League DST average</span><b className="mt-1 block text-xl text-cyan-100">{averagePoints.toFixed(1)} <small className="text-[9px] text-white/35">FP</small></b></div><div className="rounded-2xl border border-emerald-200/10 bg-emerald-300/[0.035] p-3"><span className="text-[9px] font-black uppercase tracking-wider text-emerald-100/45">Highest scoring defense</span><b className="mt-1 block text-xl text-emerald-100">{points[0]?.team || "—"} <small className="text-[9px] text-white/35">{points[0] ? `${num(points[0].values?.points).toFixed(1)} FP` : ""}</small></b></div><div className="rounded-2xl border border-violet-200/10 bg-violet-300/[0.035] p-3"><span className="text-[9px] font-black uppercase tracking-wider text-violet-100/45">Defenses shown</span><b className="mt-1 block text-xl text-violet-100">{rows.length}</b></div></div>
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-white/[0.09] bg-slate-950/35 shadow-[0_18px_50px_rgba(0,0,0,.18)]"><table className="w-full min-w-[1120px] text-left text-xs"><thead className="border-b border-white/[0.08] bg-white/[0.045] text-[9px] uppercase tracking-[.12em] text-white/45"><tr>{[["Team defense", "team"], ["Games", "games"], ...DST_COLUMNS].map(([label, key]) => <th key={key} className={`${key === "team" ? "sticky left-0 z-10 bg-[#0a1422] pl-4" : ""} px-3 py-3.5`}><button type="button" onClick={() => onSort(key)} className="flex items-center gap-1.5 whitespace-nowrap font-black transition hover:text-emerald-100"><DelayedStatHint term={label} hint={defenseColumnHint(label, key, period === "average")}>{label}</DelayedStatHint><span className={`${sort.key === key ? "text-emerald-200" : "text-white/20"}`}>{sortIndicator(sort, key)}</span></button></th>)}<th className="px-3 py-3.5 text-right">Game log</th></tr></thead><tbody className="divide-y divide-white/[0.055]">{rows.map((row, index) => { const delta = averagePoints ? ((num(row.values?.points) / averagePoints) - 1) * 100 : 0; return <tr key={row.team} tabIndex={0} role="button" aria-label={`Open ${row.team} team defense game log`} onClick={() => onSelectTeam(row.team)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelectTeam(row.team); } }} className="group cursor-pointer outline-none transition hover:bg-emerald-300/[0.05] focus-visible:bg-emerald-300/[0.08] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-emerald-200/35"><td className="sticky left-0 z-[1] bg-[#081321] px-3 py-3.5 pl-4 transition group-hover:bg-[#0b211f] group-focus-visible:bg-[#0b2925]"><div className="flex items-center gap-3"><span className="w-5 text-[9px] font-black text-white/22">#{index + 1}</span><TeamLogo team={row.team} size={42} /><div><b className="block text-white/88">{row.team} defense</b><span className={`text-[9px] font-bold ${delta > 5 ? "text-emerald-200/70" : delta < -5 ? "text-rose-200/70" : "text-white/35"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(0)}% fantasy scoring</span></div></div></td><td className="px-3 py-3.5 text-white/55">{row.games}</td>{DST_COLUMNS.map(([, key]) => <td key={key} className={`px-3 py-3.5 tabular-nums ${key === "points" ? "font-black text-cyan-100" : "text-white/72"}`}>{num(row.values?.[key]).toFixed(2)}</td>)}<td className="px-4 py-3.5 text-right"><span className="inline-flex items-center gap-1 rounded-lg border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[9px] font-black text-white/38 transition group-hover:border-emerald-200/20 group-hover:text-emerald-100">Open <span aria-hidden>→</span></span></td></tr>; })}{!rows.length ? <tr><td colSpan={3 + DST_COLUMNS.length} className="px-4 py-12 text-center text-white/40">No team-defense results are saved for this period.</td></tr> : null}</tbody></table></div>
+    </div>
+  </Panel>;
+}
+
+function DstDetailModal({ team, season, games, onClose }) {
+  if (!team) return null;
+  const totals = Object.fromEntries(DST_COLUMNS.map(([, key]) => [key, games.reduce((sum, game) => sum + (key === "points" ? game.points : num(game.stats?.[key])), 0)]));
+  return <div className="fixed inset-0 z-[130] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" onMouseDown={onClose}><section role="dialog" aria-modal="true" className="mx-auto my-4 max-w-5xl overflow-hidden rounded-[30px] border border-emerald-100/20 bg-[#07111f] shadow-2xl" onMouseDown={(event) => event.stopPropagation()}><header className="flex items-start justify-between gap-4 border-b border-white/10 p-5 sm:p-7"><div className="flex items-center gap-4"><TeamLogo team={team} size={58} /><div><div className="text-[9px] font-black uppercase tracking-[.18em] text-emerald-100/55">{season} weekly defense ledger</div><h3 className="mt-1 text-2xl font-black">{team} Team Defense</h3><p className="mt-1 text-xs text-white/40">The defense&apos;s own fantasy scoring and recorded football events by week.</p></div></div><button type="button" onClick={onClose} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/60">Close</button></header><div className="overflow-x-auto p-5 sm:p-7"><table className="w-full min-w-[900px] text-left text-xs"><thead className="text-[9px] uppercase tracking-wider text-white/35"><tr><th className="pb-3">Week</th><th>Opponent</th>{DST_COLUMNS.map(([label, key]) => <th key={key}>{label}</th>)}</tr></thead><tbody className="divide-y divide-white/[0.06]">{games.map((game) => <tr key={game.week}><td className="py-3 font-black">W{game.week}</td><td><span className="inline-flex items-center gap-2"><TeamLogo team={game.opponent} size={30} />{game.opponent}</span></td>{DST_COLUMNS.map(([, key]) => <td key={key}>{(key === "points" ? game.points : num(game.stats?.[key])).toFixed(1)}</td>)}</tr>)}</tbody>{games.length ? <tfoot className="border-t-2 border-white/15 font-black"><tr><td className="py-3">Total</td><td>{games.length} games</td>{DST_COLUMNS.map(([, key]) => <td key={key}>{num(totals[key]).toFixed(1)}</td>)}</tr><tr className="text-emerald-100"><td className="py-3">Per game</td><td>Average</td>{DST_COLUMNS.map(([, key]) => <td key={key}>{(num(totals[key]) / games.length).toFixed(2)}</td>)}</tr></tfoot> : null}</table></div></section></div>;
+}
+
+function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence = [], season, scoring, leagueScoring = null, availableSeasons = [], leagues = [], scoringLeagueId = "", onSeasonChange, onScoringChange, onScoringLeagueChange }) {
+  const [matchupView, setMatchupView] = useState("allowed");
   const [playerHistoryView, setPlayerHistoryView] = useState("best");
   const [position, setPosition] = useState("QB");
   const [offense, setOffense] = useState("");
@@ -1263,8 +1380,18 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
   const [selectedWeek, setSelectedWeek] = useState("");
   const [selectedWeeklyGame, setSelectedWeeklyGame] = useState(null);
   const [selectedDefenseBoardTeam, setSelectedDefenseBoardTeam] = useState(null);
+  const [allowedPeriod, setAllowedPeriod] = useState("average");
+  const [allowedSort, setAllowedSort] = useState({ key: "points", direction: "asc" });
+  const [dstPeriod, setDstPeriod] = useState("average");
+  const [dstSort, setDstSort] = useState({ key: "points", direction: "desc" });
+  const [selectedDstTeam, setSelectedDstTeam] = useState(null);
   const [teamPositionData, setTeamPositionData] = useState(null);
   const [teamPositionError, setTeamPositionError] = useState("");
+  useEffect(() => {
+    if (!["allowed", "team-defense", "players"].includes(matchupView)) {
+      setMatchupView("allowed");
+    }
+  }, [matchupView]);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/stat-central?artifact=team-position", { cache: "no-cache", signal: controller.signal })
@@ -1457,28 +1584,103 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
     };
     return { offense: summarize(currentOffense, priorOffense), defense: summarize(currentDefense, priorDefense), currentOffense, currentDefense };
   }, [position, scoring, season, selectedDefense, selectedOffense, teamPositionData]);
+  const allowedColumns = POSITION_ALLOWED_COLUMNS[position] || [];
+  const positionRowPoints = (row) => scoring === "LEAGUE" && leagueScoring
+    ? scoreSleeperStats(row?.stats || {}, leagueScoring, position)
+    : num(row?.points?.[String(scoring || "PPR").toLowerCase()]);
   const statDefenseBoard = useMemo(() => {
-    const scoringKey = String(scoring || "PPR").toLowerCase();
-    const evidence = (teamPositionData?.rows || []).filter((row) => num(row.season) === num(season) && row.position === position && row.attribution === "weekly_context");
-    // This is intentionally league-wide: it is a reference board, not a
-    // recommendation for whichever matchup happens to be selected elsewhere.
-    const allDefenses = [...new Set(evidence.map((row) => row.opponent))];
-    return allDefenses
-      .map((team) => {
-        const current = evidence.filter((row) => row.opponent === team);
-        const average = (rows) => rows.length ? rows.reduce((sum, row) => sum + num(row.points?.[scoringKey]), 0) / rows.length : 0;
-        return { team, games: current.length, allowed: average(current) };
-      })
-      .sort((a, b) => a.allowed - b.allowed || a.team.localeCompare(b.team));
-  }, [position, scoring, season, teamPositionData]);
+    const evidence = (teamPositionData?.rows || []).filter((row) =>
+      num(row.season) === num(season) &&
+      row.position === position &&
+      row.attribution === "weekly_context" &&
+      (allowedPeriod === "average" || num(row.week) === num(allowedPeriod)),
+    );
+    const grouped = new Map();
+    evidence.forEach((game) => {
+      const current = grouped.get(game.opponent) || { team: game.opponent, games: 0, totalPoints: 0, totals: {} };
+      current.games += 1;
+      current.totalPoints += positionRowPoints(game);
+      allowedColumns.forEach(([, key]) => { current.totals[key] = num(current.totals[key]) + num(game.stats?.[key]); });
+      grouped.set(game.opponent, current);
+    });
+    const divisor = (row) => allowedPeriod === "average" ? Math.max(1, row.games) : 1;
+    return [...grouped.values()].map((row) => ({
+      ...row,
+      points: row.totalPoints / divisor(row),
+      stats: Object.fromEntries(allowedColumns.map(([, key]) => [key, num(row.totals[key]) / divisor(row)])),
+    })).sort((a, b) => {
+      const value = (row) => allowedSort.key === "team" ? row.team : allowedSort.key === "games" ? row.games : allowedSort.key === "points" ? row.points : num(row.stats?.[allowedSort.key]);
+      const left = value(a), right = value(b);
+      const comparison = typeof left === "string" ? left.localeCompare(right) : left - right;
+      return (allowedSort.direction === "asc" ? comparison : -comparison) || a.team.localeCompare(b.team);
+    });
+  }, [allowedColumns, allowedPeriod, allowedSort, leagueScoring, position, scoring, season, teamPositionData]);
   const statRoomEstimate = statMatchup.offense.points == null || statMatchup.defense.points == null
     ? null
     : statMatchup.offense.points * 0.55 + statMatchup.defense.points * 0.45;
   const selectedDefenseBoardGames = useMemo(() => {
     if (!selectedDefenseBoardTeam) return [];
     const rows = (teamPositionData?.rows || []).filter((row) => row.position === position && row.opponent === selectedDefenseBoardTeam && row.attribution === "weekly_context");
-    return rows.filter((row) => num(row.season) === num(season)).sort((a, b) => num(b.week) - num(a.week));
+    return rows.filter((row) => num(row.season) === num(season)).sort((a, b) => num(a.week) - num(b.week));
   }, [position, season, selectedDefenseBoardTeam, teamPositionData]);
+  const selectedAllowedTotals = useMemo(() => {
+    const totals = Object.fromEntries(allowedColumns.map(([, key]) => [key, 0]));
+    let points = 0;
+    selectedDefenseBoardGames.forEach((game) => {
+      points += positionRowPoints(game);
+      allowedColumns.forEach(([, key]) => { totals[key] += num(game.stats?.[key]); });
+    });
+    return { team: selectedDefenseBoardTeam, games: selectedDefenseBoardGames.length, points, totals };
+  }, [allowedColumns, leagueScoring, position, scoring, selectedDefenseBoardGames, selectedDefenseBoardTeam]);
+  const allowedLeagueAverage = useMemo(() => {
+    const evidence = (teamPositionData?.rows || []).filter((row) => num(row.season) === num(season) && row.position === position && row.attribution === "weekly_context");
+    return evidence.length ? evidence.reduce((sum, row) => sum + positionRowPoints(row), 0) / evidence.length : 0;
+  }, [leagueScoring, position, scoring, season, teamPositionData]);
+  const allowedPointOrder = [...statDefenseBoard].sort(
+    (a, b) => a.points - b.points || a.team.localeCompare(b.team),
+  );
+  const stingiestAllowedTeam = allowedPointOrder[0] || null;
+  const mostGenerousAllowedTeam = allowedPointOrder.at(-1) || null;
+  const visibleAllowedAverage = statDefenseBoard.length
+    ? statDefenseBoard.reduce((sum, row) => sum + row.points, 0) /
+      statDefenseBoard.length
+    : 0;
+  const dstGameRows = useMemo(() => {
+    const opponentByWeek = new Map();
+    (schedule?.weeks || []).forEach((weekRow) => (weekRow.games || []).forEach((game) => {
+      const home = normalizeTeam(game.home), away = normalizeTeam(game.away);
+      opponentByWeek.set(`${num(weekRow.week)}:${home}`, away);
+      opponentByWeek.set(`${num(weekRow.week)}:${away}`, home);
+    }));
+    return (players || []).filter((player) => ["DST", "DEF"].includes(String(player.position).toUpperCase())).flatMap((player) =>
+      Object.keys(player.weeks || {}).map((week) => ({
+        team: normalizeTeam(player.team || player.player_id),
+        week: num(week),
+        opponent: opponentByWeek.get(`${num(week)}:${normalizeTeam(player.team || player.player_id)}`) || "—",
+        points: num(player.weeks?.[week]),
+        stats: player.weekly_stats?.[week] || {},
+      })),
+    ).filter((row) => row.team);
+  }, [players, schedule]);
+  const dstBoard = useMemo(() => {
+    const filtered = dstGameRows.filter((row) => dstPeriod === "average" || row.week === num(dstPeriod));
+    const grouped = new Map();
+    filtered.forEach((game) => {
+      const current = grouped.get(game.team) || { team: game.team, games: 0, totals: { points: 0 } };
+      current.games += 1;
+      current.totals.points += game.points;
+      DST_COLUMNS.slice(1).forEach(([, key]) => { current.totals[key] = num(current.totals[key]) + num(game.stats?.[key]); });
+      grouped.set(game.team, current);
+    });
+    const divisor = (row) => dstPeriod === "average" ? Math.max(1, row.games) : 1;
+    return [...grouped.values()].map((row) => ({ ...row, values: Object.fromEntries(DST_COLUMNS.map(([, key]) => [key, num(row.totals[key]) / divisor(row)])) }))
+      .sort((a, b) => {
+        const left = dstSort.key === "team" ? a.team : dstSort.key === "games" ? a.games : num(a.values?.[dstSort.key]);
+        const right = dstSort.key === "team" ? b.team : dstSort.key === "games" ? b.games : num(b.values?.[dstSort.key]);
+        const comparison = typeof left === "string" ? left.localeCompare(right) : left - right;
+        return (dstSort.direction === "asc" ? comparison : -comparison) || a.team.localeCompare(b.team);
+      });
+  }, [dstGameRows, dstPeriod, dstSort]);
   const matchupSnapshot = (offenseTeam, defenseTeam) => {
     const scoringKey = String(scoring || "PPR").toLowerCase();
     const evidence = (teamPositionData?.rows || []).filter((row) => row.position === position && row.attribution === "weekly_context" && num(row.season) <= num(season) && num(row.season) >= num(season) - 2);
@@ -1501,6 +1703,7 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
   const latestObservedWeek = Math.max(0, ...(teamPositionData?.rows || []).filter((row) => num(row.season) === num(season)).map((row) => num(row.week)));
   const activeWeek = num(selectedWeek) || matchupWeeks.find((week) => week > latestObservedWeek) || matchupWeeks.at(-1) || 1;
   const weeklyGames = (schedule?.weeks || []).find((row) => num(row.week) === activeWeek)?.games || [];
+  const selectedDstGames = dstGameRows.filter((row) => row.team === selectedDstTeam).sort((a, b) => a.week - b.week);
   const offenseRow = rows.attack.find(
     (row) => row.team === selectedOffense && row.position === position,
   );
@@ -1631,33 +1834,32 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/50">
-              Opponent-adjusted research
+              NFL team production research
             </div>
-            <h2 className="mt-1 text-2xl font-black">{season} Matchup Lab</h2>
+            <h2 className="mt-1 text-2xl font-black">{season} Team Stats</h2>
             <div className="mt-2 rounded-xl border border-violet-200/10 bg-violet-300/[0.045] px-3 py-2 text-[10px] leading-4 text-violet-100/65">
               {historicalEvidence.length
                 ? `Recency-weighted evidence: ${season} has full weight; ${historicalEvidence.map((row) => `${row.season} has ${Math.round(row.weight * 100)}% weight`).join(" and ")}. Each prior season uses its own saved schedule.`
                 : "Selected-season evidence. Prior-year context appears automatically when archived data is available."}
             </div>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-white/40">
-              Weekly player scoring is joined to the saved NFL schedule.
-              “Allowed” means total fantasy points surrendered to that position
-              per team game—not a defensive player grade.
+              Explore what opposing position groups produced against each team,
+              then switch to Team Defense for the defense&apos;s own fantasy and
+              football statistics. Every result is joined to its saved NFL game.
             </p>
           </div>
-          <div className={`grid grid-cols-2 gap-2 ${matchupView === "players" ? "sm:grid-cols-5" : matchupView === "weekly" ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+          <div className={`grid grid-cols-2 gap-2 ${matchupView === "players" ? "sm:grid-cols-5" : "sm:grid-cols-3"}`}>
             <Select label="Season" value={season} onChange={onSeasonChange}>
               {availableSeasons.map((year) => <option key={year}>{year}</option>)}
             </Select>
             <Select label="Scoring" value={scoring} onChange={onScoringChange}>
               {SCORING.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </Select>
-            {matchupView !== "teams" ? <Select label="Position" value={position} onChange={setPosition}>
+            {["allowed", "players"].includes(matchupView) ? <Select label="Position" value={position} onChange={setPosition}>
               {["QB", "RB", "WR", "TE"].map((item) => (
                 <option key={item}>{item}</option>
               ))}
             </Select> : null}
-            {matchupView === "weekly" ? <Select label="Week" value={activeWeek} onChange={setSelectedWeek}>{matchupWeeks.map((week) => <option key={week} value={week}>Week {week}</option>)}</Select> : null}
             {matchupView === "players" ? <Select
               label="Offense"
               value={selectedOffense}
@@ -1687,7 +1889,7 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
         {scoring === "LEAGUE" ? (
           <div data-guide-tip="matchup-league-scoring" className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.04] p-4">
             {leagues.length ? <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(240px,360px)] sm:items-end">
-              <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/55">League scoring is active</div><p className="mt-1 text-[11px] leading-5 text-white/42">Weekly matchup evidence, the Defense Board, and Player History are recalculated from the selected league&apos;s Sleeper scoring rules. Change the league here to rebuild the workspace.</p></div>
+              <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-100/55">League scoring is active</div><p className="mt-1 text-[11px] leading-5 text-white/42">Production Allowed by Defense, Team Defense, and Player History use the selected league&apos;s Sleeper scoring rules. Change the league here to rebuild the workspace.</p></div>
               <Select label="Scoring league" value={scoringLeagueId} preference="stat-central-scoring-league" onChange={onScoringLeagueChange}>{leagues.map((league) => <option key={league.league_id} value={league.league_id}>{league.name}</option>)}</Select>
             </div> : <p className="text-xs leading-5 text-amber-100/65">Load a Sleeper portfolio to use league scoring. PPR, Half PPR, and Standard remain available.</p>}
           </div>
@@ -1695,8 +1897,8 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
       </Panel>
       <div data-guide-tip="matchup-secondary-tabs" className="flex snap-x gap-2 overflow-x-auto rounded-[22px] border border-violet-200/10 bg-[linear-gradient(135deg,rgba(76,29,149,.13),rgba(2,6,23,.8))] p-2 shadow-inner shadow-black/20 [scrollbar-width:none]">
         {[
-          ["weekly", "Weekly Matchups"],
-          ["overview", "Defense Board"],
+          ["allowed", "Production Allowed by Defense"],
+          ["team-defense", "Team Defense"],
           ["players", "Player History"],
         ].map(([key, label]) => (
           <button
@@ -1709,6 +1911,8 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
           </button>
         ))}
       </div>
+      {matchupView === "team-defense" ? <TeamDefensePanel season={season} period={dstPeriod} onPeriodChange={setDstPeriod} weeks={matchupWeeks} rows={dstBoard} sort={dstSort} onSort={(key) => setDstSort((current) => ({ key, direction: current.key === key && current.direction === "desc" ? "asc" : "desc" }))} onSelectTeam={setSelectedDstTeam} /> : null}
+      <DstDetailModal team={selectedDstTeam} season={season} games={selectedDstGames} onClose={() => setSelectedDstTeam(null)} />
       {matchupView === "weekly" ? <Panel data-guide-tip="matchup-weekly-schedule" className="overflow-hidden">
         <div className="border-b border-white/10 p-5 sm:p-6"><div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">Week {activeWeek} schedule</div><h3 className="mt-1 text-xl font-black">Open any NFL game for its two-sided matchup read</h3><p className="mt-2 text-xs leading-5 text-white/42">Each card represents one real game. The matchup view compares both teams&apos; full {position} rooms against the opposing defense, with current production and prior-season context visible together.</p></div>
         <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2">{weeklyGames.map((game) => { const home = normalizeTeam(game.home); const away = normalizeTeam(game.away); return <button type="button" key={`${home}:${away}`} onClick={() => setSelectedWeeklyGame({ home, away })} className="group rounded-2xl border border-white/[0.09] bg-[linear-gradient(135deg,rgba(8,47,73,.16),rgba(2,6,23,.5))] p-4 text-left transition hover:border-cyan-200/35 hover:bg-cyan-300/[0.055] hover:shadow-lg hover:shadow-cyan-950/20"><div className="flex items-center justify-between gap-3"><span className="rounded-lg bg-cyan-300/10 px-2 py-1 text-[9px] font-black text-cyan-50">{game.time || `Week ${activeWeek}`}</span><span className="text-[10px] font-bold text-white/35 transition group-hover:text-cyan-100">Open matchup →</span></div><div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3"><b className="text-right text-lg">{away}</b><span className="rounded-full border border-violet-200/15 bg-violet-300/[0.08] px-2 py-1 text-[10px] font-black text-violet-100">VS</span><b className="text-lg">{home}</b></div><p className="mt-3 text-center text-xs text-white/42">{position} room production · defense allowed · football-stat evidence</p></button>; })}</div>
@@ -1720,11 +1924,12 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
         </section>
       </div> : null}
       {matchupView === "teams" ? <StatTeamProfiles data={teamPositionData} season={season} scoring={scoring} /> : null}
-      {matchupView === "overview" ? <Panel data-guide-tip="matchup-defense-board" className="overflow-hidden border-cyan-200/15">
+      {matchupView === "allowed" ? <Panel data-guide-tip="matchup-defense-board" className="overflow-hidden border-cyan-200/15">
         <div className="border-b border-white/10 bg-[radial-gradient(circle_at_95%_0%,rgba(34,211,238,.12),transparent_38%)] p-5 sm:p-6">
-          <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">League-wide reference</div>
-          <h3 className="mt-1 text-xl font-black">{position} defense board</h3>
-          <p className="mt-2 max-w-4xl text-xs leading-5 text-white/48">A neutral, season-to-date summary of every NFL defense&apos;s positional fantasy points allowed per team game. It is the total scoring by the full opposing position room—not an average divided by roster spots. Click a defense to inspect every game and the football stats behind its total.</p>
+          <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">Offensive results against NFL defenses</div>
+          <h3 className="mt-1 text-2xl font-black">What {position}s Produce Against Each Defense</h3>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-white/55">Each row names the <b className="text-white/80">defense being faced</b>. Every number is the combined result of the opponent&apos;s entire {position} group—not one player and not the defense&apos;s own fantasy score. For example, the BAL row shows what all opposing {position}s produced while playing Baltimore.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-cyan-200/10 bg-cyan-300/[0.045] p-3"><div className="text-[9px] font-black uppercase tracking-[.14em] text-cyan-100/50">Rows mean</div><p className="mt-1 text-[11px] leading-5 text-white/55">The NFL defense that was faced.</p></div><div className="rounded-2xl border border-violet-200/10 bg-violet-300/[0.045] p-3"><div className="text-[9px] font-black uppercase tracking-[.14em] text-violet-100/50">Numbers mean</div><p className="mt-1 text-[11px] leading-5 text-white/55">Combined production by every opposing {position}.</p></div><div className="rounded-2xl border border-amber-200/10 bg-amber-300/[0.04] p-3"><div className="text-[9px] font-black uppercase tracking-[.14em] text-amber-100/50">How to read it</div><p className="mt-1 text-[11px] leading-5 text-white/55">Higher output usually means a friendlier matchup.</p></div></div>
         </div>
         {teamPositionError ? <p className="p-5 text-sm text-rose-100">{teamPositionError}</p> : !teamPositionData ? <p className="p-5 text-sm text-white/40">Loading verified team-position evidence…</p> : <div className="p-5 sm:p-6">
           <div className="hidden grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -1738,12 +1943,18 @@ function MatchupLab({ players, currentPlayers = {}, schedule, historicalEvidence
             {(position === "QB" ? [["Pass attempts", "pass_att"], ["Pass yards", "pass_yd"], ["Pass TD", "pass_td"], ["Rush yards", "rush_yd"]] : position === "RB" ? [["Carries", "rush_att"], ["Rush yards", "rush_yd"], ["Targets", "rec_tgt"], ["Receiving yards", "rec_yd"]] : [["Targets", "rec_tgt"], ["Receptions", "rec"], ["Receiving yards", "rec_yd"], ["Receiving TD", "rec_td"]]).map(([label, key]) => <div key={key} className="rounded-2xl border border-white/[0.08] bg-black/15 p-4"><div className="text-[9px] font-black uppercase tracking-[.14em] text-white/32">{label} / game</div><div className="mt-2 flex items-end justify-between gap-3"><div><b className="block text-xl text-cyan-100">{statMatchup.offense.stats[key] == null ? "—" : statMatchup.offense.stats[key].toFixed(1)}</b><span className="text-[9px] text-white/35">{selectedOffense}</span></div><div className="text-right"><b className="block text-xl text-violet-100">{statMatchup.defense.stats[key] == null ? "—" : statMatchup.defense.stats[key].toFixed(1)}</b><span className="text-[9px] text-white/35">allowed</span></div></div></div>)}
           </div>
           <div className="mt-6 border-t border-white/[0.08] pt-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[9px] font-black uppercase tracking-[.16em] text-white/35">Defense-by-defense comparison</div><h4 className="mt-1 text-lg font-black">{allowedPeriod === "average" ? `${season} average offensive production allowed` : `Week ${allowedPeriod} offensive production allowed`}</h4><p className="mt-1 text-[10px] text-white/38">Select any column to rank the defenses. Select any row for its complete game log.</p></div><label className="min-w-[210px]"><span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.14em] text-white/35"><DelayedStatHint term="Results window" hint="Average per game divides each column's season total by completed games. Selecting a week shows only that one matchup for every defense.">Results window</DelayedStatHint></span><select value={allowedPeriod} onChange={(event) => setAllowedPeriod(event.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-xs"><option value="average">Season average per game</option>{matchupWeeks.map((week) => <option key={week} value={week}>Week {week} only</option>)}</select></label></div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-white/[0.07] bg-black/15 p-3"><span className="text-[9px] font-black uppercase tracking-wider text-white/30">League average</span><b className="mt-1 block text-xl text-cyan-100">{visibleAllowedAverage.toFixed(1)} <small className="text-[9px] text-white/35">FP</small></b></div><div className="rounded-2xl border border-emerald-200/10 bg-emerald-300/[0.035] p-3"><span className="text-[9px] font-black uppercase tracking-wider text-emerald-100/45">Lowest production allowed</span><b className="mt-1 block text-xl text-emerald-100">{stingiestAllowedTeam?.team || "—"} <small className="text-[9px] text-white/35">{stingiestAllowedTeam ? `${stingiestAllowedTeam.points.toFixed(1)} FP` : ""}</small></b></div><div className="rounded-2xl border border-rose-200/10 bg-rose-300/[0.035] p-3"><span className="text-[9px] font-black uppercase tracking-wider text-rose-100/45">Highest production allowed</span><b className="mt-1 block text-xl text-rose-100">{mostGenerousAllowedTeam?.team || "—"} <small className="text-[9px] text-white/35">{mostGenerousAllowedTeam ? `${mostGenerousAllowedTeam.points.toFixed(1)} FP` : ""}</small></b></div></div>
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-white/[0.09] bg-slate-950/35 shadow-[0_18px_50px_rgba(0,0,0,.18)]"><table className="w-full min-w-[1180px] text-left text-xs"><thead className="border-b border-white/[0.08] bg-white/[0.045] text-[9px] uppercase tracking-[.12em] text-white/45"><tr>{[["Defense faced", "team"], ["Games", "games"], ["Fantasy pts", "points"], ...allowedColumns].map(([label, key]) => <th key={key} className={`${key === "team" ? "sticky left-0 z-10 bg-[#0a1422] pl-4" : ""} px-3 py-3.5`}><button type="button" onClick={() => setAllowedSort((current) => ({ key, direction: current.key === key && current.direction === "desc" ? "asc" : "desc" }))} className="flex items-center gap-1.5 whitespace-nowrap font-black transition hover:text-cyan-100"><DelayedStatHint term={label} hint={allowedColumnHint(label, key, position, allowedPeriod === "average")}>{label}</DelayedStatHint><span className={`${allowedSort.key === key ? "text-cyan-200" : "text-white/20"}`}>{sortIndicator(allowedSort, key)}</span></button></th>)}<th className="px-3 py-3.5 text-right">Game log</th></tr></thead><tbody className="divide-y divide-white/[0.055]">{statDefenseBoard.map((row, index) => { const delta = visibleAllowedAverage ? ((row.points / visibleAllowedAverage) - 1) * 100 : 0; return <tr key={row.team} tabIndex={0} role="button" aria-label={`Open ${row.team} results allowed to ${position}s`} onClick={() => setSelectedDefenseBoardTeam(row.team)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedDefenseBoardTeam(row.team); } }} className="group cursor-pointer outline-none transition hover:bg-cyan-300/[0.055] focus-visible:bg-cyan-300/[0.08] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-200/35"><td className="sticky left-0 z-[1] bg-[#081321] px-3 py-3.5 pl-4 transition group-hover:bg-[#0b1d2b] group-focus-visible:bg-[#0b2231]"><div className="flex items-center gap-3"><span className="w-5 text-[9px] font-black text-white/22">#{index + 1}</span><TeamLogo team={row.team} size={42} /><div><b className="block text-white/88">{row.team} vs {position}s</b><span className={`text-[9px] font-bold ${delta > 5 ? "text-rose-200/70" : delta < -5 ? "text-emerald-200/70" : "text-white/35"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(0)}% vs league</span></div></div></td><td className="px-3 py-3.5 text-white/55">{row.games}</td><td className="px-3 py-3.5"><b className="text-base text-violet-100">{row.points.toFixed(1)}</b><span className="ml-1 text-[8px] uppercase text-white/25">FP</span></td>{allowedColumns.map(([, key]) => <td key={key} className="px-3 py-3.5 tabular-nums text-white/72">{num(row.stats?.[key]).toFixed(key.includes("yd") ? 1 : 2)}</td>)}<td className="px-4 py-3.5 text-right"><span className="inline-flex items-center gap-1 rounded-lg border border-white/[0.07] bg-white/[0.035] px-2 py-1 text-[9px] font-black text-white/38 transition group-hover:border-cyan-200/20 group-hover:text-cyan-100">Open <span aria-hidden>→</span></span></td></tr>; })}{!statDefenseBoard.length ? <tr><td colSpan={4 + allowedColumns.length} className="px-4 py-12 text-center text-white/40">No completed {position} team-game evidence is available for this week.</td></tr> : null}</tbody></table></div>
+          </div>
+          <div className="hidden mt-6 border-t border-white/[0.08] pt-5">
             <div className="flex flex-wrap items-end justify-between gap-2"><div><div className="text-[9px] font-black uppercase tracking-[.16em] text-white/35">Points allowed</div><h4 className="mt-1 font-black">Every defense, least to most permissive</h4></div><p className="text-[10px] text-white/38">Fantasy points allowed to the full {position} room per game</p></div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{statDefenseBoard.map((row, index) => <button type="button" key={row.team} onClick={() => setSelectedDefenseBoardTeam(row.team)} className="grid grid-cols-[28px_minmax(0,1fr)_62px] items-center gap-3 rounded-xl border border-white/[0.08] bg-black/15 px-3 py-3 text-left transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.055]"><span className="text-[10px] text-white/30">#{index + 1}</span><span><b className="block text-sm">{row.team}</b><small className="text-[9px] text-white/35">{row.games} game{row.games === 1 ? "" : "s"} logged</small></span><b className="text-right text-violet-100">{row.allowed.toFixed(1)}</b></button>)}</div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{statDefenseBoard.map((row, index) => <button type="button" key={row.team} onClick={() => setSelectedDefenseBoardTeam(row.team)} className="grid grid-cols-[28px_minmax(0,1fr)_62px] items-center gap-3 rounded-xl border border-white/[0.08] bg-black/15 px-3 py-3 text-left transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.055]"><span className="text-[10px] text-white/30">#{index + 1}</span><span><b className="block text-sm">{row.team}</b><small className="text-[9px] text-white/35">{row.games} game{row.games === 1 ? "" : "s"} logged</small></span><b className="text-right text-violet-100">{row.points.toFixed(1)}</b></button>)}</div>
           </div>
         </div>}
       </Panel> : null}
-      {selectedDefenseBoardTeam ? <div className="fixed inset-0 z-[130] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" role="dialog" aria-modal="true" aria-label={`${selectedDefenseBoardTeam} ${position} points allowed`} onMouseDown={() => setSelectedDefenseBoardTeam(null)}>
+      <AllowedResultsModal team={selectedDefenseBoardTeam} position={position} season={season} scoring={scoring} leagueScoring={leagueScoring} games={selectedDefenseBoardGames} columns={allowedColumns} totals={selectedAllowedTotals} leagueAverage={allowedLeagueAverage} onClose={() => setSelectedDefenseBoardTeam(null)} />
+      {false && selectedDefenseBoardTeam ? <div className="fixed inset-0 z-[130] overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xl sm:p-6" role="dialog" aria-modal="true" aria-label={`${selectedDefenseBoardTeam} ${position} points allowed`} onMouseDown={() => setSelectedDefenseBoardTeam(null)}>
         <section className="mx-auto my-4 max-w-3xl overflow-hidden rounded-[30px] border border-violet-100/20 bg-[#07111f] shadow-2xl shadow-black/60" onMouseDown={(event) => event.stopPropagation()}><header className="flex items-start justify-between gap-4 border-b border-white/10 bg-[radial-gradient(circle_at_92%_0%,rgba(139,92,246,.18),transparent_45%)] p-5 sm:p-7"><div><div className="text-[9px] font-black uppercase tracking-[.2em] text-violet-100/55">{season} defensive ledger</div><h3 className="mt-1 text-2xl font-black">{selectedDefenseBoardTeam} vs {position}s</h3><p className="mt-2 text-xs leading-5 text-white/48">Each row is the entire opposing {position} room in one NFL game. The points are summed from all players at that position—never divided by how many players appeared.</p></div><button type="button" onClick={() => setSelectedDefenseBoardTeam(null)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/60 transition hover:bg-white/10 hover:text-white">Close</button></header><div className="overflow-x-auto p-5 sm:p-7"><table className="w-full min-w-[620px] text-left text-xs"><thead className="border-b border-white/[0.09] text-[9px] uppercase tracking-[.14em] text-white/35"><tr><th className="pb-3 pr-3">Week</th><th className="pb-3 pr-3">Opponent</th><th className="pb-3 pr-3">Room points</th>{(position === "QB" ? [["Pass yd", "pass_yd"], ["Pass TD", "pass_td"], ["Rush yd", "rush_yd"]] : position === "RB" ? [["Rush yd", "rush_yd"], ["Rush TD", "rush_td"], ["Rec", "rec"]] : [["Targets", "rec_tgt"], ["Rec yd", "rec_yd"], ["Rec TD", "rec_td"]]).map(([label]) => <th key={label} className="pb-3 pr-3">{label}</th>)}</tr></thead><tbody className="divide-y divide-white/[0.06]">{selectedDefenseBoardGames.map((game) => <tr key={`${game.season}-${game.week}-${game.team}`}><td className="py-3 pr-3 font-bold">{game.season} W{game.week}</td><td className="py-3 pr-3 font-black">{game.team}</td><td className="py-3 pr-3 text-violet-100">{num(game.points?.[String(scoring || "PPR").toLowerCase()]).toFixed(1)}</td>{(position === "QB" ? ["pass_yd", "pass_td", "rush_yd"] : position === "RB" ? ["rush_yd", "rush_td", "rec"] : ["rec_tgt", "rec_yd", "rec_td"]).map((key) => <td key={key} className="py-3 pr-3 text-white/72">{num(game.stats?.[key]).toFixed(key.endsWith("yd") ? 0 : 1)}</td>)}</tr>)}{!selectedDefenseBoardGames.length ? <tr><td colSpan="6" className="py-8 text-center text-white/40">No saved {position} game ledger is available for this defense yet.</td></tr> : null}</tbody></table></div></section>
       </div> : null}
       <div className="hidden">
@@ -3930,6 +4141,7 @@ export default function StatCentralClient() {
                 historicalEvidence={matchupEvidence}
                 season={resolvedSeason}
                 scoring={scoring}
+                leagueScoring={selectedScoringLeague?.scoring_settings || null}
                 availableSeasons={availableSeasons}
                 leagues={leagues}
                 scoringLeagueId={scoringLeagueId}

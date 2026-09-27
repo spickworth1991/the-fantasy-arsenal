@@ -5,7 +5,16 @@ const arsenalDevApiOrigin = String(
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  images: { unoptimized: true }, // you use <img>; keeps behavior identical & no extra image pipeline
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "a.espncdn.com",
+        pathname: "/i/teamlogos/nfl/**",
+      },
+    ],
+  }, // native images stay direct; the NFL logo host is also allowlisted for future next/image use
   async redirects() {
     return [
       {

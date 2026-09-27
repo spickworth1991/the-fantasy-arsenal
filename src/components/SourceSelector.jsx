@@ -192,6 +192,7 @@ export const DEFAULT_SOURCES = [
   { key: "proj:draftsharks", type: "projection", label: "DraftSharks Projections", logoKey: "DraftSharks", supports: { scoring: ["std", "half", "ppr", "tep"] } },
   { key: "proj:fantasypros", type: "projection", label: "FantasyPros Projections", logoKey: "FantasyProsProjections", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:thefantasyarsenal-model", type: "projection", label: "The Fantasy Arsenal Projections", productLabel: "Safe / Expected Model", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
+  { key: "proj:thefantasyarsenal-risky", type: "projection", label: "The Fantasy Arsenal Projections", productLabel: "Boom / Bust Model", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
   { key: "proj:thefantasyarsenal", type: "projection", label: "Average of All Projections", productLabel: "All Projection Sources", logoKey: "TheFantasyArsenal", supports: { scoring: ["std", "half", "ppr"] } },
 ];
 

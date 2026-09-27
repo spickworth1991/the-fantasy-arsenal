@@ -41,6 +41,7 @@ import { scoreSleeperStats } from "../../lib/sleeperScoring";
 
 const LINEUP_SOURCE_KEYS = new Set([
   "proj:thefantasyarsenal-model",
+  "proj:thefantasyarsenal-risky",
   "proj:fantasypros",
   "proj:draftsharks",
   "proj:sleeper",
@@ -1132,6 +1133,7 @@ export default function LineupTool() {
     FANTASYPROS: null,
     ARSENAL: null,
     ARSENAL_MODEL: null,
+    ARSENAL_RISKY: null,
   });
   const [projLoading, setProjLoading] = useState(false);
   const [projError, setProjError] = useState("");

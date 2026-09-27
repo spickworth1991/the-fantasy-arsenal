@@ -8,7 +8,7 @@ const SCORING = new Set(["STD","HALF","PPR"]);
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const PUBLIC_ASSET_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://thefantasyarsenal.com";
 
-async function readSaved(request, path) {
+async function readSaved(request, path, { useNextDataCache = true } = {}) {
   // Cloning NextRequest.nextUrl is reliable on localhost, Cloudflare Pages and
   // inside the Ballsville embed. Rebuilding from request.origin can yield a
   // `null`/relative origin in some edge adapters and throw a DOM URL error.
@@ -23,10 +23,15 @@ async function readSaved(request, path) {
   ];
   for (const candidate of [...new Set(urls)]) {
     try {
-      const response = await fetch(candidate, {
-        cf:{ cacheTtl:31536000, cacheEverything:true },
-        cache:"force-cache",
-      });
+      const response = await fetch(
+        candidate,
+        useNextDataCache
+          ? {
+              cf: { cacheTtl: 31536000, cacheEverything: true },
+              cache: "force-cache",
+            }
+          : { cache: "no-store" },
+      );
       if (response.ok) return await response.json();
     } catch {}
   }
@@ -43,7 +48,14 @@ export async function GET(request) {
         return new Response(object.body, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" } });
       }
     } catch {}
-    const fallback = await readSaved(request, "/stats/derived/team-position-weeks.json");
+    // This artifact is several megabytes, above Next.js's 2 MB incremental
+    // data-cache limit. Read it directly and let the response/CDN headers
+    // below provide caching instead of producing a warning on every request.
+    const fallback = await readSaved(
+      request,
+      "/stats/derived/team-position-weeks.json",
+      { useNextDataCache: false },
+    );
     if (fallback) return NextResponse.json(fallback, { headers: { "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" } });
     return NextResponse.json({ ok: false, message: "Team-position history is unavailable." }, { status: 404 });
   }

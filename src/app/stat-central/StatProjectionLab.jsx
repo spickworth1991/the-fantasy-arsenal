@@ -7,6 +7,7 @@ import {
   sleeperScoringCoverage,
 } from "../../lib/sleeperScoring";
 import DelayedStatHint from "../../components/DelayedStatHint";
+import AvatarImage from "../../components/AvatarImage";
 
 const number = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const normalize = (value) =>
@@ -205,16 +206,38 @@ function probabilityMetricsFor(rows = []) {
   );
   const brier = (probability, result) =>
     rows.reduce((sum, row) => sum + (number(row[probability]) - number(row[result])) ** 2, 0) / rows.length;
+  const skill = (probability, result) => {
+    const score = brier(probability, result);
+    const rate = rows.reduce((sum, row) => sum + number(row[result]), 0) / rows.length;
+    const baseline = rows.reduce((sum, row) => sum + (rate - number(row[result])) ** 2, 0) / rows.length;
+    return baseline > 0 ? 1 - score / baseline : null;
+  };
+  const quantileLoss = (row, key, quantile) => {
+    const error = number(row.actual) - number(row[key]);
+    return error >= 0 ? quantile * error : (quantile - 1) * error;
+  };
+  const intervalScore = (row) => {
+    const low = number(row.p10);
+    const high = number(row.p90);
+    const actual = number(row.actual);
+    return (high - low) + 10 * Math.max(0, low - actual) + 10 * Math.max(0, actual - high);
+  };
   return {
     sample: rows.length,
     boom_brier: brier("boom_probability", "boom_result"),
     bust_brier: brier("bust_probability", "bust_result"),
+    boom_brier_skill: skill("boom_probability", "boom_result"),
+    bust_brier_skill: skill("bust_probability", "bust_result"),
     percentile_sample: percentiles.length,
     p10_under_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) < number(row.p10)).length / percentiles.length : null,
     p50_under_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) < number(row.p50)).length / percentiles.length : null,
     p90_over_rate: percentiles.length ? percentiles.filter((row) => number(row.actual) > number(row.p90)).length / percentiles.length : null,
     p10_p90_coverage: percentiles.length ? percentiles.filter((row) => number(row.actual) >= number(row.p10) && number(row.actual) <= number(row.p90)).length / percentiles.length : null,
     average_interval_width: percentiles.length ? percentiles.reduce((sum, row) => sum + number(row.p90) - number(row.p10), 0) / percentiles.length : null,
+    p10_quantile_loss: percentiles.length ? percentiles.reduce((sum, row) => sum + quantileLoss(row, "p10", 0.1), 0) / percentiles.length : null,
+    p50_quantile_loss: percentiles.length ? percentiles.reduce((sum, row) => sum + quantileLoss(row, "p50", 0.5), 0) / percentiles.length : null,
+    p90_quantile_loss: percentiles.length ? percentiles.reduce((sum, row) => sum + quantileLoss(row, "p90", 0.9), 0) / percentiles.length : null,
+    weighted_interval_score: percentiles.length ? percentiles.reduce((sum, row) => sum + intervalScore(row), 0) / percentiles.length : null,
   };
 }
 
@@ -270,6 +293,18 @@ function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
             value={pct(calibration?.p10_p90_coverage)}
             detail={`${number(calibration?.percentile_sample)} percentile-tested games`}
             tone="violet"
+          />
+          <Kpi
+            label="Brier skill"
+            value={calibration?.boom_brier_skill == null ? "—" : number(calibration.boom_brier_skill).toFixed(2)}
+            detail={`Boom skill · bust ${calibration?.bust_brier_skill == null ? "—" : number(calibration.bust_brier_skill).toFixed(2)}`}
+            tone={number(calibration?.boom_brier_skill) >= 0 ? "emerald" : "rose"}
+          />
+          <Kpi
+            label="Weighted interval score"
+            value={calibration?.weighted_interval_score == null ? "—" : number(calibration.weighted_interval_score).toFixed(2)}
+            detail={`Lower is better · median loss ${(calibration?.p50_quantile_loss ?? calibration?.median_quantile_loss) == null ? "—" : number(calibration?.p50_quantile_loss ?? calibration?.median_quantile_loss).toFixed(2)}`}
+            tone="amber"
           />
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -380,9 +415,15 @@ function AccuracyResultsTable({
   cohort,
   week,
   position,
+  team,
+  query,
 }) {
   const [sortKey, setSortKey] = useState("projection");
   const [sortDirection, setSortDirection] = useState("desc");
+  const [selectedTableWeek, setSelectedTableWeek] = useState(Math.max(1, number(week) || 1));
+  useEffect(() => {
+    setSelectedTableWeek(Math.max(1, number(week) || 1));
+  }, [week]);
   const rows = useMemo(() => {
     const filtered = results
       .filter(
@@ -391,8 +432,10 @@ function AccuracyResultsTable({
           row.scoring === scoring &&
           row.lens === lens,
       )
-      .filter((row) => week === "all" || number(row.week) === number(week))
+      .filter((row) => number(row.week) === selectedTableWeek)
       .filter((row) => position === "ALL" || row.position === position)
+      .filter((row) => team === "ALL" || row.team === team)
+      .filter((row) => !query || normalize(row.name).includes(normalize(query)))
       .filter((row) => {
         if (lens !== "safe_expected" || cohort === "all_matched") return true;
         if (cohort === "projected_5_plus") return number(row.projection) >= 5;
@@ -419,7 +462,7 @@ function AccuracyResultsTable({
           : leftValue - rightValue;
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [cohort, lens, modelBuildId, position, results, scoring, sortDirection, sortKey, week]);
+  }, [cohort, lens, modelBuildId, position, query, results, scoring, selectedTableWeek, sortDirection, sortKey, team]);
 
   const changeSort = (key) => {
     if (sortKey === key) {
@@ -447,9 +490,8 @@ function AccuracyResultsTable({
     </th>
   );
 
-  if (!rows.length) return null;
   return (
-    <details className="mt-4 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/15">
+    <details open className="mt-4 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/15">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-cyan-100">
         <span>Inspect projection vs. actual rankings</span>
         <span className="rounded-full bg-cyan-300/[0.08] px-2.5 py-1 text-[9px] text-cyan-100/70">
@@ -457,10 +499,25 @@ function AccuracyResultsTable({
         </span>
       </summary>
       <div className="border-t border-white/[0.06]">
+        <div className="flex gap-1.5 overflow-x-auto border-b border-white/[0.06] bg-slate-950/45 p-3">
+          {Array.from({ length: 18 }, (_, index) => index + 1).map((tabWeek) => (
+            <button
+              type="button"
+              key={tabWeek}
+              onClick={() => setSelectedTableWeek(tabWeek)}
+              className={`h-9 min-w-9 rounded-lg px-2 text-[10px] font-black transition ${selectedTableWeek === tabWeek ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-300/30" : tabWeek <= number(week) ? "bg-white/[0.04] text-white/45 hover:bg-white/[0.08]" : "bg-white/[0.02] text-white/20"}`}
+              aria-label={`Show Week ${tabWeek} projection results`}
+            >
+              W{tabWeek}
+            </button>
+          ))}
+        </div>
         <p className="px-4 py-3 text-[10px] leading-4 text-white/35">
-          Difference is projection minus actual: positive means the model was
-          high, negative means it was low. Select any heading to sort.
+          Week {selectedTableWeek} · difference is projection minus actual:
+          positive means the model was high, negative means it was low.
         </p>
+        {!rows.length ? <div className="border-t border-white/[0.05] px-4 py-10 text-center text-xs text-white/35">No graded forecasts match the current filters for Week {selectedTableWeek}.</div> : null}
+        {rows.length ? (
         <div className="max-h-[480px] overflow-auto">
           <table className="w-full min-w-[650px] text-xs md:min-w-[820px]">
             <thead className="sticky top-0 z-10 bg-slate-950/95 text-[9px] backdrop-blur">
@@ -488,7 +545,10 @@ function AccuracyResultsTable({
                     className={`border-t border-white/[0.05] hover:bg-cyan-300/[0.035] ${row.snap_percentage != null && number(row.snap_percentage) < 25 ? "bg-rose-500/[0.13] shadow-[inset_4px_0_0_rgba(251,113,133,.9)]" : "odd:bg-white/[0.015]"}`}
                   >
                     <td className="px-3 py-2.5">
-                      <div className="font-semibold text-white/80">{row.name}</div>
+                      <div className="flex items-center gap-2">
+                        <AvatarImage name={row.name} playerId={row.player_id} size={30} className="h-[30px] w-[30px] rounded-full bg-slate-800 object-cover" />
+                        <div className="font-semibold text-white/80">{row.name}</div>
+                      </div>
                       <div
                         className="mt-0.5 text-[9px] text-white/30"
                         title={
@@ -554,6 +614,7 @@ function AccuracyResultsTable({
             </tbody>
           </table>
         </div>
+        ) : null}
       </div>
     </details>
   );
@@ -565,6 +626,8 @@ function ProjectionSourceComparison({
   cohort,
   week,
   position,
+  team,
+  query,
   directionalEdge = {},
 }) {
   const sources = ACCURACY_SOURCES;
@@ -573,12 +636,15 @@ function ProjectionSourceComparison({
     const grouped = new Map();
     results
       .filter((row) => !modelBuildId || row.model_build_id === modelBuildId)
-      .filter((row) => week === "all" || number(row.week) === number(week))
+      .filter((row) => week === "all" || number(row.week) <= number(week))
       .filter((row) => position === "ALL" || row.position === position)
+      .filter((row) => team === "ALL" || row.team === team)
+      .filter((row) => !query || normalize(row.name).includes(normalize(query)))
       .forEach((row) => {
         const key = `${row.week}:${row.player_id || `${normalize(row.name)}:${row.position}`}`;
         const current = grouped.get(key) || {
           key,
+          player_id: row.player_id,
           name: row.name,
           position: row.position,
           team: row.team,
@@ -604,7 +670,7 @@ function ProjectionSourceComparison({
           Math.abs(number(right.sources[sortSource]?.error)) -
           Math.abs(number(left.sources[sortSource]?.error)),
       );
-  }, [cohort, modelBuildId, position, results, sortSource, week]);
+  }, [cohort, modelBuildId, position, query, results, sortSource, team, week]);
   const scopedComparison = useMemo(
     () =>
       Object.fromEntries(
@@ -676,25 +742,25 @@ function ProjectionSourceComparison({
 
   if (!results.length) return null;
   return (
-    <details className="mt-4 overflow-hidden rounded-2xl border border-violet-300/10 bg-violet-300/[0.025]">
+    <details open className="mt-4 overflow-hidden rounded-3xl border border-cyan-300/25 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.12),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.9),rgba(2,6,23,.88))] shadow-[0_18px_55px_rgba(8,145,178,.08)]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-violet-100">
-        <span>Compare frozen projection sources</span>
+        <span>Arsenal vs other projection sources</span>
         <span className="rounded-full bg-violet-300/[0.08] px-2.5 py-1 text-[9px] text-violet-100/70">
           PPR · pre-kickoff only
         </span>
       </summary>
       <div className="border-t border-white/[0.06] p-4">
         <p className="text-[10px] leading-5 text-white/38">
-          Every source is evaluated from its latest saved weekly projection
-          before that player&apos;s kickoff. Select a source card to rank the table
-          by its largest absolute misses.
+          A paired comparison uses only the exact player-weeks where both Arsenal
+          and the other source had a saved projection before kickoff. That keeps
+          the sample identical and makes the head-to-head MAE comparison fair.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {["Sleeper", "CBS"].map((source) => {
             const pair = pairedComparisons[source];
             return (
               <div key={source} className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-3 text-[10px]">
-                <div className="font-black text-cyan-100">Paired Arsenal vs {source}</div>
+                <div className="font-black text-cyan-100">Head-to-head: Arsenal vs {source}</div>
                 {pair?.sample ? (
                   <div className="mt-2 text-white/50">Same {pair.sample} player-games · Arsenal MAE <b className="text-white/80">{number(pair.arsenal?.mae).toFixed(2)}</b> · {source} MAE <b className="text-white/80">{number(pair.competitor?.mae).toFixed(2)}</b></div>
                 ) : <div className="mt-2 text-white/30">No shared frozen forecasts in this filter.</div>}
@@ -921,8 +987,6 @@ export default function StatProjectionLab({
   const [accuracyDetailsLoaded, setAccuracyDetailsLoaded] = useState(false);
   const [accuracyCohort, setAccuracyCohort] = useState("projected_5_plus");
   const [accuracyBuildScope, setAccuracyBuildScope] = useState("rolling");
-  const [accuracyWeek, setAccuracyWeek] = useState("all");
-  const [accuracyPosition, setAccuracyPosition] = useState("ALL");
   const [view, setView] = useState(modelOnly ? "model" : "player");
   const choosePlayer = (name) => {
     setSelectedName(name);
@@ -1008,7 +1072,7 @@ export default function StatProjectionLab({
     };
   }, [model?.season]);
   useEffect(() => {
-    if (view !== "model" || !accuracy?.detail_results_path || accuracyDetailsLoaded || accuracy?.player_results?.length) return;
+    if (!["model", "dna"].includes(view) || !accuracy?.detail_results_path || accuracyDetailsLoaded || accuracy?.player_results?.length) return;
     let live = true;
     fetch(accuracy.detail_results_path, { cache: "no-cache" })
       .then((response) => response.ok ? response.json() : null)
@@ -1087,8 +1151,6 @@ export default function StatProjectionLab({
 
   const coverage = model.feature_coverage || {};
   const weeklyStats = selected?.forecast?.stat_line || {};
-  const actualStatLine = selectedWeekRow?.completed ? (selectedWeekRow.stat_line || {}) : null;
-  const projectedPointsForWeek = selectedWeekRow?.projection ?? null;
   const seasonStats =
     selected?.season_outlook_stat_line || selected?.projected_stat_line || {};
   const statRows = POSITION_STATS[selected?.position] || [];
@@ -1149,15 +1211,16 @@ export default function StatProjectionLab({
         : selectedAccuracyBuild
           ? exactBuildAccuracy?.projection_lenses?.[scoring]?.[lens] || null
           : accuracy?.projection_lens_accuracy?.[scoring]?.[lens] || null;
-  const storedAccuracyMetrics =
-    lens !== "safe_expected"
-      ? modelAccuracy
-      : modelAccuracy?.cohorts?.[accuracyCohort] ||
-        (accuracyCohort === "all_matched" ? modelAccuracy : null);
+  const accuracyThroughWeek = Math.min(
+    number(week),
+    Math.max(0, number(accuracy?.last_scored_week || week)),
+  );
   const baseAccuracyRows = (accuracy?.player_results || [])
     .filter((row) => (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) && row.scoring === scoring && row.lens === lens)
-    .filter((row) => accuracyWeek === "all" || number(row.week) === number(accuracyWeek))
-    .filter((row) => accuracyPosition === "ALL" || row.position === accuracyPosition);
+    .filter((row) => number(row.week) <= accuracyThroughWeek)
+    .filter((row) => position === "ALL" || row.position === position)
+    .filter((row) => team === "ALL" || row.team === team)
+    .filter((row) => !query || normalize(row.name).includes(normalize(query)));
   const filteredAccuracyRows = baseAccuracyRows
     .filter((row) => {
       if (lens !== "safe_expected" || accuracyCohort === "all_matched") return true;
@@ -1166,22 +1229,46 @@ export default function StatProjectionLab({
       if (accuracyCohort === "top_100_projected") return Boolean(row.top_100);
       return true;
     });
+  const comparisonRowKey = (row) => `${row.snapshot_id || row.snapshot_generated_at || row.model_build_id}:${row.week}:${row.player_id || `${normalize(row.name)}:${row.position}`}`;
+  const safeComparisonRows = (accuracy?.player_results || [])
+    .filter((row) => (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) && row.scoring === scoring && row.lens === "safe_expected")
+    .filter((row) => number(row.week) <= accuracyThroughWeek)
+    .filter((row) => position === "ALL" || row.position === position)
+    .filter((row) => team === "ALL" || row.team === team)
+    .filter((row) => !query || normalize(row.name).includes(normalize(query)))
+    .filter((row) => {
+      if (accuracyCohort === "projected_5_plus") return number(row.projection) >= 5;
+      if (accuracyCohort === "projected_10_plus") return number(row.projection) >= 10;
+      if (accuracyCohort === "top_100_projected") return Boolean(row.top_100);
+      return true;
+    });
+  const comparisonPopulation = new Set(safeComparisonRows.map(comparisonRowKey));
+  const lensComparison = Object.fromEntries(
+    ["safe_expected", "risky"].map((comparisonLens) => {
+      const comparisonRows = (accuracy?.player_results || [])
+        .filter((row) => (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) && row.scoring === scoring && row.lens === comparisonLens)
+        .filter((row) => comparisonPopulation.has(comparisonRowKey(row)));
+      return [comparisonLens, accuracyMetricsFor(comparisonRows)];
+    }),
+  );
   const detailRowsAvailable = accuracyDetailsLoaded ||
     (!accuracy?.detail_results_path && Boolean(accuracy?.player_results?.length));
   const accuracyMetrics = detailRowsAvailable
     ? accuracyMetricsFor(filteredAccuracyRows)
-    : storedAccuracyMetrics;
+    : null;
   const scopedCalibrationRows = (accuracy?.outcome_results || []).filter((row) =>
     (!selectedAccuracyBuild || row.model_build_id === selectedAccuracyBuild) &&
-    (accuracyWeek === "all" || number(row.week) === number(accuracyWeek)) &&
-    (accuracyPosition === "ALL" || row.position === accuracyPosition) &&
+    number(row.week) <= accuracyThroughWeek &&
+    (position === "ALL" || row.position === position) &&
+    (team === "ALL" || row.team === team) &&
+    (!query || normalize(row.name).includes(normalize(query))) &&
     (accuracyCohort !== "projected_5_plus" || number(row.projection) >= 5) &&
     (accuracyCohort !== "projected_10_plus" || number(row.projection) >= 10) &&
     (accuracyCohort !== "top_100_projected" || Boolean(row.top_100)),
   );
   const scopedCalibration = detailRowsAvailable
     ? probabilityMetricsFor(scopedCalibrationRows)
-    : accuracy?.outcome_calibration;
+    : null;
   const scopedAccuracySummary = detailRowsAvailable
     ? {
         ...modelAccuracy,
@@ -1230,6 +1317,9 @@ export default function StatProjectionLab({
         ? "text-amber-100"
         : "text-rose-100"
     : "text-white/35";
+  const projectedDnaStatLine = selectedDnaAccuracy?.stat_line || weeklyStats;
+  const actualStatLine = selectedDnaAccuracy?.actual_stat_line || null;
+  const projectedPointsForWeek = selectedDnaAccuracy?.projection ?? selectedWeekRow?.projection ?? null;
 
   return (
     <div className="min-w-0 max-w-full space-y-4 overflow-x-clip">
@@ -1244,10 +1334,8 @@ export default function StatProjectionLab({
               {model.season} Weekly Projection Lab
             </h2>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">
-              Team volume is projected first, opportunity is allocated to each
-              player, and efficiency is applied afterward. Adaptive source
-              weighting, three years of production, matchup context, availability,
-              and simulated outcomes are kept separate so every forecast can be audited.
+              Weekly forecasts built from team volume, player role, efficiency,
+              matchup, availability, and frozen pre-kickoff evidence.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-white/48">
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">Forecast Week {model.forecast_week || recommendedWeek(model)}</span>
@@ -1437,7 +1525,9 @@ export default function StatProjectionLab({
           <div className="space-y-4">
             <Card className="p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
+                <div className="flex items-center gap-3">
+                  <AvatarImage name={selected.name} playerId={selected.player_id} size={58} className="h-[58px] w-[58px] rounded-2xl border border-cyan-300/15 bg-slate-800 object-cover shadow-[0_10px_30px_rgba(34,211,238,.12)]" />
+                  <div>
                   <div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/45">
                     {selected.forecast.completed
                       ? "Final performance"
@@ -1449,6 +1539,7 @@ export default function StatProjectionLab({
                     {selected.forecast.home ? "vs" : "at"}{" "}
                     {selected.forecast.opponent}
                   </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-4xl font-black text-emerald-100">
@@ -1463,16 +1554,7 @@ export default function StatProjectionLab({
               <div className="mt-4 grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 rounded-2xl border border-white/[0.07] bg-black/15 p-2">
                 <button
                   type="button"
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    moveSelectedWeek(-1);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      moveSelectedWeek(-1);
-                    }
-                  }}
+                  onClick={() => moveSelectedWeek(-1)}
                   disabled={selectedWeekIndex <= 0}
                   className="grid h-11 w-11 touch-manipulation place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
                   aria-label="Previous active week"
@@ -1489,16 +1571,7 @@ export default function StatProjectionLab({
                 </div>
                 <button
                   type="button"
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    moveSelectedWeek(1);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      moveSelectedWeek(1);
-                    }
-                  }}
+                  onClick={() => moveSelectedWeek(1)}
                   disabled={selectedWeekIndex < 0 || selectedWeekIndex >= seasonSeries.length - 1}
                   className="grid h-11 w-11 touch-manipulation place-items-center rounded-xl bg-white/[0.05] text-lg font-black text-white/70 disabled:opacity-25"
                   aria-label="Next active week"
@@ -1933,32 +2006,8 @@ export default function StatProjectionLab({
                   </p>
                 </div>
                 {selectedDnaAccuracy ? (
-                  <div className="grid gap-2 text-center sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
-                      <div className={`text-2xl font-black ${dnaAccuracyTone}`}>
-                        {number(selectedDnaAccuracy.error) > 0 ? "+" : ""}
-                        {number(selectedDnaAccuracy.error).toFixed(1)}
-                      </div>
-                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
-                        Miss
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
-                      <div className="text-2xl font-black text-cyan-100">
-                        {number(selectedDnaAccuracy.projection).toFixed(1)}
-                      </div>
-                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
-                        Frozen
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3">
-                      <div className="text-2xl font-black text-emerald-100">
-                        {number(selectedDnaAccuracy.actual).toFixed(1)}
-                      </div>
-                      <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-white/30">
-                        Actual
-                      </div>
-                    </div>
+                  <div className="rounded-full border border-emerald-300/20 bg-emerald-300/[0.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-100">
+                    Frozen forecast graded
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-white/[0.07] bg-black/20 px-4 py-3 text-sm font-black text-white/45">
@@ -1987,17 +2036,26 @@ export default function StatProjectionLab({
                   </div>
                   <div className="text-[10px] font-black text-white/45"><DelayedStatHint term="Difference">Difference = projection minus actual; green is closer.</DelayedStatHint></div>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Projected points">Projected points</DelayedStatHint></div><div className="mt-1 text-xl font-black text-cyan-100">{projectedPointsForWeek == null ? "—" : number(projectedPointsForWeek).toFixed(1)}</div></div>
-                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Actual points">Actual points</DelayedStatHint></div><div className="mt-1 text-xl font-black text-emerald-100">{selectedDnaAccuracy ? number(selectedDnaAccuracy.actual).toFixed(1) : "—"}</div></div>
-                  <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-3"><div className="text-[9px] uppercase tracking-wider text-white/30"><DelayedStatHint term="Difference">Difference</DelayedStatHint></div><div className={`mt-1 text-xl font-black ${dnaAccuracyTone}`}>{selectedDnaAccuracy ? `${number(selectedDnaAccuracy.error) > 0 ? "+" : ""}${number(selectedDnaAccuracy.error).toFixed(1)}` : "—"}</div></div>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  {statRows.map(([label, key]) => <div key={key} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2 text-xs"><span className="text-white/55"><DelayedStatHint term={label}>{label}</DelayedStatHint></span><b className="text-emerald-100">{formatStat(key, actualStatLine[key])}</b></div>)}
+                <div className="mt-3 overflow-x-auto rounded-2xl border border-white/[0.07] bg-black/20">
+                  <table className="w-full min-w-[520px] text-xs">
+                    <thead className="bg-white/[0.035] text-[9px] font-black uppercase tracking-wider text-white/35">
+                      <tr><th className="px-4 py-3 text-left">Metric</th><th className="px-4 py-3 text-right text-emerald-100/60">Actual</th><th className="px-4 py-3 text-right text-cyan-100/60">Projected</th><th className="px-4 py-3 text-right">Projection − actual</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-white/[0.06] bg-emerald-300/[0.025]"><td className="px-4 py-3 font-black text-white/80">Fantasy points</td><td className="px-4 py-3 text-right text-base font-black text-emerald-100">{number(selectedDnaAccuracy?.actual).toFixed(1)}</td><td className="px-4 py-3 text-right text-base font-black text-cyan-100">{number(projectedPointsForWeek).toFixed(1)}</td><td className={`px-4 py-3 text-right font-black ${dnaAccuracyTone}`}>{number(selectedDnaAccuracy?.error) > 0 ? "+" : ""}{number(selectedDnaAccuracy?.error).toFixed(1)}</td></tr>
+                      {statRows.map(([label, key]) => {
+                        const projected = Number(projectedDnaStatLine[key]);
+                        const actual = Number(actualStatLine[key]);
+                        const hasPair = Number.isFinite(projected) && Number.isFinite(actual);
+                        const difference = hasPair ? projected - actual : null;
+                        return <tr key={key} className="border-t border-white/[0.05] odd:bg-white/[0.012]"><td className="px-4 py-2.5 font-semibold text-white/60"><DelayedStatHint term={label}>{label}</DelayedStatHint></td><td className="px-4 py-2.5 text-right font-black text-emerald-100">{formatStat(key, actualStatLine[key])}</td><td className="px-4 py-2.5 text-right font-black text-cyan-100">{formatStat(key, projectedDnaStatLine[key])}</td><td className="px-4 py-2.5 text-right font-semibold text-white/45">{difference == null ? "—" : `${difference > 0 ? "+" : ""}${formatStat(key, difference)}`}</td></tr>;
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ) : null}
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {!actualStatLine ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {statRows.map(([label, key]) => (
                 <div
                   key={key}
@@ -2007,16 +2065,16 @@ export default function StatProjectionLab({
                     {label}
                   </div>
                   <div className="mt-1 text-2xl font-black text-cyan-100">
-                    {formatStat(key, weeklyStats[key])}
+                    {formatStat(key, projectedDnaStatLine[key])}
                   </div>
                   <div className="mt-1 text-[10px] text-white/32">
                     Week {week}{" "}
-                    {selected.forecast.completed ? "actual" : "forecast"} ·{" "}
+                    projection ·{" "}
                     {formatStat(key, seasonStats[key])} season outlook
                   </div>
                 </div>
               ))}
-            </div>
+            </div> : null}
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
               <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
                 <div className="text-[9px] font-black uppercase tracking-wider text-white/30">Past vs {selected.forecast.opponent}</div>
@@ -2130,13 +2188,16 @@ export default function StatProjectionLab({
               className="w-full p-4 text-left hover:bg-white/[0.03]"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-3">
+                  <AvatarImage name={player.name} playerId={player.player_id} size={40} className="h-10 w-10 shrink-0 rounded-xl bg-slate-800 object-cover" />
+                  <div className="min-w-0">
                   <b className="block truncate">{player.name}</b>
                   <small className="text-white/30">
                     {player.team} · {player.position} ·{" "}
                     {player.forecast.home ? "vs" : "at"}{" "}
                     {player.forecast.opponent}
                   </small>
+                  </div>
                 </div>
                 <b className="shrink-0 text-xl text-emerald-100">
                   {player.projection.toFixed(1)}
@@ -2185,10 +2246,13 @@ export default function StatProjectionLab({
                   className={`cursor-pointer hover:bg-white/[0.035] ${selected?.name === player.name ? "bg-cyan-300/[0.04]" : ""}`}
                 >
                   <td className="px-4 py-3">
-                    <b>{player.name}</b>
+                    <div className="flex items-center gap-3">
+                    <AvatarImage name={player.name} playerId={player.player_id} size={36} className="h-9 w-9 rounded-xl bg-slate-800 object-cover" />
+                    <div><b>{player.name}</b>
                     <small className="block text-white/28">
                       {player.team} · {player.position}
                     </small>
+                    </div></div>
                   </td>
                   <td>
                     {player.forecast.home ? "vs" : "at"}{" "}
@@ -2231,7 +2295,12 @@ export default function StatProjectionLab({
 
       {view === "model" ? (
       <Card data-guide-tip="projection-accuracy" className="p-5 sm:p-6">
-        <div className="rounded-3xl border border-cyan-300/10 bg-gradient-to-br from-cyan-300/[0.06] via-violet-300/[0.035] to-transparent p-4 sm:p-5">
+        <details className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.02]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-white/55">
+            <span>Training calibration validation</span>
+            <span className="rounded-full bg-white/[0.04] px-2.5 py-1 text-[8px] uppercase tracking-wider text-white/30">Supporting evidence · not live accuracy</span>
+          </summary>
+          <div className="border-t border-white/[0.06] bg-gradient-to-br from-cyan-300/[0.05] via-violet-300/[0.025] to-transparent p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="text-[9px] font-black uppercase tracking-[.18em] text-cyan-100/55">
@@ -2239,15 +2308,16 @@ export default function StatProjectionLab({
               </div>
               <h3 className="mt-1 text-xl font-black">Built to earn every adjustment</h3>
               <p className="mt-2 max-w-3xl text-[10px] leading-5 text-white/40">
-                The role model trains on 2023–2024, selects regularization and
-                shrinkage against untouched 2025 games, then refits for 2026.
-                A position is automatically disabled unless it improves the
-                holdout baseline. Future information is never used.
+                {model.model_version} uses a separately versioned training
+                calibration. It learned on earlier seasons, was checked against
+                untouched 2025 games, and disables position adjustments that
+                failed to improve the holdout baseline.
               </p>
             </div>
-            <span className="w-fit rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-100">
-              {model.trained_calibration?.version || "Calibration unavailable"}
-            </span>
+            <div className="w-fit rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-2 text-right">
+              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-100">Model {model.model_version}</div>
+              <div className="mt-1 text-[8px] font-semibold text-white/40">Training calibration {model.trained_calibration?.version || "unavailable"}</div>
+            </div>
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {Object.entries(model.trained_calibration?.positions || {}).map(
@@ -2273,35 +2343,36 @@ export default function StatProjectionLab({
               ),
             )}
           </div>
-        </div>
-        <details className="mt-4">
-          <summary className="cursor-pointer list-none text-lg font-black">
-            How {model.model_version} works
-          </summary>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {Object.entries(model.methodology || {}).map(([key, value]) => (
-              <div
-                key={key}
-                className="rounded-2xl border border-white/[0.06] bg-black/15 p-4"
-              >
-                <div className="text-[9px] font-black uppercase tracking-wider text-violet-100/55">
-                  {key.replaceAll("_", " ")}
-                </div>
-                <p className="mt-2 text-[10px] leading-5 text-white/38">
-                  {value}
-                </p>
-              </div>
-            ))}
           </div>
         </details>
+        <div className="mt-4 rounded-2xl border border-violet-300/10 bg-violet-300/[0.025] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <b className="text-sm text-violet-100">How {model.model_version} works</b>
+            <span className="text-[9px] text-white/30">Auditable from input to result</span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["1", "Project the game", "Estimate team plays and scoring environment."],
+              ["2", "Allocate opportunity", "Assign carries, targets, routes, and attempts by role."],
+              ["3", "Apply context", "Adjust for efficiency, matchup, availability, and uncertainty."],
+              ["4", "Freeze and verify", "Save before kickoff, then grade against final results."],
+            ].map(([step, title, copy]) => <div key={step} className="rounded-xl border border-white/[0.06] bg-black/15 p-3"><span className="text-[9px] font-black text-violet-100/45">{step}</span><b className="ml-2 text-xs text-white/80">{title}</b><p className="mt-2 text-[10px] leading-4 text-white/38">{copy}</p></div>)}
+          </div>
+        </div>
         <div className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <b className="text-sm text-emerald-100">Accuracy contract</b>
+              <b className="text-sm text-emerald-100">Live frozen model accuracy</b>
               <div className="mt-1 text-[9px] text-white/30">
                 {selectedAccuracyBuild
                   ? `Exact build ${selectedAccuracyBuild}`
                   : `Rolling weekly freeze · ${(Object.keys(accuracy?.cumulative_by_model_version || {}).length || 0).toLocaleString()} audited builds`}
+              </div>
+              <div className="mt-1 text-[9px] font-semibold text-cyan-100/55">
+                Showing completed results through Week {accuracyThroughWeek}; Week {week} forecasts remain selected page-wide.
+              </div>
+              <div className="mt-1 max-w-2xl text-[9px] leading-4 text-white/35">
+                Rolling weekly freeze grades the projection actually published before each kickoff. Choose an exact build to isolate only that version.
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -2319,28 +2390,6 @@ export default function StatProjectionLab({
                     </option>
                   ),
                 )}
-              </select>
-              <select
-                value={accuracyWeek}
-                onChange={(event) => setAccuracyWeek(event.target.value)}
-                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
-                aria-label="Accuracy table week"
-              >
-                <option value="all">All graded weeks</option>
-                {(accuracy?.weeks || []).map((row) => (
-                  <option key={row.week} value={row.week}>
-                    Week {row.week}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={accuracyPosition}
-                onChange={(event) => setAccuracyPosition(event.target.value)}
-                className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-[10px]"
-                aria-label="Accuracy position"
-              >
-                <option value="ALL">All positions</option>
-                {["QB", "RB", "WR", "TE", "K"].map((key) => <option key={key} value={key}>{key}</option>)}
               </select>
               <select
                 value={accuracyCohort}
@@ -2361,7 +2410,9 @@ export default function StatProjectionLab({
                 </option>
               </select>
               <span className="rounded-full bg-black/20 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-white/45">
-                {accuracyStatusLabel}
+                {accuracyMetrics?.sample && accuracyThroughWeek < number(accuracy?.last_scored_week)
+                  ? `Preliminary · Results through Week ${accuracyThroughWeek}`
+                  : accuracyStatusLabel}
               </span>
             </div>
           </div>
@@ -2371,6 +2422,42 @@ export default function StatProjectionLab({
             </p>
           ) : accuracyMetrics?.sample ? (
             <>
+              {scoring === "ppr" ? (
+                <ProjectionSourceComparison
+                  results={accuracy?.source_comparison_results || []}
+                  modelBuildId={selectedAccuracyBuild}
+                  cohort={accuracyCohort}
+                  week={accuracyThroughWeek}
+                  position={position}
+                  team={team}
+                  query={query}
+                  directionalEdge={accuracy?.source_directional_edge || {}}
+                />
+              ) : null}
+              {lensComparison.safe_expected?.sample && lensComparison.risky?.sample ? (
+                <div className="mt-4 rounded-2xl border border-violet-300/15 bg-[linear-gradient(135deg,rgba(139,92,246,.09),rgba(34,211,238,.04))] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-[9px] font-black uppercase tracking-[.18em] text-violet-100/60">Projection lens matchup</div>
+                      <b className="mt-1 block text-sm text-white/85">Safe / Expected vs Boom / Bust</b>
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[9px] text-white/50">Through Week {accuracyThroughWeek} · {position === "ALL" ? "all positions" : position}</span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {[["safe_expected", "Safe / Expected"], ["risky", "Boom / Bust"]].map(([key, label]) => {
+                      const result = lensComparison[key];
+                      const other = lensComparison[key === "safe_expected" ? "risky" : "safe_expected"];
+                      const winner = number(result?.mae) < number(other?.mae);
+                      return <div key={key} className={`rounded-xl border p-3 ${winner ? "border-emerald-300/25 bg-emerald-300/[0.06]" : "border-white/[0.07] bg-black/15"}`}>
+                        <div className="flex items-center justify-between gap-2"><b className="text-xs text-white/80">{label}</b>{winner ? <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[8px] font-black uppercase text-emerald-100">Lower MAE</span> : null}</div>
+                        <div className="mt-2 text-2xl font-black text-cyan-100">{number(result?.mae).toFixed(2)} <span className="text-[9px] font-medium text-white/35">MAE</span></div>
+                        <div className="mt-1 text-[9px] text-white/35">RMSE {number(result?.rmse).toFixed(2)} · {number(result?.sample)} matched games</div>
+                      </div>;
+                    })}
+                  </div>
+                  <p className="mt-3 text-[10px] leading-5 text-white/40">This is a point-accuracy comparison on the same selected week and population. Boom / Bust intentionally leans toward a tail outcome, so it may be useful for lineup strategy even when Safe / Expected has the lower average miss.</p>
+                </div>
+              ) : null}
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 <Kpi
                   label="MAE"
@@ -2450,19 +2537,11 @@ export default function StatProjectionLab({
                 scoring={scoring}
                 lens={lens}
                 cohort={accuracyCohort}
-                week={accuracyWeek}
-                position={accuracyPosition}
+                week={accuracyThroughWeek}
+                position={position}
+                team={team}
+                query={query}
               />
-              {scoring === "ppr" ? (
-                <ProjectionSourceComparison
-                  results={accuracy?.source_comparison_results || []}
-                  modelBuildId={selectedAccuracyBuild}
-                  cohort={accuracyCohort}
-                  week={accuracyWeek}
-                  position={accuracyPosition}
-                  directionalEdge={accuracy?.source_directional_edge || {}}
-                />
-              ) : null}
             </>
           ) : (
             <p className="mt-2 text-[10px] leading-5 text-white/38">

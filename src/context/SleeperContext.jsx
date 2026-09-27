@@ -29,6 +29,7 @@ const emptyProjectionIndexes = () => ({
   DRAFTSHARKS: null,
   ARSENAL: null,
   ARSENAL_MODEL: null,
+  ARSENAL_RISKY: null,
   FANTASYPROS: null,
 });
 const PROJECTION_URLS = {
@@ -41,6 +42,7 @@ const PROJECTION_URLS = {
   FANTASYPROS: PROJ_FANTASYPROS_JSON_URL,
   ARSENAL: PROJ_ARSENAL_JSON_URL,
   ARSENAL_MODEL: PROJ_ARSENAL_MODEL_JSON_URL,
+  ARSENAL_RISKY: PROJ_ARSENAL_MODEL_JSON_URL,
 };
 
 // ---- SSR-safe localStorage helpers (no-ops on server) ----
@@ -794,6 +796,7 @@ export const SleeperProvider = ({ children }) => {
       "proj:draftsharks": "DRAFTSHARKS",
         "proj:fantasypros": "FANTASYPROS",
         "proj:thefantasyarsenal-model": "ARSENAL_MODEL",
+        "proj:thefantasyarsenal-risky": "ARSENAL_RISKY",
         "proj:thefantasyarsenal": "ARSENAL",
     };
     return map[String(k || "")] || "FFA";
@@ -1082,7 +1085,7 @@ export const SleeperProvider = ({ children }) => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
 
-    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL"].includes(src)) src = "FFA";
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL", "ARSENAL_RISKY"].includes(src)) src = "FFA";
     if (!p) return 0;
 
     const idx =
@@ -1100,7 +1103,7 @@ export const SleeperProvider = ({ children }) => {
         ? projectionIndexes.FANTASYPROS
         : src === "ARSENAL"
         ? projectionIndexes.ARSENAL
-        : src === "ARSENAL_MODEL"
+        : src === "ARSENAL_MODEL" || src === "ARSENAL_RISKY"
         ? projectionIndexes.ARSENAL_MODEL
         : projectionIndexes.FFA;
 
@@ -1120,7 +1123,7 @@ export const SleeperProvider = ({ children }) => {
       pos,
       team,
     });
-    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL" || src === "ARSENAL_MODEL") {
+    if (src === "FANTASYPROS" || src === "SLEEPER" || src === "DRAFTSHARKS" || src === "ARSENAL" || src === "ARSENAL_MODEL" || src === "ARSENAL_RISKY") {
       const sf = src === "DRAFTSHARKS" && String(qbType).toLowerCase() === "sf";
       if (projectionScoring === "std") return safeNum((sf ? best?.pointsStdSf : best?.pointsStd) ?? best?.pts);
       if (projectionScoring === "half") return safeNum((sf ? best?.pointsHalfSf : best?.pointsHalf) ?? best?.pts);
@@ -1133,8 +1136,8 @@ export const SleeperProvider = ({ children }) => {
   const hasProjection = (p, source = "FFA") => {
     let src = String(source || "FFA");
     if (src.startsWith("proj:")) src = projectionSourceFromKey(src);
-    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL"].includes(src) || !p) return false;
-    const idx = projectionIndexes[src];
+    if (!["FFA", "ESPN", "CBS", "SLEEPER", "FANTASYSHARKS", "DRAFTSHARKS", "FANTASYPROS", "ARSENAL", "ARSENAL_MODEL", "ARSENAL_RISKY"].includes(src) || !p) return false;
+    const idx = src === "ARSENAL_RISKY" ? projectionIndexes.ARSENAL_MODEL : projectionIndexes[src];
     if (!idx) return false;
     const fullName = p.full_name || p.search_full_name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
     return Boolean(idx.pickBest({
@@ -1165,13 +1168,16 @@ export const SleeperProvider = ({ children }) => {
       (row) => Number(row.week) === Number(week),
     );
     if (options.scoringSettings && requestedRow?.stat_line) {
+      const expected = scoreSleeperStats(
+        requestedRow.stat_line,
+        options.scoringSettings,
+        lookup.pos,
+      );
       return {
-        points: scoreSleeperStats(
-          requestedRow.stat_line,
-          options.scoringSettings,
-          lookup.pos,
-        ),
-        basis: "weekly_league_scoring",
+        points: src === "ARSENAL_RISKY" && !requestedRow.completed
+          ? expected * safeNum(requestedRow.risky_factor || 1)
+          : expected,
+        basis: src === "ARSENAL_RISKY" ? "weekly_arsenal_boom_bust" : "weekly_league_scoring",
         statLine: requestedRow.stat_line,
         projectionRow: requestedRow,
       };
@@ -1224,7 +1230,12 @@ export const SleeperProvider = ({ children }) => {
     const seasonEntry = src === "DRAFTSHARKS" && String(options.qbType || qbType).toLowerCase() === "sf" && best
       ? { ...best, pointsStd: best.pointsStdSf ?? best.pointsStd, pointsHalf: best.pointsHalfSf ?? best.pointsHalf, pointsPpr: best.pointsPprSf ?? best.pointsPpr, pointsTep: best.pointsTepSf ?? best.pointsTep }
       : best;
-    const resolved = resolveWeeklyProjection({
+    const riskyPoints = src === "ARSENAL_RISKY"
+      ? requestedRow?.projection_lenses?.[options.scoring || projectionScoring]?.risky
+      : null;
+    const resolved = riskyPoints != null
+      ? { points: safeNum(riskyPoints), basis: "weekly_arsenal_boom_bust" }
+      : resolveWeeklyProjection({
       row: hasRequestedWeek ? weekly : best,
       week, scoring: options.scoring || projectionScoring, position: lookup.pos,
       seasonPoints: seasonEntry ? projectionPoints(seasonEntry, options.scoring || projectionScoring, lookup.pos) ?? seasonEntry.pts : null,

@@ -116,10 +116,8 @@ export default function ProjectionCenterClient() {
             Projection Center
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
-            Use The Fantasy Arsenal projection model as its own workspace:
-            inspect one player, rank the weekly slate, review projected stat
-            DNA, and audit frozen accuracy without crowding historical Stat
-            Central research.
+            Explore weekly rankings, player ranges, projected usage, and
+            verified pre-kickoff accuracy in one workspace.
           </p>
         </header>
         <div className="mt-4">
