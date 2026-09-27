@@ -102,6 +102,146 @@ const cleanResult = (value) =>
     ? value
     : "pending";
 
+const finiteNumber = (value) =>
+  value !== null && value !== "" && Number.isFinite(Number(value))
+    ? Number(value)
+    : null;
+
+async function readSeasonArtifact(request, season, file) {
+  const url = request.nextUrl.clone();
+  url.pathname = `/stats/history/${season}/${file}.json`;
+  url.search = "";
+  url.hash = "";
+  try {
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+function finalGameForLeg(schedule, leg, week) {
+  const normalizeTeam = (value) =>
+    String(value || "").toUpperCase() === "WAS"
+      ? "WSH"
+      : String(value || "").toUpperCase();
+  const team = normalizeTeam(leg.team);
+  const opponent = normalizeTeam(leg.opponent);
+  return (schedule?.weeks || [])
+    .find((row) => Number(row.week) === Number(week))
+    ?.games?.find((game) => {
+      const teams = [normalizeTeam(game.home), normalizeTeam(game.away)];
+      return teams.includes(team) && (!opponent || teams.includes(opponent));
+    });
+}
+
+function gradeLeg(leg, player, game) {
+  if (!game?.completed && !String(game?.status || "").includes("FINAL"))
+    return { result: "pending", actual: null };
+  const stats = player?.weekly_stats?.[String(leg.week)];
+  if (!stats) return { result: "pending", actual: null };
+  const participation = finiteNumber(stats.gp ?? stats.gms_active);
+  if (participation != null && participation <= 0)
+    return { result: "void", actual: null };
+  // Sleeper omits zero-valued counting fields from otherwise complete active
+  // stat rows. Once the game is final and participation is confirmed, absence
+  // of a supported prop field is therefore a real zero rather than missing data.
+  const recorded = finiteNumber(stats[leg.stat_key]);
+  const actual = recorded == null ? 0 : recorded;
+  const line = Number(leg.line);
+  const result = actual === line
+    ? "push"
+    : leg.direction === "over"
+      ? actual > line ? "won" : "lost"
+      : actual < line ? "won" : "lost";
+  return { result, actual };
+}
+
+function ticketResult(legs) {
+  if (!legs.length || legs.some((leg) => leg.result === "pending")) return "pending";
+  if (legs.some((leg) => leg.result === "lost")) return "lost";
+  if (legs.some((leg) => leg.result === "won")) return "won";
+  if (legs.some((leg) => leg.result === "push")) return "push";
+  return "void";
+}
+
+async function settleSavedTickets(request, db, tickets, legs, bets = []) {
+  const seasons = [...new Set([...tickets, ...bets].map((row) => Number(row.season)).filter(Boolean))];
+  const evidence = new Map();
+  await Promise.all(seasons.map(async (season) => {
+    const [history, schedule] = await Promise.all([
+      readSeasonArtifact(request, season, "sleeper"),
+      readSeasonArtifact(request, season, "schedule"),
+    ]);
+    if (Array.isArray(history?.players) && Array.isArray(schedule?.weeks)) {
+      evidence.set(season, {
+        players: new Map(history.players.map((player) => [String(player.player_id), player])),
+        schedule,
+      });
+    }
+  }));
+  const ticketById = new Map(tickets.map((ticket) => [ticket.ticket_id, ticket]));
+  const statements = [];
+  for (const leg of legs) {
+    const ticket = ticketById.get(leg.ticket_id);
+    const seasonEvidence = evidence.get(Number(ticket?.season));
+    if (!ticket || !seasonEvidence) continue;
+    const game = finalGameForLeg(seasonEvidence.schedule, leg, ticket.week);
+    const grade = gradeLeg(
+      { ...leg, week: ticket.week },
+      seasonEvidence.players.get(String(leg.player_id)),
+      game,
+    );
+    // A temporarily unavailable or incomplete public stat row must never
+    // erase a result that was already settled from stronger evidence.
+    if (grade.result === "pending" && leg.result !== "pending") continue;
+    if (grade.result !== leg.result || grade.actual !== finiteNumber(leg.actual)) {
+      leg.result = grade.result;
+      leg.actual = grade.actual;
+      statements.push(db.prepare(`UPDATE arsenal_prop_ticket_legs
+        SET result=?,actual=? WHERE ticket_id=? AND leg_index=?`)
+        .bind(grade.result, grade.actual, leg.ticket_id, leg.leg_index));
+    }
+  }
+  for (const bet of bets) {
+    const seasonEvidence = evidence.get(Number(bet.season));
+    if (!seasonEvidence) continue;
+    const game = finalGameForLeg(seasonEvidence.schedule, bet, bet.week);
+    const grade = gradeLeg(
+      bet,
+      seasonEvidence.players.get(String(bet.player_id)),
+      game,
+    );
+    if (grade.result === "pending" && bet.result !== "pending") continue;
+    if (grade.result !== bet.result || grade.actual !== finiteNumber(bet.actual)) {
+      bet.result = grade.result;
+      bet.actual = grade.actual;
+      bet.settled_at = grade.result === "pending" ? null : Date.now();
+      statements.push(db.prepare(`UPDATE arsenal_prop_bets
+        SET result=?,actual=?,settled_at=? WHERE bet_id=?`)
+        .bind(grade.result, grade.actual, bet.settled_at, bet.bet_id));
+    }
+  }
+  const legsByTicket = new Map();
+  for (const leg of legs) {
+    if (!legsByTicket.has(leg.ticket_id)) legsByTicket.set(leg.ticket_id, []);
+    legsByTicket.get(leg.ticket_id).push(leg);
+  }
+  for (const ticket of tickets) {
+    const result = ticketResult(legsByTicket.get(ticket.ticket_id) || []);
+    if (result !== ticket.result) {
+      ticket.result = result;
+      ticket.settled_at = result === "pending" ? null : Date.now();
+      statements.push(db.prepare(`UPDATE arsenal_prop_tickets
+        SET result=?,settled_at=? WHERE ticket_id=?`)
+        .bind(result, ticket.settled_at, ticket.ticket_id));
+    }
+  }
+  for (let index = 0; index < statements.length; index += 75)
+    await db.batch(statements.slice(index, index + 75));
+  return { tickets, legs, legsByTicket, bets };
+}
+
 export async function GET(request) {
   try {
     const { db, account } = await propContext(request);
@@ -113,12 +253,20 @@ export async function GET(request) {
     const tickets = await db.prepare("SELECT * FROM arsenal_prop_tickets WHERE account_id=? ORDER BY created_at DESC LIMIT 250").bind(account.account_id).all();
     const legs = await db.prepare(`SELECT l.* FROM arsenal_prop_ticket_legs l
       JOIN arsenal_prop_tickets t ON t.ticket_id=l.ticket_id WHERE t.account_id=? ORDER BY t.created_at DESC,l.leg_index`).bind(account.account_id).all();
-    const legsByTicket = new Map();
-    for (const leg of legs.results || []) {
-      if (!legsByTicket.has(leg.ticket_id)) legsByTicket.set(leg.ticket_id, []);
-      legsByTicket.get(leg.ticket_id).push(leg);
-    }
-    return NextResponse.json({ bets: rows.results || [], tickets: (tickets.results || []).map((ticket) => ({ ...ticket, legs: legsByTicket.get(ticket.ticket_id) || [] })) });
+    const settled = await settleSavedTickets(
+      request,
+      db,
+      tickets.results || [],
+      legs.results || [],
+      rows.results || [],
+    );
+    return NextResponse.json({
+      bets: settled.bets,
+      tickets: settled.tickets.map((ticket) => ({
+        ...ticket,
+        legs: settled.legsByTicket.get(ticket.ticket_id) || [],
+      })),
+    });
   } catch (error) {
     return new NextResponse(error?.message || "Prop bets could not be loaded.", { status: 500 });
   }

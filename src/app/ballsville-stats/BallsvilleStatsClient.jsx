@@ -383,6 +383,8 @@ export default function BallsvilleStatsClient() {
   const [rankingFormat, setRankingFormat] = useState("dynasty");
   const [rankingQb, setRankingQb] = useState("sf");
   const [workspaceTab, setWorkspaceTab] = useState("players");
+  const [scoreMode, setScoreMode] = useState("ALL");
+  const [scoreWeek, setScoreWeek] = useState(0);
   useEffect(() => {
     let active = true;
     fetch(`/data/ballsville-stats-${season}.json`, { cache: "no-store" })
@@ -418,6 +420,9 @@ export default function BallsvilleStatsClient() {
     };
   }, [season]);
   const modes = Array.isArray(data?.modes) ? data.modes : [];
+  const leaderboardModes = Array.isArray(data?.leaderboardModes)
+    ? data.leaderboardModes
+    : [];
   const cachePlayers = Array.isArray(data?.players) ? data.players : [];
   const summary = data?.summary || {};
   const visible = useMemo(
@@ -543,20 +548,75 @@ export default function BallsvilleStatsClient() {
       .sort((a, b) => b.rating - a.rating || b.stars - a.stars);
   }, [data?.teams, nflPlayers, selectedModes, teamMetric]);
   const topTeams = rankedTeams.slice(0, 10);
+  const scoreWeeks = useMemo(
+    () =>
+      [
+        ...new Set(
+          leaderboardModes
+            .filter((mode) => scoreMode === "ALL" || mode.modeKey === scoreMode)
+            .flatMap((mode) => (Array.isArray(mode.weeks) ? mode.weeks : []))
+            .map(n)
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => b - a),
+    [leaderboardModes, scoreMode],
+  );
+  const activeScoreWeek = scoreWeeks.includes(n(scoreWeek))
+    ? n(scoreWeek)
+    : scoreWeeks[0] || 0;
+  const weeklyScoreRows = useMemo(() => {
+    if (!activeScoreWeek) return [];
+    const weekKey = String(activeScoreWeek);
+    return (Array.isArray(data?.scorecards) ? data.scorecards : [])
+      .filter(
+        (row) =>
+          (scoreMode === "ALL" || row.modeKey === scoreMode) &&
+          Object.prototype.hasOwnProperty.call(row?.weekly || {}, weekKey),
+      )
+      .map((row) => ({ ...row, score: n(row.weekly?.[weekKey]) }))
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          String(a.owner?.name || "").localeCompare(
+            String(b.owner?.name || ""),
+          ),
+      );
+  }, [activeScoreWeek, data?.scorecards, scoreMode]);
+  const topWeeklyScores = weeklyScoreRows.slice(0, 10);
+  const activeScoreMode = leaderboardModes.find(
+    (mode) => mode.modeKey === scoreMode,
+  );
+  const scoreUpdatedAt = leaderboardModes
+    .filter((mode) => scoreMode === "ALL" || mode.modeKey === scoreMode)
+    .map((mode) => Date.parse(mode.updatedAt || ""))
+    .filter(Number.isFinite)
+    .sort((a, b) => b - a)[0];
   const selectedPowerTeam = rankedTeams.find(
     (team) => `${team.key}:${team.modeSlug}` === powerTeamKey,
   );
   const selectedPopulation = useMemo(() => {
-    const activeModes = modes.filter((mode) => selectedModes.has(mode.modeSlug));
-    const selectedTeams = (Array.isArray(data?.teams) ? data.teams : []).filter((team) => selectedModes.has(team.modeSlug));
+    const activeModes = modes.filter((mode) =>
+      selectedModes.has(mode.modeSlug),
+    );
+    const selectedTeams = (Array.isArray(data?.teams) ? data.teams : []).filter(
+      (team) => selectedModes.has(team.modeSlug),
+    );
     return {
       modes: activeModes.length,
       leagues: activeModes.reduce((sum, mode) => sum + n(mode.leagues), 0),
       drafts: activeModes.reduce((sum, mode) => sum + n(mode.drafts), 0),
       seats: activeModes.reduce((sum, mode) => sum + n(mode.seats), 0),
       picks: activeModes.reduce((sum, mode) => sum + n(mode.picks), 0),
-      managers: new Set(selectedTeams.map((team) => String(team.owner?.key || "")).filter(Boolean)).size,
-      players: cachePlayers.filter((player) => Object.keys(player?.modes || {}).some((slug) => selectedModes.has(slug))).length,
+      managers: new Set(
+        selectedTeams
+          .map((team) => String(team.owner?.key || ""))
+          .filter(Boolean),
+      ).size,
+      players: cachePlayers.filter((player) =>
+        Object.keys(player?.modes || {}).some((slug) =>
+          selectedModes.has(slug),
+        ),
+      ).length,
     };
   }, [cachePlayers, data?.teams, modes, selectedModes]);
   const rankingSourceLabel =
@@ -622,7 +682,10 @@ export default function BallsvilleStatsClient() {
           </Card>
         ) : (
           <>
-            <div data-guide-tip="ballsville-totals" className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div
+              data-guide-tip="ballsville-totals"
+              className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4"
+            >
               <Metric
                 label="Unique managers"
                 value={n(summary.totalOwners).toLocaleString()}
@@ -653,9 +716,10 @@ export default function BallsvilleStatsClient() {
                   {data.coverage.missingLeagues.length === 1 ? "" : "s"}
                 </div>
                 <p className="mt-1 text-xs leading-5 text-amber-50/60">
-                  The update still published every league it could process. These leagues are excluded from player
-                  counts, ADP, manager totals, and team rankings until their Draft Compare feed or Sleeper data is
-                  available.
+                  The update still published every league it could process.
+                  These leagues are excluded from player counts, ADP, manager
+                  totals, and team rankings until their Draft Compare feed or
+                  Sleeper data is available.
                 </p>
                 <details className="mt-3">
                   <summary className="cursor-pointer text-xs font-bold text-amber-100/75">
@@ -679,8 +743,10 @@ export default function BallsvilleStatsClient() {
                 <div>
                   <h2 className="text-xl font-black">Game-mode population</h2>
                   <p className="mt-1 text-xs text-white/38">
-                    Unique manager IDs versus total draft seats. Manager counts overlap between modes, so the mode
-                    figures should not be added together; the page total deduplicates them across all modes.
+                    Unique manager IDs versus total draft seats. Manager counts
+                    overlap between modes, so the mode figures should not be
+                    added together; the page total deduplicates them across all
+                    modes.
                   </p>
                 </div>
                 <button
@@ -738,12 +804,33 @@ export default function BallsvilleStatsClient() {
                 ))}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-4 sm:grid-cols-3 lg:grid-cols-6">
-                <Metric label="Selected managers" value={selectedPopulation.managers.toLocaleString()} detail="Unique across selected modes" />
-                <Metric label="Selected leagues" value={selectedPopulation.leagues.toLocaleString()} />
-                <Metric label="Selected drafts" value={selectedPopulation.drafts.toLocaleString()} />
-                <Metric label="Draft seats" value={selectedPopulation.seats.toLocaleString()} detail="Managers can repeat" />
-                <Metric label="Selections" value={selectedPopulation.picks.toLocaleString()} />
-                <Metric label="Players" value={selectedPopulation.players.toLocaleString()} detail="In active player table" />
+                <Metric
+                  label="Selected managers"
+                  value={selectedPopulation.managers.toLocaleString()}
+                  detail="Unique across selected modes"
+                />
+                <Metric
+                  label="Selected leagues"
+                  value={selectedPopulation.leagues.toLocaleString()}
+                />
+                <Metric
+                  label="Selected drafts"
+                  value={selectedPopulation.drafts.toLocaleString()}
+                />
+                <Metric
+                  label="Draft seats"
+                  value={selectedPopulation.seats.toLocaleString()}
+                  detail="Managers can repeat"
+                />
+                <Metric
+                  label="Selections"
+                  value={selectedPopulation.picks.toLocaleString()}
+                />
+                <Metric
+                  label="Players"
+                  value={selectedPopulation.players.toLocaleString()}
+                  detail="In active player table"
+                />
               </div>
             </Card>
             {selectedModes.size > 1 ? (
@@ -755,287 +842,487 @@ export default function BallsvilleStatsClient() {
                 mode-by-mode ADP, or select one mode for a clean ranking.
               </div>
             ) : null}
-            <nav data-guide-tip="ballsville-tabs" className="sticky top-14 z-30 mt-5 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl">
-              <div className="flex w-max gap-1">{[["players","Player Popularity"],["teams","Team Power Board"]].map(([key,label]) => <button type="button" key={key} onClick={()=>setWorkspaceTab(key)} className={`rounded-xl px-5 py-2.5 text-sm font-black ${workspaceTab===key ? "bg-amber-300/10 text-amber-100" : "text-white/40"}`}>{label}</button>)}</div>
-            </nav>
-            {workspaceTab === "teams" ? <Card data-guide-tip="ballsville-teams" className="mt-5 overflow-visible p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-200/55">
-                    Ballsville power board
-                  </div>
-                  <h2 className="mt-1 text-2xl font-black">Top 10 teams</h2>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-white/38">
-                    Uses the same Power Rankings split: 70% top-starter
-                    production/value and 30% depth. Rankings recalculate from
-                    the selected projection or value source, format, and active
-                    Ballsville modes. Click a team to inspect its roster.
-                  </p>
-                </div>
-                <SourceSelector
-                  sources={DEFAULT_SOURCES}
-                  value={rankingSource}
-                  onChange={setRankingSource}
-                  mode={rankingFormat}
-                  qbType={rankingQb}
-                  onModeChange={setRankingFormat}
-                  onQbTypeChange={setRankingQb}
-                  layout="inline"
-                  className="w-full lg:w-auto"
-                />
-              </div>
-              {selectedModes.size > 1 ? (
-                <div className="mt-4 rounded-xl border border-amber-300/15 bg-amber-300/[0.05] p-3 text-[10px] leading-4 text-amber-100/65">
-                  Teams from different game modes are being compared on one
-                  selected lens. Choose one mode and match its format for the
-                  most defensible ranking.
-                </div>
-              ) : null}
-              <div className="mt-4 grid gap-2 md:grid-cols-2">
-                {topTeams.map((team, index) => (
+            <nav
+              data-guide-tip="ballsville-tabs"
+              className="sticky top-14 z-30 mt-5 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/95 p-2 backdrop-blur-xl"
+            >
+              <div className="flex w-max gap-1">
+                {[
+                  ["players", "Player Popularity"],
+                  ["scores", "Weekly High Scores"],
+                  ["teams", "Team Power Board"],
+                ].map(([key, label]) => (
                   <button
                     type="button"
-                    onClick={() =>
-                      setPowerTeamKey(`${team.key}:${team.modeSlug}`)
-                    }
-                    key={`${team.key}:${team.modeSlug}`}
-                    className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-300/20 hover:bg-white/[0.05]"
+                    key={key}
+                    onClick={() => setWorkspaceTab(key)}
+                    className={`rounded-xl px-5 py-2.5 text-sm font-black ${workspaceTab === key ? "bg-amber-300/10 text-amber-100" : "text-white/40"}`}
                   >
-                    <span
-                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-black ${index < 3 ? "bg-violet-300/10 text-violet-100" : "bg-white/[0.04] text-white/35"}`}
-                    >
-                      #{index + 1}
-                    </span>
-                    <img
-                      src={avatarUrl(team.owner?.avatar)}
-                      alt=""
-                      className="h-11 w-11 rounded-xl object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <b className="block truncate">
-                        {team.owner?.name || `Roster ${team.rosterId}`}
-                      </b>
-                      <div className="truncate text-[10px] text-white/32">
-                        {team.leagueName} ·{" "}
-                        {modes.find((mode) => mode.modeSlug === team.modeSlug)
-                          ?.title || team.modeSlug}
-                      </div>
-                      <div className="mt-1 text-[9px] text-white/25">
-                        {team.covered}/{team.total} covered · top{" "}
-                        {team.starterCount}:{" "}
-                        {Math.round(team.stars).toLocaleString()} · depth:{" "}
-                        {Math.round(team.depth).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <b className="text-lg text-cyan-100">
-                        {team.rating.toLocaleString()}
-                      </b>
-                      <div className="text-[8px] uppercase text-white/25">
-                        power · view →
-                      </div>
-                    </div>
+                    {label}
                   </button>
                 ))}
-                {!topTeams.length ? (
-                  <div className="p-4 text-sm text-white/35">
-                    {Array.isArray(data?.teams)
-                      ? "No teams have coverage in the selected source and modes."
-                      : "Team rankings will appear after the Ballsville cache is regenerated."}
+              </div>
+            </nav>
+            {workspaceTab === "scores" ? (
+              <Card
+                data-guide-tip="ballsville-weekly-scores"
+                className="mt-5 overflow-hidden"
+              >
+                <div className="border-b border-white/10 bg-[radial-gradient(circle_at_85%_0%,rgba(34,211,238,.12),transparent_35%),linear-gradient(135deg,rgba(124,58,237,.08),transparent_55%)] p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-[.2em] text-cyan-200/55">
+                        Official Ballsville leaderboard scores
+                      </div>
+                      <h2 className="mt-1 text-2xl font-black">
+                        Week {activeScoreWeek || "—"} top 10
+                      </h2>
+                      <p className="mt-1 max-w-2xl text-xs leading-5 text-white/42">
+                        The highest official team scores captured by Ballsville
+                        for the selected week and game mode. The latest week can
+                        continue changing while games are being played.
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label>
+                        <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.14em] text-white/35">
+                          Game mode
+                        </span>
+                        <select
+                          value={scoreMode}
+                          onChange={(event) => {
+                            setScoreMode(event.target.value);
+                            setScoreWeek(0);
+                          }}
+                          className="w-full min-w-[190px] rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                        >
+                          <option value="ALL">All game modes</option>
+                          {leaderboardModes.map((mode) => (
+                            <option key={mode.modeKey} value={mode.modeKey}>
+                              {mode.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className="mb-1.5 block text-[9px] font-black uppercase tracking-[.14em] text-white/35">
+                          Scoring week
+                        </span>
+                        <select
+                          value={activeScoreWeek}
+                          onChange={(event) =>
+                            setScoreWeek(n(event.target.value))
+                          }
+                          className="w-full min-w-[150px] rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                        >
+                          {scoreWeeks.map((week) => (
+                            <option key={week} value={week}>
+                              Week {week}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-white/38">
+                    <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">
+                      {activeScoreMode?.title || "All game modes"}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">
+                      {weeklyScoreRows.length.toLocaleString()} scored teams
+                    </span>
+                    {Number.isFinite(scoreUpdatedAt) ? (
+                      <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">
+                        Captured {new Date(scoreUpdatedAt).toLocaleString()}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-sm">
+                    <thead className="bg-white/[0.025] text-[10px] uppercase tracking-wider text-white/35">
+                      <tr>
+                        <th className="p-3 text-center">Rank</th>
+                        <th className="p-3">Team & manager</th>
+                        <th className="p-3">Game mode</th>
+                        <th className="p-3">League</th>
+                        <th className="p-3 text-right">
+                          Week {activeScoreWeek} score
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.055]">
+                      {topWeeklyScores.map((row, index) => {
+                        const mode = leaderboardModes.find(
+                          (item) => item.modeKey === row.modeKey,
+                        );
+                        return (
+                          <tr
+                            key={`${row.key}:${activeScoreWeek}`}
+                            className="transition hover:bg-white/[0.035]"
+                          >
+                            <td className="p-3 text-center">
+                              <span
+                                className={`inline-grid h-9 w-9 place-items-center rounded-xl font-black ${index < 3 ? "bg-amber-300/10 text-amber-100" : "bg-white/[0.04] text-white/40"}`}
+                              >
+                                #{index + 1}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={avatarUrl(row.owner?.avatar)}
+                                  alt=""
+                                  className="h-11 w-11 rounded-xl object-cover"
+                                />
+                                <div className="min-w-0">
+                                  <b className="block max-w-[260px] truncate">
+                                    {row.teamName ||
+                                      row.owner?.name ||
+                                      `Roster ${row.rosterId}`}
+                                  </b>
+                                  <div className="max-w-[260px] truncate text-[10px] text-white/35">
+                                    Managed by{" "}
+                                    {row.owner?.name || "Unknown manager"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className="rounded-lg border border-cyan-200/10 bg-cyan-300/[0.06] px-2 py-1 text-[10px] font-bold text-cyan-100/70">
+                                {mode?.title || row.modeKey}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <b className="block max-w-[260px] truncate text-xs text-white/70">
+                                {row.leagueName}
+                              </b>
+                              {row.division ? (
+                                <div className="mt-1 text-[10px] text-white/30">
+                                  {row.division}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="p-3 text-right">
+                              <b className="text-xl text-cyan-100">
+                                {row.score.toFixed(2)}
+                              </b>
+                              <div className="text-[8px] uppercase tracking-wider text-white/25">
+                                fantasy points
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {!topWeeklyScores.length ? (
+                  <div className="p-8 text-center text-sm text-white/38">
+                    Weekly leaderboard scores will appear after the Ballsville
+                    statistics cache is regenerated.
                   </div>
                 ) : null}
-              </div>
-            </Card> : null}
-            {workspaceTab === "players" ? <Card data-guide-tip="ballsville-players" className="mt-5 overflow-hidden">
-              <div className="border-b border-white/10 p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black">Most drafted players</h2>
-                    <p className="mt-1 text-xs text-white/38">
-                      Click a row for top drafters and trends. Click an avatar
-                      for the full player inspector.
+                <div className="border-t border-white/10 p-4 text-[10px] leading-4 text-white/30">
+                  Scores come directly from Ballsville&apos;s published
+                  leaderboard snapshot. This view ranks the top 10 from the
+                  selected population and does not recalculate league scoring.
+                </div>
+              </Card>
+            ) : null}
+            {workspaceTab === "teams" ? (
+              <Card
+                data-guide-tip="ballsville-teams"
+                className="mt-5 overflow-visible p-5"
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-200/55">
+                      Ballsville power board
+                    </div>
+                    <h2 className="mt-1 text-2xl font-black">Top 10 teams</h2>
+                    <p className="mt-1 max-w-2xl text-xs leading-5 text-white/38">
+                      Uses the same Power Rankings split: 70% top-starter
+                      production/value and 30% depth. Rankings recalculate from
+                      the selected projection or value source, format, and
+                      active Ballsville modes. Click a team to inspect its
+                      roster.
                     </p>
                   </div>
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search players…"
-                    className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm outline-none"
+                  <SourceSelector
+                    sources={DEFAULT_SOURCES}
+                    value={rankingSource}
+                    onChange={setRankingSource}
+                    mode={rankingFormat}
+                    qbType={rankingQb}
+                    onModeChange={setRankingFormat}
+                    onQbTypeChange={setRankingQb}
+                    layout="inline"
+                    className="w-full lg:w-auto"
                   />
-                  <select
-                    value={position}
-                    onChange={(event) => setPosition(event.target.value)}
-                    className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
-                  >
-                    <option value="ALL">All positions</option>
-                    {["QB", "RB", "WR", "TE", "K", "DEF"].map((pos) => (
-                      <option key={pos}>{pos}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={sort}
-                    onChange={(event) => chooseSort(event.target.value)}
-                    className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
-                  >
-                    <option value="drafts">Most drafted</option>
-                    <option value="owners">Most managers</option>
-                    <option value="adp">Earliest ADP</option>
-                    <option value="modes">Most modes</option>
-                    <option value="rise">Biggest YoY riser</option>
-                    <option value="name">Player name</option>
-                    <option value="range">Best pick</option>
-                  </select>
                 </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[920px] text-left text-sm">
-                  <thead className="bg-white/[0.025] text-[10px] uppercase tracking-wider text-white/35">
-                    <tr>
-                      <SortHeader
-                        label="Player"
-                        sortKey="name"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                      />
-                      <SortHeader
-                        label="Drafted"
-                        sortKey="drafts"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                        align="right"
-                      />
-                      <SortHeader
-                        label="Managers"
-                        sortKey="owners"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                        align="right"
-                      />
-                      <SortHeader
-                        label="ADP"
-                        sortKey="adp"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                        align="right"
-                      />
-                      <SortHeader
-                        label="Range"
-                        sortKey="range"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                        align="right"
-                      />
-                      <SortHeader
-                        label="Modes"
-                        sortKey="modes"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                      />
-                      <SortHeader
-                        label="Prior year"
-                        sortKey="rise"
-                        activeSort={sort}
-                        direction={sortDirection}
-                        onSort={changeSort}
-                        align="right"
-                      />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.055]">
-                    {visible.slice(0, 300).map((row, index) => (
-                      <tr
-                        key={row.key}
-                        tabIndex={0}
-                        onClick={() => setDetail(row)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") setDetail(row);
-                        }}
-                        className="cursor-pointer hover:bg-white/[0.04]"
+                {selectedModes.size > 1 ? (
+                  <div className="mt-4 rounded-xl border border-amber-300/15 bg-amber-300/[0.05] p-3 text-[10px] leading-4 text-amber-100/65">
+                    Teams from different game modes are being compared on one
+                    selected lens. Choose one mode and match its format for the
+                    most defensible ranking.
+                  </div>
+                ) : null}
+                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                  {topTeams.map((team, index) => (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPowerTeamKey(`${team.key}:${team.modeSlug}`)
+                      }
+                      key={`${team.key}:${team.modeSlug}`}
+                      className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-300/20 hover:bg-white/[0.05]"
+                    >
+                      <span
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-black ${index < 3 ? "bg-violet-300/10 text-violet-100" : "bg-white/[0.04] text-white/35"}`}
                       >
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            <span className="w-7 text-xs font-black text-white/20">
-                              #{index + 1}
-                            </span>
-                            <AvatarImage
-                              name={row.name}
-                              playerId={row.playerId}
-                              size={42}
-                              className="rounded-xl"
-                              alt=""
-                            />
-                            <div>
-                              <b>{row.name}</b>
-                              <div className="text-[10px] text-white/30">
-                                {row.position || "—"} · {row.team || "FA"}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3 text-right font-black">
-                          {row.selectedDrafts}
-                        </td>
-                        <td className="p-3 text-right">{row.selectedOwners}</td>
-                        <td className="p-3 text-right">
-                          {n(row.selectedAdp) > 0
-                            ? n(row.selectedAdp).toFixed(1)
-                            : "—"}
-                          {selectedModes.size > 1 ? (
-                            <div className="text-[8px] font-bold uppercase text-amber-200/55">
-                              mixed
-                            </div>
-                          ) : null}
-                        </td>
-                        <td className="p-3 text-right text-white/45">
-                          {row.selectedBest || "—"}–{row.selectedWorst || "—"}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex max-w-sm flex-wrap gap-1">
-                            {row.modeEntries.map(([slug, count]) => (
-                              <span
-                                key={slug}
-                                className="rounded bg-cyan-300/[0.07] px-1.5 py-1 text-[9px] text-cyan-100/65"
-                              >
-                                {modes.find((mode) => mode.modeSlug === slug)
-                                  ?.title || slug}{" "}
-                                · {count}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="p-3 text-right">
-                          {row.returning ? (
-                            <>
-                              <div>{row.previousDrafts} drafts</div>
-                              <div
-                                className={`text-[10px] ${row.adpChange > 0 ? "text-emerald-100" : row.adpChange < 0 ? "text-rose-100" : "text-white/30"}`}
-                              >
-                                {row.adpChange == null
-                                  ? "ADP unavailable"
-                                  : `${row.adpChange > 0 ? "↑" : "↓"} ${Math.abs(row.adpChange).toFixed(1)} picks`}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-white/25">New</span>
-                          )}
-                        </td>
+                        #{index + 1}
+                      </span>
+                      <img
+                        src={avatarUrl(team.owner?.avatar)}
+                        alt=""
+                        className="h-11 w-11 rounded-xl object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <b className="block truncate">
+                          {team.owner?.name || `Roster ${team.rosterId}`}
+                        </b>
+                        <div className="truncate text-[10px] text-white/32">
+                          {team.leagueName} ·{" "}
+                          {modes.find((mode) => mode.modeSlug === team.modeSlug)
+                            ?.title || team.modeSlug}
+                        </div>
+                        <div className="mt-1 text-[9px] text-white/25">
+                          {team.covered}/{team.total} covered · top{" "}
+                          {team.starterCount}:{" "}
+                          {Math.round(team.stars).toLocaleString()} · depth:{" "}
+                          {Math.round(team.depth).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <b className="text-lg text-cyan-100">
+                          {team.rating.toLocaleString()}
+                        </b>
+                        <div className="text-[8px] uppercase text-white/25">
+                          power · view →
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {!topTeams.length ? (
+                    <div className="p-4 text-sm text-white/35">
+                      {Array.isArray(data?.teams)
+                        ? "No teams have coverage in the selected source and modes."
+                        : "Team rankings will appear after the Ballsville cache is regenerated."}
+                    </div>
+                  ) : null}
+                </div>
+              </Card>
+            ) : null}
+            {workspaceTab === "players" ? (
+              <Card
+                data-guide-tip="ballsville-players"
+                className="mt-5 overflow-hidden"
+              >
+                <div className="border-b border-white/10 p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl font-black">
+                        Most drafted players
+                      </h2>
+                      <p className="mt-1 text-xs text-white/38">
+                        Click a row for top drafters and trends. Click an avatar
+                        for the full player inspector.
+                      </p>
+                    </div>
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search players…"
+                      className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm outline-none"
+                    />
+                    <select
+                      value={position}
+                      onChange={(event) => setPosition(event.target.value)}
+                      className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                    >
+                      <option value="ALL">All positions</option>
+                      {["QB", "RB", "WR", "TE", "K", "DEF"].map((pos) => (
+                        <option key={pos}>{pos}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={sort}
+                      onChange={(event) => chooseSort(event.target.value)}
+                      className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm"
+                    >
+                      <option value="drafts">Most drafted</option>
+                      <option value="owners">Most managers</option>
+                      <option value="adp">Earliest ADP</option>
+                      <option value="modes">Most modes</option>
+                      <option value="rise">Biggest YoY riser</option>
+                      <option value="name">Player name</option>
+                      <option value="range">Best pick</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[920px] text-left text-sm">
+                    <thead className="bg-white/[0.025] text-[10px] uppercase tracking-wider text-white/35">
+                      <tr>
+                        <SortHeader
+                          label="Player"
+                          sortKey="name"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                        />
+                        <SortHeader
+                          label="Drafted"
+                          sortKey="drafts"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                          align="right"
+                        />
+                        <SortHeader
+                          label="Managers"
+                          sortKey="owners"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                          align="right"
+                        />
+                        <SortHeader
+                          label="ADP"
+                          sortKey="adp"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                          align="right"
+                        />
+                        <SortHeader
+                          label="Range"
+                          sortKey="range"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                          align="right"
+                        />
+                        <SortHeader
+                          label="Modes"
+                          sortKey="modes"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                        />
+                        <SortHeader
+                          label="Prior year"
+                          sortKey="rise"
+                          activeSort={sort}
+                          direction={sortDirection}
+                          onSort={changeSort}
+                          align="right"
+                        />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="border-t border-white/10 p-4 text-[10px] text-white/30">
-                Showing {Math.min(300, visible.length)} of {visible.length}{" "}
-                matching players. All details come from the scheduled cache, not
-                live league requests.
-              </div>
-            </Card> : null}
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.055]">
+                      {visible.slice(0, 300).map((row, index) => (
+                        <tr
+                          key={row.key}
+                          tabIndex={0}
+                          onClick={() => setDetail(row)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") setDetail(row);
+                          }}
+                          className="cursor-pointer hover:bg-white/[0.04]"
+                        >
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <span className="w-7 text-xs font-black text-white/20">
+                                #{index + 1}
+                              </span>
+                              <AvatarImage
+                                name={row.name}
+                                playerId={row.playerId}
+                                size={42}
+                                className="rounded-xl"
+                                alt=""
+                              />
+                              <div>
+                                <b>{row.name}</b>
+                                <div className="text-[10px] text-white/30">
+                                  {row.position || "—"} · {row.team || "FA"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3 text-right font-black">
+                            {row.selectedDrafts}
+                          </td>
+                          <td className="p-3 text-right">
+                            {row.selectedOwners}
+                          </td>
+                          <td className="p-3 text-right">
+                            {n(row.selectedAdp) > 0
+                              ? n(row.selectedAdp).toFixed(1)
+                              : "—"}
+                            {selectedModes.size > 1 ? (
+                              <div className="text-[8px] font-bold uppercase text-amber-200/55">
+                                mixed
+                              </div>
+                            ) : null}
+                          </td>
+                          <td className="p-3 text-right text-white/45">
+                            {row.selectedBest || "—"}–{row.selectedWorst || "—"}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex max-w-sm flex-wrap gap-1">
+                              {row.modeEntries.map(([slug, count]) => (
+                                <span
+                                  key={slug}
+                                  className="rounded bg-cyan-300/[0.07] px-1.5 py-1 text-[9px] text-cyan-100/65"
+                                >
+                                  {modes.find((mode) => mode.modeSlug === slug)
+                                    ?.title || slug}{" "}
+                                  · {count}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-3 text-right">
+                            {row.returning ? (
+                              <>
+                                <div>{row.previousDrafts} drafts</div>
+                                <div
+                                  className={`text-[10px] ${row.adpChange > 0 ? "text-emerald-100" : row.adpChange < 0 ? "text-rose-100" : "text-white/30"}`}
+                                >
+                                  {row.adpChange == null
+                                    ? "ADP unavailable"
+                                    : `${row.adpChange > 0 ? "↑" : "↓"} ${Math.abs(row.adpChange).toFixed(1)} picks`}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-white/25">New</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="border-t border-white/10 p-4 text-[10px] text-white/30">
+                  Showing {Math.min(300, visible.length)} of {visible.length}{" "}
+                  matching players. All details come from the scheduled cache,
+                  not live league requests.
+                </div>
+              </Card>
+            ) : null}
           </>
         )}
       </div>
