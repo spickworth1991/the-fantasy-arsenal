@@ -15,6 +15,7 @@ const n = (value) => Number(value || 0);
 const pct = (value) => value == null ? "Unscored" : value < .001 ? "<0.1%" : `${(value * 100).toFixed(value < .01 ? 2 : 1)}%`;
 const profit = (odds, stake) => odds > 0 ? stake * odds / 100 : stake * 100 / Math.abs(odds || -100);
 const lineText = (leg) => leg.direction === "over" && Number(leg.line) % 1 === .5 ? `${Math.floor(Number(leg.line)) + 1}+` : `${leg.direction === "over" ? "Over" : "Under"} ${leg.line}`;
+const sameSet = (left, right) => left.size === right.size && [...left].every((value) => right.has(value));
 
 function Panel({ children, className = "" }) { return <section className={`rounded-3xl border border-white/10 bg-slate-950/80 ${className}`}>{children}</section>; }
 function Toggle({ active, children, onClick }) { return <button type="button" onClick={onClick} className={`rounded-lg border px-3 py-1.5 text-xs ${active ? "border-cyan-300/25 bg-cyan-300/10 text-cyan-100" : "border-white/10 text-white/35"}`}>{children}</button>; }
@@ -68,6 +69,14 @@ export default function PropLabClient() {
   const [enabledMarkets, setEnabledMarkets] = useState(new Set(Object.keys(MARKETS))), [locked, setLocked] = useState(new Set()), [excluded, setExcluded] = useState(new Set());
   const [minLegs, setMinLegs] = useState(15), [maxLegs, setMaxLegs] = useState(20), [stake, setStake] = useState(10);
   const [minimumProbability, setMinimumProbability] = useState(80), [minimumEvidence, setMinimumEvidence] = useState(55);
+  const [appliedFilters, setAppliedFilters] = useState(() => ({
+    selectedGames: new Set(),
+    enabledMarkets: new Set(Object.keys(MARKETS)),
+    minLegs: 15,
+    maxLegs: 20,
+    minimumProbability: 80,
+    minimumEvidence: 55,
+  }));
   const [actualOdds, setActualOdds] = useState({}), [building, setBuilding] = useState(false), [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(""), [buildMeta, setBuildMeta] = useState(null), [now, setNow] = useState(() => Date.now());
   const [dbUnavailable, setDbUnavailable] = useState(false), [editing, setEditing] = useState(null);
@@ -96,7 +105,11 @@ export default function PropLabClient() {
     (board?.predictions || []).forEach((row) => { if (!map.has(row.gameKey)) map.set(row.gameKey, { key: row.gameKey, team: row.team, opponent: row.opponent, kickoff: row.kickoff }); });
     return [...map.values()].sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   }, [board]);
-  useEffect(() => setSelectedGames(new Set(games.filter((game) => Date.parse(game.kickoff) > Date.now()).map((game) => game.key))), [games]);
+  useEffect(() => {
+    const upcoming = new Set(games.filter((game) => Date.parse(game.kickoff) > Date.now()).map((game) => game.key));
+    setSelectedGames(upcoming);
+    setAppliedFilters((current) => ({ ...current, selectedGames: new Set(upcoming) }));
+  }, [games]);
 
   useEffect(() => {
     const worker = new Worker(new URL("./propTicketWorker.js", import.meta.url));
@@ -115,8 +128,8 @@ export default function PropLabClient() {
   }, []);
   useEffect(() => {
     if (!board || !workerRef.current) return;
-    setBuilding(true); workerRef.current.postMessage({ predictions: board.predictions || [], selectedGames: [...selectedGames], enabledMarkets: [...enabledMarkets], minimumProbability: minimumProbability / 100, minimumEvidence: minimumEvidence / 100, minLegs, maxLegs, lockedIds: [...locked], excludedIds: [...excluded], dependencyModel: board.dependencyModel, seed: `${board.capturedAt}:${board.modelBuildId}` });
-  }, [board, enabledMarkets, excluded, locked, maxLegs, minLegs, minimumEvidence, minimumProbability, selectedGames]);
+    setBuilding(true); workerRef.current.postMessage({ predictions: board.predictions || [], selectedGames: [...appliedFilters.selectedGames], enabledMarkets: [...appliedFilters.enabledMarkets], minimumProbability: appliedFilters.minimumProbability / 100, minimumEvidence: appliedFilters.minimumEvidence / 100, minLegs: appliedFilters.minLegs, maxLegs: appliedFilters.maxLegs, lockedIds: [...locked], excludedIds: [...excluded], dependencyModel: board.dependencyModel, seed: `${board.capturedAt}:${board.modelBuildId}` });
+  }, [appliedFilters, board, excluded, locked]);
   useEffect(() => {
     if (!isConnected || dbUnavailable || !board || !tickets.length) return;
     const key = tickets.map((ticket) => ticket.recommendationId).join("|"); if (recordedRef.current === key) return; recordedRef.current = key;
@@ -124,6 +137,24 @@ export default function PropLabClient() {
   }, [accountRequest, board, dbUnavailable, isConnected, tickets]);
 
   const toggle = (setter, key) => setter((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next; });
+  const filtersDirty =
+    minLegs !== appliedFilters.minLegs ||
+    maxLegs !== appliedFilters.maxLegs ||
+    minimumProbability !== appliedFilters.minimumProbability ||
+    minimumEvidence !== appliedFilters.minimumEvidence ||
+    !sameSet(selectedGames, appliedFilters.selectedGames) ||
+    !sameSet(enabledMarkets, appliedFilters.enabledMarkets);
+  const applyFilters = () => {
+    setAppliedFilters({
+      selectedGames: new Set(selectedGames),
+      enabledMarkets: new Set(enabledMarkets),
+      minLegs,
+      maxLegs,
+      minimumProbability,
+      minimumEvidence,
+    });
+    setMessage("Filters applied. Rebuilding tickets with your selected settings.");
+  };
   const remove = (id) => { setExcluded((current) => new Set([...current, id])); setLocked((current) => { const next = new Set(current); next.delete(id); return next; }); };
   const replace = (id, ticket) => { setExcluded((current) => new Set([...current, id])); setLocked(new Set(ticket.legs.filter((leg) => leg.id !== id).map((leg) => leg.id))); };
   const editOptions = useMemo(() => {
@@ -166,7 +197,7 @@ export default function PropLabClient() {
     <div className="mb-6 rounded-[2rem] border border-amber-300/15 bg-[radial-gradient(circle_at_85%_0%,rgba(251,191,36,.16),transparent_38%),rgba(2,6,23,.9)] p-6 sm:p-8"><div className="text-[11px] font-bold uppercase tracking-[.28em] text-amber-200/60">Arsenal high-chance ticket builder</div><h1 className="mt-2 text-3xl font-black sm:text-5xl">Prop Lab</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">Build large, low-stake DraftKings tickets from strong player props. Ticket probability includes historically measured relationships between props in the same game.</p>{board ? <div className={`mt-4 rounded-xl border p-3 text-xs ${actionable ? "border-emerald-300/20 bg-emerald-300/[.06] text-emerald-100/75" : "border-amber-300/25 bg-amber-300/[.07] text-amber-100/80"}`}><b className="block text-white">{actionable ? "Sportsbook data recently captured" : "Draft only — refresh sportsbook data"}</b>Odds captured {new Date(board.capturedAt).toLocaleString()} · model {board.modelVersion}. {actionable ? "Confirm every offer and the final combined price in DraftKings." : "Run npm run bets:update before placing a ticket."}</div> : null}</div>
     {!ready ? <Panel className="p-6 text-white/50">Checking Arsenal account…</Panel> : !isConnected && !localPreview ? <Panel className="p-6"><h2 className="text-xl font-black">Arsenal account required</h2><p className="mt-2 text-sm text-white/50">Sign in from My Arsenal to build and track tickets.</p><a href="/account" className="mt-4 inline-block rounded-xl bg-amber-300/15 px-4 py-2 text-sm font-bold text-amber-100">Open My Arsenal</a></Panel> : <>
       {localPreview ? <div className="mb-4 rounded-xl border border-cyan-300/20 bg-cyan-300/[.06] p-3 text-sm text-cyan-100/75"><b className="text-white">Local preview mode.</b> Building, filters, locking, replacement, and copying work locally. Saving tickets is disabled until the account API has a D1 connection.</div> : null}
-      <Panel className="p-5"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <Panel className="p-5"><div className="mb-5 flex flex-col gap-3 border-b border-white/[.07] pb-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-[10px] font-bold uppercase tracking-[.18em] text-cyan-200/55">Ticket filters</div><h2 className="mt-1 text-lg font-black">Adjust without changing your current bets</h2><p className="mt-1 text-xs text-white/40">Your displayed tickets stay frozen while you edit these controls. Apply them only when you are ready to rebuild.</p></div><span className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${filtersDirty ? "bg-amber-300/10 text-amber-100" : "bg-emerald-300/10 text-emerald-100"}`}>{filtersDirty ? "Changes waiting" : "Filters applied"}</span></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <label className="text-xs text-white/50">Minimum legs<input type="number" min="1" max="25" value={minLegs} onChange={(e) => { const value = Math.max(1, Math.min(25, Number(e.target.value))); setMinLegs(value); setMaxLegs((x) => Math.max(x, value)); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
         <label className="text-xs text-white/50">Maximum legs<input type="number" min="1" max="25" value={maxLegs} onChange={(e) => { const value = Math.max(1, Math.min(25, Number(e.target.value))); setMaxLegs(value); setMinLegs((x) => Math.min(x, value)); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
         <label className="text-xs text-white/50">Stake ($)<input type="number" min=".01" value={stake} onChange={(e) => setStake(Math.max(.01, Number(e.target.value)))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
@@ -174,7 +205,7 @@ export default function PropLabClient() {
         <label className="text-xs text-white/50">Minimum evidence<input type="number" min="0" max="100" value={minimumEvidence} onChange={(e) => setMinimumEvidence(Math.max(0, Math.min(100, Number(e.target.value))))} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white" /></label>
       </div><div className="mt-5"><div className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">Allowed markets</div><div className="flex flex-wrap gap-2">{Object.entries(MARKETS).map(([key, label]) => <Toggle key={key} active={enabledMarkets.has(key)} onClick={() => toggle(setEnabledMarkets, key)}>{label}</Toggle>)}</div></div>
       <div className="mt-5"><div className="mb-2 flex justify-between"><span className="text-xs font-bold uppercase tracking-wider text-white/40">Games</span><button type="button" onClick={() => setSelectedGames(new Set(selectedGames.size === games.length ? [] : games.map((game) => game.key)))} className="text-xs font-bold text-cyan-200">{selectedGames.size === games.length ? "Clear all" : "Select all"}</button></div><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{games.map((game) => <label key={game.key} className={`flex items-center gap-3 rounded-xl border p-3 ${selectedGames.has(game.key) ? "border-cyan-300/25 bg-cyan-300/[.06]" : "border-white/10"}`}><input type="checkbox" checked={selectedGames.has(game.key)} onChange={() => toggle(setSelectedGames, game.key)} /><span><b className="text-sm">{game.team} vs {game.opponent}</b><small className="block text-[10px] text-white/35">{new Date(game.kickoff).toLocaleString()}</small></span></label>)}</div></div>
-      {(locked.size || excluded.size) ? <div className="mt-4 text-xs text-white/45">{locked.size} locked · {excluded.size} excluded <button type="button" onClick={() => { setLocked(new Set()); setExcluded(new Set()); }} className="ml-3 font-bold text-amber-200">Reset edits</button></div> : null}</Panel>
+      {(locked.size || excluded.size) ? <div className="mt-4 text-xs text-white/45">{locked.size} locked · {excluded.size} excluded <button type="button" onClick={() => { setLocked(new Set()); setExcluded(new Set()); }} className="ml-3 font-bold text-amber-200">Reset edits</button></div> : null}<div className="mt-5 flex flex-col gap-3 border-t border-white/[.07] pt-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs leading-5 text-white/40">{filtersDirty ? "Your current tickets have not changed. Apply when you are finished choosing games and filters." : "These settings match the tickets currently displayed below."}</p><button type="button" onClick={applyFilters} disabled={!filtersDirty || building} className="shrink-0 rounded-xl border border-cyan-200/20 bg-cyan-300/12 px-5 py-2.5 text-sm font-black text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[.04] disabled:text-white/25">{building ? "Updating tickets…" : filtersDirty ? "Apply filters & update tickets" : "Tickets are up to date"}</button></div></Panel>
       {message ? <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/[.08] p-3 text-sm text-amber-100">{message}</div> : null}
       <div className="mt-6 flex justify-between"><div><div className="text-[11px] font-bold uppercase tracking-[.2em] text-cyan-200/55">Optimized comparisons</div><h2 className="mt-1 text-2xl font-black">Best available tickets</h2></div><div className="text-xs text-white/40">{building ? "Building…" : `${buildMeta?.eligibleCount || 0} eligible legs`}</div></div>
       {buildMeta?.shortfalls?.length ? <Panel className="mt-4 border-amber-300/20 p-4 text-sm text-amber-100/70">Not enough qualifying props for {buildMeta.shortfalls.join(", ")} legs. Adjust a filter or shorten the ticket.</Panel> : null}
