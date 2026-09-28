@@ -1,211 +1,211 @@
 {
-  "generatedAt": "2026-09-27T04:09:15.679Z",
+  "generatedAt": "2026-09-28T04:09:32.270Z",
   "methodology": "Latest frozen pre-kickoff prediction per exact offer. Alternate lines share one player-game-market evaluation group and receive equal group weight.",
   "overall": {
-    "observations": 260,
-    "settled": 117,
-    "groups": 37,
-    "hitRate": 0.5436,
-    "averagePredicted": 0.7038,
-    "averageMarketImplied": 0.6525,
-    "calibrationError": 0.1602
+    "observations": 1485,
+    "settled": 1411,
+    "groups": 466,
+    "hitRate": 0.6789,
+    "averagePredicted": 0.6917,
+    "averageMarketImplied": 0.678,
+    "calibrationError": 0.0127
   },
   "probabilityBands": {
     "50-55%": {
-      "observations": 24,
-      "settled": 24,
-      "groups": 16,
-      "hitRate": 0.5208,
-      "averagePredicted": 0.5215,
-      "averageMarketImplied": 0.5725,
-      "calibrationError": 0.0006
+      "observations": 235,
+      "settled": 235,
+      "groups": 196,
+      "hitRate": 0.5417,
+      "averagePredicted": 0.5244,
+      "averageMarketImplied": 0.5805,
+      "calibrationError": 0.0173
     },
     "55-60%": {
-      "observations": 19,
-      "settled": 19,
-      "groups": 14,
-      "hitRate": 0.3571,
-      "averagePredicted": 0.5706,
-      "averageMarketImplied": 0.5607,
-      "calibrationError": 0.2134
+      "observations": 208,
+      "settled": 208,
+      "groups": 178,
+      "hitRate": 0.6025,
+      "averagePredicted": 0.572,
+      "averageMarketImplied": 0.6259,
+      "calibrationError": 0.0305
     },
     "60-65%": {
-      "observations": 19,
-      "settled": 19,
-      "groups": 17,
-      "hitRate": 0.6765,
-      "averagePredicted": 0.622,
-      "averageMarketImplied": 0.6392,
-      "calibrationError": 0.0545
+      "observations": 220,
+      "settled": 220,
+      "groups": 184,
+      "hitRate": 0.6467,
+      "averagePredicted": 0.6238,
+      "averageMarketImplied": 0.6644,
+      "calibrationError": 0.023
     },
     "65-70%": {
-      "observations": 14,
-      "settled": 14,
-      "groups": 12,
-      "hitRate": 0.75,
-      "averagePredicted": 0.6775,
-      "averageMarketImplied": 0.7279,
-      "calibrationError": 0.0725
+      "observations": 185,
+      "settled": 185,
+      "groups": 158,
+      "hitRate": 0.7215,
+      "averagePredicted": 0.6769,
+      "averageMarketImplied": 0.6967,
+      "calibrationError": 0.0446
     },
     "70-75%": {
-      "observations": 7,
-      "settled": 7,
-      "groups": 7,
-      "hitRate": 0.5714,
-      "averagePredicted": 0.7181,
-      "averageMarketImplied": 0.8127,
-      "calibrationError": 0.1466
+      "observations": 157,
+      "settled": 157,
+      "groups": 143,
+      "hitRate": 0.6923,
+      "averagePredicted": 0.7248,
+      "averageMarketImplied": 0.7698,
+      "calibrationError": 0.0325
     },
     "75-80%": {
-      "observations": 8,
-      "settled": 8,
-      "groups": 8,
-      "hitRate": 0.75,
-      "averagePredicted": 0.7722,
-      "averageMarketImplied": 0.8148,
-      "calibrationError": 0.0222
+      "observations": 134,
+      "settled": 134,
+      "groups": 128,
+      "hitRate": 0.8164,
+      "averagePredicted": 0.775,
+      "averageMarketImplied": 0.8017,
+      "calibrationError": 0.0414
     },
     "80-85%": {
-      "observations": 7,
-      "settled": 7,
-      "groups": 6,
-      "hitRate": 1,
-      "averagePredicted": 0.8253,
-      "averageMarketImplied": 0.9079,
-      "calibrationError": 0.1747
+      "observations": 98,
+      "settled": 98,
+      "groups": 92,
+      "hitRate": 0.9185,
+      "averagePredicted": 0.8243,
+      "averageMarketImplied": 0.8721,
+      "calibrationError": 0.0941
     },
     "85-90%": {
-      "observations": 8,
-      "settled": 8,
-      "groups": 8,
-      "hitRate": 0.75,
-      "averagePredicted": 0.8718,
-      "averageMarketImplied": 0.8362,
-      "calibrationError": 0.1218
+      "observations": 81,
+      "settled": 81,
+      "groups": 79,
+      "hitRate": 0.8481,
+      "averagePredicted": 0.8767,
+      "averageMarketImplied": 0.8555,
+      "calibrationError": 0.0286
     },
     "90-95%": {
-      "observations": 6,
-      "settled": 6,
-      "groups": 6,
-      "hitRate": 0.8333,
-      "averagePredicted": 0.9305,
-      "averageMarketImplied": 0.8054,
-      "calibrationError": 0.0972
+      "observations": 51,
+      "settled": 51,
+      "groups": 50,
+      "hitRate": 0.92,
+      "averagePredicted": 0.9243,
+      "averageMarketImplied": 0.8583,
+      "calibrationError": 0.0043
     },
     "95-100%": {
-      "observations": 5,
-      "settled": 5,
-      "groups": 4,
-      "hitRate": 0.75,
-      "averagePredicted": 0.985,
-      "averageMarketImplied": 0.6309,
-      "calibrationError": 0.235
+      "observations": 42,
+      "settled": 42,
+      "groups": 41,
+      "hitRate": 0.8293,
+      "averagePredicted": 0.9815,
+      "averageMarketImplied": 0.7263,
+      "calibrationError": 0.1523
     }
   },
   "markets": {
     "player_pass_completions": {
-      "observations": 5,
-      "settled": 5,
-      "groups": 1,
-      "hitRate": 1,
-      "averagePredicted": 0.6593,
-      "averageMarketImplied": 0.707,
-      "calibrationError": 0.3407
+      "observations": 89,
+      "settled": 89,
+      "groups": 27,
+      "hitRate": 0.6759,
+      "averagePredicted": 0.7074,
+      "averageMarketImplied": 0.7342,
+      "calibrationError": 0.0314
     },
     "player_pass_tds": {
-      "observations": 2,
-      "settled": 2,
-      "groups": 1,
-      "hitRate": 1,
-      "averagePredicted": 0.8014,
-      "averageMarketImplied": 0.7156,
-      "calibrationError": 0.1986
+      "observations": 43,
+      "settled": 43,
+      "groups": 23,
+      "hitRate": 0.7826,
+      "averagePredicted": 0.8239,
+      "averageMarketImplied": 0.7063,
+      "calibrationError": 0.0413
     },
     "player_pass_yds": {
-      "observations": 10,
-      "settled": 10,
-      "groups": 1,
-      "hitRate": 0.8,
-      "averagePredicted": 0.6716,
-      "averageMarketImplied": 0.7364,
-      "calibrationError": 0.1284
+      "observations": 185,
+      "settled": 185,
+      "groups": 27,
+      "hitRate": 0.7176,
+      "averagePredicted": 0.6921,
+      "averageMarketImplied": 0.7106,
+      "calibrationError": 0.0254
     },
     "player_reception_yds": {
-      "observations": 42,
-      "settled": 42,
-      "groups": 12,
-      "hitRate": 0.4879,
-      "averagePredicted": 0.6468,
-      "averageMarketImplied": 0.6037,
-      "calibrationError": 0.1589
+      "observations": 392,
+      "settled": 392,
+      "groups": 137,
+      "hitRate": 0.6513,
+      "averagePredicted": 0.6582,
+      "averageMarketImplied": 0.6361,
+      "calibrationError": 0.0069
     },
     "player_receptions": {
-      "observations": 26,
-      "settled": 26,
-      "groups": 13,
-      "hitRate": 0.4295,
-      "averagePredicted": 0.7426,
-      "averageMarketImplied": 0.6797,
-      "calibrationError": 0.3131
+      "observations": 312,
+      "settled": 312,
+      "groups": 137,
+      "hitRate": 0.6983,
+      "averagePredicted": 0.7119,
+      "averageMarketImplied": 0.678,
+      "calibrationError": 0.0136
     },
     "player_rush_attempts": {
-      "observations": 13,
-      "settled": 13,
-      "groups": 5,
-      "hitRate": 0.5867,
-      "averagePredicted": 0.7273,
-      "averageMarketImplied": 0.6686,
-      "calibrationError": 0.1407
+      "observations": 122,
+      "settled": 122,
+      "groups": 43,
+      "hitRate": 0.6671,
+      "averagePredicted": 0.6937,
+      "averageMarketImplied": 0.7387,
+      "calibrationError": 0.0266
     },
     "player_rush_yds": {
-      "observations": 19,
-      "settled": 19,
-      "groups": 4,
-      "hitRate": 0.7357,
-      "averagePredicted": 0.7145,
-      "averageMarketImplied": 0.64,
-      "calibrationError": 0.0213
+      "observations": 268,
+      "settled": 268,
+      "groups": 72,
+      "hitRate": 0.6553,
+      "averagePredicted": 0.6672,
+      "averageMarketImplied": 0.6789,
+      "calibrationError": 0.0119
     }
   },
   "evidence": {
     "Moderate": {
-      "observations": 3,
-      "settled": 3,
-      "groups": 2,
-      "hitRate": 1,
-      "averagePredicted": 0.985,
-      "averageMarketImplied": 0.5094,
-      "calibrationError": 0.015
+      "observations": 75,
+      "settled": 75,
+      "groups": 38,
+      "hitRate": 0.5998,
+      "averagePredicted": 0.7501,
+      "averageMarketImplied": 0.6007,
+      "calibrationError": 0.1503
     },
     "Provisional": {
-      "observations": 15,
-      "settled": 15,
-      "groups": 4,
-      "hitRate": 0.5774,
-      "averagePredicted": 0.6533,
-      "averageMarketImplied": 0.6385,
-      "calibrationError": 0.0759
+      "observations": 68,
+      "settled": 68,
+      "groups": 29,
+      "hitRate": 0.7245,
+      "averagePredicted": 0.7107,
+      "averageMarketImplied": 0.6319,
+      "calibrationError": 0.0137
     },
     "Strong": {
-      "observations": 99,
-      "settled": 99,
-      "groups": 31,
-      "hitRate": 0.5098,
-      "averagePredicted": 0.6922,
-      "averageMarketImplied": 0.6636,
-      "calibrationError": 0.1824
+      "observations": 1268,
+      "settled": 1268,
+      "groups": 399,
+      "hitRate": 0.6832,
+      "averagePredicted": 0.6847,
+      "averageMarketImplied": 0.6887,
+      "calibrationError": 0.0015
     }
   },
   "highEstimatedChance": {
-    "observations": 31,
-    "settled": 19,
-    "groups": 17,
-    "hitRate": 0.7647,
-    "averagePredicted": 0.9179,
-    "averageMarketImplied": 0.772,
-    "calibrationError": 0.1532
+    "observations": 189,
+    "settled": 174,
+    "groups": 164,
+    "hitRate": 0.8628,
+    "averagePredicted": 0.9167,
+    "averageMarketImplied": 0.823,
+    "calibrationError": 0.0539
   },
-  "pending": 143,
+  "pending": 74,
   "pushes": 0,
   "voids": 0
 }
