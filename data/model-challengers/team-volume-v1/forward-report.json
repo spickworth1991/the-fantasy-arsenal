@@ -1,6 +1,6 @@
 {
   "source": "The Fantasy Arsenal forward challenger evaluator",
-  "generated_at": "2026-09-28T04:09:32.149Z",
+  "generated_at": "2026-09-29T04:09:39.755Z",
   "challenger": "team-volume-v1",
   "season": 2026,
   "definition_sha256": "7c5be545bb27989aa84ed392b681ab28fdf12b51d6eea66c1142404a34fc6707",
@@ -12,105 +12,295 @@
     "role_redistribution",
     "combined"
   ],
-  "completed_forward_test_weeks": [],
-  "completed_forward_test_week_count": 0,
+  "completed_forward_test_weeks": [
+    3
+  ],
+  "completed_forward_test_week_count": 1,
   "required_forward_test_weeks": 4,
-  "remaining_forward_test_weeks": 4,
-  "paired_games": 0,
+  "remaining_forward_test_weeks": 3,
+  "paired_games": 207,
   "metrics_by_arm": {
-    "incumbent": null,
-    "team_volume": null,
-    "role_redistribution": null,
-    "combined": null
+    "incumbent": {
+      "sample": 207,
+      "mae": 5.3674,
+      "rmse": 6.6217,
+      "bias": -0.6891
+    },
+    "team_volume": {
+      "sample": 207,
+      "mae": 5.3453,
+      "rmse": 6.6867,
+      "bias": -1.2116
+    },
+    "role_redistribution": {
+      "sample": 207,
+      "mae": 5.4854,
+      "rmse": 6.7074,
+      "bias": -0.4295
+    },
+    "combined": {
+      "sample": 207,
+      "mae": 5.4294,
+      "rmse": 6.7509,
+      "bias": -0.9652
+    }
   },
   "by_position": {
     "QB": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 27,
+        "mae": 6.2189,
+        "rmse": 7.6873,
+        "bias": -2.3643
+      },
+      "team_volume": {
+        "sample": 27,
+        "mae": 6.1551,
+        "rmse": 7.7551,
+        "bias": -2.8794
+      },
+      "role_redistribution": {
+        "sample": 27,
+        "mae": 6.2189,
+        "rmse": 7.6873,
+        "bias": -2.3643
+      },
+      "combined": {
+        "sample": 27,
+        "mae": 6.1551,
+        "rmse": 7.7551,
+        "bias": -2.8794
+      }
     },
     "RB": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 47,
+        "mae": 5.5284,
+        "rmse": 6.7544,
+        "bias": 0.5298
+      },
+      "team_volume": {
+        "sample": 47,
+        "mae": 5.3817,
+        "rmse": 6.6118,
+        "bias": 0.105
+      },
+      "role_redistribution": {
+        "sample": 47,
+        "mae": 5.6535,
+        "rmse": 6.8668,
+        "bias": 0.8436
+      },
+      "combined": {
+        "sample": 47,
+        "mae": 5.4997,
+        "rmse": 6.71,
+        "bias": 0.4125
+      }
     },
     "WR": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 69,
+        "mae": 5.2144,
+        "rmse": 6.5722,
+        "bias": -0.9387
+      },
+      "team_volume": {
+        "sample": 69,
+        "mae": 5.2099,
+        "rmse": 6.7478,
+        "bias": -1.7445
+      },
+      "role_redistribution": {
+        "sample": 69,
+        "mae": 5.3902,
+        "rmse": 6.6622,
+        "bias": -0.5338
+      },
+      "combined": {
+        "sample": 69,
+        "mae": 5.2868,
+        "rmse": 6.7905,
+        "bias": -1.3686
+      }
     },
     "TE": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 32,
+        "mae": 5.7902,
+        "rmse": 6.9586,
+        "bias": 0.0764
+      },
+      "team_volume": {
+        "sample": 32,
+        "mae": 5.926,
+        "rmse": 7.1334,
+        "bias": -0.5077
+      },
+      "role_redistribution": {
+        "sample": 32,
+        "mae": 5.9908,
+        "rmse": 7.1408,
+        "bias": 0.4219
+      },
+      "combined": {
+        "sample": 32,
+        "mae": 6.1307,
+        "rmse": 7.301,
+        "bias": -0.1756
+      }
     },
     "K": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 32,
+        "mae": 4.3198,
+        "rmse": 5.0209,
+        "bias": -1.2932
+      },
+      "team_volume": {
+        "sample": 32,
+        "mae": 4.3198,
+        "rmse": 5.0209,
+        "bias": -1.2932
+      },
+      "role_redistribution": {
+        "sample": 32,
+        "mae": 4.3198,
+        "rmse": 5.0209,
+        "bias": -1.2932
+      },
+      "combined": {
+        "sample": 32,
+        "mae": 4.3198,
+        "rmse": 5.0209,
+        "bias": -1.2932
+      }
     }
   },
   "role_redistribution_evidence": {
-    "absence_events": [],
-    "absence_event_count": 0,
-    "affected_player_games": 0,
+    "absence_events": [
+      "3:BAL:9997",
+      "3:BUF:4983,6039",
+      "3:CAR:11600",
+      "3:DEN:12489,9494",
+      "3:GB:10222",
+      "3:HOU:7569",
+      "3:IND:12471,8142",
+      "3:LAC:4033",
+      "3:LV:11604",
+      "3:MIA:8117",
+      "3:MIN:7049",
+      "3:NO:9757",
+      "3:NYJ:7720",
+      "3:PHI:7596",
+      "3:PIT:6819",
+      "3:SF:3286",
+      "3:WAS:8210"
+    ],
+    "absence_event_count": 17,
+    "affected_player_games": 72,
     "required_absence_events": 8,
     "required_affected_player_games": 30,
-    "evidence_ready": false,
+    "evidence_ready": true,
     "metrics_by_arm": {
-      "incumbent": null,
-      "team_volume": null,
-      "role_redistribution": null,
-      "combined": null
+      "incumbent": {
+        "sample": 72,
+        "mae": 5.2398,
+        "rmse": 6.4396,
+        "bias": 0.0484
+      },
+      "team_volume": {
+        "sample": 72,
+        "mae": 5.2071,
+        "rmse": 6.4886,
+        "bias": -0.5442
+      },
+      "role_redistribution": {
+        "sample": 72,
+        "mae": 5.5791,
+        "rmse": 6.6896,
+        "bias": 0.7948
+      },
+      "combined": {
+        "sample": 72,
+        "mae": 5.4487,
+        "rmse": 6.6772,
+        "bias": 0.1643
+      }
     }
   },
   "arm_decisions": {
     "team_volume": {
-      "metrics": null,
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
+      "metrics": {
+        "sample": 207,
+        "mae": 5.3453,
+        "rmse": 6.6867,
+        "bias": -1.2116
+      },
+      "mae_improvement": 0.0221,
+      "mae_improvement_rate": 0.0041,
+      "rmse_change": 0.065,
+      "rmse_change_rate": 0.0098,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 72,
+        "mae": 5.2071,
+        "rmse": 6.4886,
+        "bias": -0.5442
+      },
+      "affected_mae_change_rate": -0.0062,
+      "affected_rmse_change_rate": 0.0076,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "role_redistribution": {
-      "metrics": null,
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
+      "metrics": {
+        "sample": 207,
+        "mae": 5.4854,
+        "rmse": 6.7074,
+        "bias": -0.4295
+      },
+      "mae_improvement": -0.118,
+      "mae_improvement_rate": -0.022,
+      "rmse_change": 0.0857,
+      "rmse_change_rate": 0.0129,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
-      "role_evidence_ready": false,
+      "affected_metrics": {
+        "sample": 72,
+        "mae": 5.5791,
+        "rmse": 6.6896,
+        "bias": 0.7948
+      },
+      "affected_mae_change_rate": 0.0648,
+      "affected_rmse_change_rate": 0.0388,
+      "role_evidence_ready": true,
       "accuracy_gate_passed": false,
-      "recommendation": "continue_role_collection"
+      "recommendation": "keep_incumbent"
     },
     "combined": {
-      "metrics": null,
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
+      "metrics": {
+        "sample": 207,
+        "mae": 5.4294,
+        "rmse": 6.7509,
+        "bias": -0.9652
+      },
+      "mae_improvement": -0.062,
+      "mae_improvement_rate": -0.0116,
+      "rmse_change": 0.1292,
+      "rmse_change_rate": 0.0195,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
-      "role_evidence_ready": false,
+      "affected_metrics": {
+        "sample": 72,
+        "mae": 5.4487,
+        "rmse": 6.6772,
+        "bias": 0.1643
+      },
+      "affected_mae_change_rate": 0.0399,
+      "affected_rmse_change_rate": 0.0369,
+      "role_evidence_ready": true,
       "accuracy_gate_passed": false,
-      "recommendation": "continue_role_collection"
+      "recommendation": "keep_incumbent"
     }
   },
   "minimum_completed_weeks_met": false,
@@ -127,5 +317,5 @@
     "minimum_role_absence_events": 8,
     "minimum_role_affected_player_games": 30
   },
-  "note": "0/4 fully final completed weeks captured; 4 remaining."
+  "note": "1/4 fully final completed weeks captured; 3 remaining."
 }
