@@ -1,47 +1,26 @@
 {
   "schema_version": 2,
-  "fetched_at": "2026-09-27T19:45:17.617Z",
+  "fetched_at": "2026-10-01T23:48:22.871Z",
   "provider": "SportsGameOdds",
   "jurisdiction": "Michigan default; verify availability and price in the bettor's state",
   "quota": {
     "maximum": 2500,
-    "used": 66,
-    "remaining": 2434,
-    "this_capture": 5,
+    "used": 67,
+    "remaining": 2433,
+    "this_capture": 1,
     "reserve": 100
   },
-  "query_signature": "auto|APgCtTjgC4d3bgL5EeOH,EuQk9IyehJpE6rM9zHFg,Z5kQch0mnf6Kts1yLHEi|ARI@SF:2026-09-27T20:05:00.000Z,BAL@DAL:2026-09-27T20:25:00.000Z,LV@NO:2026-09-27T20:25:00.000Z,MIN@TB:2026-09-27T20:05:00.000Z|draftkings|alternates",
+  "query_signature": "auto||PIT@CLE:2026-10-02T00:15:00.000Z|draftkings|alternates",
   "capture_mode": "auto",
   "active_event_ids": [
-    "APgCtTjgC4d3bgL5EeOH",
-    "Z5kQch0mnf6Kts1yLHEi",
-    "EuQk9IyehJpE6rM9zHFg",
-    "udDSNFp0iMXuIIVOnoSe"
+    "4Ye2D8HSylsVSBg2q0ms"
   ],
   "selected_games": [
     {
-      "week": 3,
-      "away": "ARI",
-      "home": "SF",
-      "kickoff": "2026-09-27T20:05Z"
-    },
-    {
-      "week": 3,
-      "away": "MIN",
-      "home": "TB",
-      "kickoff": "2026-09-27T20:05Z"
-    },
-    {
-      "week": 3,
-      "away": "BAL",
-      "home": "DAL",
-      "kickoff": "2026-09-27T20:25Z"
-    },
-    {
-      "week": 3,
-      "away": "LV",
-      "home": "NO",
-      "kickoff": "2026-09-27T20:25Z"
+      "week": 4,
+      "away": "PIT",
+      "home": "CLE",
+      "kickoff": "2026-10-02T00:15Z"
     }
   ],
   "requested_bookmakers": [
@@ -58376,6 +58355,4315 @@
                   "point": 10.5,
                   "available": true,
                   "updated_at": "2026-09-27T19:38:31.687Z",
+                  "deeplink": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "4Ye2D8HSylsVSBg2q0ms",
+      "sport_key": "americanfootball_nfl",
+      "sport_title": "NFL",
+      "commence_time": "2026-10-02T00:15:00.000Z",
+      "home_team": "Cleveland Browns",
+      "away_team": "Pittsburgh Steelers",
+      "links": {
+        "bookmakers": {
+          "draftkings": "https://sportsbook.draftkings.com/event/34118083",
+          "caesars": "https://sportsbook.caesars.com/us/nj/bet/americanfootball/424205ee-38ac-d749-e599-34da90142a61/pittsburgh-steelers-at-cleveland-browns",
+          "nordicbet": "https://www.nordicbet.com/en/sportsbook/american-football/nfl/nfl/cleveland-browns-pittsburgh-steelers",
+          "betrsportsbook": "https://www.betr.com.au/sports/American-Football/108/United-States-of-America/NFL/Pittsburgh-Steelers-@-Cleveland-Browns/2083402/All-Markets",
+          "polymarket": "https://polymarket.com/event/nfl-pit-cle-2026-10-02",
+          "fanduel": "https://sportsbook.fanduel.com/football/-/36104915",
+          "1xbet": "https://1xbet.com/en/line/football/68315-usa-nfl/372373308-cleveland-browns-pittsburgh-steelers",
+          "paddypower": "https://www.paddypower.com/american-football/nfl/pittsburgh-steelers-@-cleveland-browns-36104915",
+          "pointsbet": "https://pointsbet.com.au/sports/american-football/NFL/2898081",
+          "sportsbet": "https://www.sportsbet.com.au/betting/american-football/nfl/pittsburgh-steelers-at-cleveland-browns-10969835",
+          "betonline": "https://sports.betonline.ag/sportsbook/football/nfl/game/491134795",
+          "lowvig": "https://sports.lowvig.ag/sportsbook/football/nfl/game/491134795",
+          "playup": "https://www.playup.com.au/betting/sports/nfl/cleveland-browns-v-pittsburgh-steelers/253191",
+          "betsson": "https://www.betsson.com/en/sportsbook/american-football/nfl/nfl?eventId=f-PrCBNk6k1kids1SkZ3HTvg",
+          "ballybet": "https://play.ballybet.com/sports#event/1029234879",
+          "betparx": "https://nj.betparx.com/kambi#event/1029234879",
+          "betrivers": "https://nj.betrivers.com/?page=sportsbook#event/1029234879",
+          "casumo": "https://www.casumo.com/en-gb/sports#event/1029234879",
+          "grosvenor": "https://www.grosvenorcasinos.com/sport#event/1029234879",
+          "livescorebet": "https://www.livescorebet.com/uk/sports/american-football/nfl/cleveland-browns-pittsburgh-steelers/SBTE_2_1029234879",
+          "tabtouch": "https://www.tabtouch.mobi/tabtouch-sports/event/1029234879",
+          "unibet": "https://www.unibet.com/betting/sports/event/1029234879",
+          "virginbet": "https://www.virginbet.com/sports/american-football/nfl/cleveland-browns-pittsburgh-steelers/SBTE_2_1029234879",
+          "888sport": "https://www.888sport.com/american-football/united-states/nfl/pittsburgh-steelers-cleveland-browns-e-7627731",
+          "bovada": "https://www.bovada.lv/sports/football/nfl/pittsburgh-steelers-cleveland-browns-202610012015",
+          "novig": "https://novig.com/event-markets/01a0cabb-dbc3-7570-8e8a-f5762a02615c/sportsgameodds",
+          "fliff": "https://sports.getfliff.com/markets/399998_c_p_202_prematch",
+          "matchbook": "https://www.matchbook.com/events/american-football/united-states-of-america/nfl/33321088138400023",
+          "betfairsportsbook": "https://www.betfair.com/betting/american-football/nfl/pittsburgh-steelers-@-cleveland-browns/e-36104915",
+          "betmgm": "https://sports.nj.betmgm.com/en/sports/events/6:43487",
+          "coral": "https://sports.coral.co.uk/event/american-football/american/nfl/cle-browns-v-pit-steelers/46476932",
+          "ladbrokes": "https://sports.ladbrokes.com/event/american-football/-/-/-/258814914",
+          "neds": "https://www.neds.com.au/sports/-/-/-/6c2c2605-ed5a-4efd-a7ad-0f1381ea6127",
+          "espnbet": "https://espnbet.com/sport/football/organization/united-states/competition/nfl/event/62779c99-cfbb-4f52-a02b-89a529ca0bda",
+          "thescorebet": "https://thescore.bet/sport/football/organization/united-states/competition/nfl/event/62779c99-cfbb-4f52-a02b-89a529ca0bda",
+          "hardrockbet": "https://app.hardrock.bet/home/competition/nfl/3868906414554612126",
+          "tab": "https://www.tab.com.au/sports/betting/American%20Football/competitions/NFL/matches/Cleveland%20v%20Pittsburgh",
+          "pinnacle": "https://www.pinnacle.com/en/football/nfl/pittsburgh-steelers-vs-cleveland-browns/1637432965",
+          "boylesports": "https://www.boylesports.com/sports/american-football/event/usa-nfl/cleveland-browns-v-pittsburgh-steelers",
+          "coolbet": "https://www.coolbet.com/en/sports/match/5528053",
+          "betway": "https://betway.com/en/sports/evt/17283319",
+          "everygame": "https://sports.everygame.eu/en/Bets/American-Football/NFL-Lines/Pittsburgh-Steelers-at-Cleveland-Browns/2898945"
+        }
+      },
+      "captured_at": "2026-10-01T23:48:22.871Z",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "title": "DraftKings",
+          "last_update": "2026-10-01T23:48:22.871Z",
+          "markets": [
+            {
+              "key": "player_pass_yds",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -700,
+                  "point": 149.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -494,
+                  "point": 159.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -360,
+                  "point": 169.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -270,
+                  "point": 179.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -203,
+                  "point": 189.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -155,
+                  "point": 199.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -121,
+                  "point": 209.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -113,
+                  "point": 212.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 104,
+                  "point": 219.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 134,
+                  "point": 229.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 167,
+                  "point": 239.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 210,
+                  "point": 249.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 267,
+                  "point": 259.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 337,
+                  "point": 269.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 427,
+                  "point": 279.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 533,
+                  "point": 289.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 670,
+                  "point": 299.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 840,
+                  "point": 309.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 1080,
+                  "point": 319.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 1340,
+                  "point": 329.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 1660,
+                  "point": 339.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 2100,
+                  "point": 349.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 2600,
+                  "point": 359.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 3400,
+                  "point": 369.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -111,
+                  "point": 212.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -112,
+                  "point": 186.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -324,
+                  "point": 149.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -238,
+                  "point": 159.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -179,
+                  "point": 169.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -134,
+                  "point": 179.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -104,
+                  "point": 189.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 125,
+                  "point": 199.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 158,
+                  "point": 209.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 203,
+                  "point": 219.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 257,
+                  "point": 229.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 328,
+                  "point": 239.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 417,
+                  "point": 249.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 529,
+                  "point": 259.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 670,
+                  "point": 269.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 860,
+                  "point": 279.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1080,
+                  "point": 289.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1360,
+                  "point": 299.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1780,
+                  "point": 309.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 2200,
+                  "point": 319.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 2800,
+                  "point": 329.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 3300,
+                  "point": 339.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 3900,
+                  "point": 349.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -112,
+                  "point": 186.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_rush_yds",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -109,
+                  "point": 56.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -2200,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -1140,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -700,
+                  "point": 29.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -306,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -162,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 107,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 175,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 274,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 424,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 640,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 930,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 1340,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 2000,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 2700,
+                  "point": 139.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 3800,
+                  "point": 149.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -115,
+                  "point": 56.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -1240,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -525,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -272,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -158,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -112,
+                  "point": 76.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 102,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 163,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 250,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 377,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 561,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 840,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 1240,
+                  "point": 139.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 1780,
+                  "point": 149.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 2500,
+                  "point": 159.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 3400,
+                  "point": 169.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -112,
+                  "point": 76.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -106,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -104,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 302,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 533,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 890,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 1440,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 2200,
+                  "point": 29.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -118,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -112,
+                  "point": 28.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -1100,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -488,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -266,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -159,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -102,
+                  "point": 29.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 209,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 411,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 760,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1320,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 2100,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 3100,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -112,
+                  "point": 28.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -113,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -102,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 182,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 377,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 690,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 1160,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 1740,
+                  "point": 29.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 3100,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -111,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": -117,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": -102,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 144,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 288,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 525,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 900,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 1400,
+                  "point": 29.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 2600,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": 3900,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Travis Homer",
+                  "player_id": "TRAVIS_HOMER_1_NFL",
+                  "price": -107,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_pass_tds",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 152,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -358,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 650,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 2100,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -196,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -224,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 255,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1140,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 173,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_pass_completions",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 110,
+                  "point": 20.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -2600,
+                  "point": 13.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -730,
+                  "point": 15.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -294,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -136,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 148,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 292,
+                  "point": 23.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 563,
+                  "point": 25.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": 1080,
+                  "point": 27.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Aaron Rodgers",
+                  "player_id": "AARON_RODGERS_1_NFL",
+                  "price": -140,
+                  "point": 20.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -107,
+                  "point": 18.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -3100,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -770,
+                  "point": 13.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -286,
+                  "point": 15.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -131,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 156,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 310,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 597,
+                  "point": 23.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1140,
+                  "point": 25.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 103,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_receptions",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -138,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -1320,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -358,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 158,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 331,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 670,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 1300,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 2300,
+                  "point": 8.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 108,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -112,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -3200,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -640,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -243,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 180,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 343,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 640,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 1140,
+                  "point": 8.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 2000,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 2900,
+                  "point": 10.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -114,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 134,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -594,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -187,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 298,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 650,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 1300,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 2300,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -172,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 128,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -610,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -195,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 285,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 620,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 1220,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 2200,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -164,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 132,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -592,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -187,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 286,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 600,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 1220,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 2300,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -169,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -127,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -1140,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -326,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 169,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 358,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 710,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 1380,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 2200,
+                  "point": 8.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 100,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": -157,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 173,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 422,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 930,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 1920,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 123,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 116,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 337,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 900,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 2000,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": -149,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -190,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 157,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 395,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 920,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 1980,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 148,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 125,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -245,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 317,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 740,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 1560,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 2800,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -159,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -184,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 149,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 343,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 770,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 1540,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 2700,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 143,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 163,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": "https://sportsbook.draftkings.com/event/34118083?outcomes=0QA374116047%232301797498_13L88808Q1-1669482518Q20"
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 442,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": "https://sportsbook.draftkings.com/event/34118083?outcomes=0QA374116047%232301797498_13L88808Q1-1669482518Q20"
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 1060,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": "https://sportsbook.draftkings.com/event/34118083?outcomes=0QA374116047%232301797498_13L88808Q1-1669482518Q20"
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 2100,
+                  "point": 4.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": "https://sportsbook.draftkings.com/event/34118083?outcomes=0QA374116047%232301797498_13L88808Q1-1669482518Q20"
+                },
+                {
+                  "name": "Under",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": -210,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": "https://sportsbook.draftkings.com/event/34118083?outcomes=0QA374116047%232301797506_13L88808Q1-847255388Q20"
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": -120,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 410,
+                  "point": 1.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 1520,
+                  "point": 2.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": -106,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_reception_yds",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -113,
+                  "point": 46.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -760,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -364,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -154,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 103,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 158,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 238,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 348,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 505,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 730,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 1060,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 1480,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 2000,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 2700,
+                  "point": 139.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": 3600,
+                  "point": 149.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "DK Metcalf",
+                  "player_id": "DK_METCALF_1_NFL",
+                  "price": -111,
+                  "point": 46.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -930,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -345,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -126,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -112,
+                  "point": 41.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -109,
+                  "point": 42.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 139,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 225,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 359,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 563,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 870,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 1340,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 2000,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 2900,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": 3900,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Harold Fannin Jr.",
+                  "player_id": "HAROLD_FANNIN_JR_1_NFL",
+                  "price": -112,
+                  "point": 41.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -111,
+                  "point": 34.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -387,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -194,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -110,
+                  "point": 36.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 115,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 178,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 273,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 416,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 610,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 900,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 1280,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 1840,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 2500,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": 3300,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Michael Pittman Jr.",
+                  "player_id": "MICHAEL_PITTMAN_1_NFL",
+                  "price": -113,
+                  "point": 34.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -114,
+                  "point": 27.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -334,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -139,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -110,
+                  "point": 30.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 193,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 336,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 559,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 920,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 1440,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 2200,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": 3300,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Pat Freiermuth",
+                  "player_id": "PAT_FREIERMUTH_1_NFL",
+                  "price": -110,
+                  "point": 27.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -114,
+                  "point": 38.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -515,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -248,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -109,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 146,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 229,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 346,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 515,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 770,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 1140,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 1680,
+                  "point": 109.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 2400,
+                  "point": 119.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": 3300,
+                  "point": 129.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Denzel Boston",
+                  "player_id": "DENZEL_BOSTON_1_NFL",
+                  "price": -110,
+                  "point": 38.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -110,
+                  "point": 26.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -307,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -108,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -131,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 211,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 372,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 620,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 970,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 1540,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 2300,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 3400,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -114,
+                  "point": 26.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": -113,
+                  "point": 16.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": -133,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": -108,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 163,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 410,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 720,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 1160,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 1780,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 2700,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": 3800,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Darnell Washington",
+                  "player_id": "DARNELL_WASHINGTON_1_NFL",
+                  "price": -111,
+                  "point": 16.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": -117,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": -107,
+                  "point": 15.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 178,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 410,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 680,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 1100,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 1700,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 2600,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": 3600,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jerry Jeudy",
+                  "player_id": "JERRY_JEUDY_1_NFL",
+                  "price": -107,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -107,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -106,
+                  "point": 12.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 128,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 313,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 970,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 1740,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 2900,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -118,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": -110,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": -106,
+                  "point": 10.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 137,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 279,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 650,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 1080,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 1760,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 2700,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": 3900,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Germie Bernard",
+                  "player_id": "GERMIE_BERNARD_1_NFL",
+                  "price": -114,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -111,
+                  "point": 20.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -180,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -112,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:45:02.125Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 115,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 272,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 450,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 710,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 1080,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 1680,
+                  "point": 79.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 2400,
+                  "point": 89.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": 3400,
+                  "point": 99.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Roman Wilson",
+                  "player_id": "ROMAN_WILSON_1_NFL",
+                  "price": -113,
+                  "point": 20.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -110,
+                  "point": 12.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 111,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 242,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 680,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 1160,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 1860,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": 2900,
+                  "point": 69.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Raheim Sanders",
+                  "player_id": "RAHEIM_SANDERS_1_NFL",
+                  "price": -114,
+                  "point": 12.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": -101,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 223,
+                  "point": 14.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 503,
+                  "point": 24.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 1240,
+                  "point": 39.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 2100,
+                  "point": 49.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": 3400,
+                  "point": 59.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Blake Whiteheart",
+                  "player_id": "BLAKE_WHITEHEART_1_NFL",
+                  "price": -124,
+                  "point": 0.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                }
+              ]
+            },
+            {
+              "key": "player_rush_attempts",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -111,
+                  "point": 16.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -2500,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -720,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -314,
+                  "point": 13.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -155,
+                  "point": 15.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 122,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 225,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 417,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 790,
+                  "point": 23.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": 1400,
+                  "point": 25.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Quinshon Judkins",
+                  "player_id": "QUINSHON_JUDKINS_1_NFL",
+                  "price": -115,
+                  "point": 16.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -105,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -3700,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -980,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -401,
+                  "point": 13.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -198,
+                  "point": 15.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 172,
+                  "point": 19.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 312,
+                  "point": 21.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 574,
+                  "point": 23.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": 1060,
+                  "point": 25.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Jaylen Warren",
+                  "player_id": "JAYLEN_WARREN_1_NFL",
+                  "price": -121,
+                  "point": 17.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 114,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -670,
+                  "point": 3.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -156,
+                  "point": 5.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 193,
+                  "point": 7.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 537,
+                  "point": 9.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Over",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": 1340,
+                  "point": 11.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
+                  "deeplink": null
+                },
+                {
+                  "name": "Under",
+                  "description": "Deshaun Watson",
+                  "player_id": "DESHAUN_WATSON_1_NFL",
+                  "price": -145,
+                  "point": 6.5,
+                  "available": true,
+                  "updated_at": "2026-10-01T23:44:08.306Z",
                   "deeplink": null
                 }
               ]
