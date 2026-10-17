@@ -16,7 +16,9 @@ export default function PlayerCard({ player, onAddA, onAddB, value }) {
       <p className="text-gray-400">
         {player.position} | {player.team}
       </p>
-      <p className="text-blue-400 font-semibold mt-2">{value}</p>
+      <p className="text-blue-400 font-semibold mt-2">
+        {Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </p>
       <div className="flex justify-center gap-2 mt-3">
         <button
           onClick={onAddA}

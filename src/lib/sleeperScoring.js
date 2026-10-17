@@ -53,6 +53,24 @@ export function fantasyProsStatsToSleeper(stats = {}) {
   }, {});
 }
 
+// FantasySharks publishes a smaller season stat line, but the passing,
+// rushing, and receiving fields it does expose map directly to Sleeper.
+export function fantasySharksStatsToSleeper(stats = {}) {
+  const aliases = {
+    pass_yds: "pass_yd",
+    pass_tds: "pass_td",
+    rush_yds: "rush_yd",
+    rush_tds: "rush_td",
+    receptions: "rec",
+    rec_yds: "rec_yd",
+    rec_tds: "rec_td",
+  };
+  return Object.entries(aliases).reduce((result, [source, target]) => {
+    if (finite(stats?.[source])) result[target] = Number(stats[source]);
+    return result;
+  }, {});
+}
+
 // DraftSharks exposes season counting stats under `projections`. Translate
 // only fields with direct Sleeper equivalents; mismatched kicking distance
 // buckets are intentionally left unsupported rather than guessed.

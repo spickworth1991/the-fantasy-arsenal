@@ -561,11 +561,22 @@ export default function SourceSelector({
               <div className="flex flex-col items-center justify-center">
                 <LogoOnly source={selected} variant="button" />
                 <div className="mt-1 text-center text-[11px] text-white/45">
-                  {selected.type === "projection" ? projectionHorizon === "week" ? "Weekly projections" : "Season projections" : "Values"}
+                  {selected.type === "projection"
+                    ? projectionHorizon === "week"
+                      ? "Weekly projections"
+                      : projectionHorizon === "remaining"
+                        ? "Rest-of-season projections"
+                        : "Season projections"
+                    : "Values"}
                 </div>
                 {selected.type === "projection" && projectionHorizon === "week" ? (
                   <span title={WEEKLY_PROJECTION_NOTE} className="mt-1 max-w-[220px] text-center text-[10px] leading-4 text-white/50">
                     Week-specific when available; otherwise a season-based estimate.
+                  </span>
+                ) : null}
+                {selected.type === "projection" && projectionHorizon === "remaining" ? (
+                  <span title="Unplayed weeks are summed using the selected league's scoring when projected stat lines support it." className="mt-1 max-w-[220px] text-center text-[10px] leading-4 text-white/50">
+                    Remaining weeks · league scoring when supported
                   </span>
                 ) : null}
                 <ProductLabel source={selected} />

@@ -20,6 +20,7 @@ import {
   projectionSourceFromKey,
   valueSourceFromKey,
 } from "../../lib/sourceSelection";
+import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 
 
 function escapePrintHtml(value) {
@@ -29,6 +30,12 @@ function escapePrintHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatMetric(value) {
+  return Number(value || 0).toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  });
 }
 
 export default function TradeAnalyzer() {
@@ -47,9 +54,11 @@ export default function TradeAnalyzer() {
     sourceKey,
     setSourceKey,
     getProjection,
+    getWeeklyProjectionDetails,
     hasProjection,
     projectionScoring,
     preloadProjections,
+    preloadWeeklyProjections,
   } = useSleeper();
 
   const metricMode = metricModeFromSourceKey(sourceKey);
@@ -68,8 +77,29 @@ export default function TradeAnalyzer() {
   const [offerBufferPct, setOfferBufferPct] = useState(0);
   const [leaguePickAssets, setLeaguePickAssets] = useState({});
   const [tradeLeagueId, setTradeLeagueId] = useState("");
+  const [tradeLeagueData, setTradeLeagueData] = useState(null);
+  const [tradeLeagueLoading, setTradeLeagueLoading] = useState(false);
+  const [tradeLeagueError, setTradeLeagueError] = useState("");
+  const [playerAddMessage, setPlayerAddMessage] = useState("");
+  const [currentNflWeek, setCurrentNflWeek] = useState(1);
+  const [projectionSeason, setProjectionSeason] = useState(new Date().getFullYear());
   const routeHandoffApplied = useRef(false);
   const [handoffContext, setHandoffContext] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("https://api.sleeper.app/v1/state/nfl", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((state) => {
+        if (!active || !state) return;
+        setCurrentNflWeek(fantasyWeekFromNflState(state));
+        if (state.season) setProjectionSeason(Number(state.season));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const resetTrade = () => {
@@ -96,8 +126,11 @@ export default function TradeAnalyzer() {
     let mounted = true;
     setProjError("");
     setProjLoading(true);
-    preloadProjections(projectionSource)
-      .then((index) => {
+    Promise.all([
+      preloadProjections(projectionSource),
+      preloadWeeklyProjections(projectionSource, projectionSeason).catch(() => null),
+    ])
+      .then(([index]) => {
         if (mounted && !index) setProjError(`${projectionSource} projections are currently unavailable.`);
       })
       .catch(() => {
@@ -111,22 +144,33 @@ export default function TradeAnalyzer() {
     };
     // preloadProjections is supplied by the shared context and intentionally omitted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metricMode, projectionSource]);
+  }, [metricMode, projectionSource, projectionSeason]);
 
   const handleLeagueChange = async (leagueId) => {
     setTradeLeagueId(leagueId || "");
     setActiveLeague(leagueId || null);
-    setSideA([]);
-    setSideB([]);
+    if (leagueId) setSourceKey("proj:thefantasyarsenal-model");
     setSelectedOwnerA("");
     setSelectedOwnerB("");
     setLeaguePickAssets({});
+    setTradeLeagueData(null);
+    setTradeLeagueError("");
+    setPlayerAddMessage("");
     if (leagueId) {
-      const loaded = await fetchLeagueRostersSilent(leagueId);
+      setTradeLeagueLoading(true);
+      let loaded;
+      try {
+        loaded = await fetchLeagueRostersSilent(leagueId);
+      } catch {
+        setTradeLeagueError("This league's rosters could not be loaded from Sleeper. Try selecting it again.");
+        setTradeLeagueLoading(false);
+        return;
+      }
       const selectedLeague = {
         ...(leagues.find((item) => String(item.league_id) === String(leagueId)) || {}),
         ...(loaded || {}),
       };
+      setTradeLeagueData(selectedLeague);
       setFormat(classifyLeagueFormat(selectedLeague).key === "dynasty" ? "dynasty" : "redraft");
       setQbType(classifyQbFormat(selectedLeague).key);
       const [tradedPicks, drafts] = await Promise.all([
@@ -176,6 +220,9 @@ export default function TradeAnalyzer() {
         }
       });
       setLeaguePickAssets(next);
+      setTradeLeagueLoading(false);
+    } else {
+      setTradeLeagueLoading(false);
     }
   };
 
@@ -207,26 +254,55 @@ export default function TradeAnalyzer() {
     window.history.replaceState({}, "", "/trade");
   }, [leagues]);
 
-  const league = leagues.find(
+  const listedLeague = leagues.find(
     (lg) => String(lg.league_id) === String(tradeLeagueId),
   );
+  const league =
+    String(tradeLeagueData?.league_id || "") === String(tradeLeagueId || "")
+      ? { ...(listedLeague || {}), ...tradeLeagueData }
+      : listedLeague;
   const allOwners = league
     ? (league.rosters || []).map((roster) => ({
-      user_id: roster.owner_id,
+        user_id: String(roster.owner_id || ""),
         roster_id: String(roster.roster_id),
-        display_name: league.users?.find((u) => u.user_id === roster.owner_id)?.display_name || "Unknown",
-        team_name: league.users?.find((u) => u.user_id === roster.owner_id)?.metadata?.team_name || null,
-        players: roster.players || [],
+        selection_id: roster.owner_id
+          ? String(roster.owner_id)
+          : `roster:${String(roster.roster_id)}`,
+        display_name: league.users?.find((u) => String(u.user_id) === String(roster.owner_id))?.display_name || `Unclaimed roster ${roster.roster_id}`,
+        team_name: league.users?.find((u) => String(u.user_id) === String(roster.owner_id))?.metadata?.team_name || null,
+        players: [
+          ...new Set(
+            [
+              ...(roster.players || []),
+              ...(roster.starters || []),
+              ...(roster.reserve || []),
+              ...(roster.taxi || []),
+            ]
+              .map(String)
+              .filter((playerId) => playerId && playerId !== "0"),
+          ),
+        ],
       }))
     : [];
 
+  const findOwner = (selectionId) => {
+    const key = String(selectionId || "");
+    if (!key) return null;
+    return allOwners.find(
+      (owner) =>
+        owner.selection_id === key ||
+        owner.user_id === key ||
+        owner.roster_id === key,
+    ) || null;
+  };
+
   const getSideTitle = (side) => {
     if (side === "A" && selectedOwnerA) {
-      const owner = allOwners.find((o) => o.user_id === selectedOwnerA);
+      const owner = findOwner(selectedOwnerA);
       return owner?.team_name || owner?.display_name || "Side A";
     }
     if (side === "B" && selectedOwnerB) {
-      const owner = allOwners.find((o) => o.user_id === selectedOwnerB);
+      const owner = findOwner(selectedOwnerB);
       return owner?.team_name || owner?.display_name || "Side B";
     }
     return side === "A" ? "Side A" : "Side B";
@@ -234,13 +310,61 @@ export default function TradeAnalyzer() {
 
   const getPlayerValue = useMemo(() => makeGetPlayerValue(valueSource, format, qbType, projectionScoring), [valueSource, format, qbType, projectionScoring]);
   const getFallbackTradeValue = useMemo(() => makeGetPlayerValue("FantasyCalc", format, qbType, projectionScoring), [format, qbType, projectionScoring]);
+  const leagueScoringSettings = league?.scoring_settings || null;
+  const hasLeagueScoring = Boolean(
+    tradeLeagueId && Object.keys(leagueScoringSettings || {}).length,
+  );
+  const exactLeagueStatProjection = ["ARSENAL_MODEL", "ARSENAL_RISKY", "SLEEPER"].includes(
+    projectionSource,
+  );
+  const estimatedLeagueStatProjection = ["FANTASYPROS", "DRAFTSHARKS", "FANTASYSHARKS"].includes(
+    projectionSource,
+  );
+  const usesLeagueRescoring = Boolean(
+    hasLeagueScoring && (exactLeagueStatProjection || estimatedLeagueStatProjection),
+  );
 
   const getMetric = useMemo(() => {
     if (metricMode === "projections") {
+      if (usesLeagueRescoring) {
+        return (player) => {
+          if (!hasProjection?.(player, projectionSource)) return 0;
+          let remainingTotal = 0;
+          for (let week = currentNflWeek; week <= 18; week += 1) {
+            const details = getWeeklyProjectionDetails(
+              player,
+              projectionSource,
+              week,
+              {
+                season: projectionSeason,
+                scoring: projectionScoring,
+                scoringSettings: leagueScoringSettings,
+                qbType,
+              },
+            );
+            if (details?.projectionRow?.completed) continue;
+            remainingTotal += Number(details?.points || 0);
+          }
+          return remainingTotal;
+        };
+      }
       return (p) => getProjection(p, projectionSource) || 0;
     }
     return (p) => getPlayerValue(p) || 0;
-  }, [metricMode, projectionSource, getPlayerValue, getProjection]);
+  }, [
+    metricMode,
+    projectionSource,
+    getPlayerValue,
+    getProjection,
+    getWeeklyProjectionDetails,
+    hasProjection,
+    usesLeagueRescoring,
+    currentNflWeek,
+    projectionSeason,
+    projectionScoring,
+    leagueScoringSettings,
+    qbType,
+  ]);
   const getFinderMetric = useMemo(() => (player) => Number(getMetric(player) || getFallbackTradeValue(player) || 0), [getMetric, getFallbackTradeValue]);
 
   const tradeValueA = sideA.reduce((sum, p) => sum + getMetric(p), 0);
@@ -262,10 +386,17 @@ export default function TradeAnalyzer() {
       : favoredSide === "B"
         ? 100 - sideAPercentage
         : 50;
-  const selectedSourceLabel =
-    DEFAULT_SOURCES.find((source) => source.key === sourceKey)?.label ||
-    sourceKey ||
-    "Selected source";
+  const selectedSource = DEFAULT_SOURCES.find((source) => source.key === sourceKey);
+  const selectedSourceLabel = selectedSource
+    ? `${selectedSource.label}${selectedSource.productLabel ? ` · ${selectedSource.productLabel}` : ""}`
+    : sourceKey || "Selected source";
+  const projectionContextMessage = !hasLeagueScoring
+    ? "Comparing sides with season projection totals."
+    : exactLeagueStatProjection
+      ? `Remaining Weeks ${currentNflWeek}–18 are recalculated from ${selectedSourceLabel} weekly stat lines using ${league?.name || "the selected league"} scoring.`
+      : estimatedLeagueStatProjection
+        ? `Remaining Weeks ${currentNflWeek}–18 use ${selectedSourceLabel}'s raw season stat projections and ${league?.name || "the selected league"} scoring. The per-game estimate respects byes; unsupported categories are not invented.`
+        : `${selectedSourceLabel} does not expose enough raw stats for league rescoring. Its result is unchanged from using the calculator without a selected league.`;
   const isPlayerRanked = (player) => {
     if (metricMode === "projections") {
       return hasProjection?.(player, projectionSource) ?? getMetric(player) > 0;
@@ -338,8 +469,9 @@ export default function TradeAnalyzer() {
     if (metricMode !== "projections") return (p) => Math.sqrt(Math.max(0, getMetric(p)));
     // Partner Finder compares durable roster strength, not this week's lineup.
     // A bye or one difficult matchup must not make a season-long asset expendable.
-    return (p) => getMetric(p) / 17;
-  }, [getMetric, metricMode]);
+    const remainingWeeks = usesLeagueRescoring ? Math.max(1, 19 - currentNflWeek) : 17;
+    return (p) => getMetric(p) / remainingWeeks;
+  }, [getMetric, metricMode, usesLeagueRescoring, currentNflWeek]);
 
   useEffect(() => {
     const diff = Math.abs(tradeValueA - tradeValueB);
@@ -369,48 +501,76 @@ export default function TradeAnalyzer() {
 
   const addPlayer = (side, player) => {
     if (!player) return;
-    if ((side === "A" && sideA.includes(player)) || (side === "B" && sideB.includes(player))) return;
+    const playerId = String(player.player_id || "");
+    if (
+      (side === "A" && sideA.some((item) => String(item.player_id) === playerId)) ||
+      (side === "B" && sideB.some((item) => String(item.player_id) === playerId))
+    ) {
+      setPlayerAddMessage(`${player.full_name || "That player"} is already on Side ${side}.`);
+      return;
+    }
     const isDraftPick = String(player.position || "").toUpperCase() === "PICK";
 
-    const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
-    const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
+    const ownerA = findOwner(selectedOwnerA);
+    const ownerB = findOwner(selectedOwnerB);
 
     if (tradeLeagueId) {
+      const playerOwner = !isDraftPick
+        ? allOwners.find((owner) => owner.players.includes(playerId))
+        : allOwners.find(
+            (owner) => owner.roster_id === String(player.league_pick_owner_roster_id || ""),
+          );
+      if (!playerOwner) {
+        setPlayerAddMessage(
+          `${player.full_name || "That asset"} is not currently owned in ${league?.name || "this league"}, so it cannot be added to a roster-to-roster trade.`,
+        );
+        return;
+      }
+
       if (ownerA && ownerB) {
-        const allowedOwner = side === "A" ? ownerB : ownerA;
+        const allowedOwner = side === "A" ? ownerA : ownerB;
         if (isDraftPick) {
-          if (String(player.league_pick_owner_roster_id || "") !== allowedOwner.roster_id) return;
-        } else if (!allowedOwner.players.includes(player.player_id)) return;
+          if (String(player.league_pick_owner_roster_id || "") !== allowedOwner.roster_id) {
+            setPlayerAddMessage(`${player.full_name || "That pick"} belongs to ${playerOwner.display_name}, not ${allowedOwner.display_name}.`);
+            return;
+          }
+        } else if (!allowedOwner.players.includes(playerId)) {
+          setPlayerAddMessage(`${player.full_name || "That player"} belongs to ${playerOwner.display_name}, not ${allowedOwner.display_name}.`);
+          return;
+        }
       } else if (ownerA && !ownerB) {
         const ownedByA = isDraftPick
           ? String(player.league_pick_owner_roster_id || "") === ownerA.roster_id
-          : ownerA.players.includes(player.player_id);
-        if ((side === "B" && !ownedByA) || (side === "A" && ownedByA)) return;
+          : ownerA.players.includes(playerId);
+        if ((side === "A" && !ownedByA) || (side === "B" && ownedByA)) {
+          setPlayerAddMessage(
+            side === "A"
+              ? `${player.full_name || "That asset"} is not on ${ownerA.display_name}'s roster.`
+              : `${player.full_name || "That asset"} is already owned by Side A.`,
+          );
+          return;
+        }
       } else if (ownerB && !ownerA) {
         const ownedByB = isDraftPick
           ? String(player.league_pick_owner_roster_id || "") === ownerB.roster_id
-          : ownerB.players.includes(player.player_id);
-        if ((side === "A" && !ownedByB) || (side === "B" && ownedByB)) return;
+          : ownerB.players.includes(playerId);
+        if ((side === "B" && !ownedByB) || (side === "A" && ownedByB)) {
+          setPlayerAddMessage(
+            side === "B"
+              ? `${player.full_name || "That asset"} is not on ${ownerB.display_name}'s roster.`
+              : `${player.full_name || "That asset"} is already owned by Side B.`,
+          );
+          return;
+        }
       }
 
-      const playerOwner = !isDraftPick
-        ? league?.rosters?.find((r) => r.players.includes(player.player_id))
-        : null;
       if (playerOwner) {
-        if (side === "B" && !selectedOwnerA) setSelectedOwnerA(playerOwner.owner_id);
-        if (side === "A" && !selectedOwnerB) setSelectedOwnerB(playerOwner.owner_id);
-      }
-      if (isDraftPick) {
-        const pickOwner = allOwners.find(
-          (owner) => owner.roster_id === String(player.league_pick_owner_roster_id || ""),
-        );
-        if (pickOwner) {
-          if (side === "B" && !selectedOwnerA) setSelectedOwnerA(pickOwner.user_id);
-          if (side === "A" && !selectedOwnerB) setSelectedOwnerB(pickOwner.user_id);
-        }
+        if (side === "A" && !selectedOwnerA) setSelectedOwnerA(playerOwner.selection_id);
+        if (side === "B" && !selectedOwnerB) setSelectedOwnerB(playerOwner.selection_id);
       }
     }
 
+    setPlayerAddMessage("");
     if (side === "A") setSideA((prev) => [...prev, player]);
     else setSideB((prev) => [...prev, player]);
   };
@@ -425,14 +585,18 @@ export default function TradeAnalyzer() {
 
   let candidatePool = Object.values(players || {});
   if (tradeLeagueId) {
-    const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
-    const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
+    const ownerA = findOwner(selectedOwnerA);
+    const ownerB = findOwner(selectedOwnerB);
     if (ownerA && ownerB) {
-      const source = recSide === "A" ? ownerB : ownerA;
+      const source = recSide === "A" ? ownerA : ownerB;
       candidatePool = (source.players || []).map((pid) => players[pid]).filter(Boolean);
     } else if (ownerA || ownerB) {
       const exclude = new Set((ownerA || ownerB)?.players || []);
-      candidatePool = candidatePool.filter((p) => !exclude.has(p.player_id));
+      candidatePool = allOwners
+        .flatMap((owner) => owner.players)
+        .filter((playerId) => !exclude.has(String(playerId)))
+        .map((playerId) => players[playerId])
+        .filter(Boolean);
     }
   }
 
@@ -448,6 +612,9 @@ export default function TradeAnalyzer() {
   const filteredPlayers = (side) => {
     if (!tradeLeagueId) return players;
     const picksFor = (owner) =>
+      metricMode === "projections"
+        ? []
+        :
       Object.entries(leaguePickAssets).filter(
         ([, pick]) =>
           !owner ||
@@ -455,37 +622,38 @@ export default function TradeAnalyzer() {
       );
     const withPicks = (map, owner) =>
       Object.fromEntries([...Object.entries(map), ...picksFor(owner)]);
-    const ownerA = allOwners.find((o) => o.user_id === selectedOwnerA);
-    const ownerB = allOwners.find((o) => o.user_id === selectedOwnerB);
-    if (ownerA && ownerB) {
-      const source = side === "A" ? ownerB : ownerA;
-      return withPicks((source.players || []).reduce((map, pid) => {
-        if (players[pid]) map[pid] = players[pid];
+    const playersForOwners = (owners) =>
+      owners.reduce((map, owner) => {
+        owner.players.forEach((playerId) => {
+          if (players[playerId]) map[playerId] = players[playerId];
+        });
         return map;
-      }, {}), source);
+      }, {});
+    const ownerA = findOwner(selectedOwnerA);
+    const ownerB = findOwner(selectedOwnerB);
+    if (ownerA && ownerB) {
+      const source = side === "A" ? ownerA : ownerB;
+      return withPicks(playersForOwners([source]), source);
     }
     if (ownerA && !ownerB) {
-      return side === "B"
-        ? withPicks((ownerA.players || []).reduce((m, pid) => {
-            if (players[pid]) m[pid] = players[pid];
-            return m;
-          }, {}), ownerA)
-        : Object.fromEntries([...Object.entries(players).filter(([pid, player]) => !(ownerA.players || []).includes(pid) && String(player?.position || "").toUpperCase() !== "PICK"), ...picksFor(null)]);
+      return side === "A"
+        ? withPicks(playersForOwners([ownerA]), ownerA)
+        : withPicks(
+            playersForOwners(allOwners.filter((owner) => owner.roster_id !== ownerA.roster_id)),
+            null,
+          );
     }
     if (ownerB && !ownerA) {
-      return side === "A"
-        ? withPicks((ownerB.players || []).reduce((m, pid) => {
-            if (players[pid]) m[pid] = players[pid];
-            return m;
-          }, {}), ownerB)
-        : Object.fromEntries([...Object.entries(players).filter(([pid, player]) => !(ownerB.players || []).includes(pid) && String(player?.position || "").toUpperCase() !== "PICK"), ...picksFor(null)]);
+      return side === "B"
+        ? withPicks(playersForOwners([ownerB]), ownerB)
+        : withPicks(
+            playersForOwners(allOwners.filter((owner) => owner.roster_id !== ownerB.roster_id)),
+            null,
+          );
     }
-    return Object.fromEntries([
-      ...Object.entries(players || {}).filter(
-        ([, player]) => String(player?.position || "").toUpperCase() !== "PICK",
-      ),
-      ...picksFor(null),
-    ]);
+    // Before a side is identified, player search covers only rostered players.
+    // Typing a player selects that roster; draft picks appear after an owner is selected.
+    return playersForOwners(allOwners);
   };
 
   const topRecommendations = Object.values(players || {})
@@ -537,7 +705,7 @@ export default function TradeAnalyzer() {
       return;
     }
     printWindow.opener = null;
-    const valueText = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+    const valueText = formatMetric;
     const assetRows = (assets) => assets.map((player) => {
       const name = player.full_name || player.search_full_name || player.player_id || "Unknown asset";
       const detail = [player.position, player.team].filter(Boolean).join(" · ");
@@ -579,6 +747,7 @@ export default function TradeAnalyzer() {
                     onModeChange={setFormat}
                     onQbTypeChange={setQbType}
                     layout="inline"
+                    projectionHorizon={usesLeagueRescoring ? "remaining" : "season"}
                   />
                 </div>
                 <div className="mt-2 text-xs text-white/60">
@@ -587,9 +756,32 @@ export default function TradeAnalyzer() {
                     : projLoading && metricMode === "projections"
                     ? "Loading projection inputs..."
                     : metricMode === "projections"
-                    ? "Comparing sides with season projection totals."
+                    ? projectionContextMessage
                     : "Comparing sides with the selected trade market."}
                 </div>
+                {tradeLeagueId ? (
+                  <div
+                    className={`mt-3 rounded-2xl border p-3 text-xs leading-5 ${
+                      metricMode !== "projections" || !usesLeagueRescoring
+                        ? "border-amber-300/20 bg-amber-300/[0.06] text-amber-50/75"
+                        : estimatedLeagueStatProjection
+                          ? "border-violet-300/20 bg-violet-300/[0.06] text-violet-50/75"
+                          : "border-emerald-300/20 bg-emerald-300/[0.055] text-emerald-50/75"
+                    }`}
+                  >
+                    {metricMode !== "projections" ? (
+                      <><b className="text-amber-100">League scoring is not applied to market values.</b> This source still works, but its number is the same as using it without a selected league.</>
+                    ) : !hasLeagueScoring ? (
+                      <><b className="text-amber-100">League scoring settings are unavailable.</b> The selected projection still works, but it cannot be recalculated for this league.</>
+                    ) : exactLeagueStatProjection ? (
+                      <><b className="text-emerald-100">Weekly league scoring active.</b> This source exposes weekly stat lines that are recalculated with the selected league&apos;s settings.</>
+                    ) : estimatedLeagueStatProjection ? (
+                      <><b className="text-violet-100">Season-stat league scoring active.</b> Available raw season stats are rescored and converted to a bye-aware per-game estimate. Unsupported categories remain excluded instead of being guessed.</>
+                    ) : (
+                      <><b className="text-amber-100">This source cannot be recalculated.</b> It still works, but the result is the same as using it without a selected league. Choose Arsenal Safe or Boom / Bust for full league scoring.</>
+                    )}
+                  </div>
+                ) : null}
                 <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-violet-300/15 bg-violet-300/[0.045] p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="text-sm font-black text-violet-100">
@@ -631,6 +823,40 @@ export default function TradeAnalyzer() {
                     </button>
                   ) : null}
                 </div>
+                {tradeLeagueLoading ? (
+                  <div className="mt-3 text-xs font-semibold text-cyan-100">Loading every roster in this league…</div>
+                ) : null}
+                {tradeLeagueError ? (
+                  <div className="mt-3 rounded-xl border border-rose-300/15 bg-rose-300/[0.06] p-3 text-xs text-rose-100">{tradeLeagueError}</div>
+                ) : null}
+                {tradeLeagueId && !tradeLeagueLoading ? (
+                  <div
+                    className={`mt-3 rounded-xl border px-3 py-3 text-xs leading-5 ${
+                      exactLeagueStatProjection && hasLeagueScoring
+                        ? "border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-50/80"
+                        : estimatedLeagueStatProjection && hasLeagueScoring
+                          ? "border-violet-300/20 bg-violet-300/[0.06] text-violet-50/80"
+                          : "border-amber-300/20 bg-amber-300/[0.06] text-amber-50/80"
+                    }`}
+                  >
+                    {exactLeagueStatProjection && hasLeagueScoring ? (
+                      <>
+                        <b className="text-emerald-100">League scoring is active.</b>{" "}
+                        {selectedSourceLabel} exposes weekly projected stats, so this league&apos;s scoring settings are being applied.
+                      </>
+                    ) : estimatedLeagueStatProjection && hasLeagueScoring ? (
+                      <>
+                        <b className="text-violet-100">League scoring estimate is active.</b>{" "}
+                        {selectedSourceLabel} exposes season stat projections. Those stats are rescored for this league and converted to a bye-aware per-game rate. Arsenal Safe, Boom / Bust, and Sleeper are more matchup-specific because they expose weekly stat lines.
+                      </>
+                    ) : (
+                      <>
+                        <b className="text-amber-100">For a league-scoring comparison, use Arsenal Safe, Boom / Bust, Sleeper, FantasyPros, DraftSharks, or FantasySharks.</b>{" "}
+                        Those sources expose stat projections that can be recalculated. {selectedSourceLabel} uses its standard number without this league&apos;s scoring.
+                      </>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -666,11 +892,11 @@ export default function TradeAnalyzer() {
             <div data-guide-tip="trade-analyzer" className={tradeTab === "analyzer" ? "block" : "hidden"}><div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-gray-900 p-4 md:grid-cols-3">
               <div className="rounded-xl bg-[#0f2134] px-4 py-3">
                 <div className="text-xs uppercase tracking-wide text-blue-200/60">Side A</div>
-                <div className="mt-1 text-2xl font-semibold text-white">{Math.round(tradeValueA).toLocaleString()}</div>
+                <div className="mt-1 text-2xl font-semibold text-white">{formatMetric(tradeValueA)}</div>
               </div>
               <div className="rounded-xl bg-[#2b1518] px-4 py-3">
                 <div className="text-xs uppercase tracking-wide text-rose-200/60">Side B</div>
-                <div className="mt-1 text-2xl font-semibold text-white">{Math.round(tradeValueB).toLocaleString()}</div>
+                <div className="mt-1 text-2xl font-semibold text-white">{formatMetric(tradeValueB)}</div>
               </div>
               <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="text-xs uppercase tracking-wide text-white/45">Verdict</div>
@@ -739,15 +965,18 @@ export default function TradeAnalyzer() {
                 {tradeLeagueId ? (
                   <select
                     value={selectedOwnerA}
-                    onChange={(e) => setSelectedOwnerA(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedOwnerA(e.target.value);
+                      setPlayerAddMessage("");
+                    }}
                     data-account-persist="off"
                     aria-label="Trade Analyzer Side A owner"
                     className="bg-gray-800 text-white p-2 rounded mb-4 w-full"
                   >
-                    <option value="">Select Owner</option>
+                    <option value="">Select Side A owner</option>
                     {allOwners.map((owner) => (
-                      <option key={owner.user_id} value={owner.user_id}>
-                        {owner.display_name}
+                      <option key={owner.roster_id} value={owner.selection_id} disabled={!owner.players.length}>
+                        {owner.display_name} ({owner.players.length} players{owner.players.length ? "" : " · empty roster"})
                       </option>
                     ))}
                   </select>
@@ -766,6 +995,17 @@ export default function TradeAnalyzer() {
                       getPlayerValue={getMetric}
                       isPlayerRanked={isPlayerRanked}
                       sourceLabel={selectedSourceLabel}
+                      browseLabel={
+                        selectedOwnerA
+                          ? `${getSideTitle("A")} roster`
+                          : "Eligible players · selecting one finds their team"
+                      }
+                      browseOnFocus={!tradeLeagueId || Boolean(selectedOwnerA)}
+                      focusHint={
+                        tradeLeagueId && !selectedOwnerA
+                          ? "Start typing a rostered player's name. Selecting that player will identify and select their team automatically."
+                          : ""
+                      }
                     />
                   }
                 />
@@ -775,15 +1015,18 @@ export default function TradeAnalyzer() {
                 {tradeLeagueId ? (
                   <select
                     value={selectedOwnerB}
-                    onChange={(e) => setSelectedOwnerB(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedOwnerB(e.target.value);
+                      setPlayerAddMessage("");
+                    }}
                     data-account-persist="off"
                     aria-label="Trade Analyzer Side B owner"
                     className="bg-gray-800 text-white p-2 rounded mb-4 w-full"
                   >
-                    <option value="">Select Owner</option>
+                    <option value="">Select Side B owner</option>
                     {allOwners.map((owner) => (
-                      <option key={owner.user_id} value={owner.user_id}>
-                        {owner.display_name}
+                      <option key={owner.roster_id} value={owner.selection_id} disabled={!owner.players.length}>
+                        {owner.display_name} ({owner.players.length} players{owner.players.length ? "" : " · empty roster"})
                       </option>
                     ))}
                   </select>
@@ -802,11 +1045,28 @@ export default function TradeAnalyzer() {
                       getPlayerValue={getMetric}
                       isPlayerRanked={isPlayerRanked}
                       sourceLabel={selectedSourceLabel}
+                      browseLabel={
+                        selectedOwnerB
+                          ? `${getSideTitle("B")} roster`
+                          : "Eligible players · selecting one finds their team"
+                      }
+                      browseOnFocus={!tradeLeagueId || Boolean(selectedOwnerB)}
+                      focusHint={
+                        tradeLeagueId && !selectedOwnerB
+                          ? "Start typing a rostered player's name. Selecting that player will identify and select their team automatically."
+                          : ""
+                      }
                     />
                   }
                 />
               </div>
             </div>
+
+            {playerAddMessage ? (
+              <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-3 text-sm text-amber-50/85">
+                {playerAddMessage}
+              </div>
+            ) : null}
 
             {sideA.length > 0 || sideB.length > 0 ? (
               <div className="text-center mt-6">
@@ -824,7 +1084,7 @@ export default function TradeAnalyzer() {
               </div>
             ) : null}
 
-            {players && Object.keys(players).length > 0 ? (
+            {!tradeLeagueId && players && Object.keys(players).length > 0 ? (
               <div className="mt-10 bg-gray-900 p-6 rounded-lg shadow-lg">
                 <h2 className="text-xl font-semibold mb-4">Top Available Players</h2>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

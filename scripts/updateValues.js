@@ -3345,7 +3345,20 @@ async function updateSleeperProjections() {
       current.points_half_ppr += halfPpr;
       current.points_standard += standard;
       current.projected_weeks += 1;
-      current.weekly[week] = { ppr, half_ppr: halfPpr, standard };
+      const statLine = Object.fromEntries(
+        Object.entries(projection || {}).filter(([key, value]) => {
+          if (!Number.isFinite(Number(value))) return false;
+          if (["gp", "cmp_pct"].includes(key)) return false;
+          if (key.startsWith("pts_") || key.includes("adp")) return false;
+          return true;
+        }).map(([key, value]) => [key, Number(value)]),
+      );
+      current.weekly[week] = {
+        ppr,
+        half_ppr: halfPpr,
+        standard,
+        stat_line: statLine,
+      };
       totals.set(String(playerId), current);
     });
   });
@@ -3397,6 +3410,10 @@ async function updateSleeperProjections() {
     source: "Sleeper",
     endpoint_status: "undocumented",
     scoring: "PPR",
+    league_scoring: {
+      scope: "weekly",
+      basis: "Sleeper raw weekly projected stats",
+    },
     weeks_requested: weeks,
     count: rows.length,
     rows,

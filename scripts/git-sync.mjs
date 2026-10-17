@@ -30,9 +30,12 @@ function rebaseInProgress() {
 function generatedDataFile(file) {
   const normalized = String(file || "").replaceAll("\\", "/");
   return (
+    /^data\/model-challengers\/[^/]+\/forward-report\.json$/i.test(normalized) ||
     normalized.startsWith("public/archive/") ||
     /^public\/data\/ballsville-stats-\d{4}\.json$/i.test(normalized) ||
     /^public\/data\/player-stock-drafters-\d{4}\.json$/i.test(normalized) ||
+    /^public\/data\/odds\/(?:nfl-prop-board|nfl-props-snapshot|prop-lab-accuracy)\.json$/i.test(normalized) ||
+    normalized === "public/data/sleeper-roster-percentages.json" ||
     /^public\/(?:[^/]+_cache|source-freshness|value-cache-version)\.json$/i.test(normalized) ||
     /^public\/projections(?:_[^/]+)?\.json$/i.test(normalized) ||
     /^public\/stats\/(?:advanced|derived|history|projections)\//i.test(normalized)
@@ -117,6 +120,17 @@ function finishRebase() {
     if (!resolveGeneratedConflicts()) return false;
     const unresolved = output(["diff", "--name-only", "--diff-filter=U"]);
     if (!unresolved) {
+      // A failed sync may be repaired while its rebase is paused. Include that
+      // repair in the resumed local commit so Git sees a clean worktree.
+      const syncScriptChanged = git(["diff", "--quiet", "--", "scripts/git-sync.mjs"], {
+        allowFailure: true,
+        quiet: true,
+      });
+      if (syncScriptChanged.status === 1) {
+        git(["add", "--", "scripts/git-sync.mjs"]);
+      } else if (syncScriptChanged.status > 1) {
+        return false;
+      }
       const staged = git(["diff", "--cached", "--quiet"], {
         allowFailure: true,
         quiet: true,
@@ -148,7 +162,7 @@ if (rebaseInProgress()) {
 
 const branch = git(["branch", "--show-current"], { quiet:true }).stdout.trim();
 if (branch !== "main") {
-  console.error(`npm run gil only syncs main. Current branch: ${branch || "detached HEAD"}`);
+  console.error(`npm run sync only syncs main. Current branch: ${branch || "detached HEAD"}`);
   process.exit(1);
 }
 
@@ -189,5 +203,5 @@ for (let attempt = 1; attempt <= 3; attempt += 1) {
   }
 }
 
-console.error("GitHub changed repeatedly while syncing. Run npm run gil again.");
+console.error("GitHub changed repeatedly while syncing. Run npm run sync again.");
 process.exit(1);

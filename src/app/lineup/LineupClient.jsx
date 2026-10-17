@@ -9,6 +9,7 @@ const BackgroundParticles = dynamic(
   { ssr: false },
 );
 import LoadingScreen from "../../components/LoadingScreen";
+import AvatarImage from "../../components/AvatarImage";
 import { fantasyWeekFromNflState } from "../../lib/nflSeasonState";
 import { useSleeper } from "../../context/SleeperContext";
 import { useArsenalAccount } from "../../context/ArsenalAccountContext";
@@ -271,6 +272,151 @@ function parseLeagueSlots(league) {
   return { strict, flexGroups };
 }
 
+const NON_STARTER_SLOTS = new Set(["BN", "IR", "TAXI"]);
+const CONFIRMED_OUT_STATUSES = new Set([
+  "OUT",
+  "IR",
+  "PUP",
+  "NFI",
+  "NA",
+  "SUSPENDED",
+  "INACTIVE",
+]);
+
+function sleeperAvailabilityStatus(player) {
+  const rosterStatus = String(player?.status || "").trim();
+  const normalizedRoster = rosterStatus.toLowerCase().replace(/[\s-]+/g, "_");
+  const rosterMap = {
+    ir: "IR",
+    injured_reserve: "IR",
+    reserve_injured: "IR",
+    reserve_pup: "PUP",
+    physically_unable_to_perform: "PUP",
+    pup: "PUP",
+    non_football_injury: "NFI",
+    nfi: "NFI",
+    suspended: "SUSPENDED",
+    exempt: "NA",
+    na: "NA",
+    commissioner_exempt: "NA",
+  };
+  if (rosterMap[normalizedRoster]) return rosterMap[normalizedRoster];
+  const injury = String(player?.injury_status || "").trim().toUpperCase();
+  if (injury) return injury;
+  if (normalizedRoster === "inactive") return "INACTIVE";
+  return "";
+}
+
+function lineupSlotDefinitions(league) {
+  return (league?.roster_positions || [])
+    .map((value) => String(value || "").toUpperCase())
+    .filter((slot) => slot && !NON_STARTER_SLOTS.has(slot))
+    .map((slot, index) => {
+      const normalized = slot === "DST" ? "DEF" : slot;
+      const eligible =
+        normalized === "FLEX" || normalized === "REC_FLEX"
+          ? ["RB", "WR", "TE"]
+          : ["SUPER_FLEX", "SUPERFLEX", "Q/W/R/T"].includes(normalized)
+            ? ["QB", "RB", "WR", "TE"]
+            : normalized === "WRRB_FLEX" || normalized === "W/R"
+              ? ["WR", "RB"]
+              : normalized === "WRTE_FLEX" || normalized === "W/T"
+                ? ["WR", "TE"]
+                : normalized === "IDP_FLEX"
+                  ? ["DL", "LB", "DB", "IDP"]
+                  : normalized.includes("/")
+                    ? normalized
+                        .split("/")
+                        .map(
+                          (part) =>
+                            ({ Q: "QB", R: "RB", W: "WR", T: "TE" })[part] ||
+                            normalizePos(part),
+                        )
+                    : [normalizePos(normalized)];
+      const label = ["SUPER_FLEX", "SUPERFLEX", "Q/W/R/T"].includes(normalized)
+        ? "SF"
+        : ["FLEX", "REC_FLEX", "WRRB_FLEX", "WRTE_FLEX"].includes(normalized)
+          ? "FLEX"
+          : normalized;
+      return {
+        key: `${normalized}:${index}`,
+        slot: normalized,
+        label,
+        eligible,
+      };
+    });
+}
+
+function playerFitsSlot(player, slot) {
+  return Boolean(player && slot?.eligible?.includes(normalizePos(player.pos)));
+}
+
+function confirmedUnavailable(player, selectedWeek, currentWeek) {
+  if (!player || Number(selectedWeek) !== Number(currentWeek)) return false;
+  return (
+    Boolean(player.inactive) ||
+    CONFIRMED_OUT_STATUSES.has(
+      String(player.availabilityStatus || player.injury || "").toUpperCase(),
+    )
+  );
+}
+
+function playerCreatesLineupIssue(player, selectedWeek, currentWeek) {
+  return (
+    !player ||
+    Boolean(player.isOnBye) ||
+    confirmedUnavailable(player, selectedWeek, currentWeek)
+  );
+}
+
+function optimizePlannerSlots({
+  slots,
+  candidates,
+  defaultIds = [],
+  week,
+  currentWeek,
+}) {
+  const output = Array(slots.length).fill(null);
+  const used = new Set();
+  const byId = new Map(
+    candidates.map((player) => [String(player.pid), player]),
+  );
+
+  defaultIds.forEach((id, index) => {
+    const player = byId.get(String(id || ""));
+    if (!player?.gameStarted || !playerFitsSlot(player, slots[index])) return;
+    output[index] = String(player.pid);
+    used.add(String(player.pid));
+  });
+
+  const orderedSlots = slots
+    .map((slot, index) => ({ slot, index }))
+    .filter(({ index }) => !output[index])
+    .sort(
+      (left, right) =>
+        left.slot.eligible.length - right.slot.eligible.length ||
+        left.index - right.index,
+    );
+  const available = [...candidates].sort(
+    (left, right) =>
+      Number(right.selectionScore || right.proj || 0) -
+      Number(left.selectionScore || left.proj || 0),
+  );
+  orderedSlots.forEach(({ slot, index }) => {
+    const best = available.find(
+      (player) =>
+        !used.has(String(player.pid)) &&
+        !player.lockedOnBench &&
+        !playerCreatesLineupIssue(player, week, currentWeek) &&
+        playerFitsSlot(player, slot),
+    );
+    if (!best) return;
+    output[index] = String(best.pid);
+    used.add(String(best.pid));
+  });
+  return output;
+}
+
 /* ---------- Helpers ---------- */
 function inferQbTypeFromLeague(league) {
   return classifyQbFormat(league).key;
@@ -281,7 +427,9 @@ function inferFormatFromLeague(league) {
 function gameIsFinal(game) {
   return (
     game?.statusState === "post" ||
-    String(game?.status || "").toLowerCase().startsWith("final")
+    String(game?.status || "")
+      .toLowerCase()
+      .startsWith("final")
   );
 }
 function formatFantasyPoints(value) {
@@ -389,9 +537,9 @@ function solveOptimalLineup({
         : Number(frozenProjectionById[String(pid)] ?? getWeeklyMetric(p) ?? 0);
       const projectionDetails = isOnBye ? null : getWeeklyDetails?.(p) || null;
       const injury = String(p?.injury_status || "").toUpperCase();
-      const inactive = String(p?.status || "").toLowerCase() === "inactive";
-      const unavailable =
-        ["OUT", "IR", "PUP", "SUSPENDED"].includes(injury) || inactive;
+      const availabilityStatus = sleeperAvailabilityStatus(p);
+      const inactive = availabilityStatus === "INACTIVE";
+      const unavailable = CONFIRMED_OUT_STATUSES.has(availabilityStatus);
       const availabilityMultiplier = unavailable
         ? 0
         : injury === "DOUBTFUL"
@@ -418,9 +566,8 @@ function solveOptimalLineup({
         ? Number(actualPointsById[String(pid)]) || 0
         : null;
       const expectedMedian = frozenProj * availabilityMultiplier;
-      const median = gameStarted && useLiveScoring
-        ? (livePoints ?? 0)
-        : expectedMedian;
+      const median =
+        gameStarted && useLiveScoring ? (livePoints ?? 0) : expectedMedian;
       const currentStarter = currentStarterIds.has(String(pid));
       const started = currentStarter && gameStarted;
       const lockedOnBench = !currentStarter && gameStarted;
@@ -468,6 +615,7 @@ function solveOptimalLineup({
         selectionScore,
         marketValue: getMarketValue?.(p) || 0,
         injury,
+        availabilityStatus,
         unavailable,
         inactive,
         isOnBye,
@@ -532,7 +680,7 @@ function solveOptimalLineup({
     0,
   );
   const liveScore = starters.reduce(
-    (sum, player) => sum + (player.gameStarted ? player.livePoints ?? 0 : 0),
+    (sum, player) => sum + (player.gameStarted ? (player.livePoints ?? 0) : 0),
     0,
   );
   const floorScore = starters.reduce((s, x) => s + (x.floor || 0), 0);
@@ -559,6 +707,55 @@ function solveOptimalLineup({
 function winProbability(scoreA, scoreB) {
   return (
     100 / (1 + Math.exp(-(Number(scoreA || 0) - Number(scoreB || 0)) / 12))
+  );
+}
+
+function MatchupSnapshot({ metricMode, matchup, ownerA, ownerB, ownerLabel }) {
+  if (!ownerA || !ownerB) return null;
+  const projectionMode = metricMode === "projections";
+  return (
+    <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+            {projectionMode ? "Live + projected edge" : "Optimized value edge"}
+          </div>
+          <div className="mt-1 font-bold">
+            {matchup?.delta >= 0 ? ownerLabel(ownerA) : ownerLabel(ownerB)}
+          </div>
+          <div className="text-xs text-white/45">
+            by {Math.abs(matchup?.delta || 0).toFixed(1)}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Your win chance</div>
+          <div className="mt-1 text-2xl font-black text-emerald-200">
+            {projectionMode ? `${Math.round(winProbability(matchup?.a.score, matchup?.b.score))}%` : "—"}
+          </div>
+          <div className="text-xs text-white/45">
+            {projectionMode ? "Modeled from lineup totals" : "Requires projection mode"}
+          </div>
+        </div>
+        {projectionMode ? (
+          <>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Your range</div>
+              <div className="mt-1 font-bold">
+                {matchup?.a.floorScore.toFixed(1)}–{matchup?.a.ceilingScore.toFixed(1)}
+              </div>
+              <div className="text-xs text-white/45">Floor to ceiling</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Opponent range</div>
+              <div className="mt-1 font-bold">
+                {matchup?.b.floorScore.toFixed(1)}–{matchup?.b.ceilingScore.toFixed(1)}
+              </div>
+              <div className="text-xs text-white/45">Floor to ceiling</div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -740,7 +937,8 @@ function LineupPersonalization({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {formatFantasyPoints(player.frozenProj)} projected ·{" "}
+                    {player.pos} · {formatFantasyPoints(player.frozenProj)}{" "}
+                    projected ·{" "}
                     {player.started
                       ? player.gameCompleted
                         ? "Final / locked"
@@ -927,7 +1125,8 @@ function LineupPersonalizationPremium({
                     {player.name}
                   </div>
                   <div className="text-[9px] text-white/30">
-                    {player.pos} · {formatFantasyPoints(player.frozenProj)} projected
+                    {player.pos} · {formatFantasyPoints(player.frozenProj)}{" "}
+                    projected
                     {player.gameStarted
                       ? ` (${formatFantasyPoints(player.livePoints ?? 0)} ${player.gameCompleted ? "final" : "live"})`
                       : ""}{" "}
@@ -1035,9 +1234,7 @@ function findCloseAlternatives(
 /* ---------- Find opponent & H2H week ---------- */
 function opponentRosterIdFromMatchups(matchups, myRosterId) {
   const myRosterKey = String(myRosterId);
-  const myRow = matchups.find(
-    (row) => String(row?.roster_id) === myRosterKey,
-  );
+  const myRow = matchups.find((row) => String(row?.roster_id) === myRosterKey);
   if (myRow?.matchup_id == null || myRow.matchup_id === "") return null;
   const matchupKey = String(myRow.matchup_id);
   const opponent = matchups.find(
@@ -1147,8 +1344,16 @@ export default function LineupTool() {
   }, [sourceKey]);
 
   const [week, setWeek] = useState(1);
+  const [currentNflWeek, setCurrentNflWeek] = useState(1);
   const [season, setSeason] = useState(new Date().getFullYear());
-  const { details: getWeekDetails, loading: weeklyProjectionLoading, ready: weeklyProjectionReady } = useWeeklyProjectionSource(projectionSource, { enabled: metricMode === "projections", season });
+  const {
+    details: getWeekDetails,
+    loading: weeklyProjectionLoading,
+    ready: weeklyProjectionReady,
+  } = useWeeklyProjectionSource(projectionSource, {
+    enabled: metricMode === "projections",
+    season,
+  });
   const [byeMap, setByeMap] = useState({ by_team: {} });
   const [byeDataAvailable, setByeDataAvailable] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
@@ -1199,81 +1404,79 @@ export default function LineupTool() {
       Promise.all([
         fetch(
           `/api/nfl-scoreboard?season=${season}&week=${week}&weatherFallback=stored`,
-        ).then((response) =>
-          response.ok ? response.json() : { games: [] },
-        ),
+        ).then((response) => (response.ok ? response.json() : { games: [] })),
         fetch(`/stats/projections/${season}/schedule.json`, {
           cache: "no-store",
         })
           .then((response) => (response.ok ? response.json() : null))
           .catch(() => null),
       ])
-      .then(([data, savedSchedule]) => {
-        if (!active) return;
-        const map = {};
-        const conditions = {};
-        const savedGames =
-          savedSchedule?.weeks?.find(
-            (entry) => Number(entry.week) === Number(week),
-          )?.games || [];
-        const savedByTeam = new Map();
-        savedGames.forEach((game) => {
-          if (game?.home) savedByTeam.set(normalizeTeamAbbr(game.home), game);
-          if (game?.away) savedByTeam.set(normalizeTeamAbbr(game.away), game);
-        });
-        (data.games || []).forEach((game) =>
-          (game.teams || []).forEach((team) => {
-            const normalizedTeam = normalizeTeamAbbr(team);
-            const savedGame = savedByTeam.get(normalizedTeam);
-            map[normalizedTeam] = game;
-            const indoor =
-              Boolean(game?.venue?.indoor) ||
-              game?.venue?.roofType === "fixed" ||
-              savedGame?.venue?.roofType === "fixed" ||
-              savedGame?.weather?.indoor === true;
-            const savedWeather = savedGame?.weather || null;
-            const embeddedWeather = game?.weather || null;
-            conditions[normalizedTeam] = indoor
-              ? {
-                  source: "venue",
-                  summary: "Indoor",
+        .then(([data, savedSchedule]) => {
+          if (!active) return;
+          const map = {};
+          const conditions = {};
+          const savedGames =
+            savedSchedule?.weeks?.find(
+              (entry) => Number(entry.week) === Number(week),
+            )?.games || [];
+          const savedByTeam = new Map();
+          savedGames.forEach((game) => {
+            if (game?.home) savedByTeam.set(normalizeTeamAbbr(game.home), game);
+            if (game?.away) savedByTeam.set(normalizeTeamAbbr(game.away), game);
+          });
+          (data.games || []).forEach((game) =>
+            (game.teams || []).forEach((team) => {
+              const normalizedTeam = normalizeTeamAbbr(team);
+              const savedGame = savedByTeam.get(normalizedTeam);
+              map[normalizedTeam] = game;
+              const indoor =
+                Boolean(game?.venue?.indoor) ||
+                game?.venue?.roofType === "fixed" ||
+                savedGame?.venue?.roofType === "fixed" ||
+                savedGame?.weather?.indoor === true;
+              const savedWeather = savedGame?.weather || null;
+              const embeddedWeather = game?.weather || null;
+              conditions[normalizedTeam] = indoor
+                ? {
+                    source: "venue",
+                    summary: "Indoor",
                     indoor: true,
                     stored: Boolean(savedGame),
                     stadium:
                       game?.venue?.name || savedGame?.venue?.name || null,
-                }
-              : savedWeather || embeddedWeather
-                ? {
-                    ...(embeddedWeather || {}),
-                    ...(savedWeather || {}),
-                    summary:
-                      savedWeather?.summary ||
-                      embeddedWeather?.summary ||
-                      null,
-                    indoor: false,
-                    stored: Boolean(savedWeather),
-                    stadium:
-                      game?.venue?.name || savedGame?.venue?.name || null,
                   }
-                : {
-                    source: null,
-                    summary: null,
-                    indoor: false,
-                    unavailable: true,
-                    stadium:
-                      game?.venue?.name || savedGame?.venue?.name || null,
-                  };
-          }),
-        );
-        setKickoffMap(map);
-        setWeatherMap(conditions);
-      })
-      .catch(() => {
-        if (active) {
-          setKickoffMap({});
-          setWeatherMap({});
-        }
-      });
+                : savedWeather || embeddedWeather
+                  ? {
+                      ...(embeddedWeather || {}),
+                      ...(savedWeather || {}),
+                      summary:
+                        savedWeather?.summary ||
+                        embeddedWeather?.summary ||
+                        null,
+                      indoor: false,
+                      stored: Boolean(savedWeather),
+                      stadium:
+                        game?.venue?.name || savedGame?.venue?.name || null,
+                    }
+                  : {
+                      source: null,
+                      summary: null,
+                      indoor: false,
+                      unavailable: true,
+                      stadium:
+                        game?.venue?.name || savedGame?.venue?.name || null,
+                    };
+            }),
+          );
+          setKickoffMap(map);
+          setWeatherMap(conditions);
+        })
+        .catch(() => {
+          if (active) {
+            setKickoffMap({});
+            setWeatherMap({});
+          }
+        });
     loadScoreboard();
     const timer = window.setInterval(loadScoreboard, 30000);
     return () => {
@@ -1296,9 +1499,7 @@ export default function LineupTool() {
         fetch(
           `https://api.sleeper.app/v1/league/${activeLeague}/matchups/${week}`,
         ).then((response) => (response.ok ? response.json() : [])),
-        fetch(
-          `https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`,
-        )
+        fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`)
           .then((response) => (response.ok ? response.json() : {}))
           .catch(() => ({})),
       ])
@@ -1308,10 +1509,12 @@ export default function LineupTool() {
           setWeeklyStatsById(stats || {});
           const next = {};
           (rows || []).forEach((row) => {
-            Object.entries(row?.players_points || {}).forEach(([id, points]) => {
-              const value = Number(points);
-              if (Number.isFinite(value)) next[String(id)] = value;
-            });
+            Object.entries(row?.players_points || {}).forEach(
+              ([id, points]) => {
+                const value = Number(points);
+                if (Number.isFinite(value)) next[String(id)] = value;
+              },
+            );
           });
           setActualPointsById(next);
         })
@@ -1419,7 +1622,8 @@ export default function LineupTool() {
           localStorage.getItem(`lineup-settings:${scope}`) || "{}",
         );
         setTreatAsChopped(saved.treatAsChopped === true);
-        if (LINEUP_SOURCE_KEYS.has(saved.sourceKey)) setSourceKey(saved.sourceKey);
+        if (LINEUP_SOURCE_KEYS.has(saved.sourceKey))
+          setSourceKey(saved.sourceKey);
         if (["redraft", "dynasty"].includes(saved.formatLocal))
           setFormatLocal(saved.formatLocal);
         if (["1qb", "sf"].includes(saved.qbLocal)) setQbLocal(saved.qbLocal);
@@ -1678,10 +1882,10 @@ export default function LineupTool() {
       String(nextSource).startsWith("val:")
         ? "Value mode uses current-season redraft rankings to order lineup choices. It can identify the strongest season-long player, but it does not model this week's opponent, weather, or expected fantasy points, so matchup totals and win probability are unavailable."
         : nextSource === "proj:sleeper"
-        ? "Sleeper supplies weekly Standard, Half-PPR, and PPR totals. The optimizer uses the closest reception-scoring profile, but Sleeper cannot be exactly rescored for custom settings such as 6-point passing touchdowns or yardage bonuses."
-        : nextSource === "proj:draftsharks"
-          ? "DraftSharks is recalculated from its raw season stat projections using your league settings, then converted to a weekly average. It is not a matchup-specific weekly forecast."
-          : "",
+          ? "Sleeper supplies weekly Standard, Half-PPR, and PPR totals. The optimizer uses the closest reception-scoring profile, but Sleeper cannot be exactly rescored for custom settings such as 6-point passing touchdowns or yardage bonuses."
+          : nextSource === "proj:draftsharks"
+            ? "DraftSharks is recalculated from its raw season stat projections using your league settings, then converted to a weekly average. It is not a matchup-specific weekly forecast."
+            : "",
     );
     setSourceKey(nextSource);
   };
@@ -1695,7 +1899,9 @@ export default function LineupTool() {
         const res = await fetch("https://api.sleeper.app/v1/state/nfl");
         const data = await res.json();
         if (mounted) {
-          setWeek(fantasyWeekFromNflState(data));
+          const activeWeek = fantasyWeekFromNflState(data);
+          setWeek(activeWeek);
+          setCurrentNflWeek(activeWeek);
           if (data?.season) setSeason(Number(data.season));
         }
         const byeRes = await fetch(
@@ -1762,14 +1968,24 @@ export default function LineupTool() {
     [activeLeague, season, week, projectionSource, projectionScoring],
   );
   useEffect(() => {
-    if (metricMode !== "projections" || !activeLeague || !week || weeklyProjectionLoading || !weeklyProjectionReady) {
-      setFrozenProjectionById({});
+    if (
+      metricMode !== "projections" ||
+      !activeLeague ||
+      !week ||
+      weeklyProjectionLoading ||
+      !weeklyProjectionReady
+    ) {
+      setFrozenProjectionById((current) =>
+        Object.keys(current).length ? {} : current,
+      );
       return;
     }
     let saved = {};
     try {
       saved = JSON.parse(
-        localStorage.getItem(`lineup-frozen-projections:v2:${frozenProjectionScope}`) || "{}",
+        localStorage.getItem(
+          `lineup-frozen-projections:v2:${frozenProjectionScope}`,
+        ) || "{}",
       );
     } catch {}
     const next = { ...saved };
@@ -1787,11 +2003,21 @@ export default function LineupTool() {
     });
     try {
       localStorage.setItem(
-          `lineup-frozen-projections:v2:${frozenProjectionScope}`,
+        `lineup-frozen-projections:v2:${frozenProjectionScope}`,
         JSON.stringify(next),
       );
     } catch {}
-    setFrozenProjectionById(next);
+    setFrozenProjectionById((current) => {
+      const currentKeys = Object.keys(current);
+      const nextKeys = Object.keys(next);
+      if (
+        currentKeys.length === nextKeys.length &&
+        nextKeys.every((key) => Number(current[key]) === Number(next[key]))
+      ) {
+        return current;
+      }
+      return next;
+    });
   }, [
     activeLeague,
     frozenProjectionScope,
@@ -1868,6 +2094,90 @@ export default function LineupTool() {
     });
   };
 
+  const rosteredPlayerIds = useMemo(
+    () =>
+      new Set(rosters.flatMap((roster) => (roster?.players || []).map(String))),
+    [rosters],
+  );
+  const plannerFreeAgents = useMemo(() => {
+    if (
+      !activeLeague ||
+      !players ||
+      (metricMode === "projections" && !weeklyProjectionReady)
+    )
+      return [];
+    const byPosition = new Map();
+    Object.entries(players).forEach(([pid, player]) => {
+      if (rosteredPlayerIds.has(String(pid))) return;
+      const pos = normalizePos(player?.position);
+      if (!["QB", "RB", "WR", "TE", "K", "DEF"].includes(pos)) return;
+      const team = normalizeTeamAbbr(player?.team);
+      if (!team || ["FA", "RET"].includes(team)) return;
+      const injury = String(player?.injury_status || "").toUpperCase();
+      const availabilityStatus = sleeperAvailabilityStatus(player);
+      const inactive = availabilityStatus === "INACTIVE";
+      const byeWeeks = byeMap?.by_team?.[team] || [];
+      const isOnBye = byeWeeks.map(Number).includes(Number(week));
+      const game = kickoffMap?.[team] || null;
+      const gameStarted = gameHasStarted(game);
+      const unavailable =
+        Number(week) === Number(currentNflWeek) &&
+        CONFIRMED_OUT_STATUSES.has(availabilityStatus);
+      const baseMetric = Number(getWeeklyMetric(player) || 0);
+      const availabilityMultiplier = unavailable
+        ? 0
+        : injury === "DOUBTFUL" && Number(week) === Number(currentNflWeek)
+          ? 0.45
+          : injury === "QUESTIONABLE" && Number(week) === Number(currentNflWeek)
+            ? 0.9
+            : 1;
+      const score = isOnBye ? 0 : baseMetric * availabilityMultiplier;
+      const candidate = {
+        pid: String(pid),
+        name: player?.full_name || player?.search_full_name || String(pid),
+        pos,
+        team,
+        proj: score,
+        frozenProj: isOnBye ? 0 : baseMetric,
+        selectionScore: score,
+        marketValue: Number(getValueMetric(player) || 0),
+        injury,
+        availabilityStatus,
+        inactive,
+        unavailable,
+        isOnBye,
+        game,
+        gameStarted,
+        gameCompleted: gameIsFinal(game),
+        lockedOnBench: gameStarted,
+        freeAgent: true,
+      };
+      if (!byPosition.has(pos)) byPosition.set(pos, []);
+      byPosition.get(pos).push(candidate);
+    });
+    return [...byPosition.values()].flatMap((rows) =>
+      rows
+        .sort(
+          (left, right) =>
+            Number(right.selectionScore || 0) -
+            Number(left.selectionScore || 0),
+        )
+        .slice(0, 40),
+    );
+  }, [
+    activeLeague,
+    byeMap,
+    currentNflWeek,
+    getValueMetric,
+    getWeeklyMetric,
+    kickoffMap,
+    metricMode,
+    players,
+    rosteredPlayerIds,
+    week,
+    weeklyProjectionReady,
+  ]);
+
   const overviewGroups = useMemo(() => {
     const entries = weeklyMatchups
       .map((row) => {
@@ -1877,7 +2187,8 @@ export default function LineupTool() {
         const result = compute(uid);
         const activePlayers = result?.starters || [];
         const scoreState =
-          activePlayers.length && activePlayers.every((player) => player.gameCompleted)
+          activePlayers.length &&
+          activePlayers.every((player) => player.gameCompleted)
             ? "Final"
             : activePlayers.some((player) => player.gameStarted)
               ? "Live"
@@ -1901,16 +2212,27 @@ export default function LineupTool() {
     }
     const groups = new Map();
     entries.forEach((entry) => {
-      const key = entry.row?.matchup_id == null
-        ? `solo:${entry.rosterId}`
-        : `matchup:${entry.row.matchup_id}`;
+      const key =
+        entry.row?.matchup_id == null
+          ? `solo:${entry.rosterId}`
+          : `matchup:${entry.row.matchup_id}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(entry);
     });
     return [...groups.entries()].map(([id, teams]) => ({ id, teams }));
     // compute and ownerLabel intentionally follow the current league calculation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeklyMatchups, rosterByRosterId, choppedMode, players, projectionSource, projectionScoring, kickoffMap, actualPointsById, frozenProjectionById]);
+  }, [
+    weeklyMatchups,
+    rosterByRosterId,
+    choppedMode,
+    players,
+    projectionSource,
+    projectionScoring,
+    kickoffMap,
+    actualPointsById,
+    frozenProjectionById,
+  ]);
 
   const openOverviewTeam = (first, second = null) => {
     setOwnerA(first?.uid || "");
@@ -2012,10 +2334,7 @@ export default function LineupTool() {
     excludedPlayerIds,
   ]);
 
-  const decisionRows = useMemo(
-    () => buildDecisionRows(matchup?.a, matchup?.b?.score || 0, metricMode),
-    [matchup, metricMode],
-  );
+  const decisionRows = [];
 
   const hasScoredGames =
     Object.keys(actualPointsById).length > 0 &&
@@ -2102,9 +2421,7 @@ export default function LineupTool() {
       .filter(
         (id) =>
           valid.has(id) &&
-          !gameHasStarted(
-            kickoffMap?.[normalizeTeamAbbr(players?.[id]?.team)],
-          ),
+          !gameHasStarted(kickoffMap?.[normalizeTeamAbbr(players?.[id]?.team)]),
       );
     setLockedPlayerIds(new Set(selected));
     setExcludedPlayerIds(new Set());
@@ -2133,11 +2450,11 @@ export default function LineupTool() {
               <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">
-                    Weekly Setup
+                    Weekly Lineup Command
                   </div>
                   <div className="mt-1 text-sm text-white/65">
-                    Lock the league, choose the scoring lens, and preview the
-                    best lineup for that week.
+                    One workspace for the league, model, matchup, conditions,
+                    and lineup plan.
                   </div>
                 </div>
                 <div className="text-xs text-white/45">
@@ -2147,7 +2464,10 @@ export default function LineupTool() {
                 </div>
               </div>
 
-              <details className="premium-disclosure mb-4" data-guide-tip="lineup-source">
+              <details
+                className="premium-disclosure mb-4"
+                data-guide-tip="lineup-source"
+              >
                 <summary>
                   Model Settings{" "}
                   <span className="ml-auto text-xs font-normal text-white/45">
@@ -2174,7 +2494,10 @@ export default function LineupTool() {
                     showScoring={false}
                     layout="inline"
                   />
-                  <div className="mt-3 flex justify-end" data-guide-tip="lineup-source-explained">
+                  <div
+                    className="mt-3 flex justify-end"
+                    data-guide-tip="lineup-source-explained"
+                  >
                     <button
                       type="button"
                       onClick={() => setShowSourceHelp(true)}
@@ -2185,7 +2508,9 @@ export default function LineupTool() {
                   </div>
                   {league ? (
                     <div className="mt-3 rounded-xl border border-emerald-300/30 bg-emerald-300/[0.09] px-4 py-3 text-sm text-white/70">
-                      <b className="text-emerald-100">Why only these sources?</b>{" "}
+                      <b className="text-emerald-100">
+                        Why only these sources?
+                      </b>{" "}
                       Weekly projection feeds must support a defensible scoring
                       conversion. Value mode is limited to current-season
                       redraft boards; dynasty markets are intentionally excluded
@@ -2194,7 +2519,10 @@ export default function LineupTool() {
                     </div>
                   ) : null}
                   {sourceNotice ? (
-                    <div role="alert" className="mt-3 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm font-semibold leading-5 text-amber-100">
+                    <div
+                      role="alert"
+                      className="mt-3 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm font-semibold leading-5 text-amber-100"
+                    >
                       {sourceNotice}
                     </div>
                   ) : null}
@@ -2205,7 +2533,10 @@ export default function LineupTool() {
                     </div>
                   ) : null}
                   {league ? (
-                    <label data-guide-tip="lineup-chopped-override" className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3">
+                    <label
+                      data-guide-tip="lineup-chopped-override"
+                      className="mt-3 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 px-4 py-3"
+                    >
                       <span className="min-w-0">
                         <span className="flex items-center gap-2 text-sm font-bold text-white/80">
                           Treat this league as chopped
@@ -2239,6 +2570,17 @@ export default function LineupTool() {
                   ) : null}
                 </div>
               </details>
+
+              {activeLeague && rosters.length ? (
+                <div className="mb-4">
+                  <GameConditions
+                    results={[
+                      ownerA ? compute(ownerA) : null,
+                      !choppedMode && ownerB ? compute(ownerB) : null,
+                    ]}
+                  />
+                </div>
+              ) : null}
 
               {metricMode === "values" ? (
                 <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -2289,7 +2631,10 @@ export default function LineupTool() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap items-end gap-4" data-guide-tip="lineup-week-controls">
+              <div
+                className="flex flex-wrap items-end gap-4"
+                data-guide-tip="lineup-week-controls"
+              >
                 <span className="font-semibold">League:</span>
                 <LeagueSearchSelect
                   data-guide-tip="lineup-league"
@@ -2409,16 +2754,70 @@ export default function LineupTool() {
                   </>
                 )}
 
-                <span className="font-semibold ml-4">NFL Week:</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={18}
-                  value={week}
-                  onChange={(e) => setWeek(parseInt(e.target.value || "1", 10))}
-                  className="w-24 rounded-xl border border-white/10 bg-gray-800 px-3 py-2 text-white"
-                  title="Changing the week auto-follows your scheduled opponent"
-                />
+                <span className="font-semibold sm:ml-4">NFL Week:</span>
+                <div className="inline-flex overflow-hidden rounded-xl border border-white/10 bg-slate-950/80">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setWeek((current) => Math.max(1, current - 1))
+                    }
+                    disabled={week <= 1}
+                    className="px-3 py-2 text-white/55 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                    aria-label="Previous week"
+                  >
+                    ←
+                  </button>
+                  <select
+                    value={week}
+                    onChange={(event) => setWeek(Number(event.target.value))}
+                    className="border-x border-white/10 bg-slate-950 px-4 py-2 text-sm font-black text-white outline-none"
+                    title="Changing the week auto-follows your scheduled opponent"
+                  >
+                    {Array.from({ length: 18 }, (_, index) => index + 1).map(
+                      (value) => (
+                        <option key={value} value={value}>
+                          Week {value}
+                          {value === currentNflWeek ? " · current" : ""}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setWeek((current) => Math.min(18, current + 1))
+                    }
+                    disabled={week >= 18}
+                    className="px-3 py-2 text-white/55 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                    aria-label="Next week"
+                  >
+                    →
+                  </button>
+                </div>
+
+                <div
+                  data-guide-tip="lineup-view-toggle"
+                  className="inline-flex rounded-xl border border-white/10 bg-slate-950/70 p-1 sm:ml-2"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={lineupView === "optimizer"}
+                    data-no-account-persist
+                    onClick={() => setLineupView("optimizer")}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/45 hover:text-white"}`}
+                  >
+                    {choppedMode ? "Survival lineup" : "Lineup optimizer"}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={lineupView === "overview"}
+                    data-no-account-persist
+                    onClick={() => setLineupView("overview")}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/45 hover:text-white"}`}
+                  >
+                    {choppedMode ? "Chopped overview" : "Matchup overview"}
+                  </button>
+                </div>
 
                 <span className="ml-auto text-sm opacity-80">
                   {projError && metricMode === "projections"
@@ -2426,341 +2825,454 @@ export default function LineupTool() {
                     : null}
                 </span>
               </div>
-            </Card>
 
-            <div data-guide-tip="lineup-view-toggle" className="mt-6 inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
-              <button type="button" aria-pressed={lineupView === "optimizer"} data-no-account-persist onClick={() => setLineupView("optimizer")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "optimizer" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
-                {choppedMode ? "Survival lineup" : "Lineup optimizer"}
-              </button>
-              <button type="button" aria-pressed={lineupView === "overview"} data-no-account-persist onClick={() => setLineupView("overview")} className={`rounded-xl px-4 py-2 text-sm font-bold ${lineupView === "overview" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:text-white"}`}>
-                {choppedMode ? "Chopped overview" : "Matchup overview"}
-              </button>
-            </div>
+              {activeLeague && rosters.length ? (
+                <div
+                  className="mt-4 grid gap-3 border-t border-white/[0.08] pt-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
+                  data-guide-tip="lineup-matchup"
+                >
+                  <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.045] p-3">
+                    <div className="text-[9px] font-black uppercase tracking-[.16em] text-cyan-100/45">
+                      Your team
+                    </div>
+                    <b className="mt-1 block truncate text-sm text-white/85">
+                      {ownerA ? ownerLabel(ownerA) : "Loading your roster…"}
+                    </b>
+                  </div>
+
+                  {!choppedMode ? (
+                    <label className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.04] p-3">
+                      <span className="text-[9px] font-black uppercase tracking-[.16em] text-violet-100/45">
+                        Opponent
+                      </span>
+                      <select
+                        data-account-persist="off"
+                        className="mt-1 w-full bg-transparent text-sm font-bold text-white/85 outline-none"
+                        value={ownerB}
+                        onChange={(event) => onChangeOwnerB(event.target.value)}
+                      >
+                        <option className="bg-slate-900" value="">
+                          Select opponent…
+                        </option>
+                        {users
+                          .filter((user) => user.user_id !== ownerA)
+                          .map((user) => (
+                            <option
+                              className="bg-slate-900"
+                              key={user.user_id}
+                              value={user.user_id}
+                            >
+                              {ownerLabel(user.user_id)}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="rounded-2xl border border-rose-300/15 bg-rose-300/[0.04] p-3 text-xs text-white/55">
+                      <b className="text-rose-100">Survival field</b>
+                      <span className="mt-1 block">No head-to-head opponent</span>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 text-[10px] text-white/40 sm:col-span-2 lg:col-span-1">
+                    <b className="block uppercase tracking-wider text-white/55">Starting slots</b>
+                    <span className="mt-1 block max-w-[280px]">
+                      {Object.entries(slots.strict)
+                        .filter(([, count]) => count > 0)
+                        .map(([position, count]) => `${position}×${count}`)
+                        .join(" · ")}
+                      {slots.flexGroups.length
+                        ? ` · FLEX×${slots.flexGroups.length}`
+                        : ""}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </Card>
 
             {lineupView === "overview" ? (
               <>
-                <SectionTitle subtitle={choppedMode ? "Every active roster ranked against the weekly elimination line." : "Every league matchup with Sleeper's live score and the Arsenal Safe projected final."}>
+                <SectionTitle
+                  subtitle={
+                    choppedMode
+                      ? "Every active roster ranked against the weekly elimination line."
+                      : "Every league matchup with Sleeper's live score and the Arsenal Safe projected final."
+                  }
+                >
                   {choppedMode ? "Chopped Survival Board" : "Matchup Overview"}
                 </SectionTitle>
                 {!activeLeague || !rosters.length ? (
-                  <Card className="p-6 text-sm text-white/60">Choose a league above to load this week&apos;s board.</Card>
+                  <Card className="p-6 text-sm text-white/60">
+                    Choose a league above to load this week&apos;s board.
+                  </Card>
                 ) : !overviewGroups.length ? (
-                  <Card className="p-6 text-sm text-white/60">No Week {week} matchup rows are available from Sleeper yet.</Card>
+                  <Card className="p-6 text-sm text-white/60">
+                    No Week {week} matchup rows are available from Sleeper yet.
+                  </Card>
+                ) : choppedMode ? (
+                  <ChoppedLeaderboard
+                    groups={overviewGroups}
+                    myUserId={myUserId}
+                    onOpen={openOverviewTeam}
+                  />
                 ) : (
-                  choppedMode ? (
-                    <ChoppedLeaderboard groups={overviewGroups} myUserId={myUserId} onOpen={openOverviewTeam} />
-                  ) : (
                   <div className="grid gap-3 lg:grid-cols-2">
                     {overviewGroups.map((group, index) => {
                       const cutline = choppedMode
-                        ? Math.min(...overviewGroups.map((item) => item.teams[0]?.projected || 0))
+                        ? Math.min(
+                            ...overviewGroups.map(
+                              (item) => item.teams[0]?.projected || 0,
+                            ),
+                          )
                         : null;
                       return (
-                        <button key={group.id} type="button" onClick={() => openOverviewTeam(group.teams[0], group.teams[1])} className="rounded-3xl border border-white/10 bg-slate-900/90 p-4 text-left transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]">
+                        <button
+                          key={group.id}
+                          type="button"
+                          onClick={() =>
+                            openOverviewTeam(group.teams[0], group.teams[1])
+                          }
+                          className="rounded-3xl border border-white/10 bg-slate-900/90 p-4 text-left transition hover:border-cyan-300/30 hover:bg-cyan-300/[0.04]"
+                        >
                           {choppedMode ? (
                             <div className="mb-3 flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">Survival rank #{index + 1}</span>
-                              {Math.abs((group.teams[0]?.projected || 0) - cutline) < 0.01 ? <span className="rounded-full bg-rose-400/10 px-2 py-1 text-[10px] font-bold text-rose-200">Projected chop</span> : <span className="text-[10px] text-emerald-200">+{((group.teams[0]?.projected || 0) - cutline).toFixed(1)} above cut</span>}
+                              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                                Survival rank #{index + 1}
+                              </span>
+                              {Math.abs(
+                                (group.teams[0]?.projected || 0) - cutline,
+                              ) < 0.01 ? (
+                                <span className="rounded-full bg-rose-400/10 px-2 py-1 text-[10px] font-bold text-rose-200">
+                                  Projected chop
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-emerald-200">
+                                  +
+                                  {(
+                                    (group.teams[0]?.projected || 0) - cutline
+                                  ).toFixed(1)}{" "}
+                                  above cut
+                                </span>
+                              )}
                             </div>
                           ) : null}
                           <div className="space-y-2">
                             {group.teams.map((team) => (
-                              <div key={team.rosterId} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl bg-black/20 px-3 py-3">
-                                <div className="min-w-0"><div className="truncate font-bold">{team.label}</div><div className="text-[10px] text-white/35">{String(team.uid) === String(myUserId) ? "Your team · " : ""}{isBestBall ? "Best Ball roster" : "Managed lineup"}</div></div>
-                                <div className="text-right"><div className="text-[9px] uppercase text-white/30">{team.scoreState}</div><b className="text-emerald-100">{formatFantasyPoints(team.live)}</b></div>
-                                <div className="text-right"><div className="text-[9px] uppercase text-white/30">Projected</div><b>{formatFantasyPoints(team.projected)}</b></div>
+                              <div
+                                key={team.rosterId}
+                                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl bg-black/20 px-3 py-3"
+                              >
+                                <div className="min-w-0">
+                                  <div className="truncate font-bold">
+                                    {team.label}
+                                  </div>
+                                  <div className="text-[10px] text-white/35">
+                                    {String(team.uid) === String(myUserId)
+                                      ? "Your team · "
+                                      : ""}
+                                    {isBestBall
+                                      ? "Best Ball roster"
+                                      : "Managed lineup"}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-[9px] uppercase text-white/30">
+                                    {team.scoreState}
+                                  </div>
+                                  <b className="text-emerald-100">
+                                    {formatFantasyPoints(team.live)}
+                                  </b>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-[9px] uppercase text-white/30">
+                                    Projected
+                                  </div>
+                                  <b>{formatFantasyPoints(team.projected)}</b>
+                                </div>
                               </div>
                             ))}
                           </div>
-                          <div className="mt-3 text-right text-xs font-semibold text-cyan-200/70">Open lineup details →</div>
+                          <div className="mt-3 text-right text-xs font-semibold text-cyan-200/70">
+                            Open lineup details →
+                          </div>
                         </button>
                       );
                     })}
                   </div>
-                  )
                 )}
               </>
             ) : null}
 
-            {lineupView === "optimizer" ? <>
-
-            <SectionTitle subtitle="Left = you (locked). Right = your opponent for the selected week.">
-              {choppedMode ? "Weekly Survival Lineup" : "Matchup Preview"}
-            </SectionTitle>
-
-            {!activeLeague || !rosters.length ? (
-              <Card className="p-6">
-                <div className="text-sm opacity-70">
-                  Choose a league above to load rosters.
-                </div>
-              </Card>
-            ) : (
-              <Card className="p-4" data-guide-tip="lineup-results">
-                {ownerA && myUserId && String(ownerA) !== String(myUserId) ? (
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-300/20 bg-violet-300/[0.06] p-3">
-                    <div className="text-sm text-white/65">Viewing {ownerLabel(ownerA)}&apos;s {choppedMode ? "survival lineup" : "matchup"}.</div>
-                    <button type="button" onClick={() => { setOwnerA(myUserId); setOwnerB(""); }} className="rounded-xl bg-violet-300/15 px-3 py-2 text-xs font-bold text-violet-100">Return to my own {choppedMode ? "lineup" : "matchup"}</button>
-                  </div>
-                ) : null}
-                <div className="grid sm:grid-cols-3 gap-3 mb-4" data-guide-tip="lineup-matchup">
-                  {/* Owner A locked */}
-                  <div>
-                    <div className="block text-sm font-medium mb-1">
-                      {String(ownerA) === String(myUserId) ? "Your team" : "Selected team"}
+            {lineupView === "optimizer" ? (
+              <>
+                {!activeLeague || !rosters.length ? (
+                  <Card className="mt-4 p-6">
+                    <div className="text-sm opacity-70">
+                      Choose a league above to load rosters.
                     </div>
-                    <div className="w-full rounded bg-gray-800 text-white p-2">
-                      {ownerA ? ownerLabel(ownerA) : "—"}
-                    </div>
-                    <div className="text-[11px] text-gray-400 mt-1">
-                      Auto-selected from your Sleeper account.
-                    </div>
-                  </div>
-
-                  {/* Owner B selectable; changing it will jump to the week you face them (if scheduled) */}
-                  {!choppedMode ? <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Owner B (opponent)
-                    </label>
-                    <select
-                      data-account-persist="off"
-                      className="w-full rounded bg-gray-800 text-white p-2"
-                      value={ownerB}
-                      onChange={(e) => onChangeOwnerB(e.target.value)}
+                  </Card>
+                ) : (
+                  <Card className="mt-4 p-4" data-guide-tip="lineup-results">
+                    {ownerA &&
+                    myUserId &&
+                    String(ownerA) !== String(myUserId) ? (
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-300/20 bg-violet-300/[0.06] p-3">
+                        <div className="text-sm text-white/65">
+                          Viewing {ownerLabel(ownerA)}&apos;s{" "}
+                          {choppedMode ? "survival lineup" : "matchup"}.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOwnerA(myUserId);
+                            setOwnerB("");
+                          }}
+                          className="rounded-xl bg-violet-300/15 px-3 py-2 text-xs font-bold text-violet-100"
+                        >
+                          Return to my own {choppedMode ? "lineup" : "matchup"}
+                        </button>
+                      </div>
+                    ) : null}
+                    <MatchupSnapshot
+                      metricMode={metricMode}
+                      matchup={matchup}
+                      ownerA={ownerA}
+                      ownerB={ownerB}
+                      ownerLabel={ownerLabel}
+                    />
+                    <div
+                      className={`grid gap-4 ${choppedMode ? "" : "lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,.75fr)]"}`}
+                      data-guide-tip="lineup-teams"
                     >
-                      <option value="">Select opponent…</option>
-                      {users
-                        .filter((u) => u.user_id !== ownerA)
-                        .map((u) => (
-                          <option key={u.user_id} value={u.user_id}>
-                            {ownerLabel(u.user_id)}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="text-[11px] text-gray-400 mt-1">
-                      Auto-follows your opponent when week changes.
+                      {ownerA && String(ownerA) === String(myUserId) ? (
+                        <InteractiveLineupPlanner
+                          league={league}
+                          roster={rosterByOwnerId[ownerA]}
+                          result={compute(ownerA)}
+                          playerDirectory={players}
+                          freeAgents={plannerFreeAgents}
+                          week={week}
+                          currentWeek={currentNflWeek}
+                          byeMap={byeMap}
+                          metricMode={metricMode}
+                          metricLabel={metricLabel}
+                          onWeekChange={setWeek}
+                          onPlayerSelect={setSelectedPlayerBreakdown}
+                        />
+                      ) : (
+                        <TeamBox
+                          title={
+                            ownerA
+                              ? `${ownerLabel(ownerA)} — Lineup preview`
+                              : "Selected team"
+                          }
+                          res={ownerA ? compute(ownerA) : null}
+                          metricLabel={metricLabel}
+                          onPlayerSelect={setSelectedPlayerBreakdown}
+                          enableSuggestions={metricMode === "projections"}
+                        />
+                      )}
+                      {!choppedMode ? (
+                        <TeamBox
+                          title={
+                            ownerB
+                              ? `${ownerLabel(ownerB)} — Opponent preview`
+                              : "Opponent"
+                          }
+                          res={ownerB ? compute(ownerB) : null}
+                          metricLabel={metricLabel}
+                          onPlayerSelect={setSelectedPlayerBreakdown}
+                          enableSuggestions={false}
+                        />
+                      ) : null}
                     </div>
-                  </div> : (
-                    <div className="rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-3 text-xs leading-5 text-white/55">
-                      <b className="text-rose-100">No head-to-head opponent.</b> This league is scored as a weekly survival field; the lowest team total is the elimination line.
-                    </div>
-                  )}
 
-                  <div className="self-end text-sm opacity-70">
-                    Slots:{" "}
-                    {Object.entries(slots.strict)
-                      .filter(([, v]) => v > 0)
-                      .map(([k, v]) => `${k}×${v}`)
-                      .join(" · ")}
-                    {slots.flexGroups.length
-                      ? ` · FLEX×${slots.flexGroups.length}`
-                      : ""}
-                  </div>
-                </div>
-
-                <GameConditions
-                  results={[
-                    ownerA ? compute(ownerA) : null,
-                    !choppedMode && ownerB ? compute(ownerB) : null,
-                  ]}
-                />
-
-                <div className={`grid gap-4 ${choppedMode ? "" : "md:grid-cols-2"}`} data-guide-tip="lineup-teams">
-                  <TeamBox
-                    title={
-                      ownerA
-                        ? `${ownerLabel(ownerA)} — Optimized Lineup`
-                        : "Owner A"
-                    }
-                    res={ownerA ? compute(ownerA) : null}
-                    metricLabel={metricLabel}
-                    onPlayerSelect={setSelectedPlayerBreakdown}
-                    // show suggestions ONLY in projections mode
-                    enableSuggestions={metricMode === "projections"}
-                  />
-                  {!choppedMode ? <TeamBox
-                    title={
-                      ownerB
-                        ? `${ownerLabel(ownerB)} — Optimized Lineup`
-                        : "Owner B"
-                    }
-                    res={ownerB ? compute(ownerB) : null}
-                    metricLabel={metricLabel}
-                    onPlayerSelect={setSelectedPlayerBreakdown}
-                    enableSuggestions={false}
-                  /> : null}
-                </div>
-
-                {ownerA && ownerB && (
-                  <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <div>
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          {metricMode === "projections" ? "Live + projected edge" : "Optimized value edge"}
-                        </div>
-                        <div className="mt-1 font-bold">
-                          {matchup?.delta >= 0
-                            ? ownerLabel(ownerA)
-                            : ownerLabel(ownerB)}
-                        </div>
-                        <div className="text-xs text-white/45">
-                          by {Math.abs(matchup?.delta || 0).toFixed(1)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          Your win chance
-                        </div>
-                        <div className="mt-1 text-2xl font-black text-emerald-200">
-                          {metricMode === "projections"
-                            ? `${Math.round(winProbability(matchup?.a.score, matchup?.b.score))}%`
-                            : "—"}
-                        </div>
-                        <div className="text-xs text-white/45">
-                          {metricMode === "projections"
-                            ? "Modeled from lineup totals"
-                            : "Requires projection mode"}
-                        </div>
-                      </div>
-                      <div className={metricMode === "projections" ? "" : "hidden"}>
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          Your range
-                        </div>
-                        <div className="mt-1 font-bold">
-                          {matchup?.a.floorScore.toFixed(1)}–
-                          {matchup?.a.ceilingScore.toFixed(1)}
-                        </div>
-                        <div className="text-xs text-white/45">
-                          Floor to ceiling
-                        </div>
-                      </div>
-                      <div className={metricMode === "projections" ? "" : "hidden"}>
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                          Opponent range
-                        </div>
-                        <div className="mt-1 font-bold">
-                          {matchup?.b.floorScore.toFixed(1)}–
-                          {matchup?.b.ceilingScore.toFixed(1)}
-                        </div>
-                        <div className="text-xs text-white/45">
-                          Floor to ceiling
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {ownerA && ownerB ? (
-                  <div className="mt-5" data-guide-tip="lineup-explainer">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/55">
-                          Decision Explainer
-                        </div>
-                        <h3 className="mt-1 text-xl font-black">
-                          Why these players start
-                        </h3>
-                        <p className="mt-1 text-xs text-white/45">
-                          The closest start/sit decisions, ordered from hardest
-                          call to easiest.
-                        </p>
-                      </div>
-                      <div className="text-xs text-white/40">
-                        Weather loaded for {Object.keys(weatherMap).length} NFL
-                        teams · injury status from Sleeper
-                      </div>
-                    </div>
-                    {decisionRows.length ? (
-                      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                        {decisionRows.map((decision) => (
-                          <article
-                            key={decision.starter.pid}
-                            className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-400/[0.06] to-white/[0.02] p-4"
+                    {false && ownerA && ownerB && (
+                      <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                              {metricMode === "projections"
+                                ? "Live + projected edge"
+                                : "Optimized value edge"}
+                            </div>
+                            <div className="mt-1 font-bold">
+                              {matchup?.delta >= 0
+                                ? ownerLabel(ownerA)
+                                : ownerLabel(ownerB)}
+                            </div>
+                            <div className="text-xs text-white/45">
+                              by {Math.abs(matchup?.delta || 0).toFixed(1)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                              Your win chance
+                            </div>
+                            <div className="mt-1 text-2xl font-black text-emerald-200">
+                              {metricMode === "projections"
+                                ? `${Math.round(winProbability(matchup?.a.score, matchup?.b.score))}%`
+                                : "—"}
+                            </div>
+                            <div className="text-xs text-white/45">
+                              {metricMode === "projections"
+                                ? "Modeled from lineup totals"
+                                : "Requires projection mode"}
+                            </div>
+                          </div>
+                          <div
+                            className={
+                              metricMode === "projections" ? "" : "hidden"
+                            }
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
-                                    Start {decision.starter.name}
-                                  </div>
-                                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] text-white/45">
-                                    {decision.confidence} confidence
-                                  </span>
-                                </div>
-                                <div className="mt-1 text-sm font-semibold text-white/60">
-                                  over {decision.alternative.name}
-                                </div>
-                              </div>
-                              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-right">
-                                <div className="text-[9px] uppercase tracking-wider text-white/35">
-                                  Win impact
-                                </div>
-                                <div className="mt-0.5 font-black text-cyan-100">
-                                  {decision.winImpact == null
-                                    ? "—"
-                                    : `${decision.winImpact >= 0 ? "+" : ""}${decision.winImpact.toFixed(1)}%`}
-                                </div>
-                              </div>
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                              Your range
                             </div>
-                            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                              <div className="rounded-xl bg-black/15 p-2">
-                                <div className="text-[9px] uppercase text-white/30">
-                                  Floor
-                                </div>
-                                <div className="text-xs font-bold">
-                                  {decision.starter.floor.toFixed(1)}
-                                </div>
-                              </div>
-                              <div className="rounded-xl bg-black/15 p-2">
-                                <div className="text-[9px] uppercase text-white/30">
-                                  Median
-                                </div>
-                                <div className="text-xs font-bold">
-                                  {decision.starter.proj.toFixed(1)}
-                                </div>
-                              </div>
-                              <div className="rounded-xl bg-black/15 p-2">
-                                <div className="text-[9px] uppercase text-white/30">
-                                  Ceiling
-                                </div>
-                                <div className="text-xs font-bold">
-                                  {decision.starter.ceiling.toFixed(1)}
-                                </div>
-                              </div>
+                            <div className="mt-1 font-bold">
+                              {matchup?.a.floorScore.toFixed(1)}–
+                              {matchup?.a.ceilingScore.toFixed(1)}
                             </div>
-                            <ul className="mt-3 space-y-1.5 text-xs leading-5 text-white/55">
-                              {decision.reasons.map((reason) => (
-                                <li key={reason} className="flex gap-2">
-                                  <span className="text-cyan-200/60">◆</span>
-                                  <span>{reason}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </article>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">
-                        There are no close same-position start/sit decisions on
-                        this roster for Week {week}.
+                            <div className="text-xs text-white/45">
+                              Floor to ceiling
+                            </div>
+                          </div>
+                          <div
+                            className={
+                              metricMode === "projections" ? "" : "hidden"
+                            }
+                          >
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                              Opponent range
+                            </div>
+                            <div className="mt-1 font-bold">
+                              {matchup?.b.floorScore.toFixed(1)}–
+                              {matchup?.b.ceilingScore.toFixed(1)}
+                            </div>
+                            <div className="text-xs text-white/45">
+                              Floor to ceiling
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
-                    <div className="mt-3 text-[11px] leading-5 text-white/35">
-                      Floor and ceiling are modeled ranges derived from
-                      projection volatility, position, injury status, and
-                      available weather—not guarantees. Win probability is an
-                      estimate from the two optimized projection totals.
-                    </div>
-                  </div>
-                ) : null}
-              </Card>
-            )}
-            </> : null}
+
+                    {false && ownerA && ownerB ? (
+                      <div className="mt-5" data-guide-tip="lineup-explainer">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                          <div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/55">
+                              Decision Explainer
+                            </div>
+                            <h3 className="mt-1 text-xl font-black">
+                              Why these players start
+                            </h3>
+                            <p className="mt-1 text-xs text-white/45">
+                              The closest start/sit decisions, ordered from
+                              hardest call to easiest.
+                            </p>
+                          </div>
+                          <div className="text-xs text-white/40">
+                            Weather loaded for {Object.keys(weatherMap).length}{" "}
+                            NFL teams · injury status from Sleeper
+                          </div>
+                        </div>
+                        {decisionRows.length ? (
+                          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                            {decisionRows.map((decision) => (
+                              <article
+                                key={decision.starter.pid}
+                                className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-400/[0.06] to-white/[0.02] p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                                        Start {decision.starter.name}
+                                      </div>
+                                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] text-white/45">
+                                        {decision.confidence} confidence
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 text-sm font-semibold text-white/60">
+                                      over {decision.alternative.name}
+                                    </div>
+                                  </div>
+                                  <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-right">
+                                    <div className="text-[9px] uppercase tracking-wider text-white/35">
+                                      Win impact
+                                    </div>
+                                    <div className="mt-0.5 font-black text-cyan-100">
+                                      {decision.winImpact == null
+                                        ? "—"
+                                        : `${decision.winImpact >= 0 ? "+" : ""}${decision.winImpact.toFixed(1)}%`}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                  <div className="rounded-xl bg-black/15 p-2">
+                                    <div className="text-[9px] uppercase text-white/30">
+                                      Floor
+                                    </div>
+                                    <div className="text-xs font-bold">
+                                      {decision.starter.floor.toFixed(1)}
+                                    </div>
+                                  </div>
+                                  <div className="rounded-xl bg-black/15 p-2">
+                                    <div className="text-[9px] uppercase text-white/30">
+                                      Median
+                                    </div>
+                                    <div className="text-xs font-bold">
+                                      {decision.starter.proj.toFixed(1)}
+                                    </div>
+                                  </div>
+                                  <div className="rounded-xl bg-black/15 p-2">
+                                    <div className="text-[9px] uppercase text-white/30">
+                                      Ceiling
+                                    </div>
+                                    <div className="text-xs font-bold">
+                                      {decision.starter.ceiling.toFixed(1)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <ul className="mt-3 space-y-1.5 text-xs leading-5 text-white/55">
+                                  {decision.reasons.map((reason) => (
+                                    <li key={reason} className="flex gap-2">
+                                      <span className="text-cyan-200/60">
+                                        ◆
+                                      </span>
+                                      <span>{reason}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/50">
+                            There are no close same-position start/sit decisions
+                            on this roster for Week {week}.
+                          </div>
+                        )}
+                        <div className="mt-3 text-[11px] leading-5 text-white/35">
+                          Floor and ceiling are modeled ranges derived from
+                          projection volatility, position, injury status, and
+                          available weather—not guarantees. Win probability is
+                          an estimate from the two optimized projection totals.
+                        </div>
+                      </div>
+                    ) : null}
+                  </Card>
+                )}
+              </>
+            ) : null}
           </>
         )}
       </div>
       <PlayerBreakdownModal
         player={selectedPlayerBreakdown}
-        actualStats={weeklyStatsById?.[String(selectedPlayerBreakdown?.pid)] || {}}
+        actualStats={
+          weeklyStatsById?.[String(selectedPlayerBreakdown?.pid)] || {}
+        }
         metricMode={metricMode}
         scoringSettings={league?.scoring_settings || {}}
         onClose={() => setSelectedPlayerBreakdown(null)}
@@ -2781,7 +3293,10 @@ export default function LineupTool() {
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-200/55">
                   Lineup source guide
                 </div>
-                <h2 id="lineup-source-help-title" className="mt-1 text-2xl font-black">
+                <h2
+                  id="lineup-source-help-title"
+                  className="mt-1 text-2xl font-black"
+                >
                   Projections and values answer different questions
                 </h2>
               </div>
@@ -2796,7 +3311,9 @@ export default function LineupTool() {
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.05] p-4">
-                <h3 className="font-black text-emerald-100">Weekly projections</h3>
+                <h3 className="font-black text-emerald-100">
+                  Weekly projections
+                </h3>
                 <p className="mt-2 text-xs leading-5 text-white/55">
                   Best for start/sit decisions. They estimate this week&apos;s
                   fantasy points and can support projected totals, ranges, and
@@ -2816,11 +3333,11 @@ export default function LineupTool() {
             </div>
             <div className="mt-3 rounded-2xl bg-white/[0.035] p-4 text-xs leading-5 text-white/48">
               Only FantasyCalc Redraft, FantasyNavigator Redraft, and Arsenal
-              Redraft are offered as values. Dynasty sources are excluded because
-              age, future seasons, and trade-market demand can favor a player who
-              is not the better start this week. The current data library does
-              not contain a dedicated best-ball value board, so the optimizer
-              does not label a redraft source as best-ball data.
+              Redraft are offered as values. Dynasty sources are excluded
+              because age, future seasons, and trade-market demand can favor a
+              player who is not the better start this week. The current data
+              library does not contain a dedicated best-ball value board, so the
+              optimizer does not label a redraft source as best-ball data.
             </div>
           </div>
         </div>
@@ -2847,36 +3364,46 @@ export default function LineupTool() {
             {
               target: "lineup-week-controls",
               title: "Set the exact weekly context",
-              detail: "Choose a Sleeper league and NFL week. Arsenal reads that league's roster slots and scoring rules, follows the scheduled opponent, and saves your lineup preferences so you do not have to rebuild the workspace on every visit. If needed, this tour temporarily loads your first league and restores the empty state when it closes.",
+              detail:
+                "Choose a Sleeper league and NFL week. Arsenal reads that league's roster slots and scoring rules, follows the scheduled opponent, and saves your lineup preferences so you do not have to rebuild the workspace on every visit. If needed, this tour temporarily loads your first league and restores the empty state when it closes.",
             },
             {
               target: "lineup-source",
               focusSelector: '[data-guide-tip="lineup-source-explained"]',
               title: "Choose the right decision model",
-              detail: "Projection mode is the weekly start/sit lens. Arsenal Safe is the default, and sources with underlying football stats can be recalculated with your league's scoring. Compatible published-total feeds use their closest supported scoring profile. Redraft values are for roster-strength context; dynasty values are intentionally excluded from a one-week decision.",
+              detail:
+                "Projection mode is the weekly start/sit lens. Arsenal Safe is the default, and sources with underlying football stats can be recalculated with your league's scoring. Compatible published-total feeds use their closest supported scoring profile. Redraft values are for roster-strength context; dynasty values are intentionally excluded from a one-week decision.",
               onEnter: () => {
-                const details = document.querySelector('[data-guide-tip="lineup-source"]');
+                const details = document.querySelector(
+                  '[data-guide-tip="lineup-source"]',
+                );
                 if (details) details.open = true;
               },
             },
             {
               target: "lineup-chopped-override",
               title: "Correct custom survival leagues once",
-              detail: "If a commissioner runs a chopped or guillotine format that Sleeper does not label, turn on this league-specific override. Both views immediately switch from head-to-head logic to survival logic, and the choice follows your Arsenal account across signed-in devices.",
+              detail:
+                "If a commissioner runs a chopped or guillotine format that Sleeper does not label, turn on this league-specific override. Both views immediately switch from head-to-head logic to survival logic, and the choice follows your Arsenal account across signed-in devices.",
               onEnter: () => {
-                const details = document.querySelector('[data-guide-tip="lineup-source"]');
+                const details = document.querySelector(
+                  '[data-guide-tip="lineup-source"]',
+                );
                 if (details) details.open = true;
               },
             },
             {
               target: "lineup-view-toggle",
               title: "Move from the league board to the decision",
-              detail: "Matchup Overview shows every matchup's live or final score beside its projected finish. Best Ball uses the week's active roster, while chopped mode becomes a heat-mapped survival board around the elimination line. Open any team there for its optimized lineup, then return to your own matchup with one tap.",
+              detail:
+                "Matchup Overview shows every matchup's live or final score beside its projected finish. Best Ball uses the week's active roster, while chopped mode becomes a heat-mapped survival board around the elimination line. Open any team there for its optimized lineup, then return to your own matchup with one tap.",
               onEnter: () => setLineupView("overview"),
             },
             {
               target: "lineup-matchup",
-              title: choppedMode ? "Optimize against the cut line" : "Follow the real matchup",
+              title: choppedMode
+                ? "Optimize against the cut line"
+                : "Follow the real matchup",
               detail: choppedMode
                 ? "Survival mode removes the artificial head-to-head opponent and builds the strongest legal lineup against the week's elimination field."
                 : "The optimizer locks your roster on the left and follows the scheduled opponent for the selected week. Choosing another opponent jumps to the week when you face them.",
@@ -2885,30 +3412,38 @@ export default function LineupTool() {
             {
               target: "lineup-weather",
               title: "Audit the game environment",
-              detail: "Open Game Conditions for stadium, indoor status, forecast icon, temperature, precipitation, wind, and live or final ESPN game status. Forecasts are stored by the projection update, so opening this panel does not spend a weather request.",
+              detail:
+                "Open Game Conditions for stadium, indoor status, forecast icon, temperature, precipitation, wind, and live or final ESPN game status. Forecasts are stored by the projection update, so opening this panel does not spend a weather request.",
               onEnter: () => {
                 setLineupView("optimizer");
                 window.setTimeout(() => {
-                  const details = document.querySelector('[data-guide-tip="lineup-weather"]');
+                  const details = document.querySelector(
+                    '[data-guide-tip="lineup-weather"]',
+                  );
                   if (details) details.open = true;
                 }, 0);
               },
             },
             {
-              target: "lineup-teams",
+              target: "lineup-planner",
               scrollBlock: "start",
-              title: "Read every row as a scoring decision",
-              detail: "Starters and bench options are ranked within the league's legal slots. Injury and bye labels stay visible, and mobile rows show Live or Final / Projected together. Tap anywhere on a player row to open scoring anatomy: league-scored expected points, frozen pregame projection, live and projected football stats, expected range, and Arsenal AI analysis.",
+              title: "Swipe, repair, and optimize every week",
+              detail:
+                "Move through all 18 weeks with the week rail, or show only weeks with a bye or confirmed absence. Questionable players stay visible as warnings. Tap a starter and swap in a legal bench option, optimize the whole roster, or reset one week without losing your other plans.",
             },
             {
-              target: choppedMode ? "lineup-teams" : "lineup-explainer",
+              target: "lineup-free-agents",
               scrollBlock: "start",
-              title: choppedMode
-                ? "Build margin above the elimination line"
-                : "Finish with the decisions that can swing the week",
-              detail: choppedMode
-                ? "The survival lineup maximizes the selected weekly model within your legal slots. Use close-call notes, injury tags, weather, and each player's scoring anatomy to judge how much risk you want while protecting your margin above the chop line."
-                : "Decision Explainer prioritizes the closest legal alternatives and combines projected points, modeled range, injury designation, weather context, and estimated win-probability impact. Treat the range as uncertainty—not a promised minimum or maximum—and use the player popup to inspect which football stats created the recommendation.",
+              title: "Preview players truly available in this league",
+              detail:
+                "The available pool removes every player rostered anywhere in this specific league. Select a starter slot to reveal only legal replacements, then preview a free agent in the planned lineup. This is decision support only; Sleeper remains the place where you add the player and submit the lineup.",
+            },
+            {
+              target: "lineup-planner",
+              scrollBlock: "start",
+              title: "Keep the forecast separate from the result",
+              detail:
+                "PROJ is the frozen pre-kickoff forecast and never moves with the game. After kickoff, a separate LIVE score appears and becomes FINAL when the game ends.",
               onEnter: () => setLineupView("optimizer"),
             },
           ]}
@@ -2925,26 +3460,56 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
     <Card className="overflow-hidden">
       <div className="border-b border-white/10 bg-gradient-to-r from-rose-400/[0.08] to-transparent p-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div><div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200/55">Week elimination leaderboard</div><h3 className="mt-1 text-xl font-black">Lowest projected total is on the block</h3></div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200/55">
+              Week elimination leaderboard
+            </div>
+            <h3 className="mt-1 text-xl font-black">
+              Lowest projected total is on the block
+            </h3>
+          </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-white/45">
               <span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Cut line
-              <span className="h-2.5 w-2.5 rounded-full bg-orange-400" /> Within 7
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" /> Within 15
+              <span className="h-2.5 w-2.5 rounded-full bg-orange-400" /> Within
+              7
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" /> Within
+              15
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Safer
             </div>
-            <div className="rounded-xl bg-rose-300/10 px-4 py-2 text-right"><div className="text-[9px] uppercase text-rose-100/55">Projected cut line</div><b className="text-xl text-rose-100">{formatFantasyPoints(cutline)}</b></div>
+            <div className="rounded-xl bg-rose-300/10 px-4 py-2 text-right">
+              <div className="text-[9px] uppercase text-rose-100/55">
+                Projected cut line
+              </div>
+              <b className="text-xl text-rose-100">
+                {formatFantasyPoints(cutline)}
+              </b>
+            </div>
           </div>
         </div>
       </div>
       <div className="p-2">
         <div className="min-w-0">
-          <div className="grid grid-cols-[36px_minmax(0,1fr)_76px] gap-2 px-2 py-2 text-[8px] font-bold uppercase tracking-[0.12em] text-white/28 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:text-[9px] sm:tracking-[0.16em]"><span>Rank</span><span>Franchise</span><span className="text-right sm:hidden">Live / Proj</span><span className="hidden text-right sm:block">Live</span><span className="hidden text-right sm:block">Projected</span><span className="hidden text-right sm:block">Safety</span></div>
+          <div className="grid grid-cols-[36px_minmax(0,1fr)_76px] gap-2 px-2 py-2 text-[8px] font-bold uppercase tracking-[0.12em] text-white/28 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:text-[9px] sm:tracking-[0.16em]">
+            <span>Rank</span>
+            <span>Franchise</span>
+            <span className="text-right sm:hidden">Live / Proj</span>
+            <span className="hidden text-right sm:block">Live</span>
+            <span className="hidden text-right sm:block">Projected</span>
+            <span className="hidden text-right sm:block">Safety</span>
+          </div>
           {groups.map((group, index) => {
             const team = group.teams[0];
             const mine = String(team?.uid) === String(myUserId);
             const cushion = Math.max(0, (team?.projected || 0) - cutline);
-            const heat = index === 0 ? "cut" : cushion <= 7 ? "hot" : cushion <= 15 ? "close" : "safe";
+            const heat =
+              index === 0
+                ? "cut"
+                : cushion <= 7
+                  ? "hot"
+                  : cushion <= 15
+                    ? "close"
+                    : "safe";
             const rowTone = {
               cut: "border-rose-300/20 bg-rose-400/[0.045]",
               hot: "border-orange-300/15 bg-orange-400/[0.035]",
@@ -2963,15 +3528,53 @@ function ChoppedLeaderboard({ groups, myUserId, onOpen }) {
               close: "text-amber-100",
               safe: "text-emerald-200",
             }[heat];
-            const safetyLabel = heat === "cut" ? "PROJECTED CHOP" : heat === "hot" ? `+${cushion.toFixed(1)} DANGER` : heat === "close" ? `+${cushion.toFixed(1)} CLOSE` : `+${cushion.toFixed(1)} SAFE`;
-            return <button key={group.id} type="button" onClick={() => onOpen(team)} className={`mb-1 grid w-full grid-cols-[36px_minmax(0,1fr)_76px] items-center gap-2 rounded-xl border px-2 py-2.5 text-left transition hover:brightness-125 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:py-3 ${rowTone} ${mine ? "ring-1 ring-inset ring-cyan-300/35" : ""}`}>
-              <span className={`grid h-7 w-7 place-items-center rounded-lg text-[10px] font-black sm:h-8 sm:w-8 sm:text-xs ${badgeTone}`}>#{index + 1}</span>
-              <span className="min-w-0"><b className="block truncate">{team?.label}</b><small className="text-[9px] font-bold uppercase tracking-wider text-white/35">{mine ? "You · " : ""}{heat === "cut" ? "Current cut line" : "Open lineup"}</small></span>
-              <b className="text-right text-[11px] tabular-nums sm:hidden"><span className="text-emerald-100">{formatFantasyPoints(team?.live)}</span><span className="px-0.5 text-white/25">/</span>{formatFantasyPoints(team?.projected)}</b>
-              <b className="hidden text-right text-emerald-100 sm:block">{formatFantasyPoints(team?.live)}</b>
-              <b className="hidden text-right sm:block">{formatFantasyPoints(team?.projected)}</b>
-              <span className={`hidden text-right text-[10px] font-black sm:block ${textTone}`}>{safetyLabel}</span>
-            </button>;
+            const safetyLabel =
+              heat === "cut"
+                ? "PROJECTED CHOP"
+                : heat === "hot"
+                  ? `+${cushion.toFixed(1)} DANGER`
+                  : heat === "close"
+                    ? `+${cushion.toFixed(1)} CLOSE`
+                    : `+${cushion.toFixed(1)} SAFE`;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => onOpen(team)}
+                className={`mb-1 grid w-full grid-cols-[36px_minmax(0,1fr)_76px] items-center gap-2 rounded-xl border px-2 py-2.5 text-left transition hover:brightness-125 sm:grid-cols-[46px_minmax(0,1fr)_90px_100px_110px] sm:gap-3 sm:px-3 sm:py-3 ${rowTone} ${mine ? "ring-1 ring-inset ring-cyan-300/35" : ""}`}
+              >
+                <span
+                  className={`grid h-7 w-7 place-items-center rounded-lg text-[10px] font-black sm:h-8 sm:w-8 sm:text-xs ${badgeTone}`}
+                >
+                  #{index + 1}
+                </span>
+                <span className="min-w-0">
+                  <b className="block truncate">{team?.label}</b>
+                  <small className="text-[9px] font-bold uppercase tracking-wider text-white/35">
+                    {mine ? "You · " : ""}
+                    {heat === "cut" ? "Current cut line" : "Open lineup"}
+                  </small>
+                </span>
+                <b className="text-right text-[11px] tabular-nums sm:hidden">
+                  <span className="text-emerald-100">
+                    {formatFantasyPoints(team?.live)}
+                  </span>
+                  <span className="px-0.5 text-white/25">/</span>
+                  {formatFantasyPoints(team?.projected)}
+                </b>
+                <b className="hidden text-right text-emerald-100 sm:block">
+                  {formatFantasyPoints(team?.live)}
+                </b>
+                <b className="hidden text-right sm:block">
+                  {formatFantasyPoints(team?.projected)}
+                </b>
+                <span
+                  className={`hidden text-right text-[10px] font-black sm:block ${textTone}`}
+                >
+                  {safetyLabel}
+                </span>
+              </button>
+            );
           })}
         </div>
       </div>
@@ -3055,7 +3658,10 @@ function GameConditions({ results = [] }) {
   const rows = [...games.values()];
   if (!rows.length) return null;
   return (
-    <details data-guide-tip="lineup-weather" className="group mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3">
+    <details
+      data-guide-tip="lineup-weather"
+      className="group mb-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.045] p-3"
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[9px] font-black uppercase tracking-[0.18em] text-sky-100/50">
@@ -3080,20 +3686,43 @@ function GameConditions({ results = [] }) {
           const wind = Number(row.weather?.windSpeed);
           const visual = weatherVisual(row.weather, row.completed);
           return (
-            <div key={`${matchup}:${index}`} className="rounded-xl border border-white/[0.06] bg-black/20 px-3 py-3">
+            <div
+              key={`${matchup}:${index}`}
+              className="rounded-xl border border-white/[0.06] bg-black/20 px-3 py-3"
+            >
               <div className="flex items-center justify-between gap-2">
-                <b className="truncate text-xs text-white/75">{matchup}{row.weather?.stadium ? ` · ${row.weather.stadium}` : ""}</b>
+                <b className="truncate text-xs text-white/75">
+                  {matchup}
+                  {row.weather?.stadium ? ` · ${row.weather.stadium}` : ""}
+                </b>
                 <span className="shrink-0 text-[8px] font-bold uppercase text-white/30">
                   {row.completed ? "Final" : row.started ? "Live" : "Forecast"}
                 </span>
               </div>
               <div className="mt-1 text-[10px] leading-4 text-sky-100/65">
-                <span className="mr-1 text-base" aria-hidden>{visual.icon}</span>
+                <span className="mr-1 text-base" aria-hidden>
+                  {visual.icon}
+                </span>
                 {visual.label}
                 {Number.isFinite(temperature) ? ` · ${temperature}°` : ""}
               </div>
-              {visual.detail ? <div className="mt-1 text-[9px] leading-4 text-white/35">{visual.detail}</div> : null}
-              {!row.weather?.indoor && (Number.isFinite(precipitation) || Number.isFinite(wind)) ? <div className="mt-1 text-[9px] text-white/38">{Number.isFinite(precipitation) ? `${Math.round(precipitation)}% precipitation` : ""}{Number.isFinite(precipitation) && Number.isFinite(wind) ? " · " : ""}{Number.isFinite(wind) ? `${Math.round(wind)} mph wind` : ""}</div> : null}
+              {visual.detail ? (
+                <div className="mt-1 text-[9px] leading-4 text-white/35">
+                  {visual.detail}
+                </div>
+              ) : null}
+              {!row.weather?.indoor &&
+              (Number.isFinite(precipitation) || Number.isFinite(wind)) ? (
+                <div className="mt-1 text-[9px] text-white/38">
+                  {Number.isFinite(precipitation)
+                    ? `${Math.round(precipitation)}% precipitation`
+                    : ""}
+                  {Number.isFinite(precipitation) && Number.isFinite(wind)
+                    ? " · "
+                    : ""}
+                  {Number.isFinite(wind) ? `${Math.round(wind)} mph wind` : ""}
+                </div>
+              ) : null}
             </div>
           );
         })}
@@ -3129,11 +3758,39 @@ const PLAYER_STAT_LABELS = {
 const statKeysForPlayer = (position) => {
   const pos = String(position || "").toUpperCase();
   if (pos === "QB")
-    return ["pass_cmp", "pass_att", "pass_yd", "pass_td", "pass_int", "rush_att", "rush_yd", "rush_td", "fum_lost"];
+    return [
+      "pass_cmp",
+      "pass_att",
+      "pass_yd",
+      "pass_td",
+      "pass_int",
+      "rush_att",
+      "rush_yd",
+      "rush_td",
+      "fum_lost",
+    ];
   if (pos === "RB")
-    return ["rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fum_lost"];
+    return [
+      "rush_att",
+      "rush_yd",
+      "rush_td",
+      "rec_tgt",
+      "rec",
+      "rec_yd",
+      "rec_td",
+      "fum_lost",
+    ];
   if (["WR", "TE"].includes(pos))
-    return ["rec_tgt", "rec", "rec_yd", "rec_td", "rush_att", "rush_yd", "rush_td", "fum_lost"];
+    return [
+      "rec_tgt",
+      "rec",
+      "rec_yd",
+      "rec_td",
+      "rush_att",
+      "rush_yd",
+      "rush_td",
+      "fum_lost",
+    ];
   if (pos === "K") return ["fgm", "fga", "xpm", "xpa"];
   return ["sack", "int", "fum_rec", "def_td", "pts_allow"];
 };
@@ -3171,7 +3828,8 @@ function buildPlayerProjectionAnalysis(
   const scoring = Object.keys(scoringSettings || {}).length
     ? scoringSettings
     : DEFAULT_ANALYSIS_SCORING;
-  const pointDelta = Number(player.livePoints || 0) - Number(player.frozenProj || 0);
+  const pointDelta =
+    Number(player.livePoints || 0) - Number(player.frozenProj || 0);
   const state = player.gameCompleted ? "finished" : "is currently";
   const direction =
     Math.abs(pointDelta) < 1
@@ -3182,11 +3840,7 @@ function buildPlayerProjectionAnalysis(
     .map((key) => {
       const actual = statNumber(actualStats, key);
       const projected = statNumber(projectedStats, key);
-      const actualPoints = scoreSleeperStats(
-        { [key]: actual },
-        scoring,
-        pos,
-      );
+      const actualPoints = scoreSleeperStats({ [key]: actual }, scoring, pos);
       const projectedPoints = scoreSleeperStats(
         { [key]: projected },
         scoring,
@@ -3208,9 +3862,12 @@ function buildPlayerProjectionAnalysis(
   const aligned = [...drivers]
     .filter((row) => row.projected > 0 && row.relativeMiss <= 0.18)
     .sort((left, right) => left.relativeMiss - right.relativeMiss)[0];
-  const driverText = meaningful.slice(0, 2).map((row) =>
-    `${compactStat(row.actual)} ${row.label.toLowerCase()} versus ${compactStat(row.projected)} projected`,
-  );
+  const driverText = meaningful
+    .slice(0, 2)
+    .map(
+      (row) =>
+        `${compactStat(row.actual)} ${row.label.toLowerCase()} versus ${compactStat(row.projected)} projected`,
+    );
   const actualTouchdowns =
     statNumber(actualStats, "pass_td") +
     statNumber(actualStats, "rush_td") +
@@ -3240,12 +3897,14 @@ function buildPlayerProjectionAnalysis(
   ) {
     gameScript = `${actualTouchdowns.toFixed(actualTouchdowns % 1 ? 1 : 0)} total TD versus ${projectedTouchdowns.toFixed(2)} expected made scoring efficiency the defining swing${volumeClose ? ", while opportunity volume stayed close to forecast" : ""}.`;
   } else if (volumeKey && volumeProjected > 0) {
-    const volumeLabel = PLAYER_STAT_LABELS[volumeKey]?.toLowerCase() || "opportunities";
+    const volumeLabel =
+      PLAYER_STAT_LABELS[volumeKey]?.toLowerCase() || "opportunities";
     gameScript = `${compactStat(volumeActual)} ${volumeLabel} versus ${compactStat(volumeProjected)} projected made workload ${volumeActual >= volumeProjected ? "a positive" : "a limiting"} factor.`;
   } else if (pos === "K") {
     gameScript = `${compactStat(statNumber(actualStats, "fgm"))} made field goals versus ${compactStat(statNumber(projectedStats, "fgm"))} projected drove most of the kicking result.`;
   } else if (["DEF", "DST"].includes(pos)) {
-    gameScript = "Turnovers, sacks, touchdowns, and points allowed can make team-defense scoring move sharply even when the matchup expectation was reasonable.";
+    gameScript =
+      "Turnovers, sacks, touchdowns, and points allowed can make team-defense scoring move sharply even when the matchup expectation was reasonable.";
   }
   const accuracyText = aligned
     ? `${aligned.label} was close: ${compactStat(aligned.actual)} live versus ${compactStat(aligned.projected)} projected.`
@@ -3261,7 +3920,13 @@ function buildPlayerProjectionAnalysis(
   };
 }
 
-function PlayerBreakdownModal({ player, actualStats = {}, metricMode, scoringSettings = {}, onClose }) {
+function PlayerBreakdownModal({
+  player,
+  actualStats = {},
+  metricMode,
+  scoringSettings = {},
+  onClose,
+}) {
   if (!player) return null;
   const projectedStats = player.projectionDetails?.statLine || {};
   const scoringBasis = String(player.projectionDetails?.basis || "");
@@ -3282,33 +3947,1474 @@ function PlayerBreakdownModal({ player, actualStats = {}, metricMode, scoringSet
       Number.isFinite(Number(actualStats?.[key])),
   );
   return (
-    <div className="fixed inset-0 z-[230] overflow-y-auto bg-slate-950/88 p-3 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section data-guide-tip="lineup-player-breakdown" role="dialog" aria-modal="true" aria-labelledby="lineup-player-breakdown-title" className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-cyan-200/20 bg-slate-950 shadow-2xl shadow-black/60">
+    <div
+      className="fixed inset-0 z-[230] overflow-y-auto bg-slate-950/88 p-3 backdrop-blur-xl sm:p-6"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        data-guide-tip="lineup-player-breakdown"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lineup-player-breakdown-title"
+        className="mx-auto my-3 max-w-3xl overflow-hidden rounded-[30px] border border-cyan-200/20 bg-slate-950 shadow-2xl shadow-black/60"
+      >
         <header className="border-b border-white/10 bg-[radial-gradient(circle_at_92%_0%,rgba(34,211,238,.16),transparent_46%)] p-5 sm:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-100/55">Weekly scoring anatomy</div>
-              <h2 id="lineup-player-breakdown-title" className="mt-1 text-2xl font-black sm:text-3xl">{player.name}</h2>
-              <p className="mt-1 text-xs text-white/42">{player.team} · {player.pos} · Week breakdown</p>
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-100/55">
+                Weekly scoring anatomy
+              </div>
+              <h2
+                id="lineup-player-breakdown-title"
+                className="mt-1 text-2xl font-black sm:text-3xl"
+              >
+                {player.name}
+              </h2>
+              <p className="mt-1 text-xs text-white/42">
+                {player.team} · {player.pos} · Week breakdown
+              </p>
             </div>
-            <button type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60" aria-label="Close player breakdown">×</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-xl text-white/60"
+              aria-label="Close player breakdown"
+            >
+              ×
+            </button>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/50">Live fantasy points</div><b className="mt-1 block text-3xl text-emerald-100">{player.hasLivePoints ? formatFantasyPoints(player.livePoints) : "—"}</b><small className="text-white/32">Sleeper game stats</small></div>
-            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4"><div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/50">{metricMode === "values" ? "Redraft value" : leagueScored ? "League-scored expected points" : "Frozen projection"}</div><b className="mt-1 block text-3xl text-cyan-100">{formatFantasyPoints(player.frozenProj)}</b><small className="text-white/32">{metricMode === "values" ? "Season-long ranking scale" : `${leagueScored ? "Your league settings · " : ""}saved before kickoff`}</small>{metricMode === "projections" ? <div className="mt-2 text-[9px] text-cyan-100/45">Expected range {formatFantasyPoints(player.expectedFloor ?? player.floor)}–{formatFantasyPoints(player.expectedCeiling ?? player.ceiling)}</div> : null}</div>
+            <div className="rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.055] p-4">
+              <div className="text-[9px] font-black uppercase tracking-wider text-emerald-100/50">
+                Live fantasy points
+              </div>
+              <b className="mt-1 block text-3xl text-emerald-100">
+                {player.hasLivePoints
+                  ? formatFantasyPoints(player.livePoints)
+                  : "—"}
+              </b>
+              <small className="text-white/32">Sleeper game stats</small>
+            </div>
+            <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4">
+              <div className="text-[9px] font-black uppercase tracking-wider text-cyan-100/50">
+                {metricMode === "values"
+                  ? "Redraft value"
+                  : leagueScored
+                    ? "League-scored expected points"
+                    : "Frozen projection"}
+              </div>
+              <b className="mt-1 block text-3xl text-cyan-100">
+                {formatFantasyPoints(player.frozenProj)}
+              </b>
+              <small className="text-white/32">
+                {metricMode === "values"
+                  ? "Season-long ranking scale"
+                  : `${leagueScored ? "Your league settings · " : ""}saved before kickoff`}
+              </small>
+              {metricMode === "projections" ? (
+                <div className="mt-2 text-[9px] text-cyan-100/45">
+                  Expected range{" "}
+                  {formatFantasyPoints(player.expectedFloor ?? player.floor)}–
+                  {formatFantasyPoints(
+                    player.expectedCeiling ?? player.ceiling,
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
-          {metricMode === "projections" && analysis ? <div className="mt-3 rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.07] to-violet-300/[0.045] p-4 text-xs leading-5 text-white/58"><div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/65">Arsenal AI analysis</div><p className="mt-1 font-semibold text-white/78">{analysis.headline}</p><p className="mt-1">{analysis.drivers}</p>{analysis.gameScript ? <p className="mt-1">{analysis.gameScript}</p> : null}<p className="mt-1 text-white/42">{analysis.accuracyText}</p></div> : null}
+          {metricMode === "projections" && analysis ? (
+            <div className="mt-3 rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.07] to-violet-300/[0.045] p-4 text-xs leading-5 text-white/58">
+              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/65">
+                Arsenal AI analysis
+              </div>
+              <p className="mt-1 font-semibold text-white/78">
+                {analysis.headline}
+              </p>
+              <p className="mt-1">{analysis.drivers}</p>
+              {analysis.gameScript ? (
+                <p className="mt-1">{analysis.gameScript}</p>
+              ) : null}
+              <p className="mt-1 text-white/42">{analysis.accuracyText}</p>
+            </div>
+          ) : null}
         </header>
         <div className="p-5 sm:p-7">
-          {metricMode === "values" ? <div className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.05] p-4 text-xs leading-5 text-white/55">Value mode ranks season-long player strength; it does not contain a projected football stat line. Switch to a projection source to compare projected attempts, yards, receptions, and touchdowns with live production.</div> : keys.length ? <><div className="grid grid-cols-[minmax(0,1fr)_90px_90px] gap-2 px-3 pb-2 text-[9px] font-black uppercase tracking-wider text-white/30"><span>Football stat</span><span className="text-right">Live</span><span className="text-right">Projected</span></div><div className="space-y-1">{keys.map((key) => <div key={key} className="grid grid-cols-[minmax(0,1fr)_90px_90px] items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-3 text-xs"><span className="font-semibold text-white/65">{PLAYER_STAT_LABELS[key] || key}</span><b className="text-right text-emerald-100">{Number.isFinite(Number(actualStats?.[key])) ? Number(actualStats[key]).toLocaleString(undefined,{maximumFractionDigits:2}) : "—"}</b><b className="text-right text-cyan-100">{Number.isFinite(Number(projectedStats?.[key])) ? Number(projectedStats[key]).toLocaleString(undefined,{maximumFractionDigits:2}) : "—"}</b></div>)}</div></> : <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-6 text-white/45">This source supplies a fantasy-point total but does not expose the underlying projected football stat line for this player.</div>}
-          <div className="mt-4 flex flex-wrap gap-2 text-[10px]"><span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">{player.injury || (player.inactive ? "Inactive" : "Active")}</span>{player.weather?.summary ? <span className="rounded-full bg-sky-300/[0.07] px-3 py-1.5 text-sky-100/65">{player.weather.summary}</span> : null}<span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">{player.projectionDetails?.basis?.replaceAll("_", " ") || "Published source total"}</span></div>
+          {metricMode === "values" ? (
+            <div className="rounded-2xl border border-violet-300/15 bg-violet-300/[0.05] p-4 text-xs leading-5 text-white/55">
+              Value mode ranks season-long player strength; it does not contain
+              a projected football stat line. Switch to a projection source to
+              compare projected attempts, yards, receptions, and touchdowns with
+              live production.
+            </div>
+          ) : keys.length ? (
+            <>
+              <div className="grid grid-cols-[minmax(0,1fr)_90px_90px] gap-2 px-3 pb-2 text-[9px] font-black uppercase tracking-wider text-white/30">
+                <span>Football stat</span>
+                <span className="text-right">Live</span>
+                <span className="text-right">Projected</span>
+              </div>
+              <div className="space-y-1">
+                {keys.map((key) => (
+                  <div
+                    key={key}
+                    className="grid grid-cols-[minmax(0,1fr)_90px_90px] items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-3 text-xs"
+                  >
+                    <span className="font-semibold text-white/65">
+                      {PLAYER_STAT_LABELS[key] || key}
+                    </span>
+                    <b className="text-right text-emerald-100">
+                      {Number.isFinite(Number(actualStats?.[key]))
+                        ? Number(actualStats[key]).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"}
+                    </b>
+                    <b className="text-right text-cyan-100">
+                      {Number.isFinite(Number(projectedStats?.[key]))
+                        ? Number(projectedStats[key]).toLocaleString(
+                            undefined,
+                            { maximumFractionDigits: 2 },
+                          )
+                        : "—"}
+                    </b>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-6 text-white/45">
+              This source supplies a fantasy-point total but does not expose the
+              underlying projected football stat line for this player.
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2 text-[10px]">
+            <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">
+              {player.injury || (player.inactive ? "Inactive" : "Active")}
+            </span>
+            {player.weather?.summary ? (
+              <span className="rounded-full bg-sky-300/[0.07] px-3 py-1.5 text-sky-100/65">
+                {player.weather.summary}
+              </span>
+            ) : null}
+            <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-white/45">
+              {player.projectionDetails?.basis?.replaceAll("_", " ") ||
+                "Published source total"}
+            </span>
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect }) {
+const POSITION_BADGES = {
+  QB: "bg-rose-500/90 text-white",
+  RB: "bg-emerald-500/90 text-white",
+  WR: "bg-blue-500/90 text-white",
+  TE: "bg-amber-500/90 text-white",
+  FLEX: "bg-slate-500/90 text-white",
+  SF: "bg-violet-500/90 text-white",
+  K: "bg-fuchsia-500/90 text-white",
+  DEF: "bg-slate-600 text-white",
+};
+
+const ESPN_DEFENSE_TEAM_CODES = { WAS: "wsh" };
+
+function plannerGameLabel(player) {
+  if (player?.isOnBye) return "";
+  const game = player?.game;
+  if (!game) return "Time TBD";
+  if (player.gameCompleted || gameIsFinal(game)) return "Final";
+  if (player.gameStarted || gameHasStarted(game)) {
+    return game.status || game.shortDetail || "Live";
+  }
+  const kickoff = new Date(game.date || game.startTime || 0);
+  if (!Number.isFinite(kickoff.getTime()) || kickoff.getTime() <= 0)
+    return game.status || "Time TBD";
+  return kickoff.toLocaleString(undefined, {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function plannerRange(player) {
+  return {
+    floor: Number(player?.expectedFloor ?? player?.floor ?? 0),
+    ceiling: Number(player?.expectedCeiling ?? player?.ceiling ?? 0),
+  };
+}
+
+function signedPoints(value) {
+  const amount = Number(value) || 0;
+  return `${amount >= 0 ? "+" : ""}${formatFantasyPoints(amount)}`;
+}
+
+function PlannerTeamLogo({ team, size = 42 }) {
+  const normalized = normalizeTeamAbbr(team);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [normalized]);
+  const code = ESPN_DEFENSE_TEAM_CODES[normalized] || normalized.toLowerCase();
+  if (!normalized || failed) {
+    return (
+      <span
+        className="grid shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-[10px] font-black text-white/60"
+        style={{ width: size, height: size }}
+        aria-label={`${normalized || "NFL"} defense`}
+      >
+        {normalized || "NFL"}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="grid shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] p-1"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`}
+        alt={`${normalized} logo`}
+        width={size - 8}
+        height={size - 8}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className="h-full w-full object-contain"
+      />
+    </span>
+  );
+}
+
+function plannerAvailability(player, week, currentWeek) {
+  if (!player) return null;
+  if (player.isOnBye)
+    return { label: "BYE", className: "bg-violet-300/15 text-violet-100" };
+  if (Number(week) !== Number(currentWeek)) return null;
+  const status = String(
+    player.availabilityStatus || player.injury || (player.inactive ? "INACTIVE" : ""),
+  ).toUpperCase();
+  if (!status) return null;
+  if (CONFIRMED_OUT_STATUSES.has(status))
+    return { label: status, className: "bg-rose-300/12 text-rose-100" };
+  if (status === "DOUBTFUL")
+    return { label: status, className: "bg-orange-300/12 text-orange-100" };
+  return { label: status, className: "bg-amber-300/12 text-amber-100" };
+}
+
+function plannerAvailabilityShort(status) {
+  if (!status) return "";
+  if (status === "QUESTIONABLE") return "Q";
+  if (status === "DOUBTFUL") return "D";
+  return status;
+}
+
+function plannerOpponent(player) {
+  const team = normalizeTeamAbbr(player?.team);
+  const teams = Array.isArray(player?.game?.teams)
+    ? player.game.teams.map(normalizeTeamAbbr).filter(Boolean)
+    : [];
+  return teams.find((candidate) => candidate !== team) || "";
+}
+
+function PlannerPlayerRow({
+  player,
+  slotLabel,
+  week,
+  currentWeek,
+  metricMode,
+  selected = false,
+  eligible = false,
+  actionLabel = "Swap",
+  onAction,
+  onExplain,
+  onInspect,
+  locked = false,
+  freeAgent = false,
+  recentlyMoved = false,
+  requiresAction = false,
+}) {
+  const availability = plannerAvailability(player, week, currentWeek);
+  const opponent = plannerOpponent(player);
+  const gameLabel = plannerGameLabel(player);
+  const value =
+    metricMode === "values"
+      ? Number(player.marketValue ?? player.frozenProj ?? player.proj ?? 0)
+      : Number(player.frozenProj ?? player.proj ?? 0);
+  const actual = player.hasLivePoints ? Number(player.livePoints) : null;
+  const actualLabel = player.gameCompleted ? "FINAL" : "LIVE";
+  const unavailable = Boolean(
+    availability &&
+      (availability.label === "BYE" ||
+        CONFIRMED_OUT_STATUSES.has(availability.label)),
+  );
+  const availabilityWarning = Boolean(availability && !unavailable);
+  return (
+    <div
+      className={`group flex min-h-[68px] items-center gap-3 rounded-2xl border px-3 py-2.5 transition ${
+        selected
+          ? "border-cyan-300/65 bg-cyan-300/[0.1] shadow-[0_0_0_1px_rgba(103,232,249,.2)]"
+          : unavailable
+            ? availability.label === "BYE"
+              ? "border-violet-300/45 bg-violet-300/[0.09] shadow-[inset_4px_0_0_rgba(196,181,253,.72)]"
+              : "border-rose-300/45 bg-rose-300/[0.09] shadow-[inset_4px_0_0_rgba(253,164,175,.72)]"
+            : availabilityWarning
+              ? "border-orange-300/30 bg-orange-300/[0.055] shadow-[inset_4px_0_0_rgba(253,186,116,.48)]"
+          : eligible
+            ? "border-emerald-300/25 bg-emerald-300/[0.055] hover:border-emerald-200/45"
+            : "border-white/[0.08] bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.04]"
+      } ${recentlyMoved ? "animate-[lineup-player-move_.42s_cubic-bezier(.2,.8,.2,1)]" : ""}`}
+    >
+      <span
+        className={`grid h-8 min-w-9 shrink-0 place-items-center rounded-lg px-1.5 text-[10px] font-black ${POSITION_BADGES[slotLabel || player.pos] || POSITION_BADGES.FLEX}`}
+      >
+        {slotLabel || player.pos}
+      </span>
+      <button
+        type="button"
+        onClick={() => onInspect?.(player)}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        {player.pos === "DEF" ? (
+          <PlannerTeamLogo team={player.team || player.name} />
+        ) : (
+          <AvatarImage
+            playerId={player.pid}
+            name={player.name}
+            size={42}
+            className="rounded-full border border-white/10"
+            alt=""
+          />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <b className="truncate text-sm text-white/90">
+              {player.name}
+              {availability ? (
+                <span
+                  className={
+                    unavailable
+                      ? availability.label === "BYE"
+                        ? "text-violet-100"
+                        : "text-rose-100"
+                      : "text-orange-100"
+                  }
+                >
+                  {` - ${plannerAvailabilityShort(availability.label)}`}
+                </span>
+              ) : null}
+            </b>
+            {availability ? (
+              <span className={`rounded-md px-1.5 py-0.5 text-[8px] font-black tracking-wide ${availability.className}`}>
+                {unavailable
+                  ? requiresAction
+                    ? availability.label === "BYE"
+                      ? "MUST SWAP"
+                      : "UNAVAILABLE"
+                    : availability.label
+                  : "MONITOR"}
+              </span>
+            ) : null}
+            {freeAgent ? (
+              <span className="rounded-md bg-emerald-300/10 px-1.5 py-0.5 text-[8px] font-black text-emerald-100">
+                AVAILABLE
+              </span>
+            ) : null}
+          </span>
+          {availability && requiresAction ? (
+            <span
+              className={`mt-0.5 block text-[9px] font-black uppercase tracking-wide ${unavailable ? (availability.label === "BYE" ? "text-violet-100/75" : "text-rose-100/75") : "text-orange-100/70"}`}
+            >
+              {unavailable
+                ? requiresAction
+                  ? availability.label === "BYE"
+                    ? "Must swap · NFL bye week"
+                    : `Must swap · ${availability.label}`
+                  : null
+                : `${availability.label === "QUESTIONABLE" ? "Questionable" : "Doubtful"} · monitor game status`}
+            </span>
+          ) : null}
+          <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
+            {player.pos} · {player.team || "FA"}
+            {opponent ? ` vs ${opponent}` : ""}
+            {gameLabel ? (
+              <>
+                <span className="text-white/20"> · </span>
+                <span
+                  className={
+                    player.gameStarted && !player.gameCompleted
+                      ? "text-emerald-100/70"
+                      : "text-white/35"
+                  }
+                >
+                  {gameLabel}
+                </span>
+              </>
+            ) : null}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wide sm:hidden">
+            <span className="rounded-md bg-cyan-300/[0.08] px-1.5 py-0.5 text-cyan-100/75">
+              {formatFantasyPoints(value)}{" "}
+              {metricMode === "values" ? "value" : "proj"}
+            </span>
+            {metricMode === "projections" && actual != null ? (
+              <span
+                className={`rounded-md px-1.5 py-0.5 ${player.gameCompleted ? "bg-white/[0.07] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}
+              >
+                {formatFantasyPoints(actual)} {actualLabel}
+              </span>
+            ) : null}
+          </span>
+        </span>
+      </button>
+      <div className="hidden min-w-[118px] shrink-0 items-center justify-end gap-4 sm:flex">
+        <div className="text-right">
+          <b className="block text-xl font-black leading-none text-cyan-100">
+            {formatFantasyPoints(value)}
+          </b>
+          <span className="mt-1 block text-[9px] font-black uppercase tracking-[0.14em] text-cyan-100/45">
+            {metricMode === "values" ? "Value" : "Projected"}
+          </span>
+        </div>
+        {metricMode === "projections" && actual != null ? (
+          <div className="text-right">
+            <b className={`block text-xl font-black leading-none ${player.gameCompleted ? "text-white/80" : "text-emerald-100"}`}>
+              {formatFantasyPoints(actual)}
+            </b>
+            <span className={`mt-1 block text-[9px] font-black uppercase tracking-[0.14em] ${player.gameCompleted ? "text-white/35" : "text-emerald-100/55"}`}>
+              {actualLabel}
+            </span>
+          </div>
+        ) : null}
+      </div>
+      {locked ? (
+        <span className="rounded-lg bg-white/[0.05] px-2 py-1 text-[9px] font-black text-white/35">
+          LOCKED
+        </span>
+      ) : onAction ? (
+        <span className="flex shrink-0 items-center gap-1">
+          {onExplain ? (
+            <button
+              type="button"
+              onClick={onExplain}
+              aria-label={`Why swap for ${player.name}?`}
+              title="Why this move?"
+              className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 text-xs font-black text-white/45 transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.07] hover:text-cyan-100"
+            >
+              i
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onAction}
+            className={`rounded-xl px-2.5 py-2 text-[10px] font-black transition ${
+              selected
+                ? "bg-cyan-300 text-slate-950"
+                : eligible
+                  ? "border border-emerald-300/30 bg-emerald-300/10 text-emerald-100 hover:bg-emerald-300/20"
+                  : "text-white/28 hover:bg-white/[0.06] hover:text-white/65"
+            }`}
+          >
+            {selected ? (
+              <>
+                <span aria-hidden>✓</span>
+                <span className="sr-only sm:not-sr-only sm:ml-1">Selected</span>
+              </>
+            ) : (
+              <>
+                <span aria-hidden className="text-sm leading-none">⇄</span>
+                <span className="sr-only sm:not-sr-only sm:ml-1">
+                  {actionLabel}
+                </span>
+              </>
+            )}
+          </button>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function InteractiveLineupPlanner({
+  league,
+  roster,
+  result,
+  playerDirectory,
+  freeAgents = [],
+  week,
+  currentWeek,
+  byeMap,
+  metricMode,
+  metricLabel,
+  onWeekChange,
+  onPlayerSelect,
+}) {
+  const slots = useMemo(() => lineupSlotDefinitions(league), [league]);
+  const rosterCandidates = result?.allCandidates || [];
+  const candidateById = useMemo(
+    () =>
+      new Map(
+        [...rosterCandidates, ...freeAgents].map((player) => [
+          String(player.pid),
+          player,
+        ]),
+      ),
+    [freeAgents, rosterCandidates],
+  );
+  const rawDefaultIds = useMemo(
+    () => slots.map((_, index) => String(roster?.starters?.[index] || "")),
+    [roster?.starters, slots],
+  );
+  const scope = `${league?.league_id || "none"}:${roster?.roster_id || "none"}:${week}`;
+  const storageKey = `lineup-planner:v1:${scope}`;
+  const [starterIds, setStarterIds] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [issuesOnly, setIssuesOnly] = useState(false);
+  const [freeAgentFilter, setFreeAgentFilter] = useState("ALL");
+  const [freeAgentSort, setFreeAgentSort] = useState("smart");
+  const [toast, setToast] = useState("");
+  const [undoState, setUndoState] = useState(null);
+  const [recentlyMoved, setRecentlyMoved] = useState("");
+  const [explanation, setExplanation] = useState(null);
+  const [savedWeekPlans, setSavedWeekPlans] = useState({});
+  const [planRevision, setPlanRevision] = useState(0);
+  const touchStartX = useRef(null);
+  const weekRailRef = useRef(null);
+  const freeAgentSectionRef = useRef(null);
+  const hydratedScopeRef = useRef("");
+
+  const candidateForId = (id, selectedWeek = week) => {
+    if (!id) return null;
+    const existing = candidateById.get(String(id));
+    if (existing && Number(selectedWeek) === Number(week)) return existing;
+    const player = playerDirectory?.[id];
+    if (!player) return existing || null;
+    const team = normalizeTeamAbbr(player.team);
+    return {
+      pid: String(id),
+      name: player.full_name || player.search_full_name || String(id),
+      pos: normalizePos(player.position),
+      team,
+      injury: String(player.injury_status || "").toUpperCase(),
+      availabilityStatus: sleeperAvailabilityStatus(player),
+      inactive: sleeperAvailabilityStatus(player) === "INACTIVE",
+      isOnBye: (byeMap?.by_team?.[team] || [])
+        .map(Number)
+        .includes(Number(selectedWeek)),
+      frozenProj: 0,
+      proj: 0,
+      selectionScore: 0,
+    };
+  };
+
+  const defaultLineup = useMemo(
+    () =>
+      rawDefaultIds.map((id) => {
+        const player = candidateForId(id);
+        if (!player) return null;
+        // Keep the Sleeper starter visible even when unavailable. The status
+        // row must explain who needs replacing and why; hiding the player as
+        // an anonymous empty slot makes the lineup problem harder to audit.
+        return String(id);
+      }),
+    // candidateById changes when the active weekly evidence refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [candidateById, currentWeek, rawDefaultIds, week],
+  );
+
+  useEffect(() => {
+    if (!slots.length || !rawDefaultIds.some(Boolean)) return;
+    if (!rawDefaultIds.some((id) => id && candidateById.has(String(id))))
+      return;
+    if (hydratedScopeRef.current === scope) return;
+    let saved = null;
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (Array.isArray(parsed?.starters)) saved = parsed.starters;
+    } catch {}
+    const next = (saved || defaultLineup).map((id) => (id ? String(id) : null));
+    while (next.length < slots.length) next.push(null);
+    rawDefaultIds.forEach((id, index) => {
+      const player = candidateForId(id);
+      if (player?.gameStarted) next[index] = String(id);
+    });
+    setStarterIds(next.slice(0, slots.length));
+    setSelectedSlot(null);
+    setFreeAgentFilter("ALL");
+    setUndoState(null);
+    setExplanation(null);
+    hydratedScopeRef.current = scope;
+  }, [candidateById, defaultLineup, rawDefaultIds, scope, slots.length]);
+
+  useEffect(() => {
+    const plans = {};
+    try {
+      for (let target = 1; target <= 18; target += 1) {
+        const key = `lineup-planner:v1:${league?.league_id || "none"}:${roster?.roster_id || "none"}:${target}`;
+        const parsed = JSON.parse(localStorage.getItem(key) || "null");
+        if (Array.isArray(parsed?.starters)) plans[target] = parsed.starters;
+      }
+    } catch {}
+    setSavedWeekPlans(plans);
+  }, [league?.league_id, planRevision, roster?.roster_id, scope]);
+
+  const persistLineup = (next) => {
+    const normalized = next
+      .slice(0, slots.length)
+      .map((id) => (id ? String(id) : null));
+    setStarterIds(normalized);
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ starters: normalized, updatedAt: Date.now() }),
+      );
+    } catch {}
+    setPlanRevision((value) => value + 1);
+  };
+  const flash = (message) => {
+    setToast(message);
+    window.setTimeout(
+      () => setToast((current) => (current === message ? "" : current)),
+      2600,
+    );
+  };
+  const resetWeek = () => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setStarterIds(defaultLineup);
+    setSelectedSlot(null);
+    setUndoState(null);
+    flash(`Week ${week} reset to Sleeper default`);
+    setPlanRevision((value) => value + 1);
+  };
+  const resetAllWeeks = () => {
+    try {
+      for (let target = 1; target <= 18; target += 1) {
+        localStorage.removeItem(
+          `lineup-planner:v1:${league?.league_id || "none"}:${roster?.roster_id || "none"}:${target}`,
+        );
+      }
+    } catch {}
+    setStarterIds(defaultLineup);
+    setSelectedSlot(null);
+    setUndoState(null);
+    flash("All planned weeks reset");
+    setPlanRevision((value) => value + 1);
+  };
+  const optimize = () => {
+    const optimized = optimizePlannerSlots({
+      slots,
+      candidates: rosterCandidates,
+      defaultIds: rawDefaultIds,
+      week,
+      currentWeek,
+    });
+    persistLineup(optimized);
+    setSelectedSlot(null);
+    flash(`Lineup optimized for Week ${week}`);
+  };
+
+  const selectedSlotDefinition =
+    selectedSlot == null ? null : slots[selectedSlot];
+  const chooseSlot = (index) => {
+    const current = candidateForId(starterIds[index]);
+    if (current?.gameStarted) return;
+    setSelectedSlot((value) => (value === index ? null : index));
+    const eligible = slots[index]?.eligible || [];
+    setFreeAgentFilter(
+      eligible.length === 1
+        ? eligible[0]
+        : slots[index]?.label === "SF"
+          ? "ALL"
+          : "FLEX",
+    );
+  };
+  const swapIntoSelectedSlot = (player) => {
+    if (selectedSlot == null || !playerFitsSlot(player, selectedSlotDefinition))
+      return;
+    if (
+      player.gameStarted ||
+      playerCreatesLineupIssue(player, week, currentWeek)
+    )
+      return;
+    const next = [...starterIds];
+    const existingIndex = next.findIndex(
+      (id) => String(id || "") === String(player.pid),
+    );
+    const displaced = next[selectedSlot];
+    const previous = [...starterIds];
+    const slotLabel = selectedSlotDefinition.label;
+    next[selectedSlot] = String(player.pid);
+    if (existingIndex >= 0 && existingIndex !== selectedSlot) {
+      const displacedPlayer = candidateForId(displaced);
+      next[existingIndex] =
+        displacedPlayer && playerFitsSlot(displacedPlayer, slots[existingIndex])
+          ? String(displaced)
+          : null;
+    }
+    persistLineup(next);
+    setUndoState({ starters: previous, player: player.name, slotLabel });
+    setRecentlyMoved(String(player.pid));
+    window.setTimeout(
+      () =>
+        setRecentlyMoved((current) =>
+          current === String(player.pid) ? "" : current,
+        ),
+      500,
+    );
+    setSelectedSlot(null);
+    setExplanation(null);
+    flash(
+      `${player.freeAgent ? "Previewing" : "Starting"} ${player.name} in ${slotLabel}`,
+    );
+  };
+
+  const undoLastSwap = () => {
+    if (!undoState?.starters) return;
+    persistLineup(undoState.starters);
+    setRecentlyMoved(
+      String(undoState.starters.find((id) => id && !starterIds.includes(id)) || ""),
+    );
+    flash(`Undid ${undoState.player} swap`);
+    setUndoState(null);
+  };
+
+  const usedIds = new Set(starterIds.filter(Boolean).map(String));
+  const bench = rosterCandidates
+    .filter((player) => !usedIds.has(String(player.pid)))
+    .sort(
+      (left, right) =>
+        Number(right.selectionScore || right.proj || 0) -
+        Number(left.selectionScore || left.proj || 0),
+    );
+  const visibleFreeAgents = freeAgents
+    .filter((player) => {
+      if (
+        selectedSlotDefinition &&
+        !playerFitsSlot(player, selectedSlotDefinition)
+      )
+        return false;
+      if (freeAgentFilter === "ALL") return true;
+      if (freeAgentFilter === "FLEX")
+        return ["RB", "WR", "TE"].includes(player.pos);
+      return player.pos === freeAgentFilter;
+    })
+    .filter(
+      (player) =>
+        !player.gameStarted &&
+        !playerCreatesLineupIssue(player, week, currentWeek),
+    )
+    .sort((left, right) => {
+      const score = (player) =>
+        Number(
+          metricMode === "values"
+            ? (player.marketValue ?? player.selectionScore ?? 0)
+            : freeAgentSort === "floor"
+              ? (player.expectedFloor ?? player.floor ?? 0)
+              : freeAgentSort === "ceiling"
+                ? (player.expectedCeiling ?? player.ceiling ?? 0)
+                : freeAgentSort === "projection"
+                  ? (player.frozenProj ?? player.proj ?? 0)
+                  : (player.selectionScore ?? player.frozenProj ?? player.proj ?? 0),
+        ) || 0;
+      if (freeAgentSort === "name")
+        return String(left.name).localeCompare(String(right.name));
+      if (freeAgentSort === "position")
+        return (
+          String(left.pos).localeCompare(String(right.pos)) ||
+          score(right) - score(left)
+        );
+      return score(right) - score(left);
+    })
+    .slice(0, 12);
+
+  const weekPlanState = useMemo(() => {
+    const rows = {};
+    for (let targetWeek = 1; targetWeek <= 18; targetWeek += 1) {
+      const plannedIds = Array.isArray(savedWeekPlans[targetWeek])
+        ? savedWeekPlans[targetWeek]
+        : rawDefaultIds;
+      const issues = plannedIds
+        .map((id) => candidateForId(id, targetWeek))
+        .filter((player) =>
+          playerCreatesLineupIssue(player, targetWeek, currentWeek),
+        )
+        .map((player) => ({
+          name: player?.name || "Empty slot",
+          reason: player?.isOnBye
+            ? "BYE"
+            : player?.inactive
+              ? "INACTIVE"
+              : String(player?.injury || "EMPTY").toUpperCase(),
+        }));
+      const changes = plannedIds.reduce(
+        (count, id, index) =>
+          count +
+          (String(id || "") !== String(rawDefaultIds[index] || "") ? 1 : 0),
+        0,
+      );
+      rows[targetWeek] = { issues, changes, edited: changes > 0 };
+    }
+    return rows;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    byeMap,
+    currentWeek,
+    playerDirectory,
+    rawDefaultIds,
+    savedWeekPlans,
+  ]);
+  const issueCounts = Object.fromEntries(
+    Object.entries(weekPlanState).map(([targetWeek, state]) => [
+      targetWeek,
+      state.issues.length,
+    ]),
+  );
+  const issueWeeks = Array.from({ length: 18 }, (_, index) => index + 1).filter(
+    (targetWeek) => issueCounts[targetWeek] > 0,
+  );
+  const visibleWeeks = issuesOnly
+    ? issueWeeks.length
+      ? issueWeeks
+      : [week]
+    : Array.from({ length: 18 }, (_, index) => index + 1);
+  const goToAdjacentWeek = (direction) => {
+    const currentIndex = visibleWeeks.indexOf(Number(week));
+    const fallbackIndex = visibleWeeks.findIndex(
+      (value) => value > Number(week),
+    );
+    const baseIndex =
+      currentIndex >= 0 ? currentIndex : Math.max(0, fallbackIndex);
+    const nextIndex = Math.max(
+      0,
+      Math.min(visibleWeeks.length - 1, baseIndex + direction),
+    );
+    onWeekChange(visibleWeeks[nextIndex]);
+  };
+  useEffect(() => {
+    const selected = weekRailRef.current?.querySelector(
+      `[data-planner-week="${week}"]`,
+    );
+    selected?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [issuesOnly, week]);
+
+  const lineupTotal = starterIds.reduce((sum, id) => {
+    const player = candidateForId(id);
+    if (!player) return sum;
+    return (
+      sum +
+      (metricMode === "values"
+        ? Number(player.marketValue ?? player.frozenProj ?? player.proj ?? 0)
+        : Number(player.frozenProj ?? player.proj ?? 0))
+    );
+  }, 0);
+  const unresolvedIssues = starterIds.reduce(
+    (count, id) =>
+      count +
+      (playerCreatesLineupIssue(candidateForId(id), week, currentWeek) ? 1 : 0),
+    0,
+  );
+  const changed = JSON.stringify(starterIds) !== JSON.stringify(defaultLineup);
+  const defaultTotal = defaultLineup.reduce((sum, id) => {
+    const player = candidateForId(id);
+    if (!player) return sum;
+    return (
+      sum +
+      (metricMode === "values"
+        ? Number(player.marketValue ?? player.frozenProj ?? player.proj ?? 0)
+        : Number(player.frozenProj ?? player.proj ?? 0))
+    );
+  }, 0);
+  const changeCount = starterIds.reduce(
+    (count, id, index) =>
+      count + (String(id || "") !== String(defaultLineup[index] || "") ? 1 : 0),
+    0,
+  );
+  const lineupDelta = lineupTotal - defaultTotal;
+  const freeAgentFilters = selectedSlotDefinition
+    ? [
+        "ALL",
+        ...selectedSlotDefinition.eligible,
+        ...(selectedSlotDefinition.eligible.some((pos) =>
+          ["RB", "WR", "TE"].includes(pos),
+        ) && selectedSlotDefinition.eligible.length > 1
+          ? ["FLEX"]
+          : []),
+      ].filter((value, index, rows) => rows.indexOf(value) === index)
+    : ["ALL", "QB", "RB", "WR", "TE", "FLEX", "K", "DEF"];
+
+  const openExplanation = (incoming) => {
+    if (selectedSlot == null) return;
+    const outgoing = candidateForId(starterIds[selectedSlot]);
+    const incomingRange = plannerRange(incoming);
+    const outgoingRange = plannerRange(outgoing);
+    const incomingByeWeeks = (byeMap?.by_team?.[incoming?.team] || [])
+      .map(Number)
+      .filter((target) => target >= Number(week) && target <= 18);
+    const outgoingByeWeeks = (byeMap?.by_team?.[outgoing?.team] || [])
+      .map(Number)
+      .filter((target) => target >= Number(week) && target <= 18);
+    setExplanation({
+      incoming,
+      outgoing,
+      slotLabel: selectedSlotDefinition.label,
+      projectionDelta:
+        Number(incoming?.frozenProj ?? incoming?.proj ?? 0) -
+        Number(outgoing?.frozenProj ?? outgoing?.proj ?? 0),
+      floorDelta: incomingRange.floor - outgoingRange.floor,
+      ceilingDelta: incomingRange.ceiling - outgoingRange.ceiling,
+      incomingByeWeeks,
+      outgoingByeWeeks,
+    });
+  };
+
+  return (
+    <section
+      data-guide-tip="lineup-planner"
+      className="overflow-hidden rounded-[28px] border border-cyan-200/15 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.12),transparent_34%),linear-gradient(160deg,rgba(8,28,48,.98),rgba(3,12,24,.98))] shadow-xl shadow-black/20"
+    >
+      <header className="border-b border-white/10 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[.22em] text-cyan-100/50">
+              Ballsville weekly lineup planner
+            </div>
+            <h3 className="mt-1 text-xl font-black">
+              Build your Week {week} lineup
+            </h3>
+            <p className="mt-1 text-[11px] leading-5 text-white/38">
+              Tap a starter slot, then choose a compatible bench player or a
+              real unrostered player below. Planning only—nothing is submitted
+              to Sleeper. PROJ stays frozen; LIVE becomes FINAL when the game
+              ends.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={resetWeek}
+              disabled={!changed}
+              className="rounded-xl border border-white/10 px-3 py-2 text-[10px] font-black text-white/55 hover:bg-white/[0.05] disabled:opacity-30"
+            >
+              Reset week
+            </button>
+            <button
+              type="button"
+              onClick={optimize}
+              className="rounded-xl border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-black text-cyan-100 hover:bg-cyan-300/20"
+            >
+              ✦ Optimize
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={issuesOnly}
+            onClick={() => {
+              const next = !issuesOnly;
+              setIssuesOnly(next);
+              if (next && !issueCounts[week] && issueWeeks.length)
+                onWeekChange(issueWeeks[0]);
+            }}
+            className={`rounded-full border px-3 py-1.5 text-[10px] font-black ${issuesOnly ? "border-amber-300/35 bg-amber-300/12 text-amber-100" : "border-white/10 bg-white/[0.035] text-white/48"}`}
+          >
+            Issues only · {issueWeeks.length} weeks
+          </button>
+          <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[10px] text-white/40">
+            Bye + confirmed out count as issues
+          </span>
+          <span className="rounded-full border border-amber-300/10 bg-amber-300/[0.04] px-3 py-1.5 text-[10px] text-amber-100/55">
+            Questionable is warning only
+          </span>
+          <button
+            type="button"
+            onClick={resetAllWeeks}
+            className="ml-auto text-[10px] font-bold text-white/30 hover:text-white/60"
+          >
+            Reset all weeks
+          </button>
+        </div>
+      </header>
+
+      <div className="border-b border-white/10 bg-black/15 px-3 py-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => goToAdjacentWeek(-1)}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/45 hover:bg-white/[0.05]"
+            aria-label="Previous visible week"
+          >
+            ←
+          </button>
+          <div
+            ref={weekRailRef}
+            className="flex min-w-0 flex-1 snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {visibleWeeks.map((targetWeek) => {
+              const state = weekPlanState[targetWeek];
+              const issue = state?.issues?.[0];
+              const active = Number(week) === targetWeek;
+              const issueTone = state?.issues.some((row) => row.reason !== "BYE")
+                ? "border-rose-300/35 bg-rose-300/[0.08] text-rose-50"
+                : "border-violet-300/35 bg-violet-300/[0.08] text-violet-50";
+              return (
+                <button
+                  type="button"
+                  key={targetWeek}
+                  data-planner-week={targetWeek}
+                  onClick={() => onWeekChange(targetWeek)}
+                  className={`min-h-[82px] min-w-[128px] snap-center rounded-2xl border p-3 text-left transition ${state?.issues.length ? issueTone : state?.edited ? "border-cyan-300/30 bg-cyan-300/[0.07] text-cyan-50" : "border-emerald-300/15 bg-emerald-300/[0.035] text-white/55"} ${active ? "shadow-[inset_0_0_0_2px_rgba(103,232,249,.58)]" : "hover:border-white/25"}`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <b className="text-[10px] font-black uppercase tracking-wider">
+                      Week {targetWeek}
+                    </b>
+                    {state?.edited ? (
+                      <span className="rounded-full bg-cyan-300/15 px-1.5 py-0.5 text-[8px] font-black text-cyan-100">
+                        EDITED
+                      </span>
+                    ) : null}
+                  </span>
+                  <span
+                    className={`mt-2 block text-xs font-black ${state?.issues.length ? (issue?.reason === "BYE" ? "text-violet-100" : "text-rose-100") : state?.edited ? "text-cyan-100" : "text-emerald-100/75"}`}
+                  >
+                    {state?.issues.length
+                      ? `${state.issues.length} swap${state.issues.length === 1 ? "" : "s"} needed`
+                      : state?.edited
+                        ? "Edited · clear"
+                        : "Lineup clear"}
+                  </span>
+                  <span className="mt-1 block truncate text-[9px] text-white/38">
+                    {issue
+                      ? `${issue.name} · ${issue.reason}`
+                      : state?.edited
+                        ? `${state.changes} saved change${state.changes === 1 ? "" : "s"}`
+                        : "No bye or OUT conflict"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => goToAdjacentWeek(1)}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 text-white/45 hover:bg-white/[0.05]"
+            aria-label="Next visible week"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="p-3 sm:p-4"
+        onTouchStart={(event) => {
+          touchStartX.current = event.touches?.[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStartX.current;
+          const end = event.changedTouches?.[0]?.clientX;
+          touchStartX.current = null;
+          if (start == null || end == null || Math.abs(end - start) < 55)
+            return;
+          goToAdjacentWeek(end < start ? 1 : -1);
+        }}
+      >
+        {toast ? (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.08] px-3 py-2 text-xs font-bold text-emerald-100">
+            <span>✓ {toast}</span>
+            {undoState ? (
+              <button
+                type="button"
+                onClick={undoLastSwap}
+                className="rounded-lg border border-emerald-200/20 bg-black/15 px-2 py-1 text-[10px] font-black hover:bg-black/25"
+              >
+                Undo
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-black/20 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <div>
+              <span className="block text-[8px] font-black uppercase tracking-wider text-white/30">Week {week} plan</span>
+              <b className={changeCount ? "text-cyan-100" : "text-white/65"}>
+                {changeCount
+                  ? `${changeCount} change${changeCount === 1 ? "" : "s"}`
+                  : "Sleeper lineup"}
+              </b>
+            </div>
+            <div>
+              <span className="block text-[8px] font-black uppercase tracking-wider text-white/30">Projection impact</span>
+              <b className={lineupDelta >= 0 ? "text-emerald-100" : "text-rose-100"}>
+                {signedPoints(lineupDelta)}
+              </b>
+            </div>
+            <div>
+              <span className="block text-[8px] font-black uppercase tracking-wider text-white/30">Lineup health</span>
+              <b className={unresolvedIssues ? "text-rose-100" : "text-emerald-100"}>
+                {unresolvedIssues
+                  ? `${unresolvedIssues} swap${unresolvedIssues === 1 ? "" : "s"} needed`
+                  : changeCount
+                    ? "Edited · clear"
+                    : "Clear"}
+              </b>
+            </div>
+          </div>
+          {undoState ? (
+            <button
+              type="button"
+              onClick={undoLastSwap}
+              className="rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-3 py-2 text-[10px] font-black text-cyan-100"
+            >
+              Undo last swap
+            </button>
+          ) : null}
+        </div>
+        {selectedSlotDefinition ? (
+          <div className="sticky top-2 z-20 mb-3 flex items-center justify-between gap-3 rounded-2xl border border-cyan-300/35 bg-[#08243a]/95 px-3 py-3 shadow-xl shadow-black/30 backdrop-blur-xl">
+            <div className="min-w-0 text-xs font-black text-cyan-50">
+              <span className="block truncate">⇄ {candidateForId(starterIds[selectedSlot])?.name || "Empty slot"}</span>
+              <span className="mt-0.5 block text-[9px] font-semibold text-cyan-100/50">
+                Choose a {selectedSlotDefinition.label} replacement
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedSlot(null)}
+              className="rounded-lg px-2 py-1 text-[10px] font-black text-cyan-100/70 hover:bg-cyan-300/10"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : null}
+        <div className="mb-2 flex items-end justify-between gap-3 px-1">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[.18em] text-white/35">
+              Starters
+            </div>
+            <div className="mt-0.5 text-[9px] text-white/25">
+              {unresolvedIssues
+                ? `${unresolvedIssues} open lineup issue${unresolvedIssues === 1 ? "" : "s"}`
+                : "No unresolved starter issues"}
+            </div>
+          </div>
+          <div className="text-right">
+            <b className="text-lg text-cyan-100">
+              {formatFantasyPoints(lineupTotal)}
+            </b>
+            <div className="text-[8px] font-black uppercase tracking-wider text-white/28">
+              {metricLabel}
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {slots.map((slot, index) => {
+            const player = candidateForId(starterIds[index]);
+            if (!player) {
+              const hasBenchReplacement = bench.some(
+                (candidate) =>
+                  playerFitsSlot(candidate, slot) &&
+                  !candidate.gameStarted &&
+                  !playerCreatesLineupIssue(candidate, week, currentWeek),
+              );
+              return (
+                <button
+                  type="button"
+                  key={slot.key}
+                  onClick={() => {
+                    chooseSlot(index);
+                    if (!hasBenchReplacement) {
+                      window.setTimeout(
+                        () =>
+                          freeAgentSectionRef.current?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          }),
+                        0,
+                      );
+                    }
+                  }}
+                  className={`flex min-h-[68px] w-full items-center gap-3 rounded-2xl border border-dashed px-3 py-2.5 text-left transition ${selectedSlot === index ? "border-cyan-300/65 bg-cyan-300/[0.09]" : "border-amber-300/25 bg-amber-300/[0.045] hover:border-amber-200/45"}`}
+                >
+                  <span
+                    className={`grid h-8 min-w-9 place-items-center rounded-lg px-1.5 text-[10px] font-black ${POSITION_BADGES[slot.label] || POSITION_BADGES.FLEX}`}
+                  >
+                    {slot.label}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <b className="block text-sm text-amber-100">
+                      Empty starter slot
+                    </b>
+                    <span className="block text-[10px] text-amber-100/45">
+                      Bye, confirmed out, or no starter selected
+                    </span>
+                  </span>
+                  <span className="rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-[10px] font-black text-amber-100">
+                    <span aria-hidden>{hasBenchReplacement ? "⇄" : "+"}</span>
+                    <span className="sr-only sm:not-sr-only sm:ml-1">
+                      {hasBenchReplacement ? "Swap" : "Search"}
+                    </span>
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <PlannerPlayerRow
+                key={slot.key}
+                player={player}
+                slotLabel={slot.label}
+                week={week}
+                currentWeek={currentWeek}
+                metricMode={metricMode}
+                selected={selectedSlot === index}
+                eligible={
+                  selectedSlot != null &&
+                  selectedSlot !== index &&
+                  playerFitsSlot(player, selectedSlotDefinition)
+                }
+                locked={player.gameStarted}
+                actionLabel="Swap"
+                onAction={
+                  player.gameStarted
+                    ? null
+                    : () =>
+                        selectedSlot == null
+                          ? chooseSlot(index)
+                          : swapIntoSelectedSlot(player)
+                }
+                onExplain={
+                  selectedSlot != null &&
+                  selectedSlot !== index &&
+                  playerFitsSlot(player, selectedSlotDefinition)
+                    ? () => openExplanation(player)
+                    : null
+                }
+                onInspect={onPlayerSelect}
+                freeAgent={player.freeAgent}
+                recentlyMoved={recentlyMoved === String(player.pid)}
+                requiresAction
+              />
+            );
+          })}
+        </div>
+
+        <div className="mt-5 mb-2 flex items-center justify-between px-1">
+          <div className="text-[10px] font-black uppercase tracking-[.18em] text-white/35">
+            Bench
+          </div>
+          <div className="text-[9px] text-white/25">
+            {bench.length} rostered options
+          </div>
+        </div>
+        <div className="space-y-2">
+          {bench.map((player) => {
+            const canSwap = Boolean(
+              selectedSlotDefinition &&
+                playerFitsSlot(player, selectedSlotDefinition) &&
+                !player.gameStarted &&
+                !playerCreatesLineupIssue(player, week, currentWeek),
+            );
+            return (
+              <PlannerPlayerRow
+                key={player.pid}
+                player={player}
+                week={week}
+                currentWeek={currentWeek}
+                metricMode={metricMode}
+                eligible={canSwap}
+                locked={player.gameStarted}
+                actionLabel="Swap"
+                onAction={canSwap ? () => swapIntoSelectedSlot(player) : null}
+                onExplain={canSwap ? () => openExplanation(player) : null}
+                onInspect={onPlayerSelect}
+                recentlyMoved={recentlyMoved === String(player.pid)}
+              />
+            );
+          })}
+        </div>
+
+        <div
+          ref={freeAgentSectionRef}
+          data-guide-tip="lineup-free-agents"
+          className="mt-6 rounded-3xl border border-emerald-300/15 bg-emerald-300/[0.035] p-3 sm:p-4"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-100/65">
+                League free agents
+              </div>
+              <p className="mt-1 text-[10px] leading-4 text-white/35">
+                These players are not on any roster in{" "}
+                {league?.name || "this league"}. Previewing one does not add
+                them on Sleeper.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold text-emerald-100/45">
+                {freeAgents.length} available
+              </span>
+              <label className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-white/35">
+                Sort
+                <select
+                  value={freeAgentSort}
+                  onChange={(event) => setFreeAgentSort(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-slate-950 px-2.5 py-2 text-[10px] font-bold normal-case tracking-normal text-white/70 outline-none focus:border-emerald-300/30"
+                >
+                  <option value="smart">Best fit</option>
+                  <option value="projection">Projection</option>
+                  <option value="floor">Floor</option>
+                  <option value="ceiling">Ceiling</option>
+                  <option value="position">Position</option>
+                  <option value="name">Name</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {freeAgentFilters.map(
+              (position) => (
+                <button
+                  type="button"
+                  key={position}
+                  onClick={() => setFreeAgentFilter(position)}
+                  className={`rounded-full border px-3 py-1.5 text-[9px] font-black ${freeAgentFilter === position ? "border-emerald-300/35 bg-emerald-300/15 text-emerald-100" : "border-white/[0.08] text-white/35 hover:bg-white/[0.04]"}`}
+                >
+                  {position}
+                </button>
+              ),
+            )}
+          </div>
+          {selectedSlotDefinition ? (
+            <div className="mt-3 text-[10px] font-semibold text-cyan-100/55">
+              Showing compatible options for {selectedSlotDefinition.label};
+              choose “Swap” to place one in the plan.
+            </div>
+          ) : (
+            <div className="mt-3 text-[10px] text-white/30">
+              Select a starter or empty slot above to enable replacements.
+            </div>
+          )}
+          <div className="mt-3 space-y-2">
+            {visibleFreeAgents.map((player) => {
+              const compatible = Boolean(
+                selectedSlotDefinition &&
+                  playerFitsSlot(player, selectedSlotDefinition),
+              );
+              return (
+                <PlannerPlayerRow
+                  key={player.pid}
+                  player={player}
+                  week={week}
+                  currentWeek={currentWeek}
+                  metricMode={metricMode}
+                  eligible={compatible}
+                  actionLabel="Swap"
+                  onAction={
+                    compatible ? () => swapIntoSelectedSlot(player) : null
+                  }
+                  onExplain={
+                    compatible ? () => openExplanation(player) : null
+                  }
+                  onInspect={onPlayerSelect}
+                  freeAgent
+                  recentlyMoved={recentlyMoved === String(player.pid)}
+                />
+              );
+            })}
+            {!visibleFreeAgents.length ? (
+              <div className="rounded-2xl border border-white/[0.07] p-4 text-center text-xs text-white/35">
+                No eligible unrostered players were found for this filter and
+                week.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {explanation ? (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setExplanation(null); }}>
+          <section role="dialog" aria-modal="true" aria-label="Why this move?" className="max-h-[88vh] w-full overflow-y-auto rounded-t-[28px] border border-cyan-200/20 bg-[radial-gradient(circle_at_100%_0%,rgba(34,211,238,.14),transparent_36%),#071827] p-5 shadow-2xl sm:max-w-lg sm:rounded-[28px]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[.2em] text-cyan-100/50">Swap intelligence</div>
+                <h4 className="mt-1 text-xl font-black">Why this move?</h4>
+                <p className="mt-1 text-xs text-white/42">
+                  {explanation.outgoing?.name || "Empty slot"} → {explanation.incoming.name} · {explanation.slotLabel}
+                </p>
+              </div>
+              <button type="button" onClick={() => setExplanation(null)} className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-white/45 hover:bg-white/[0.05]" aria-label="Close explanation">×</button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                ["Projection", explanation.projectionDelta],
+                ["Floor", explanation.floorDelta],
+                ["Ceiling", explanation.ceilingDelta],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-3 text-center">
+                  <b className={`block text-lg ${Number(value) >= 0 ? "text-emerald-100" : "text-rose-100"}`}>{signedPoints(value)}</b>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-white/30">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 space-y-2 text-xs leading-5">
+              <div className="rounded-2xl bg-white/[0.035] p-3">
+                <b className="text-white/75">Workload &amp; availability</b>
+                <p className="mt-1 text-white/42">
+                  {explanation.incoming.injury
+                    ? `${explanation.incoming.name} carries a ${explanation.incoming.injury} designation, which lowers the modeled floor.`
+                    : explanation.outgoing?.injury
+                      ? `${explanation.outgoing.name} carries a ${explanation.outgoing.injury} designation; ${explanation.incoming.name} has no current Sleeper injury tag.`
+                      : `${explanation.incoming.name} has no current Sleeper injury designation. The projection already reflects the available weekly role evidence.`}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/[0.035] p-3">
+                <b className="text-white/75">Opponent &amp; conditions</b>
+                <p className="mt-1 text-white/42">
+                  {explanation.incoming.team || "NFL team TBD"}{plannerOpponent(explanation.incoming) ? ` vs ${plannerOpponent(explanation.incoming)}` : " · opponent TBD"} · {plannerGameLabel(explanation.incoming)}. {explanation.incoming.weather?.summary ? `${explanation.incoming.weather.summary}${explanation.incoming.weather.temperature != null ? `, ${explanation.incoming.weather.temperature}°` : ""}.` : "No stored weather report is attached to this game."}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/[0.035] p-3">
+                <b className="text-white/75">Rest-of-season impact</b>
+                <p className="mt-1 text-white/42">
+                  {explanation.incoming.name} remaining bye: {explanation.incomingByeWeeks.length ? `Week ${explanation.incomingByeWeeks.join(", ")}` : "none in the remaining window"}. {explanation.outgoing ? `${explanation.outgoing.name} remaining bye: ${explanation.outgoingByeWeeks.length ? `Week ${explanation.outgoingByeWeeks.join(", ")}` : "none in the remaining window"}.` : "This fills an empty starting slot."} Use the week selector to inspect each affected week.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button type="button" onClick={() => setExplanation(null)} className="flex-1 rounded-xl border border-white/10 px-4 py-3 text-xs font-black text-white/55">Keep looking</button>
+              <button type="button" onClick={() => swapIntoSelectedSlot(explanation.incoming)} className="flex-1 rounded-xl bg-cyan-300 px-4 py-3 text-xs font-black text-slate-950">Apply swap</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      <style jsx global>{`
+        @keyframes lineup-player-move {
+          0% { opacity: .35; transform: translateX(22px) scale(.985); }
+          60% { opacity: 1; transform: translateX(-3px) scale(1.005); }
+          100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+function TeamBox({
+  title,
+  res,
+  metricLabel,
+  enableSuggestions,
+  onPlayerSelect,
+}) {
   const suggestions = useMemo(() => {
     if (!enableSuggestions || !res) return {};
     return findCloseAlternatives(res.starters, res.bench, {
@@ -3324,16 +5430,24 @@ function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect })
         <div className="text-sm opacity-70">Pick an owner.</div>
       ) : (
         <>
-          <div className={`mb-3 grid gap-2 text-center ${metricLabel === "Value" ? "grid-cols-1" : "grid-cols-2"}`}>
-            {metricLabel !== "Value" ? <div className="rounded-lg bg-black/15 px-2 py-1.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
-                Live total
+          <div
+            className={`mb-3 grid gap-2 text-center ${metricLabel === "Value" ? "grid-cols-1" : "grid-cols-2"}`}
+          >
+            {metricLabel !== "Value" ? (
+              <div className="rounded-lg bg-black/15 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
+                  Live total
+                </div>
+                <b className="text-emerald-100">
+                  {formatFantasyPoints(res.liveScore)}
+                </b>
               </div>
-              <b className="text-emerald-100">{formatFantasyPoints(res.liveScore)}</b>
-            </div> : null}
+            ) : null}
             <div className="rounded-lg bg-black/15 px-2 py-1.5">
               <div className="text-[9px] font-semibold uppercase tracking-wide text-white/40">
-                {metricLabel === "Value" ? "Optimized lineup value" : "Projected total"}
+                {metricLabel === "Value"
+                  ? "Optimized lineup value"
+                  : "Projected total"}
               </div>
               <b className="text-cyan-100">
                 {formatFantasyPoints(res.projectedScore)}
@@ -3360,111 +5474,131 @@ function TeamBox({ title, res, metricLabel, enableSuggestions, onPlayerSelect })
     </div>
   );
 }
-function Section({ label, items, metricLabel, suggestions = {}, onPlayerSelect, collapsible = false }) {
+function Section({
+  label,
+  items,
+  metricLabel,
+  suggestions = {},
+  onPlayerSelect,
+  collapsible = false,
+}) {
   const table = (
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left opacity-70">
-            <th className="py-1">Pos</th>
-            <th className="py-1">Player</th>
-            <th className="py-1 text-right">
-              <span className="sm:hidden">{metricLabel === "Value" ? "Value" : "Live / Proj"}</span>
-              <span className="hidden sm:inline">{metricLabel === "Value" ? "Value" : "Points"}</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((x) => {
-            const alts = suggestions[x.pid] || [];
-            return (
-              <tr
-                key={x.pid}
-                role="button"
-                tabIndex={0}
-                onClick={() => onPlayerSelect?.(x)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onPlayerSelect?.(x);
-                  }
-                }}
-                className="cursor-pointer border-t border-white/10 align-top transition hover:bg-cyan-300/[0.045] focus:bg-cyan-300/[0.06] focus:outline-none"
-              >
-                <td className="py-1">{x.pos}</td>
-                <td className="py-1">
-                  <span className="font-semibold text-white/90">{x.name}</span>{" "}
-                  <span className="opacity-60 text-xs">({x.team})</span>
-                  {x.gameStarted && metricLabel !== "Value" ? (
-                    <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${x.gameCompleted ? "bg-white/[0.08] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}>
-                      {x.gameCompleted ? "Final" : "Live"}
-                    </span>
-                  ) : null}
-                  {x.injury || x.inactive || x.isOnBye ? (
-                    <span
-                      className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${x.isOnBye || x.inactive || ["OUT", "IR", "PUP", "SUSPENDED"].includes(x.injury) ? "bg-rose-300/12 text-rose-100" : x.injury === "DOUBTFUL" ? "bg-orange-300/12 text-orange-100" : "bg-amber-300/12 text-amber-100"}`}
-                      title="Sleeper player availability status used by the lineup optimizer"
-                    >
-                      {x.isOnBye
-                        ? "BYE"
-                        : x.inactive
-                          ? "INACTIVE"
-                          : x.injury}
-                    </span>
-                  ) : null}
-                  {alts.length > 0 && (
-                    <div className="mt-0.5 text-[11px] text-amber-300">
-                      Close call:&nbsp;
-                      {alts.map((a, i) => (
-                        <span key={a.pid}>
-                          {i > 0 ? ", " : ""}
-                          {a.name}{" "}
-                          {a.delta >= 0
-                            ? `(+${Math.round(a.delta)})`
-                            : `(${Math.round(a.delta)})`}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="min-w-[82px] py-1.5 text-right tabular-nums">
-                  {x.gameStarted && metricLabel !== "Value" ? (
-                    <div className="inline-flex flex-col items-end">
-                      <div className="whitespace-nowrap text-sm font-black">
-                        <span className={x.gameCompleted ? "text-white/75" : "text-emerald-100"}>
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left opacity-70">
+          <th className="py-1">Pos</th>
+          <th className="py-1">Player</th>
+          <th className="py-1 text-right">
+            <span className="sm:hidden">
+              {metricLabel === "Value" ? "Value" : "Live / Proj"}
+            </span>
+            <span className="hidden sm:inline">
+              {metricLabel === "Value" ? "Value" : "Points"}
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((x) => {
+          const alts = suggestions[x.pid] || [];
+          return (
+            <tr
+              key={x.pid}
+              role="button"
+              tabIndex={0}
+              onClick={() => onPlayerSelect?.(x)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onPlayerSelect?.(x);
+                }
+              }}
+              className="cursor-pointer border-t border-white/10 align-top transition hover:bg-cyan-300/[0.045] focus:bg-cyan-300/[0.06] focus:outline-none"
+            >
+              <td className="py-1">{x.pos}</td>
+              <td className="py-1">
+                <span className="font-semibold text-white/90">{x.name}</span>{" "}
+                <span className="opacity-60 text-xs">({x.team})</span>
+                {x.gameStarted && metricLabel !== "Value" ? (
+                  <span
+                    className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${x.gameCompleted ? "bg-white/[0.08] text-white/55" : "bg-emerald-300/10 text-emerald-100"}`}
+                  >
+                    {x.gameCompleted ? "Final" : "Live"}
+                  </span>
+                ) : null}
+                {x.injury || x.inactive || x.isOnBye ? (
+                  <span
+                    className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${x.isOnBye || x.inactive || ["OUT", "IR", "PUP", "SUSPENDED"].includes(x.injury) ? "bg-rose-300/12 text-rose-100" : x.injury === "DOUBTFUL" ? "bg-orange-300/12 text-orange-100" : "bg-amber-300/12 text-amber-100"}`}
+                    title="Sleeper player availability status used by the lineup optimizer"
+                  >
+                    {x.isOnBye ? "BYE" : x.inactive ? "INACTIVE" : x.injury}
+                  </span>
+                ) : null}
+                {alts.length > 0 && (
+                  <div className="mt-0.5 text-[11px] text-amber-300">
+                    Close call:&nbsp;
+                    {alts.map((a, i) => (
+                      <span key={a.pid}>
+                        {i > 0 ? ", " : ""}
+                        {a.name}{" "}
+                        {a.delta >= 0
+                          ? `(+${Math.round(a.delta)})`
+                          : `(${Math.round(a.delta)})`}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </td>
+              <td className="min-w-[82px] py-1.5 text-right tabular-nums">
+                {x.gameStarted && metricLabel !== "Value" ? (
+                  <div className="inline-flex flex-col items-end">
+                    <div className="whitespace-nowrap text-sm font-black">
+                      <span
+                        className={
+                          x.gameCompleted ? "text-white/75" : "text-emerald-100"
+                        }
+                      >
                         {formatFantasyPoints(x.livePoints ?? 0)}
-                        </span>
-                        <span className="mx-1 text-white/20">/</span>
-                        <span className="text-cyan-100/80">
-                          {formatFantasyPoints(x.frozenProj)}
-                        </span>
-                      </div>
-                      <span className="block text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
-                        {x.gameCompleted ? "Final" : "Live"} / Projected
                       </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex flex-col items-end">
-                      <b className="text-cyan-100/90">
+                      <span className="mx-1 text-white/20">/</span>
+                      <span className="text-cyan-100/80">
                         {formatFantasyPoints(x.frozenProj)}
-                      </b>
-                      <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
-                        {metricLabel === "Value" ? "Redraft value" : "Projected"}
                       </span>
                     </div>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    <span className="block text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
+                      {x.gameCompleted ? "Final" : "Live"} / Projected
+                    </span>
+                  </div>
+                ) : (
+                  <div className="inline-flex flex-col items-end">
+                    <b className="text-cyan-100/90">
+                      {formatFantasyPoints(x.frozenProj)}
+                    </b>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30">
+                      {metricLabel === "Value" ? "Redraft value" : "Projected"}
+                    </span>
+                  </div>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
   if (collapsible) {
     return (
       <details className="group mb-3 rounded-xl border border-white/[0.07] bg-black/10">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-white/75">
-          <span>{label} <span className="text-white/35">({items.length})</span></span>
-          <span className="text-white/35 transition group-open:rotate-180" aria-hidden="true">⌄</span>
+          <span>
+            {label} <span className="text-white/35">({items.length})</span>
+          </span>
+          <span
+            className="text-white/35 transition group-open:rotate-180"
+            aria-hidden="true"
+          >
+            ⌄
+          </span>
         </summary>
         <div className="border-t border-white/[0.07] px-3 pb-2">{table}</div>
       </details>

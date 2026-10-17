@@ -9,6 +9,8 @@ export default function TradeSide({
   suggestedPlayers,
   addPlayerToSide,
 }) {
+  const formatValue = (value) =>
+    Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
   return (
     <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
@@ -34,7 +36,7 @@ export default function TradeSide({
                   <div>
                     <span className="font-semibold">{p.full_name}</span>
                     <span className="block text-gray-400 text-sm">
-                      {p.position} | {p.team} | {getPlayerValue(p)}
+                      {p.position} | {p.team} | {formatValue(getPlayerValue(p))}
                     </span>
                   </div>
                 </div>
@@ -74,7 +76,7 @@ export default function TradeSide({
                   />
                   <div className="ml-2 flex-1">
                     <p className="text-sm font-semibold">{p.full_name}</p>
-                    <p className="text-gray-400 text-xs">{getPlayerValue(p)}</p>
+                    <p className="text-gray-400 text-xs">{formatValue(getPlayerValue(p))}</p>
                   </div>
                   <button
                     onClick={() => addPlayerToSide(p)}

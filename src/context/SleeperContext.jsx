@@ -4,7 +4,7 @@ import { createContext, useRef, useContext, useState, useEffect, useMemo, useCal
 import { get, set } from "idb-keyval";
 import { makeGetPlayerValue } from "../lib/values";
 import { isWeeklyProjectionFeed, projectionPoints, projectionWeeks, resolveWeeklyProjection } from "../lib/projectionHorizon";
-import { draftSharksStatsToSleeper, fantasyProsStatsToSleeper, scoreSleeperStats } from "../lib/sleeperScoring";
+import { draftSharksStatsToSleeper, fantasyProsStatsToSleeper, fantasySharksStatsToSleeper, scoreSleeperStats } from "../lib/sleeperScoring";
 import { PROJECTION_DATA_SEASON, PROJ_ARSENAL_JSON_URL, PROJ_ARSENAL_MODEL_JSON_URL, PROJ_CBS_JSON_URL, PROJ_DRAFTSHARKS_JSON_URL, PROJ_ESPN_JSON_URL, PROJ_FANTASYPROS_JSON_URL, PROJ_FANTASYSHARKS_JSON_URL, PROJ_JSON_URL, PROJ_SLEEPER_JSON_URL } from "../lib/projectionSeason";
 import {
   formatPickLabel,
@@ -1182,8 +1182,10 @@ export const SleeperProvider = ({ children }) => {
         projectionRow: requestedRow,
       };
     }
-    if (src === "FANTASYPROS" && options.scoringSettings && best?.stats) {
-      const seasonStatLine = fantasyProsStatsToSleeper(best.stats);
+    if (["FANTASYPROS", "FANTASYSHARKS"].includes(src) && options.scoringSettings && best?.stats) {
+      const seasonStatLine = src === "FANTASYPROS"
+        ? fantasyProsStatsToSleeper(best.stats)
+        : fantasySharksStatsToSleeper(best.stats);
       const rescoredSeason = scoreSleeperStats(
         seasonStatLine,
         options.scoringSettings,
@@ -1193,10 +1195,11 @@ export const SleeperProvider = ({ children }) => {
       if (byeWeeks.map(Number).includes(Number(week))) {
         return { points: 0, basis: "bye" };
       }
-      const games = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      const scheduledGames = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      const games = safeNum(best.stats.games_played ?? best.stats.games ?? best.stats.gp) || scheduledGames;
       return {
         points: rescoredSeason / Math.max(1, games),
-        basis: "fantasypros_league_scoring_estimate",
+        basis: `${src.toLowerCase()}_league_scoring_estimate`,
         statLine: Object.fromEntries(
           Object.entries(seasonStatLine).map(([key, value]) => [
             key,
@@ -1214,7 +1217,8 @@ export const SleeperProvider = ({ children }) => {
       );
       const byeWeeks = options.byeMap?.by_team?.[lookup.team] || data?.byes?.[lookup.team] || [];
       if (byeWeeks.map(Number).includes(Number(week))) return { points: 0, basis: "bye" };
-      const games = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      const scheduledGames = byeWeeks.length ? 18 - byeWeeks.length : 17;
+      const games = safeNum(best.stats.games_played ?? best.stats.games ?? best.stats.gp) || scheduledGames;
       return {
         points: rescoredSeason / Math.max(1, games),
         basis: "draftsharks_league_scoring_estimate",
