@@ -377,8 +377,18 @@ function AdvancedAccuracyPanel({ summary, metrics, calibration }) {
 
 function StatComponentAccuracy({ rows = [] }) {
   const components = useMemo(() => {
-    const fields = ["pass_att", "pass_yd", "pass_td", "rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd", "rec_td", "fga", "fgm"];
-    return fields.flatMap((field) => {
+    const fields = [
+      ["pass_att", "Pass attempts", "Passing"], ["pass_cmp", "Completions", "Passing"],
+      ["pass_yd", "Passing yards", "Passing"], ["pass_td", "Passing TDs", "Passing"],
+      ["pass_int", "Interceptions", "Passing"], ["rush_att", "Rush attempts", "Rushing"],
+      ["rush_yd", "Rushing yards", "Rushing"], ["rush_td", "Rushing TDs", "Rushing"],
+      ["rec_tgt", "Targets", "Receiving"], ["rec", "Receptions", "Receiving"],
+      ["rec_yd", "Receiving yards", "Receiving"], ["rec_td", "Receiving TDs", "Receiving"],
+      ["fum_lost", "Fumbles lost", "Ball security"], ["fga", "FG attempts", "Kicking"],
+      ["fgm", "Field goals made", "Kicking"], ["xpa", "XP attempts", "Kicking"],
+      ["xpm", "Extra points made", "Kicking"], ["kick_pts", "Kicking points", "Kicking"],
+    ];
+    return fields.flatMap(([field, label, group]) => {
       const eligible = rows.flatMap((row) => {
         const projected = row.stat_line?.[field];
         const actual = row.actual_stat_line?.[field];
@@ -386,20 +396,31 @@ function StatComponentAccuracy({ rows = [] }) {
           ? [{ projection: Number(projected), actual: Number(actual) }]
           : [];
       });
+      const activity = eligible.reduce((sum, row) => sum + Math.abs(row.actual) + Math.abs(row.projection), 0);
+      if (!eligible.length || activity === 0) return [];
       const metrics = accuracyMetricsFor(eligible);
-      return metrics ? [{ field, ...metrics }] : [];
+      const actualMean = eligible.reduce((sum, row) => sum + Math.abs(row.actual), 0) / eligible.length;
+      return metrics ? [{ field, label, group, actual_mean: actualMean, normalized_mae: metrics.mae / Math.max(0.1, actualMean), ...metrics }] : [];
     });
   }, [rows]);
   if (!components.length) return null;
   return (
     <details className="mt-4 overflow-hidden rounded-2xl border border-amber-300/10 bg-amber-300/[0.025]">
-      <summary className="cursor-pointer list-none px-4 py-3 text-xs font-black text-amber-100">Workload and stat-component error</summary>
+      <summary className="cursor-pointer list-none px-4 py-3 text-xs font-black text-amber-100">Every projected stat: component accuracy</summary>
+      <div className="border-t border-white/[0.06] px-4 pt-4 text-[10px] leading-5 text-white/45">
+        Raw MAE stays in the stat&apos;s natural unit. <DelayedStatHint hint="Normalized MAE divides the average miss by the average actual result for that stat, making differently scaled categories easier to compare. Lower is better, but rare stats such as touchdowns remain naturally noisy." term="Normalized MAE">Normalized MAE</DelayedStatHint> makes yards, attempts, receptions, and touchdowns easier to compare; it is diagnostic evidence, not a direct fantasy-point weight.
+      </div>
       <div className="grid gap-2 border-t border-white/[0.06] p-4 sm:grid-cols-2 lg:grid-cols-4">
         {components.map((row) => (
           <div key={row.field} className="rounded-xl bg-black/20 p-3">
-            <div className="text-[9px] uppercase tracking-wider text-white/35">{row.field.replaceAll("_", " ")}</div>
+            <div className="text-[8px] uppercase tracking-wider text-white/25">{row.group}</div>
+            <div className="mt-0.5 text-[10px] font-black text-white/55">{row.label}</div>
             <div className="mt-1 text-lg font-black text-amber-100">{number(row.mae).toFixed(2)} MAE</div>
-            <div className="text-[9px] text-white/30">{row.sample} matched games · bias {number(row.bias).toFixed(2)}</div>
+            <div className="mt-1 flex flex-wrap gap-x-3 text-[9px] text-white/35">
+              <span><DelayedStatHint hint="The component MAE divided by this stat's average actual value. Lower is better; use this for scale-aware comparisons between different stats." term="Normalized MAE">nMAE</DelayedStatHint> {(number(row.normalized_mae) * 100).toFixed(0)}%</span>
+              <span><DelayedStatHint term="Bias">bias</DelayedStatHint> {number(row.bias).toFixed(2)}</span>
+            </div>
+            <div className="mt-1 text-[8px] text-white/25">{row.sample} matched player-games · actual avg {number(row.actual_mean).toFixed(2)}</div>
           </div>
         ))}
       </div>
@@ -632,6 +653,7 @@ function ProjectionSourceComparison({
 }) {
   const sources = ACCURACY_SOURCES;
   const [sortSource, setSortSource] = useState("The Fantasy Arsenal");
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const rows = useMemo(() => {
     const grouped = new Map();
     results
@@ -739,9 +761,35 @@ function ProjectionSourceComparison({
     ],
     [rows],
   );
+  const selectedPlayerRecords = useMemo(() => {
+    if (!selectedPlayer) return [];
+    const grouped = new Map();
+    results
+      .filter((row) => !modelBuildId || row.model_build_id === modelBuildId)
+      .filter((row) =>
+        selectedPlayer.player_id && row.player_id
+          ? String(row.player_id) === String(selectedPlayer.player_id)
+          : normalize(row.name) === normalize(selectedPlayer.name) &&
+            row.position === selectedPlayer.position,
+      )
+      .forEach((row) => {
+        const key = String(row.week);
+        const current = grouped.get(key) || {
+          week: number(row.week),
+          actual: row.actual,
+          team: row.team,
+          opponent: row.opponent,
+          sources: {},
+        };
+        current.sources[row.source] = row;
+        grouped.set(key, current);
+      });
+    return [...grouped.values()].sort((left, right) => left.week - right.week);
+  }, [modelBuildId, results, selectedPlayer]);
 
   if (!results.length) return null;
   return (
+    <>
     <details open className="mt-4 overflow-hidden rounded-3xl border border-cyan-300/25 bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,.12),transparent_35%),linear-gradient(145deg,rgba(15,23,42,.9),rgba(2,6,23,.88))] shadow-[0_18px_55px_rgba(8,145,178,.08)]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-black text-violet-100">
         <span>Arsenal vs other projection sources</span>
@@ -826,6 +874,7 @@ function ProjectionSourceComparison({
           <table className="w-full min-w-[720px] text-xs">
             <thead className="sticky top-0 z-10 bg-slate-950/95 text-[9px] uppercase tracking-wider text-white/40 backdrop-blur">
               <tr>
+                <th className="px-3 py-2.5 text-left">Week</th>
                 <th className="px-3 py-2.5 text-left">Player</th>
                 <th className="px-3 py-2.5 text-right">Actual</th>
                 {sources.map((source) => (
@@ -836,7 +885,21 @@ function ProjectionSourceComparison({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.key} className="border-t border-white/[0.05] odd:bg-white/[0.015]">
-                  <td className="px-3 py-2.5"><b className="text-white/75">{row.name}</b><div className="mt-0.5 text-[9px] text-white/28">{row.position} · {row.team} vs {row.opponent}</div></td>
+                  <td className="px-3 py-2.5 font-black text-cyan-100/75">W{number(row.week)}</td>
+                  <td className="px-3 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlayer(row)}
+                      className="group flex items-center gap-2 text-left"
+                      aria-label={`Open all projection records for ${row.name}`}
+                    >
+                      <AvatarImage name={row.name} playerId={row.player_id} size={30} className="h-[30px] w-[30px] rounded-full bg-slate-800 object-cover" />
+                      <span>
+                        <b className="text-white/75 underline-offset-2 group-hover:text-cyan-100 group-hover:underline">{row.name}</b>
+                        <span className="mt-0.5 block text-[9px] text-white/28">{row.position} · {row.team} vs {row.opponent}</span>
+                      </span>
+                    </button>
+                  </td>
                   <td className="px-3 py-2.5 text-right font-black text-white/80">{number(row.actual).toFixed(2)}</td>
                   {sources.map((source) => {
                     const result = row.sources[source];
@@ -853,6 +916,51 @@ function ProjectionSourceComparison({
         </div>
       </div>
     </details>
+    {selectedPlayer ? (
+      <div
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/80 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSelectedPlayer(null);
+        }}
+      >
+        <section role="dialog" aria-modal="true" aria-label={`${selectedPlayer.name} projection history`} className="max-h-[92vh] w-full overflow-hidden rounded-t-[28px] border border-cyan-300/15 bg-slate-950 shadow-2xl sm:max-w-4xl sm:rounded-[28px]">
+          <div className="flex items-center gap-3 border-b border-white/10 bg-slate-950/95 p-4">
+            <AvatarImage name={selectedPlayer.name} playerId={selectedPlayer.player_id} size={44} className="h-11 w-11 rounded-full bg-slate-800 object-cover" />
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-lg font-black text-white">{selectedPlayer.name}</h3>
+              <p className="text-[10px] text-white/40">Every frozen PPR projection record currently available</p>
+            </div>
+            <button type="button" onClick={() => setSelectedPlayer(null)} className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.06] text-lg text-white/60" aria-label="Close player projection history">×</button>
+          </div>
+          <div className="max-h-[calc(92vh-77px)] overflow-auto p-4">
+            <table className="w-full min-w-[680px] text-xs">
+              <thead className="sticky top-0 z-10 bg-slate-950 text-[9px] uppercase tracking-wider text-white/40">
+                <tr>
+                  <th className="px-3 py-2.5 text-left">Week</th>
+                  <th className="px-3 py-2.5 text-left">Matchup</th>
+                  <th className="px-3 py-2.5 text-right">Actual</th>
+                  {sources.map((source) => <th key={source} className="px-3 py-2.5 text-right">{source === "The Fantasy Arsenal" ? "Arsenal" : source}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPlayerRecords.map((record) => (
+                  <tr key={record.week} className="border-t border-white/[0.06] odd:bg-white/[0.015]">
+                    <td className="px-3 py-3 font-black text-cyan-100">Week {record.week}</td>
+                    <td className="px-3 py-3 text-white/45">{record.team} vs {record.opponent || "—"}</td>
+                    <td className="px-3 py-3 text-right font-black text-white/80">{number(record.actual).toFixed(2)}</td>
+                    {sources.map((source) => {
+                      const result = record.sources[source];
+                      return <td key={source} className="px-3 py-3 text-right">{result ? <><b className="block text-cyan-100">{number(result.projection).toFixed(2)}</b><span className={`text-[9px] ${Math.abs(number(result.error)) > 5 ? "text-rose-100" : "text-white/30"}`}>{number(result.error) > 0 ? "+" : ""}{number(result.error).toFixed(2)}</span></> : <span className="text-white/20">—</span>}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    ) : null}
+    </>
   );
 }
 
@@ -1145,7 +1253,10 @@ export default function StatProjectionLab({
   const selectedWeekIndex = seasonSeries.findIndex(
     (row) => number(row.week) === number(week),
   );
-  const selectWeek = (value) => setWeek(number(value));
+  const selectWeek = (value) => {
+    const nextWeek = number(value);
+    if (nextWeek >= 1 && nextWeek <= 18) setWeek(nextWeek);
+  };
   const moveSelectedWeek = (direction) => {
     if (!seasonSeries.length) return;
     const current = selectedWeekIndex >= 0 ? selectedWeekIndex : 0;
@@ -1602,9 +1713,9 @@ export default function StatProjectionLab({
                   <button
                     type="button"
                     key={row.week}
-                    onPointerUp={() => {
-                      selectWeek(row.week);
-                    }}
+                    onClick={() => selectWeek(row.week)}
+                    aria-pressed={row.week === week}
+                    aria-label={`Select Week ${row.week}${row.completed ? ", final result" : ", projected"}`}
                     className={`min-w-[58px] touch-manipulation snap-start rounded-xl px-2 py-2 text-center ${row.week === week ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/20" : "bg-white/[0.035] text-white/40"}`}
                   >
                     <span className="block text-[9px] font-black">W{row.week}</span>
@@ -1683,14 +1794,14 @@ export default function StatProjectionLab({
                       <button
                         type="button"
                         key={row.week}
-                        onPointerUp={() => {
-                          selectWeek(row.week);
-                        }}
-                        className="flex min-w-0 touch-manipulation flex-1 flex-col items-center justify-end gap-1"
-                        title={`Week ${row.week} ${row.opponent}: ${row.projection.toFixed(1)}`}
+                        onClick={() => selectWeek(row.week)}
+                        aria-pressed={active}
+                        aria-label={`Select Week ${row.week}, ${row.completed ? "final" : "projected"} ${row.projection.toFixed(1)} points against ${row.opponent}`}
+                        className={`group flex min-w-0 touch-manipulation flex-1 flex-col items-center justify-end gap-1 rounded-t-lg outline-none transition focus-visible:ring-2 focus-visible:ring-cyan-300/80 ${active ? "bg-amber-300/[0.06]" : "hover:bg-white/[0.035]"}`}
+                        title={`Select Week ${row.week} · ${row.completed ? "Final" : "Projected"} ${row.projection.toFixed(1)} vs ${row.opponent}`}
                       >
                         <div
-                          className={`w-full rounded-t ${active ? "bg-amber-300" : row.completed ? "bg-slate-500/60" : "bg-gradient-to-t from-cyan-400/55 to-violet-300/70"}`}
+                          className={`pointer-events-none w-full rounded-t transition-[filter,opacity] group-hover:brightness-125 ${active ? "bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,.3)]" : row.completed ? "bg-slate-500/60" : "bg-gradient-to-t from-cyan-400/55 to-violet-300/70"}`}
                           style={{
                             height: `${Math.max(4, (row.projection / maxProjection) * 145)}px`,
                           }}
@@ -1698,7 +1809,7 @@ export default function StatProjectionLab({
                         <span
                           className={`text-[8px] ${active ? "font-black text-amber-100" : "text-white/25"}`}
                         >
-                          {row.week}
+                          W{row.week}
                         </span>
                       </button>
                     );

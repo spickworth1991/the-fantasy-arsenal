@@ -34,11 +34,14 @@ backup.zip
 !/scripts/buildStatProjectionModel.js
 !/scripts/evaluateStatProjectionModel.js
 !/scripts/evaluateProjectionChallenger.js
+!/scripts/backfillProjectionChallenger.mjs
 !/scripts/promoteProjectionChallenger.js
 !/scripts/backtest-stat-model.mjs
 !/scripts/replayStatProjectionModel.mjs
+!/scripts/replayCurrentSeasonAdaptation.mjs
 !/scripts/testProjectionReplay.mjs
 !/scripts/testProjectionShadowArms.mjs
+!/scripts/testProjectionContracts.mjs
 !/scripts/auditProjectionPipeline.js
 !/scripts/capturePreKickoffSnapshot.js
 !/scripts/updateAdvancedStats.js
@@ -56,4 +59,6 @@ backup.zip
 !/scripts/lib/projectionFinality.mjs
 !/scripts/lib/trainedProjectionModel.mjs
 !/scripts/lib/projectionShadowArms.mjs
+!/scripts/lib/canonicalFileHash.mjs
+/data/model-challengers/in-season-adaptation-v1/
 /docs/

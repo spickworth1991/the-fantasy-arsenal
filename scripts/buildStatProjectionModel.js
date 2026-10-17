@@ -5,6 +5,12 @@ import { fileURLToPath } from "url";
 import { finalScheduleWeeks } from "./lib/projectionFinality.mjs";
 import { trainedAdjustmentFromCalibration } from "./lib/trainedProjectionModel.mjs";
 import { buildProjectionShadowArms } from "./lib/projectionShadowArms.mjs";
+import { normalizeProjectedStatLine } from "./lib/projectionContracts.mjs";
+import {
+  canonicalFileSha256,
+  canonicalText,
+  frozenTextHashMatches,
+} from "./lib/canonicalFileHash.mjs";
 
 const scriptFile = fileURLToPath(import.meta.url);
 const root = path.join(path.dirname(scriptFile), "..");
@@ -216,7 +222,10 @@ const fingerprintFile = (file) => {
   return {
     path: path.relative(root, file).replace(/\\/g, "/"),
     bytes: raw.length,
-    sha256: crypto.createHash("sha256").update(raw).digest("hex"),
+    sha256: crypto
+      .createHash("sha256")
+      .update(canonicalText(raw.toString("utf8")))
+      .digest("hex"),
     updated,
   };
 };
@@ -591,16 +600,19 @@ function projectionStatIndexes(resolveCanonicalKey) {
       name: "FantasyPros",
       weight: 1,
       file: `projections_fantasypros_${season}.json`,
+      projectionContract: "full_season",
     },
     {
       name: "DraftSharks",
       weight: 1,
       file: `projections_draftsharks_${season}.json`,
+      projectionContract: "rest_of_season",
     },
     {
       name: "FantasySharks",
       weight: 0.75,
       file: `projections_fantasysharks_${season}.json`,
+      projectionContract: "full_season",
     },
   ];
   return sources
@@ -612,6 +624,8 @@ function projectionStatIndexes(resolveCanonicalKey) {
       return {
         ...source,
         updated: payload?.updated || null,
+        projectionContract:
+          payload?.projection_contract || source.projectionContract,
         index: new Map(
           rows
             .filter((row) => playerKey(row).split("|")[0])
@@ -672,18 +686,32 @@ function weightedConsensusDetails(values) {
   };
 }
 
-function externalStatPrior(player, sourceIndexes, history) {
+function externalStatPrior(player, sourceIndexes, history, context = {}) {
   const position = String(player?.position || "").toUpperCase();
   const rows = sourceIndexes
     .map((source) => {
       const row = source.index.get(playerKey(player));
       if (!row) return null;
       const rawLine = projectionLine(source.name, row);
-      const completedLine = inferMissingVolume(rawLine, history, position);
+      const normalizedLine = normalizeProjectedStatLine({
+        rawLine,
+        contract: source.projectionContract,
+        actualLine: context.actualLine,
+        remainingGames: context.remainingGames,
+        activeGames: context.activeWeeks,
+        fields: statFields,
+      });
+      const completedLine = inferMissingVolume(
+        normalizedLine,
+        history,
+        position,
+      );
       return {
         source: source.name,
         weight: source.weight,
+        projectionContract: source.projectionContract,
         rawLine,
+        normalizedLine,
         presentFields: new Set(
           Object.entries(completedLine)
             .filter(([, value]) => Number.isFinite(Number(value)))
@@ -722,6 +750,15 @@ function externalStatPrior(player, sourceIndexes, history) {
     adaptive_weights: weights,
     source_lines: Object.fromEntries(
       rows.map((row) => [row.source, row.rawLine]),
+    ),
+    normalized_source_lines: Object.fromEntries(
+      rows.map((row) => [
+        row.source,
+        {
+          projection_contract: row.projectionContract,
+          line: row.normalizedLine,
+        },
+      ]),
     ),
   };
 }
@@ -2388,27 +2425,21 @@ const shadowImplementationFile = path.join(
 if (shadowDefinitionFile && !shadowDefinition)
   throw new Error(`Unreadable shadow definition: ${shadowDefinitionFile}`);
 if (shadowDefinition?.base_calibration_sha256) {
-  const baseCalibrationSha = crypto
-    .createHash("sha256")
-    .update(fs.readFileSync(trainedCalibrationFile))
-    .digest("hex");
-  if (baseCalibrationSha !== shadowDefinition.base_calibration_sha256)
+  const baseCalibrationSha = canonicalFileSha256(trainedCalibrationFile);
+  if (!frozenTextHashMatches(trainedCalibrationFile, shadowDefinition.base_calibration_sha256))
     throw new Error(
       `Shadow definition ${shadowDefinition.version || challengerName} requires base calibration ${shadowDefinition.base_calibration_sha256}, but ${baseCalibrationSha} is loaded. Freeze a new shadow definition before capturing it.`,
     );
 }
 if (shadowDefinition?.implementation_sha256) {
-  const implementationSha = crypto
-    .createHash("sha256")
-    .update(fs.readFileSync(shadowImplementationFile))
-    .digest("hex");
-  if (implementationSha !== shadowDefinition.implementation_sha256)
+  const implementationSha = canonicalFileSha256(shadowImplementationFile);
+  if (!frozenTextHashMatches(shadowImplementationFile, shadowDefinition.implementation_sha256))
     throw new Error(
       `Shadow implementation changed (${implementationSha}); freeze and audit a new definition before capturing it.`,
     );
 }
 const calibrationBuildHash = fs.existsSync(trainedCalibrationFile)
-  ? crypto.createHash("sha256").update(fs.readFileSync(trainedCalibrationFile)).digest("hex").slice(0, 8)
+  ? canonicalFileSha256(trainedCalibrationFile).slice(0, 8)
   : "uncalibrated";
 MODEL_BUILD_ID = `${MODEL_VERSION}.${MODEL_BUILD_HASH}.${calibrationBuildHash}`;
 const teamUsageEvidence = buildTeamUsageEvidence(evidence);
@@ -2501,8 +2532,22 @@ const modeledPlayers = base.rows
     const team = normalizeTeam(player.team);
     const key = playerKey(player);
     const history = aggregatePlayerHistory(key, evidence);
+    const currentPlayerHistory = currentEvidence?.playerHistory.get(key);
+    const activeWeeks = Array.from({ length: 18 }, (_, index) => index + 1)
+      .map((week) => opponentByWeek.get(`${week}:${team}`))
+      .filter(Boolean).length;
+    const remainingGames = Array.from(
+      { length: 18 },
+      (_, index) => index + 1,
+    ).filter(
+      (week) => opponentByWeek.has(`${week}:${team}`) && !finalWeeks.has(week),
+    ).length;
     if (history.games) historyPlayers += 1;
-    const prior = externalStatPrior(player, sourceIndexes, history);
+    const prior = externalStatPrior(player, sourceIndexes, history, {
+      actualLine: currentPlayerHistory?.totals || {},
+      remainingGames,
+      activeWeeks,
+    });
     let priorLine = prior.line;
     let priorType = "multi-source projected stat consensus";
     const scoreablePrior = scoreLine(priorLine, 1, position) > 0;
@@ -2529,16 +2574,12 @@ const modeledPlayers = base.rows
         usedStatSources.length,
         usedStatSources.length === 0,
       );
-    const activeWeeks = Array.from({ length: 18 }, (_, index) => index + 1)
-      .map((week) => opponentByWeek.get(`${week}:${team}`))
-      .filter(Boolean).length;
     const baselineWeekly = Object.fromEntries(
       statFields.map((field) => [
         field,
         num(seasonLine[field]) / Math.max(1, activeWeeks),
       ]),
     );
-    const currentPlayerHistory = currentEvidence?.playerHistory.get(key);
     const volatility = playerVolatilityProfile(key, evidence);
     const learnedRoleFeatures = productionRoleFeatures(
       key,
@@ -2562,12 +2603,6 @@ const modeledPlayers = base.rows
     const actualByWeek = new Map(
       (currentPlayerHistory?.weekly || []).map((row) => [row.week, row]),
     );
-    const remainingGames = Array.from(
-      { length: 18 },
-      (_, index) => index + 1,
-    ).filter(
-      (week) => opponentByWeek.has(`${week}:${team}`) && !finalWeeks.has(week),
-    ).length;
     const remainingLine = guardStatRates(
       {
         games: Math.max(1, remainingGames),
@@ -3022,7 +3057,13 @@ const modeledPlayers = base.rows
         ignored_sources:
           prior.sources.length && !scoreablePrior ? prior.sources : [],
         field_coverage: prior.coverage,
-        weighting: "adaptive field-level agreement weighting",
+        projection_contracts: Object.fromEntries(
+          Object.entries(prior.normalized_source_lines || {}).map(
+            ([source, row]) => [source, row.projection_contract],
+          ),
+        ),
+        weighting:
+          "contract-normalized remaining-game pace with adaptive field-level agreement weighting",
       },
       regression,
       volatility: {
@@ -3260,6 +3301,7 @@ const output = {
       source: source.name,
       players: source.index.size,
       updated: source.updated,
+      projection_contract: source.projectionContract,
     })),
     advanced_context_seasons: evidence.filter(
       (row) => num(row.advancedCoverage?.team_weeks) > 0,
@@ -3338,6 +3380,9 @@ if (challengerName) {
       team: player.team,
       position: player.position,
       depth_chart_order: player.depth_chart_order,
+      completed_games: player.completed_games,
+      actual_stat_line: player.actual_stat_line,
+      learned_role: player.learned_role,
       forecast: player.weeks.find((row) => Number(row.week) === Number(challengerWeek)) || null,
     }))
     .filter((player) => {

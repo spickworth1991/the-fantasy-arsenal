@@ -20,6 +20,163 @@ function scaleProjections(projections, factor) {
   );
 }
 
+function scoreStatLine(line, scoring) {
+  const receptionPoints = scoring === "ppr" ? 1 : scoring === "half" ? 0.5 : 0;
+  return (
+    finite(line?.pass_yd) * 0.04 +
+    finite(line?.pass_td) * 4 -
+    finite(line?.pass_int) * 2 +
+    finite(line?.rush_yd) * 0.1 +
+    finite(line?.rush_td) * 6 +
+    finite(line?.rec_yd) * 0.1 +
+    finite(line?.rec_td) * 6 +
+    finite(line?.rec) * receptionPoints -
+    finite(line?.fum_lost) * 2
+  );
+}
+
+const adaptationFields = {
+  QB: {
+    volume: ["pass_att", "rush_att"],
+    rates: [
+      ["pass_cmp", "pass_att"],
+      ["pass_yd", "pass_att"],
+      ["pass_td", "pass_att"],
+      ["pass_int", "pass_att"],
+      ["rush_yd", "rush_att"],
+      ["rush_td", "rush_att"],
+    ],
+  },
+  RB: {
+    volume: ["rush_att", "rec_tgt"],
+    rates: [
+      ["rush_yd", "rush_att"],
+      ["rush_td", "rush_att"],
+      ["rec", "rec_tgt"],
+      ["rec_yd", "rec_tgt"],
+      ["rec_td", "rec_tgt"],
+    ],
+  },
+  WR: {
+    volume: ["rush_att", "rec_tgt"],
+    rates: [
+      ["rush_yd", "rush_att"],
+      ["rush_td", "rush_att"],
+      ["rec", "rec_tgt"],
+      ["rec_yd", "rec_tgt"],
+      ["rec_td", "rec_tgt"],
+    ],
+  },
+  TE: {
+    volume: ["rec_tgt"],
+    rates: [
+      ["rec", "rec_tgt"],
+      ["rec_yd", "rec_tgt"],
+      ["rec_td", "rec_tgt"],
+    ],
+  },
+};
+
+function adaptCurrentSeasonRole(player, settings = {}) {
+  const incumbent = { ...(player.forecast?.projections || {}) };
+  const fields = adaptationFields[player.position];
+  const games = finite(player.completed_games);
+  const minimumGames = finite(settings.minimum_games, 3);
+  const source = player.forecast?.stat_line || {};
+  const actual = player.actual_stat_line || {};
+  if (
+    settings.enabled === false ||
+    !fields ||
+    games < minimumGames ||
+    isUnavailableForPlay(player)
+  ) {
+    return {
+      projections: incumbent,
+      context: {
+        triggered: false,
+        completed_games: games,
+        reason: settings.enabled === false
+          ? "position_disabled_by_validation"
+          : !fields
+          ? "unsupported_position"
+          : games < minimumGames
+            ? "insufficient_current_season_games"
+            : "unavailable",
+      },
+    };
+  }
+
+  const next = { ...source };
+  const volumeReliability = games / (games + finite(settings.volume_prior_games, 4));
+  const efficiencyReliability = games / (games + finite(settings.efficiency_prior_games, 16));
+  const volumeStrength = finite(
+    settings.volume_strength ?? settings.application_strength,
+    1,
+  );
+  const efficiencyStrength = finite(
+    settings.efficiency_strength ?? settings.application_strength,
+    1,
+  );
+  const maximumShift = finite(settings.maximum_field_shift, 0.3);
+  const fieldFactors = {};
+
+  for (const field of fields.volume) {
+    const baseline = finite(source[field]);
+    const observed = finite(actual[field]) / Math.max(1, games);
+    if (baseline <= 0 || observed < 0) continue;
+    const rawRatio = observed / Math.max(0.01, baseline);
+    const factor = clamp(
+      1 + (rawRatio - 1) * volumeReliability * volumeStrength,
+      1 - maximumShift,
+      1 + maximumShift,
+    );
+    next[field] = baseline * factor;
+    fieldFactors[field] = round(factor, 5);
+  }
+
+  for (const [numerator, denominator] of fields.rates) {
+    const baselineDenominator = finite(source[denominator]);
+    const actualDenominator = finite(actual[denominator]);
+    const baselineRate = finite(source[numerator]) / Math.max(0.01, baselineDenominator);
+    const actualRate = finite(actual[numerator]) / Math.max(0.01, actualDenominator);
+    if (baselineDenominator <= 0 || actualDenominator <= 0 || baselineRate <= 0) continue;
+    const maximumRateShift = Math.min(maximumShift, finite(settings.maximum_rate_shift, 0.16));
+    const rateFactor = clamp(
+      1 +
+        (actualRate / baselineRate - 1) *
+          efficiencyReliability *
+          efficiencyStrength,
+      1 - maximumRateShift,
+      1 + maximumRateShift,
+    );
+    next[numerator] = finite(next[denominator]) * baselineRate * rateFactor;
+    fieldFactors[`${numerator}_per_${denominator}`] = round(rateFactor, 5);
+  }
+
+  next.pass_cmp = Math.min(finite(next.pass_cmp), finite(next.pass_att));
+  next.rec = Math.min(finite(next.rec), finite(next.rec_tgt));
+  const projections = Object.fromEntries(
+    ["ppr", "half", "std"].map((format) => [
+      format,
+      round(Math.max(0, scoreStatLine(next, format)), 3),
+    ]),
+  );
+  const factor = finite(incumbent.ppr)
+    ? finite(projections.ppr) / finite(incumbent.ppr)
+    : 1;
+  return {
+    projections,
+    context: {
+      triggered: Object.values(fieldFactors).some((value) => Math.abs(value - 1) >= 0.005),
+      completed_games: games,
+      factor: round(factor, 5),
+      volume_reliability: round(volumeReliability, 5),
+      efficiency_reliability: round(efficiencyReliability, 5),
+      field_factors: fieldFactors,
+    },
+  };
+}
+
 function targetAffinity(absentPosition, recipientPosition) {
   const affinity = {
     WR: { WR: 1, TE: 0.65, RB: 0.4 },
@@ -294,6 +451,20 @@ export function buildProjectionShadowArms(players, definition) {
       projections: incumbent,
       context: { triggered: false, factor: 1, absent_players: [] },
     };
+    const adaptationArms = Object.fromEntries(
+      Object.entries(definition.in_season_adaptation?.arms || {}).map(
+        ([arm, settings]) => {
+          const positionSettings =
+            settings.settings_by_position?.[player.position] || {};
+          const adaptation = adaptCurrentSeasonRole(player, {
+            ...(definition.in_season_adaptation || {}),
+            ...settings,
+            ...positionSettings,
+          });
+          return [arm, adaptation];
+        },
+      ),
+    );
     return {
       ...player,
       forecast_arms: {
@@ -301,10 +472,22 @@ export function buildProjectionShadowArms(players, definition) {
         team_volume: scaleProjections(incumbent, teamFactor),
         role_redistribution: role.projections,
         combined: scaleProjections(role.projections, teamFactor),
+        ...Object.fromEntries(
+          Object.entries(adaptationArms).map(([arm, row]) => [
+            arm,
+            row.projections,
+          ]),
+        ),
       },
       shadow_context: {
         team_volume_factor: round(teamFactor, 5),
         role_redistribution: role.context,
+        in_season_adaptation: Object.fromEntries(
+          Object.entries(adaptationArms).map(([arm, row]) => [
+            arm,
+            row.context,
+          ]),
+        ),
       },
     };
   });

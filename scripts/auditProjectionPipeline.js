@@ -1,7 +1,7 @@
-import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { canonicalFileSha256 } from "./lib/canonicalFileHash.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const season =
@@ -65,8 +65,7 @@ const writeJson = (file, value) => {
 };
 const fingerprint = (file) => {
   if (!fs.existsSync(file)) return null;
-  const raw = fs.readFileSync(file);
-  return crypto.createHash("sha256").update(raw).digest("hex");
+  return canonicalFileSha256(file);
 };
 const relative = (file) => path.relative(root, file).replace(/\\/g, "/");
 const current = readJson(currentFile);
@@ -525,6 +524,38 @@ addCheck(
   missingStatInputs.length
     ? `Missing stat inputs: ${missingStatInputs.map((source) => source.name).join(", ")}.`
     : "All configured field-level stat inputs are present.",
+);
+const recognizedProjectionContracts = new Set([
+  "full_season",
+  "rest_of_season",
+]);
+const projectedStatSources =
+  current?.feature_coverage?.projected_stat_sources || [];
+const invalidProjectionContracts = projectedStatSources.filter(
+  (source) =>
+    !recognizedProjectionContracts.has(String(source?.projection_contract)),
+);
+addCheck(
+  "projection_source_contracts",
+  !projectedStatSources.length || invalidProjectionContracts.length
+    ? "fail"
+    : "pass",
+  !projectedStatSources.length
+    ? "The model did not publish projection-source contract metadata."
+    : invalidProjectionContracts.length
+      ? `Unknown projection contracts: ${invalidProjectionContracts
+          .map(
+            (source) =>
+              `${source?.source || "unknown"} (${source?.projection_contract || "missing"})`,
+          )
+          .join(", ")}.`
+      : `All ${projectedStatSources.length} field-level projection sources declare whether they are full-season or rest-of-season.`,
+  {
+    sources: projectedStatSources.map((source) => ({
+      source: source?.source || null,
+      projection_contract: source?.projection_contract || null,
+    })),
+  },
 );
 const calibrationPositions = ["QB", "RB", "WR", "TE", "K"];
 const invalidCalibrations = calibrationPositions.filter((position) => {

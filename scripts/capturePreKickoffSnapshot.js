@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
+import { frozenTextHashMatches } from "./lib/canonicalFileHash.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const season =
@@ -82,7 +82,6 @@ const batch = upcoming.filter(
 console.log(
   `Capturing Week ${upcoming[0].week} final-window projections for ${batch.length} game${batch.length === 1 ? "" : "s"} kicking off near ${new Date(earliest).toISOString()}.`,
 );
-const sha256 = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 const calibrationFile = path.join(root, "public", "stats", "projections", "model-calibration.json");
 const shadowImplementationFile = path.join(root, "scripts", "lib", "projectionShadowArms.mjs");
 const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
@@ -91,11 +90,15 @@ const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
     console.warn(`Skipping shadow '${candidate.name}': its frozen definition is unreadable. The incumbent capture will continue.`);
     return false;
   }
-  if (definition.base_calibration_sha256 && (!fs.existsSync(calibrationFile) || sha256(calibrationFile) !== definition.base_calibration_sha256)) {
+  if (definition.local_only === true) {
+    console.log(`Skipping local-only shadow '${candidate.name}' during automatic pre-kickoff capture.`);
+    return false;
+  }
+  if (definition.base_calibration_sha256 && (!fs.existsSync(calibrationFile) || !frozenTextHashMatches(calibrationFile, definition.base_calibration_sha256))) {
     console.warn(`Skipping shadow '${candidate.name}': its frozen base calibration no longer matches the published calibration. Freeze and audit a new challenger definition before resuming this arm.`);
     return false;
   }
-  if (definition.implementation_sha256 && (!fs.existsSync(shadowImplementationFile) || sha256(shadowImplementationFile) !== definition.implementation_sha256)) {
+  if (definition.implementation_sha256 && (!fs.existsSync(shadowImplementationFile) || !frozenTextHashMatches(shadowImplementationFile, definition.implementation_sha256))) {
     console.warn(`Skipping shadow '${candidate.name}': its implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
     return false;
   }

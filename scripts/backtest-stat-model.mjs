@@ -34,6 +34,7 @@ const defaultDefenseStrength = 0.35;
 const defaultRiskAmplification = 3;
 const rawFields = [
   "pass_att",
+  "pass_cmp",
   "pass_yd",
   "pass_td",
   "pass_int",
@@ -44,6 +45,7 @@ const rawFields = [
   "rec",
   "rec_yd",
   "rec_td",
+  "fum_lost",
   "fga",
   "fgm",
   "xpa",
@@ -507,6 +509,38 @@ function playerProfile(history, positionGames, year, week) {
     matchupSensitivity: clamp(0.88 + cv * 0.72 * volatilityReliability, 0.88, 1.48),
     historicalBoomRate: ratios.length ? ratios.filter((ratio) => ratio >= 1.3).length / ratios.length : 0.2,
     historicalBustRate: ratios.length ? ratios.filter((ratio) => ratio <= 0.7).length / ratios.length : 0.2,
+  };
+}
+
+function weightedStatLine(games, year, week, currentSeason) {
+  const rows = games.filter((game) =>
+    currentSeason ? game.year === year : game.year < year,
+  );
+  if (!rows.length) return null;
+  const totals = Object.fromEntries(rawFields.map((field) => [field, 0]));
+  let weightTotal = 0;
+  for (const game of rows) {
+    const weight = currentSeason
+      ? 0.78 ** Math.max(0, week - game.week - 1)
+      : evidenceWeight(game, year, week);
+    if (!weight) continue;
+    for (const field of rawFields)
+      totals[field] += number(game.stats?.[field]) * weight;
+    weightTotal += weight;
+  }
+  if (!weightTotal) return null;
+  return Object.fromEntries(
+    rawFields.map((field) => [field, round(totals[field] / weightTotal, 5)]),
+  );
+}
+
+function inSeasonAdaptationContext(history, position, year, week) {
+  if (!new Set(["QB", "RB", "WR", "TE"]).has(position)) return null;
+  const currentGames = history.filter((game) => game.year === year);
+  return {
+    current_games: currentGames.length,
+    current_per_game: weightedStatLine(history, year, week, true),
+    prior_per_game: weightedStatLine(history, year, week, false),
   };
 }
 
@@ -1910,6 +1944,15 @@ for (const year of seasons) {
         risky: round(risky?.projection, 4),
         risk_factor: round(risky?.factor || 1, 4),
         actual: game.points,
+        actual_stat_line: Object.fromEntries(
+          rawFields.map((field) => [field, round(number(game.stats?.[field]), 5)]),
+        ),
+        adaptation_context: inSeasonAdaptationContext(
+          history,
+          game.position,
+          year,
+          week,
+        ),
         actual_ratio: round(game.points / Math.max(0.1, profile.baseline), 4),
         safe_error: round(safe.projection - game.points, 4),
         risky_error: round((risky?.projection ?? safe.projection) - game.points, 4),

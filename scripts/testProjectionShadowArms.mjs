@@ -20,6 +20,16 @@ const definition = {
     maximum_recipient_increase_factor: 1.35,
     confirmed_unavailable_statuses: ["out"],
   },
+  in_season_adaptation: {
+    minimum_games: 3,
+    volume_prior_games: 4,
+    efficiency_prior_games: 16,
+    maximum_field_shift: 0.3,
+    maximum_rate_shift: 0.16,
+    arms: {
+      adaptive_balanced: { application_strength: 0.8 },
+    },
+  },
 };
 
 const forecast = ({
@@ -190,6 +200,69 @@ for (const player of seasonLongResult) {
 const repeat = buildProjectionShadowArms(players, definition);
 assert.deepEqual(result, repeat);
 
+const quarterback = {
+  player_id: "qb",
+  name: "Changing QB",
+  team: "CLE",
+  position: "QB",
+  completed_games: 5,
+  actual_stat_line: {
+    pass_att: 160,
+    pass_cmp: 104,
+    pass_yd: 1120,
+    pass_td: 7,
+    pass_int: 3,
+    rush_att: 30,
+    rush_yd: 170,
+    rush_td: 2,
+  },
+  forecast: {
+    ...forecast({ ppr: 10, targets: 0, targetShare: 0 }),
+    projections: { ppr: 10, half: 10, std: 10 },
+    stat_line: {
+      pass_att: 22,
+      pass_cmp: 14,
+      pass_yd: 150,
+      pass_td: 0.9,
+      pass_int: 0.5,
+      rush_att: 3,
+      rush_yd: 15,
+      rush_td: 0.08,
+    },
+  },
+};
+const adaptedQuarterback = buildProjectionShadowArms(
+  [quarterback],
+  definition,
+)[0];
+assert.ok(
+  adaptedQuarterback.forecast_arms.adaptive_balanced.ppr >
+    adaptedQuarterback.forecast_arms.incumbent.ppr,
+);
+assert.equal(
+  adaptedQuarterback.shadow_context.in_season_adaptation.adaptive_balanced.triggered,
+  true,
+);
+
+const positionControlled = buildProjectionShadowArms([quarterback], {
+  ...definition,
+  in_season_adaptation: {
+    arms: {
+      controlled: {
+        settings_by_position: { QB: { enabled: false } },
+      },
+    },
+  },
+})[0];
+assert.deepEqual(
+  positionControlled.forecast_arms.controlled,
+  positionControlled.forecast_arms.incumbent,
+);
+assert.equal(
+  positionControlled.shadow_context.in_season_adaptation.controlled.reason,
+  "position_disabled_by_validation",
+);
+
 console.log(
-  `Projection shadow-arm tests: PASS (${result.length} fixture players, ${affected.length} affected recipients).`,
+  `Projection shadow-arm tests: PASS (${result.length} fixture players, ${affected.length} affected recipients, QB adaptation verified).`,
 );

@@ -16,6 +16,7 @@ import {
   normalizeFantasyTeamAbbr,
   parsePickLabel,
 } from "../src/lib/picks.js";
+import { normalizeSeasonProjectionPoints } from "./lib/projectionContracts.mjs";
 
 // For __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -3414,6 +3415,7 @@ async function updateSleeperProjections() {
       scope: "weekly",
       basis: "Sleeper raw weekly projected stats",
     },
+    projection_contract: "full_season_sum_of_explicit_weeks",
     weeks_requested: weeks,
     count: rows.length,
     rows,
@@ -3523,6 +3525,7 @@ async function updateFantasyProsProjections() {
       `FantasyPros projection coverage is incomplete (${coreCount} offensive players); existing cache was not overwritten.`,
     );
   const output = projectionOutput("FantasyPros", rows, {
+    projection_contract: "full_season",
     scoring: "STD/HALF/PPR",
     scoring_variants: ["std", "half", "ppr"],
     default_scoring: "ppr",
@@ -3538,9 +3541,9 @@ async function updateFantasyProsProjections() {
 
 async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
   const sourceFiles = [
-    { key: "FFA", path: PROJ_OUT_PATH, weight: 1, formats: ["ppr"] },
-    { key: "ESPN", path: ESPN_PROJ_OUT_PATH, weight: 1, formats: ["ppr"] },
-    { key: "CBS", path: CBS_PROJ_OUT_PATH, weight: 1, formats: ["ppr"] },
+    { key: "FFA", path: PROJ_OUT_PATH, weight: 1, formats: ["ppr"], projectionContract: "full_season" },
+    { key: "ESPN", path: ESPN_PROJ_OUT_PATH, weight: 1, formats: ["ppr"], projectionContract: "full_season" },
+    { key: "CBS", path: CBS_PROJ_OUT_PATH, weight: 1, formats: ["ppr"], projectionContract: "ytd_actual_plus_rest_of_season" },
     // Sleeper's feed is useful corroborating data, but receives less influence
     // because its season totals can be inconsistent while weekly data is changing.
     {
@@ -3548,24 +3551,28 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
       path: SLEEPER_PROJ_OUT_PATH,
       weight: 0.35,
       formats: ["ppr", "half", "std"],
+      projectionContract: "full_season_sum_of_explicit_weeks",
     },
     {
       key: "FantasySharks",
       path: FANTASYSHARKS_PROJ_OUT_PATH,
       weight: 1,
       formats: ["ppr"],
+      projectionContract: "full_season",
     },
     {
       key: "DraftSharks",
       path: DRAFTSHARKS_PROJ_OUT_PATH,
       weight: 1,
       formats: ["ppr", "half", "std"],
+      projectionContract: "rest_of_season",
     },
     {
       key: "FantasyPros",
       path: FANTASYPROS_PROJ_OUT_PATH,
       weight: 1,
       formats: ["ppr", "half", "std"],
+      projectionContract: "full_season",
     },
   ];
   if (includeArsenalModel) {
@@ -3575,6 +3582,7 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
       weight: 1,
       formats: ["ppr", "half", "std"],
       contextAdjusted: true,
+      projectionContract: "full_season",
     });
   }
   const available = sourceFiles.filter((source) => fs.existsSync(source.path));
@@ -3592,6 +3600,32 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
   }
 
   const sleeperPlayers = await fetchSleeperPlayersMap();
+  const historyFile = path.join(
+    __dirname,
+    `../public/stats/history/${CURRENT_SEASON}/sleeper.json`,
+  );
+  const savedHistory = fs.existsSync(historyFile)
+    ? JSON.parse(fs.readFileSync(historyFile, "utf8"))
+    : { players: [], final_weeks: [] };
+  const finalizedWeeks = new Set(
+    (savedHistory.final_weeks || []).map(Number),
+  );
+  const actualPointsById = new Map();
+  const actualPointsByName = new Map();
+  for (const player of savedHistory.players || []) {
+    const totals = { ppr: 0, half: 0, std: 0 };
+    for (const [weekText, points] of Object.entries(player.weeks || {})) {
+      if (!finalizedWeeks.has(Number(weekText))) continue;
+      totals.ppr += Number(points?.ppr) || 0;
+      totals.half += Number(points?.half) || 0;
+      totals.std += Number(points?.std) || 0;
+    }
+    if (player.player_id) actualPointsById.set(String(player.player_id), totals);
+    actualPointsByName.set(
+      `${normNameForMap(player.name)}|${normalizePos(player.position)}`,
+      totals,
+    );
+  }
   const projectionOverrides = JSON.parse(
     fs.readFileSync(
       path.join(__dirname, "../data/player-projection-overrides.json"),
@@ -3670,6 +3704,9 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
   available.forEach((source) => {
     const data = JSON.parse(fs.readFileSync(source.path, "utf8"));
     if (Number(data?.season) !== CURRENT_SEASON) return;
+    const projectionContract = String(
+      data?.projection_contract || source.projectionContract || "unknown",
+    );
     (Array.isArray(data?.rows) ? data.rows : []).forEach((row) => {
       if (
         source.key === "FantasyArsenal" &&
@@ -3697,27 +3734,47 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
       if (!player.team && row?.team)
         player.team = normalizeFantasyTeamAbbr(row.team);
       const receptionInvariant = !["RB", "WR", "TE"].includes(position);
+      const actualPoints =
+        (resolved?.player_id
+          ? actualPointsById.get(String(resolved.player_id))
+          : null) ||
+        actualPointsByName.get(`${normNameForMap(name)}|${position}`) ||
+        { ppr: 0, half: 0, std: 0 };
+      const seasonComparable = (value, format) => {
+        return normalizeSeasonProjectionPoints(
+          value,
+          projectionContract,
+          actualPoints[format],
+        );
+      };
       const supports = (format) =>
         source.formats.includes(format) || receptionInvariant;
       const input = {
         source: source.key,
         weight: source.weight,
         contextAdjusted: source.contextAdjusted === true,
-        ppr: Number(row?.points_ppr ?? row?.pointsPpr ?? row?.points) || 0,
+        projection_contract: projectionContract,
+        raw_ppr: Number(row?.points_ppr ?? row?.pointsPpr ?? row?.points) || 0,
+        ppr: seasonComparable(
+          row?.points_ppr ?? row?.pointsPpr ?? row?.points,
+          "ppr",
+        ) || 0,
         half: supports("half")
-          ? Number(
+          ? seasonComparable(
               row?.points_half ??
                 row?.points_half_ppr ??
                 row?.pointsHalf ??
                 row?.points,
+              "half",
             ) || 0
           : null,
         std: supports("std")
-          ? Number(
+          ? seasonComparable(
               row?.points_std ??
                 row?.points_standard ??
                 row?.pointsStd ??
                 row?.points,
+              "std",
             ) || 0
           : null,
       };
@@ -3879,6 +3936,8 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
           player.inputs.map((input) => [
             input.source,
             {
+              projection_contract: input.projection_contract,
+              raw_ppr: Number(input.raw_ppr.toFixed(3)),
               ppr: Number(input.ppr.toFixed(3)),
               half: Number.isFinite(input.half)
                 ? Number(input.half.toFixed(3))
@@ -3937,6 +3996,13 @@ async function updateProjectionConsensus({ includeArsenalModel = false } = {}) {
       ],
       maximum_positive_adjustment: "4%",
       note: "Age and experience are not independently applied to current-season points because projection sources already price those effects; doing so again would double-count them.",
+    },
+    projection_contract_policy: {
+      output: "full_season_outlook",
+      rest_of_season_sources:
+        "Finalized actual points are added before comparison and averaging.",
+      full_season_sources: "Used as supplied.",
+      explicit_week_sources: "Excluded from season-total averaging.",
     },
     source_weights: Object.fromEntries(
       sourceFiles.map((source) => [source.key, source.weight]),
@@ -4088,7 +4154,11 @@ async function updateFantasySharksProjections() {
   fs.writeFileSync(
     FANTASYSHARKS_PROJ_OUT_PATH,
     JSON.stringify(
-      projectionOutput("FantasySharks", rows, { endpoint: url, segment }),
+      projectionOutput("FantasySharks", rows, {
+        endpoint: url,
+        segment,
+        projection_contract: "full_season",
+      }),
       null,
       2,
     ),
@@ -4241,6 +4311,7 @@ async function updateDraftSharksProjections() {
     DRAFTSHARKS_PROJ_OUT_PATH,
     JSON.stringify(
       projectionOutput("DraftSharks", rows, {
+        projection_contract: "rest_of_season",
         scoring: "STD/HALF/PPR/TEP",
         scoring_variants: ["std", "half", "ppr", "tep"],
         default_scoring: "ppr",

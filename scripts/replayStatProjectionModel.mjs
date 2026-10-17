@@ -19,8 +19,8 @@ const requestedYears = String(args.season || args.seasons || "2024,2025")
 if (!requestedYears.length) throw new Error("Pass a valid --season or --seasons value.");
 const quick = Boolean(args.quick);
 const experiment = String(args.experiment || "workload").toLowerCase();
-if (!new Set(["workload", "team-volume"]).has(experiment))
-  throw new Error("--experiment must be workload or team-volume.");
+if (!new Set(["workload", "team-volume", "qb-adaptation", "stat-adaptation", "weighted-stat-trend"]).has(experiment))
+  throw new Error("--experiment must be workload, team-volume, qb-adaptation, stat-adaptation, or weighted-stat-trend.");
 const evaluationYears = quick ? [requestedYears.at(-1)] : requestedYears;
 const firstEvaluationYear = Math.min(...evaluationYears);
 const dataYears = Array.from(
@@ -203,6 +203,383 @@ const projection = (row, model, strength) =>
 const workloadProjection = (base, row, model, strength) =>
   base * clamp(1 + predictRidge(model, row) * strength, 0.78, 1.22);
 
+function scoreQbLine(line = {}) {
+  return (
+    Number(line.pass_yd || 0) * 0.04 +
+    Number(line.pass_td || 0) * 4 -
+    Number(line.pass_int || 0) * 2 +
+    Number(line.rush_yd || 0) * 0.1 +
+    Number(line.rush_td || 0) * 6 -
+    Number(line.fum_lost || 0) * 2
+  );
+}
+
+function qbAdaptationProjection(base, row, settings = {}) {
+  if (row.position !== "QB") return base;
+  const context = row.adaptation_context || {};
+  const current = context.current_per_game;
+  const prior = context.prior_per_game;
+  const games = Number(context.current_games || 0);
+  if (!current || !prior || games < Number(settings.minimum_games || 3)) return base;
+  const next = { ...prior };
+  const volumeReliability = games / (games + Number(settings.volume_prior_games || 4));
+  const efficiencyReliability = games / (games + Number(settings.efficiency_prior_games || 16));
+  const volumeStrength = Number(
+    settings.volume_strength ?? settings.application_strength ?? 1,
+  );
+  const efficiencyStrength = Number(
+    settings.efficiency_strength ?? settings.application_strength ?? 1,
+  );
+  const maximumShift = Number(settings.maximum_field_shift || 0.3);
+  const maximumRateShift = Number(settings.maximum_rate_shift || 0.16);
+  for (const field of ["pass_att", "rush_att"]) {
+    const priorValue = Number(prior[field] || 0);
+    const currentValue = Number(current[field] || 0);
+    if (priorValue <= 0) continue;
+    const factor = clamp(
+      1 + (currentValue / priorValue - 1) * volumeReliability * volumeStrength,
+      1 - maximumShift,
+      1 + maximumShift,
+    );
+    next[field] = priorValue * factor;
+  }
+  for (const [numerator, denominator] of [
+    ["pass_cmp", "pass_att"],
+    ["pass_yd", "pass_att"],
+    ["pass_td", "pass_att"],
+    ["pass_int", "pass_att"],
+    ["rush_yd", "rush_att"],
+    ["rush_td", "rush_att"],
+  ]) {
+    const priorDenominator = Number(prior[denominator] || 0);
+    const currentDenominator = Number(current[denominator] || 0);
+    const priorRate = Number(prior[numerator] || 0) / Math.max(0.01, priorDenominator);
+    const currentRate = Number(current[numerator] || 0) / Math.max(0.01, currentDenominator);
+    if (priorRate <= 0 || priorDenominator <= 0 || currentDenominator <= 0) continue;
+    const factor = clamp(
+      1 + (currentRate / priorRate - 1) * efficiencyReliability * efficiencyStrength,
+      1 - maximumRateShift,
+      1 + maximumRateShift,
+    );
+    next[numerator] = Number(next[denominator] || 0) * priorRate * factor;
+  }
+  const priorPoints = scoreQbLine(prior);
+  const adaptedPoints = scoreQbLine(next);
+  if (priorPoints <= 0 || adaptedPoints <= 0) return base;
+  return base * clamp(
+    adaptedPoints / priorPoints,
+    1 - maximumShift,
+    1 + maximumShift,
+  );
+}
+
+function selectQbAdaptationSettings(rows, baseOf) {
+  const candidates = [];
+  for (const volumePriorGames of [2, 4, 6, 8])
+    for (const efficiencyPriorGames of [12, 16, 24])
+      for (const applicationStrength of [0.4, 0.6, 0.8, 1])
+        for (const maximumFieldShift of [0.2, 0.3, 0.4]) {
+          const settings = {
+            minimum_games: 3,
+            volume_prior_games: volumePriorGames,
+            efficiency_prior_games: efficiencyPriorGames,
+            application_strength: applicationStrength,
+            maximum_field_shift: maximumFieldShift,
+            maximum_rate_shift: Math.min(0.16, maximumFieldShift),
+          };
+          const scored = rows.map((row) => ({
+            ...row,
+            candidate: qbAdaptationProjection(baseOf(row), row, settings),
+          }));
+          candidates.push({ ...settings, ...pointMetrics(scored, "candidate") });
+        }
+  return candidates.sort(
+    (left, right) => left.mae - right.mae || left.rmse - right.rmse,
+  )[0];
+}
+
+const adaptationFieldsByPosition = {
+  QB: {
+    volume: ["pass_att", "rush_att"],
+    rates: [["pass_cmp", "pass_att"], ["pass_yd", "pass_att"], ["pass_td", "pass_att"], ["pass_int", "pass_att"], ["rush_yd", "rush_att"], ["rush_td", "rush_att"]],
+  },
+  RB: {
+    volume: ["rush_att", "rec_tgt"],
+    rates: [["rush_yd", "rush_att"], ["rush_td", "rush_att"], ["rec", "rec_tgt"], ["rec_yd", "rec_tgt"], ["rec_td", "rec_tgt"]],
+  },
+  WR: {
+    volume: ["rush_att", "rec_tgt"],
+    rates: [["rush_yd", "rush_att"], ["rush_td", "rush_att"], ["rec", "rec_tgt"], ["rec_yd", "rec_tgt"], ["rec_td", "rec_tgt"]],
+  },
+  TE: {
+    volume: ["rec_tgt"],
+    rates: [["rec", "rec_tgt"], ["rec_yd", "rec_tgt"], ["rec_td", "rec_tgt"]],
+  },
+};
+
+const allMeasuredStatFields = [
+  "pass_att", "pass_cmp", "pass_yd", "pass_td", "pass_int",
+  "rush_att", "rush_yd", "rush_td", "rec_tgt", "rec", "rec_yd",
+  "rec_td", "fum_lost", "fga", "fgm", "xpa", "xpm", "kick_pts",
+];
+
+function scoreAdaptationLine(position, line = {}) {
+  if (position === "QB") return scoreQbLine(line);
+  return (
+    Number(line.rush_yd || 0) * 0.1 +
+    Number(line.rush_td || 0) * 6 +
+    Number(line.rec || 0) +
+    Number(line.rec_yd || 0) * 0.1 +
+    Number(line.rec_td || 0) * 6
+  );
+}
+
+function statAdaptationProjection(base, row, settings = {}) {
+  const fields = adaptationFieldsByPosition[row.position];
+  if (!fields) return base;
+  const context = row.adaptation_context || {};
+  const current = context.current_per_game;
+  const prior = context.prior_per_game;
+  const games = Number(context.current_games || 0);
+  if (!current || !prior || games < Number(settings.minimum_games || 3)) return base;
+  const next = { ...prior };
+  const volumeReliability = games / (games + Number(settings.volume_prior_games || 4));
+  const efficiencyReliability = games / (games + Number(settings.efficiency_prior_games || 16));
+  const volumeStrength = Number(
+    settings.volume_strength ?? settings.application_strength ?? 1,
+  );
+  const efficiencyStrength = Number(
+    settings.efficiency_strength ?? settings.application_strength ?? 1,
+  );
+  const maximumShift = Number(settings.maximum_field_shift || 0.3);
+  const maximumRateShift = Number(settings.maximum_rate_shift || 0.16);
+  for (const field of fields.volume) {
+    const priorValue = Number(prior[field] || 0);
+    const currentValue = Number(current[field] || 0);
+    if (priorValue <= 0) continue;
+    next[field] = priorValue * clamp(
+      1 + (currentValue / priorValue - 1) * volumeReliability * volumeStrength,
+      1 - maximumShift,
+      1 + maximumShift,
+    );
+  }
+  for (const [numerator, denominator] of fields.rates) {
+    const priorDenominator = Number(prior[denominator] || 0);
+    const currentDenominator = Number(current[denominator] || 0);
+    const priorRate = Number(prior[numerator] || 0) / Math.max(0.01, priorDenominator);
+    const currentRate = Number(current[numerator] || 0) / Math.max(0.01, currentDenominator);
+    if (priorRate <= 0 || priorDenominator <= 0 || currentDenominator <= 0) continue;
+    const rateFactor = clamp(
+      1 + (currentRate / priorRate - 1) * efficiencyReliability * efficiencyStrength,
+      1 - maximumRateShift,
+      1 + maximumRateShift,
+    );
+    next[numerator] = Number(next[denominator] || 0) * priorRate * rateFactor;
+  }
+  const priorPoints = scoreAdaptationLine(row.position, prior);
+  const adaptedPoints = scoreAdaptationLine(row.position, next);
+  if (priorPoints <= 0 || adaptedPoints <= 0) return base;
+  return base * clamp(adaptedPoints / priorPoints, 1 - maximumShift, 1 + maximumShift);
+}
+
+function weightedStatTrendLine(row, settings = {}) {
+  const fields = adaptationFieldsByPosition[row.position];
+  const context = row.adaptation_context || {};
+  const current = context.current_per_game;
+  const prior = context.prior_per_game;
+  const games = Number(context.current_games || 0);
+  if (!fields || !current || !prior || games < Number(settings.minimum_games || 3))
+    return prior ? { ...prior } : null;
+  const next = { ...prior };
+  for (const field of fields.volume) {
+    const config = settings.components?.[field];
+    const priorValue = Number(prior[field] || 0);
+    const currentValue = Number(current[field] || 0);
+    if (!config || priorValue <= 0 || currentValue < 0) continue;
+    const reliability = games / (games + Number(config.prior_games || 4));
+    const factor = clamp(
+      1 + (currentValue / priorValue - 1) * reliability * Number(config.strength || 0),
+      1 - Number(config.maximum_shift || 0.4),
+      1 + Number(config.maximum_shift || 0.4),
+    );
+    next[field] = priorValue * factor;
+  }
+  for (const [numerator, denominator] of fields.rates) {
+    const key = `${numerator}_per_${denominator}`;
+    const config = settings.components?.[key];
+    const priorDenominator = Number(prior[denominator] || 0);
+    const currentDenominator = Number(current[denominator] || 0);
+    const priorRate = Number(prior[numerator] || 0) / Math.max(0.01, priorDenominator);
+    const currentRate = Number(current[numerator] || 0) / Math.max(0.01, currentDenominator);
+    if (!config || priorRate <= 0 || priorDenominator <= 0 || currentDenominator <= 0) continue;
+    const reliability = games / (games + Number(config.prior_games || 12));
+    const factor = clamp(
+      1 + (currentRate / priorRate - 1) * reliability * Number(config.strength || 0),
+      1 - Number(config.maximum_shift || 0.2),
+      1 + Number(config.maximum_shift || 0.2),
+    );
+    next[numerator] = Number(next[denominator] || 0) * priorRate * factor;
+  }
+  next.pass_cmp = Math.min(Number(next.pass_cmp || 0), Number(next.pass_att || 0));
+  next.rec = Math.min(Number(next.rec || 0), Number(next.rec_tgt || 0));
+  return next;
+}
+
+function componentMetrics(rows, field, lineOf) {
+  const samples = [];
+  for (const row of rows) {
+    const actual = finite(row.actual_stat_line?.[field]);
+    const projected = finite(lineOf(row)?.[field]);
+    if (!Number.isFinite(actual) || !Number.isFinite(projected)) continue;
+    samples.push({ actual, projected });
+  }
+  if (!samples.length) return null;
+  const mae = mean(samples.map(({ actual, projected }) => Math.abs(projected - actual)));
+  const actualScale = mean(samples.map(({ actual }) => Math.abs(actual)));
+  const bias = mean(samples.map(({ actual, projected }) => projected - actual));
+  return {
+    sample: samples.length,
+    mae,
+    normalized_mae: mae / Math.max(0.1, actualScale),
+    bias,
+    actual_mean: mean(samples.map(({ actual }) => actual)),
+  };
+}
+
+function trendDiagnostics(rows, field) {
+  const pairs = rows.flatMap((row) => {
+    const prior = finite(row.adaptation_context?.prior_per_game?.[field]);
+    const current = finite(row.adaptation_context?.current_per_game?.[field]);
+    const actual = finite(row.actual_stat_line?.[field]);
+    if (![prior, current, actual].every(Number.isFinite) || Math.abs(prior) < 0.01)
+      return [];
+    return [{ trend: (current - prior) / Math.max(0.1, Math.abs(prior)), future: (actual - prior) / Math.max(0.1, Math.abs(prior)) }];
+  });
+  if (pairs.length < 2) return { sample: pairs.length, correlation: null, direction_accuracy: null };
+  const trendMean = mean(pairs.map((row) => row.trend));
+  const futureMean = mean(pairs.map((row) => row.future));
+  const covariance = mean(pairs.map((row) => (row.trend - trendMean) * (row.future - futureMean)));
+  const trendSd = Math.sqrt(mean(pairs.map((row) => (row.trend - trendMean) ** 2)));
+  const futureSd = Math.sqrt(mean(pairs.map((row) => (row.future - futureMean) ** 2)));
+  return {
+    sample: pairs.length,
+    correlation: trendSd && futureSd ? covariance / (trendSd * futureSd) : null,
+    direction_accuracy: mean(pairs.map((row) => Math.sign(row.trend) === Math.sign(row.future) ? 1 : 0)),
+  };
+}
+
+function selectWeightedStatTrendSettings(componentRows, finalRows, position, baseOf) {
+  const fields = adaptationFieldsByPosition[position];
+  if (!fields) return { passthrough: true };
+  const eligible = componentRows.filter((row) =>
+    row.adaptation_context?.prior_per_game &&
+    row.adaptation_context?.current_per_game &&
+    Number(row.adaptation_context?.current_games || 0) >= 3
+  );
+  const settings = { minimum_games: 3, components: {}, diagnostics: {} };
+  const tuneComponent = (field, key, priorGames, maximumShifts) => {
+    const baseline = componentMetrics(eligible, field, (row) => row.adaptation_context?.prior_per_game);
+    if (!baseline || baseline.sample < 50) return;
+    let best = null;
+    for (const prior_games of priorGames)
+      for (const strength of [0, 0.5, 1, 1.5, 2])
+        for (const maximum_shift of maximumShifts) {
+          const candidateSettings = {
+            ...settings,
+            components: { ...settings.components, [key]: { prior_games, strength, maximum_shift } },
+          };
+          const metrics = componentMetrics(eligible, field, (row) => weightedStatTrendLine(row, candidateSettings));
+          if (!metrics) continue;
+          const candidate = { prior_games, strength, maximum_shift, ...metrics };
+          if (!best || candidate.mae < best.mae || (candidate.mae === best.mae && Math.abs(candidate.bias) < Math.abs(best.bias)))
+            best = candidate;
+        }
+    const accepted = best && best.mae < baseline.mae;
+    settings.components[key] = accepted
+      ? { prior_games: best.prior_games, strength: best.strength, maximum_shift: best.maximum_shift }
+      : { prior_games: priorGames.at(-1), strength: 0, maximum_shift: maximumShifts[0] };
+    const trend = trendDiagnostics(eligible, field);
+    settings.diagnostics[field] = {
+      baseline: Object.fromEntries(Object.entries(baseline).map(([name, value]) => [name, round(value, 5)])),
+      selected: best ? Object.fromEntries(Object.entries(best).map(([name, value]) => [name, round(value, 5)])) : null,
+      accepted,
+      relative_mae_improvement: best ? round((baseline.mae - best.mae) / Math.max(0.001, baseline.mae), 5) : null,
+      trend: Object.fromEntries(Object.entries(trend).map(([name, value]) => [name, round(value, 5)])),
+    };
+  };
+  for (const field of fields.volume)
+    tuneComponent(field, field, [1, 2, 3, 4, 6, 8], [0.25, 0.4, 0.6]);
+  for (const [numerator, denominator] of fields.rates)
+    tuneComponent(numerator, `${numerator}_per_${denominator}`, [3, 6, 10, 16, 24], [0.12, 0.2, 0.3]);
+  const fantasyCandidates = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.65, 0.8, 1].map((applicationStrength) => {
+    const candidateSettings = { ...settings, application_strength: applicationStrength };
+    const scored = finalRows.map((row) => ({
+      ...row,
+      candidate: weightedStatTrendProjection(baseOf(row), row, candidateSettings),
+    }));
+    return {
+      application_strength: applicationStrength,
+      ...pointMetrics(scored, "candidate"),
+      early_mae: pointMetrics(scored.filter((row) => row.week <= 9), "candidate").mae,
+      late_mae: pointMetrics(scored.filter((row) => row.week >= 10), "candidate").mae,
+    };
+  });
+  const noAdjustment = fantasyCandidates.find((candidate) => candidate.application_strength === 0);
+  const stableCandidates = fantasyCandidates.filter((candidate) =>
+    candidate.application_strength === 0 ||
+    (candidate.early_mae < noAdjustment.early_mae && candidate.late_mae < noAdjustment.late_mae)
+  ).sort((left, right) => left.mae - right.mae || left.rmse - right.rmse);
+  settings.application_strength = stableCandidates[0]?.application_strength || 0;
+  settings.stability_gate = "The selected strength must improve both Weeks 4-9 and Weeks 10-18 in the untouched tuning season; otherwise the position is disabled.";
+  settings.fantasy_selection = fantasyCandidates.map((candidate) => ({
+    application_strength: candidate.application_strength,
+    sample: candidate.sample,
+    mae: round(candidate.mae, 5),
+    rmse: round(candidate.rmse, 5),
+    bias: round(candidate.bias, 5),
+    early_mae: round(candidate.early_mae, 5),
+    late_mae: round(candidate.late_mae, 5),
+  }));
+  return settings;
+}
+
+function weightedStatTrendProjection(base, row, settings = {}) {
+  const prior = row.adaptation_context?.prior_per_game;
+  const next = weightedStatTrendLine(row, settings);
+  if (!prior || !next) return base;
+  const priorPoints = scoreAdaptationLine(row.position, prior);
+  const adaptedPoints = scoreAdaptationLine(row.position, next);
+  if (priorPoints <= 0 || adaptedPoints <= 0) return base;
+  const rawRatio = adaptedPoints / priorPoints;
+  const applicationStrength = Number(settings.application_strength ?? 1);
+  return base * clamp(1 + (rawRatio - 1) * applicationStrength, 0.55, 1.55);
+}
+
+function selectStatAdaptationSettings(rows, baseOf) {
+  const candidates = [];
+  for (const volumePriorGames of [2, 4, 6, 8])
+    for (const efficiencyPriorGames of [12, 16, 24])
+      for (const volumeStrength of [0, 0.25, 0.5, 0.75, 1])
+        for (const efficiencyStrength of [0, 0.25, 0.5, 0.75, 1])
+          for (const maximumFieldShift of [0.25, 0.35]) {
+          const settings = {
+            minimum_games: 3,
+            volume_prior_games: volumePriorGames,
+            efficiency_prior_games: efficiencyPriorGames,
+            volume_strength: volumeStrength,
+            efficiency_strength: efficiencyStrength,
+            maximum_field_shift: maximumFieldShift,
+            maximum_rate_shift: Math.min(0.16, maximumFieldShift),
+          };
+          const scored = rows.map((row) => ({
+            ...row,
+            candidate: statAdaptationProjection(baseOf(row), row, settings),
+          }));
+          candidates.push({ ...settings, ...pointMetrics(scored, "candidate") });
+        }
+  return candidates.sort((left, right) => left.mae - right.mae || left.rmse - right.rmse)[0];
+}
+
 function teamOpportunityGroups(rows) {
   const groups = new Map();
   for (const row of rows) {
@@ -362,6 +739,24 @@ for (const position of positions) {
     );
     continue;
   }
+  if (experiment === "qb-adaptation") {
+    settings[position] = position === "QB"
+      ? selectQbAdaptationSettings(tune, baseForecast)
+      : { passthrough: true };
+    continue;
+  }
+  if (experiment === "stat-adaptation") {
+    settings[position] = adaptationFieldsByPosition[position]
+      ? selectStatAdaptationSettings(tune, baseForecast)
+      : { passthrough: true };
+    continue;
+  }
+  if (experiment === "weighted-stat-trend") {
+    settings[position] = adaptationFieldsByPosition[position]
+      ? selectWeightedStatTrendSettings(train, tune, position, baseForecast)
+      : { passthrough: true };
+    continue;
+  }
   const candidates = [];
   for (const lambda of [10, 30, 100, 300]) {
     const model = fitRidge(
@@ -468,12 +863,30 @@ for (const year of evaluationYears) {
             workloadCalibrationModel,
             settings[position].strength,
           )
-        : (row) => teamVolumeProjection(
-            calibrationBaseForecast(row),
-            row,
-            tuningGroups,
-            settings[position],
-          ),
+        : experiment === "qb-adaptation"
+          ? (row) => qbAdaptationProjection(
+              calibrationBaseForecast(row),
+              row,
+              settings[position],
+            )
+          : experiment === "stat-adaptation"
+            ? (row) => statAdaptationProjection(
+                calibrationBaseForecast(row),
+                row,
+                settings[position],
+              )
+          : experiment === "weighted-stat-trend"
+            ? (row) => weightedStatTrendProjection(
+                calibrationBaseForecast(row),
+                row,
+                settings[position],
+              )
+          : (row) => teamVolumeProjection(
+              calibrationBaseForecast(row),
+              row,
+              tuningGroups,
+              settings[position],
+            ),
     );
     const preseasonByPlayer = new Map();
     for (const row of prior.filter((candidate) => candidate.year === year - 1))
@@ -523,7 +936,13 @@ for (const year of evaluationYears) {
               workloadModel,
               settings[position].strength,
             )
-          : teamVolumeProjection(b, row, targetGroups, settings[position]);
+          : experiment === "qb-adaptation"
+            ? qbAdaptationProjection(b, row, settings[position])
+            : experiment === "stat-adaptation"
+              ? statAdaptationProjection(b, row, settings[position])
+            : experiment === "weighted-stat-trend"
+              ? weightedStatTrendProjection(b, row, settings[position])
+            : teamVolumeProjection(b, row, targetGroups, settings[position]);
         const d = experiment === "workload"
           ? workloadProjection(
               b,
@@ -531,12 +950,18 @@ for (const year of evaluationYears) {
               weeklyWorkloadModel,
               settings[position].strength,
             )
-          : teamVolumeProjection(
-              b,
-              row,
-              targetGroups,
-              weeklyTeamVolumeSettings,
-            );
+          : experiment === "qb-adaptation"
+            ? c
+            : experiment === "stat-adaptation"
+              ? c
+            : experiment === "weighted-stat-trend"
+              ? c
+            : teamVolumeProjection(
+                b,
+                row,
+                targetGroups,
+                weeklyTeamVolumeSettings,
+              );
         if (![a, b, c, d].every(Number.isFinite) || b < 5) continue;
         const scored = {
           ...row,
@@ -566,7 +991,12 @@ for (const year of evaluationYears) {
       experiment,
       ...(experiment === "workload"
         ? { workload_features: workloadFeatureNames }
-        : { opportunity_budget: "Targets and carries are capped at one team share; unclaimed share remains reserved for unmodeled players." }),
+        : ["qb-adaptation", "stat-adaptation", "weighted-stat-trend"].includes(experiment)
+          ? {
+              adaptation: "Current-season opportunity updates faster than yardage and touchdown efficiency rates, with separately selected settings by position.",
+              adaptation_settings: settings[position],
+            }
+          : { opportunity_budget: "Targets and carries are capped at one team share; unclaimed share remains reserved for unmodeled players." }),
       weekly_refit_latest_allowed_week:
         "only result weeks admitted by the Wednesday-noon plus 48-hour availability cutoff",
       uncertainty_fit_season: year - 1,
@@ -588,6 +1018,11 @@ const arms = experiment === "workload" ? {
   b: "Arsenal incumbent with weekly evidence",
   c: "Workload adjustment with fixed preseason coefficients",
   d: "Workload adjustment with weekly coefficient refits",
+} : ["qb-adaptation", "stat-adaptation", "weighted-stat-trend"].includes(experiment) ? {
+  a: "Preseason frozen",
+  b: "Arsenal incumbent with weekly evidence",
+  c: experiment === "qb-adaptation" ? "QB stat-specific in-season adaptation" : experiment === "weighted-stat-trend" ? "Reliability-weighted stat trend adaptation" : "Position-specific in-season stat adaptation",
+  d: experiment === "qb-adaptation" ? "QB stat-specific in-season adaptation (repeatability check)" : experiment === "weighted-stat-trend" ? "Reliability-weighted stat trend adaptation (repeatability check)" : "Position-specific in-season stat adaptation (repeatability check)",
 } : {
   a: "Preseason frozen",
   b: "Arsenal incumbent with weekly evidence",
@@ -680,14 +1115,55 @@ const wisChangeRate =
   (headline.c.distribution.weighted_interval_score -
     headline.b.distribution.weighted_interval_score) /
   Math.max(0.001, headline.b.distribution.weighted_interval_score);
+const primaryRows = experiment === "qb-adaptation"
+  ? scoredRows.filter((row) => row.position === "QB")
+  : ["stat-adaptation", "weighted-stat-trend"].includes(experiment)
+    ? scoredRows.filter((row) => adaptationFieldsByPosition[row.position])
+    : scoredRows;
+const primaryHeadline = ["qb-adaptation", "stat-adaptation", "weighted-stat-trend"].includes(experiment)
+  ? summarize(primaryRows)
+  : headline;
+const primaryCVsB = ["qb-adaptation", "stat-adaptation", "weighted-stat-trend"].includes(experiment)
+  ? pairedBootstrap(primaryRows, "b", "c")
+  : cVsB;
+const primaryMaeImprovementRate =
+  (primaryHeadline.b.point.mae - primaryHeadline.c.point.mae) /
+  Math.max(0.001, primaryHeadline.b.point.mae);
+const primaryRmseChangeRate =
+  (primaryHeadline.c.point.rmse - primaryHeadline.b.point.rmse) /
+  Math.max(0.001, primaryHeadline.b.point.rmse);
+const primaryWisChangeRate =
+  (primaryHeadline.c.distribution.weighted_interval_score -
+    primaryHeadline.b.distribution.weighted_interval_score) /
+  Math.max(0.001, primaryHeadline.b.distribution.weighted_interval_score);
+const componentHoldout = experiment === "weighted-stat-trend"
+  ? Object.fromEntries(positions.map((position) => {
+      const rows = scoredRows.filter((row) => row.position === position);
+      const fieldRows = allMeasuredStatFields.flatMap((field) => {
+        const baseline = componentMetrics(rows, field, (row) => row.adaptation_context?.prior_per_game);
+        if (!baseline || baseline.actual_mean === 0) return [];
+        const challenger = componentMetrics(rows, field, (row) => weightedStatTrendLine(row, settings[position]));
+        return [{
+          field,
+          incumbent_stat_proxy: Object.fromEntries(Object.entries(baseline).map(([name, value]) => [name, round(value, 5)])),
+          challenger: challenger ? Object.fromEntries(Object.entries(challenger).map(([name, value]) => [name, round(value, 5)])) : null,
+          relative_mae_improvement: challenger
+            ? round((baseline.mae - challenger.mae) / Math.max(0.001, baseline.mae), 5)
+            : null,
+          trend: trendDiagnostics(rows, field),
+        }];
+      });
+      return [position, fieldRows];
+    }))
+  : null;
 const eligibleForForwardTest =
   !quick &&
   evaluationYears.length >= 2 &&
-  maeImprovementRate >= 0.01 &&
+  primaryMaeImprovementRate >= 0.01 &&
   seasonWins &&
-  cVsB.lower_95 > 0 &&
-  rmseChangeRate <= 0.01 &&
-  wisChangeRate <= 0.01 &&
+  primaryCVsB.lower_95 > 0 &&
+  primaryRmseChangeRate <= 0.01 &&
+  primaryWisChangeRate <= 0.01 &&
   !positionRegressions.length;
 
 const protectedAfter = Object.fromEntries(
@@ -718,6 +1194,7 @@ const report = {
   by_week: byWeek,
   uncertainty: { c_vs_b: cVsB, d_vs_c: dVsC },
   model_selection: settings,
+  component_holdout: componentHoldout,
   model_audit: modelAudit,
   decision: {
     eligible_for_forward_test: eligibleForForwardTest,
@@ -726,9 +1203,10 @@ const report = {
       : eligibleForForwardTest
         ? "start_forward_shadow_test"
         : "keep_incumbent",
-    mae_improvement_rate: round(maeImprovementRate, 4),
-    rmse_change_rate: round(rmseChangeRate, 4),
-    weighted_interval_score_change_rate: round(wisChangeRate, 4),
+    primary_population: experiment === "qb-adaptation" ? "QB" : ["stat-adaptation", "weighted-stat-trend"].includes(experiment) ? "QB/RB/WR/TE" : "all positions",
+    mae_improvement_rate: round(primaryMaeImprovementRate, 4),
+    rmse_change_rate: round(primaryRmseChangeRate, 4),
+    weighted_interval_score_change_rate: round(primaryWisChangeRate, 4),
     improved_each_evaluation_season: seasonWins,
     position_regressions: positionRegressions,
     thresholds: {
@@ -757,7 +1235,9 @@ const report = {
     "Weekly team identity may use finalized advanced data strictly for identity matching; target-week performance and market fields are excluded from features.",
     experiment === "workload"
       ? "The workload experiment uses a regularized ridge overlay on the incumbent and limits its adjustment to 22% in either direction."
-      : "The team-volume experiment caps modeled target and carry shares at the team total, preserves reserve opportunity for unmodeled players, and tests a bounded pregame pace adjustment.",
+      : ["qb-adaptation", "stat-adaptation", "weighted-stat-trend"].includes(experiment)
+        ? "The stat adaptation experiment updates attempts, carries, and targets faster than efficiency, applies only after three current-season games, and remains bounded. Historical source stat lines are unavailable, so prior-season per-game statistics stand in for the historical baseline; the live shadow test remains required."
+        : "The team-volume experiment caps modeled target and carry shares at the team total, preserves reserve opportunity for unmodeled players, and tests a bounded pregame pace adjustment.",
   ],
 };
 

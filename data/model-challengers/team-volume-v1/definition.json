@@ -5,7 +5,7 @@
   "model_type": "projection_experiment_suite",
   "definition_sha256": "7c5be545bb27989aa84ed392b681ab28fdf12b51d6eea66c1142404a34fc6707",
   "base_calibration_sha256": "c90d3c29fe5ecb422786c12a8748daa2852261984d6b4a454f0dff8c03862556",
-  "implementation_sha256": "a8757250426d5fd6661301585ea0c0dd6be3da9dcccacc66c0d8dd9413985bc0",
+  "implementation_sha256": "f30b30b85384a9e6ea61d23c72fe48746a287a9b848725dcc898b0b3bde871a1",
   "forward_test_required_weeks": 4,
   "minimum_role_absence_events": 8,
   "minimum_role_affected_player_games": 30,
