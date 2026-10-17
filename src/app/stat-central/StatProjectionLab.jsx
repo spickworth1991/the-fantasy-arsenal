@@ -1076,9 +1076,27 @@ export default function StatProjectionLab({
     let live = true;
     fetch(accuracy.detail_results_path, { cache: "no-cache" })
       .then((response) => response.ok ? response.json() : null)
-      .then((payload) => {
-        if (live && payload) {
-          setAccuracy((current) => ({ ...current, ...payload }));
+      .then(async (payload) => {
+        if (!payload || payload.format !== "week_shards") return payload;
+        const shards = await Promise.all(
+          (payload.weeks || []).map((shard) =>
+            fetch(shard.path, { cache: "no-cache" })
+              .then((response) => response.ok ? response.json() : null)
+              .catch(() => null),
+          ),
+        );
+        return {
+          player_results: shards.flatMap((shard) => shard?.player_results || []),
+          coverage_results: shards.flatMap((shard) => shard?.coverage_results || []),
+          outcome_results: shards.flatMap((shard) => shard?.outcome_results || []),
+          source_comparison_results: shards.flatMap(
+            (shard) => shard?.source_comparison_results || [],
+          ),
+        };
+      })
+      .then((details) => {
+        if (live && details) {
+          setAccuracy((current) => ({ ...current, ...details }));
           setAccuracyDetailsLoaded(true);
         }
       })

@@ -58,6 +58,14 @@ const resultsOutputFile = path.join(
   String(season),
   "accuracy-results.json",
 );
+const resultsOutputDirectory = path.join(
+  root,
+  "public",
+  "stats",
+  "projections",
+  String(season),
+  "accuracy-results",
+);
 const valueArchiveDirectory = path.join(root, "public", "archive");
 const scoringKeys = ["ppr", "half", "std"];
 const projectionLenses = ["safe_expected", "risky"];
@@ -1309,22 +1317,57 @@ const output = {
   weeks: weekResults,
 };
 
-writeJson(outputFile, output);
+const detailWeeks = [...new Set([
+  ...lensLedger.map((row) => number(row.week)),
+  ...coverageLedger.map((row) => number(row.week)),
+  ...outcomeLedger.map((row) => number(row.week)),
+  ...sourceComparisonResults.map((row) => number(row.week)),
+])]
+  .filter((week) => week > 0)
+  .sort((left, right) => left - right);
+const detailShards = detailWeeks.map((week) => {
+  const payload = {
+    season,
+    week,
+    generated_at: output.generated_at,
+    player_results: lensLedger.filter((row) => number(row.week) === week),
+    coverage_results: coverageLedger.filter((row) => number(row.week) === week),
+    outcome_results: outcomeLedger.filter((row) => number(row.week) === week),
+    source_comparison_results: sourceComparisonResults.filter(
+      (row) => number(row.week) === week,
+    ),
+  };
+  const relativePath = `/stats/projections/${season}/accuracy-results/week-${week}.json`;
+  writeJson(path.join(resultsOutputDirectory, `week-${week}.json`), payload);
+  return {
+    week,
+    path: relativePath,
+    counts: {
+      player_results: payload.player_results.length,
+      coverage_results: payload.coverage_results.length,
+      outcome_results: payload.outcome_results.length,
+      source_comparison_results: payload.source_comparison_results.length,
+    },
+  };
+});
 writeJson(resultsOutputFile, {
+  schema_version: 2,
+  format: "week_shards",
   season,
   generated_at: output.generated_at,
-  player_results: lensLedger,
-  coverage_results: coverageLedger,
-  outcome_results: outcomeLedger,
-  source_comparison_results: sourceComparisonResults,
+  weeks: detailShards,
 });
-writeJson(summaryOutputFile, {
+const summaryOutput = {
   ...output,
   player_results: [],
   coverage_results: [],
   source_comparison_results: [],
   detail_results_path: `/stats/projections/${season}/accuracy-results.json`,
-});
+};
+// Keep the legacy endpoint lightweight and compatible. Detailed observations
+// live in weekly shards so no public asset can exceed Cloudflare's 25 MiB cap.
+writeJson(outputFile, summaryOutput);
+writeJson(summaryOutputFile, summaryOutput);
 console.log(
   !scheduleAvailable
     ? `No saved ${season} projection schedule is available; no forecasts were graded.`

@@ -35,7 +35,20 @@ if (!candidate) {
   process.exit(0);
 }
 const actualFile = path.join(root, "public", "stats", "projections", String(season), "accuracy-results.json");
-const actualPayload = readJson(actualFile, {});
+const actualIndex = readJson(actualFile, {});
+const actualPayload = actualIndex?.format === "week_shards"
+  ? (actualIndex.weeks || []).reduce(
+      (combined, shard) => {
+        const relativePath = String(shard?.path || "").replace(/^\/+/, "");
+        const payload = relativePath
+          ? readJson(path.join(root, "public", relativePath), {})
+          : {};
+        combined.player_results.push(...(payload.player_results || []));
+        return combined;
+      },
+      { player_results: [] },
+    )
+  : actualIndex;
 const actualRows = (actualPayload.player_results || []).filter(
   (row) => row.scoring === "ppr" && row.lens === "safe_expected",
 );

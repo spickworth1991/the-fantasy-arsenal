@@ -1093,6 +1093,20 @@ export default function GameCenterClient() {
     let active = true;
     fetch(`/stats/projections/${nflSeason || year || new Date().getFullYear()}/accuracy.json`, { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
+      .then(async (payload) => {
+        if (payload?.source_comparison_results?.length || !payload?.detail_results_path) return payload;
+        const detailResponse = await fetch(payload.detail_results_path, { cache: "no-store" });
+        if (!detailResponse.ok) return payload;
+        const details = await detailResponse.json();
+        if (details?.format !== "week_shards") return { ...payload, ...details };
+        const selectedShard = (details.weeks || []).find(
+          (shard) => n(shard.week) === n(week),
+        );
+        if (!selectedShard?.path) return payload;
+        const shardResponse = await fetch(selectedShard.path, { cache: "no-store" });
+        if (!shardResponse.ok) return payload;
+        return { ...payload, ...(await shardResponse.json()) };
+      })
       .then((payload) => {
         if (active) setGradedFrozenProjections(payload?.source_comparison_results || []);
       })
@@ -1100,7 +1114,7 @@ export default function GameCenterClient() {
         if (active) setGradedFrozenProjections([]);
       });
     return () => { active = false; };
-  }, [nflSeason, year]);
+  }, [nflSeason, week, year]);
   const selectedFrozenSource =
     sourceKey === "proj:sleeper"
       ? "Sleeper"
