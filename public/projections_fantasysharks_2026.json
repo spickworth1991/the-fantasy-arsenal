@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-17T04:08:54.110Z",
+  "updated": "2026-10-18T04:08:55.802Z",
   "season": 2026,
   "source": "FantasySharks",
   "scoring": "PPR",
@@ -25004,5 +25004,6 @@
     "nickmullens": 0.1
   },
   "endpoint": "https://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=874&Position=99&scoring=2&League=&uid=4&uid2=&printable=",
-  "segment": "874"
+  "segment": "874",
+  "projection_contract": "full_season"
 }
