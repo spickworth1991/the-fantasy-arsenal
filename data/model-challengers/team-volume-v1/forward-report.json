@@ -1,6 +1,6 @@
 {
   "source": "The Fantasy Arsenal forward challenger evaluator",
-  "generated_at": "2026-10-19T04:10:26.325Z",
+  "generated_at": "2026-10-20T04:09:59.649Z",
   "challenger": "team-volume-v1",
   "season": 2026,
   "definition_sha256": "7c5be545bb27989aa84ed392b681ab28fdf12b51d6eea66c1142404a34fc6707",
@@ -15,167 +15,168 @@
   "completed_forward_test_weeks": [
     3,
     4,
-    5
+    5,
+    6
   ],
-  "completed_forward_test_week_count": 3,
+  "completed_forward_test_week_count": 4,
   "required_forward_test_weeks": 4,
-  "remaining_forward_test_weeks": 1,
-  "paired_games": 600,
+  "remaining_forward_test_weeks": 0,
+  "paired_games": 661,
   "metrics_by_arm": {
     "incumbent": {
-      "sample": 600,
-      "mae": 5.6575,
-      "rmse": 7.3168,
-      "bias": -1.1994
+      "sample": 661,
+      "mae": 5.6303,
+      "rmse": 7.2731,
+      "bias": -1.1149
     },
     "team_volume": {
-      "sample": 600,
-      "mae": 5.6374,
-      "rmse": 7.3738,
-      "bias": -1.6834
+      "sample": 661,
+      "mae": 5.6138,
+      "rmse": 7.322,
+      "bias": -1.5769
     },
     "role_redistribution": {
-      "sample": 600,
-      "mae": 5.718,
-      "rmse": 7.3587,
-      "bias": -1.0087
+      "sample": 661,
+      "mae": 5.6873,
+      "rmse": 7.3073,
+      "bias": -0.9209
     },
     "combined": {
-      "sample": 600,
-      "mae": 5.6778,
-      "rmse": 7.3997,
-      "bias": -1.5039
+      "sample": 661,
+      "mae": 5.6519,
+      "rmse": 7.3405,
+      "bias": -1.3938
     }
   },
   "by_position": {
     "QB": {
       "incumbent": {
-        "sample": 83,
-        "mae": 6.2638,
-        "rmse": 7.7638,
-        "bias": -1.7128
+        "sample": 93,
+        "mae": 6.1,
+        "rmse": 7.589,
+        "bias": -1.1557
       },
       "team_volume": {
-        "sample": 83,
-        "mae": 6.1661,
-        "rmse": 7.7615,
-        "bias": -2.2666
+        "sample": 93,
+        "mae": 6.0206,
+        "rmse": 7.5651,
+        "bias": -1.6622
       },
       "role_redistribution": {
-        "sample": 83,
-        "mae": 6.2638,
-        "rmse": 7.7638,
-        "bias": -1.7128
+        "sample": 93,
+        "mae": 6.1,
+        "rmse": 7.589,
+        "bias": -1.1557
       },
       "combined": {
-        "sample": 83,
-        "mae": 6.1661,
-        "rmse": 7.7615,
-        "bias": -2.2666
+        "sample": 93,
+        "mae": 6.0206,
+        "rmse": 7.5651,
+        "bias": -1.6622
       }
     },
     "RB": {
       "incumbent": {
-        "sample": 125,
-        "mae": 6.2703,
-        "rmse": 8.0356,
-        "bias": -1.4388
+        "sample": 138,
+        "mae": 6.2379,
+        "rmse": 7.9863,
+        "bias": -1.5074
       },
       "team_volume": {
-        "sample": 125,
-        "mae": 6.188,
-        "rmse": 8.0088,
-        "bias": -1.8068
+        "sample": 138,
+        "mae": 6.1685,
+        "rmse": 7.9602,
+        "bias": -1.8499
       },
       "role_redistribution": {
-        "sample": 125,
-        "mae": 6.2858,
-        "rmse": 8.0644,
-        "bias": -1.1995
+        "sample": 138,
+        "mae": 6.2365,
+        "rmse": 7.9824,
+        "bias": -1.2496
       },
       "combined": {
-        "sample": 125,
-        "mae": 6.2004,
-        "rmse": 8.0279,
-        "bias": -1.5734
+        "sample": 138,
+        "mae": 6.163,
+        "rmse": 7.9466,
+        "bias": -1.5986
       }
     },
     "WR": {
       "incumbent": {
-        "sample": 204,
-        "mae": 5.8246,
-        "rmse": 7.7527,
-        "bias": -1.2456
+        "sample": 222,
+        "mae": 5.8386,
+        "rmse": 7.7675,
+        "bias": -1.2163
       },
       "team_volume": {
-        "sample": 204,
-        "mae": 5.8463,
-        "rmse": 7.8939,
-        "bias": -1.9464
+        "sample": 222,
+        "mae": 5.8662,
+        "rmse": 7.9009,
+        "bias": -1.8967
       },
       "role_redistribution": {
-        "sample": 204,
-        "mae": 5.945,
-        "rmse": 7.8229,
-        "bias": -0.9516
+        "sample": 222,
+        "mae": 5.9586,
+        "rmse": 7.8382,
+        "bias": -0.9208
       },
       "combined": {
-        "sample": 204,
-        "mae": 5.9131,
-        "rmse": 7.9334,
-        "bias": -1.6745
+        "sample": 222,
+        "mae": 5.9364,
+        "rmse": 7.9417,
+        "bias": -1.6224
       }
     },
     "TE": {
       "incumbent": {
-        "sample": 93,
-        "mae": 5.5005,
-        "rmse": 6.7476,
-        "bias": -0.2372
+        "sample": 104,
+        "mae": 5.3298,
+        "rmse": 6.5263,
+        "bias": -0.1543
       },
       "team_volume": {
-        "sample": 93,
-        "mae": 5.5217,
-        "rmse": 6.834,
-        "bias": -0.8336
+        "sample": 104,
+        "mae": 5.3288,
+        "rmse": 6.5988,
+        "bias": -0.7312
       },
       "role_redistribution": {
-        "sample": 93,
-        "mae": 5.6063,
-        "rmse": 6.8174,
-        "bias": 0.0265
+        "sample": 104,
+        "mae": 5.4378,
+        "rmse": 6.5945,
+        "bias": 0.1059
       },
       "combined": {
-        "sample": 93,
-        "mae": 5.6186,
-        "rmse": 6.8833,
-        "bias": -0.5858
+        "sample": 104,
+        "mae": 5.4283,
+        "rmse": 6.6465,
+        "bias": -0.4861
       }
     },
     "K": {
       "incumbent": {
-        "sample": 95,
-        "mae": 4.1161,
-        "rmse": 5.1821,
-        "bias": -1.2788
+        "sample": 104,
+        "mae": 4.2601,
+        "rmse": 5.3563,
+        "bias": -1.3016
       },
       "team_volume": {
-        "sample": 95,
-        "mae": 4.1161,
-        "rmse": 5.1821,
-        "bias": -1.2788
+        "sample": 104,
+        "mae": 4.2601,
+        "rmse": 5.3563,
+        "bias": -1.3016
       },
       "role_redistribution": {
-        "sample": 95,
-        "mae": 4.1161,
-        "rmse": 5.1821,
-        "bias": -1.2788
+        "sample": 104,
+        "mae": 4.2601,
+        "rmse": 5.3563,
+        "bias": -1.3016
       },
       "combined": {
-        "sample": 95,
-        "mae": 4.1161,
-        "rmse": 5.1821,
-        "bias": -1.2788
+        "sample": 104,
+        "mae": 4.2601,
+        "rmse": 5.3563,
+        "bias": -1.3016
       }
     }
   },
@@ -213,118 +214,123 @@
       "5:MIA:13296",
       "5:NYJ:11625,8155",
       "5:PHI:4866,5848,7525",
-      "5:WAS:2449"
+      "5:WAS:2449",
+      "6:ARI:13287",
+      "6:KC:10229",
+      "6:LAC:12509",
+      "6:SF:5872",
+      "6:WAS:12533"
     ],
-    "absence_event_count": 33,
-    "affected_player_games": 127,
+    "absence_event_count": 38,
+    "affected_player_games": 146,
     "required_absence_events": 8,
     "required_affected_player_games": 30,
     "evidence_ready": true,
     "metrics_by_arm": {
       "incumbent": {
-        "sample": 127,
-        "mae": 5.1924,
-        "rmse": 6.3215,
-        "bias": 0.2694
+        "sample": 146,
+        "mae": 5.2083,
+        "rmse": 6.3603,
+        "bias": 0.1541
       },
       "team_volume": {
-        "sample": 127,
-        "mae": 5.1791,
-        "rmse": 6.3693,
-        "bias": -0.3226
+        "sample": 146,
+        "mae": 5.1772,
+        "rmse": 6.3848,
+        "bias": -0.4362
       },
       "role_redistribution": {
-        "sample": 127,
-        "mae": 5.4785,
-        "rmse": 6.5475,
-        "bias": 1.1703
+        "sample": 146,
+        "mae": 5.4664,
+        "rmse": 6.5352,
+        "bias": 1.0324
       },
       "combined": {
-        "sample": 127,
-        "mae": 5.3697,
-        "rmse": 6.5093,
-        "bias": 0.5253
+        "sample": 146,
+        "mae": 5.3497,
+        "rmse": 6.4803,
+        "bias": 0.393
       }
     }
   },
   "arm_decisions": {
     "team_volume": {
       "metrics": {
-        "sample": 600,
-        "mae": 5.6374,
-        "rmse": 7.3738,
-        "bias": -1.6834
+        "sample": 661,
+        "mae": 5.6138,
+        "rmse": 7.322,
+        "bias": -1.5769
       },
-      "mae_improvement": 0.0201,
-      "mae_improvement_rate": 0.0036,
-      "rmse_change": 0.057,
-      "rmse_change_rate": 0.0078,
+      "mae_improvement": 0.0165,
+      "mae_improvement_rate": 0.0029,
+      "rmse_change": 0.0489,
+      "rmse_change_rate": 0.0067,
       "position_regressions": [],
       "affected_metrics": {
-        "sample": 127,
-        "mae": 5.1791,
-        "rmse": 6.3693,
-        "bias": -0.3226
+        "sample": 146,
+        "mae": 5.1772,
+        "rmse": 6.3848,
+        "bias": -0.4362
       },
-      "affected_mae_change_rate": -0.0026,
-      "affected_rmse_change_rate": 0.0076,
+      "affected_mae_change_rate": -0.006,
+      "affected_rmse_change_rate": 0.0039,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "role_redistribution": {
       "metrics": {
-        "sample": 600,
-        "mae": 5.718,
-        "rmse": 7.3587,
-        "bias": -1.0087
+        "sample": 661,
+        "mae": 5.6873,
+        "rmse": 7.3073,
+        "bias": -0.9209
       },
-      "mae_improvement": -0.0605,
-      "mae_improvement_rate": -0.0107,
-      "rmse_change": 0.0419,
-      "rmse_change_rate": 0.0057,
+      "mae_improvement": -0.057,
+      "mae_improvement_rate": -0.0101,
+      "rmse_change": 0.0342,
+      "rmse_change_rate": 0.0047,
       "position_regressions": [],
       "affected_metrics": {
-        "sample": 127,
-        "mae": 5.4785,
-        "rmse": 6.5475,
-        "bias": 1.1703
+        "sample": 146,
+        "mae": 5.4664,
+        "rmse": 6.5352,
+        "bias": 1.0324
       },
-      "affected_mae_change_rate": 0.0551,
-      "affected_rmse_change_rate": 0.0358,
+      "affected_mae_change_rate": 0.0496,
+      "affected_rmse_change_rate": 0.0275,
       "role_evidence_ready": true,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "combined": {
       "metrics": {
-        "sample": 600,
-        "mae": 5.6778,
-        "rmse": 7.3997,
-        "bias": -1.5039
+        "sample": 661,
+        "mae": 5.6519,
+        "rmse": 7.3405,
+        "bias": -1.3938
       },
-      "mae_improvement": -0.0203,
-      "mae_improvement_rate": -0.0036,
-      "rmse_change": 0.0829,
-      "rmse_change_rate": 0.0113,
+      "mae_improvement": -0.0216,
+      "mae_improvement_rate": -0.0038,
+      "rmse_change": 0.0674,
+      "rmse_change_rate": 0.0093,
       "position_regressions": [],
       "affected_metrics": {
-        "sample": 127,
-        "mae": 5.3697,
-        "rmse": 6.5093,
-        "bias": 0.5253
+        "sample": 146,
+        "mae": 5.3497,
+        "rmse": 6.4803,
+        "bias": 0.393
       },
-      "affected_mae_change_rate": 0.0341,
-      "affected_rmse_change_rate": 0.0297,
+      "affected_mae_change_rate": 0.0271,
+      "affected_rmse_change_rate": 0.0189,
       "role_evidence_ready": true,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     }
   },
-  "minimum_completed_weeks_met": false,
+  "minimum_completed_weeks_met": true,
   "eligible_for_review": false,
   "reviewable_arms": [],
-  "recommendation": "collect_forward_weeks",
+  "recommendation": "keep_incumbent",
   "gate": {
     "minimum_mae_improvement_rate": 0.01,
     "maximum_rmse_deterioration_rate": 0.01,
@@ -335,5 +341,5 @@
     "minimum_role_absence_events": 8,
     "minimum_role_affected_player_games": 30
   },
-  "note": "3/4 fully final completed weeks captured; 1 remaining."
+  "note": "No experimental arm passed every paired accuracy safety threshold."
 }
