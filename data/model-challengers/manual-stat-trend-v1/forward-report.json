@@ -1,0 +1,302 @@
+{
+  "source": "The Fantasy Arsenal forward challenger evaluator",
+  "generated_at": "2026-10-25T06:17:38.053Z",
+  "challenger": "manual-stat-trend-v1",
+  "season": 2026,
+  "definition_sha256": "1c7524804ea79fe55add8324291be89e7eb621860018634c071d2adcbe33e9ed",
+  "rejected_definition_snapshots": 0,
+  "population": "identical frozen player-games where every arm produced a forecast and the incumbent projected at least 5 PPR points",
+  "arms": [
+    "incumbent",
+    "in_season_adaptation",
+    "manual_stat_trend",
+    "combined_adaptation_manual",
+    "dynamic_rest_of_season",
+    "dynamic_ros_in_season_adaptation",
+    "dynamic_ros_manual_stat_trend",
+    "dynamic_ros_combined"
+  ],
+  "completed_forward_test_weeks": [],
+  "completed_forward_test_week_count": 0,
+  "required_forward_test_weeks": 4,
+  "required_forward_player_games": 600,
+  "remaining_forward_test_weeks": 4,
+  "paired_games": 0,
+  "total_available_paired_games": 1058,
+  "metrics_by_arm": {
+    "incumbent": null,
+    "in_season_adaptation": null,
+    "manual_stat_trend": null,
+    "combined_adaptation_manual": null,
+    "dynamic_rest_of_season": null,
+    "dynamic_ros_in_season_adaptation": null,
+    "dynamic_ros_manual_stat_trend": null,
+    "dynamic_ros_combined": null
+  },
+  "retrospective_evidence": {
+    "evidence_class": "recovered_retrospective",
+    "promotion_eligible": false,
+    "paired_games": 1058,
+    "completed_weeks": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "metrics_by_arm": {
+      "incumbent": {
+        "sample": 1058,
+        "mae": 5.6348,
+        "rmse": 7.2772,
+        "bias": -0.7227
+      },
+      "in_season_adaptation": {
+        "sample": 1058,
+        "mae": 5.6101,
+        "rmse": 7.2312,
+        "bias": -0.6274
+      },
+      "manual_stat_trend": {
+        "sample": 1058,
+        "mae": 5.5753,
+        "rmse": 7.1976,
+        "bias": -0.6694
+      },
+      "combined_adaptation_manual": {
+        "sample": 1058,
+        "mae": 5.566,
+        "rmse": 7.167,
+        "bias": -0.6105
+      },
+      "dynamic_rest_of_season": {
+        "sample": 1058,
+        "mae": 5.6112,
+        "rmse": 7.2108,
+        "bias": -0.4694
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 1058,
+        "mae": 5.6062,
+        "rmse": 7.1958,
+        "bias": -0.4234
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 1058,
+        "mae": 5.5744,
+        "rmse": 7.1571,
+        "bias": -0.3941
+      },
+      "dynamic_ros_combined": {
+        "sample": 1058,
+        "mae": 5.5681,
+        "rmse": 7.1445,
+        "bias": -0.3646
+      }
+    },
+    "note": "Recovered forecasts are displayed for context but never counted by the prospective promotion gate."
+  },
+  "by_position": {
+    "QB": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    },
+    "RB": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    },
+    "WR": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    },
+    "TE": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    },
+    "K": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    }
+  },
+  "role_redistribution_evidence": {
+    "absence_events": [],
+    "absence_event_count": 0,
+    "affected_player_games": 0,
+    "required_absence_events": 8,
+    "required_affected_player_games": 30,
+    "evidence_ready": false,
+    "metrics_by_arm": {
+      "incumbent": null,
+      "in_season_adaptation": null,
+      "manual_stat_trend": null,
+      "combined_adaptation_manual": null,
+      "dynamic_rest_of_season": null,
+      "dynamic_ros_in_season_adaptation": null,
+      "dynamic_ros_manual_stat_trend": null,
+      "dynamic_ros_combined": null
+    }
+  },
+  "arm_decisions": {
+    "in_season_adaptation": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "manual_stat_trend": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "combined_adaptation_manual": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "dynamic_rest_of_season": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "dynamic_ros_in_season_adaptation": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "dynamic_ros_manual_stat_trend": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    },
+    "dynamic_ros_combined": {
+      "metrics": null,
+      "comparison_arm": "incumbent",
+      "mae_improvement": null,
+      "mae_improvement_rate": 0,
+      "rmse_change": null,
+      "rmse_change_rate": 0,
+      "bias_absolute_change": 0,
+      "position_regressions": [],
+      "affected_metrics": null,
+      "affected_mae_change_rate": 0,
+      "affected_rmse_change_rate": 0,
+      "role_evidence_ready": null,
+      "accuracy_gate_passed": false,
+      "recommendation": "keep_incumbent"
+    }
+  },
+  "minimum_completed_weeks_met": false,
+  "eligible_for_review": false,
+  "reviewable_arms": [],
+  "recommendation": "collect_forward_weeks",
+  "gate": {
+    "minimum_mae_improvement_rate": 0.01,
+    "regime_minimum_mae_improvement_rate_vs_combined": 0.005,
+    "regime_maximum_rmse_deterioration_rate": 0.0025,
+    "regime_maximum_absolute_bias_deterioration": 0.1,
+    "regime_minimum_paired_games": 600,
+    "maximum_rmse_deterioration_rate": 0.01,
+    "maximum_position_mae_deterioration_rate": 0.03,
+    "minimum_position_sample": 200,
+    "completed_weeks_must_be_fully_final": true,
+    "role_arms_require_affected_mae_improvement_rate": 0.01,
+    "minimum_role_absence_events": 8,
+    "minimum_role_affected_player_games": 30
+  },
+  "note": "0/4 fully final completed weeks captured; 4 remaining."
+}

@@ -11,7 +11,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const argument = (name, fallback = "") =>
   process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3) || fallback;
 const season = Number(argument("season", new Date().getUTCFullYear()));
-const challenger = String(argument("challenger", "team-volume-v1")).replace(/[^a-z0-9_-]/gi, "");
+const challenger = String(argument("challenger", "manual-stat-trend-v1")).replace(/[^a-z0-9_-]/gi, "");
 const weeks = [...new Set(
   argument("weeks")
     .split(",")
@@ -25,7 +25,7 @@ const writeJson = (file, payload) => {
 };
 
 if (!challenger || !weeks.length) {
-  throw new Error("Provide a challenger and at least one week, for example --challenger=team-volume-v1 --weeks=4,5.");
+  throw new Error("Provide a challenger and at least one week, for example --challenger=manual-stat-trend-v1 --weeks=7,8.");
 }
 
 const candidateDirectory = path.join(root, "data", "model-challengers", challenger);

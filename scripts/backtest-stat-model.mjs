@@ -534,13 +534,17 @@ function weightedStatLine(games, year, week, currentSeason) {
   );
 }
 
-function inSeasonAdaptationContext(history, position, year, week) {
-  if (!new Set(["QB", "RB", "WR", "TE"]).has(position)) return null;
+function inSeasonAdaptationContext(history, position, year, week, targetTeam) {
+  if (!new Set(["QB", "RB", "WR", "TE", "K"]).has(position)) return null;
   const currentGames = history.filter((game) => game.year === year);
+  const priorGames = history.filter((game) => game.year < year).sort((a, b) => b.year - a.year || b.week - a.week);
+  const previousTeam = priorGames[0]?.team || null;
   return {
     current_games: currentGames.length,
     current_per_game: weightedStatLine(history, year, week, true),
     prior_per_game: weightedStatLine(history, year, week, false),
+    previous_team: previousTeam,
+    team_changed: Boolean(previousTeam && targetTeam && previousTeam !== targetTeam),
   };
 }
 
@@ -615,6 +619,7 @@ function weightedAverage(rows, accessor, year, week) {
 function roleFeatures(history, teamUsage, profile, year, week) {
   const recent = history.slice(-3);
   const earlier = history.slice(0, -3);
+  const currentSeasonGames = history.filter((game) => Number(game.year) === Number(year));
   const share = (game) => {
     const team = teamUsage.rows.get(`${game.year}|${game.week}|${game.team}`);
     const denominator = teamOpportunity(game, team);
@@ -643,6 +648,19 @@ function roleFeatures(history, teamUsage, profile, year, week) {
   const advancedValue = (field, nested) => (game) => {
     const value = nested ? game.advanced?.[field]?.[nested] : game.advanced?.[field];
     return value !== null && Number.isFinite(Number(value)) ? Number(value) : null;
+  };
+  const windowTrend = (window, accessor) => {
+    if (!currentSeasonGames.length) return null;
+    const recentRows = currentSeasonGames.slice(-window);
+    const recentKeys = new Set(recentRows.map((game) => `${game.year}:${game.week}`));
+    const earlierRows = history.filter(
+      (game) => !recentKeys.has(`${game.year}:${game.week}`),
+    );
+    const recentValue = weightedAverage(recentRows, accessor, year, week);
+    const earlierValue = weightedAverage(earlierRows, accessor, year, week);
+    return Number.isFinite(recentValue) && Number.isFinite(earlierValue)
+      ? clamp(recentValue - earlierValue, -0.75, 0.75)
+      : null;
   };
   const highValueTouchRate = (game) => {
     const opportunities = number(game.advanced?.targets) + number(game.advanced?.carries);
@@ -728,6 +746,15 @@ function roleFeatures(history, teamUsage, profile, year, week) {
       week,
     ),
     opportunity_volatility: opportunityVolatility,
+    ...Object.fromEntries(
+      [1, 2, 3].flatMap((window) => [
+        [`regime_snap_trend_${window}g`, windowTrend(window, snaps)],
+        [`regime_opportunity_trend_${window}g`, windowTrend(window, share)],
+        [`regime_target_share_trend_${window}g`, windowTrend(window, targetShare)],
+        [`regime_carry_share_trend_${window}g`, windowTrend(window, carryShare)],
+        [`regime_red_zone_share_trend_${window}g`, windowTrend(window, redZone)],
+      ]),
+    ),
     receiving_epa_per_target: weightedAverage(
       history,
       advancedValue("receiving_epa_per_target"),
@@ -1952,6 +1979,7 @@ for (const year of seasons) {
           game.position,
           year,
           week,
+          game.team,
         ),
         actual_ratio: round(game.points / Math.max(0.1, profile.baseline), 4),
         safe_error: round(safe.projection - game.points, 4),

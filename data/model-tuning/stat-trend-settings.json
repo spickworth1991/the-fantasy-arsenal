@@ -1,0 +1,365 @@
+{
+  "_instructions": [
+    "Edit this file, save it, then run: npm run tune",
+    "enabled controls whether a position or stat participates.",
+    "minimum_games on each stat controls when that component begins adjusting. The position minimum_games is only the fallback when a stat omits it.",
+    "up_weight and down_weight control trend strength by direction. Optional max_up_move_pct and max_down_move_pct override the shared component cap.",
+    "Role multipliers let the same component react differently for newcomer/established starters and reserves. Keep them at 1 until testing a role hypothesis.",
+    "Directional weights control how strongly that stat follows its current-season trend. 0 ignores that direction; 0.5 is cautious; 1 is full; values above 1 are aggressive.",
+    "prior_games controls shrinkage. Lower reacts faster; higher trusts the historical baseline longer.",
+    "max_stat_move_pct caps that individual volume or efficiency-rate change. Use decimals: 0.25 means 25%.",
+    "overall_weight controls how much of the combined stat-line change reaches the fantasy projection.",
+    "max_total_move_pct caps the final fantasy projection change in either direction.",
+    "Stats not used by a position are ignored. Attempts/targets/carries alter volume; yards, catches, TDs, and interceptions alter the corresponding per-opportunity rate.",
+    "A disabled rate remains fixed, but its projected total can still move when an enabled volume changes. Example: pass attempts can move interceptions at an unchanged interception rate.",
+    "The tuner adds the bounded fantasy-point change from the adjusted stat line to Arsenal Safe; it does not multiply Safe by a proxy-derived percentage.",
+    "Use the FANTASY marginal column to decide whether a component helps the full projection. Component stat MAE improvements are diagnostic and are not automatically additive.",
+    "Do not edit evaluation years to chase a better result. Repeated runs make 2024-2025 development data; final verification must use separate evidence."
+  ],
+  "minimum_games": 1,
+  "team_volume_reconciliation": {
+    "enabled": true,
+    "share_strength": 0.75,
+    "pace_strength": 0.25
+  },
+  "positions": {
+    "QB": {
+      "enabled": true,
+      "minimum_games": 1,
+      "overall_weight": 1,
+      "max_total_move_pct": 0.6,
+      "role_multipliers": {
+        "newcomer_starter": 1,
+        "newcomer_reserve": 1,
+        "established_starter": 0.75,
+        "established_reserve": 1,
+        "team_change": 1.25,
+        "role_expansion": 1
+      },
+      "stats": {
+        "pass_att": {
+          "enabled": true,
+          "minimum_games": 1,
+          "up_weight": 0.25,
+          "down_weight": 0.5,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.4
+        },
+        "pass_cmp": {
+          "enabled": true,
+          "minimum_games": 1,
+          "up_weight": 0.5,
+          "down_weight": 0.5,
+          "prior_games": 3.5,
+          "max_stat_move_pct": 0.5
+        },
+        "pass_yd": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 0,
+          "down_weight": 1.5,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.35,
+          "max_up_move_pct": 0.1
+        },
+        "pass_td": {
+          "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 1.25,
+          "down_weight": 0,
+          "prior_games": 24,
+          "max_stat_move_pct": 0.4
+        },
+        "pass_int": {
+          "enabled": true,
+          "minimum_games": 4,
+          "up_weight": 0,
+          "down_weight": 1.25,
+          "prior_games": 3,
+          "max_stat_move_pct": 0.15,
+          "max_down_move_pct": 0.25
+        },
+        "rush_att": {
+          "enabled": true,
+          "minimum_games": 2,
+          "up_weight": 1.5,
+          "down_weight": 0.5,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.4
+        },
+        "rush_yd": {
+          "enabled": true,
+          "minimum_games": 1,
+          "up_weight": 0.8,
+          "down_weight": 0,
+          "prior_games": 24,
+          "max_stat_move_pct": 0.7
+        },
+        "rush_td": {
+          "enabled": false,
+          "minimum_games": 1,
+          "up_weight": 0,
+          "down_weight": 0,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.15
+        }
+      }
+    },
+    "RB": {
+      "enabled": true,
+      "minimum_games": 2,
+      "overall_weight": 0.65,
+      "max_total_move_pct": 0.4,
+      "role_multipliers": {
+        "newcomer_starter": 1,
+        "newcomer_reserve": 1,
+        "established_starter": 1,
+        "established_reserve": 1.25,
+        "team_change": 1.25,
+        "role_expansion": 0.75
+      },
+      "stats": {
+        "rush_att": {
+          "enabled": true,
+          "minimum_games": 1,
+          "up_weight": 1.25,
+          "down_weight": 1.5,
+          "prior_games": 6,
+          "max_stat_move_pct": 0.6,
+          "max_up_move_pct": 0.2
+        },
+        "rush_yd": {
+          "enabled": true,
+          "minimum_games": 2,
+          "up_weight": 0.5,
+          "down_weight": 2,
+          "prior_games": 2,
+          "max_stat_move_pct": 0.2,
+          "max_down_move_pct": 0.1
+        },
+        "rush_td": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 0,
+          "down_weight": 0,
+          "prior_games": 24,
+          "max_stat_move_pct": 0.3
+        },
+        "rec_tgt": {
+          "enabled": true,
+          "minimum_games": 1,
+          "up_weight": 0.75,
+          "down_weight": 0.5,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.6,
+          "max_down_move_pct": 0.15
+        },
+        "rec": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 1,
+          "down_weight": 1,
+          "prior_games": 3,
+          "max_stat_move_pct": 0.15
+        },
+        "rec_yd": {
+        "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 2,
+          "down_weight": 2,
+          "prior_games": 2,
+          "max_stat_move_pct": 0.15
+        },
+        "rec_td": {
+          "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 1,
+          "down_weight": 1,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.3
+        }
+      }
+    },
+    "WR": {
+      "enabled": true,
+      "minimum_games": 2,
+      "overall_weight": 0.65,
+      "max_total_move_pct": 0.3,
+      "role_multipliers": {
+        "newcomer_starter": 1,
+        "newcomer_reserve": 1,
+        "established_starter": 0.75,
+        "established_reserve": 0.75,
+        "team_change": 1.25,
+        "role_expansion": 1
+      },
+      "stats": {
+        "rush_att": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 0.25,
+          "down_weight": 0.5,
+          "prior_games": 8,
+          "max_stat_move_pct": 0.2
+        },
+        "rush_yd": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 0.5,
+          "down_weight": 0.5,
+          "prior_games": 12,
+          "max_stat_move_pct": 0.15
+        },
+        "rush_td": {
+          "enabled": true,
+          "minimum_games": 6,
+          "up_weight": 0.25,
+          "down_weight": 0.25,
+          "prior_games": 24,
+          "max_stat_move_pct": 0.1
+        },
+        "rec_tgt": {
+          "enabled": true,
+          "minimum_games": 2,
+          "up_weight": 0.9,
+          "down_weight": 0.75,
+          "prior_games": 3,
+          "max_stat_move_pct": 0.4
+        },
+        "rec": {
+          "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 0.25,
+          "down_weight": 0.5,
+          "prior_games": 8,
+          "max_stat_move_pct": 0.15
+        },
+        "rec_yd": {
+          "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 0.25,
+          "down_weight": 0.25,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.15
+        },
+        "rec_td": {
+          "enabled": true,
+          "minimum_games": 4,
+          "up_weight": 0.25,
+          "down_weight": 0.5,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.15
+        }
+      }
+    },
+    "TE": {
+      "enabled": true,
+      "minimum_games": 2,
+      "overall_weight": 0.65,
+      "max_total_move_pct": 0.4,
+      "role_multipliers": {
+        "newcomer_starter": 1,
+        "newcomer_reserve": 1,
+        "established_starter": 1,
+        "established_reserve": 1,
+        "team_change": 1,
+        "role_expansion": 1
+      },
+      "stats": {
+        "rec_tgt": {
+          "enabled": true,
+          "minimum_games": 5,
+          "up_weight": 0.5,
+          "down_weight": 1.5,
+          "prior_games": 3.8,
+          "max_stat_move_pct": 0.3,
+          "max_up_move_pct": 0.1,
+          "max_down_move_pct": 0.15
+        },
+        "rec": {
+        "enabled": true,
+          "minimum_games": 3,
+          "up_weight": 0.25,
+          "down_weight": 0.5,
+          "prior_games": 8,
+          "max_stat_move_pct": 0.15
+        },
+        "rec_yd": {
+        "enabled": false,
+          "minimum_games": 3,
+          "up_weight": 0.25,
+          "down_weight": 0.25,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.15,
+          "max_up_move_pct": 0.15,
+          "max_down_move_pct": 0.15
+        },
+        "rec_td": {
+          "enabled": true,
+          "minimum_games": 4,
+          "up_weight": 0,
+          "down_weight": 2,
+          "prior_games": 3,
+          "max_stat_move_pct": 0.3
+        }
+      }
+    },
+    "K": {
+      "enabled": false,
+      "minimum_games": 3,
+      "overall_weight": 0.65,
+      "max_total_move_pct": 0.25,
+      "role_multipliers": {
+        "newcomer_starter": 1,
+        "newcomer_reserve": 1,
+        "established_starter": 1,
+        "established_reserve": 1,
+        "team_change": 1,
+        "role_expansion": 1
+      },
+      "stats": {
+        "fga": {
+          "enabled": false,
+          "minimum_games": 5,
+          "up_weight": 0,
+          "down_weight": 1.25,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.25
+        },
+        "xpa": {
+          "enabled": false,
+          "minimum_games": 3,
+          "up_weight": 0.5,
+          "down_weight": 0,
+          "prior_games": 16,
+          "max_stat_move_pct": 0.25
+        },
+        "kick_pts": {
+          "enabled": true,
+          "minimum_games": 4,
+          "up_weight": 0,
+          "down_weight": 0.5,
+          "prior_games": 8,
+          "max_stat_move_pct": 0.2
+        },
+        "fgm": {
+          "enabled": false,
+          "minimum_games": 4,
+          "up_weight": 0.25,
+          "down_weight": 1.5,
+          "prior_games": 1,
+          "max_stat_move_pct": 0.1,
+          "max_down_move_pct": 0.4
+        },
+        "xpm": {
+          "enabled": false,
+          "minimum_games": 5,
+          "up_weight": 0.25,
+          "down_weight": 0.25,
+          "prior_games": 24,
+          "max_stat_move_pct": 0.05
+        }
+      }
+    }
+  }
+}

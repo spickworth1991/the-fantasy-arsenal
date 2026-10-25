@@ -34,6 +34,7 @@ if (!candidate) {
   console.log(`No frozen '${challenger}' challenger exists; forward evaluation skipped.`);
   process.exit(0);
 }
+const retrospective = readJson(path.join(candidateDirectory, `retrospective-${season}.json`));
 const actualFile = path.join(root, "public", "stats", "projections", String(season), "accuracy-results.json");
 const actualIndex = readJson(actualFile, {});
 const actualPayload = actualIndex?.format === "week_shards"
@@ -134,6 +135,15 @@ const weeks = [...new Set(pairs.map((row) => row.week))].sort((a, b) => a - b);
 const metricsByArm = Object.fromEntries(
   arms.map((arm) => [arm, metrics(pairs, arm)]),
 );
+const retrospectiveFinalWeeks = new Set(retrospective?.fully_final_weeks || []);
+const retrospectivePairs = (retrospective?.records || []).filter((row) =>
+  retrospectiveFinalWeeks.has(Number(row.week)) &&
+  Number.isFinite(Number(row.actual)) &&
+  arms.every((arm) => Number.isFinite(Number(row[arm]))),
+);
+const retrospectiveMetricsByArm = Object.fromEntries(
+  arms.map((arm) => [arm, metrics(retrospectivePairs, arm)]),
+);
 const incumbent = metricsByArm.incumbent;
 const affectedRows = pairs.filter((row) => row.role_redistribution_triggered);
 const affectedMetricsByArm = Object.fromEntries(
@@ -153,6 +163,7 @@ const byPosition = Object.fromEntries(["QB", "RB", "WR", "TE", "K"].map((positio
 }));
 const eligible = weeks.length >= Number(candidate.forward_test_required_weeks || 4);
 const requiredWeeks = Number(candidate.forward_test_required_weeks || 4);
+const requiredForwardPlayerGames = Number(candidate.minimum_forward_player_games || 600);
 const requiredAbsenceEvents = Number(candidate.minimum_role_absence_events || 8);
 const requiredAffectedGames = Number(candidate.minimum_role_affected_player_games || 30);
 const roleEvidenceReady =
@@ -163,31 +174,40 @@ const armDecisions = Object.fromEntries(
     .filter((arm) => arm !== "incumbent")
     .map((arm) => {
       const armMetrics = metricsByArm[arm];
-      const maeImprovement = incumbent && armMetrics
-        ? round(incumbent.mae - armMetrics.mae)
+      const comparisonArm = arm === "regime_aware_combined" && metricsByArm.combined_adaptation_manual
+        ? "combined_adaptation_manual"
+        : arm.startsWith("dynamic_ros_") && metricsByArm.dynamic_rest_of_season
+          ? "dynamic_rest_of_season"
+          : "incumbent";
+      const comparisonMetrics = metricsByArm[comparisonArm];
+      const maeImprovement = comparisonMetrics && armMetrics
+        ? round(comparisonMetrics.mae - armMetrics.mae)
         : null;
-      const rmseChange = incumbent && armMetrics
-        ? round(armMetrics.rmse - incumbent.rmse)
+      const rmseChange = comparisonMetrics && armMetrics
+        ? round(armMetrics.rmse - comparisonMetrics.rmse)
         : null;
-      const maeImprovementRate = incumbent && armMetrics
-        ? maeImprovement / Math.max(0.001, incumbent.mae)
+      const maeImprovementRate = comparisonMetrics && armMetrics
+        ? maeImprovement / Math.max(0.001, comparisonMetrics.mae)
         : null;
-      const rmseChangeRate = incumbent && armMetrics
-        ? rmseChange / Math.max(0.001, incumbent.rmse)
+      const rmseChangeRate = comparisonMetrics && armMetrics
+        ? rmseChange / Math.max(0.001, comparisonMetrics.rmse)
+        : null;
+      const biasAbsoluteChange = comparisonMetrics && armMetrics
+        ? Math.abs(armMetrics.bias) - Math.abs(comparisonMetrics.bias)
         : null;
       const positionRegressions = Object.entries(byPosition)
         .filter(([, row]) =>
-          row.incumbent?.sample >= 200 &&
+          row[comparisonArm]?.sample >= 200 &&
           row[arm] &&
-          (row[arm].mae - row.incumbent.mae) /
-            Math.max(0.001, row.incumbent.mae) > 0.03,
+          (row[arm].mae - row[comparisonArm].mae) /
+            Math.max(0.001, row[comparisonArm].mae) > 0.03,
         )
         .map(([position, row]) => ({
           position,
-          sample: row.incumbent.sample,
+          sample: row[comparisonArm].sample,
           mae_change_rate: round(
-            (row[arm].mae - row.incumbent.mae) /
-              Math.max(0.001, row.incumbent.mae),
+            (row[arm].mae - row[comparisonArm].mae) /
+              Math.max(0.001, row[comparisonArm].mae),
           ),
         }));
       const affectedIncumbent = affectedMetricsByArm.incumbent;
@@ -201,11 +221,15 @@ const armDecisions = Object.fromEntries(
           Math.max(0.001, affectedIncumbent.rmse)
         : null;
       const usesRoleRedistribution = ["role_redistribution", "combined"].includes(arm);
+      const isRegimeAware = arm === "regime_aware_combined";
       const pointGate = arm === "role_redistribution"
         ? affectedMaeChangeRate <= -0.01 && affectedRmseChangeRate <= 0.01
-        : maeImprovementRate >= 0.01 && rmseChangeRate <= 0.01;
+        : isRegimeAware
+          ? maeImprovementRate >= 0.005 && rmseChangeRate <= 0.0025 && biasAbsoluteChange <= 0.1
+          : maeImprovementRate >= 0.01 && rmseChangeRate <= 0.01;
       const passed =
         eligible &&
+        (!isRegimeAware || pairs.length >= requiredForwardPlayerGames) &&
         pointGate &&
         positionRegressions.length === 0 &&
         (!usesRoleRedistribution ||
@@ -214,10 +238,12 @@ const armDecisions = Object.fromEntries(
         arm,
         {
           metrics: armMetrics,
+          comparison_arm: comparisonArm,
           mae_improvement: maeImprovement,
           mae_improvement_rate: round(maeImprovementRate),
           rmse_change: rmseChange,
           rmse_change_rate: round(rmseChangeRate),
+          bias_absolute_change: round(biasAbsoluteChange),
           position_regressions: positionRegressions,
           affected_metrics: affectedArm,
           affected_mae_change_rate: round(affectedMaeChangeRate),
@@ -248,9 +274,19 @@ const report = {
   completed_forward_test_weeks: weeks,
   completed_forward_test_week_count: weeks.length,
   required_forward_test_weeks: requiredWeeks,
+  required_forward_player_games: requiredForwardPlayerGames,
   remaining_forward_test_weeks: Math.max(0, requiredWeeks - weeks.length),
   paired_games: pairs.length,
+  total_available_paired_games: retrospectivePairs.length + pairs.length,
   metrics_by_arm: metricsByArm,
+  retrospective_evidence: {
+    evidence_class: "recovered_retrospective",
+    promotion_eligible: false,
+    paired_games: retrospectivePairs.length,
+    completed_weeks: [...new Set(retrospectivePairs.map((row) => Number(row.week)))].sort((a, b) => a - b),
+    metrics_by_arm: retrospectiveMetricsByArm,
+    note: "Recovered forecasts are displayed for context but never counted by the prospective promotion gate.",
+  },
   by_position: byPosition,
   role_redistribution_evidence: {
     absence_events: absenceEvents,
@@ -274,6 +310,10 @@ const report = {
         : "keep_incumbent",
   gate: {
     minimum_mae_improvement_rate: 0.01,
+    regime_minimum_mae_improvement_rate_vs_combined: 0.005,
+    regime_maximum_rmse_deterioration_rate: 0.0025,
+    regime_maximum_absolute_bias_deterioration: 0.1,
+    regime_minimum_paired_games: requiredForwardPlayerGames,
     maximum_rmse_deterioration_rate: 0.01,
     maximum_position_mae_deterioration_rate: 0.03,
     minimum_position_sample: 200,
@@ -297,4 +337,4 @@ if (candidate.site_exposed !== false) {
   fs.mkdirSync(path.dirname(publicOutput), { recursive: true });
   fs.writeFileSync(publicOutput, JSON.stringify(report, null, 2));
 }
-console.log(`${challenger}: ${pairs.length} paired games across ${weeks.length} completed weeks, ${absenceEvents.length} qualifying absence events; ${report.recommendation}.`);
+console.log(`${challenger}: ${retrospectivePairs.length} recovered retrospective paired games plus ${pairs.length} prospective paired games across ${weeks.length} prospectively captured completed weeks; ${report.recommendation}.`);

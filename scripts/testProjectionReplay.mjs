@@ -153,6 +153,49 @@ for (const arm of ["a", "b", "c", "d"]) {
   );
 }
 
+if (report.experiment === "manual-stat-trend") {
+  check(
+    report.manual_settings?.projection_method?.includes("adds the bounded fantasy-point delta"),
+    "manual tuner must use the additive stat-line delta method",
+  );
+  const enabled = report.enabled_tuning_positions || [];
+  check(enabled.length > 0, "manual tuner has no enabled positions");
+  for (const position of enabled) {
+    const settings = report.model_selection?.[position];
+    const ablation = report.manual_ablations?.[position];
+    const diagnostic = report.manual_position_diagnostics?.find((row) => row.position === position);
+    check(Boolean(ablation), `${position} is missing component ablations`);
+    check(Boolean(diagnostic), `${position} is missing stability diagnostics`);
+    check(
+      (diagnostic?.seasons || []).length === report.evaluation_seasons.length,
+      `${position} is missing season-level diagnostics`,
+    );
+    for (const [component, definition] of Object.entries(settings?.components || {})) {
+      if (!(Number(definition.strength) > 0)) continue;
+      check(
+        Number.isInteger(definition.minimum_games) && definition.minimum_games >= 1,
+        `${position} ${component} has an invalid component minimum_games`,
+      );
+      check(
+        Number.isFinite(ablation?.leave_one_component_out?.[component]?.marginal_improvement_rate),
+        `${position} ${component} is missing marginal fantasy impact`,
+      );
+    }
+    const cap = Number(settings?.maximum_total_shift || 0);
+    check(
+      records.filter((row) => row.position === position).every((row) =>
+        row.c >= Math.max(0, row.b * (1 - cap)) - 1e-9 &&
+        row.c <= row.b * (1 + cap) + 1e-9
+      ),
+      `${position} exceeded its total movement cap`,
+    );
+  }
+  check(
+    records.every((row) => !enabled.includes(row.position) || typeof row.role_cohort === "string"),
+    "enabled manual-tuner rows are missing role cohorts",
+  );
+}
+
 if (failures.length) {
   console.error("Projection replay tests: FAIL");
   failures.forEach((failure) => console.error(`- ${failure}`));

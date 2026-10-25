@@ -77,11 +77,17 @@ const replayRows = forecasts.map((forecast) => {
 const metrics = (rows, field) => ({
   sample: rows.length,
   mae: rows.length ? rows.reduce((sum, row) => sum + Math.abs(row[field] - row.actual), 0) / rows.length : null,
+  rmse: rows.length ? Math.sqrt(rows.reduce((sum, row) => sum + (row[field] - row.actual) ** 2, 0) / rows.length) : null,
+  bias: rows.length ? rows.reduce((sum, row) => sum + row[field] - row.actual, 0) / rows.length : null,
 });
 for (const position of ["ALL", "QB", "RB", "WR", "TE", "K"]) {
   const rows = replayRows.filter((row) => row.completed_games >= 3 && (position === "ALL" || row.position === position));
   const incumbent = metrics(rows, "incumbent");
   const adaptation = metrics(rows, "adaptation");
+  const improvement = incumbent.mae && adaptation.mae != null
+    ? (incumbent.mae - adaptation.mae) / incumbent.mae * 100
+    : null;
+  console.log(`  balance: MAE ${improvement == null ? "—" : `${improvement >= 0 ? "+" : ""}${improvement.toFixed(2)}%`} | RMSE ${incumbent.rmse?.toFixed(3) || "—"} -> ${adaptation.rmse?.toFixed(3) || "—"} | bias ${incumbent.bias?.toFixed(3) || "—"} -> ${adaptation.bias?.toFixed(3) || "—"}`);
   console.log(`${position}: ${rows.length} completed frozen player-games | incumbent ${incumbent.mae?.toFixed(3) || "—"} | adaptation ${adaptation.mae?.toFixed(3) || "—"}`);
 }
 

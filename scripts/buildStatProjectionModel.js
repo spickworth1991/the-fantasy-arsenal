@@ -1696,6 +1696,7 @@ function productionRoleFeatures(key, position, evidence, teamUsage) {
       ? values.reduce((sum, value) => sum + value, 0) / values.length
       : null;
   };
+  const currentSeasonGames = games.filter((game) => Number(game.year) === season);
   const teamRow = (game) =>
     teamUsage.rows.get(`${game.year}|${game.week}|${game.team}`);
   const snapShare = (game) => {
@@ -1736,6 +1737,16 @@ function productionRoleFeatures(key, position, evidence, teamUsage) {
     const advanced = game.advanced;
     const value = nested ? advanced?.[field]?.[nested] : advanced?.[field];
     return value !== null && Number.isFinite(Number(value)) ? Number(value) : null;
+  };
+  const windowTrend = (window, accessor) => {
+    if (!currentSeasonGames.length) return null;
+    const recentRows = currentSeasonGames.slice(-window);
+    const earlierRows = games.filter((game) => !recentRows.includes(game));
+    const recentValue = average(recentRows, accessor);
+    const earlierValue = average(earlierRows, accessor);
+    return Number.isFinite(recentValue) && Number.isFinite(earlierValue)
+      ? clamp(recentValue - earlierValue, -0.75, 0.75)
+      : null;
   };
   const highValueTouchRate = (game) => {
     const opportunities = num(game.advanced?.targets) + num(game.advanced?.carries);
@@ -1826,11 +1837,24 @@ function productionRoleFeatures(key, position, evidence, teamUsage) {
       const plays = num(teamRow(game)?.plays);
       return plays > 0 ? plays / teamUsage.leaguePace - 1 : null;
     }),
+    ...Object.fromEntries(
+      [1, 2, 3].flatMap((window) => [
+        [`regime_snap_trend_${window}g`, windowTrend(window, snapShare)],
+        [`regime_opportunity_trend_${window}g`, windowTrend(window, opportunityShare)],
+        [`regime_target_share_trend_${window}g`, windowTrend(window, advancedValue("target_share"))],
+        [`regime_carry_share_trend_${window}g`, windowTrend(window, advancedValue("carry_share"))],
+        [`regime_red_zone_share_trend_${window}g`, windowTrend(window, redZoneShare)],
+      ]),
+    ),
     history_reliability: games.length / (games.length + 6),
     games: games.length,
   };
   features.available_features = Object.entries(features).filter(
-    ([key, value]) => key !== "games" && value !== null && Number.isFinite(Number(value)),
+    ([key, value]) =>
+      key !== "games" &&
+      !key.startsWith("regime_") &&
+      value !== null &&
+      Number.isFinite(Number(value)),
   ).length;
   return features;
 }

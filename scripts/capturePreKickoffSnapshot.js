@@ -84,10 +84,15 @@ console.log(
 );
 const calibrationFile = path.join(root, "public", "stats", "projections", "model-calibration.json");
 const shadowImplementationFile = path.join(root, "scripts", "lib", "projectionShadowArms.mjs");
+const regimeImplementationFile = path.join(root, "scripts", "lib", "regimeAwareCombined.mjs");
 const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
   const definition = readJson(candidate.definition);
   if (!definition) {
     console.warn(`Skipping shadow '${candidate.name}': its frozen definition is unreadable. The incumbent capture will continue.`);
+    return false;
+  }
+  if (definition.capture_enabled === false) {
+    console.log(`Skipping completed shadow '${candidate.name}'; automatic capture is disabled.`);
     return false;
   }
   if (definition.local_only === true) {
@@ -100,6 +105,10 @@ const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
   }
   if (definition.implementation_sha256 && (!fs.existsSync(shadowImplementationFile) || !frozenTextHashMatches(shadowImplementationFile, definition.implementation_sha256))) {
     console.warn(`Skipping shadow '${candidate.name}': its implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
+    return false;
+  }
+  if (definition.regime_implementation_sha256 && (!fs.existsSync(regimeImplementationFile) || !frozenTextHashMatches(regimeImplementationFile, definition.regime_implementation_sha256))) {
+    console.warn(`Skipping shadow '${candidate.name}': its regime-aware implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
     return false;
   }
   return true;
