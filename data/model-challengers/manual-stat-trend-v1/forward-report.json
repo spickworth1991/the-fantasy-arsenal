@@ -1,6 +1,6 @@
 {
   "source": "The Fantasy Arsenal forward challenger evaluator",
-  "generated_at": "2026-10-26T04:10:11.602Z",
+  "generated_at": "2026-10-27T04:09:53.864Z",
   "challenger": "manual-stat-trend-v1",
   "season": 2026,
   "definition_sha256": "1c7524804ea79fe55add8324291be89e7eb621860018634c071d2adcbe33e9ed",
@@ -16,22 +16,64 @@
     "dynamic_ros_manual_stat_trend",
     "dynamic_ros_combined"
   ],
-  "completed_forward_test_weeks": [],
-  "completed_forward_test_week_count": 0,
+  "completed_forward_test_weeks": [
+    7
+  ],
+  "completed_forward_test_week_count": 1,
   "required_forward_test_weeks": 4,
   "required_forward_player_games": 600,
-  "remaining_forward_test_weeks": 4,
-  "paired_games": 0,
-  "total_available_paired_games": 1058,
+  "remaining_forward_test_weeks": 3,
+  "paired_games": 60,
+  "total_available_paired_games": 1118,
   "metrics_by_arm": {
-    "incumbent": null,
-    "in_season_adaptation": null,
-    "manual_stat_trend": null,
-    "combined_adaptation_manual": null,
-    "dynamic_rest_of_season": null,
-    "dynamic_ros_in_season_adaptation": null,
-    "dynamic_ros_manual_stat_trend": null,
-    "dynamic_ros_combined": null
+    "incumbent": {
+      "sample": 60,
+      "mae": 4.9736,
+      "rmse": 6.3983,
+      "bias": -1.2067
+    },
+    "in_season_adaptation": {
+      "sample": 60,
+      "mae": 4.6599,
+      "rmse": 6.0464,
+      "bias": -1.0819
+    },
+    "manual_stat_trend": {
+      "sample": 60,
+      "mae": 4.7965,
+      "rmse": 6.2386,
+      "bias": -1.5791
+    },
+    "combined_adaptation_manual": {
+      "sample": 60,
+      "mae": 4.8586,
+      "rmse": 6.2926,
+      "bias": -1.4767
+    },
+    "dynamic_rest_of_season": {
+      "sample": 60,
+      "mae": 4.574,
+      "rmse": 5.8406,
+      "bias": -1.0102
+    },
+    "dynamic_ros_in_season_adaptation": {
+      "sample": 60,
+      "mae": 4.5867,
+      "rmse": 5.8337,
+      "bias": -0.88
+    },
+    "dynamic_ros_manual_stat_trend": {
+      "sample": 60,
+      "mae": 4.6614,
+      "rmse": 5.9772,
+      "bias": -1.11
+    },
+    "dynamic_ros_combined": {
+      "sample": 60,
+      "mae": 4.7074,
+      "rmse": 6.1169,
+      "bias": -1.0049
+    }
   },
   "retrospective_evidence": {
     "evidence_class": "recovered_retrospective",
@@ -98,183 +140,499 @@
   },
   "by_position": {
     "QB": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 9,
+        "mae": 4.8228,
+        "rmse": 6.378,
+        "bias": 0.7199
+      },
+      "in_season_adaptation": {
+        "sample": 9,
+        "mae": 3.8422,
+        "rmse": 5.6066,
+        "bias": 0.7651
+      },
+      "manual_stat_trend": {
+        "sample": 9,
+        "mae": 3.8528,
+        "rmse": 5.459,
+        "bias": 0.0979
+      },
+      "combined_adaptation_manual": {
+        "sample": 9,
+        "mae": 3.5383,
+        "rmse": 5.0957,
+        "bias": 0.2352
+      },
+      "dynamic_rest_of_season": {
+        "sample": 9,
+        "mae": 3.923,
+        "rmse": 5.6241,
+        "bias": 0.275
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 9,
+        "mae": 3.5763,
+        "rmse": 5.2807,
+        "bias": 0.2792
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 9,
+        "mae": 3.7988,
+        "rmse": 5.2873,
+        "bias": -0.1277
+      },
+      "dynamic_ros_combined": {
+        "sample": 9,
+        "mae": 3.6764,
+        "rmse": 5.187,
+        "bias": -0.0582
+      }
     },
     "RB": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 12,
+        "mae": 4.856,
+        "rmse": 5.8707,
+        "bias": -3.3707
+      },
+      "in_season_adaptation": {
+        "sample": 12,
+        "mae": 5.1521,
+        "rmse": 6.0732,
+        "bias": -3.2241
+      },
+      "manual_stat_trend": {
+        "sample": 12,
+        "mae": 5.5718,
+        "rmse": 6.8077,
+        "bias": -3.9763
+      },
+      "combined_adaptation_manual": {
+        "sample": 12,
+        "mae": 6.1178,
+        "rmse": 7.2527,
+        "bias": -3.567
+      },
+      "dynamic_rest_of_season": {
+        "sample": 12,
+        "mae": 5.2637,
+        "rmse": 6.0339,
+        "bias": -2.5377
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 12,
+        "mae": 5.7105,
+        "rmse": 6.5911,
+        "bias": -2.2182
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 12,
+        "mae": 5.9917,
+        "rmse": 7.255,
+        "bias": -2.454
+      },
+      "dynamic_ros_combined": {
+        "sample": 12,
+        "mae": 6.3136,
+        "rmse": 7.8658,
+        "bias": -1.9809
+      }
     },
     "WR": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 20,
+        "mae": 5.8558,
+        "rmse": 7.5256,
+        "bias": -2.2295
+      },
+      "in_season_adaptation": {
+        "sample": 20,
+        "mae": 5.1783,
+        "rmse": 6.7975,
+        "bias": -1.9632
+      },
+      "manual_stat_trend": {
+        "sample": 20,
+        "mae": 5.4901,
+        "rmse": 7.1219,
+        "bias": -2.4342
+      },
+      "combined_adaptation_manual": {
+        "sample": 20,
+        "mae": 5.4901,
+        "rmse": 7.1219,
+        "bias": -2.4342
+      },
+      "dynamic_rest_of_season": {
+        "sample": 20,
+        "mae": 5.0838,
+        "rmse": 6.4711,
+        "bias": -1.6412
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 20,
+        "mae": 5.0096,
+        "rmse": 6.2527,
+        "bias": -1.4441
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 20,
+        "mae": 5.0393,
+        "rmse": 6.2865,
+        "bias": -1.6138
+      },
+      "dynamic_ros_combined": {
+        "sample": 20,
+        "mae": 5.0393,
+        "rmse": 6.2865,
+        "bias": -1.6138
+      }
     },
     "TE": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 10,
+        "mae": 5.12,
+        "rmse": 6.4004,
+        "bias": 1.2394
+      },
+      "in_season_adaptation": {
+        "sample": 10,
+        "mae": 5.12,
+        "rmse": 6.4004,
+        "bias": 1.2394
+      },
+      "manual_stat_trend": {
+        "sample": 10,
+        "mae": 4.8032,
+        "rmse": 6.0183,
+        "bias": 0.701
+      },
+      "combined_adaptation_manual": {
+        "sample": 10,
+        "mae": 4.8032,
+        "rmse": 6.0183,
+        "bias": 0.701
+      },
+      "dynamic_rest_of_season": {
+        "sample": 10,
+        "mae": 4.5873,
+        "rmse": 5.9452,
+        "bias": 0.6427
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 10,
+        "mae": 4.5873,
+        "rmse": 5.9452,
+        "bias": 0.6427
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 10,
+        "mae": 4.4384,
+        "rmse": 5.7945,
+        "bias": 0.2514
+      },
+      "dynamic_ros_combined": {
+        "sample": 10,
+        "mae": 4.4384,
+        "rmse": 5.7945,
+        "bias": 0.2514
+      }
     },
     "K": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "in_season_adaptation": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "manual_stat_trend": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "combined_adaptation_manual": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "dynamic_rest_of_season": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      },
+      "dynamic_ros_combined": {
+        "sample": 9,
+        "mae": 3.158,
+        "rmse": 3.8621,
+        "bias": -0.6931
+      }
     }
   },
   "role_redistribution_evidence": {
-    "absence_events": [],
-    "absence_event_count": 0,
-    "affected_player_games": 0,
+    "absence_events": [
+      "7:ARI:13287",
+      "7:DAL:8917",
+      "7:KC:10229",
+      "7:PHI:7525,9486",
+      "7:SEA:9753"
+    ],
+    "absence_event_count": 5,
+    "affected_player_games": 18,
     "required_absence_events": 8,
     "required_affected_player_games": 30,
     "evidence_ready": false,
     "metrics_by_arm": {
-      "incumbent": null,
-      "in_season_adaptation": null,
-      "manual_stat_trend": null,
-      "combined_adaptation_manual": null,
-      "dynamic_rest_of_season": null,
-      "dynamic_ros_in_season_adaptation": null,
-      "dynamic_ros_manual_stat_trend": null,
-      "dynamic_ros_combined": null
+      "incumbent": {
+        "sample": 18,
+        "mae": 5.5652,
+        "rmse": 7.2152,
+        "bias": -1.4397
+      },
+      "in_season_adaptation": {
+        "sample": 18,
+        "mae": 5.4404,
+        "rmse": 6.8663,
+        "bias": -1.0639
+      },
+      "manual_stat_trend": {
+        "sample": 18,
+        "mae": 5.4434,
+        "rmse": 6.9227,
+        "bias": -1.8362
+      },
+      "combined_adaptation_manual": {
+        "sample": 18,
+        "mae": 5.6366,
+        "rmse": 7.0494,
+        "bias": -1.7747
+      },
+      "dynamic_rest_of_season": {
+        "sample": 18,
+        "mae": 4.9373,
+        "rmse": 6.2848,
+        "bias": -1.0587
+      },
+      "dynamic_ros_in_season_adaptation": {
+        "sample": 18,
+        "mae": 5.1169,
+        "rmse": 6.3556,
+        "bias": -0.8162
+      },
+      "dynamic_ros_manual_stat_trend": {
+        "sample": 18,
+        "mae": 5.1511,
+        "rmse": 6.3285,
+        "bias": -1.1947
+      },
+      "dynamic_ros_combined": {
+        "sample": 18,
+        "mae": 5.3548,
+        "rmse": 6.6136,
+        "bias": -1.0826
+      }
     }
   },
   "arm_decisions": {
     "in_season_adaptation": {
-      "metrics": null,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.6599,
+        "rmse": 6.0464,
+        "bias": -1.0819
+      },
       "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "mae_improvement": 0.3137,
+      "mae_improvement_rate": 0.0631,
+      "rmse_change": -0.3519,
+      "rmse_change_rate": -0.055,
+      "bias_absolute_change": -0.1248,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.4404,
+        "rmse": 6.8663,
+        "bias": -1.0639
+      },
+      "affected_mae_change_rate": -0.0224,
+      "affected_rmse_change_rate": -0.0484,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "manual_stat_trend": {
-      "metrics": null,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.7965,
+        "rmse": 6.2386,
+        "bias": -1.5791
+      },
       "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "mae_improvement": 0.1771,
+      "mae_improvement_rate": 0.0356,
+      "rmse_change": -0.1597,
+      "rmse_change_rate": -0.025,
+      "bias_absolute_change": 0.3724,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.4434,
+        "rmse": 6.9227,
+        "bias": -1.8362
+      },
+      "affected_mae_change_rate": -0.0219,
+      "affected_rmse_change_rate": -0.0405,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "combined_adaptation_manual": {
-      "metrics": null,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.8586,
+        "rmse": 6.2926,
+        "bias": -1.4767
+      },
       "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "mae_improvement": 0.115,
+      "mae_improvement_rate": 0.0231,
+      "rmse_change": -0.1057,
+      "rmse_change_rate": -0.0165,
+      "bias_absolute_change": 0.27,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.6366,
+        "rmse": 7.0494,
+        "bias": -1.7747
+      },
+      "affected_mae_change_rate": 0.0128,
+      "affected_rmse_change_rate": -0.023,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "dynamic_rest_of_season": {
-      "metrics": null,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.574,
+        "rmse": 5.8406,
+        "bias": -1.0102
+      },
       "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "mae_improvement": 0.3996,
+      "mae_improvement_rate": 0.0803,
+      "rmse_change": -0.5577,
+      "rmse_change_rate": -0.0872,
+      "bias_absolute_change": -0.1965,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 4.9373,
+        "rmse": 6.2848,
+        "bias": -1.0587
+      },
+      "affected_mae_change_rate": -0.1128,
+      "affected_rmse_change_rate": -0.1289,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "dynamic_ros_in_season_adaptation": {
-      "metrics": null,
-      "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.5867,
+        "rmse": 5.8337,
+        "bias": -0.88
+      },
+      "comparison_arm": "dynamic_rest_of_season",
+      "mae_improvement": -0.0127,
+      "mae_improvement_rate": -0.0028,
+      "rmse_change": -0.0069,
+      "rmse_change_rate": -0.0012,
+      "bias_absolute_change": -0.1302,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.1169,
+        "rmse": 6.3556,
+        "bias": -0.8162
+      },
+      "affected_mae_change_rate": -0.0806,
+      "affected_rmse_change_rate": -0.1191,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "dynamic_ros_manual_stat_trend": {
-      "metrics": null,
-      "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.6614,
+        "rmse": 5.9772,
+        "bias": -1.11
+      },
+      "comparison_arm": "dynamic_rest_of_season",
+      "mae_improvement": -0.0874,
+      "mae_improvement_rate": -0.0191,
+      "rmse_change": 0.1366,
+      "rmse_change_rate": 0.0234,
+      "bias_absolute_change": 0.0998,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.1511,
+        "rmse": 6.3285,
+        "bias": -1.1947
+      },
+      "affected_mae_change_rate": -0.0744,
+      "affected_rmse_change_rate": -0.1229,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
     },
     "dynamic_ros_combined": {
-      "metrics": null,
-      "comparison_arm": "incumbent",
-      "mae_improvement": null,
-      "mae_improvement_rate": 0,
-      "rmse_change": null,
-      "rmse_change_rate": 0,
-      "bias_absolute_change": 0,
+      "metrics": {
+        "sample": 60,
+        "mae": 4.7074,
+        "rmse": 6.1169,
+        "bias": -1.0049
+      },
+      "comparison_arm": "dynamic_rest_of_season",
+      "mae_improvement": -0.1334,
+      "mae_improvement_rate": -0.0292,
+      "rmse_change": 0.2763,
+      "rmse_change_rate": 0.0473,
+      "bias_absolute_change": -0.0053,
       "position_regressions": [],
-      "affected_metrics": null,
-      "affected_mae_change_rate": 0,
-      "affected_rmse_change_rate": 0,
+      "affected_metrics": {
+        "sample": 18,
+        "mae": 5.3548,
+        "rmse": 6.6136,
+        "bias": -1.0826
+      },
+      "affected_mae_change_rate": -0.0378,
+      "affected_rmse_change_rate": -0.0834,
       "role_evidence_ready": null,
       "accuracy_gate_passed": false,
       "recommendation": "keep_incumbent"
@@ -298,5 +656,5 @@
     "minimum_role_absence_events": 8,
     "minimum_role_affected_player_games": 30
   },
-  "note": "0/4 fully final completed weeks captured; 4 remaining."
+  "note": "1/4 fully final completed weeks captured; 3 remaining."
 }
