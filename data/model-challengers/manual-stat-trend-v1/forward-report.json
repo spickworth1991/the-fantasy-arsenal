@@ -1,6 +1,6 @@
 {
   "source": "The Fantasy Arsenal forward challenger evaluator",
-  "generated_at": "2026-10-27T04:09:53.864Z",
+  "generated_at": "2026-10-28T04:09:03.873Z",
   "challenger": "manual-stat-trend-v1",
   "season": 2026,
   "definition_sha256": "1c7524804ea79fe55add8324291be89e7eb621860018634c071d2adcbe33e9ed",
@@ -28,51 +28,51 @@
   "metrics_by_arm": {
     "incumbent": {
       "sample": 60,
-      "mae": 4.9736,
-      "rmse": 6.3983,
-      "bias": -1.2067
+      "mae": 4.9719,
+      "rmse": 6.3961,
+      "bias": -1.2051
     },
     "in_season_adaptation": {
       "sample": 60,
-      "mae": 4.6599,
-      "rmse": 6.0464,
-      "bias": -1.0819
+      "mae": 4.6582,
+      "rmse": 6.0439,
+      "bias": -1.0802
     },
     "manual_stat_trend": {
       "sample": 60,
-      "mae": 4.7965,
-      "rmse": 6.2386,
-      "bias": -1.5791
+      "mae": 4.7949,
+      "rmse": 6.2361,
+      "bias": -1.5774
     },
     "combined_adaptation_manual": {
       "sample": 60,
-      "mae": 4.8586,
-      "rmse": 6.2926,
-      "bias": -1.4767
+      "mae": 4.8569,
+      "rmse": 6.29,
+      "bias": -1.475
     },
     "dynamic_rest_of_season": {
       "sample": 60,
-      "mae": 4.574,
-      "rmse": 5.8406,
-      "bias": -1.0102
+      "mae": 4.5724,
+      "rmse": 5.838,
+      "bias": -1.0085
     },
     "dynamic_ros_in_season_adaptation": {
       "sample": 60,
-      "mae": 4.5867,
-      "rmse": 5.8337,
-      "bias": -0.88
+      "mae": 4.585,
+      "rmse": 5.831,
+      "bias": -0.8783
     },
     "dynamic_ros_manual_stat_trend": {
       "sample": 60,
-      "mae": 4.6614,
-      "rmse": 5.9772,
-      "bias": -1.11
+      "mae": 4.6597,
+      "rmse": 5.9744,
+      "bias": -1.1083
     },
     "dynamic_ros_combined": {
       "sample": 60,
-      "mae": 4.7074,
-      "rmse": 6.1169,
-      "bias": -1.0049
+      "mae": 4.7057,
+      "rmse": 6.114,
+      "bias": -1.0033
     }
   },
   "retrospective_evidence": {
@@ -142,51 +142,51 @@
     "QB": {
       "incumbent": {
         "sample": 9,
-        "mae": 4.8228,
-        "rmse": 6.378,
-        "bias": 0.7199
+        "mae": 4.8117,
+        "rmse": 6.3633,
+        "bias": 0.731
       },
       "in_season_adaptation": {
         "sample": 9,
-        "mae": 3.8422,
-        "rmse": 5.6066,
-        "bias": 0.7651
+        "mae": 3.8311,
+        "rmse": 5.5891,
+        "bias": 0.7762
       },
       "manual_stat_trend": {
         "sample": 9,
-        "mae": 3.8528,
-        "rmse": 5.459,
-        "bias": 0.0979
+        "mae": 3.8417,
+        "rmse": 5.4396,
+        "bias": 0.109
       },
       "combined_adaptation_manual": {
         "sample": 9,
-        "mae": 3.5383,
-        "rmse": 5.0957,
-        "bias": 0.2352
+        "mae": 3.5272,
+        "rmse": 5.0741,
+        "bias": 0.2463
       },
       "dynamic_rest_of_season": {
         "sample": 9,
-        "mae": 3.923,
-        "rmse": 5.6241,
-        "bias": 0.275
+        "mae": 3.9119,
+        "rmse": 5.6062,
+        "bias": 0.2861
       },
       "dynamic_ros_in_season_adaptation": {
         "sample": 9,
-        "mae": 3.5763,
-        "rmse": 5.2807,
-        "bias": 0.2792
+        "mae": 3.5652,
+        "rmse": 5.2608,
+        "bias": 0.2903
       },
       "dynamic_ros_manual_stat_trend": {
         "sample": 9,
-        "mae": 3.7988,
-        "rmse": 5.2873,
-        "bias": -0.1277
+        "mae": 3.7877,
+        "rmse": 5.2661,
+        "bias": -0.1166
       },
       "dynamic_ros_combined": {
         "sample": 9,
-        "mae": 3.6764,
-        "rmse": 5.187,
-        "bias": -0.0582
+        "mae": 3.6653,
+        "rmse": 5.1646,
+        "bias": -0.0471
       }
     },
     "RB": {
@@ -458,16 +458,16 @@
     "in_season_adaptation": {
       "metrics": {
         "sample": 60,
-        "mae": 4.6599,
-        "rmse": 6.0464,
-        "bias": -1.0819
+        "mae": 4.6582,
+        "rmse": 6.0439,
+        "bias": -1.0802
       },
       "comparison_arm": "incumbent",
       "mae_improvement": 0.3137,
       "mae_improvement_rate": 0.0631,
-      "rmse_change": -0.3519,
-      "rmse_change_rate": -0.055,
-      "bias_absolute_change": -0.1248,
+      "rmse_change": -0.3522,
+      "rmse_change_rate": -0.0551,
+      "bias_absolute_change": -0.1249,
       "position_regressions": [],
       "affected_metrics": {
         "sample": 18,
@@ -484,16 +484,16 @@
     "manual_stat_trend": {
       "metrics": {
         "sample": 60,
-        "mae": 4.7965,
-        "rmse": 6.2386,
-        "bias": -1.5791
+        "mae": 4.7949,
+        "rmse": 6.2361,
+        "bias": -1.5774
       },
       "comparison_arm": "incumbent",
-      "mae_improvement": 0.1771,
+      "mae_improvement": 0.177,
       "mae_improvement_rate": 0.0356,
-      "rmse_change": -0.1597,
+      "rmse_change": -0.16,
       "rmse_change_rate": -0.025,
-      "bias_absolute_change": 0.3724,
+      "bias_absolute_change": 0.3723,
       "position_regressions": [],
       "affected_metrics": {
         "sample": 18,
@@ -510,16 +510,16 @@
     "combined_adaptation_manual": {
       "metrics": {
         "sample": 60,
-        "mae": 4.8586,
-        "rmse": 6.2926,
-        "bias": -1.4767
+        "mae": 4.8569,
+        "rmse": 6.29,
+        "bias": -1.475
       },
       "comparison_arm": "incumbent",
       "mae_improvement": 0.115,
       "mae_improvement_rate": 0.0231,
-      "rmse_change": -0.1057,
-      "rmse_change_rate": -0.0165,
-      "bias_absolute_change": 0.27,
+      "rmse_change": -0.1061,
+      "rmse_change_rate": -0.0166,
+      "bias_absolute_change": 0.2699,
       "position_regressions": [],
       "affected_metrics": {
         "sample": 18,
@@ -536,16 +536,16 @@
     "dynamic_rest_of_season": {
       "metrics": {
         "sample": 60,
-        "mae": 4.574,
-        "rmse": 5.8406,
-        "bias": -1.0102
+        "mae": 4.5724,
+        "rmse": 5.838,
+        "bias": -1.0085
       },
       "comparison_arm": "incumbent",
-      "mae_improvement": 0.3996,
-      "mae_improvement_rate": 0.0803,
-      "rmse_change": -0.5577,
-      "rmse_change_rate": -0.0872,
-      "bias_absolute_change": -0.1965,
+      "mae_improvement": 0.3995,
+      "mae_improvement_rate": 0.0804,
+      "rmse_change": -0.5581,
+      "rmse_change_rate": -0.0873,
+      "bias_absolute_change": -0.1966,
       "position_regressions": [],
       "affected_metrics": {
         "sample": 18,
@@ -562,14 +562,14 @@
     "dynamic_ros_in_season_adaptation": {
       "metrics": {
         "sample": 60,
-        "mae": 4.5867,
-        "rmse": 5.8337,
-        "bias": -0.88
+        "mae": 4.585,
+        "rmse": 5.831,
+        "bias": -0.8783
       },
       "comparison_arm": "dynamic_rest_of_season",
-      "mae_improvement": -0.0127,
+      "mae_improvement": -0.0126,
       "mae_improvement_rate": -0.0028,
-      "rmse_change": -0.0069,
+      "rmse_change": -0.007,
       "rmse_change_rate": -0.0012,
       "bias_absolute_change": -0.1302,
       "position_regressions": [],
@@ -588,14 +588,14 @@
     "dynamic_ros_manual_stat_trend": {
       "metrics": {
         "sample": 60,
-        "mae": 4.6614,
-        "rmse": 5.9772,
-        "bias": -1.11
+        "mae": 4.6597,
+        "rmse": 5.9744,
+        "bias": -1.1083
       },
       "comparison_arm": "dynamic_rest_of_season",
-      "mae_improvement": -0.0874,
+      "mae_improvement": -0.0873,
       "mae_improvement_rate": -0.0191,
-      "rmse_change": 0.1366,
+      "rmse_change": 0.1364,
       "rmse_change_rate": 0.0234,
       "bias_absolute_change": 0.0998,
       "position_regressions": [],
@@ -614,16 +614,16 @@
     "dynamic_ros_combined": {
       "metrics": {
         "sample": 60,
-        "mae": 4.7074,
-        "rmse": 6.1169,
-        "bias": -1.0049
+        "mae": 4.7057,
+        "rmse": 6.114,
+        "bias": -1.0033
       },
       "comparison_arm": "dynamic_rest_of_season",
-      "mae_improvement": -0.1334,
+      "mae_improvement": -0.1333,
       "mae_improvement_rate": -0.0292,
-      "rmse_change": 0.2763,
+      "rmse_change": 0.276,
       "rmse_change_rate": 0.0473,
-      "bias_absolute_change": -0.0053,
+      "bias_absolute_change": -0.0052,
       "position_regressions": [],
       "affected_metrics": {
         "sample": 18,
