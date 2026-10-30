@@ -1,156 +1,156 @@
 {
-  "updated_at": "2026-10-29T04:08:40.300Z",
+  "updated_at": "2026-10-30T04:08:56.095Z",
   "sources": {
     "fc": {
       "key": "fc",
       "name": "FantasyCalc",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:06:16.810Z",
-      "last_success_at": "2026-10-29T04:06:16.810Z",
+      "last_attempt_at": "2026-10-30T04:06:19.554Z",
+      "last_success_at": "2026-10-30T04:06:19.554Z",
       "last_error": ""
     },
     "dp": {
       "key": "dp",
       "name": "DynastyProcess",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:06:16.968Z",
-      "last_success_at": "2026-10-29T04:06:16.968Z",
+      "last_attempt_at": "2026-10-30T04:06:19.765Z",
+      "last_success_at": "2026-10-30T04:06:19.765Z",
       "last_error": ""
     },
     "ktc": {
       "key": "ktc",
       "name": "KeepTradeCut",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:06:50.515Z",
-      "last_success_at": "2026-10-29T04:06:50.515Z",
+      "last_attempt_at": "2026-10-30T04:06:55.413Z",
+      "last_success_at": "2026-10-30T04:06:55.413Z",
       "last_error": ""
     },
     "fn": {
       "key": "fn",
       "name": "FantasyNavigator",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:06:51.953Z",
-      "last_success_at": "2026-10-29T04:06:51.953Z",
+      "last_attempt_at": "2026-10-30T04:06:56.257Z",
+      "last_success_at": "2026-10-30T04:06:56.257Z",
       "last_error": ""
     },
     "idp": {
       "key": "idp",
       "name": "IDynastyP",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:45.950Z",
-      "last_success_at": "2026-10-29T04:07:45.950Z",
+      "last_attempt_at": "2026-10-30T04:07:49.581Z",
+      "last_success_at": "2026-10-30T04:07:49.581Z",
       "last_error": ""
     },
     "idpshow": {
       "key": "idpshow",
       "name": "The IDP Show",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:49.178Z",
-      "last_success_at": "2026-10-29T04:07:49.178Z",
+      "last_attempt_at": "2026-10-30T04:07:53.186Z",
+      "last_success_at": "2026-10-30T04:07:53.186Z",
       "last_error": ""
     },
     "sp": {
       "key": "sp",
       "name": "StickyPicky",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:49.410Z",
-      "last_success_at": "2026-10-29T04:07:49.410Z",
+      "last_attempt_at": "2026-10-30T04:07:53.463Z",
+      "last_success_at": "2026-10-30T04:07:53.463Z",
       "last_error": ""
     },
     "proj": {
       "key": "proj",
       "name": "Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:49.689Z",
-      "last_success_at": "2026-10-29T04:07:49.689Z",
+      "last_attempt_at": "2026-10-30T04:07:53.788Z",
+      "last_success_at": "2026-10-30T04:07:53.788Z",
       "last_error": ""
     },
     "sleeper_proj": {
       "key": "sleeper_proj",
       "name": "Sleeper Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:50.423Z",
-      "last_success_at": "2026-10-29T04:07:50.423Z",
+      "last_attempt_at": "2026-10-30T04:07:54.703Z",
+      "last_success_at": "2026-10-30T04:07:54.703Z",
       "last_error": ""
     },
     "fantasysharks_proj": {
       "key": "fantasysharks_proj",
       "name": "FantasySharks Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:07.894Z",
-      "last_success_at": "2026-10-29T04:08:07.894Z",
+      "last_attempt_at": "2026-10-30T04:08:12.800Z",
+      "last_success_at": "2026-10-30T04:08:12.800Z",
       "last_error": ""
     },
     "draftsharks_proj": {
       "key": "draftsharks_proj",
       "name": "DraftSharks Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:08.548Z",
-      "last_success_at": "2026-10-29T04:08:08.548Z",
+      "last_attempt_at": "2026-10-30T04:08:13.729Z",
+      "last_success_at": "2026-10-30T04:08:13.729Z",
       "last_error": ""
     },
     "espn_proj": {
       "key": "espn_proj",
       "name": "ESPN Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:12.705Z",
-      "last_success_at": "2026-10-29T04:08:12.705Z",
+      "last_attempt_at": "2026-10-30T04:08:16.823Z",
+      "last_success_at": "2026-10-30T04:08:16.823Z",
       "last_error": ""
     },
     "cbs_proj": {
       "key": "cbs_proj",
       "name": "CBS Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:22.744Z",
-      "last_success_at": "2026-10-29T04:08:22.744Z",
+      "last_attempt_at": "2026-10-30T04:08:35.148Z",
+      "last_success_at": "2026-10-30T04:08:35.148Z",
       "last_error": ""
     },
     "arsenal_proj": {
       "key": "arsenal_proj",
       "name": "Average of All Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:40.300Z",
-      "last_success_at": "2026-10-29T04:08:40.300Z",
+      "last_attempt_at": "2026-10-30T04:08:56.095Z",
+      "last_success_at": "2026-10-30T04:08:56.095Z",
       "last_error": ""
     },
     "fp": {
       "key": "fp",
       "name": "FantasyPros",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:06:52.285Z",
-      "last_success_at": "2026-10-29T04:06:52.285Z",
+      "last_attempt_at": "2026-10-30T04:06:57.420Z",
+      "last_success_at": "2026-10-30T04:06:57.420Z",
       "last_error": ""
     },
     "fantasypros_proj": {
       "key": "fantasypros_proj",
       "name": "FantasyPros Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:09.028Z",
-      "last_success_at": "2026-10-29T04:08:09.028Z",
+      "last_attempt_at": "2026-10-30T04:08:14.107Z",
+      "last_success_at": "2026-10-30T04:08:14.107Z",
       "last_error": ""
     },
     "fantasypros_ecr": {
       "key": "fantasypros_ecr",
       "name": "FantasyPros ECR Rank Score",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:07:41.737Z",
-      "last_success_at": "2026-10-29T04:07:41.737Z",
+      "last_attempt_at": "2026-10-30T04:07:46.878Z",
+      "last_success_at": "2026-10-30T04:07:46.878Z",
       "last_error": ""
     },
     "projection_anchor": {
       "key": "projection_anchor",
       "name": "Projection Model Input Anchor",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:23.232Z",
-      "last_success_at": "2026-10-29T04:08:23.232Z",
+      "last_attempt_at": "2026-10-30T04:08:35.728Z",
+      "last_success_at": "2026-10-30T04:08:35.728Z",
       "last_error": ""
     },
     "arsenal_model_proj": {
       "key": "arsenal_model_proj",
       "name": "The Fantasy Arsenal Projections",
       "status": "success",
-      "last_attempt_at": "2026-10-29T04:08:38.411Z",
-      "last_success_at": "2026-10-29T04:08:38.411Z",
+      "last_attempt_at": "2026-10-30T04:08:53.885Z",
+      "last_success_at": "2026-10-30T04:08:53.885Z",
       "last_error": ""
     }
   }
