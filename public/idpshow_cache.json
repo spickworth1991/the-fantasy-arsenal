@@ -397,9 +397,9 @@
       "value": 5404
     },
     {
-      "name": "Myles Garrett",
-      "position": "ED",
-      "team": "RAMS",
+      "name": "Sonny Styles",
+      "position": "LB",
+      "team": "COMMANDERS",
       "value": 5399
     },
     {
@@ -679,9 +679,9 @@
       "value": 4206
     },
     {
-      "name": "Sonny Styles",
-      "position": "LB",
-      "team": "COMMANDERS",
+      "name": "Myles Garrett",
+      "position": "ED",
+      "team": "RAMS",
       "value": 4173
     },
     {
@@ -697,9 +697,9 @@
       "value": 4167
     },
     {
-      "name": "Nakobe Dean",
-      "position": "LB",
-      "team": "RAIDERS",
+      "name": "Greg Rousseau",
+      "position": "ED",
+      "team": "BILLS",
       "value": 4164
     },
     {
@@ -823,81 +823,81 @@
       "value": 3655
     },
     {
-      "name": "Nick Bolton",
+      "name": "Nakobe Dean",
       "position": "LB",
-      "team": "CHIEFS",
+      "team": "RAIDERS",
       "value": 3611
-    },
-    {
-      "name": "Greg Rousseau",
-      "position": "ED",
-      "team": "BILLS",
-      "value": 3609
     },
     {
       "name": "Roquan Smith",
       "position": "LB",
       "team": "RAVENS",
-      "value": 3608
+      "value": 3609
     },
     {
       "name": "Devin Lloyd",
       "position": "LB",
       "team": "PANTHERS",
+      "value": 3608
+    },
+    {
+      "name": "Nick Bolton",
+      "position": "LB",
+      "team": "CHIEFS",
       "value": 3606
-    },
-    {
-      "name": "Jihaad Campbell",
-      "position": "LB",
-      "team": "EAGLES",
-      "value": 3605
-    },
-    {
-      "name": "Maxx Crosby",
-      "position": "ED",
-      "team": "RAIDERS",
-      "value": 3603
-    },
-    {
-      "name": "Nick Emmanwori",
-      "position": "S",
-      "team": "SEAHAWKS",
-      "value": 3602
-    },
-    {
-      "name": "Kyle Hamilton",
-      "position": "S",
-      "team": "RAVENS",
-      "value": 3600
-    },
-    {
-      "name": "Travis Hunter",
-      "position": "CB",
-      "team": "JAGUARS",
-      "value": 3599
-    },
-    {
-      "name": "Jordyn Brooks",
-      "position": "LB",
-      "team": "DOLPHINS",
-      "value": 3598
-    },
-    {
-      "name": "Josh Hines-Allen",
-      "position": "ED",
-      "team": "JAGUARS",
-      "value": 3596
     },
     {
       "name": "David Bailey",
       "position": "ED",
       "team": "JETS",
+      "value": 3605
+    },
+    {
+      "name": "Travis Hunter",
+      "position": "CB",
+      "team": "JAGUARS",
+      "value": 3603
+    },
+    {
+      "name": "Jordyn Brooks",
+      "position": "LB",
+      "team": "DOLPHINS",
+      "value": 3602
+    },
+    {
+      "name": "Nick Emmanwori",
+      "position": "S",
+      "team": "SEAHAWKS",
+      "value": 3600
+    },
+    {
+      "name": "Kyle Hamilton",
+      "position": "S",
+      "team": "RAVENS",
+      "value": 3599
+    },
+    {
+      "name": "Josh Hines-Allen",
+      "position": "ED",
+      "team": "JAGUARS",
+      "value": 3598
+    },
+    {
+      "name": "Maxx Crosby",
+      "position": "ED",
+      "team": "RAIDERS",
+      "value": 3596
+    },
+    {
+      "name": "Jihaad Campbell",
+      "position": "LB",
+      "team": "EAGLES",
       "value": 3595
     },
     {
-      "name": "Caleb Downs",
-      "position": "S",
-      "team": "COWBOYS",
+      "name": "Tuli Tuipulotu",
+      "position": "ED",
+      "team": "CHARGERS",
       "value": 3593
     },
     {
@@ -925,9 +925,9 @@
       "value": 3528
     },
     {
-      "name": "Laiatu Latu",
-      "position": "ED",
-      "team": "COLTS",
+      "name": "Caleb Downs",
+      "position": "S",
+      "team": "COWBOYS",
       "value": 3527
     },
     {
@@ -949,9 +949,9 @@
       "value": 3494
     },
     {
-      "name": "Nick Bosa",
+      "name": "Laiatu Latu",
       "position": "ED",
-      "team": "49ERS",
+      "team": "COLTS",
       "value": 3492
     },
     {
@@ -979,9 +979,9 @@
       "value": 3478
     },
     {
-      "name": "T.J. Watt",
+      "name": "Nick Bosa",
       "position": "ED",
-      "team": "STEELERS",
+      "team": "49ERS",
       "value": 3458
     },
     {
@@ -1003,9 +1003,9 @@
       "value": 3430
     },
     {
-      "name": "Nik Bonitto",
+      "name": "T.J. Watt",
       "position": "ED",
-      "team": "BRONCOS",
+      "team": "STEELERS",
       "value": 3426
     },
     {
@@ -1021,27 +1021,27 @@
       "value": 3415
     },
     {
+      "name": "Nik Bonitto",
+      "position": "ED",
+      "team": "BRONCOS",
+      "value": 3396
+    },
+    {
       "name": "Josiah Trotter",
       "position": "LB",
       "team": "BUCCANEERS",
-      "value": 3396
+      "value": 3367
     },
     {
       "name": "Anthony Hill Jr.",
       "position": "LB",
       "team": "TITANS",
-      "value": 3367
-    },
-    {
-      "name": "Byron Young",
-      "position": "ED",
-      "team": "RAMS",
       "value": 3339
     },
     {
-      "name": "Tuli Tuipulotu",
-      "position": "ED",
-      "team": "CHARGERS",
+      "name": "Edgerrin Cooper",
+      "position": "LB",
+      "team": "PACKERS",
       "value": 3313
     },
     {
@@ -1051,9 +1051,9 @@
       "value": 3308
     },
     {
-      "name": "Edgerrin Cooper",
-      "position": "LB",
-      "team": "PACKERS",
+      "name": "Byron Young",
+      "position": "ED",
+      "team": "RAMS",
       "value": 3288
     },
     {
@@ -1069,9 +1069,9 @@
       "value": 3279
     },
     {
-      "name": "Dillon Thieneman",
-      "position": "S",
-      "team": "BEARS",
+      "name": "Ernest Jones",
+      "position": "LB",
+      "team": "SEAHAWKS",
       "value": 3264
     },
     {
@@ -1105,9 +1105,9 @@
       "value": 3246
     },
     {
-      "name": "Ernest Jones",
-      "position": "LB",
-      "team": "SEAHAWKS",
+      "name": "Dillon Thieneman",
+      "position": "S",
+      "team": "BEARS",
       "value": 3241
     },
     {
@@ -3541,9 +3541,9 @@
       "value": 1298
     },
     {
-      "name": "Ed Oliver",
-      "position": "DT",
-      "team": "BILLS",
+      "name": "Derrick Barnes",
+      "position": "LB",
+      "team": "LIONS",
       "value": 1294
     },
     {
@@ -3553,15 +3553,15 @@
       "value": 1294
     },
     {
-      "name": "Derrick Barnes",
-      "position": "LB",
-      "team": "LIONS",
-      "value": 1291
-    },
-    {
       "name": "Milton Williams",
       "position": "DT",
       "team": "PATRIOTS",
+      "value": 1291
+    },
+    {
+      "name": "Ed Oliver",
+      "position": "DT",
+      "team": "BILLS",
       "value": 1288
     },
     {
@@ -3619,15 +3619,15 @@
       "value": 1271
     },
     {
-      "name": "Zion Young",
-      "position": "ED",
-      "team": "RAVENS",
-      "value": 1269
-    },
-    {
       "name": "Christian Elliss",
       "position": "LB",
       "team": "PATRIOTS",
+      "value": 1269
+    },
+    {
+      "name": "Zion Young",
+      "position": "ED",
+      "team": "RAVENS",
       "value": 1267
     },
     {
@@ -3637,15 +3637,15 @@
       "value": 1267
     },
     {
-      "name": "Dre Greenlaw",
-      "position": "LB",
-      "team": "49ERS",
-      "value": 1265
-    },
-    {
       "name": "Josh Sweat",
       "position": "ED",
       "team": "CARDINALS",
+      "value": 1265
+    },
+    {
+      "name": "Dre Greenlaw",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1263
     },
     {
@@ -3799,12 +3799,6 @@
       "value": 1237
     },
     {
-      "name": "Dante Trader Jr.",
-      "position": "S",
-      "team": "DOLPHINS",
-      "value": 1236
-    },
-    {
       "name": "Mykel Williams",
       "position": "ED",
       "team": "49ERS",
@@ -3814,6 +3808,12 @@
       "name": "Camryn Bynum",
       "position": "S",
       "team": "COLTS",
+      "value": 1236
+    },
+    {
+      "name": "Dante Trader Jr.",
+      "position": "S",
+      "team": "DOLPHINS",
       "value": 1235
     },
     {
@@ -3895,9 +3895,9 @@
       "value": 1230
     },
     {
-      "name": "Tyler Nubin",
-      "position": "S",
-      "team": "GIANTS",
+      "name": "Nickolas Martin",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1230
     },
     {
@@ -3913,9 +3913,9 @@
       "value": 1229
     },
     {
-      "name": "Nickolas Martin",
-      "position": "LB",
-      "team": "49ERS",
+      "name": "Tyler Nubin",
+      "position": "S",
+      "team": "GIANTS",
       "value": 1229
     },
     {
@@ -3937,15 +3937,15 @@
       "value": 1228
     },
     {
-      "name": "Jaden Dugger",
+      "name": "Jeremiah Trotter Jr.",
       "position": "LB",
-      "team": "49ERS",
+      "team": "EAGLES",
       "value": 1228
     },
     {
-      "name": "Lathan Ransom",
-      "position": "S",
-      "team": "PANTHERS",
+      "name": "Jaden Dugger",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1228
     },
     {
@@ -3955,9 +3955,9 @@
       "value": 1228
     },
     {
-      "name": "Shemar Stewart",
-      "position": "ED",
-      "team": "BENGALS",
+      "name": "Lathan Ransom",
+      "position": "S",
+      "team": "PANTHERS",
       "value": 1228
     },
     {
@@ -3965,6 +3965,12 @@
       "position": "WR",
       "team": "NOS",
       "value": 1228
+    },
+    {
+      "name": "Shemar Stewart",
+      "position": "ED",
+      "team": "BENGALS",
+      "value": 1227
     },
     {
       "name": "Bobby Wagner",
@@ -4006,7 +4012,7 @@
       "name": "Cody Barton",
       "position": "LB",
       "team": "TITANS",
-      "value": 1227
+      "value": 1226
     },
     {
       "name": "Bobby Okereke",
@@ -4015,15 +4021,15 @@
       "value": 1226
     },
     {
-      "name": "Ashton Gillotte",
-      "position": "ED",
-      "team": "CHIEFS",
-      "value": 1226
-    },
-    {
       "name": "Dane Belton",
       "position": "S",
       "team": "JETS",
+      "value": 1226
+    },
+    {
+      "name": "Ashton Gillotte",
+      "position": "ED",
+      "team": "CHIEFS",
       "value": 1226
     },
     {
@@ -4063,16 +4069,16 @@
       "value": 1226
     },
     {
-      "name": "C.J. Gardner-Johnson",
-      "position": "S",
-      "team": "BILLS",
-      "value": 1226
-    },
-    {
       "name": "Josh Cameron",
       "position": "WR",
       "team": "JAC",
       "value": 1226
+    },
+    {
+      "name": "C.J. Gardner-Johnson",
+      "position": "S",
+      "team": "BILLS",
+      "value": 1225
     },
     {
       "name": "Reed Blankenship",
@@ -4081,15 +4087,15 @@
       "value": 1225
     },
     {
-      "name": "Josaiah Stewart",
-      "position": "ED",
-      "team": "RAMS",
-      "value": 1225
-    },
-    {
       "name": "Alohi Gilman",
       "position": "S",
       "team": "CHIEFS",
+      "value": 1225
+    },
+    {
+      "name": "Josaiah Stewart",
+      "position": "ED",
+      "team": "RAMS",
       "value": 1225
     },
     {
@@ -4111,9 +4117,9 @@
       "value": 1225
     },
     {
-      "name": "Cody Simon",
-      "position": "LB",
-      "team": "CARDINALS",
+      "name": "Mike Sainristil",
+      "position": "CB",
+      "team": "COMMANDERS",
       "value": 1225
     },
     {
@@ -4123,15 +4129,9 @@
       "value": 1225
     },
     {
-      "name": "Mike Sainristil",
-      "position": "CB",
-      "team": "COMMANDERS",
-      "value": 1225
-    },
-    {
-      "name": "Christian Rozeboom",
+      "name": "Cody Simon",
       "position": "LB",
-      "team": "BUCCANEERS",
+      "team": "CARDINALS",
       "value": 1225
     },
     {
@@ -4141,15 +4141,21 @@
       "value": 1225
     },
     {
-      "name": "Joseph Ossai",
-      "position": "ED",
-      "team": "JETS",
+      "name": "Christian Rozeboom",
+      "position": "LB",
+      "team": "BUCCANEERS",
       "value": 1225
     },
     {
       "name": "Kool-Aid McKinstry",
       "position": "CB",
       "team": "SAINTS",
+      "value": 1225
+    },
+    {
+      "name": "Joseph Ossai",
+      "position": "ED",
+      "team": "JETS",
       "value": 1225
     },
     {
@@ -4162,12 +4168,6 @@
       "name": "Byron Murphy Jr.",
       "position": "CB",
       "team": "VIKINGS",
-      "value": 1225
-    },
-    {
-      "name": "Gervon Dexter Sr.",
-      "position": "DT",
-      "team": "FALCONS",
       "value": 1225
     },
     {
@@ -4423,9 +4423,9 @@
       "value": 955
     },
     {
-      "name": "Kevin Byard",
-      "position": "S",
-      "team": "PATRIOTS",
+      "name": "Gervon Dexter Sr.",
+      "position": "DT",
+      "team": "FALCONS",
       "value": 951
     },
     {
@@ -4441,39 +4441,39 @@
       "value": 948
     },
     {
+      "name": "Kevin Byard",
+      "position": "S",
+      "team": "PATRIOTS",
+      "value": 945
+    },
+    {
       "name": "Jevon Holland",
       "position": "S",
       "team": "GIANTS",
-      "value": 945
+      "value": 939
     },
     {
       "name": "Christian Barmore",
       "position": "DT",
       "team": "PATRIOTS",
-      "value": 939
+      "value": 934
     },
     {
       "name": "Marlon Humphrey",
       "position": "CB",
       "team": "RAVENS",
-      "value": 934
+      "value": 928
     },
     {
       "name": "Keisean Nixon",
       "position": "CB",
       "team": "PACKERS",
-      "value": 928
+      "value": 923
     },
     {
       "name": "DeMarcus Lawrence",
       "position": "ED",
       "team": "SEAHAWKS",
-      "value": 923
-    },
-    {
-      "name": "T'Vondre Sweat",
-      "position": "DT",
-      "team": "JETS",
       "value": 918
     },
     {
@@ -4489,9 +4489,9 @@
       "value": 915
     },
     {
-      "name": "JT Tuimoloau",
-      "position": "ED",
-      "team": "COLTS",
+      "name": "T'Vondre Sweat",
+      "position": "DT",
+      "team": "JETS",
       "value": 913
     },
     {
@@ -4507,9 +4507,9 @@
       "value": 906
     },
     {
-      "name": "Princely Umanmielen",
+      "name": "JT Tuimoloau",
       "position": "ED",
-      "team": "PANTHERS",
+      "team": "COLTS",
       "value": 903
     },
     {
@@ -4519,9 +4519,9 @@
       "value": 901
     },
     {
-      "name": "Braden Fiske",
-      "position": "DT",
-      "team": "RAMS",
+      "name": "Princely Umanmielen",
+      "position": "ED",
+      "team": "PANTHERS",
       "value": 899
     },
     {
@@ -4543,9 +4543,9 @@
       "value": 893
     },
     {
-      "name": "Justin Strnad",
-      "position": "LB",
-      "team": "BRONCOS",
+      "name": "Braden Fiske",
+      "position": "DT",
+      "team": "RAMS",
       "value": 890
     },
     {
@@ -4567,9 +4567,9 @@
       "value": 888
     },
     {
-      "name": "Jimmy Rolder",
+      "name": "Justin Strnad",
       "position": "LB",
-      "team": "LIONS",
+      "team": "BRONCOS",
       "value": 886
     },
     {
@@ -4585,9 +4585,9 @@
       "value": 885
     },
     {
-      "name": "TY Okada",
-      "position": "S",
-      "team": "SEAHAWKS",
+      "name": "Jimmy Rolder",
+      "position": "LB",
+      "team": "LIONS",
       "value": 882
     },
     {
@@ -4597,21 +4597,21 @@
       "value": 880
     },
     {
+      "name": "TY Okada",
+      "position": "S",
+      "team": "SEAHAWKS",
+      "value": 878
+    },
+    {
       "name": "Christen Miller",
       "position": "DT",
       "team": "SAINTS",
-      "value": 878
+      "value": 874
     },
     {
       "name": "Gracen Halton",
       "position": "DT",
       "team": "49ERS",
-      "value": 874
-    },
-    {
-      "name": "Nate Wiggins",
-      "position": "CB",
-      "team": "RAVENS",
       "value": 871
     },
     {
@@ -4633,15 +4633,15 @@
       "value": 868
     },
     {
-      "name": "Dorance Armstrong",
-      "position": "ED",
-      "team": "COMMANDERS",
+      "name": "Ty'Ron Hopper",
+      "position": "LB",
+      "team": "PACKERS",
       "value": 867
     },
     {
-      "name": "Andru Phillips",
+      "name": "Nate Wiggins",
       "position": "CB",
-      "team": "GIANTS",
+      "team": "RAVENS",
       "value": 864
     },
     {
@@ -4651,9 +4651,9 @@
       "value": 862
     },
     {
-      "name": "Jalen Ramsey",
-      "position": "S",
-      "team": "STEELERS",
+      "name": "Dorance Armstrong",
+      "position": "ED",
+      "team": "COMMANDERS",
       "value": 860
     },
     {
@@ -4663,9 +4663,9 @@
       "value": 858
     },
     {
-      "name": "Brandon Cisse",
+      "name": "Andru Phillips",
       "position": "CB",
-      "team": "PACKERS",
+      "team": "GIANTS",
       "value": 857
     },
     {
@@ -4681,15 +4681,15 @@
       "value": 855
     },
     {
-      "name": "Tyrel Dodson",
-      "position": "LB",
-      "team": "PANTHERS",
+      "name": "Jalen Ramsey",
+      "position": "S",
+      "team": "STEELERS",
       "value": 854
     },
     {
-      "name": "Kyler Gordon",
+      "name": "Brandon Cisse",
       "position": "CB",
-      "team": "BEARS",
+      "team": "PACKERS",
       "value": 851
     },
     {
@@ -4705,9 +4705,9 @@
       "value": 849
     },
     {
-      "name": "Alim McNeill",
-      "position": "DT",
-      "team": "LIONS",
+      "name": "Kyler Gordon",
+      "position": "CB",
+      "team": "BEARS",
       "value": 848
     },
     {
@@ -4723,9 +4723,9 @@
       "value": 846
     },
     {
-      "name": "Malcolm Koonce",
-      "position": "ED",
-      "team": "RAIDERS",
+      "name": "Tyrel Dodson",
+      "position": "LB",
+      "team": "PANTHERS",
       "value": 845
     },
     {
@@ -4735,15 +4735,15 @@
       "value": 843
     },
     {
-      "name": "Ronnie Hickman Jr.",
-      "position": "S",
-      "team": "BROWNS",
+      "name": "Alim McNeill",
+      "position": "DT",
+      "team": "LIONS",
       "value": 842
     },
     {
-      "name": "Alex Wright",
+      "name": "Malcolm Koonce",
       "position": "ED",
-      "team": "BROWNS",
+      "team": "RAIDERS",
       "value": 839
     },
     {
@@ -4753,9 +4753,9 @@
       "value": 838
     },
     {
-      "name": "Wade Woodaz",
-      "position": "LB",
-      "team": "TEXANS",
+      "name": "Ronnie Hickman Jr.",
+      "position": "S",
+      "team": "BROWNS",
       "value": 837
     },
     {
@@ -4765,15 +4765,15 @@
       "value": 835
     },
     {
-      "name": "Justin Reid",
-      "position": "S",
-      "team": "SAINTS",
+      "name": "Alex Wright",
+      "position": "ED",
+      "team": "BROWNS",
       "value": 834
     },
     {
-      "name": "Shaun Dolac",
+      "name": "Wade Woodaz",
       "position": "LB",
-      "team": "RAMS",
+      "team": "TEXANS",
       "value": 832
     },
     {
@@ -4783,27 +4783,27 @@
       "value": 830
     },
     {
-      "name": "Kerby Joseph",
+      "name": "Justin Reid",
       "position": "S",
-      "team": "LIONS",
+      "team": "SAINTS",
       "value": 829
     },
     {
-      "name": "Tatum Bethune",
-      "position": "LB",
-      "team": "49ERS",
+      "name": "Kerby Joseph",
+      "position": "S",
+      "team": "LIONS",
       "value": 827
+    },
+    {
+      "name": "Shaun Dolac",
+      "position": "LB",
+      "team": "RAMS",
+      "value": 825
     },
     {
       "name": "Tyson Campbell",
       "position": "CB",
       "team": "BROWNS",
-      "value": 825
-    },
-    {
-      "name": "Michael Taaffe",
-      "position": "S",
-      "team": "DOLPHINS",
       "value": 822
     },
     {
@@ -4813,15 +4813,15 @@
       "value": 821
     },
     {
-      "name": "Jordan Burch",
-      "position": "ED",
-      "team": "CARDINALS",
+      "name": "Tatum Bethune",
+      "position": "LB",
+      "team": "49ERS",
       "value": 820
     },
     {
-      "name": "Romello Height",
-      "position": "ED",
-      "team": "49ERS",
+      "name": "Michael Taaffe",
+      "position": "S",
+      "team": "DOLPHINS",
       "value": 818
     },
     {
@@ -4837,15 +4837,15 @@
       "value": 817
     },
     {
-      "name": "Joey Porter Jr.",
-      "position": "CB",
-      "team": "COWBOYS",
+      "name": "Romello Height",
+      "position": "ED",
+      "team": "49ERS",
       "value": 816
     },
     {
-      "name": "Trevin Wallace",
-      "position": "LB",
-      "team": "JETS",
+      "name": "Joey Porter Jr.",
+      "position": "CB",
+      "team": "COWBOYS",
       "value": 814
     },
     {
@@ -4855,9 +4855,9 @@
       "value": 814
     },
     {
-      "name": "Coby Bryant",
-      "position": "S",
-      "team": "BEARS",
+      "name": "Jordan Burch",
+      "position": "ED",
+      "team": "CARDINALS",
       "value": 812
     },
     {
@@ -4867,45 +4867,45 @@
       "value": 812
     },
     {
+      "name": "Coby Bryant",
+      "position": "S",
+      "team": "BEARS",
+      "value": 810
+    },
+    {
+      "name": "Trevin Wallace",
+      "position": "LB",
+      "team": "JETS",
+      "value": 809
+    },
+    {
       "name": "Oluwafemi Oladejo",
       "position": "ED",
       "team": "TITANS",
-      "value": 810
+      "value": 807
     },
     {
       "name": "Omarr Norman-Lott",
       "position": "DT",
       "team": "CHIEFS",
-      "value": 809
-    },
-    {
-      "name": "Ty'Ron Hopper",
-      "position": "LB",
-      "team": "PACKERS",
-      "value": 807
+      "value": 805
     },
     {
       "name": "Christian Benford",
       "position": "CB",
       "team": "BILLS",
-      "value": 805
+      "value": 804
     },
     {
       "name": "Shemar James",
       "position": "LB",
       "team": "COWBOYS",
-      "value": 804
+      "value": 802
     },
     {
       "name": "Noah Sewell",
       "position": "LB",
       "team": "BEARS",
-      "value": 802
-    },
-    {
-      "name": "Taron Johnson",
-      "position": "CB",
-      "team": "RAIDERS",
       "value": 801
     },
     {
@@ -4915,45 +4915,45 @@
       "value": 801
     },
     {
+      "name": "Taron Johnson",
+      "position": "CB",
+      "team": "RAIDERS",
+      "value": 799
+    },
+    {
       "name": "Andrew Wingard",
       "position": "S",
       "team": "CARDINALS",
-      "value": 799
+      "value": 798
     },
     {
       "name": "Javon Bullard",
       "position": "S",
       "team": "PACKERS",
-      "value": 798
+      "value": 796
     },
     {
       "name": "L'Jarius Sneed",
       "position": "CB",
       "team": "CHIEFS",
-      "value": 796
+      "value": 795
     },
     {
       "name": "Tyree Wilson",
       "position": "DT",
       "team": "SAINTS",
-      "value": 795
+      "value": 793
     },
     {
       "name": "Genesis Smith",
       "position": "S",
       "team": "CHARGERS",
-      "value": 793
+      "value": 792
     },
     {
       "name": "Deommodore Lenoir",
       "position": "CB",
       "team": "49ERS",
-      "value": 792
-    },
-    {
-      "name": "Jeremiah Trotter Jr.",
-      "position": "LB",
-      "team": "EAGLES",
       "value": 791
     },
     {
@@ -4963,15 +4963,15 @@
       "value": 790
     },
     {
-      "name": "Bryan Bresee",
-      "position": "DT",
-      "team": "SAINTS",
-      "value": 789
-    },
-    {
       "name": "Osa Odighizuwa",
       "position": "DT",
       "team": "49ERS",
+      "value": 789
+    },
+    {
+      "name": "Bryan Bresee",
+      "position": "DT",
+      "team": "SAINTS",
       "value": 787
     },
     {
@@ -4981,15 +4981,15 @@
       "value": 787
     },
     {
-      "name": "Jonah Laulu",
-      "position": "DT",
-      "team": "RAIDERS",
-      "value": 786
-    },
-    {
       "name": "Omar Speights",
       "position": "LB",
       "team": "RAMS",
+      "value": 786
+    },
+    {
+      "name": "Jonah Laulu",
+      "position": "DT",
+      "team": "RAIDERS",
       "value": 785
     },
     {
@@ -5239,15 +5239,15 @@
       "value": 761
     },
     {
-      "name": "Geno Stone",
-      "position": "S",
-      "team": "BILLS",
-      "value": 760
-    },
-    {
       "name": "Branson Combs",
       "position": "LB",
       "team": "JAGUARS",
+      "value": 760
+    },
+    {
+      "name": "Geno Stone",
+      "position": "S",
+      "team": "BILLS",
       "value": 760
     },
     {
@@ -5305,15 +5305,15 @@
       "value": 758
     },
     {
-      "name": "Landon Jackson",
-      "position": "ED",
-      "team": "BILLS",
-      "value": 757
-    },
-    {
       "name": "Theo Jackson",
       "position": "S",
       "team": "VIKINGS",
+      "value": 757
+    },
+    {
+      "name": "Landon Jackson",
+      "position": "ED",
+      "team": "BILLS",
       "value": 757
     },
     {
@@ -5335,27 +5335,27 @@
       "value": 757
     },
     {
-      "name": "Kayden McDonald",
-      "position": "DT",
-      "team": "TEXANS",
-      "value": 756
-    },
-    {
       "name": "Tommy Eichenberg",
       "position": "LB",
       "team": "RAIDERS",
       "value": 756
     },
     {
-      "name": "Jadon Canady",
-      "position": "CB",
-      "team": "CHIEFS",
+      "name": "Kayden McDonald",
+      "position": "DT",
+      "team": "TEXANS",
       "value": 756
     },
     {
       "name": "Jordan Magee",
       "position": "LB",
       "team": "COMMANDERS",
+      "value": 756
+    },
+    {
+      "name": "Jadon Canady",
+      "position": "CB",
+      "team": "CHIEFS",
       "value": 756
     },
     {
@@ -5509,15 +5509,15 @@
       "value": 753
     },
     {
-      "name": "LT Overton",
-      "position": "ED",
-      "team": "COWBOYS",
-      "value": 753
-    },
-    {
       "name": "Jaden Hicks",
       "position": "S",
       "team": "CHIEFS",
+      "value": 753
+    },
+    {
+      "name": "LT Overton",
+      "position": "ED",
+      "team": "COWBOYS",
       "value": 753
     },
     {
@@ -5581,15 +5581,15 @@
       "value": 752
     },
     {
-      "name": "Tyler Onyedim",
-      "position": "DT",
-      "team": "BRONCOS",
-      "value": 752
-    },
-    {
       "name": "Matthew Judon",
       "position": "ED",
       "team": "BILLS",
+      "value": 752
+    },
+    {
+      "name": "Tyler Onyedim",
+      "position": "DT",
+      "team": "BRONCOS",
       "value": 752
     },
     {
@@ -5599,15 +5599,15 @@
       "value": 752
     },
     {
-      "name": "Darrell Jackson Jr.",
-      "position": "DT",
-      "team": "JETS",
-      "value": 752
-    },
-    {
       "name": "Kyle Van Noy",
       "position": "ED",
       "team": "RAVENS",
+      "value": 752
+    },
+    {
+      "name": "Darrell Jackson Jr.",
+      "position": "DT",
+      "team": "JETS",
       "value": 752
     },
     {
@@ -7013,9 +7013,9 @@
       "value": 6055
     },
     {
-      "name": "Myles Garrett",
-      "position": "ED",
-      "team": "RAMS",
+      "name": "Sonny Styles",
+      "position": "LB",
+      "team": "COMMANDERS",
       "value": 6053
     },
     {
@@ -7289,9 +7289,9 @@
       "value": 4961
     },
     {
-      "name": "Sonny Styles",
-      "position": "LB",
-      "team": "COMMANDERS",
+      "name": "Myles Garrett",
+      "position": "ED",
+      "team": "RAMS",
       "value": 4919
     },
     {
@@ -7301,9 +7301,9 @@
       "value": 4918
     },
     {
-      "name": "Nakobe Dean",
-      "position": "LB",
-      "team": "RAIDERS",
+      "name": "Greg Rousseau",
+      "position": "ED",
+      "team": "BILLS",
       "value": 4916
     },
     {
@@ -7505,9 +7505,9 @@
       "value": 4274
     },
     {
-      "name": "Nick Bolton",
+      "name": "Nakobe Dean",
       "position": "LB",
-      "team": "CHIEFS",
+      "team": "RAIDERS",
       "value": 4213
     },
     {
@@ -7517,9 +7517,9 @@
       "value": 4203
     },
     {
-      "name": "Greg Rousseau",
-      "position": "ED",
-      "team": "BILLS",
+      "name": "Roquan Smith",
+      "position": "LB",
+      "team": "RAVENS",
       "value": 4185
     },
     {
@@ -7535,9 +7535,9 @@
       "value": 4166
     },
     {
-      "name": "Roquan Smith",
+      "name": "Devin Lloyd",
       "position": "LB",
-      "team": "RAVENS",
+      "team": "PANTHERS",
       "value": 4157
     },
     {
@@ -7547,15 +7547,15 @@
       "value": 4143
     },
     {
-      "name": "Devin Lloyd",
+      "name": "Nick Bolton",
       "position": "LB",
-      "team": "PANTHERS",
+      "team": "CHIEFS",
       "value": 4129
     },
     {
-      "name": "Jihaad Campbell",
-      "position": "LB",
-      "team": "EAGLES",
+      "name": "David Bailey",
+      "position": "ED",
+      "team": "JETS",
       "value": 4102
     },
     {
@@ -7565,9 +7565,9 @@
       "value": 4077
     },
     {
-      "name": "Maxx Crosby",
-      "position": "ED",
-      "team": "RAIDERS",
+      "name": "Travis Hunter",
+      "position": "CB",
+      "team": "JAGUARS",
       "value": 4075
     },
     {
@@ -7601,9 +7601,9 @@
       "value": 4052
     },
     {
-      "name": "Nick Emmanwori",
-      "position": "S",
-      "team": "SEAHAWKS",
+      "name": "Jordyn Brooks",
+      "position": "LB",
+      "team": "DOLPHINS",
       "value": 4048
     },
     {
@@ -7631,9 +7631,9 @@
       "value": 4024
     },
     {
-      "name": "Kyle Hamilton",
+      "name": "Nick Emmanwori",
       "position": "S",
-      "team": "RAVENS",
+      "team": "SEAHAWKS",
       "value": 4021
     },
     {
@@ -7667,9 +7667,9 @@
       "value": 4000
     },
     {
-      "name": "Travis Hunter",
-      "position": "CB",
-      "team": "JAGUARS",
+      "name": "Kyle Hamilton",
+      "position": "S",
+      "team": "RAVENS",
       "value": 3995
     },
     {
@@ -7679,9 +7679,9 @@
       "value": 3989
     },
     {
-      "name": "Jordyn Brooks",
-      "position": "LB",
-      "team": "DOLPHINS",
+      "name": "Josh Hines-Allen",
+      "position": "ED",
+      "team": "JAGUARS",
       "value": 3969
     },
     {
@@ -7691,9 +7691,9 @@
       "value": 3952
     },
     {
-      "name": "Josh Hines-Allen",
+      "name": "Maxx Crosby",
       "position": "ED",
-      "team": "JAGUARS",
+      "team": "RAIDERS",
       "value": 3943
     },
     {
@@ -7721,9 +7721,9 @@
       "value": 3922
     },
     {
-      "name": "David Bailey",
-      "position": "ED",
-      "team": "JETS",
+      "name": "Jihaad Campbell",
+      "position": "LB",
+      "team": "EAGLES",
       "value": 3917
     },
     {
@@ -7739,9 +7739,9 @@
       "value": 3898
     },
     {
-      "name": "Caleb Downs",
-      "position": "S",
-      "team": "COWBOYS",
+      "name": "Tuli Tuipulotu",
+      "position": "ED",
+      "team": "CHARGERS",
       "value": 3892
     },
     {
@@ -7925,9 +7925,9 @@
       "value": 3541
     },
     {
-      "name": "Laiatu Latu",
-      "position": "ED",
-      "team": "COLTS",
+      "name": "Caleb Downs",
+      "position": "S",
+      "team": "COWBOYS",
       "value": 3539
     },
     {
@@ -7949,27 +7949,27 @@
       "value": 3537
     },
     {
+      "name": "Laiatu Latu",
+      "position": "ED",
+      "team": "COLTS",
+      "value": 3531
+    },
+    {
       "name": "Nick Bosa",
       "position": "ED",
       "team": "49ERS",
-      "value": 3531
+      "value": 3522
     },
     {
       "name": "T.J. Watt",
       "position": "ED",
       "team": "STEELERS",
-      "value": 3522
+      "value": 3514
     },
     {
       "name": "Nik Bonitto",
       "position": "ED",
       "team": "BRONCOS",
-      "value": 3514
-    },
-    {
-      "name": "Josiah Trotter",
-      "position": "LB",
-      "team": "BUCCANEERS",
       "value": 3506
     },
     {
@@ -7979,9 +7979,9 @@
       "value": 3500
     },
     {
-      "name": "Anthony Hill Jr.",
+      "name": "Josiah Trotter",
       "position": "LB",
-      "team": "TITANS",
+      "team": "BUCCANEERS",
       "value": 3499
     },
     {
@@ -7991,27 +7991,27 @@
       "value": 3493
     },
     {
-      "name": "Byron Young",
-      "position": "ED",
-      "team": "RAMS",
+      "name": "Anthony Hill Jr.",
+      "position": "LB",
+      "team": "TITANS",
       "value": 3492
-    },
-    {
-      "name": "Tuli Tuipulotu",
-      "position": "ED",
-      "team": "CHARGERS",
-      "value": 3485
     },
     {
       "name": "Edgerrin Cooper",
       "position": "LB",
       "team": "PACKERS",
+      "value": 3485
+    },
+    {
+      "name": "Byron Young",
+      "position": "ED",
+      "team": "RAMS",
       "value": 3479
     },
     {
-      "name": "Dillon Thieneman",
-      "position": "S",
-      "team": "BEARS",
+      "name": "Ernest Jones",
+      "position": "LB",
+      "team": "SEAHAWKS",
       "value": 3473
     },
     {
@@ -8021,9 +8021,9 @@
       "value": 3472
     },
     {
-      "name": "Ernest Jones",
-      "position": "LB",
-      "team": "SEAHAWKS",
+      "name": "Dillon Thieneman",
+      "position": "S",
+      "team": "BEARS",
       "value": 3467
     },
     {
@@ -10133,21 +10133,21 @@
       "value": 1545
     },
     {
-      "name": "Ed Oliver",
-      "position": "DT",
-      "team": "BILLS",
-      "value": 1544
-    },
-    {
       "name": "Derrick Barnes",
       "position": "LB",
       "team": "LIONS",
-      "value": 1543
+      "value": 1544
     },
     {
       "name": "Milton Williams",
       "position": "DT",
       "team": "PATRIOTS",
+      "value": 1543
+    },
+    {
+      "name": "Ed Oliver",
+      "position": "DT",
+      "team": "BILLS",
       "value": 1541
     },
     {
@@ -10199,15 +10199,15 @@
       "value": 1535
     },
     {
-      "name": "Zion Young",
-      "position": "ED",
-      "team": "RAVENS",
-      "value": 1533
-    },
-    {
       "name": "Christian Elliss",
       "position": "LB",
       "team": "PATRIOTS",
+      "value": 1533
+    },
+    {
+      "name": "Zion Young",
+      "position": "ED",
+      "team": "RAVENS",
       "value": 1532
     },
     {
@@ -10217,15 +10217,15 @@
       "value": 1532
     },
     {
-      "name": "Dre Greenlaw",
-      "position": "LB",
-      "team": "49ERS",
-      "value": 1531
-    },
-    {
       "name": "Josh Sweat",
       "position": "ED",
       "team": "CARDINALS",
+      "value": 1531
+    },
+    {
+      "name": "Dre Greenlaw",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1530
     },
     {
@@ -10397,12 +10397,6 @@
       "value": 1509
     },
     {
-      "name": "Dante Trader Jr.",
-      "position": "S",
-      "team": "DOLPHINS",
-      "value": 1508
-    },
-    {
       "name": "Mykel Williams",
       "position": "ED",
       "team": "49ERS",
@@ -10412,6 +10406,12 @@
       "name": "Camryn Bynum",
       "position": "S",
       "team": "COLTS",
+      "value": 1508
+    },
+    {
+      "name": "Dante Trader Jr.",
+      "position": "S",
+      "team": "DOLPHINS",
       "value": 1507
     },
     {
@@ -10487,9 +10487,9 @@
       "value": 1498
     },
     {
-      "name": "Tyler Nubin",
-      "position": "S",
-      "team": "GIANTS",
+      "name": "Nickolas Martin",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1497
     },
     {
@@ -10505,9 +10505,9 @@
       "value": 1496
     },
     {
-      "name": "Nickolas Martin",
-      "position": "LB",
-      "team": "49ERS",
+      "name": "Tyler Nubin",
+      "position": "S",
+      "team": "GIANTS",
       "value": 1495
     },
     {
@@ -10529,15 +10529,15 @@
       "value": 1493
     },
     {
-      "name": "Jaden Dugger",
+      "name": "Jeremiah Trotter Jr.",
       "position": "LB",
-      "team": "49ERS",
+      "team": "EAGLES",
       "value": 1492
     },
     {
-      "name": "Lathan Ransom",
-      "position": "S",
-      "team": "PANTHERS",
+      "name": "Jaden Dugger",
+      "position": "LB",
+      "team": "49ERS",
       "value": 1492
     },
     {
@@ -10547,15 +10547,15 @@
       "value": 1491
     },
     {
-      "name": "Shemar Stewart",
-      "position": "ED",
-      "team": "BENGALS",
+      "name": "Lathan Ransom",
+      "position": "S",
+      "team": "PANTHERS",
       "value": 1490
     },
     {
-      "name": "Bobby Wagner",
-      "position": "LB",
-      "team": "FA",
+      "name": "Shemar Stewart",
+      "position": "ED",
+      "team": "BENGALS",
       "value": 1490
     },
     {
@@ -10565,10 +10565,16 @@
       "value": 1490
     },
     {
+      "name": "Bobby Wagner",
+      "position": "LB",
+      "team": "FA",
+      "value": 1489
+    },
+    {
       "name": "Bryan Cook",
       "position": "S",
       "team": "BENGALS",
-      "value": 1489
+      "value": 1488
     },
     {
       "name": "Dadrion Taylor-Demerson",
@@ -10580,7 +10586,7 @@
       "name": "Malik Mustapha",
       "position": "S",
       "team": "49ERS",
-      "value": 1488
+      "value": 1487
     },
     {
       "name": "Jalen Thompson",
@@ -10592,24 +10598,18 @@
       "name": "K'Lavon Chaisson",
       "position": "ED",
       "team": "COMMANDERS",
-      "value": 1487
+      "value": 1486
     },
     {
       "name": "Cody Barton",
       "position": "LB",
       "team": "TITANS",
-      "value": 1486
+      "value": 1485
     },
     {
       "name": "Bobby Okereke",
       "position": "LB",
       "team": "PANTHERS",
-      "value": 1485
-    },
-    {
-      "name": "Ashton Gillotte",
-      "position": "ED",
-      "team": "CHIEFS",
       "value": 1485
     },
     {
@@ -10625,6 +10625,12 @@
       "value": 1484
     },
     {
+      "name": "Ashton Gillotte",
+      "position": "ED",
+      "team": "CHIEFS",
+      "value": 1483
+    },
+    {
       "name": "Uchenna Nwosu",
       "position": "ED",
       "team": "SEAHAWKS",
@@ -10634,7 +10640,7 @@
       "name": "Devonte Wyatt",
       "position": "DT",
       "team": "PACKERS",
-      "value": 1483
+      "value": 1482
     },
     {
       "name": "Craig Woodson",
@@ -10646,7 +10652,7 @@
       "name": "Kamren Kinchens",
       "position": "S",
       "team": "RAMS",
-      "value": 1482
+      "value": 1481
     },
     {
       "name": "Cameron Heyward",
@@ -10658,12 +10664,6 @@
       "name": "Andrew Mukuba",
       "position": "S",
       "team": "EAGLES",
-      "value": 1481
-    },
-    {
-      "name": "C.J. Gardner-Johnson",
-      "position": "S",
-      "team": "BILLS",
       "value": 1480
     },
     {
@@ -10673,15 +10673,15 @@
       "value": 1480
     },
     {
-      "name": "Reed Blankenship",
+      "name": "C.J. Gardner-Johnson",
       "position": "S",
-      "team": "TEXANS",
+      "team": "BILLS",
       "value": 1479
     },
     {
-      "name": "Josaiah Stewart",
-      "position": "ED",
-      "team": "RAMS",
+      "name": "Reed Blankenship",
+      "position": "S",
+      "team": "TEXANS",
       "value": 1479
     },
     {
@@ -10691,21 +10691,21 @@
       "value": 1478
     },
     {
+      "name": "Josaiah Stewart",
+      "position": "ED",
+      "team": "RAMS",
+      "value": 1478
+    },
+    {
       "name": "Jack Sawyer",
       "position": "ED",
       "team": "STEELERS",
-      "value": 1478
+      "value": 1477
     },
     {
       "name": "Chris Johnson",
       "position": "CB",
       "team": "DOLPHINS",
-      "value": 1477
-    },
-    {
-      "name": "SirVocea Dennis",
-      "position": "LB",
-      "team": "BUCCANEERS",
       "value": 1477
     },
     {
@@ -10715,27 +10715,27 @@
       "value": 1477
     },
     {
-      "name": "Cody Simon",
+      "name": "SirVocea Dennis",
       "position": "LB",
-      "team": "CARDINALS",
-      "value": 1476
-    },
-    {
-      "name": "Isaiah McDuffie",
-      "position": "LB",
-      "team": "PACKERS",
+      "team": "BUCCANEERS",
       "value": 1476
     },
     {
       "name": "Mike Sainristil",
       "position": "CB",
       "team": "COMMANDERS",
+      "value": 1476
+    },
+    {
+      "name": "Isaiah McDuffie",
+      "position": "LB",
+      "team": "PACKERS",
       "value": 1475
     },
     {
-      "name": "Christian Rozeboom",
+      "name": "Cody Simon",
       "position": "LB",
-      "team": "BUCCANEERS",
+      "team": "CARDINALS",
       "value": 1475
     },
     {
@@ -10745,9 +10745,9 @@
       "value": 1474
     },
     {
-      "name": "Joseph Ossai",
-      "position": "ED",
-      "team": "JETS",
+      "name": "Christian Rozeboom",
+      "position": "LB",
+      "team": "BUCCANEERS",
       "value": 1474
     },
     {
@@ -10757,9 +10757,9 @@
       "value": 1473
     },
     {
-      "name": "Calen Bullock",
-      "position": "S",
-      "team": "TEXANS",
+      "name": "Joseph Ossai",
+      "position": "ED",
+      "team": "JETS",
       "value": 1473
     },
     {
@@ -10769,15 +10769,15 @@
       "value": 1473
     },
     {
-      "name": "Byron Murphy Jr.",
-      "position": "CB",
-      "team": "VIKINGS",
+      "name": "Calen Bullock",
+      "position": "S",
+      "team": "TEXANS",
       "value": 1472
     },
     {
-      "name": "Gervon Dexter Sr.",
-      "position": "DT",
-      "team": "FALCONS",
+      "name": "Byron Murphy Jr.",
+      "position": "CB",
+      "team": "VIKINGS",
       "value": 1472
     },
     {
@@ -11141,9 +11141,9 @@
       "value": 1028
     },
     {
-      "name": "Kevin Byard",
-      "position": "S",
-      "team": "PATRIOTS",
+      "name": "Gervon Dexter Sr.",
+      "position": "DT",
+      "team": "FALCONS",
       "value": 1025
     },
     {
@@ -11153,45 +11153,45 @@
       "value": 1025
     },
     {
+      "name": "Kevin Byard",
+      "position": "S",
+      "team": "PATRIOTS",
+      "value": 1023
+    },
+    {
       "name": "Jevon Holland",
       "position": "S",
       "team": "GIANTS",
-      "value": 1023
+      "value": 1022
     },
     {
       "name": "Christian Barmore",
       "position": "DT",
       "team": "PATRIOTS",
-      "value": 1022
+      "value": 1020
     },
     {
       "name": "Marlon Humphrey",
       "position": "CB",
       "team": "RAVENS",
-      "value": 1020
+      "value": 1018
     },
     {
       "name": "Keisean Nixon",
       "position": "CB",
       "team": "PACKERS",
-      "value": 1018
+      "value": 1016
     },
     {
       "name": "DeMarcus Lawrence",
       "position": "ED",
       "team": "SEAHAWKS",
-      "value": 1016
+      "value": 1015
     },
     {
       "name": "T'Vondre Sweat",
       "position": "DT",
       "team": "JETS",
-      "value": 1015
-    },
-    {
-      "name": "JT Tuimoloau",
-      "position": "ED",
-      "team": "COLTS",
       "value": 1013
     },
     {
@@ -11201,9 +11201,9 @@
       "value": 1011
     },
     {
-      "name": "Princely Umanmielen",
+      "name": "JT Tuimoloau",
       "position": "ED",
-      "team": "PANTHERS",
+      "team": "COLTS",
       "value": 1010
     },
     {
@@ -11219,9 +11219,9 @@
       "value": 1009
     },
     {
-      "name": "Braden Fiske",
-      "position": "DT",
-      "team": "RAMS",
+      "name": "Princely Umanmielen",
+      "position": "ED",
+      "team": "PANTHERS",
       "value": 1008
     },
     {
@@ -11231,9 +11231,9 @@
       "value": 1007
     },
     {
-      "name": "Justin Strnad",
-      "position": "LB",
-      "team": "BRONCOS",
+      "name": "Braden Fiske",
+      "position": "DT",
+      "team": "RAMS",
       "value": 1005
     },
     {
@@ -11243,15 +11243,15 @@
       "value": 1004
     },
     {
-      "name": "Jimmy Rolder",
+      "name": "Justin Strnad",
       "position": "LB",
-      "team": "LIONS",
+      "team": "BRONCOS",
       "value": 1003
     },
     {
-      "name": "TY Okada",
-      "position": "S",
-      "team": "SEAHAWKS",
+      "name": "Jimmy Rolder",
+      "position": "LB",
+      "team": "LIONS",
       "value": 1002
     },
     {
@@ -11261,21 +11261,21 @@
       "value": 1002
     },
     {
+      "name": "TY Okada",
+      "position": "S",
+      "team": "SEAHAWKS",
+      "value": 1000
+    },
+    {
       "name": "Christen Miller",
       "position": "DT",
       "team": "SAINTS",
-      "value": 1000
+      "value": 999
     },
     {
       "name": "Gracen Halton",
       "position": "DT",
       "team": "49ERS",
-      "value": 999
-    },
-    {
-      "name": "Nate Wiggins",
-      "position": "CB",
-      "team": "RAVENS",
       "value": 997
     },
     {
@@ -11291,9 +11291,9 @@
       "value": 997
     },
     {
-      "name": "Dorance Armstrong",
-      "position": "ED",
-      "team": "COMMANDERS",
+      "name": "Ty'Ron Hopper",
+      "position": "LB",
+      "team": "PACKERS",
       "value": 996
     },
     {
@@ -11303,81 +11303,81 @@
       "value": 996
     },
     {
+      "name": "Nate Wiggins",
+      "position": "CB",
+      "team": "RAVENS",
+      "value": 994
+    },
+    {
+      "name": "Dorance Armstrong",
+      "position": "ED",
+      "team": "COMMANDERS",
+      "value": 993
+    },
+    {
       "name": "Andru Phillips",
       "position": "CB",
       "team": "GIANTS",
-      "value": 994
+      "value": 991
     },
     {
       "name": "Jalen Ramsey",
       "position": "S",
       "team": "STEELERS",
-      "value": 993
+      "value": 990
     },
     {
       "name": "Brandon Cisse",
       "position": "CB",
       "team": "PACKERS",
-      "value": 991
-    },
-    {
-      "name": "Tyrel Dodson",
-      "position": "LB",
-      "team": "PANTHERS",
-      "value": 990
+      "value": 988
     },
     {
       "name": "Kyler Gordon",
       "position": "CB",
       "team": "BEARS",
-      "value": 988
+      "value": 987
+    },
+    {
+      "name": "Tyrel Dodson",
+      "position": "LB",
+      "team": "PANTHERS",
+      "value": 986
     },
     {
       "name": "Alim McNeill",
       "position": "DT",
       "team": "LIONS",
-      "value": 987
+      "value": 984
     },
     {
       "name": "Malcolm Koonce",
       "position": "ED",
       "team": "RAIDERS",
-      "value": 986
+      "value": 983
     },
     {
       "name": "Ronnie Hickman Jr.",
       "position": "S",
       "team": "BROWNS",
-      "value": 984
+      "value": 982
     },
     {
       "name": "Alex Wright",
       "position": "ED",
       "team": "BROWNS",
-      "value": 983
+      "value": 980
     },
     {
       "name": "Wade Woodaz",
       "position": "LB",
       "team": "TEXANS",
-      "value": 982
+      "value": 979
     },
     {
       "name": "Justin Reid",
       "position": "S",
       "team": "SAINTS",
-      "value": 980
-    },
-    {
-      "name": "Shaun Dolac",
-      "position": "LB",
-      "team": "RAMS",
-      "value": 979
-    },
-    {
-      "name": "Kerby Joseph",
-      "position": "S",
-      "team": "LIONS",
       "value": 978
     },
     {
@@ -11387,21 +11387,21 @@
       "value": 978
     },
     {
-      "name": "Tatum Bethune",
-      "position": "LB",
-      "team": "49ERS",
+      "name": "Kerby Joseph",
+      "position": "S",
+      "team": "LIONS",
       "value": 976
+    },
+    {
+      "name": "Shaun Dolac",
+      "position": "LB",
+      "team": "RAMS",
+      "value": 975
     },
     {
       "name": "Tyson Campbell",
       "position": "CB",
       "team": "BROWNS",
-      "value": 975
-    },
-    {
-      "name": "Michael Taaffe",
-      "position": "S",
-      "team": "DOLPHINS",
       "value": 974
     },
     {
@@ -11411,21 +11411,21 @@
       "value": 973
     },
     {
-      "name": "Jordan Burch",
-      "position": "ED",
-      "team": "CARDINALS",
+      "name": "Tatum Bethune",
+      "position": "LB",
+      "team": "49ERS",
       "value": 972
+    },
+    {
+      "name": "Michael Taaffe",
+      "position": "S",
+      "team": "DOLPHINS",
+      "value": 971
     },
     {
       "name": "Romello Height",
       "position": "ED",
       "team": "49ERS",
-      "value": 971
-    },
-    {
-      "name": "Joey Porter Jr.",
-      "position": "CB",
-      "team": "COWBOYS",
       "value": 970
     },
     {
@@ -11435,27 +11435,27 @@
       "value": 970
     },
     {
-      "name": "Trevin Wallace",
-      "position": "LB",
-      "team": "JETS",
+      "name": "Joey Porter Jr.",
+      "position": "CB",
+      "team": "COWBOYS",
       "value": 969
+    },
+    {
+      "name": "Jordan Burch",
+      "position": "ED",
+      "team": "CARDINALS",
+      "value": 968
     },
     {
       "name": "Coby Bryant",
       "position": "S",
       "team": "BEARS",
-      "value": 968
-    },
-    {
-      "name": "Oluwafemi Oladejo",
-      "position": "ED",
-      "team": "TITANS",
       "value": 966
     },
     {
-      "name": "Omarr Norman-Lott",
-      "position": "DT",
-      "team": "CHIEFS",
+      "name": "Trevin Wallace",
+      "position": "LB",
+      "team": "JETS",
       "value": 965
     },
     {
@@ -11465,27 +11465,27 @@
       "value": 965
     },
     {
-      "name": "Ty'Ron Hopper",
-      "position": "LB",
-      "team": "PACKERS",
+      "name": "Oluwafemi Oladejo",
+      "position": "ED",
+      "team": "TITANS",
       "value": 964
+    },
+    {
+      "name": "Omarr Norman-Lott",
+      "position": "DT",
+      "team": "CHIEFS",
+      "value": 963
     },
     {
       "name": "Christian Benford",
       "position": "CB",
       "team": "BILLS",
-      "value": 963
+      "value": 962
     },
     {
       "name": "Shemar James",
       "position": "LB",
       "team": "COWBOYS",
-      "value": 962
-    },
-    {
-      "name": "Noah Sewell",
-      "position": "LB",
-      "team": "BEARS",
       "value": 961
     },
     {
@@ -11495,27 +11495,27 @@
       "value": 960
     },
     {
+      "name": "Noah Sewell",
+      "position": "LB",
+      "team": "BEARS",
+      "value": 959
+    },
+    {
       "name": "Taron Johnson",
       "position": "CB",
       "team": "RAIDERS",
-      "value": 959
+      "value": 958
     },
     {
       "name": "Andrew Wingard",
       "position": "S",
       "team": "CARDINALS",
-      "value": 958
+      "value": 957
     },
     {
       "name": "Javon Bullard",
       "position": "S",
       "team": "PACKERS",
-      "value": 957
-    },
-    {
-      "name": "L'Jarius Sneed",
-      "position": "CB",
-      "team": "CHIEFS",
       "value": 956
     },
     {
@@ -11525,27 +11525,27 @@
       "value": 956
     },
     {
+      "name": "L'Jarius Sneed",
+      "position": "CB",
+      "team": "CHIEFS",
+      "value": 955
+    },
+    {
       "name": "Tyree Wilson",
       "position": "DT",
       "team": "SAINTS",
-      "value": 955
+      "value": 954
     },
     {
       "name": "Genesis Smith",
       "position": "S",
       "team": "CHARGERS",
-      "value": 954
+      "value": 953
     },
     {
       "name": "Deommodore Lenoir",
       "position": "CB",
       "team": "49ERS",
-      "value": 953
-    },
-    {
-      "name": "Jeremiah Trotter Jr.",
-      "position": "LB",
-      "team": "EAGLES",
       "value": 952
     },
     {
@@ -11561,27 +11561,27 @@
       "value": 951
     },
     {
-      "name": "Bryan Bresee",
-      "position": "DT",
-      "team": "SAINTS",
-      "value": 950
-    },
-    {
       "name": "Osa Odighizuwa",
       "position": "DT",
       "team": "49ERS",
-      "value": 949
+      "value": 950
     },
     {
-      "name": "Jonah Laulu",
+      "name": "Bryan Bresee",
       "position": "DT",
-      "team": "RAIDERS",
-      "value": 948
+      "team": "SAINTS",
+      "value": 949
     },
     {
       "name": "Omar Speights",
       "position": "LB",
       "team": "RAMS",
+      "value": 948
+    },
+    {
+      "name": "Jonah Laulu",
+      "position": "DT",
+      "team": "RAIDERS",
       "value": 947
     },
     {
@@ -11831,15 +11831,15 @@
       "value": 914
     },
     {
-      "name": "Geno Stone",
-      "position": "S",
-      "team": "BILLS",
-      "value": 913
-    },
-    {
       "name": "Branson Combs",
       "position": "LB",
       "team": "JAGUARS",
+      "value": 913
+    },
+    {
+      "name": "Geno Stone",
+      "position": "S",
+      "team": "BILLS",
       "value": 913
     },
     {
@@ -11897,15 +11897,15 @@
       "value": 907
     },
     {
-      "name": "Landon Jackson",
-      "position": "ED",
-      "team": "BILLS",
-      "value": 906
-    },
-    {
       "name": "Theo Jackson",
       "position": "S",
       "team": "VIKINGS",
+      "value": 906
+    },
+    {
+      "name": "Landon Jackson",
+      "position": "ED",
+      "team": "BILLS",
       "value": 906
     },
     {
@@ -11927,15 +11927,15 @@
       "value": 904
     },
     {
-      "name": "Kayden McDonald",
-      "position": "DT",
-      "team": "TEXANS",
-      "value": 903
-    },
-    {
       "name": "Tommy Eichenberg",
       "position": "LB",
       "team": "RAIDERS",
+      "value": 903
+    },
+    {
+      "name": "Kayden McDonald",
+      "position": "DT",
+      "team": "TEXANS",
       "value": 903
     },
     {
@@ -11945,15 +11945,15 @@
       "value": 903
     },
     {
-      "name": "Jadon Canady",
-      "position": "CB",
-      "team": "CHIEFS",
-      "value": 902
-    },
-    {
       "name": "Jordan Magee",
       "position": "LB",
       "team": "COMMANDERS",
+      "value": 902
+    },
+    {
+      "name": "Jadon Canady",
+      "position": "CB",
+      "team": "CHIEFS",
       "value": 902
     },
     {
@@ -12113,15 +12113,15 @@
       "value": 890
     },
     {
-      "name": "LT Overton",
-      "position": "ED",
-      "team": "COWBOYS",
-      "value": 890
-    },
-    {
       "name": "Jaden Hicks",
       "position": "S",
       "team": "CHIEFS",
+      "value": 890
+    },
+    {
+      "name": "LT Overton",
+      "position": "ED",
+      "team": "COWBOYS",
       "value": 889
     },
     {
@@ -12185,15 +12185,15 @@
       "value": 885
     },
     {
-      "name": "Tyler Onyedim",
-      "position": "DT",
-      "team": "BRONCOS",
-      "value": 885
-    },
-    {
       "name": "Matthew Judon",
       "position": "ED",
       "team": "BILLS",
+      "value": 885
+    },
+    {
+      "name": "Tyler Onyedim",
+      "position": "DT",
+      "team": "BRONCOS",
       "value": 884
     },
     {
@@ -12203,15 +12203,15 @@
       "value": 884
     },
     {
-      "name": "Darrell Jackson Jr.",
-      "position": "DT",
-      "team": "JETS",
-      "value": 884
-    },
-    {
       "name": "Kyle Van Noy",
       "position": "ED",
       "team": "RAVENS",
+      "value": 884
+    },
+    {
+      "name": "Darrell Jackson Jr.",
+      "position": "DT",
+      "team": "JETS",
       "value": 883
     },
     {
@@ -13353,5 +13353,5 @@
   ],
   "Redraft_SF": [],
   "Redraft_1QB": [],
-  "updated": "2026-11-02T05:07:53.382Z"
+  "updated": "2026-11-03T05:08:07.091Z"
 }
