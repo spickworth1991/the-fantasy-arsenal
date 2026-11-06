@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-05T05:07:59.368Z",
+  "updated": "2026-11-06T05:08:03.787Z",
   "season": 2026,
   "source": "FantasyPros",
   "scoring": "STD/HALF/PPR",
@@ -13697,7 +13697,7 @@
       "player_id": "",
       "source_player_id": "19739",
       "name": "Cody White",
-      "team": "FA",
+      "team": "LV",
       "position": "WR",
       "points": 18.64,
       "points_std": 11.81,
@@ -16328,7 +16328,7 @@
       "player_id": "",
       "source_player_id": "27470",
       "name": "Carter Runyon",
-      "team": "LV",
+      "team": "FA",
       "position": "TE",
       "points": 8.24,
       "points_std": 4.56,
@@ -16387,7 +16387,7 @@
       "player_id": "",
       "source_player_id": "28399",
       "name": "Carsen Ryan",
-      "team": "CLE",
+      "team": "FA",
       "position": "TE",
       "points": 8.14,
       "points_std": 4.34,
@@ -18755,5 +18755,5 @@
   "default_scoring": "ppr",
   "endpoint": "https://api.fantasypros.com/public/v2/json/nfl/2026/projections?position=ALL&week=0",
   "api_requests": 1,
-  "source_updated": null
+  "source_updated": "9/08"
 }
