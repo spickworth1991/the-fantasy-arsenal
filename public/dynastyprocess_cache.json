@@ -1,2007 +1,2007 @@
 {
-  "Ja'Marr Chase": {
-    "pos": "WR",
-    "team": "CIN",
-    "one_qb": 10113,
-    "superflex": 8970
-  },
   "Jaxon Smith-Njigba": {
     "pos": "WR",
     "team": "SEA",
+    "one_qb": 10184,
+    "superflex": 9249
+  },
+  "Ja'Marr Chase": {
+    "pos": "WR",
+    "team": "CIN",
     "one_qb": 10018,
-    "superflex": 8970
+    "superflex": 8928
   },
   "Bijan Robinson": {
     "pos": "RB",
     "team": "ATL",
-    "one_qb": 9580,
-    "superflex": 8301
+    "one_qb": 9603,
+    "superflex": 8439
   },
   "Jahmyr Gibbs": {
     "pos": "RB",
     "team": "DET",
-    "one_qb": 9314,
-    "superflex": 7901
+    "one_qb": 9336,
+    "superflex": 7883
   },
   "Amon-Ra St. Brown": {
     "pos": "WR",
     "team": "DET",
-    "one_qb": 9184,
-    "superflex": 7976
-  },
-  "CeeDee Lamb": {
-    "pos": "WR",
-    "team": "DAL",
-    "one_qb": 9119,
-    "superflex": 7846
+    "one_qb": 9162,
+    "superflex": 7995
   },
   "Puka Nacua": {
     "pos": "WR",
     "team": "LAR",
-    "one_qb": 8949,
-    "superflex": 7754
+    "one_qb": 8866,
+    "superflex": 7646
+  },
+  "CeeDee Lamb": {
+    "pos": "WR",
+    "team": "DAL",
+    "one_qb": 8762,
+    "superflex": 7682
   },
   "Justin Jefferson": {
     "pos": "WR",
     "team": "MIN",
-    "one_qb": 8949,
-    "superflex": 7682
-  },
-  "Kenneth Walker III": {
-    "pos": "RB",
-    "team": "KC",
-    "one_qb": 8108,
-    "superflex": 6261
-  },
-  "Ashton Jeanty": {
-    "pos": "RB",
-    "team": "LV",
-    "one_qb": 7995,
-    "superflex": 6291
+    "one_qb": 8321,
+    "superflex": 7243
   },
   "Malik Nabers": {
     "pos": "WR",
     "team": "NYG",
-    "one_qb": 7939,
-    "superflex": 6174
+    "one_qb": 8051,
+    "superflex": 6410
   },
-  "Jeremiyah Love": {
+  "Kenneth Walker III": {
     "pos": "RB",
-    "team": "ARI",
-    "one_qb": 7312,
-    "superflex": 5794
+    "team": "KC",
+    "one_qb": 8032,
+    "superflex": 6410
   },
-  "Drake London": {
-    "pos": "WR",
-    "team": "ATL",
-    "one_qb": 7295,
-    "superflex": 5808
+  "Ashton Jeanty": {
+    "pos": "RB",
+    "team": "LV",
+    "one_qb": 7754,
+    "superflex": 6073
   },
   "James Cook III": {
     "pos": "RB",
     "team": "BUF",
-    "one_qb": 7295,
-    "superflex": 5567
+    "one_qb": 7521,
+    "superflex": 5862
+  },
+  "Jeremiyah Love": {
+    "pos": "RB",
+    "team": "ARI",
+    "one_qb": 7381,
+    "superflex": 5960
+  },
+  "Drake London": {
+    "pos": "WR",
+    "team": "ATL",
+    "one_qb": 7329,
+    "superflex": 5918
   },
   "Josh Allen": {
     "pos": "QB",
     "team": "BUF",
-    "one_qb": 7009,
-    "superflex": 10232
-  },
-  "Jonathan Taylor": {
-    "pos": "RB",
-    "team": "IND",
-    "one_qb": 6943,
-    "superflex": 5225
+    "one_qb": 6992,
+    "superflex": 10208
   },
   "Chris Olave": {
     "pos": "WR",
     "team": "NO",
-    "one_qb": 6656,
-    "superflex": 5032
+    "one_qb": 6814,
+    "superflex": 5213
+  },
+  "Jonathan Taylor": {
+    "pos": "RB",
+    "team": "IND",
+    "one_qb": 6593,
+    "superflex": 4938
   },
   "Tetairoa McMillan": {
     "pos": "WR",
     "team": "CAR",
     "one_qb": 6547,
-    "superflex": 4927
-  },
-  "Breece Hall": {
-    "pos": "RB",
-    "team": "NYJ",
-    "one_qb": 6380,
-    "superflex": 4881
+    "superflex": 4915
   },
   "2026 Pick 1.01": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 6334,
-    "superflex": 7978
+    "one_qb": 6272,
+    "superflex": 7960
   },
-  "Garrett Wilson": {
-    "pos": "WR",
+  "Breece Hall": {
+    "pos": "RB",
     "team": "NYJ",
-    "one_qb": 6306,
-    "superflex": 4712
+    "one_qb": 6232,
+    "superflex": 4689
   },
   "Brock Bowers": {
     "pos": "TE",
     "team": "LV",
-    "one_qb": 6073,
-    "superflex": 4790
+    "one_qb": 6188,
+    "superflex": 5008
   },
-  "Nico Collins": {
+  "Garrett Wilson": {
     "pos": "WR",
-    "team": "HOU",
-    "one_qb": 5918,
-    "superflex": 4249
-  },
-  "Emeka Egbuka": {
-    "pos": "WR",
-    "team": "TB",
-    "one_qb": 5890,
-    "superflex": 4289
+    "team": "NYJ",
+    "one_qb": 6059,
+    "superflex": 4635
   },
   "Trey McBride": {
     "pos": "TE",
     "team": "ARI",
-    "one_qb": 5740,
-    "superflex": 4432
-  },
-  "2026 Pick 1.02": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 5589,
-    "superflex": 6429
+    "one_qb": 5988,
+    "superflex": 4712
   },
   "Drake Maye": {
     "pos": "QB",
     "team": "NE",
-    "one_qb": 5502,
+    "one_qb": 5780,
     "superflex": 6247
   },
-  "Lamar Jackson": {
-    "pos": "QB",
-    "team": "BAL",
-    "one_qb": 5337,
-    "superflex": 9358
+  "Nico Collins": {
+    "pos": "WR",
+    "team": "HOU",
+    "one_qb": 5620,
+    "superflex": 4111
   },
-  "Christian McCaffrey": {
-    "pos": "RB",
-    "team": "SF",
-    "one_qb": 5225,
-    "superflex": 3960
+  "2026 Pick 1.02": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 5522,
+    "superflex": 6430
   },
   "Zay Flowers": {
     "pos": "WR",
     "team": "BAL",
-    "one_qb": 5213,
-    "superflex": 4689
+    "one_qb": 5425,
+    "superflex": 5080
   },
-  "DeVonta Smith": {
+  "Emeka Egbuka": {
     "pos": "WR",
-    "team": "PHI",
-    "one_qb": 5044,
-    "superflex": 3587
-  },
-  "De'Von Achane": {
-    "pos": "RB",
-    "team": "MIA",
-    "one_qb": 4915,
-    "superflex": 3725
-  },
-  "George Pickens": {
-    "pos": "WR",
-    "team": "DAL",
-    "one_qb": 4869,
-    "superflex": 4309
+    "team": "TB",
+    "one_qb": 5237,
+    "superflex": 3969
   },
   "Luther Burden III": {
     "pos": "WR",
     "team": "CHI",
-    "one_qb": 4812,
-    "superflex": 3613
+    "one_qb": 5176,
+    "superflex": 3941
   },
   "Carnell Tate": {
     "pos": "WR",
     "team": "TEN",
-    "one_qb": 4559,
-    "superflex": 3391
-  },
-  "2026 Pick 1.03": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 4512,
-    "superflex": 5199
-  },
-  "Chase Brown": {
-    "pos": "RB",
-    "team": "CIN",
-    "one_qb": 4506,
-    "superflex": 3160
-  },
-  "A.J. Brown": {
-    "pos": "WR",
-    "team": "NE",
-    "one_qb": 4453,
-    "superflex": 3359
-  },
-  "Ladd McConkey": {
-    "pos": "WR",
-    "team": "LAC",
-    "one_qb": 4401,
-    "superflex": 3036
-  },
-  "Patrick Mahomes II": {
-    "pos": "QB",
-    "team": "KC",
-    "one_qb": 4370,
-    "superflex": 8399
+    "one_qb": 4950,
+    "superflex": 3778
   },
   "Colston Loveland": {
     "pos": "TE",
     "team": "CHI",
-    "one_qb": 4259,
-    "superflex": 3320
+    "one_qb": 4904,
+    "superflex": 3868
   },
-  "Parker Washington": {
-    "pos": "WR",
-    "team": "JAC",
-    "one_qb": 4259,
-    "superflex": 3212
-  },
-  "2027 Early 1st": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 4178,
-    "superflex": 4923
-  },
-  "Tyler Warren": {
-    "pos": "TE",
-    "team": "IND",
-    "one_qb": 4111,
-    "superflex": 3065
-  },
-  "Joe Burrow": {
-    "pos": "QB",
-    "team": "CIN",
-    "one_qb": 4063,
-    "superflex": 8360
-  },
-  "Christian Watson": {
-    "pos": "WR",
-    "team": "GB",
-    "one_qb": 4016,
-    "superflex": 2744
-  },
-  "Jaylen Waddle": {
-    "pos": "WR",
-    "team": "DEN",
-    "one_qb": 3960,
-    "superflex": 3029
-  },
-  "Caleb Williams": {
-    "pos": "QB",
-    "team": "CHI",
-    "one_qb": 3690,
-    "superflex": 8340
-  },
-  "Sam LaPorta": {
-    "pos": "TE",
-    "team": "DET",
-    "one_qb": 3690,
-    "superflex": 2980
-  },
-  "Kyren Williams": {
+  "De'Von Achane": {
     "pos": "RB",
-    "team": "LAR",
-    "one_qb": 3673,
-    "superflex": 2810
+    "team": "MIA",
+    "one_qb": 4881,
+    "superflex": 3655
   },
-  "Rome Odunze": {
-    "pos": "WR",
-    "team": "CHI",
-    "one_qb": 3664,
-    "superflex": 2655
+  "Lamar Jackson": {
+    "pos": "QB",
+    "team": "BAL",
+    "one_qb": 4790,
+    "superflex": 8660
   },
-  "2026 Pick 1.04": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 3656,
-    "superflex": 4221
-  },
-  "Tee Higgins": {
-    "pos": "WR",
-    "team": "CIN",
-    "one_qb": 3471,
-    "superflex": 2712
-  },
-  "Rashee Rice": {
-    "pos": "WR",
+  "Patrick Mahomes II": {
+    "pos": "QB",
     "team": "KC",
-    "one_qb": 3471,
-    "superflex": 2540
+    "one_qb": 4712,
+    "superflex": 8419
   },
-  "Jayden Daniels": {
-    "pos": "QB",
-    "team": "WAS",
-    "one_qb": 3367,
-    "superflex": 6782
-  },
-  "Omarion Hampton": {
-    "pos": "RB",
-    "team": "LAC",
-    "one_qb": 3359,
-    "superflex": 2481
-  },
-  "Trevor Lawrence": {
-    "pos": "QB",
-    "team": "JAC",
-    "one_qb": 3335,
-    "superflex": 6814
-  },
-  "Bucky Irving": {
-    "pos": "RB",
-    "team": "TB",
-    "one_qb": 3094,
-    "superflex": 2378
-  },
-  "Jameson Williams": {
+  "DeVonta Smith": {
     "pos": "WR",
-    "team": "DET",
-    "one_qb": 3065,
-    "superflex": 2190
+    "team": "PHI",
+    "one_qb": 4635,
+    "superflex": 3471
   },
   "Matthew Golden": {
     "pos": "WR",
     "team": "GB",
-    "one_qb": 3058,
-    "superflex": 2206
+    "one_qb": 4581,
+    "superflex": 3407
   },
-  "Saquon Barkley": {
+  "George Pickens": {
+    "pos": "WR",
+    "team": "DAL",
+    "one_qb": 4527,
+    "superflex": 3886
+  },
+  "Christian McCaffrey": {
     "pos": "RB",
-    "team": "PHI",
-    "one_qb": 3050,
-    "superflex": 2041
+    "team": "SF",
+    "one_qb": 4506,
+    "superflex": 3512
+  },
+  "2026 Pick 1.03": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 4475,
+    "superflex": 5212
+  },
+  "2027 Early 1st": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 4386,
+    "superflex": 5220
+  },
+  "Joe Burrow": {
+    "pos": "QB",
+    "team": "CIN",
+    "one_qb": 4229,
+    "superflex": 8379
+  },
+  "Caleb Williams": {
+    "pos": "QB",
+    "team": "CHI",
+    "one_qb": 4209,
+    "superflex": 8419
+  },
+  "Christian Watson": {
+    "pos": "WR",
+    "team": "GB",
+    "one_qb": 4131,
+    "superflex": 3101
+  },
+  "Parker Washington": {
+    "pos": "WR",
+    "team": "JAC",
+    "one_qb": 4035,
+    "superflex": 3138
+  },
+  "Tyler Warren": {
+    "pos": "TE",
+    "team": "IND",
+    "one_qb": 3831,
+    "superflex": 2870
+  },
+  "Sam LaPorta": {
+    "pos": "TE",
+    "team": "DET",
+    "one_qb": 3804,
+    "superflex": 3058
+  },
+  "Jaylen Waddle": {
+    "pos": "WR",
+    "team": "DEN",
+    "one_qb": 3778,
+    "superflex": 2883
+  },
+  "A.J. Brown": {
+    "pos": "WR",
+    "team": "NE",
+    "one_qb": 3742,
+    "superflex": 2870
+  },
+  "Trevor Lawrence": {
+    "pos": "QB",
+    "team": "JAC",
+    "one_qb": 3725,
+    "superflex": 6609
+  },
+  "Jayden Daniels": {
+    "pos": "QB",
+    "team": "WAS",
+    "one_qb": 3664,
+    "superflex": 6750
+  },
+  "Ladd McConkey": {
+    "pos": "WR",
+    "team": "LAC",
+    "one_qb": 3655,
+    "superflex": 2618
+  },
+  "Bucky Irving": {
+    "pos": "RB",
+    "team": "TB",
+    "one_qb": 3647,
+    "superflex": 2712
+  },
+  "2026 Pick 1.04": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 3638,
+    "superflex": 4241
+  },
+  "Tee Higgins": {
+    "pos": "WR",
+    "team": "CIN",
+    "one_qb": 3571,
+    "superflex": 2870
+  },
+  "Kyren Williams": {
+    "pos": "RB",
+    "team": "LAR",
+    "one_qb": 3571,
+    "superflex": 2816
+  },
+  "Bhayshul Tuten": {
+    "pos": "RB",
+    "team": "JAC",
+    "one_qb": 3415,
+    "superflex": 2790
   },
   "Brock Purdy": {
     "pos": "QB",
     "team": "SF",
-    "one_qb": 3008,
-    "superflex": 6335
+    "one_qb": 3415,
+    "superflex": 6395
   },
-  "2026 Pick 1.05": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 2973,
-    "superflex": 3438
+  "Rome Odunze": {
+    "pos": "WR",
+    "team": "CHI",
+    "one_qb": 3407,
+    "superflex": 2534
+  },
+  "Chase Brown": {
+    "pos": "RB",
+    "team": "CIN",
+    "one_qb": 3138,
+    "superflex": 2328
+  },
+  "Jameson Williams": {
+    "pos": "WR",
+    "team": "DET",
+    "one_qb": 3043,
+    "superflex": 2258
   },
   "Tucker Kraft": {
     "pos": "TE",
     "team": "GB",
-    "one_qb": 2959,
-    "superflex": 2114
+    "one_qb": 3036,
+    "superflex": 2216
   },
   "Jalen Hurts": {
     "pos": "QB",
     "team": "PHI",
-    "one_qb": 2890,
-    "superflex": 6609
+    "one_qb": 3022,
+    "superflex": 6578
+  },
+  "2026 Pick 1.05": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 2968,
+    "superflex": 3461
+  },
+  "Rashee Rice": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 2952,
+    "superflex": 2190
+  },
+  "Quinshon Judkins": {
+    "pos": "RB",
+    "team": "CLE",
+    "one_qb": 2843,
+    "superflex": 2180
+  },
+  "Dalton Kincaid": {
+    "pos": "TE",
+    "team": "BUF",
+    "one_qb": 2770,
+    "superflex": 2175
   },
   "Javonte Williams": {
     "pos": "RB",
     "team": "DAL",
     "one_qb": 2738,
-    "superflex": 2075
+    "superflex": 2080
+  },
+  "Saquon Barkley": {
+    "pos": "RB",
+    "team": "PHI",
+    "one_qb": 2712,
+    "superflex": 1707
   },
   "Jordyn Tyson": {
     "pos": "WR",
     "team": "NO",
-    "one_qb": 2712,
-    "superflex": 2164
+    "one_qb": 2693,
+    "superflex": 2195
   },
-  "Quinshon Judkins": {
-    "pos": "RB",
+  "KC Concepcion Jr.": {
+    "pos": "WR",
     "team": "CLE",
-    "one_qb": 2674,
-    "superflex": 2094
-  },
-  "Dalton Kincaid": {
-    "pos": "TE",
-    "team": "BUF",
-    "one_qb": 2624,
-    "superflex": 2055
-  },
-  "Travis Etienne Jr.": {
-    "pos": "RB",
-    "team": "NO",
-    "one_qb": 2540,
-    "superflex": 1810
+    "one_qb": 2600,
+    "superflex": 1998
   },
   "Denzel Boston": {
     "pos": "WR",
     "team": "CLE",
-    "one_qb": 2434,
-    "superflex": 1929
+    "one_qb": 2492,
+    "superflex": 1867
   },
   "2026 Pick 1.06": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 2426,
-    "superflex": 2810
+    "one_qb": 2430,
+    "superflex": 2835
+  },
+  "Omarion Hampton": {
+    "pos": "RB",
+    "team": "LAC",
+    "one_qb": 2395,
+    "superflex": 1902
   },
   "Harold Fannin Jr.": {
     "pos": "TE",
     "team": "CLE",
     "one_qb": 2378,
-    "superflex": 1929
-  },
-  "TreVeyon Henderson": {
-    "pos": "RB",
-    "team": "NE",
-    "one_qb": 2361,
-    "superflex": 1875
+    "superflex": 1911
   },
   "Makai Lemon": {
     "pos": "WR",
     "team": "PHI",
-    "one_qb": 2345,
-    "superflex": 1902
+    "one_qb": 2334,
+    "superflex": 1858
   },
   "DJ Moore": {
     "pos": "WR",
     "team": "BUF",
-    "one_qb": 2285,
-    "superflex": 1237
-  },
-  "Bhayshul Tuten": {
-    "pos": "RB",
-    "team": "JAC",
-    "one_qb": 2124,
-    "superflex": 1671
-  },
-  "KC Concepcion Jr.": {
-    "pos": "WR",
-    "team": "CLE",
-    "one_qb": 2119,
-    "superflex": 1756
-  },
-  "DK Metcalf": {
-    "pos": "WR",
-    "team": "PIT",
-    "one_qb": 2104,
-    "superflex": 962
+    "one_qb": 2328,
+    "superflex": 1324
   },
   "Kyle Pitts Sr.": {
     "pos": "TE",
     "team": "ATL",
-    "one_qb": 2065,
-    "superflex": 1025
-  },
-  "2026 Pick 1.07": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1987,
-    "superflex": 2305
-  },
-  "Cam Skattebo": {
-    "pos": "RB",
-    "team": "NYG",
-    "one_qb": 1938,
-    "superflex": 1504
-  },
-  "Derrick Henry": {
-    "pos": "RB",
-    "team": "BAL",
-    "one_qb": 1929,
-    "superflex": 1504
-  },
-  "D'Andre Swift": {
-    "pos": "RB",
-    "team": "CHI",
-    "one_qb": 1915,
-    "superflex": 1445
-  },
-  "2027 1st": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1890,
-    "superflex": 2207
-  },
-  "Jadarian Price": {
-    "pos": "RB",
-    "team": "SEA",
-    "one_qb": 1880,
-    "superflex": 1362
-  },
-  "2027 Mid 1st": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1869,
-    "superflex": 2167
+    "one_qb": 2301,
+    "superflex": 1312
   },
   "C.J. Stroud": {
     "pos": "QB",
     "team": "HOU",
-    "one_qb": 1828,
-    "superflex": 5274
+    "one_qb": 2253,
+    "superflex": 5451
   },
-  "Justin Herbert": {
-    "pos": "QB",
-    "team": "LAC",
-    "one_qb": 1802,
-    "superflex": 6247
+  "Travis Etienne Jr.": {
+    "pos": "RB",
+    "team": "NO",
+    "one_qb": 2185,
+    "superflex": 1591
   },
-  "Michael Wilson": {
+  "D'Andre Swift": {
+    "pos": "RB",
+    "team": "CHI",
+    "one_qb": 2144,
+    "superflex": 1625
+  },
+  "DK Metcalf": {
     "pos": "WR",
-    "team": "ARI",
-    "one_qb": 1711,
-    "superflex": 1324
+    "team": "PIT",
+    "one_qb": 2036,
+    "superflex": 929
+  },
+  "TreVeyon Henderson": {
+    "pos": "RB",
+    "team": "NE",
+    "one_qb": 2031,
+    "superflex": 1521
+  },
+  "2027 1st": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 2007,
+    "superflex": 2360
+  },
+  "2026 Pick 1.07": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 1996,
+    "superflex": 2330
+  },
+  "2027 Mid 1st": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 1985,
+    "superflex": 2317
   },
   "Dak Prescott": {
     "pos": "QB",
     "team": "DAL",
-    "one_qb": 1695,
-    "superflex": 4869
-  },
-  "2026 Pick 1.08": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1632,
-    "superflex": 1897
-  },
-  "Brian Thomas Jr.": {
-    "pos": "WR",
-    "team": "JAC",
-    "one_qb": 1583,
-    "superflex": 1178
-  },
-  "Bo Nix": {
-    "pos": "QB",
-    "team": "DEN",
-    "one_qb": 1572,
-    "superflex": 5020
-  },
-  "Jordan Addison": {
-    "pos": "WR",
-    "team": "MIN",
-    "one_qb": 1569,
-    "superflex": 1206
-  },
-  "Isaiah Likely": {
-    "pos": "TE",
-    "team": "NYG",
-    "one_qb": 1558,
-    "superflex": 1197
-  },
-  "2028 1st": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1512,
-    "superflex": 1766
-  },
-  "Alec Pierce": {
-    "pos": "WR",
-    "team": "IND",
-    "one_qb": 1493,
-    "superflex": 1067
-  },
-  "Jalen Coker": {
-    "pos": "WR",
-    "team": "CAR",
-    "one_qb": 1490,
-    "superflex": 1208
-  },
-  "Marvin Harrison Jr.": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 1462,
-    "superflex": 1077
+    "one_qb": 1802,
+    "superflex": 4881
   },
   "Jordan Love": {
     "pos": "QB",
     "team": "GB",
-    "one_qb": 1388,
-    "superflex": 5387
+    "one_qb": 1794,
+    "superflex": 5659
   },
-  "Kenyon Sadiq": {
-    "pos": "TE",
-    "team": "NYJ",
-    "one_qb": 1378,
-    "superflex": 1126
+  "Jadarian Price": {
+    "pos": "RB",
+    "team": "SEA",
+    "one_qb": 1683,
+    "superflex": 1246
+  },
+  "Michael Wilson": {
+    "pos": "WR",
+    "team": "ARI",
+    "one_qb": 1671,
+    "superflex": 1282
   },
   "Jaylen Warren": {
     "pos": "RB",
     "team": "PIT",
-    "one_qb": 1372,
-    "superflex": 1050
+    "one_qb": 1667,
+    "superflex": 1246
   },
-  "2026 Pick 1.09": {
+  "2026 Pick 1.08": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 1346,
-    "superflex": 1567
+    "one_qb": 1645,
+    "superflex": 1922
   },
-  "Michael Pittman Jr.": {
-    "pos": "WR",
-    "team": "PIT",
-    "one_qb": 1318,
-    "superflex": 422
+  "2028 1st": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 1605,
+    "superflex": 1888
   },
-  "Terry McLaurin": {
-    "pos": "WR",
-    "team": "WAS",
-    "one_qb": 1231,
-    "superflex": 920
-  },
-  "Chuba Hubbard": {
+  "Derrick Henry": {
     "pos": "RB",
-    "team": "CAR",
-    "one_qb": 1186,
-    "superflex": 899
+    "team": "BAL",
+    "one_qb": 1587,
+    "superflex": 1252
   },
-  "Omar Cooper Jr.": {
+  "Cam Skattebo": {
+    "pos": "RB",
+    "team": "NYG",
+    "one_qb": 1554,
+    "superflex": 1211
+  },
+  "Brian Thomas Jr.": {
     "pos": "WR",
-    "team": "NYJ",
-    "one_qb": 1183,
-    "superflex": 832
+    "team": "JAC",
+    "one_qb": 1550,
+    "superflex": 1134
   },
-  "2026 Pick 1.10": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 1113,
-    "superflex": 1298
+  "Jalen Coker": {
+    "pos": "WR",
+    "team": "CAR",
+    "one_qb": 1504,
+    "superflex": 1243
+  },
+  "Isaiah Likely": {
+    "pos": "TE",
+    "team": "NYG",
+    "one_qb": 1458,
+    "superflex": 1148
+  },
+  "Marvin Harrison Jr.": {
+    "pos": "WR",
+    "team": "HOU",
+    "one_qb": 1435,
+    "superflex": 1075
   },
   "Jared Goff": {
     "pos": "QB",
     "team": "DET",
-    "one_qb": 1113,
-    "superflex": 3742
+    "one_qb": 1428,
+    "superflex": 4063
   },
-  "Davante Adams": {
-    "pos": "WR",
-    "team": "LAR",
-    "one_qb": 1064,
-    "superflex": 826
+  "Kenyon Sadiq": {
+    "pos": "TE",
+    "team": "NYJ",
+    "one_qb": 1415,
+    "superflex": 1148
   },
-  "Josh Downs": {
+  "2026 Pick 1.09": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 1360,
+    "superflex": 1590
+  },
+  "Alec Pierce": {
     "pos": "WR",
     "team": "IND",
-    "one_qb": 1023,
-    "superflex": 822
+    "one_qb": 1353,
+    "superflex": 983
+  },
+  "Bo Nix": {
+    "pos": "QB",
+    "team": "DEN",
+    "one_qb": 1328,
+    "superflex": 4495
   },
   "George Kittle": {
     "pos": "TE",
     "team": "SF",
-    "one_qb": 987,
-    "superflex": 794
+    "one_qb": 1306,
+    "superflex": 1023
   },
-  "Mike Evans": {
+  "Chuba Hubbard": {
+    "pos": "RB",
+    "team": "CAR",
+    "one_qb": 1276,
+    "superflex": 997
+  },
+  "Jordan Addison": {
     "pos": "WR",
-    "team": "SF",
-    "one_qb": 976,
-    "superflex": 733
+    "team": "MIN",
+    "one_qb": 1276,
+    "superflex": 978
   },
-  "2026 Pick 1.11": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 924,
-    "superflex": 1079
-  },
-  "Tyler Shough": {
+  "Justin Herbert": {
     "pos": "QB",
-    "team": "NO",
-    "one_qb": 920,
-    "superflex": 3320
+    "team": "LAC",
+    "one_qb": 1273,
+    "superflex": 5620
   },
-  "Kyle Monangai": {
-    "pos": "RB",
-    "team": "CHI",
-    "one_qb": 909,
-    "superflex": 670
-  },
-  "Xavier Worthy": {
+  "Omar Cooper Jr.": {
     "pos": "WR",
-    "team": "KC",
-    "one_qb": 872,
-    "superflex": 673
-  },
-  "Josh Jacobs": {
-    "pos": "RB",
-    "team": "GB",
-    "one_qb": 870,
-    "superflex": 644
-  },
-  "2027 Late 1st": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 864,
-    "superflex": 1008
+    "team": "NYJ",
+    "one_qb": 1249,
+    "superflex": 1020
   },
   "Jaxson Dart": {
     "pos": "QB",
     "team": "NYG",
-    "one_qb": 832,
-    "superflex": 3504
+    "one_qb": 1234,
+    "superflex": 3950
   },
-  "Wan'Dale Robinson": {
+  "Michael Pittman Jr.": {
     "pos": "WR",
-    "team": "TEN",
-    "one_qb": 832,
-    "superflex": 635
+    "team": "PIT",
+    "one_qb": 1148,
+    "superflex": 350
   },
-  "Blake Corum": {
-    "pos": "RB",
-    "team": "LAR",
-    "one_qb": 812,
-    "superflex": 610
-  },
-  "Fernando Mendoza": {
-    "pos": "QB",
-    "team": "LV",
-    "one_qb": 810,
-    "superflex": 2803
-  },
-  "2026 Pick 1.12": {
+  "2026 Pick 1.10": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 770,
-    "superflex": 900
-  },
-  "Antonio Williams": {
-    "pos": "WR",
-    "team": "WAS",
-    "one_qb": 738,
-    "superflex": 592
-  },
-  "Jayden Higgins": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 727,
-    "superflex": 562
-  },
-  "Bryce Young": {
-    "pos": "QB",
-    "team": "CAR",
-    "one_qb": 711,
-    "superflex": 3190
-  },
-  "Jakobi Meyers": {
-    "pos": "WR",
-    "team": "JAC",
-    "one_qb": 680,
-    "superflex": 484
-  },
-  "2026 Pick 2.01": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 643,
-    "superflex": 754
+    "one_qb": 1128,
+    "superflex": 1320
   },
   "Jonah Coleman": {
     "pos": "RB",
     "team": "DEN",
-    "one_qb": 639,
-    "superflex": 532
+    "one_qb": 1004,
+    "superflex": 822
   },
-  "Chris Bell": {
+  "Josh Downs": {
     "pos": "WR",
-    "team": "MIA",
-    "one_qb": 638,
-    "superflex": 498
+    "team": "IND",
+    "one_qb": 983,
+    "superflex": 773
   },
-  "Jonathon Brooks": {
-    "pos": "RB",
-    "team": "CAR",
-    "one_qb": 635,
-    "superflex": 169
-  },
-  "David Montgomery": {
-    "pos": "RB",
-    "team": "HOU",
-    "one_qb": 626,
-    "superflex": 488
-  },
-  "RJ Harvey": {
-    "pos": "RB",
-    "team": "DEN",
-    "one_qb": 603,
-    "superflex": 508
-  },
-  "Khalil Shakir": {
+  "Mike Evans": {
     "pos": "WR",
-    "team": "BUF",
-    "one_qb": 600,
-    "superflex": 443
+    "team": "SF",
+    "one_qb": 978,
+    "superflex": 748
+  },
+  "Davante Adams": {
+    "pos": "WR",
+    "team": "LAR",
+    "one_qb": 971,
+    "superflex": 706
+  },
+  "2026 Pick 1.11": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 939,
+    "superflex": 1100
+  },
+  "Wan'Dale Robinson": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 931,
+    "superflex": 664
+  },
+  "2027 Late 1st": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 928,
+    "superflex": 1086
+  },
+  "Tyler Shough": {
+    "pos": "QB",
+    "team": "NO",
+    "one_qb": 907,
+    "superflex": 3423
+  },
+  "Fernando Mendoza": {
+    "pos": "QB",
+    "team": "LV",
+    "one_qb": 864,
+    "superflex": 2796
+  },
+  "Blake Corum": {
+    "pos": "RB",
+    "team": "LAR",
+    "one_qb": 847,
+    "superflex": 632
+  },
+  "Antonio Williams": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 847,
+    "superflex": 675
+  },
+  "Kyle Monangai": {
+    "pos": "RB",
+    "team": "CHI",
+    "one_qb": 842,
+    "superflex": 620
   },
   "Brenton Strange": {
     "pos": "TE",
     "team": "JAC",
-    "one_qb": 597,
-    "superflex": 480
+    "one_qb": 824,
+    "superflex": 653
   },
-  "Rhamondre Stevenson": {
+  "2026 Pick 1.12": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 784,
+    "superflex": 919
+  },
+  "Terry McLaurin": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 771,
+    "superflex": 606
+  },
+  "Josh Jacobs": {
     "pos": "RB",
-    "team": "NE",
-    "one_qb": 594,
-    "superflex": 482
+    "team": "GB",
+    "one_qb": 766,
+    "superflex": 624
+  },
+  "Bryce Young": {
+    "pos": "QB",
+    "team": "CAR",
+    "one_qb": 738,
+    "superflex": 2952
+  },
+  "Jayden Higgins": {
+    "pos": "WR",
+    "team": "HOU",
+    "one_qb": 731,
+    "superflex": 574
+  },
+  "2026 Pick 2.01": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 657,
+    "superflex": 771
+  },
+  "Jakobi Meyers": {
+    "pos": "WR",
+    "team": "JAC",
+    "one_qb": 653,
+    "superflex": 448
+  },
+  "Xavier Worthy": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 650,
+    "superflex": 533
   },
   "De'Zhaun Stribling": {
     "pos": "WR",
     "team": "SF",
-    "one_qb": 571,
-    "superflex": 457
+    "one_qb": 611,
+    "superflex": 484
   },
-  "Quentin Johnston": {
+  "Khalil Shakir": {
     "pos": "WR",
-    "team": "LAC",
-    "one_qb": 568,
-    "superflex": 439
+    "team": "BUF",
+    "one_qb": 607,
+    "superflex": 460
   },
-  "Jake Ferguson": {
-    "pos": "TE",
-    "team": "DAL",
-    "one_qb": 563,
-    "superflex": 463
-  },
-  "Courtland Sutton": {
+  "Germie Bernard": {
     "pos": "WR",
-    "team": "DEN",
-    "one_qb": 549,
-    "superflex": 384
+    "team": "PIT",
+    "one_qb": 578,
+    "superflex": 504
+  },
+  "Chris Bell": {
+    "pos": "WR",
+    "team": "MIA",
+    "one_qb": 572,
+    "superflex": 446
+  },
+  "Jonathon Brooks": {
+    "pos": "RB",
+    "team": "CAR",
+    "one_qb": 566,
+    "superflex": 149
   },
   "2026 Pick 2.02": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 539,
-    "superflex": 633
-  },
-  "Juwan Johnson": {
-    "pos": "TE",
-    "team": "NO",
-    "one_qb": 532,
-    "superflex": 416
+    "one_qb": 552,
+    "superflex": 648
   },
   "Eli Stowers": {
     "pos": "TE",
     "team": "PHI",
-    "one_qb": 496,
-    "superflex": 409
-  },
-  "Jayden Reed": {
-    "pos": "WR",
-    "team": "GB",
-    "one_qb": 495,
-    "superflex": 346
-  },
-  "Chris Godwin Jr.": {
-    "pos": "WR",
-    "team": "TB",
-    "one_qb": 482,
-    "superflex": 402
-  },
-  "Oronde Gadsden II": {
-    "pos": "TE",
-    "team": "LAC",
-    "one_qb": 479,
-    "superflex": 379
+    "one_qb": 538,
+    "superflex": 424
   },
   "Romeo Doubs": {
     "pos": "WR",
     "team": "NE",
-    "one_qb": 472,
-    "superflex": 390
+    "one_qb": 535,
+    "superflex": 412
   },
-  "Sam Darnold": {
-    "pos": "QB",
-    "team": "SEA",
-    "one_qb": 456,
-    "superflex": 1893
+  "Rhamondre Stevenson": {
+    "pos": "RB",
+    "team": "NE",
+    "one_qb": 516,
+    "superflex": 435
   },
-  "Terrance Ferguson": {
-    "pos": "TE",
-    "team": "LAR",
-    "one_qb": 455,
-    "superflex": 393
-  },
-  "2026 Pick 2.03": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 454,
-    "superflex": 534
-  },
-  "Dallas Goedert": {
-    "pos": "TE",
-    "team": "PHI",
-    "one_qb": 448,
-    "superflex": 356
+  "Quentin Johnston": {
+    "pos": "WR",
+    "team": "LAC",
+    "one_qb": 510,
+    "superflex": 406
   },
   "Baker Mayfield": {
     "pos": "QB",
     "team": "TB",
-    "one_qb": 431,
-    "superflex": 1617
+    "one_qb": 481,
+    "superflex": 1695
   },
-  "Travis Kelce": {
+  "Oronde Gadsden II": {
     "pos": "TE",
-    "team": "KC",
-    "one_qb": 430,
-    "superflex": 329
+    "team": "LAC",
+    "one_qb": 480,
+    "superflex": 388
+  },
+  "2026 Pick 2.03": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 465,
+    "superflex": 547
+  },
+  "RJ Harvey": {
+    "pos": "RB",
+    "team": "DEN",
+    "one_qb": 460,
+    "superflex": 395
   },
   "2027 Early 2nd": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 421,
-    "superflex": 495
+    "one_qb": 457,
+    "superflex": 537
   },
-  "Kyler Murray": {
+  "Sam Darnold": {
     "pos": "QB",
-    "team": "MIN",
-    "one_qb": 421,
-    "superflex": 2643
+    "team": "SEA",
+    "one_qb": 453,
+    "superflex": 1794
+  },
+  "Dallas Goedert": {
+    "pos": "TE",
+    "team": "PHI",
+    "one_qb": 446,
+    "superflex": 359
+  },
+  "Terrance Ferguson": {
+    "pos": "TE",
+    "team": "LAR",
+    "one_qb": 444,
+    "superflex": 373
+  },
+  "Chig Okonkwo": {
+    "pos": "TE",
+    "team": "WAS",
+    "one_qb": 428,
+    "superflex": 314
+  },
+  "Caleb Douglas": {
+    "pos": "WR",
+    "team": "MIA",
+    "one_qb": 426,
+    "superflex": 364
+  },
+  "Courtland Sutton": {
+    "pos": "WR",
+    "team": "DEN",
+    "one_qb": 420,
+    "superflex": 309
+  },
+  "Tony Pollard": {
+    "pos": "RB",
+    "team": "TEN",
+    "one_qb": 412,
+    "superflex": 326
+  },
+  "David Montgomery": {
+    "pos": "RB",
+    "team": "HOU",
+    "one_qb": 404,
+    "superflex": 333
   },
   "Zach Charbonnet": {
     "pos": "RB",
     "team": "SEA",
     "one_qb": 397,
-    "superflex": 321
-  },
-  "Cam Ward": {
-    "pos": "QB",
-    "team": "TEN",
-    "one_qb": 390,
-    "superflex": 1337
-  },
-  "2026 Pick 2.04": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 383,
-    "superflex": 451
-  },
-  "Rico Dowdle": {
-    "pos": "RB",
-    "team": "PIT",
-    "one_qb": 381,
-    "superflex": 306
-  },
-  "Matthew Stafford": {
-    "pos": "QB",
-    "team": "LAR",
-    "one_qb": 377,
-    "superflex": 1264
-  },
-  "Emmett Johnson": {
-    "pos": "RB",
-    "team": "KC",
-    "one_qb": 372,
-    "superflex": 283
-  },
-  "Woody Marks": {
-    "pos": "RB",
-    "team": "HOU",
-    "one_qb": 364,
-    "superflex": 309
-  },
-  "Adonai Mitchell": {
-    "pos": "WR",
-    "team": "NYJ",
-    "one_qb": 355,
-    "superflex": 283
-  },
-  "Ricky Pearsall": {
-    "pos": "WR",
-    "team": "SF",
-    "one_qb": 355,
-    "superflex": 226
-  },
-  "Tony Pollard": {
-    "pos": "RB",
-    "team": "TEN",
-    "one_qb": 354,
-    "superflex": 283
-  },
-  "Chig Okonkwo": {
-    "pos": "TE",
-    "team": "WAS",
-    "one_qb": 333,
-    "superflex": 256
-  },
-  "Mark Andrews": {
-    "pos": "TE",
-    "team": "BAL",
-    "one_qb": 330,
-    "superflex": 284
-  },
-  "2026 Pick 2.05": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 324,
-    "superflex": 383
-  },
-  "Tre' Harris": {
-    "pos": "WR",
-    "team": "LAC",
-    "one_qb": 320,
-    "superflex": 270
-  },
-  "Jacory Croskey-Merritt": {
-    "pos": "RB",
-    "team": "WAS",
-    "one_qb": 317,
-    "superflex": 255
+    "superflex": 314
   },
   "Stefon Diggs": {
     "pos": "WR",
     "team": "WAS",
-    "one_qb": 317,
-    "superflex": 269
+    "one_qb": 396,
+    "superflex": 331
   },
-  "Ja'Kobi Lane": {
-    "pos": "WR",
-    "team": "BAL",
-    "one_qb": 310,
-    "superflex": 232
-  },
-  "Michael Penix Jr.": {
-    "pos": "QB",
-    "team": "ATL",
-    "one_qb": 310,
-    "superflex": 1082
-  },
-  "Tank Dell": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 310,
-    "superflex": 54
-  },
-  "Rachaad White": {
-    "pos": "RB",
-    "team": "WAS",
-    "one_qb": 295,
-    "superflex": 243
-  },
-  "Pat Bryant": {
-    "pos": "WR",
-    "team": "DEN",
-    "one_qb": 292,
-    "superflex": 256
-  },
-  "Germie Bernard": {
-    "pos": "WR",
-    "team": "PIT",
-    "one_qb": 292,
-    "superflex": 256
-  },
-  "2026 Pick 2.06": {
+  "2026 Pick 2.04": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 275,
-    "superflex": 325
+    "one_qb": 393,
+    "superflex": 463
   },
-  "Daniel Jones": {
-    "pos": "QB",
-    "team": "IND",
-    "one_qb": 265,
-    "superflex": 938
-  },
-  "Malik Willis": {
-    "pos": "QB",
-    "team": "MIA",
-    "one_qb": 262,
-    "superflex": 974
-  },
-  "Tyler Allgeier": {
-    "pos": "RB",
-    "team": "ARI",
-    "one_qb": 257,
-    "superflex": 197
-  },
-  "Kenny Gainwell": {
-    "pos": "RB",
+  "Chris Godwin Jr.": {
+    "pos": "WR",
     "team": "TB",
-    "one_qb": 253,
-    "superflex": 202
+    "one_qb": 393,
+    "superflex": 316
   },
-  "Jordan Mason": {
-    "pos": "RB",
-    "team": "MIN",
-    "one_qb": 242,
-    "superflex": 186
+  "Matthew Stafford": {
+    "pos": "QB",
+    "team": "LAR",
+    "one_qb": 390,
+    "superflex": 1306
   },
-  "Rashid Shaheed": {
-    "pos": "WR",
-    "team": "SEA",
-    "one_qb": 237,
-    "superflex": 187
-  },
-  "2026 Pick 2.07": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 234,
-    "superflex": 278
-  },
-  "Deebo Samuel Sr.": {
-    "pos": "WR",
-    "team": "SF",
-    "one_qb": 230,
-    "superflex": 167
-  },
-  "Tre Tucker": {
-    "pos": "WR",
-    "team": "LV",
-    "one_qb": 227,
-    "superflex": 173
-  },
-  "Braelon Allen": {
-    "pos": "RB",
-    "team": "NYJ",
-    "one_qb": 222,
-    "superflex": 184
-  },
-  "2027 2nd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 220,
-    "superflex": 260
-  },
-  "AJ Barner": {
+  "Jake Ferguson": {
     "pos": "TE",
-    "team": "SEA",
-    "one_qb": 218,
-    "superflex": 200
+    "team": "DAL",
+    "one_qb": 389,
+    "superflex": 346
   },
-  "2027 Mid 2nd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 216,
-    "superflex": 256
+  "Kyler Murray": {
+    "pos": "QB",
+    "team": "MIN",
+    "one_qb": 388,
+    "superflex": 2498
+  },
+  "Juwan Johnson": {
+    "pos": "TE",
+    "team": "NO",
+    "one_qb": 386,
+    "superflex": 314
+  },
+  "Cam Ward": {
+    "pos": "QB",
+    "team": "TEN",
+    "one_qb": 386,
+    "superflex": 1276
+  },
+  "Adonai Mitchell": {
+    "pos": "WR",
+    "team": "NYJ",
+    "one_qb": 380,
+    "superflex": 296
   },
   "T.J. Hockenson": {
     "pos": "TE",
     "team": "MIN",
-    "one_qb": 215,
-    "superflex": 187
+    "one_qb": 364,
+    "superflex": 316
   },
-  "Caleb Douglas": {
+  "Tank Dell": {
     "pos": "WR",
-    "team": "MIA",
-    "one_qb": 213,
-    "superflex": 192
+    "team": "HOU",
+    "one_qb": 364,
+    "superflex": 65
   },
-  "Ty Simpson": {
-    "pos": "QB",
-    "team": "LAR",
-    "one_qb": 207,
-    "superflex": 704
+  "Jayden Reed": {
+    "pos": "WR",
+    "team": "GB",
+    "one_qb": 359,
+    "superflex": 270
   },
-  "J.K. Dobbins": {
+  "Rico Dowdle": {
     "pos": "RB",
-    "team": "DEN",
-    "one_qb": 207,
-    "superflex": 175
+    "team": "PIT",
+    "one_qb": 349,
+    "superflex": 283
   },
-  "Travis Hunter": {
-    "pos": "WR",
-    "team": "JAC",
-    "one_qb": 204,
-    "superflex": 162
-  },
-  "2026 Pick 2.08": {
+  "2026 Pick 2.05": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 200,
-    "superflex": 238
+    "one_qb": 334,
+    "superflex": 394
   },
-  "Anthony Richardson Sr.": {
+  "Travis Kelce": {
+    "pos": "TE",
+    "team": "KC",
+    "one_qb": 323,
+    "superflex": 266
+  },
+  "Braelon Allen": {
+    "pos": "RB",
+    "team": "NYJ",
+    "one_qb": 321,
+    "superflex": 278
+  },
+  "Emmett Johnson": {
+    "pos": "RB",
+    "team": "KC",
+    "one_qb": 315,
+    "superflex": 255
+  },
+  "Malik Willis": {
     "pos": "QB",
-    "team": "IND",
-    "one_qb": 198,
-    "superflex": 519
+    "team": "MIA",
+    "one_qb": 310,
+    "superflex": 969
+  },
+  "Ricky Pearsall": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 307,
+    "superflex": 202
+  },
+  "Jacory Croskey-Merritt": {
+    "pos": "RB",
+    "team": "WAS",
+    "one_qb": 299,
+    "superflex": 252
+  },
+  "Ja'Kobi Lane": {
+    "pos": "WR",
+    "team": "BAL",
+    "one_qb": 292,
+    "superflex": 231
+  },
+  "Michael Penix Jr.": {
+    "pos": "QB",
+    "team": "ATL",
+    "one_qb": 290,
+    "superflex": 1035
+  },
+  "Woody Marks": {
+    "pos": "RB",
+    "team": "HOU",
+    "one_qb": 290,
+    "superflex": 254
+  },
+  "Tre Tucker": {
+    "pos": "WR",
+    "team": "LV",
+    "one_qb": 288,
+    "superflex": 211
+  },
+  "2026 Pick 2.06": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 284,
+    "superflex": 335
+  },
+  "Rachaad White": {
+    "pos": "RB",
+    "team": "WAS",
+    "one_qb": 262,
+    "superflex": 227
   },
   "Brandon Aiyuk": {
     "pos": "WR",
     "team": "SF",
-    "one_qb": 198,
+    "one_qb": 255,
+    "superflex": 169
+  },
+  "Tre' Harris": {
+    "pos": "WR",
+    "team": "LAC",
+    "one_qb": 250,
+    "superflex": 218
+  },
+  "Mark Andrews": {
+    "pos": "TE",
+    "team": "BAL",
+    "one_qb": 243,
+    "superflex": 218
+  },
+  "2026 Pick 2.07": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 242,
+    "superflex": 287
+  },
+  "Daniel Jones": {
+    "pos": "QB",
+    "team": "IND",
+    "one_qb": 242,
+    "superflex": 741
+  },
+  "2027 2nd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 240,
+    "superflex": 284
+  },
+  "Tyler Allgeier": {
+    "pos": "RB",
+    "team": "ARI",
+    "one_qb": 238,
     "superflex": 199
   },
-  "Jaylin Noel": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 194,
-    "superflex": 163
+  "2027 Mid 2nd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 237,
+    "superflex": 280
   },
-  "Tyreek Hill": {
-    "pos": "WR",
-    "team": "FA",
-    "one_qb": 192,
-    "superflex": 199
+  "Kenny Gainwell": {
+    "pos": "RB",
+    "team": "TB",
+    "one_qb": 233,
+    "superflex": 198
   },
   "Mike Washington Jr.": {
     "pos": "RB",
     "team": "LV",
-    "one_qb": 184,
-    "superflex": 163
+    "one_qb": 230,
+    "superflex": 214
+  },
+  "Eli Raridon": {
+    "pos": "TE",
+    "team": "NE",
+    "one_qb": 229,
+    "superflex": 184
+  },
+  "Rashid Shaheed": {
+    "pos": "WR",
+    "team": "SEA",
+    "one_qb": 228,
+    "superflex": 184
+  },
+  "Travis Hunter": {
+    "pos": "WR",
+    "team": "JAC",
+    "one_qb": 223,
+    "superflex": 208
   },
   "Hunter Henry": {
     "pos": "TE",
     "team": "NE",
-    "one_qb": 180,
-    "superflex": 151
+    "one_qb": 219,
+    "superflex": 187
   },
-  "2028 2nd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 176,
-    "superflex": 208
+  "Ty Simpson": {
+    "pos": "QB",
+    "team": "LAR",
+    "one_qb": 212,
+    "superflex": 626
   },
-  "Aaron Jones Sr.": {
+  "Jordan Mason": {
     "pos": "RB",
     "team": "MIN",
-    "one_qb": 173,
-    "superflex": 146
-  },
-  "2026 Pick 2.09": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 172,
-    "superflex": 204
-  },
-  "Tyjae Spears": {
-    "pos": "RB",
-    "team": "TEN",
-    "one_qb": 164,
-    "superflex": 127
-  },
-  "Kayshon Boutte": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 159,
-    "superflex": 137
-  },
-  "Dalton Schultz": {
-    "pos": "TE",
-    "team": "HOU",
-    "one_qb": 157,
-    "superflex": 142
-  },
-  "2026 Pick 2.10": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 148,
+    "one_qb": 211,
     "superflex": 176
   },
-  "Dylan Sampson": {
-    "pos": "RB",
-    "team": "CLE",
-    "one_qb": 146,
-    "superflex": 119
-  },
-  "Isaac TeSlaa": {
+  "Jaylin Noel": {
     "pos": "WR",
-    "team": "DET",
-    "one_qb": 138,
-    "superflex": 95
+    "team": "HOU",
+    "one_qb": 211,
+    "superflex": 196
+  },
+  "2026 Pick 2.08": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 208,
+    "superflex": 246
+  },
+  "Deebo Samuel Sr.": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 205,
+    "superflex": 162
   },
   "Ollie Gordon II": {
     "pos": "RB",
     "team": "MIA",
-    "one_qb": 134,
-    "superflex": 108
+    "one_qb": 203,
+    "superflex": 164
+  },
+  "2028 2nd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 192,
+    "superflex": 227
+  },
+  "J.K. Dobbins": {
+    "pos": "RB",
+    "team": "DEN",
+    "one_qb": 184,
+    "superflex": 164
+  },
+  "Pat Bryant": {
+    "pos": "WR",
+    "team": "DEN",
+    "one_qb": 180,
+    "superflex": 185
+  },
+  "AJ Barner": {
+    "pos": "TE",
+    "team": "SEA",
+    "one_qb": 179,
+    "superflex": 164
+  },
+  "2026 Pick 2.09": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 178,
+    "superflex": 212
   },
   "Malachi Fields": {
     "pos": "WR",
     "team": "NYG",
-    "one_qb": 131,
-    "superflex": 116
+    "one_qb": 176,
+    "superflex": 153
   },
-  "Gunnar Helm": {
-    "pos": "TE",
-    "team": "TEN",
-    "one_qb": 128,
-    "superflex": 103
-  },
-  "Chris Rodriguez Jr.": {
-    "pos": "RB",
-    "team": "JAC",
-    "one_qb": 128,
-    "superflex": 117
-  },
-  "2026 Pick 2.11": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 127,
-    "superflex": 152
-  },
-  "Jalen McMillan": {
+  "Tyreek Hill": {
     "pos": "WR",
-    "team": "TB",
-    "one_qb": 126,
-    "superflex": 110
+    "team": "FA",
+    "one_qb": 174,
+    "superflex": 198
   },
-  "Keon Coleman": {
+  "Anthony Richardson Sr.": {
+    "pos": "QB",
+    "team": "IND",
+    "one_qb": 161,
+    "superflex": 430
+  },
+  "Kayshon Boutte": {
     "pos": "WR",
-    "team": "BUF",
-    "one_qb": 124,
-    "superflex": 92
+    "team": "HOU",
+    "one_qb": 156,
+    "superflex": 140
   },
-  "Max Klare": {
-    "pos": "TE",
-    "team": "LAR",
-    "one_qb": 120,
-    "superflex": 93
-  },
-  "Dontayvion Wicks": {
-    "pos": "WR",
-    "team": "PHI",
-    "one_qb": 119,
-    "superflex": 116
-  },
-  "2027 Late 2nd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 117,
-    "superflex": 139
-  },
-  "Brian Robinson Jr.": {
+  "Dylan Sampson": {
     "pos": "RB",
-    "team": "ATL",
-    "one_qb": 115,
-    "superflex": 93
-  },
-  "Nicholas Singleton": {
-    "pos": "RB",
-    "team": "TEN",
-    "one_qb": 111,
-    "superflex": 88
-  },
-  "2026 Pick 2.12": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 110,
-    "superflex": 132
-  },
-  "Keaton Mitchell": {
-    "pos": "RB",
-    "team": "LAC",
-    "one_qb": 102,
-    "superflex": 94
-  },
-  "Tyrone Tracy Jr.": {
-    "pos": "RB",
-    "team": "NYG",
-    "one_qb": 100,
-    "superflex": 81
-  },
-  "2026 Pick 3.01": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 96,
-    "superflex": 115
-  },
-  "Jerry Jeudy": {
-    "pos": "WR",
     "team": "CLE",
-    "one_qb": 94,
-    "superflex": 69
-  },
-  "Ted Hurst III": {
-    "pos": "WR",
-    "team": "TB",
-    "one_qb": 91,
-    "superflex": 90
-  },
-  "Mason Taylor": {
-    "pos": "TE",
-    "team": "NYJ",
-    "one_qb": 89,
-    "superflex": 67
-  },
-  "Kaelon Black": {
-    "pos": "RB",
-    "team": "SF",
-    "one_qb": 85,
-    "superflex": 74
-  },
-  "2026 Pick 3.02": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 83,
-    "superflex": 100
-  },
-  "Elic Ayomanor": {
-    "pos": "WR",
-    "team": "TEN",
-    "one_qb": 83,
-    "superflex": 72
-  },
-  "Greg Dulcich": {
-    "pos": "TE",
-    "team": "MIA",
-    "one_qb": 83,
-    "superflex": 77
-  },
-  "Ryan Flournoy": {
-    "pos": "WR",
-    "team": "DAL",
-    "one_qb": 83,
-    "superflex": 76
-  },
-  "Troy Franklin": {
-    "pos": "WR",
-    "team": "DEN",
-    "one_qb": 82,
-    "superflex": 71
-  },
-  "Alvin Kamara": {
-    "pos": "RB",
-    "team": "NO",
-    "one_qb": 81,
-    "superflex": 71
+    "one_qb": 154,
+    "superflex": 132
   },
   "Malik Washington": {
     "pos": "WR",
     "team": "MIA",
-    "one_qb": 80,
+    "one_qb": 154,
+    "superflex": 155
+  },
+  "2026 Pick 2.10": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 154,
+    "superflex": 183
+  },
+  "Keon Coleman": {
+    "pos": "WR",
+    "team": "BUF",
+    "one_qb": 154,
+    "superflex": 115
+  },
+  "Dalton Schultz": {
+    "pos": "TE",
+    "team": "HOU",
+    "one_qb": 154,
+    "superflex": 145
+  },
+  "Ted Hurst III": {
+    "pos": "WR",
+    "team": "TB",
+    "one_qb": 139,
+    "superflex": 144
+  },
+  "Aaron Jones Sr.": {
+    "pos": "RB",
+    "team": "MIN",
+    "one_qb": 139,
+    "superflex": 125
+  },
+  "Kaelon Black": {
+    "pos": "RB",
+    "team": "SF",
+    "one_qb": 139,
+    "superflex": 115
+  },
+  "Max Klare": {
+    "pos": "TE",
+    "team": "LAR",
+    "one_qb": 138,
+    "superflex": 113
+  },
+  "Ryan Flournoy": {
+    "pos": "WR",
+    "team": "DAL",
+    "one_qb": 136,
+    "superflex": 118
+  },
+  "Gunnar Helm": {
+    "pos": "TE",
+    "team": "TEN",
+    "one_qb": 133,
+    "superflex": 114
+  },
+  "2026 Pick 2.11": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 133,
+    "superflex": 158
+  },
+  "J.J. McCarthy": {
+    "pos": "QB",
+    "team": "NYG",
+    "one_qb": 129,
+    "superflex": 472
+  },
+  "2027 Late 2nd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 129,
+    "superflex": 153
+  },
+  "Chris Rodriguez Jr.": {
+    "pos": "RB",
+    "team": "JAC",
+    "one_qb": 126,
+    "superflex": 120
+  },
+  "Tyjae Spears": {
+    "pos": "RB",
+    "team": "TEN",
+    "one_qb": 123,
+    "superflex": 106
+  },
+  "Tyrone Tracy Jr.": {
+    "pos": "RB",
+    "team": "NYG",
+    "one_qb": 122,
+    "superflex": 96
+  },
+  "Jalen McMillan": {
+    "pos": "WR",
+    "team": "TB",
+    "one_qb": 121,
+    "superflex": 109
+  },
+  "Dontayvion Wicks": {
+    "pos": "WR",
+    "team": "PHI",
+    "one_qb": 118,
+    "superflex": 113
+  },
+  "Mason Taylor": {
+    "pos": "TE",
+    "team": "NYJ",
+    "one_qb": 116,
+    "superflex": 93
+  },
+  "2026 Pick 2.12": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 115,
+    "superflex": 137
+  },
+  "Geno Smith": {
+    "pos": "QB",
+    "team": "NYJ",
+    "one_qb": 105,
+    "superflex": 304
+  },
+  "2026 Pick 3.01": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 100,
+    "superflex": 119
+  },
+  "Devaughn Vele": {
+    "pos": "WR",
+    "team": "NO",
+    "one_qb": 97,
+    "superflex": 99
+  },
+  "Nicholas Singleton": {
+    "pos": "RB",
+    "team": "TEN",
+    "one_qb": 96,
     "superflex": 83
   },
   "Oscar Delp": {
     "pos": "TE",
     "team": "NO",
-    "one_qb": 79,
+    "one_qb": 95,
+    "superflex": 85
+  },
+  "Brian Robinson Jr.": {
+    "pos": "RB",
+    "team": "ATL",
+    "one_qb": 95,
+    "superflex": 84
+  },
+  "Jerry Jeudy": {
+    "pos": "WR",
+    "team": "CLE",
+    "one_qb": 91,
     "superflex": 69
   },
-  "Eli Raridon": {
+  "Greg Dulcich": {
     "pos": "TE",
-    "team": "NE",
+    "team": "MIA",
+    "one_qb": 90,
+    "superflex": 85
+  },
+  "2026 Pick 3.02": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 87,
+    "superflex": 104
+  },
+  "Michael Mayer": {
+    "pos": "TE",
+    "team": "LV",
+    "one_qb": 79,
+    "superflex": 97
+  },
+  "Isaac TeSlaa": {
+    "pos": "WR",
+    "team": "DET",
     "one_qb": 77,
-    "superflex": 75
-  },
-  "Jacoby Brissett": {
-    "pos": "QB",
-    "team": "ARI",
-    "one_qb": 76,
-    "superflex": 333
-  },
-  "Devaughn Vele": {
-    "pos": "WR",
-    "team": "NO",
-    "one_qb": 76,
-    "superflex": 88
-  },
-  "Rashod Bateman": {
-    "pos": "WR",
-    "team": "BAL",
-    "one_qb": 75,
-    "superflex": 53
+    "superflex": 61
   },
   "2026 Pick 3.03": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 76,
+    "superflex": 91
+  },
+  "Troy Franklin": {
+    "pos": "WR",
+    "team": "DEN",
+    "one_qb": 75,
+    "superflex": 72
+  },
+  "Kyle Williams": {
+    "pos": "WR",
+    "team": "NE",
+    "one_qb": 74,
+    "superflex": 67
+  },
+  "2027 Early 3rd": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 73,
     "superflex": 88
   },
-  "J.J. McCarthy": {
-    "pos": "QB",
-    "team": "NYG",
-    "one_qb": 71,
-    "superflex": 244
+  "Tank Bigsby": {
+    "pos": "RB",
+    "team": "PHI",
+    "one_qb": 73,
+    "superflex": 63
   },
-  "Shedeur Sanders": {
-    "pos": "QB",
-    "team": "CLE",
-    "one_qb": 71,
-    "superflex": 289
+  "Matt Hibner": {
+    "pos": "TE",
+    "team": "BAL",
+    "one_qb": 72,
+    "superflex": 66
+  },
+  "Alvin Kamara": {
+    "pos": "RB",
+    "team": "NO",
+    "one_qb": 72,
+    "superflex": 67
+  },
+  "Elic Ayomanor": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 72,
+    "superflex": 71
+  },
+  "Keaton Mitchell": {
+    "pos": "RB",
+    "team": "LAC",
+    "one_qb": 70,
+    "superflex": 74
   },
   "Pat Freiermuth": {
     "pos": "TE",
     "team": "PIT",
-    "one_qb": 70,
-    "superflex": 70
+    "one_qb": 69,
+    "superflex": 69
   },
-  "Geno Smith": {
-    "pos": "QB",
-    "team": "NYJ",
-    "one_qb": 70,
-    "superflex": 216
-  },
-  "Cade Otton": {
-    "pos": "TE",
-    "team": "TB",
-    "one_qb": 70,
-    "superflex": 63
-  },
-  "Tank Bigsby": {
-    "pos": "RB",
-    "team": "PHI",
-    "one_qb": 67,
-    "superflex": 55
-  },
-  "2027 Early 3rd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 66,
-    "superflex": 80
-  },
-  "Michael Mayer": {
-    "pos": "TE",
-    "team": "LV",
-    "one_qb": 65,
-    "superflex": 68
-  },
-  "Deshaun Watson": {
-    "pos": "QB",
-    "team": "CLE",
-    "one_qb": 64,
-    "superflex": 238
+  "Rashod Bateman": {
+    "pos": "WR",
+    "team": "BAL",
+    "one_qb": 68,
+    "superflex": 48
   },
   "2026 Pick 3.04": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 64,
-    "superflex": 77
+    "one_qb": 67,
+    "superflex": 80
   },
-  "Jauan Jennings": {
-    "pos": "WR",
-    "team": "MIN",
+  "Jacoby Brissett": {
+    "pos": "QB",
+    "team": "ARI",
+    "one_qb": 65,
+    "superflex": 354
+  },
+  "Kirk Cousins": {
+    "pos": "QB",
+    "team": "LV",
     "one_qb": 64,
-    "superflex": 49
+    "superflex": 203
   },
   "Kimani Vidal": {
     "pos": "RB",
     "team": "LAC",
-    "one_qb": 63,
+    "one_qb": 62,
     "superflex": 52
   },
-  "Zachariah Branch": {
-    "pos": "WR",
-    "team": "ATL",
-    "one_qb": 60,
-    "superflex": 62
-  },
-  "Kyle Williams": {
-    "pos": "WR",
-    "team": "NE",
-    "one_qb": 58,
-    "superflex": 49
-  },
-  "Skyler Bell": {
-    "pos": "WR",
-    "team": "BUF",
-    "one_qb": 57,
-    "superflex": 58
-  },
-  "2026 Pick 3.05": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 56,
-    "superflex": 68
-  },
-  "Aaron Rodgers": {
+  "Mac Jones": {
     "pos": "QB",
-    "team": "PIT",
-    "one_qb": 51,
-    "superflex": 189
-  },
-  "David Njoku": {
-    "pos": "TE",
-    "team": "LAC",
-    "one_qb": 49,
-    "superflex": 45
-  },
-  "2026 Pick 3.06": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 49,
-    "superflex": 60
-  },
-  "Elijah Sarratt": {
-    "pos": "WR",
-    "team": "BAL",
-    "one_qb": 49,
-    "superflex": 49
-  },
-  "Ray Davis": {
-    "pos": "RB",
-    "team": "BUF",
-    "one_qb": 48,
-    "superflex": 46
-  },
-  "Chris Brazzell II": {
-    "pos": "WR",
-    "team": "CAR",
-    "one_qb": 47,
-    "superflex": 37
+    "team": "SF",
+    "one_qb": 62,
+    "superflex": 175
   },
   "MarShawn Lloyd": {
     "pos": "RB",
     "team": "GB",
-    "one_qb": 46,
-    "superflex": 59
+    "one_qb": 61,
+    "superflex": 67
   },
-  "Jack Bech": {
+  "DeMario Douglas": {
+    "pos": "WR",
+    "team": "NE",
+    "one_qb": 60,
+    "superflex": 53
+  },
+  "Aaron Rodgers": {
+    "pos": "QB",
+    "team": "PIT",
+    "one_qb": 60,
+    "superflex": 235
+  },
+  "Shedeur Sanders": {
+    "pos": "QB",
+    "team": "CLE",
+    "one_qb": 59,
+    "superflex": 223
+  },
+  "2026 Pick 3.05": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 59,
+    "superflex": 71
+  },
+  "Elijah Sarratt": {
+    "pos": "WR",
+    "team": "BAL",
+    "one_qb": 55,
+    "superflex": 54
+  },
+  "Zachariah Branch": {
+    "pos": "WR",
+    "team": "ATL",
+    "one_qb": 55,
+    "superflex": 60
+  },
+  "Tory Horton": {
+    "pos": "WR",
+    "team": "SEA",
+    "one_qb": 53,
+    "superflex": 55
+  },
+  "Jalen Nailor": {
     "pos": "WR",
     "team": "LV",
+    "one_qb": 52,
+    "superflex": 49
+  },
+  "2026 Pick 3.06": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 52,
+    "superflex": 62
+  },
+  "Kevin Coleman Jr.": {
+    "pos": "WR",
+    "team": "MIA",
+    "one_qb": 50,
+    "superflex": 46
+  },
+  "Deshaun Watson": {
+    "pos": "QB",
+    "team": "CLE",
+    "one_qb": 49,
+    "superflex": 259
+  },
+  "Cade Otton": {
+    "pos": "TE",
+    "team": "TB",
     "one_qb": 46,
-    "superflex": 41
+    "superflex": 53
   },
   "2026 Pick 3.07": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 46,
+    "superflex": 55
+  },
+  "Chimere Dike": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 45,
+    "superflex": 44
+  },
+  "2027 3rd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 44,
+    "superflex": 54
+  },
+  "Cyrus Allen": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 44,
+    "superflex": 50
+  },
+  "2027 Mid 3rd": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 44,
     "superflex": 53
   },
-  "Kaytron Allen": {
-    "pos": "RB",
-    "team": "MIA",
-    "one_qb": 43,
-    "superflex": 48
-  },
-  "Calvin Ridley": {
+  "Skyler Bell": {
     "pos": "WR",
-    "team": "TEN",
-    "one_qb": 42,
-    "superflex": 35
+    "team": "BUF",
+    "one_qb": 44,
+    "superflex": 50
   },
-  "Elijah Arroyo": {
-    "pos": "TE",
-    "team": "SEA",
-    "one_qb": 42,
-    "superflex": 39
-  },
-  "Kirk Cousins": {
-    "pos": "QB",
+  "Jack Bech": {
+    "pos": "WR",
     "team": "LV",
-    "one_qb": 42,
-    "superflex": 160
+    "one_qb": 43,
+    "superflex": 43
   },
-  "Mac Jones": {
-    "pos": "QB",
-    "team": "SF",
-    "one_qb": 41,
-    "superflex": 84
+  "Bryce Lance": {
+    "pos": "WR",
+    "team": "NO",
+    "one_qb": 43,
+    "superflex": 43
   },
   "Kaleb Johnson": {
     "pos": "RB",
     "team": "GB",
-    "one_qb": 41,
-    "superflex": 46
+    "one_qb": 42,
+    "superflex": 50
   },
-  "2027 3rd": {
+  "Keenan Allen": {
+    "pos": "WR",
+    "team": "IND",
+    "one_qb": 41,
+    "superflex": 39
+  },
+  "2026 Pick 3.08": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 40,
     "superflex": 49
   },
-  "2027 Mid 3rd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 39,
-    "superflex": 48
-  },
-  "Bryce Lance": {
+  "Jauan Jennings": {
     "pos": "WR",
-    "team": "NO",
+    "team": "MIN",
     "one_qb": 39,
-    "superflex": 42
-  },
-  "Roman Wilson": {
-    "pos": "WR",
-    "team": "PIT",
-    "one_qb": 39,
-    "superflex": 57
-  },
-  "2026 Pick 3.08": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 39,
-    "superflex": 47
-  },
-  "Chimere Dike": {
-    "pos": "WR",
-    "team": "TEN",
-    "one_qb": 38,
-    "superflex": 35
-  },
-  "Darnell Mooney": {
-    "pos": "WR",
-    "team": "NYG",
-    "one_qb": 38,
-    "superflex": 32
-  },
-  "Emanuel Wilson": {
-    "pos": "RB",
-    "team": "SEA",
-    "one_qb": 36,
     "superflex": 38
   },
-  "Theo Johnson": {
+  "Tua Tagovailoa": {
+    "pos": "QB",
+    "team": "ATL",
+    "one_qb": 39,
+    "superflex": 632
+  },
+  "Konata Mumpfield": {
+    "pos": "WR",
+    "team": "LAR",
+    "one_qb": 38,
+    "superflex": 37
+  },
+  "Darnell Washington": {
     "pos": "TE",
-    "team": "NYG",
+    "team": "PIT",
+    "one_qb": 37,
+    "superflex": 21
+  },
+  "David Njoku": {
+    "pos": "TE",
+    "team": "LAC",
+    "one_qb": 37,
+    "superflex": 43
+  },
+  "2026 Pick 3.09": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 36,
-    "superflex": 38
+    "superflex": 44
+  },
+  "2028 3rd": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 35,
+    "superflex": 43
+  },
+  "Chris Brazzell II": {
+    "pos": "WR",
+    "team": "CAR",
+    "one_qb": 35,
+    "superflex": 33
   },
   "Jaylen Wright": {
     "pos": "RB",
     "team": "MIA",
     "one_qb": 34,
-    "superflex": 32
-  },
-  "2026 Pick 3.09": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 34,
-    "superflex": 42
-  },
-  "Tory Horton": {
-    "pos": "WR",
-    "team": "SEA",
-    "one_qb": 34,
-    "superflex": 41
-  },
-  "Jalen Nailor": {
-    "pos": "WR",
-    "team": "LV",
-    "one_qb": 33,
-    "superflex": 32
-  },
-  "DeMario Douglas": {
-    "pos": "WR",
-    "team": "NE",
-    "one_qb": 33,
-    "superflex": 39
-  },
-  "Tua Tagovailoa": {
-    "pos": "QB",
-    "team": "ATL",
-    "one_qb": 33,
-    "superflex": 560
-  },
-  "2028 3rd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 32,
-    "superflex": 39
-  },
-  "James Conner": {
-    "pos": "RB",
-    "team": "ARI",
-    "one_qb": 32,
-    "superflex": 32
-  },
-  "Marvin Mims Jr.": {
-    "pos": "WR",
-    "team": "DEN",
-    "one_qb": 32,
-    "superflex": 28
-  },
-  "Carson Beck": {
-    "pos": "QB",
-    "team": "ARI",
-    "one_qb": 31,
-    "superflex": 162
+    "superflex": 33
   },
   "2026 Pick 3.10": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 30,
-    "superflex": 38
+    "one_qb": 32,
+    "superflex": 39
   },
-  "Kevin Coleman Jr.": {
-    "pos": "WR",
+  "Kaytron Allen": {
+    "pos": "RB",
     "team": "MIA",
     "one_qb": 30,
-    "superflex": 29
+    "superflex": 43
   },
-  "Jaydon Blue": {
-    "pos": "RB",
-    "team": "PHI",
+  "Carson Beck": {
+    "pos": "QB",
+    "team": "ARI",
+    "one_qb": 30,
+    "superflex": 157
+  },
+  "Drew Lock": {
+    "pos": "QB",
+    "team": "SEA",
+    "one_qb": 30,
+    "superflex": 49
+  },
+  "Calvin Ridley": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 29,
+    "superflex": 28
+  },
+  "2026 Pick 3.11": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 29,
     "superflex": 35
   },
-  "2026 Pick 3.11": {
+  "Seth McGowan": {
+    "pos": "RB",
+    "team": "IND",
+    "one_qb": 28,
+    "superflex": 32
+  },
+  "Colby Parkinson": {
+    "pos": "TE",
+    "team": "LAR",
+    "one_qb": 28,
+    "superflex": 35
+  },
+  "Elijah Arroyo": {
+    "pos": "TE",
+    "team": "SEA",
+    "one_qb": 28,
+    "superflex": 35
+  },
+  "Mike Gesicki": {
+    "pos": "TE",
+    "team": "CIN",
+    "one_qb": 28,
+    "superflex": 39
+  },
+  "Emanuel Wilson": {
+    "pos": "RB",
+    "team": "SEA",
+    "one_qb": 27,
+    "superflex": 32
+  },
+  "2027 Late 3rd": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 27,
     "superflex": 34
   },
-  "Cyrus Allen": {
-    "pos": "WR",
-    "team": "KC",
-    "one_qb": 27,
-    "superflex": 33
-  },
-  "Demond Claiborne": {
+  "James Conner": {
     "pos": "RB",
-    "team": "MIN",
+    "team": "ARI",
     "one_qb": 27,
-    "superflex": 35
-  },
-  "Isiah Pacheco": {
-    "pos": "RB",
-    "team": "DET",
-    "one_qb": 25,
     "superflex": 31
   },
-  "2027 Late 3rd": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 24,
-    "superflex": 30
+  "Darnell Mooney": {
+    "pos": "WR",
+    "team": "NYG",
+    "one_qb": 26,
+    "superflex": 28
   },
-  "Darren Waller": {
+  "Theo Johnson": {
     "pos": "TE",
-    "team": "CAR",
-    "one_qb": 24,
-    "superflex": 27
+    "team": "NYG",
+    "one_qb": 26,
+    "superflex": 35
   },
   "2026 Pick 3.12": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 24,
-    "superflex": 31
+    "one_qb": 25,
+    "superflex": 32
   },
-  "Colby Parkinson": {
-    "pos": "TE",
-    "team": "LAR",
+  "Roman Wilson": {
+    "pos": "WR",
+    "team": "PIT",
+    "one_qb": 25,
+    "superflex": 46
+  },
+  "Ray Davis": {
+    "pos": "RB",
+    "team": "BUF",
     "one_qb": 24,
-    "superflex": 30
+    "superflex": 32
+  },
+  "2026 Pick 4.01": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 23,
+    "superflex": 29
+  },
+  "Tyquan Thornton": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 23,
+    "superflex": 25
+  },
+  "Marvin Mims Jr.": {
+    "pos": "WR",
+    "team": "DEN",
+    "one_qb": 23,
+    "superflex": 25
   },
   "Kendre Miller": {
     "pos": "RB",
     "team": "NO",
     "one_qb": 23,
-    "superflex": 27
-  },
-  "2026 Pick 4.01": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 22,
-    "superflex": 28
-  },
-  "Keenan Allen": {
-    "pos": "WR",
-    "team": "IND",
-    "one_qb": 22,
-    "superflex": 27
-  },
-  "Konata Mumpfield": {
-    "pos": "WR",
-    "team": "LAR",
-    "one_qb": 21,
-    "superflex": 23
-  },
-  "Devin Neal": {
-    "pos": "RB",
-    "team": "WAS",
-    "one_qb": 21,
-    "superflex": 23
-  },
-  "Evan Engram": {
-    "pos": "TE",
-    "team": "DEN",
-    "one_qb": 20,
-    "superflex": 24
+    "superflex": 29
   },
   "2026 Pick 4.02": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 20,
+    "one_qb": 21,
     "superflex": 26
   },
-  "Cooper Kupp": {
-    "pos": "WR",
-    "team": "SEA",
-    "one_qb": 19,
-    "superflex": 19
-  },
-  "Carson Wentz": {
+  "Joe Flacco": {
     "pos": "QB",
+    "team": "CIN",
+    "one_qb": 20,
+    "superflex": 67
+  },
+  "Cole Payton": {
+    "pos": "QB",
+    "team": "PHI",
+    "one_qb": 20,
+    "superflex": 7
+  },
+  "Jalon Daniels": {
+    "pos": "QB",
+    "team": "TB",
+    "one_qb": 20,
+    "superflex": 25
+  },
+  "Tyson Bagent": {
+    "pos": "QB",
+    "team": "CHI",
+    "one_qb": 19,
+    "superflex": 77
+  },
+  "Demond Claiborne": {
+    "pos": "RB",
     "team": "MIN",
-    "one_qb": 18,
-    "superflex": 20
+    "one_qb": 19,
+    "superflex": 30
   },
-  "Mack Hollins": {
-    "pos": "WR",
-    "team": "NE",
-    "one_qb": 18,
-    "superflex": 23
-  },
-  "Tyquan Thornton": {
-    "pos": "WR",
-    "team": "KC",
-    "one_qb": 18,
-    "superflex": 22
+  "Isiah Pacheco": {
+    "pos": "RB",
+    "team": "DET",
+    "one_qb": 19,
+    "superflex": 29
   },
   "2026 Pick 4.03": {
     "pos": "PICK",
     "team": "NA",
+    "one_qb": 19,
+    "superflex": 24
+  },
+  "2027 Early 4th": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 18,
     "superflex": 23
+  },
+  "Gardner Minshew II": {
+    "pos": "QB",
+    "team": "ARI",
+    "one_qb": 17,
+    "superflex": 4
+  },
+  "Marcus Mariota": {
+    "pos": "QB",
+    "team": "WAS",
+    "one_qb": 17,
+    "superflex": 100
+  },
+  "Dohnte Meyers": {
+    "pos": "WR",
+    "team": "CIN",
+    "one_qb": 17,
+    "superflex": 18
+  },
+  "Jameis Winston": {
+    "pos": "QB",
+    "team": "NYG",
+    "one_qb": 17,
+    "superflex": 124
+  },
+  "2026 Pick 4.04": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 17,
+    "superflex": 22
   },
   "Justin Fields": {
     "pos": "QB",
     "team": "KC",
     "one_qb": 17,
-    "superflex": 48
+    "superflex": 73
   },
-  "Justin Joly": {
+  "Charlie Kolar": {
     "pos": "TE",
-    "team": "MIA",
-    "one_qb": 17,
-    "superflex": 32
-  },
-  "Brenen Thompson": {
-    "pos": "WR",
     "team": "LAC",
     "one_qb": 17,
-    "superflex": 16
+    "superflex": 20
   },
-  "2026 Pick 4.04": {
-    "pos": "PICK",
-    "team": "NA",
+  "Josh Cameron": {
+    "pos": "WR",
+    "team": "JAC",
     "one_qb": 16,
-    "superflex": 21
+    "superflex": 20
   },
-  "2027 Early 4th": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 16,
-    "superflex": 21
-  },
-  "Sean Tucker": {
-    "pos": "RB",
-    "team": "TB",
+  "Mack Hollins": {
+    "pos": "WR",
+    "team": "NE",
     "one_qb": 16,
     "superflex": 24
-  },
-  "Xavier Legette": {
-    "pos": "WR",
-    "team": "CAR",
-    "one_qb": 15,
-    "superflex": 20
   },
   "Tyler Huntley": {
     "pos": "QB",
     "team": "BAL",
-    "one_qb": 15,
-    "superflex": 2
+    "one_qb": 16,
+    "superflex": 3
   },
-  "Darnell Washington": {
-    "pos": "TE",
-    "team": "PIT",
-    "one_qb": 15,
-    "superflex": 17
-  },
-  "Tyson Bagent": {
-    "pos": "QB",
-    "team": "CHI",
-    "one_qb": 15,
-    "superflex": 91
-  },
-  "Joe Flacco": {
-    "pos": "QB",
-    "team": "CIN",
-    "one_qb": 15,
-    "superflex": 18
-  },
-  "Matt Hibner": {
-    "pos": "TE",
-    "team": "BAL",
-    "one_qb": 15,
-    "superflex": 21
-  },
-  "Drew Lock": {
-    "pos": "QB",
-    "team": "SEA",
-    "one_qb": 15,
-    "superflex": 133
-  },
-  "Seth McGowan": {
+  "Trey Benson": {
     "pos": "RB",
-    "team": "IND",
-    "one_qb": 15,
-    "superflex": 22
+    "team": "ARI",
+    "one_qb": 16,
+    "superflex": 26
   },
   "2026 Pick 4.05": {
     "pos": "PICK",
@@ -2009,165 +2009,201 @@
     "one_qb": 15,
     "superflex": 20
   },
+  "Carson Wentz": {
+    "pos": "QB",
+    "team": "MIN",
+    "one_qb": 15,
+    "superflex": 3
+  },
+  "Evan Engram": {
+    "pos": "TE",
+    "team": "DEN",
+    "one_qb": 15,
+    "superflex": 23
+  },
+  "Cooper Kupp": {
+    "pos": "WR",
+    "team": "SEA",
+    "one_qb": 15,
+    "superflex": 19
+  },
+  "Calvin Austin III": {
+    "pos": "WR",
+    "team": "NYG",
+    "one_qb": 15,
+    "superflex": 17
+  },
   "Cedric Tillman": {
     "pos": "WR",
     "team": "NO",
-    "one_qb": 15,
-    "superflex": 20
-  },
-  "Jalen Milroe": {
-    "pos": "QB",
-    "team": "SEA",
     "one_qb": 14,
-    "superflex": 41
+    "superflex": 18
   },
-  "Marcus Mariota": {
-    "pos": "QB",
-    "team": "WAS",
+  "Jaydon Blue": {
+    "pos": "RB",
+    "team": "PHI",
     "one_qb": 14,
-    "superflex": 58
-  },
-  "Jalen Royals": {
-    "pos": "WR",
-    "team": "KC",
-    "one_qb": 14,
-    "superflex": 20
-  },
-  "Isaiah Bond": {
-    "pos": "WR",
-    "team": "CLE",
-    "one_qb": 14,
-    "superflex": 15
-  },
-  "Christian Kirk": {
-    "pos": "WR",
-    "team": "SF",
-    "one_qb": 13,
-    "superflex": 19
-  },
-  "Jalon Daniels": {
-    "pos": "QB",
-    "team": "TB",
-    "one_qb": 13,
     "superflex": 22
   },
   "2026 Pick 4.06": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 13,
-    "superflex": 18
-  },
-  "Jameis Winston": {
-    "pos": "QB",
-    "team": "NYG",
-    "one_qb": 13,
-    "superflex": 79
-  },
-  "Raheim Sanders": {
-    "pos": "RB",
-    "team": "CLE",
-    "one_qb": 13,
-    "superflex": 18
-  },
-  "Cole Kmet": {
-    "pos": "TE",
-    "team": "CHI",
-    "one_qb": 13,
-    "superflex": 16
-  },
-  "2026 Pick 4.07": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 12,
-    "superflex": 17
+    "one_qb": 14,
+    "superflex": 19
   },
   "Cade Klubnik": {
     "pos": "QB",
     "team": "NYJ",
-    "one_qb": 11,
-    "superflex": 13
+    "one_qb": 14,
+    "superflex": 10
   },
-  "2026 Pick 4.08": {
+  "Jack Strand": {
+    "pos": "QB",
+    "team": "ATL",
+    "one_qb": 14,
+    "superflex": 3
+  },
+  "Jalen Milroe": {
+    "pos": "QB",
+    "team": "SEA",
+    "one_qb": 14,
+    "superflex": 12
+  },
+  "Isaiah Bond": {
+    "pos": "WR",
+    "team": "CLE",
+    "one_qb": 13,
+    "superflex": 17
+  },
+  "Jalen Royals": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 13,
+    "superflex": 20
+  },
+  "2026 Pick 4.07": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 11,
-    "superflex": 15
+    "one_qb": 13,
+    "superflex": 17
+  },
+  "Sean Tucker": {
+    "pos": "RB",
+    "team": "TB",
+    "one_qb": 13,
+    "superflex": 22
   },
   "2027 4th": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 11,
-    "superflex": 15
-  },
-  "Cole Payton": {
-    "pos": "QB",
-    "team": "PHI",
-    "one_qb": 11,
-    "superflex": 8
-  },
-  "Trey Benson": {
-    "pos": "RB",
-    "team": "ARI",
-    "one_qb": 11,
-    "superflex": 17
+    "one_qb": 12,
+    "superflex": 16
   },
   "2027 Mid 4th": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 11,
-    "superflex": 15
+    "one_qb": 12,
+    "superflex": 16
   },
-  "Kalif Raymond": {
+  "2026 Pick 4.08": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 12,
+    "superflex": 16
+  },
+  "Darren Waller": {
+    "pos": "TE",
+    "team": "CAR",
+    "one_qb": 12,
+    "superflex": 18
+  },
+  "Savion Williams": {
     "pos": "WR",
-    "team": "CHI",
-    "one_qb": 10,
+    "team": "GB",
+    "one_qb": 11,
+    "superflex": 17
+  },
+  "Darius Slayton": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 11,
+    "superflex": 16
+  },
+  "Devin Neal": {
+    "pos": "RB",
+    "team": "WAS",
+    "one_qb": 11,
     "superflex": 19
   },
   "2026 Pick 4.09": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 10,
-    "superflex": 14
-  },
-  "Calvin Austin III": {
-    "pos": "WR",
-    "team": "NYG",
-    "one_qb": 10,
+    "one_qb": 11,
     "superflex": 15
   },
-  "Darius Slayton": {
+  "Dont'e Thornton Jr.": {
     "pos": "WR",
-    "team": "FA",
-    "one_qb": 10,
-    "superflex": 16
+    "team": "LV",
+    "one_qb": 11,
+    "superflex": 12
   },
-  "Mike Gesicki": {
-    "pos": "TE",
-    "team": "CIN",
-    "one_qb": 10,
-    "superflex": 17
-  },
-  "Drew Allar": {
+  "Taylen Green": {
     "pos": "QB",
-    "team": "PIT",
+    "team": "CLE",
     "one_qb": 10,
-    "superflex": 50
+    "superflex": 6
   },
   "Najee Harris": {
     "pos": "RB",
     "team": "FA",
     "one_qb": 10,
-    "superflex": 18
+    "superflex": 17
   },
   "2026 Pick 4.10": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 9,
+    "one_qb": 10,
+    "superflex": 14
+  },
+  "Cole Kmet": {
+    "pos": "TE",
+    "team": "CHI",
+    "one_qb": 10,
+    "superflex": 15
+  },
+  "Sam Roush": {
+    "pos": "TE",
+    "team": "CHI",
+    "one_qb": 10,
+    "superflex": 14
+  },
+  "2028 4th": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 10,
     "superflex": 13
   },
-  "Andrei Iosivas": {
+  "Spencer Rattler": {
+    "pos": "QB",
+    "team": "NO",
+    "one_qb": 10,
+    "superflex": 5
+  },
+  "John Metchie III": {
     "pos": "WR",
-    "team": "CIN",
+    "team": "CAR",
+    "one_qb": 10,
+    "superflex": 12
+  },
+  "Marlin Klein": {
+    "pos": "TE",
+    "team": "HOU",
+    "one_qb": 10,
+    "superflex": 16
+  },
+  "2026 Pick 4.11": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 9,
     "superflex": 13
   },
@@ -2175,65 +2211,119 @@
     "pos": "RB",
     "team": "BAL",
     "one_qb": 9,
-    "superflex": 15
-  },
-  "Taylen Green": {
-    "pos": "QB",
-    "team": "CLE",
-    "one_qb": 9,
-    "superflex": 9
-  },
-  "Zavion Thomas": {
-    "pos": "WR",
-    "team": "CHI",
-    "one_qb": 9,
     "superflex": 14
   },
-  "Dont'e Thornton Jr.": {
+  "Drew Allar": {
+    "pos": "QB",
+    "team": "PIT",
+    "one_qb": 9,
+    "superflex": 27
+  },
+  "Jalen Tolbert": {
+    "pos": "WR",
+    "team": "MIA",
+    "one_qb": 9,
+    "superflex": 10
+  },
+  "Devontez Walker": {
+    "pos": "WR",
+    "team": "BAL",
+    "one_qb": 9,
+    "superflex": 10
+  },
+  "2027 Late 4th": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 9,
+    "superflex": 12
+  },
+  "2026 Pick 4.12": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 9,
+    "superflex": 12
+  },
+  "Quinn Ewers": {
+    "pos": "QB",
+    "team": "JAC",
+    "one_qb": 9,
+    "superflex": 7
+  },
+  "Ben Sinnott": {
+    "pos": "TE",
+    "team": "WAS",
+    "one_qb": 8,
+    "superflex": 18
+  },
+  "Tez Johnson": {
+    "pos": "WR",
+    "team": "TB",
+    "one_qb": 8,
+    "superflex": 14
+  },
+  "Efton Chism III": {
+    "pos": "WR",
+    "team": "NE",
+    "one_qb": 8,
+    "superflex": 18
+  },
+  "Haynes King": {
+    "pos": "QB",
+    "team": "CAR",
+    "one_qb": 8,
+    "superflex": 3
+  },
+  "Jerome Ford": {
+    "pos": "RB",
+    "team": "ARI",
+    "one_qb": 8,
+    "superflex": 12
+  },
+  "Malik Benson": {
     "pos": "WR",
     "team": "LV",
-    "one_qb": 9,
-    "superflex": 12
-  },
-  "2028 4th": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 9,
-    "superflex": 12
-  },
-  "2026 Pick 4.11": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 9,
-    "superflex": 12
-  },
-  "Spencer Rattler": {
-    "pos": "QB",
-    "team": "NO",
-    "one_qb": 9,
-    "superflex": 5
-  },
-  "Hollywood Brown": {
-    "pos": "WR",
-    "team": "PHI",
-    "one_qb": 9,
-    "superflex": 12
-  },
-  "Jordan James": {
-    "pos": "RB",
-    "team": "SF",
-    "one_qb": 9,
+    "one_qb": 8,
     "superflex": 14
+  },
+  "2026 Pick 5.01": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 8,
+    "superflex": 11
+  },
+  "Jahan Dotson": {
+    "pos": "WR",
+    "team": "ATL",
+    "one_qb": 8,
+    "superflex": 12
+  },
+  "Christian Kirk": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 8,
+    "superflex": 14
+  },
+  "Treylon Burks": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 8,
+    "superflex": 13
+  },
+  "Joe Milton III": {
+    "pos": "QB",
+    "team": "PHI",
+    "one_qb": 8,
+    "superflex": 3
+  },
+  "Xavier Legette": {
+    "pos": "WR",
+    "team": "CAR",
+    "one_qb": 8,
+    "superflex": 15
   },
   "Isaac Guerendo": {
     "pos": "RB",
     "team": "SF",
-    "one_qb": 9,
-    "superflex": 13
-  },
-  "Sam Roush": {
-    "pos": "TE",
-    "team": "CHI",
     "one_qb": 8,
     "superflex": 12
   },
@@ -2243,53 +2333,83 @@
     "one_qb": 8,
     "superflex": 14
   },
-  "Charlie Kolar": {
-    "pos": "TE",
+  "Brenen Thompson": {
+    "pos": "WR",
     "team": "LAC",
     "one_qb": 8,
-    "superflex": 14
+    "superflex": 11
   },
-  "Quinn Ewers": {
+  "Jordan James": {
+    "pos": "RB",
+    "team": "SF",
+    "one_qb": 8,
+    "superflex": 16
+  },
+  "2026 Pick 5.02": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 8,
+    "superflex": 10
+  },
+  "Ty Johnson": {
+    "pos": "RB",
+    "team": "BUF",
+    "one_qb": 7,
+    "superflex": 13
+  },
+  "Malik Davis": {
+    "pos": "RB",
+    "team": "DAL",
+    "one_qb": 7,
+    "superflex": 10
+  },
+  "DJ Giddens": {
+    "pos": "RB",
+    "team": "IND",
+    "one_qb": 7,
+    "superflex": 16
+  },
+  "Tanner McKee": {
     "pos": "QB",
-    "team": "JAC",
-    "one_qb": 8,
+    "team": "PHI",
+    "one_qb": 7,
+    "superflex": 15
+  },
+  "Justice Hill": {
+    "pos": "RB",
+    "team": "BAL",
+    "one_qb": 7,
+    "superflex": 15
+  },
+  "Roschon Johnson": {
+    "pos": "RB",
+    "team": "CHI",
+    "one_qb": 7,
+    "superflex": 12
+  },
+  "Hollywood Brown": {
+    "pos": "WR",
+    "team": "PHI",
+    "one_qb": 7,
+    "superflex": 12
+  },
+  "2026 Pick 5.03": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 7,
     "superflex": 10
   },
-  "2026 Pick 4.12": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 8,
-    "superflex": 11
+  "Samaje Perine": {
+    "pos": "RB",
+    "team": "CIN",
+    "one_qb": 7,
+    "superflex": 13
   },
-  "Malik Benson": {
-    "pos": "WR",
-    "team": "LV",
-    "one_qb": 8,
-    "superflex": 11
-  },
-  "Ben Sinnott": {
-    "pos": "TE",
-    "team": "WAS",
-    "one_qb": 8,
-    "superflex": 14
-  },
-  "2027 Late 4th": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 8,
-    "superflex": 11
-  },
-  "John Metchie III": {
-    "pos": "WR",
-    "team": "CAR",
-    "one_qb": 8,
-    "superflex": 10
-  },
-  "2026 Pick 5.01": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 8,
-    "superflex": 11
+  "Raheim Sanders": {
+    "pos": "RB",
+    "team": "CLE",
+    "one_qb": 7,
+    "superflex": 13
   },
   "Isaiah Davis": {
     "pos": "RB",
@@ -2297,119 +2417,71 @@
     "one_qb": 7,
     "superflex": 14
   },
-  "Jake Tonges": {
-    "pos": "TE",
-    "team": "SF",
-    "one_qb": 7,
-    "superflex": 11
-  },
-  "Dohnte Meyers": {
-    "pos": "WR",
-    "team": "CIN",
-    "one_qb": 7,
-    "superflex": 9
-  },
-  "Will Howard": {
-    "pos": "QB",
-    "team": "PIT",
-    "one_qb": 7,
-    "superflex": 6
-  },
-  "2026 Pick 5.02": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 7,
-    "superflex": 10
-  },
-  "Brashard Smith": {
+  "George Holani": {
     "pos": "RB",
-    "team": "KC",
-    "one_qb": 7,
-    "superflex": 12
-  },
-  "Tez Johnson": {
-    "pos": "WR",
-    "team": "TB",
-    "one_qb": 7,
-    "superflex": 11
-  },
-  "Marlin Klein": {
-    "pos": "TE",
-    "team": "HOU",
+    "team": "SEA",
     "one_qb": 7,
     "superflex": 13
   },
-  "Tanner McKee": {
-    "pos": "QB",
-    "team": "PHI",
+  "Devin Singletary": {
+    "pos": "RB",
+    "team": "NYG",
     "one_qb": 7,
-    "superflex": 9
+    "superflex": 12
   },
-  "Joe Milton III": {
-    "pos": "QB",
-    "team": "PHI",
-    "one_qb": 7,
-    "superflex": 3
-  },
-  "Noah Fant": {
-    "pos": "TE",
+  "Barion Brown": {
+    "pos": "WR",
     "team": "NO",
+    "one_qb": 7,
+    "superflex": 10
+  },
+  "Joshua Palmer": {
+    "pos": "WR",
+    "team": "BUF",
     "one_qb": 7,
     "superflex": 11
   },
-  "2026 Pick 5.03": {
-    "pos": "PICK",
-    "team": "NA",
+  "Tutu Atwell": {
+    "pos": "WR",
+    "team": "LAR",
     "one_qb": 7,
-    "superflex": 9
-  },
-  "Samaje Perine": {
-    "pos": "RB",
-    "team": "CIN",
-    "one_qb": 6,
-    "superflex": 10
-  },
-  "Justice Hill": {
-    "pos": "RB",
-    "team": "BAL",
-    "one_qb": 6,
-    "superflex": 12
-  },
-  "DJ Giddens": {
-    "pos": "RB",
-    "team": "IND",
-    "one_qb": 6,
-    "superflex": 14
+    "superflex": 8
   },
   "2026 Pick 5.04": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 6,
+    "one_qb": 7,
     "superflex": 9
   },
-  "Erick All Jr.": {
-    "pos": "TE",
+  "Garrett Nussmeier": {
+    "pos": "QB",
+    "team": "KC",
+    "one_qb": 7,
+    "superflex": 7
+  },
+  "2027 Early 5th": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 7,
+    "superflex": 9
+  },
+  "Andrei Iosivas": {
+    "pos": "WR",
     "team": "CIN",
     "one_qb": 6,
-    "superflex": 15
+    "superflex": 12
   },
-  "Chris Brooks": {
-    "pos": "RB",
-    "team": "GB",
+  "Davis Mills": {
+    "pos": "QB",
+    "team": "HOU",
+    "one_qb": 6,
+    "superflex": 3
+  },
+  "Jordan Whittington": {
+    "pos": "WR",
+    "team": "LAR",
     "one_qb": 6,
     "superflex": 11
-  },
-  "Jerome Ford": {
-    "pos": "RB",
-    "team": "ARI",
-    "one_qb": 6,
-    "superflex": 10
-  },
-  "George Holani": {
-    "pos": "RB",
-    "team": "SEA",
-    "one_qb": 6,
-    "superflex": 12
   },
   "2026 Pick 5.05": {
     "pos": "PICK",
@@ -2417,9 +2489,15 @@
     "one_qb": 6,
     "superflex": 8
   },
-  "2027 Early 5th": {
-    "pos": "PICK",
-    "team": "NA",
+  "Erick All Jr.": {
+    "pos": "TE",
+    "team": "CIN",
+    "one_qb": 6,
+    "superflex": 16
+  },
+  "Josh Cuevas": {
+    "pos": "TE",
+    "team": "BAL",
     "one_qb": 6,
     "superflex": 8
   },
@@ -2429,41 +2507,41 @@
     "one_qb": 6,
     "superflex": 8
   },
-  "Eli Heidenreich": {
-    "pos": "RB",
-    "team": "PIT",
-    "one_qb": 5,
-    "superflex": 9
-  },
-  "Luke McCaffrey": {
+  "Xavier Hutchinson": {
     "pos": "WR",
-    "team": "WAS",
-    "one_qb": 5,
-    "superflex": 7
+    "team": "HOU",
+    "one_qb": 6,
+    "superflex": 10
+  },
+  "Brashard Smith": {
+    "pos": "RB",
+    "team": "KC",
+    "one_qb": 6,
+    "superflex": 13
+  },
+  "Justin Joly": {
+    "pos": "TE",
+    "team": "MIA",
+    "one_qb": 6,
+    "superflex": 19
   },
   "2026 Pick 5.07": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 5,
+    "one_qb": 6,
     "superflex": 7
   },
-  "Tutu Atwell": {
-    "pos": "WR",
-    "team": "LAR",
-    "one_qb": 5,
-    "superflex": 9
-  },
-  "Jonnu Smith": {
+  "Jake Tonges": {
     "pos": "TE",
-    "team": "GB",
-    "one_qb": 5,
-    "superflex": 6
+    "team": "SF",
+    "one_qb": 6,
+    "superflex": 11
   },
-  "Ja'Tavion Sanders": {
-    "pos": "TE",
-    "team": "CAR",
-    "one_qb": 5,
-    "superflex": 9
+  "Will Shipley": {
+    "pos": "RB",
+    "team": "PHI",
+    "one_qb": 6,
+    "superflex": 11
   },
   "2026 Pick 5.08": {
     "pos": "PICK",
@@ -2471,33 +2549,39 @@
     "one_qb": 5,
     "superflex": 7
   },
-  "Xavier Hutchinson": {
-    "pos": "WR",
-    "team": "HOU",
-    "one_qb": 5,
-    "superflex": 8
-  },
-  "Josh Cameron": {
-    "pos": "WR",
-    "team": "JAC",
+  "Tyler Higbee": {
+    "pos": "TE",
+    "team": "LAR",
     "one_qb": 5,
     "superflex": 10
   },
-  "Devontez Walker": {
-    "pos": "WR",
-    "team": "BAL",
+  "2027 5th": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 5,
-    "superflex": 9
+    "superflex": 7
   },
-  "Will Shipley": {
-    "pos": "RB",
-    "team": "PHI",
+  "2027 Mid 5th": {
+    "pos": "PICK",
+    "team": "NA",
     "one_qb": 5,
-    "superflex": 11
+    "superflex": 7
   },
-  "Ty Johnson": {
+  "Trevor Etienne": {
     "pos": "RB",
-    "team": "BUF",
+    "team": "CAR",
+    "one_qb": 5,
+    "superflex": 10
+  },
+  "Jaleel McLaughlin": {
+    "pos": "RB",
+    "team": "CLE",
+    "one_qb": 5,
+    "superflex": 8
+  },
+  "J'Mari Taylor": {
+    "pos": "RB",
+    "team": "JAC",
     "one_qb": 5,
     "superflex": 9
   },
@@ -2505,39 +2589,69 @@
     "pos": "PICK",
     "team": "NA",
     "one_qb": 5,
+    "superflex": 7
+  },
+  "Eli Heidenreich": {
+    "pos": "RB",
+    "team": "PIT",
+    "one_qb": 5,
+    "superflex": 12
+  },
+  "Jonnu Smith": {
+    "pos": "TE",
+    "team": "GB",
+    "one_qb": 5,
     "superflex": 6
   },
-  "Treylon Burks": {
-    "pos": "WR",
-    "team": "WAS",
+  "Audric Estime": {
+    "pos": "RB",
+    "team": "NO",
     "one_qb": 5,
-    "superflex": 8
+    "superflex": 7
   },
-  "Jaylin Lane": {
-    "pos": "WR",
-    "team": "WAS",
-    "one_qb": 5,
-    "superflex": 8
-  },
-  "2027 5th": {
+  "2026 Pick 5.10": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 5,
     "superflex": 6
   },
-  "Joshua Palmer": {
-    "pos": "WR",
-    "team": "BUF",
+  "Will Howard": {
+    "pos": "QB",
+    "team": "PIT",
     "one_qb": 5,
-    "superflex": 10
+    "superflex": 7
   },
-  "Tai Felton": {
-    "pos": "WR",
-    "team": "MIN",
+  "Dillon Gabriel": {
+    "pos": "QB",
+    "team": "CLE",
     "one_qb": 5,
-    "superflex": 8
+    "superflex": 3
   },
-  "2027 Mid 5th": {
+  "Zavion Thomas": {
+    "pos": "WR",
+    "team": "CHI",
+    "one_qb": 5,
+    "superflex": 9
+  },
+  "2026 Pick 5.11": {
+    "pos": "PICK",
+    "team": "NA",
+    "one_qb": 5,
+    "superflex": 6
+  },
+  "Jordan Watkins": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 5,
+    "superflex": 9
+  },
+  "J. Michael Sturdivant": {
+    "pos": "WR",
+    "team": "GB",
+    "one_qb": 5,
+    "superflex": 6
+  },
+  "2026 Pick 5.12": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 5,
@@ -2547,149 +2661,53 @@
     "pos": "WR",
     "team": "CIN",
     "one_qb": 5,
-    "superflex": 10
+    "superflex": 9
   },
-  "2026 Pick 5.10": {
+  "Chris Brooks": {
+    "pos": "RB",
+    "team": "GB",
+    "one_qb": 4,
+    "superflex": 11
+  },
+  "Tanner Koziol": {
+    "pos": "TE",
+    "team": "JAC",
+    "one_qb": 4,
+    "superflex": 13
+  },
+  "Luke McCaffrey": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 4,
+    "superflex": 8
+  },
+  "Dawson Knox": {
+    "pos": "TE",
+    "team": "BUF",
+    "one_qb": 4,
+    "superflex": 9
+  },
+  "2027 Late 5th": {
     "pos": "PICK",
     "team": "NA",
-    "one_qb": 5,
+    "one_qb": 4,
     "superflex": 6
   },
   "Deion Burks": {
     "pos": "WR",
     "team": "IND",
     "one_qb": 4,
-    "superflex": 4
-  },
-  "Devin Singletary": {
-    "pos": "RB",
-    "team": "NYG",
-    "one_qb": 4,
-    "superflex": 8
-  },
-  "Efton Chism III": {
-    "pos": "WR",
-    "team": "NE",
-    "one_qb": 4,
-    "superflex": 10
-  },
-  "2026 Pick 5.11": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 4,
     "superflex": 6
-  },
-  "Sione Vaki": {
-    "pos": "RB",
-    "team": "DET",
-    "one_qb": 4,
-    "superflex": 4
-  },
-  "Jahan Dotson": {
-    "pos": "WR",
-    "team": "ATL",
-    "one_qb": 4,
-    "superflex": 8
-  },
-  "Trevor Etienne": {
-    "pos": "RB",
-    "team": "CAR",
-    "one_qb": 4,
-    "superflex": 9
-  },
-  "Jalen Tolbert": {
-    "pos": "WR",
-    "team": "MIA",
-    "one_qb": 4,
-    "superflex": 5
-  },
-  "2026 Pick 5.12": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 4,
-    "superflex": 6
-  },
-  "Roschon Johnson": {
-    "pos": "RB",
-    "team": "CHI",
-    "one_qb": 4,
-    "superflex": 7
-  },
-  "Dillon Gabriel": {
-    "pos": "QB",
-    "team": "CLE",
-    "one_qb": 4,
-    "superflex": 3
-  },
-  "Tyler Higbee": {
-    "pos": "TE",
-    "team": "LAR",
-    "one_qb": 4,
-    "superflex": 7
-  },
-  "Tahj Brooks": {
-    "pos": "RB",
-    "team": "CIN",
-    "one_qb": 4,
-    "superflex": 9
-  },
-  "Dawson Knox": {
-    "pos": "TE",
-    "team": "BUF",
-    "one_qb": 4,
-    "superflex": 8
-  },
-  "Riley Leonard": {
-    "pos": "QB",
-    "team": "IND",
-    "one_qb": 4,
-    "superflex": 3
-  },
-  "Kendrick Bourne": {
-    "pos": "WR",
-    "team": "ARI",
-    "one_qb": 4,
-    "superflex": 6
-  },
-  "2027 Late 5th": {
-    "pos": "PICK",
-    "team": "NA",
-    "one_qb": 4,
-    "superflex": 5
-  },
-  "Jordan Whittington": {
-    "pos": "WR",
-    "team": "LAR",
-    "one_qb": 4,
-    "superflex": 6
-  },
-  "CJ Daniels": {
-    "pos": "WR",
-    "team": "LAR",
-    "one_qb": 4,
-    "superflex": 7
-  },
-  "Malik Davis": {
-    "pos": "RB",
-    "team": "DAL",
-    "one_qb": 4,
-    "superflex": 7
   },
   "2028 5th": {
     "pos": "PICK",
     "team": "NA",
     "one_qb": 4,
-    "superflex": 5
+    "superflex": 6
   },
-  "Jack Endries": {
-    "pos": "TE",
-    "team": "CIN",
-    "one_qb": 4,
-    "superflex": 5
-  },
-  "Garrett Nussmeier": {
-    "pos": "QB",
-    "team": "KC",
+  "Jaylin Lane": {
+    "pos": "WR",
+    "team": "WAS",
     "one_qb": 4,
     "superflex": 8
   },
@@ -2699,17 +2717,155 @@
     "one_qb": 4,
     "superflex": 8
   },
-  "Tanner Koziol": {
+  "Ja'Tavion Sanders": {
     "pos": "TE",
-    "team": "JAC",
+    "team": "CAR",
+    "one_qb": 4,
+    "superflex": 9
+  },
+  "Tahj Brooks": {
+    "pos": "RB",
+    "team": "CIN",
+    "one_qb": 4,
+    "superflex": 10
+  },
+  "Bam Knight": {
+    "pos": "RB",
+    "team": "ARI",
     "one_qb": 4,
     "superflex": 7
   },
-  "Barion Brown": {
+  "Kalif Raymond": {
     "pos": "WR",
+    "team": "CHI",
+    "one_qb": 4,
+    "superflex": 17
+  },
+  "CJ Daniels": {
+    "pos": "WR",
+    "team": "LAR",
+    "one_qb": 4,
+    "superflex": 7
+  },
+  "KeAndre Lambert-Smith": {
+    "pos": "WR",
+    "team": "LAC",
+    "one_qb": 4,
+    "superflex": 5
+  },
+  "Noah Fant": {
+    "pos": "TE",
     "team": "NO",
+    "one_qb": 4,
+    "superflex": 8
+  },
+  "Tyler Badie": {
+    "pos": "RB",
+    "team": "DEN",
+    "one_qb": 4,
+    "superflex": 4
+  },
+  "Jack Endries": {
+    "pos": "TE",
+    "team": "CIN",
+    "one_qb": 4,
+    "superflex": 7
+  },
+  "Rasheen Ali": {
+    "pos": "RB",
+    "team": "BAL",
+    "one_qb": 4,
+    "superflex": 6
+  },
+  "Riley Leonard": {
+    "pos": "QB",
+    "team": "IND",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Sione Vaki": {
+    "pos": "RB",
+    "team": "DET",
+    "one_qb": 3,
+    "superflex": 5
+  },
+  "Tommy Tremble": {
+    "pos": "TE",
+    "team": "CAR",
     "one_qb": 3,
     "superflex": 6
+  },
+  "Mitchell Evans": {
+    "pos": "TE",
+    "team": "CAR",
+    "one_qb": 3,
+    "superflex": 9
+  },
+  "Emari Demercado": {
+    "pos": "RB",
+    "team": "HOU",
+    "one_qb": 3,
+    "superflex": 7
+  },
+  "CJ Donaldson": {
+    "pos": "RB",
+    "team": "NO",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Roman Hemby": {
+    "pos": "RB",
+    "team": "LV",
+    "one_qb": 3,
+    "superflex": 5
+  },
+  "Noah Gray": {
+    "pos": "TE",
+    "team": "KC",
+    "one_qb": 3,
+    "superflex": 5
+  },
+  "Corey Kiner": {
+    "pos": "RB",
+    "team": "NE",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Kendrick Bourne": {
+    "pos": "WR",
+    "team": "ARI",
+    "one_qb": 3,
+    "superflex": 7
+  },
+  "Jeff Caldwell": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Eric Rivers Jr.": {
+    "pos": "WR",
+    "team": "TB",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Dyami Brown": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Dean Connors": {
+    "pos": "RB",
+    "team": "LAR",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Tyren Montgomery": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 3,
+    "superflex": 3
   },
   "Trey Lance": {
     "pos": "QB",
@@ -2717,33 +2873,27 @@
     "one_qb": 3,
     "superflex": 3
   },
-  "Luke Musgrave": {
+  "Zach Ertz": {
     "pos": "TE",
-    "team": "GB",
+    "team": "PHI",
     "one_qb": 3,
-    "superflex": 4
+    "superflex": 5
   },
-  "J. Michael Sturdivant": {
-    "pos": "WR",
-    "team": "GB",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Jaleel McLaughlin": {
+  "Kareem Hunt": {
     "pos": "RB",
-    "team": "CLE",
+    "team": "FA",
     "one_qb": 3,
-    "superflex": 7
+    "superflex": 3
   },
-  "Savion Williams": {
+  "Tai Felton": {
     "pos": "WR",
-    "team": "GB",
+    "team": "MIN",
     "one_qb": 3,
-    "superflex": 8
+    "superflex": 6
   },
-  "Elijah Higgins": {
-    "pos": "TE",
-    "team": "ARI",
+  "Austin Ekeler": {
+    "pos": "RB",
+    "team": "WAS",
     "one_qb": 3,
     "superflex": 3
   },
@@ -2757,223 +2907,19 @@
     "pos": "WR",
     "team": "DET",
     "one_qb": 3,
-    "superflex": 5
-  },
-  "Davis Mills": {
-    "pos": "QB",
-    "team": "HOU",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Emari Demercado": {
-    "pos": "RB",
-    "team": "HOU",
-    "one_qb": 3,
-    "superflex": 7
-  },
-  "Joe Royer": {
-    "pos": "TE",
-    "team": "CLE",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Kenny Pickett": {
-    "pos": "QB",
-    "team": "CAR",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Gardner Minshew II": {
-    "pos": "QB",
-    "team": "ARI",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Michael Trigg": {
-    "pos": "TE",
-    "team": "DAL",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Mitchell Evans": {
-    "pos": "TE",
-    "team": "CAR",
-    "one_qb": 3,
-    "superflex": 7
-  },
-  "Jack Strand": {
-    "pos": "QB",
-    "team": "ATL",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Corey Kiner": {
-    "pos": "RB",
-    "team": "NE",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Reggie Virgil": {
-    "pos": "WR",
-    "team": "ARI",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Audric Estime": {
-    "pos": "RB",
-    "team": "CLE",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Brycen Tremayne": {
-    "pos": "WR",
-    "team": "CAR",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Zach Wilson": {
-    "pos": "QB",
-    "team": "NO",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Tommy DeVito": {
-    "pos": "QB",
-    "team": "NE",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Noah Gray": {
-    "pos": "TE",
-    "team": "KC",
-    "one_qb": 3,
-    "superflex": 6
-  },
-  "Tommy Tremble": {
-    "pos": "TE",
-    "team": "CAR",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Cade Stover": {
-    "pos": "TE",
-    "team": "HOU",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Luke Schoonmaker": {
-    "pos": "TE",
-    "team": "DAL",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Sam Howell": {
-    "pos": "QB",
-    "team": "DAL",
-    "one_qb": 3,
     "superflex": 3
   },
   "Darius Cooper": {
     "pos": "WR",
     "team": "PHI",
     "one_qb": 3,
-    "superflex": 3
-  },
-  "Dallen Bentley": {
-    "pos": "TE",
-    "team": "DEN",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Haynes King": {
-    "pos": "QB",
-    "team": "CAR",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "KeAndre Lambert-Smith": {
-    "pos": "WR",
-    "team": "LAC",
-    "one_qb": 3,
-    "superflex": 6
-  },
-  "Jordan Watkins": {
-    "pos": "WR",
-    "team": "SF",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Aidan O'Connell": {
-    "pos": "QB",
-    "team": "LV",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Sam Ehlinger": {
-    "pos": "QB",
-    "team": "DEN",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Jimmy Garoppolo": {
-    "pos": "QB",
-    "team": "LAR",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Cody White": {
-    "pos": "WR",
-    "team": "LV",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Mason Rudolph": {
-    "pos": "QB",
-    "team": "PIT",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Rasheen Ali": {
-    "pos": "RB",
-    "team": "BAL",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Bam Knight": {
-    "pos": "RB",
-    "team": "ARI",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Josh Cuevas": {
-    "pos": "TE",
-    "team": "BAL",
-    "one_qb": 3,
     "superflex": 4
   },
-  "Jake Browning": {
-    "pos": "QB",
-    "team": "LAC",
+  "Nate Boerkircher": {
+    "pos": "TE",
+    "team": "JAC",
     "one_qb": 3,
-    "superflex": 2
-  },
-  "Jarrett Stidham": {
-    "pos": "QB",
-    "team": "DEN",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Jake Bobo": {
-    "pos": "WR",
-    "team": "SEA",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "Tyrod Taylor": {
-    "pos": "QB",
-    "team": "GB",
-    "one_qb": 3,
-    "superflex": 2
+    "superflex": 7
   },
   "Olamide Zaccheaus": {
     "pos": "WR",
@@ -2981,33 +2927,27 @@
     "one_qb": 3,
     "superflex": 3
   },
-  "Nate Boerkircher": {
-    "pos": "TE",
-    "team": "JAC",
-    "one_qb": 3,
-    "superflex": 4
-  },
-  "Skyy Moore": {
+  "DeAndre Hopkins": {
     "pos": "WR",
-    "team": "GB",
+    "team": "BAL",
     "one_qb": 3,
     "superflex": 3
   },
-  "KaVontae Turpin": {
-    "pos": "WR",
-    "team": "DAL",
+  "Robert Henry Jr.": {
+    "pos": "RB",
+    "team": "WAS",
     "one_qb": 3,
     "superflex": 3
   },
-  "Joshua Dobbs": {
+  "Kenny Pickett": {
     "pos": "QB",
-    "team": "DET",
+    "team": "CAR",
     "one_qb": 3,
     "superflex": 2
   },
-  "Kaden Wetjen": {
-    "pos": "WR",
-    "team": "PIT",
+  "Seydou Traore": {
+    "pos": "TE",
+    "team": "MIA",
     "one_qb": 3,
     "superflex": 3
   },
@@ -3017,129 +2957,75 @@
     "one_qb": 3,
     "superflex": 3
   },
-  "Austin Hooper": {
+  "Luke Musgrave": {
     "pos": "TE",
-    "team": "ATL",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "CJ Donaldson": {
-    "pos": "RB",
-    "team": "NO",
-    "one_qb": 3,
-    "superflex": 3
-  },
-  "J'Mari Taylor": {
-    "pos": "RB",
-    "team": "JAC",
-    "one_qb": 3,
-    "superflex": 5
-  },
-  "Brady Cook": {
-    "pos": "QB",
-    "team": "MIA",
-    "one_qb": 3,
-    "superflex": 2
-  },
-  "Tyler Badie": {
-    "pos": "RB",
-    "team": "DEN",
+    "team": "GB",
     "one_qb": 3,
     "superflex": 4
   },
-  "Kyle McCord": {
-    "pos": "QB",
-    "team": "MIA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Andy Dalton": {
-    "pos": "QB",
-    "team": "ATL",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Josh Oliver": {
-    "pos": "TE",
-    "team": "MIN",
-    "one_qb": 2,
+  "Reggie Virgil": {
+    "pos": "WR",
+    "team": "ARI",
+    "one_qb": 3,
     "superflex": 3
   },
-  "Thomas Fidone II": {
+  "Joe Royer": {
     "pos": "TE",
-    "team": "NYG",
-    "one_qb": 2,
+    "team": "CLE",
+    "one_qb": 3,
     "superflex": 3
   },
-  "Mitchell Trubisky": {
+  "Elijah Higgins": {
+    "pos": "TE",
+    "team": "ARI",
+    "one_qb": 3,
+    "superflex": 3
+  },
+  "Mason Rudolph": {
     "pos": "QB",
-    "team": "TEN",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Roman Hemby": {
-    "pos": "RB",
-    "team": "LV",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Riley Nowakowski": {
-    "pos": "TE",
     "team": "PIT",
-    "one_qb": 2,
+    "one_qb": 3,
+    "superflex": 2
+  },
+  "KaVontae Turpin": {
+    "pos": "WR",
+    "team": "DAL",
+    "one_qb": 3,
     "superflex": 3
   },
-  "Max Brosmer": {
+  "Jake Browning": {
     "pos": "QB",
-    "team": "MIN",
-    "one_qb": 2,
+    "team": "LAC",
+    "one_qb": 3,
     "superflex": 2
+  },
+  "Dallen Bentley": {
+    "pos": "TE",
+    "team": "DEN",
+    "one_qb": 3,
+    "superflex": 3
   },
   "Joe Mixon": {
     "pos": "RB",
     "team": "FA",
     "one_qb": 2,
-    "superflex": 3
+    "superflex": 2
   },
-  "Adam Trautman": {
-    "pos": "TE",
-    "team": "DEN",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Jaren Kanak": {
-    "pos": "TE",
-    "team": "TEN",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Tyler Goodson": {
-    "pos": "RB",
-    "team": "DAL",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Daniel Bellinger": {
-    "pos": "TE",
-    "team": "TEN",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Nick Mullens": {
+  "Zach Wilson": {
     "pos": "QB",
-    "team": "JAC",
+    "team": "NO",
     "one_qb": 2,
     "superflex": 2
   },
-  "Zach Ertz": {
-    "pos": "TE",
-    "team": "PHI",
+  "Cody White": {
+    "pos": "WR",
+    "team": "LV",
     "one_qb": 2,
-    "superflex": 4
+    "superflex": 2
   },
-  "Carsen Ryan": {
+  "Michael Trigg": {
     "pos": "TE",
-    "team": "CLE",
+    "team": "DAL",
     "one_qb": 2,
     "superflex": 3
   },
@@ -3149,23 +3035,47 @@
     "one_qb": 2,
     "superflex": 3
   },
-  "Demarcus Robinson": {
-    "pos": "WR",
-    "team": "SF",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Behren Morton": {
+  "Sam Howell": {
     "pos": "QB",
-    "team": "NE",
+    "team": "DAL",
     "one_qb": 2,
     "superflex": 2
   },
-  "Dean Connors": {
-    "pos": "RB",
-    "team": "LAR",
+  "Riley Nowakowski": {
+    "pos": "TE",
+    "team": "PIT",
     "one_qb": 2,
     "superflex": 3
+  },
+  "Jam Miller": {
+    "pos": "RB",
+    "team": "ATL",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Cade Stover": {
+    "pos": "TE",
+    "team": "HOU",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Andy Dalton": {
+    "pos": "QB",
+    "team": "ATL",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jimmy Garoppolo": {
+    "pos": "QB",
+    "team": "LAR",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Aidan O'Connell": {
+    "pos": "QB",
+    "team": "LV",
+    "one_qb": 2,
+    "superflex": 2
   },
   "Jared Wiley": {
     "pos": "TE",
@@ -3173,135 +3083,51 @@
     "one_qb": 2,
     "superflex": 3
   },
-  "Jelani Woods": {
+  "Adam Trautman": {
     "pos": "TE",
-    "team": "NYJ",
+    "team": "DEN",
     "one_qb": 2,
     "superflex": 3
   },
-  "Kyle Allen": {
-    "pos": "QB",
-    "team": "BUF",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Jam Miller": {
-    "pos": "RB",
-    "team": "ATL",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Cooper Rush": {
-    "pos": "QB",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Robert Henry Jr.": {
-    "pos": "RB",
-    "team": "SEA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Grant Calcaterra": {
-    "pos": "TE",
-    "team": "PHI",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Jacob Cowing": {
+  "Brycen Tremayne": {
     "pos": "WR",
-    "team": "SF",
+    "team": "CAR",
     "one_qb": 2,
     "superflex": 2
   },
-  "Jeremy Ruckert": {
+  "Davis Allen": {
     "pos": "TE",
-    "team": "NYJ",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Seydou Traore": {
-    "pos": "TE",
-    "team": "MIA",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "John Michael Gyllenborg": {
-    "pos": "TE",
-    "team": "KC",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Mo Alie-Cox": {
-    "pos": "TE",
-    "team": "IND",
-    "one_qb": 2,
-    "superflex": 3
-  },
-  "Kurtis Rourke": {
-    "pos": "QB",
-    "team": "SF",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Stetson Bennett IV": {
-    "pos": "QB",
     "team": "LAR",
     "one_qb": 2,
-    "superflex": 2
+    "superflex": 7
   },
-  "Brevin Jordan": {
+  "Jaren Kanak": {
     "pos": "TE",
-    "team": "HOU",
+    "team": "TEN",
     "one_qb": 2,
     "superflex": 3
   },
-  "Bo Melton": {
-    "pos": "WR",
+  "Tyrod Taylor": {
+    "pos": "QB",
     "team": "GB",
     "one_qb": 2,
     "superflex": 2
   },
-  "Kareem Hunt": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Jawhar Jordan": {
-    "pos": "RB",
-    "team": "HOU",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Jaydn Ott": {
-    "pos": "RB",
-    "team": "KC",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Dae'Quan Wright": {
-    "pos": "TE",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Brock Wright": {
-    "pos": "TE",
-    "team": "DET",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Jeremy McNichols": {
-    "pos": "RB",
-    "team": "WAS",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Tyren Montgomery": {
+  "Kaden Wetjen": {
     "pos": "WR",
-    "team": "TEN",
+    "team": "PIT",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jake Bobo": {
+    "pos": "WR",
+    "team": "SEA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jarrett Stidham": {
+    "pos": "QB",
+    "team": "DEN",
     "one_qb": 2,
     "superflex": 2
   },
@@ -3311,21 +3137,81 @@
     "one_qb": 2,
     "superflex": 2
   },
-  "Philip Rivers": {
-    "pos": "QB",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Ashton Dulin": {
+  "Nick Westbrook-Ikhine": {
     "pos": "WR",
     "team": "IND",
     "one_qb": 2,
     "superflex": 2
   },
-  "Austin Ekeler": {
+  "Tommy DeVito": {
+    "pos": "QB",
+    "team": "NE",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Raheem Mostert": {
+    "pos": "RB",
+    "team": "LV",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Carsen Ryan": {
+    "pos": "TE",
+    "team": "FA",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Demarcus Robinson": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Austin Hooper": {
+    "pos": "TE",
+    "team": "ATL",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Jeremy McNichols": {
     "pos": "RB",
     "team": "WAS",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jaydn Ott": {
+    "pos": "RB",
+    "team": "KC",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Will Kacmarek": {
+    "pos": "TE",
+    "team": "MIA",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Kyle McCord": {
+    "pos": "QB",
+    "team": "MIA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Luke Schoonmaker": {
+    "pos": "TE",
+    "team": "DAL",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Sam Ehlinger": {
+    "pos": "QB",
+    "team": "DEN",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Mitchell Trubisky": {
+    "pos": "QB",
+    "team": "TEN",
     "one_qb": 2,
     "superflex": 2
   },
@@ -3335,9 +3221,69 @@
     "one_qb": 2,
     "superflex": 2
   },
-  "Tyler Conklin": {
+  "Josh Oliver": {
     "pos": "TE",
-    "team": "DET",
+    "team": "MIN",
+    "one_qb": 2,
+    "superflex": 3
+  },
+  "Brady Cook": {
+    "pos": "QB",
+    "team": "MIA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Elijah Mitchell": {
+    "pos": "RB",
+    "team": "PHI",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Tyler Goodson": {
+    "pos": "RB",
+    "team": "DAL",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Elijah Moore": {
+    "pos": "WR",
+    "team": "PHI",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jelani Woods": {
+    "pos": "TE",
+    "team": "NYJ",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Dae'Quan Wright": {
+    "pos": "TE",
+    "team": "FA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Thomas Fidone II": {
+    "pos": "TE",
+    "team": "NYG",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jacob Cowing": {
+    "pos": "WR",
+    "team": "SF",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Jawhar Jordan": {
+    "pos": "RB",
+    "team": "HOU",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Antonio Gibson": {
+    "pos": "RB",
+    "team": "FA",
     "one_qb": 2,
     "superflex": 2
   },
@@ -3347,92 +3293,44 @@
     "one_qb": 2,
     "superflex": 2
   },
-  "Durham Smythe": {
-    "pos": "TE",
-    "team": "BAL",
-    "one_qb": 2,
-    "superflex": 2
-  },
   "Jimmy Horn Jr.": {
     "pos": "WR",
     "team": "CLE",
     "one_qb": 2,
     "superflex": 2
   },
-  "Odell Beckham Jr.": {
-    "pos": "WR",
-    "team": "MIN",
+  "Jeremy Ruckert": {
+    "pos": "TE",
+    "team": "NYJ",
     "one_qb": 2,
     "superflex": 2
   },
-  "Dyami Brown": {
-    "pos": "WR",
-    "team": "WAS",
+  "Nick Mullens": {
+    "pos": "QB",
+    "team": "JAC",
     "one_qb": 2,
     "superflex": 2
   },
-  "Kylen Granson": {
+  "Khalil Herbert": {
+    "pos": "RB",
+    "team": "ATL",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Daniel Bellinger": {
     "pos": "TE",
     "team": "TEN",
     "one_qb": 2,
     "superflex": 2
   },
-  "Drew Sample": {
+  "John Michael Gyllenborg": {
     "pos": "TE",
-    "team": "CIN",
+    "team": "KC",
     "one_qb": 2,
     "superflex": 2
   },
-  "Will Kacmarek": {
-    "pos": "TE",
-    "team": "MIA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Noah Whittington": {
-    "pos": "RB",
-    "team": "HOU",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Nick Westbrook-Ikhine": {
+  "Eric McAlister": {
     "pos": "WR",
-    "team": "IND",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Case Keenum": {
-    "pos": "QB",
-    "team": "CHI",
-    "one_qb": 2,
-    "superflex": 1
-  },
-  "Josh Johnson": {
-    "pos": "QB",
-    "team": "CIN",
-    "one_qb": 2,
-    "superflex": 1
-  },
-  "Taysom Hill": {
-    "pos": "TE",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Daylan Smothers": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Hunter Long": {
-    "pos": "TE",
-    "team": "ARI",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Desmond Reid": {
-    "pos": "RB",
     "team": "FA",
     "one_qb": 2,
     "superflex": 2
@@ -3443,129 +3341,105 @@
     "one_qb": 2,
     "superflex": 2
   },
-  "Jackson Hawes": {
-    "pos": "TE",
+  "Kyle Allen": {
+    "pos": "QB",
     "team": "BUF",
     "one_qb": 2,
     "superflex": 2
   },
-  "Rahsul Faison": {
+  "Hunter Long": {
+    "pos": "TE",
+    "team": "ARI",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Kurtis Rourke": {
+    "pos": "QB",
+    "team": "SF",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Grant Calcaterra": {
+    "pos": "TE",
+    "team": "PHI",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Stetson Bennett IV": {
+    "pos": "QB",
+    "team": "LAR",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Desmond Reid": {
     "pos": "RB",
     "team": "FA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Damien Martinez": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Miles Sanders": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Tanner Hudson": {
+    "pos": "TE",
+    "team": "CIN",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Skyy Moore": {
+    "pos": "WR",
+    "team": "GB",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Tyler Conklin": {
+    "pos": "TE",
+    "team": "DET",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Ty Chandler": {
+    "pos": "RB",
+    "team": "NO",
+    "one_qb": 2,
+    "superflex": 2
+  },
+  "Zamir White": {
+    "pos": "RB",
+    "team": "NO",
     "one_qb": 2,
     "superflex": 2
   },
   "Brandin Cooks": {
     "pos": "WR",
     "team": "SF",
-    "one_qb": 2,
-    "superflex": 2
-  },
-  "Elijah Moore": {
-    "pos": "WR",
-    "team": "PHI",
     "one_qb": 1,
     "superflex": 1
-  },
-  "Theo Wease Jr.": {
-    "pos": "WR",
-    "team": "LAC",
-    "one_qb": 1,
-    "superflex": 1
-  },
-  "Davis Allen": {
-    "pos": "TE",
-    "team": "LAR",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Mark Fletcher": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Stone Smartt": {
-    "pos": "TE",
-    "team": "NO",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Quintin Morris": {
-    "pos": "TE",
-    "team": "JAC",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Chip Trayanum": {
-    "pos": "RB",
-    "team": "NYJ",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Miles Sanders": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Kenny McIntosh": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "AJ Dillon": {
-    "pos": "RB",
-    "team": "CAR",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Antonio Gibson": {
-    "pos": "RB",
-    "team": "FA",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Sean Clifford": {
-    "pos": "QB",
-    "team": "CIN",
-    "one_qb": 1,
-    "superflex": 1
-  },
-  "Luke Farrell": {
-    "pos": "TE",
-    "team": "SF",
-    "one_qb": 1,
-    "superflex": 2
   },
   "Michael Carter": {
     "pos": "RB",
     "team": "TEN",
     "one_qb": 1,
-    "superflex": 2
-  },
-  "Isaiah Williams": {
-    "pos": "WR",
-    "team": "NYJ",
-    "one_qb": 1,
     "superflex": 1
   },
-  "Will Mallory": {
-    "pos": "TE",
-    "team": "IND",
-    "one_qb": 1,
-    "superflex": 2
-  },
-  "Lil'Jordan Humphrey": {
-    "pos": "WR",
-    "team": "DEN",
-    "one_qb": 1,
-    "superflex": 1
-  },
-  "Zamir White": {
+  "Zack Moss": {
     "pos": "RB",
-    "team": "NO",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Alexander Mattison": {
+    "pos": "RB",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3575,27 +3449,189 @@
     "one_qb": 1,
     "superflex": 1
   },
+  "Bo Melton": {
+    "pos": "WR",
+    "team": "GB",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Ashton Dulin": {
+    "pos": "WR",
+    "team": "IND",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Harrison Bryant": {
+    "pos": "TE",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 2
+  },
+  "Xavier Restrepo": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 1,
+    "superflex": 1
+  },
   "Malachi Corley": {
     "pos": "WR",
     "team": "CLE",
     "one_qb": 1,
     "superflex": 1
   },
-  "Drew Ogletree": {
+  "Josh Johnson": {
+    "pos": "QB",
+    "team": "CIN",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Hassan Haskins": {
+    "pos": "RB",
+    "team": "CLE",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Kylen Granson": {
     "pos": "TE",
-    "team": "IND",
+    "team": "TEN",
     "one_qb": 1,
     "superflex": 2
   },
-  "Tim Patrick": {
+  "Cam Akers": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Brock Wright": {
+    "pos": "TE",
+    "team": "DET",
+    "one_qb": 1,
+    "superflex": 2
+  },
+  "Van Jefferson": {
+    "pos": "WR",
+    "team": "WAS",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Tyler Lockett": {
+    "pos": "WR",
+    "team": "LV",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Isaiah Hodgins": {
+    "pos": "WR",
+    "team": "PIT",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jalin Hyatt": {
+    "pos": "WR",
+    "team": "NYG",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Brevin Jordan": {
+    "pos": "TE",
+    "team": "HOU",
+    "one_qb": 1,
+    "superflex": 2
+  },
+  "Stone Smartt": {
+    "pos": "TE",
+    "team": "NO",
+    "one_qb": 1,
+    "superflex": 2
+  },
+  "Isaiah Williams": {
     "pos": "WR",
     "team": "NYJ",
     "one_qb": 1,
     "superflex": 1
   },
+  "Case Keenum": {
+    "pos": "QB",
+    "team": "CHI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "AJ Dillon": {
+    "pos": "RB",
+    "team": "CAR",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Drew Sample": {
+    "pos": "TE",
+    "team": "CIN",
+    "one_qb": 1,
+    "superflex": 2
+  },
   "Marquez Valdes-Scantling": {
     "pos": "WR",
     "team": "PIT",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Kenny McIntosh": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Noah Brown": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Sincere McCormick": {
+    "pos": "RB",
+    "team": "SF",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Durham Smythe": {
+    "pos": "TE",
+    "team": "BAL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Josh Reynolds": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Mo Alie-Cox": {
+    "pos": "TE",
+    "team": "IND",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Sterling Shepard": {
+    "pos": "WR",
+    "team": "NYJ",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "JuJu Smith-Schuster": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Dare Ogunbowale": {
+    "pos": "RB",
+    "team": "HOU",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jackson Hawes": {
+    "pos": "TE",
+    "team": "BUF",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3605,33 +3641,33 @@
     "one_qb": 1,
     "superflex": 1
   },
-  "Kalel Mullings": {
-    "pos": "RB",
-    "team": "TEN",
+  "Sean Clifford": {
+    "pos": "QB",
+    "team": "CIN",
     "one_qb": 1,
     "superflex": 1
   },
-  "Payne Durham": {
+  "Julian Hill": {
     "pos": "TE",
-    "team": "TB",
+    "team": "NE",
     "one_qb": 1,
     "superflex": 1
   },
-  "Jared Wayne": {
+  "Luke Farrell": {
+    "pos": "TE",
+    "team": "SF",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Curtis Samuel": {
     "pos": "WR",
-    "team": "MIA",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
-  "Evan Hull": {
-    "pos": "RB",
+  "Tip Reiman": {
+    "pos": "TE",
     "team": "ARI",
-    "one_qb": 1,
-    "superflex": 1
-  },
-  "Jonathan Mingo": {
-    "pos": "WR",
-    "team": "DAL",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3641,9 +3677,171 @@
     "one_qb": 1,
     "superflex": 1
   },
-  "Xavier Smith": {
+  "Eric Gray": {
+    "pos": "RB",
+    "team": "NYG",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "John Bates": {
+    "pos": "TE",
+    "team": "WAS",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Evan Hull": {
+    "pos": "RB",
+    "team": "ARI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Moliki Matavao": {
+    "pos": "TE",
+    "team": "NO",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Tim Patrick": {
     "pos": "WR",
+    "team": "NYJ",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Lucas Krull": {
+    "pos": "TE",
+    "team": "DEN",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Craig Reynolds": {
+    "pos": "RB",
+    "team": "WAS",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Diontae Johnson": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Drew Ogletree": {
+    "pos": "TE",
+    "team": "IND",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Johnny Mundt": {
+    "pos": "TE",
+    "team": "PHI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Brevyn Spann-Ford": {
+    "pos": "TE",
+    "team": "DAL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Will Mallory": {
+    "pos": "TE",
+    "team": "IND",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jermaine Burton": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Gus Edwards": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Payne Durham": {
+    "pos": "TE",
+    "team": "TB",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Javon Baker": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Trey Sermon": {
+    "pos": "RB",
+    "team": "ATL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jaret Patterson": {
+    "pos": "RB",
+    "team": "DEN",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Marcus Yarns": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Carson Steele": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Zay Jones": {
+    "pos": "WR",
+    "team": "ARI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Eric Saubert": {
+    "pos": "TE",
+    "team": "SEA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jonathan Mingo": {
+    "pos": "WR",
+    "team": "DAL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Cody Schrader": {
+    "pos": "RB",
+    "team": "DEN",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Clyde Edwards-Helaire": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "David Moore": {
+    "pos": "WR",
+    "team": "CAR",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jack Stoll": {
+    "pos": "TE",
     "team": "SF",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Jamari Thrash": {
+    "pos": "WR",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3653,27 +3851,129 @@
     "one_qb": 1,
     "superflex": 1
   },
-  "Ronnie Rivers": {
+  "Cordarrelle Patterson": {
     "pos": "RB",
-    "team": "LAR",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
-  "Chris Moore": {
+  "Johnny Wilson": {
     "pos": "WR",
-    "team": "BAL",
+    "team": "PHI",
     "one_qb": 1,
     "superflex": 1
   },
-  "Ben Skowronek": {
-    "pos": "WR",
-    "team": "PIT",
+  "Keaontay Ingram": {
+    "pos": "RB",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
-  "Mitch Tinsley": {
-    "pos": "WR",
+  "Deneric Prince": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Israel Abanikanda": {
+    "pos": "RB",
+    "team": "DAL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "James Mitchell": {
+    "pos": "TE",
+    "team": "DAL",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Kendall Milton": {
+    "pos": "RB",
     "team": "CIN",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Connor Heyward": {
+    "pos": "TE",
+    "team": "LV",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Allen Lazard": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Deuce Vaughn": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Ian Thomas": {
+    "pos": "TE",
+    "team": "LV",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Ainias Smith": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Dominic Lovett": {
+    "pos": "WR",
+    "team": "DET",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Blake Watson": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Teagan Quitoriano": {
+    "pos": "TE",
+    "team": "ARI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Tyler Johnson": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Ray-Ray McCloud III": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Tyler Scott": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Cedrick Wilson Jr.": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Salvon Ahmed": {
+    "pos": "RB",
+    "team": "CHI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Frank Gore Jr.": {
+    "pos": "RB",
+    "team": "BUF",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3683,9 +3983,9 @@
     "one_qb": 1,
     "superflex": 1
   },
-  "Ricky White III": {
-    "pos": "WR",
-    "team": "SEA",
+  "Ronnie Rivers": {
+    "pos": "RB",
+    "team": "LAR",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3695,9 +3995,15 @@
     "one_qb": 1,
     "superflex": 1
   },
-  "Devin Duvernay": {
+  "Derius Davis": {
     "pos": "WR",
-    "team": "ARI",
+    "team": "LAC",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Keilan Robinson": {
+    "pos": "RB",
+    "team": "FA",
     "one_qb": 1,
     "superflex": 1
   },
@@ -3707,94 +4013,256 @@
     "one_qb": 1,
     "superflex": 1
   },
+  "Jeff Wilson Jr.": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "D'Ernest Johnson": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
   "Kene Nwangwu": {
     "pos": "RB",
     "team": "NYJ",
     "one_qb": 1,
     "superflex": 1
   },
-  "Lew Nichols III": {
-    "pos": "RB",
+  "Hunter Renfrow": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Justin Watson": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Ben Skowronek": {
+    "pos": "WR",
     "team": "PIT",
     "one_qb": 1,
     "superflex": 1
   },
+  "Scotty Miller": {
+    "pos": "WR",
+    "team": "CHI",
+    "one_qb": 1,
+    "superflex": 1
+  },
+  "Travis Homer": {
+    "pos": "RB",
+    "team": "PIT",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Darrynton Evans": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Braxton Berrios": {
+    "pos": "WR",
+    "team": "NYG",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "K.J. Osborn": {
+    "pos": "WR",
+    "team": "TEN",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Chase Edmonds": {
+    "pos": "RB",
+    "team": "WAS",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Bub Means": {
+    "pos": "WR",
+    "team": "KC",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Velus Jones Jr.": {
+    "pos": "WR",
+    "team": "SEA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Tahj Washington": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Nyheim Miller-Hines": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "JaMycal Hasty": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Michael Wiley": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Gary Brightwell": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Xavier Gipson": {
+    "pos": "WR",
+    "team": "PHI",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Trayveon Williams": {
+    "pos": "RB",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Devin Duvernay": {
+    "pos": "WR",
+    "team": "ARI",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Mecole Hardman Jr.": {
+    "pos": "WR",
+    "team": "IND",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Quez Watkins": {
+    "pos": "WR",
+    "team": "IND",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Jason Brownlee": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Tejhaun Palmer": {
+    "pos": "WR",
+    "team": "LAC",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Lew Nichols III": {
+    "pos": "RB",
+    "team": "PIT",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Danny Gray": {
+    "pos": "WR",
+    "team": "FA",
+    "one_qb": 0,
+    "superflex": 0
+  },
+  "Jashaun Corbin": {
+    "pos": "RB",
+    "team": "DAL",
+    "one_qb": 0,
+    "superflex": 0
+  },
   "2026 Pick 1.13": {
     "pos": "PICK",
     "team": "",
-    "superflex": 751,
+    "superflex": 768,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 642
+    "one_qb": 655
   },
   "2026 Pick 1.14": {
     "pos": "PICK",
     "team": "",
-    "superflex": 626,
+    "superflex": 641,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 535
+    "one_qb": 547
   },
   "2026 Pick 1.15": {
     "pos": "PICK",
     "team": "",
-    "superflex": 522,
+    "superflex": 536,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 446
+    "one_qb": 456
   },
   "2026 Pick 1.16": {
     "pos": "PICK",
     "team": "",
-    "superflex": 495,
+    "superflex": 505,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 424
+    "one_qb": 431
   },
   "2026 Pick 2.13": {
     "pos": "PICK",
     "team": "",
-    "superflex": 115,
+    "superflex": 119,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 95
+    "one_qb": 99
   },
   "2026 Pick 2.14": {
     "pos": "PICK",
     "team": "",
-    "superflex": 100,
+    "superflex": 103,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 83
+    "one_qb": 86
   },
   "2026 Pick 2.15": {
     "pos": "PICK",
     "team": "",
-    "superflex": 86,
+    "superflex": 89,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 71
+    "one_qb": 74
   },
   "2026 Pick 2.16": {
     "pos": "PICK",
     "team": "",
-    "superflex": 75,
+    "superflex": 77,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 62
+    "one_qb": 64
   },
   "2026 Pick 3.13": {
     "pos": "PICK",
     "team": "",
-    "superflex": 28,
+    "superflex": 29,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 21
+    "one_qb": 22
   },
   "2026 Pick 3.14": {
     "pos": "PICK",
     "team": "",
-    "superflex": 26,
+    "superflex": 27,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
     "one_qb": 19
@@ -3802,50 +4270,50 @@
   "2026 Pick 3.15": {
     "pos": "PICK",
     "team": "",
-    "superflex": 23,
+    "superflex": 24,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 17
+    "one_qb": 16
   },
   "2026 Pick 3.16": {
     "pos": "PICK",
     "team": "",
-    "superflex": 21,
+    "superflex": 22,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 15
+    "one_qb": 14
   },
   "2026 Pick 4.13": {
+    "pos": "PICK",
+    "team": "",
+    "superflex": 11,
+    "generatedPickValue": true,
+    "pickValueMethod": "source-curve interpolation",
+    "one_qb": 9
+  },
+  "2026 Pick 4.14": {
     "pos": "PICK",
     "team": "",
     "superflex": 10,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 7
+    "one_qb": 9
   },
-  "2026 Pick 4.14": {
+  "2026 Pick 4.15": {
     "pos": "PICK",
     "team": "",
     "superflex": 9,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 6
-  },
-  "2026 Pick 4.15": {
-    "pos": "PICK",
-    "team": "",
-    "superflex": 8,
-    "generatedPickValue": true,
-    "pickValueMethod": "source-curve interpolation",
-    "one_qb": 6
+    "one_qb": 9
   },
   "2026 Pick 4.16": {
     "pos": "PICK",
     "team": "",
-    "superflex": 8,
+    "superflex": 9,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 5
+    "one_qb": 9
   },
   "2026 Pick 5.13": {
     "pos": "PICK",
@@ -3853,7 +4321,7 @@
     "superflex": 6,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 4
+    "one_qb": 5
   },
   "2026 Pick 5.14": {
     "pos": "PICK",
@@ -3861,7 +4329,7 @@
     "superflex": 6,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 4
+    "one_qb": 5
   },
   "2026 Pick 5.15": {
     "pos": "PICK",
@@ -3869,7 +4337,7 @@
     "superflex": 6,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 4
+    "one_qb": 5
   },
   "2026 Pick 5.16": {
     "pos": "PICK",
@@ -3877,6 +4345,6 @@
     "superflex": 6,
     "generatedPickValue": true,
     "pickValueMethod": "source-curve interpolation",
-    "one_qb": 4
+    "one_qb": 5
   }
 }
