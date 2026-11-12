@@ -1,753 +1,768 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T05:06:23.209Z",
+  "generatedAt": "2026-11-12T05:06:18.067Z",
   "source": "Sleeper player research",
   "season": "2026",
   "seasonType": "regular",
   "week": 10,
   "players": {
     "96": {
-      "rostered": 37.7,
-      "started": 8.8
+      "rostered": 47.7,
+      "started": 20.3
     },
     "421": {
-      "rostered": 89.3,
-      "started": 52.9
+      "rostered": 86,
+      "started": 49
     },
     "650": {
-      "rostered": 20.3,
-      "started": 17.8
+      "rostered": 15.1,
+      "started": 12.1
     },
     "843": {
-      "rostered": 5.7,
-      "started": 1.5
+      "rostered": 6.7,
+      "started": 2.2
+    },
+    "957": {
+      "rostered": 1.1,
+      "started": 0.2
     },
     "1052": {
-      "rostered": 12.4,
-      "started": 7.7
+      "rostered": 12,
+      "started": 8.1
     },
     "1166": {
-      "rostered": 77.1,
-      "started": 39.5
+      "rostered": 76.9,
+      "started": 38.2
     },
     "1233": {
-      "rostered": 2.5,
-      "started": 0.7
+      "rostered": 2.6,
+      "started": 0.6
     },
     "1373": {
-      "rostered": 23.8,
-      "started": 9
+      "rostered": 25,
+      "started": 10.6
     },
     "1433": {
-      "rostered": 8.2,
-      "started": 7.1
+      "rostered": 8.9,
+      "started": 7.8
     },
     "1466": {
-      "rostered": 93.8,
-      "started": 80.8
+      "rostered": 94.1,
+      "started": 81.7
     },
     "1479": {
-      "rostered": 64.4,
-      "started": 39.8
+      "rostered": 64.1,
+      "started": 31
     },
     "1945": {
-      "rostered": 31.9,
-      "started": 15.1
+      "rostered": 35.9,
+      "started": 23.1
     },
     "2020": {
-      "rostered": 33.9,
-      "started": 30
+      "rostered": 19.1,
+      "started": 13.2
     },
     "2036": {
-      "rostered": 2.6,
-      "started": 0.8
+      "rostered": 2.7,
+      "started": 1.2
     },
     "2064": {
-      "rostered": 1.9,
+      "rostered": 2.9,
       "started": 1.1
     },
-    "2078": {
-      "rostered": 1.2,
-      "started": 0.1
-    },
     "2133": {
-      "rostered": 86.2,
-      "started": 9.2
+      "rostered": 86.7,
+      "started": 7.9
     },
     "2197": {
-      "rostered": 4.4,
-      "started": 0.8
+      "rostered": 3.7,
+      "started": 0.6
     },
     "2216": {
-      "rostered": 93.6,
-      "started": 12.6
+      "rostered": 92.9,
+      "started": 11.1
     },
     "2227": {
-      "rostered": 16.8,
-      "started": 7
+      "rostered": 16.5,
+      "started": 7.1
     },
     "2306": {
-      "rostered": 2.7,
-      "started": 0.3
+      "rostered": 2.5,
+      "started": 0.2
     },
     "2307": {
       "rostered": 1.3,
-      "started": 0.2
+      "started": 0.1
     },
     "2311": {
-      "rostered": 11.2,
-      "started": 3.1
+      "rostered": 12.3,
+      "started": 4
     },
     "2393": {
-      "rostered": 34.9,
-      "started": 19.6
+      "rostered": 34,
+      "started": 19.4
+    },
+    "2427": {
+      "rostered": 1.5,
+      "started": 0.5
     },
     "2449": {
-      "rostered": 87.6,
-      "started": 62.3
+      "rostered": 87.1,
+      "started": 61.8
     },
     "2505": {
-      "rostered": 15.9,
-      "started": 6.2
+      "rostered": 30.3,
+      "started": 16.3
     },
     "2617": {
-      "rostered": 68.1,
-      "started": 41.9
+      "rostered": 59.9,
+      "started": 20.2
     },
     "2747": {
-      "rostered": 83,
-      "started": 80.6
+      "rostered": 81.5,
+      "started": 78.9
+    },
+    "3155": {
+      "rostered": 2.4,
+      "started": 0.6
     },
     "3156": {
-      "rostered": 1.3,
-      "started": 0.4
+      "rostered": 1.5,
+      "started": 0.3
     },
     "3160": {
-      "rostered": 5.3,
-      "started": 2.4
+      "rostered": 8,
+      "started": 4.7
     },
     "3161": {
-      "rostered": 8.4,
-      "started": 4.9
+      "rostered": 4.3,
+      "started": 2.3
     },
     "3163": {
-      "rostered": 90.6,
-      "started": 59
+      "rostered": 89,
+      "started": 56.1
     },
     "3172": {
-      "rostered": 18,
-      "started": 10.4
+      "rostered": 17,
+      "started": 11.2
     },
     "3198": {
-      "rostered": 98.1,
-      "started": 95
+      "rostered": 98.7,
+      "started": 95.6
     },
     "3214": {
-      "rostered": 60.6,
-      "started": 25.1
+      "rostered": 61.4,
+      "started": 29.9
     },
     "3233": {
-      "rostered": 22.3,
-      "started": 15.3
+      "rostered": 22.6,
+      "started": 15.4
     },
     "3257": {
-      "rostered": 19.6,
-      "started": 4.8
+      "rostered": 21.9,
+      "started": 6.7
     },
     "3271": {
-      "rostered": 28.7,
-      "started": 10.5
+      "rostered": 31.6,
+      "started": 13.4
     },
     "3286": {
-      "rostered": 20.7,
-      "started": 9.2
+      "rostered": 22.3,
+      "started": 11
     },
     "3294": {
-      "rostered": 93.9,
-      "started": 73.1
+      "rostered": 93.6,
+      "started": 71.1
     },
     "3321": {
-      "rostered": 14.9,
+      "rostered": 12.8,
       "started": 0.2
     },
     "3451": {
-      "rostered": 84,
-      "started": 71.6
+      "rostered": 85.4,
+      "started": 74.2
     },
     "3558": {
-      "rostered": 2.8,
-      "started": 1.2
+      "rostered": 3,
+      "started": 1.3
     },
     "3634": {
-      "rostered": 11.7,
-      "started": 2.9
+      "rostered": 10.8,
+      "started": 1.7
     },
     "3678": {
-      "rostered": 4.5,
-      "started": 3.8
-    },
-    "3973": {
-      "rostered": 68.7,
-      "started": 38.2
-    },
-    "4017": {
-      "rostered": 12.9,
+      "rostered": 3.2,
       "started": 2.1
     },
+    "3973": {
+      "rostered": 74.1,
+      "started": 44.5
+    },
+    "4017": {
+      "rostered": 14.1,
+      "started": 4.2
+    },
     "4018": {
-      "rostered": 1.6,
-      "started": 0.1
+      "rostered": 1.4,
+      "started": 0
     },
     "4032": {
-      "rostered": 3.6,
-      "started": 2
+      "rostered": 4.1,
+      "started": 2.3
     },
     "4033": {
-      "rostered": 4.6,
-      "started": 0.4
+      "rostered": 4.5,
+      "started": 0.3
     },
     "4034": {
-      "rostered": 99.1,
-      "started": 95.4
+      "rostered": 99.3,
+      "started": 96
     },
     "4035": {
-      "rostered": 67,
-      "started": 26.9
+      "rostered": 61.6,
+      "started": 21
     },
     "4037": {
-      "rostered": 63.4,
-      "started": 19.6
+      "rostered": 57.1,
+      "started": 13.6
     },
     "4039": {
-      "rostered": 18.1,
-      "started": 6.7
+      "rostered": 17.1,
+      "started": 6.1
     },
     "4046": {
-      "rostered": 92.8,
-      "started": 64.2
+      "rostered": 92.1,
+      "started": 61.7
     },
     "4066": {
       "rostered": 2.7,
       "started": 0.4
     },
     "4070": {
-      "rostered": 72.9,
-      "started": 33.1
+      "rostered": 75.2,
+      "started": 39.7
     },
     "4071": {
-      "rostered": 2.1,
-      "started": 1.1
+      "rostered": 2.6,
+      "started": 1
     },
     "4081": {
-      "rostered": 52.4,
-      "started": 44.8
+      "rostered": 51,
+      "started": 42.7
     },
     "4118": {
-      "rostered": 10.4,
-      "started": 4.4
+      "rostered": 10.5,
+      "started": 3.9
     },
     "4135": {
-      "rostered": 20.9,
-      "started": 12
+      "rostered": 19.2,
+      "started": 10.4
     },
     "4137": {
-      "rostered": 7.7,
+      "rostered": 7.3,
       "started": 0.7
     },
     "4147": {
-      "rostered": 17.3,
-      "started": 4.6
+      "rostered": 15.4,
+      "started": 4.3
     },
     "4177": {
-      "rostered": 7,
-      "started": 2
-    },
-    "4195": {
-      "rostered": 3.5,
-      "started": 2.7
-    },
-    "4199": {
-      "rostered": 82.4,
-      "started": 42.7
-    },
-    "4217": {
-      "rostered": 97,
-      "started": 87.4
-    },
-    "4224": {
-      "rostered": 7.7,
-      "started": 5.7
-    },
-    "4227": {
-      "rostered": 18.9,
-      "started": 14.8
-    },
-    "4413": {
-      "rostered": 7.4,
+      "rostered": 9.3,
       "started": 3.2
     },
+    "4195": {
+      "rostered": 3.1,
+      "started": 2.2
+    },
+    "4199": {
+      "rostered": 80.9,
+      "started": 42.5
+    },
+    "4217": {
+      "rostered": 97.5,
+      "started": 88.7
+    },
+    "4224": {
+      "rostered": 8.5,
+      "started": 6.7
+    },
+    "4227": {
+      "rostered": 18.3,
+      "started": 14.1
+    },
+    "4413": {
+      "rostered": 7,
+      "started": 3.9
+    },
     "4454": {
-      "rostered": 10.2,
-      "started": 0.8
+      "rostered": 9,
+      "started": 0.6
     },
     "4663": {
-      "rostered": 8.8,
-      "started": 3.7
+      "rostered": 11,
+      "started": 5.1
     },
     "4866": {
-      "rostered": 96.5,
-      "started": 54.4
+      "rostered": 96.1,
+      "started": 35.6
     },
     "4881": {
-      "rostered": 80.3,
-      "started": 15.5
+      "rostered": 78.6,
+      "started": 13.2
     },
     "4892": {
-      "rostered": 27,
-      "started": 7.8
+      "rostered": 24.9,
+      "started": 5.3
     },
     "4943": {
-      "rostered": 38.6,
-      "started": 3.4
+      "rostered": 35.3,
+      "started": 2.8
     },
     "4950": {
-      "rostered": 3.5,
+      "rostered": 2.8,
       "started": 0.1
     },
     "4960": {
-      "rostered": 83.3,
-      "started": 73.3
+      "rostered": 83.6,
+      "started": 72.5
     },
     "4963": {
-      "rostered": 8.4,
-      "started": 5.3
+      "rostered": 7.1,
+      "started": 4
     },
     "4964": {
-      "rostered": 1.2,
-      "started": 0.6
+      "rostered": 1.4,
+      "started": 0.8
     },
     "4967": {
-      "rostered": 10.6,
-      "started": 6
+      "rostered": 10.9,
+      "started": 6.3
     },
     "4968": {
-      "rostered": 10.5,
-      "started": 2.4
+      "rostered": 10.2,
+      "started": 2.6
     },
     "4971": {
-      "rostered": 27.2,
-      "started": 9.3
+      "rostered": 24.3,
+      "started": 7.3
     },
     "4981": {
-      "rostered": 2.6,
-      "started": 0.1
+      "rostered": 2.5,
+      "started": 0.2
     },
     "4983": {
-      "rostered": 92.5,
-      "started": 74.8
+      "rostered": 92.9,
+      "started": 76.1
     },
     "4984": {
-      "rostered": 98.5,
-      "started": 95.9
+      "rostered": 99.3,
+      "started": 96.3
     },
     "4993": {
-      "rostered": 49.4,
-      "started": 29.5
+      "rostered": 46.4,
+      "started": 28
     },
     "4999": {
-      "rostered": 4.9,
-      "started": 2.5
+      "rostered": 4.6,
+      "started": 2.2
     },
     "5001": {
-      "rostered": 29.5,
-      "started": 10.6
+      "rostered": 27.3,
+      "started": 9.8
     },
     "5012": {
-      "rostered": 50.5,
-      "started": 20.5
+      "rostered": 47.1,
+      "started": 19.2
     },
     "5017": {
-      "rostered": 24,
-      "started": 18.2
+      "rostered": 27.6,
+      "started": 22
     },
     "5022": {
-      "rostered": 72.9,
-      "started": 26.8
+      "rostered": 67.7,
+      "started": 15.9
     },
     "5030": {
-      "rostered": 5.6,
+      "rostered": 6.1,
       "started": 1.7
     },
     "5036": {
-      "rostered": 1.3,
-      "started": 0.7
+      "rostered": 2.2,
+      "started": 0.8
     },
     "5041": {
-      "rostered": 89.2,
-      "started": 76.3
+      "rostered": 89.8,
+      "started": 77.3
     },
     "5045": {
-      "rostered": 51.5,
-      "started": 15.2
+      "rostered": 50.8,
+      "started": 11.7
     },
     "5061": {
-      "rostered": 1.5,
-      "started": 0.2
+      "rostered": 1.9,
+      "started": 0.4
     },
     "5071": {
-      "rostered": 3,
-      "started": 0.5
+      "rostered": 2.7,
+      "started": 1
     },
     "5119": {
-      "rostered": 2.2,
-      "started": 1.8
+      "rostered": 9.2,
+      "started": 8
     },
     "5189": {
-      "rostered": 19.1,
-      "started": 15.6
+      "rostered": 21.2,
+      "started": 17.2
     },
     "5226": {
-      "rostered": 1.4,
-      "started": 0.3
+      "rostered": 1.5
     },
     "5297": {
       "rostered": 2.1,
-      "started": 0.8
+      "started": 0.5
     },
     "5330": {
-      "rostered": 1.3,
-      "started": 0.3
+      "rostered": 1.7,
+      "started": 0.2
     },
     "5332": {
-      "rostered": 60.9,
+      "rostered": 60.4,
       "started": 49.3
     },
+    "5341": {
+      "rostered": 1.4,
+      "started": 0.7
+    },
     "5346": {
-      "rostered": 20.2,
-      "started": 8.2
+      "rostered": 20.1,
+      "started": 7.1
     },
     "5372": {
-      "rostered": 7.9,
-      "started": 2.6
+      "rostered": 7.7,
+      "started": 2.3
     },
     "5378": {
-      "rostered": 1.7,
-      "started": 0.6
+      "rostered": 1.5,
+      "started": 1
     },
     "5580": {
-      "rostered": 5.8,
-      "started": 3.4
+      "rostered": 7.1,
+      "started": 4.1
     },
     "5726": {
-      "rostered": 18.2,
+      "rostered": 19.3,
       "started": 13
     },
     "5816": {
-      "rostered": 34.2,
-      "started": 16.7
+      "rostered": 34,
+      "started": 17.2
     },
     "5839": {
-      "rostered": 8.5,
-      "started": 4.6
+      "rostered": 8.3,
+      "started": 4.5
     },
     "5840": {
-      "rostered": 27.7,
-      "started": 18.2
+      "rostered": 27.1,
+      "started": 18.7
     },
     "5841": {
-      "rostered": 1.7,
+      "rostered": 2.5,
       "started": 0.5
     },
     "5843": {
-      "rostered": 23.8,
-      "started": 13.1
+      "rostered": 21,
+      "started": 8.6
     },
     "5844": {
-      "rostered": 75.9,
-      "started": 47.6
+      "rostered": 76.1,
+      "started": 48.5
     },
     "5846": {
-      "rostered": 87.3,
-      "started": 30.6
+      "rostered": 87.8,
+      "started": 43.1
     },
     "5847": {
-      "rostered": 15.3,
+      "rostered": 15.4,
       "started": 10
     },
     "5849": {
-      "rostered": 41.5,
-      "started": 4
+      "rostered": 32.3,
+      "started": 2.9
     },
     "5850": {
-      "rostered": 94.8,
-      "started": 51.4
+      "rostered": 92.3,
+      "started": 30.9
     },
     "5854": {
-      "rostered": 14.7,
-      "started": 10.4
+      "rostered": 15.1,
+      "started": 10.6
     },
     "5859": {
-      "rostered": 92.5,
-      "started": 25.3
+      "rostered": 92.8,
+      "started": 38.3
     },
     "5862": {
-      "rostered": 22.7,
-      "started": 8.1
+      "rostered": 21.4,
+      "started": 7.3
     },
     "5864": {
-      "rostered": 4.1,
-      "started": 2.6
+      "rostered": 4.3,
+      "started": 2.9
     },
     "5865": {
-      "rostered": 1.3,
-      "started": 0.6
+      "rostered": 1.6,
+      "started": 0.7
     },
     "5870": {
       "rostered": 13,
-      "started": 4.5
+      "started": 4.7
     },
     "5871": {
-      "rostered": 16.2,
-      "started": 7.9
+      "rostered": 13.8,
+      "started": 5.7
     },
     "5872": {
-      "rostered": 71.6,
-      "started": 10.8
+      "rostered": 74,
+      "started": 19.9
     },
     "5876": {
-      "rostered": 21.7,
-      "started": 16.4
+      "rostered": 20.5,
+      "started": 14.8
     },
     "5892": {
-      "rostered": 78.2,
-      "started": 14.6
+      "rostered": 79.7,
+      "started": 21.2
     },
     "5893": {
-      "rostered": 1.3,
-      "started": 0.2
+      "rostered": 1.7,
+      "started": 0.3
     },
     "5906": {
       "rostered": 1.4,
       "started": 0.2
     },
     "5908": {
-      "rostered": 17.8,
-      "started": 8.7
+      "rostered": 31.7,
+      "started": 22.7
     },
     "5912": {
-      "rostered": 15.9,
-      "started": 10.8
+      "rostered": 19.8,
+      "started": 14.3
     },
     "5927": {
-      "rostered": 29.1,
-      "started": 7.1
+      "rostered": 28.4,
+      "started": 6.5
     },
     "5944": {
-      "rostered": 15.2,
-      "started": 3.4
+      "rostered": 14.6,
+      "started": 4.7
     },
     "5947": {
-      "rostered": 59.1,
-      "started": 27.8
+      "rostered": 62.3,
+      "started": 30.8
     },
     "5960": {
-      "rostered": 6.1,
-      "started": 2.4
+      "rostered": 5.9,
+      "started": 1.7
     },
     "5967": {
-      "rostered": 89.7,
-      "started": 40.6
+      "rostered": 90.6,
+      "started": 56.1
     },
     "5991": {
-      "rostered": 68.5,
-      "started": 57.9
+      "rostered": 67.3,
+      "started": 54.8
     },
     "5995": {
-      "rostered": 10.6,
-      "started": 3.4
+      "rostered": 16.2,
+      "started": 6.5
     },
     "6011": {
-      "rostered": 8,
-      "started": 2.2
+      "rostered": 3.8,
+      "started": 0.9
     },
     "6025": {
-      "rostered": 1.7,
-      "started": 0.3
+      "rostered": 1.8,
+      "started": 0.4
     },
     "6039": {
-      "rostered": 3.5,
-      "started": 1.1
+      "rostered": 3,
+      "started": 0.9
     },
     "6056": {
-      "rostered": 9.2,
-      "started": 5.1
+      "rostered": 10.1,
+      "started": 6.7
     },
     "6065": {
-      "rostered": 2.6,
+      "rostered": 2.7,
       "started": 0.5
     },
     "6083": {
-      "rostered": 78,
-      "started": 75
+      "rostered": 73,
+      "started": 69.4
     },
     "6118": {
-      "rostered": 19,
-      "started": 13
+      "rostered": 20.4,
+      "started": 14.2
     },
     "6119": {
-      "rostered": 5.1,
-      "started": 1.8
+      "rostered": 4.9,
+      "started": 1.4
     },
     "6124": {
-      "rostered": 9.4,
-      "started": 3.9
+      "rostered": 8.8,
+      "started": 3.1
     },
     "6125": {
-      "rostered": 53.8,
-      "started": 32.5
+      "rostered": 50.2,
+      "started": 18.6
     },
     "6130": {
-      "rostered": 65,
-      "started": 39.5
+      "rostered": 53.7,
+      "started": 26.7
     },
     "6131": {
-      "rostered": 5.6,
-      "started": 2.3
+      "rostered": 6.2,
+      "started": 3.1
     },
     "6141": {
-      "rostered": 26.3,
-      "started": 19.9
+      "rostered": 25.3,
+      "started": 19.1
     },
     "6183": {
-      "rostered": 54,
-      "started": 42.4
+      "rostered": 53.3,
+      "started": 43.4
     },
     "6214": {
-      "rostered": 20.3,
-      "started": 14.3
+      "rostered": 19.3,
+      "started": 13.8
     },
     "6217": {
-      "rostered": 62.1,
-      "started": 51.1
+      "rostered": 63.1,
+      "started": 51.5
     },
     "6301": {
-      "rostered": 2.2,
-      "started": 0.7
+      "rostered": 2.8,
+      "started": 1.3
     },
     "6302": {
-      "rostered": 16.8,
-      "started": 9.4
+      "rostered": 17.6,
+      "started": 11.1
     },
     "6315": {
-      "rostered": 5.2,
-      "started": 2.3
+      "rostered": 4.7,
+      "started": 2.1
     },
     "6333": {
-      "rostered": 10.4,
-      "started": 7.1
+      "rostered": 9.4,
+      "started": 6.1
     },
     "6416": {
-      "rostered": 1.6,
-      "started": 1.1
+      "rostered": 2.5,
+      "started": 1.5
+    },
+    "6427": {
+      "rostered": 2.7,
+      "started": 0.7
     },
     "6485": {
-      "rostered": 32.3,
-      "started": 21.1
+      "rostered": 33.2,
+      "started": 22.7
     },
     "6650": {
-      "rostered": 70.7,
-      "started": 58.3
+      "rostered": 54.3,
+      "started": 29.2
     },
     "6711": {
-      "rostered": 4.3,
-      "started": 0.6
+      "rostered": 5.1,
+      "started": 0.7
     },
     "6768": {
-      "rostered": 2.9,
+      "rostered": 2.8,
       "started": 0.2
     },
     "6770": {
-      "rostered": 98.5,
-      "started": 92
+      "rostered": 98.8,
+      "started": 91.8
     },
     "6782": {
-      "rostered": 13.8,
-      "started": 7.1
+      "rostered": 14.2,
+      "started": 8.4
     },
     "6783": {
-      "rostered": 6.3,
-      "started": 0.8
+      "rostered": 6.1,
+      "started": 0.9
     },
     "6784": {
-      "rostered": 3.7,
-      "started": 1.5
+      "rostered": 4.8,
+      "started": 2.2
     },
     "6786": {
-      "rostered": 99.2,
-      "started": 99.2
+      "rostered": 99.4,
+      "started": 99.1
     },
     "6788": {
-      "rostered": 29.1,
-      "started": 23.1
+      "rostered": 28.4,
+      "started": 23.5
     },
     "6790": {
-      "rostered": 96.9,
-      "started": 55
+      "rostered": 97.2,
+      "started": 32.2
     },
     "6791": {
-      "rostered": 2.4,
-      "started": 1.1
+      "rostered": 2.5,
+      "started": 1.4
     },
     "6794": {
-      "rostered": 98.3,
-      "started": 96.5
+      "rostered": 98.9,
+      "started": 96.4
     },
     "6797": {
-      "rostered": 32.3,
-      "started": 13.8
+      "rostered": 30.4,
+      "started": 13
     },
     "6799": {
-      "rostered": 4.6,
-      "started": 2.1
+      "rostered": 4.5,
+      "started": 2.5
     },
     "6800": {
-      "rostered": 2,
-      "started": 1.1
+      "rostered": 1.9,
+      "started": 1
     },
     "6801": {
-      "rostered": 98.2,
-      "started": 95.2
+      "rostered": 98.5,
+      "started": 95.4
     },
     "6803": {
-      "rostered": 11.4,
+      "rostered": 9.7,
       "started": 0.1
     },
     "6804": {
-      "rostered": 88,
-      "started": 53.6
+      "rostered": 89.7,
+      "started": 54.3
     },
     "6806": {
-      "rostered": 69.6,
-      "started": 23.3
+      "rostered": 62.6,
+      "started": 15.3
     },
     "6807": {
-      "rostered": 15,
-      "started": 5.5
+      "rostered": 17.8,
+      "started": 8.9
     },
     "6813": {
-      "rostered": 98.5,
-      "started": 98.4
+      "rostered": 99.1,
+      "started": 98.2
     },
     "6815": {
-      "rostered": 57.6,
-      "started": 35.9
+      "rostered": 52.8,
+      "started": 23.4
     },
     "6818": {
-      "rostered": 1.3,
+      "rostered": 1.8,
       "started": 0.5
     },
     "6819": {
-      "rostered": 28.2,
+      "rostered": 28.1,
       "started": 1.4
     },
     "6826": {
@@ -755,1463 +770,1497 @@
       "started": 0.1
     },
     "6860": {
-      "rostered": 12.7,
-      "started": 3.2
+      "rostered": 11.2,
+      "started": 3.7
     },
     "6865": {
-      "rostered": 4.8,
-      "started": 1.1
+      "rostered": 5.3,
+      "started": 1.4
     },
     "6868": {
-      "rostered": 2.6,
-      "started": 0.5
+      "rostered": 3.4,
+      "started": 0.9
     },
     "6880": {
-      "rostered": 1.1,
-      "started": 0.4
+      "rostered": 1.3,
+      "started": 0.5
     },
     "6888": {
-      "rostered": 11.6,
-      "started": 4.8
+      "rostered": 10.8,
+      "started": 3.7
     },
     "6896": {
-      "rostered": 5,
-      "started": 2.5
+      "rostered": 4.5,
+      "started": 2.4
     },
     "6900": {
-      "rostered": 5.6,
-      "started": 2.1
-    },
-    "6901": {
-      "rostered": 11.4,
-      "started": 7.3
-    },
-    "6904": {
-      "rostered": 29.1,
-      "started": 7.8
-    },
-    "6911": {
-      "rostered": 14.8,
-      "started": 2.9
-    },
-    "6923": {
-      "rostered": 3.4,
-      "started": 0.3
-    },
-    "6941": {
-      "rostered": 1,
-      "started": 0.4
-    },
-    "6949": {
-      "rostered": 40.1,
-      "started": 30.8
-    },
-    "6977": {
-      "rostered": 1.3,
-      "started": 0.5
-    },
-    "7002": {
-      "rostered": 50.2,
-      "started": 22.9
-    },
-    "7016": {
-      "rostered": 38.4,
-      "started": 32.2
-    },
-    "7018": {
-      "rostered": 2.2,
-      "started": 1.1
-    },
-    "7021": {
-      "rostered": 67.3,
-      "started": 19.4
-    },
-    "7042": {
-      "rostered": 58.4,
-      "started": 51.8
-    },
-    "7049": {
-      "rostered": 7.4,
-      "started": 1.2
-    },
-    "7069": {
-      "rostered": 4.2,
-      "started": 2.8
-    },
-    "7083": {
-      "rostered": 1.4,
-      "started": 0.1
-    },
-    "7090": {
-      "rostered": 2.3,
-      "started": 0.2
-    },
-    "7113": {
-      "rostered": 11,
-      "started": 3.3
-    },
-    "7117": {
-      "rostered": 1.5,
-      "started": 0.1
-    },
-    "7136": {
-      "rostered": 24.4,
-      "started": 17.1
-    },
-    "7346": {
-      "rostered": 3.2,
-      "started": 0.6
-    },
-    "7523": {
-      "rostered": 93,
-      "started": 72.6
-    },
-    "7525": {
-      "rostered": 94,
-      "started": 11.6
-    },
-    "7526": {
-      "rostered": 90.4,
-      "started": 40.2
-    },
-    "7527": {
-      "rostered": 1.6,
-      "started": 0
-    },
-    "7528": {
-      "rostered": 3.4,
-      "started": 0.2
-    },
-    "7543": {
-      "rostered": 80.4,
-      "started": 9.2
-    },
-    "7547": {
-      "rostered": 98.9,
-      "started": 98
-    },
-    "7553": {
-      "rostered": 75.9,
-      "started": 47.1
-    },
-    "7561": {
-      "rostered": 11.4,
-      "started": 1.9
-    },
-    "7562": {
-      "rostered": 1,
-      "started": 0.3
-    },
-    "7564": {
-      "rostered": 99.1,
-      "started": 98
-    },
-    "7567": {
-      "rostered": 47.1,
-      "started": 11.9
-    },
-    "7569": {
-      "rostered": 98.1,
-      "started": 90.9
-    },
-    "7571": {
-      "rostered": 9.1,
+      "rostered": 4.9,
       "started": 2
     },
-    "7588": {
-      "rostered": 98.7,
-      "started": 97
+    "6901": {
+      "rostered": 11,
+      "started": 7.5
     },
-    "7591": {
-      "rostered": 1.4,
-      "started": 0
+    "6904": {
+      "rostered": 28,
+      "started": 6.7
     },
-    "7594": {
-      "rostered": 96.9,
-      "started": 91.8
-    },
-    "7600": {
-      "rostered": 33.9,
-      "started": 9.3
-    },
-    "7611": {
-      "rostered": 92.6,
-      "started": 53.1
-    },
-    "7626": {
-      "rostered": 5.1,
-      "started": 2.8
-    },
-    "7627": {
-      "rostered": 69,
-      "started": 56.5
-    },
-    "7633": {
-      "rostered": 1.7,
-      "started": 0.6
-    },
-    "7635": {
-      "rostered": 7.6,
-      "started": 2.2
-    },
-    "7637": {
-      "rostered": 1.2,
-      "started": 0.4
-    },
-    "7640": {
-      "rostered": 44.2,
-      "started": 6.1
-    },
-    "7641": {
-      "rostered": 7.9,
-      "started": 3.2
-    },
-    "7647": {
-      "rostered": 7.3,
-      "started": 4.7
-    },
-    "7648": {
-      "rostered": 73.8,
-      "started": 63.7
-    },
-    "7659": {
-      "rostered": 16.2,
-      "started": 9
-    },
-    "7666": {
-      "rostered": 5.3,
+    "6911": {
+      "rostered": 13.2,
       "started": 2.7
     },
-    "7667": {
-      "rostered": 1.6,
-      "started": 0.7
-    },
-    "7669": {
-      "rostered": 1.3,
-      "started": 0.3
-    },
-    "7672": {
-      "rostered": 74.1,
-      "started": 65.6
-    },
-    "7677": {
-      "rostered": 4.9,
-      "started": 1.2
-    },
-    "7679": {
-      "rostered": 1.1,
-      "started": 0.5
-    },
-    "7682": {
-      "rostered": 1,
-      "started": 0.7
-    },
-    "7687": {
-      "rostered": 1,
-      "started": 0.3
-    },
-    "7696": {
+    "6921": {
       "rostered": 2.4,
       "started": 1.3
     },
-    "7715": {
-      "rostered": 6.8,
-      "started": 4.3
-    },
-    "7726": {
-      "rostered": 17.6,
-      "started": 11.2
-    },
-    "7765": {
+    "6923": {
       "rostered": 2.4,
+      "started": 0.6
+    },
+    "6941": {
+      "rostered": 1.1,
+      "started": 0.3
+    },
+    "6949": {
+      "rostered": 41.9,
+      "started": 31.3
+    },
+    "6977": {
+      "rostered": 1.5,
+      "started": 0.4
+    },
+    "7002": {
+      "rostered": 50,
+      "started": 23.4
+    },
+    "7016": {
+      "rostered": 37.7,
+      "started": 31.8
+    },
+    "7018": {
+      "rostered": 1.4,
       "started": 0.5
     },
-    "7782": {
-      "rostered": 3,
+    "7021": {
+      "rostered": 70.8,
+      "started": 29.3
+    },
+    "7042": {
+      "rostered": 66.3,
+      "started": 59.6
+    },
+    "7044": {
+      "rostered": 1.3,
+      "started": 0.3
+    },
+    "7049": {
+      "rostered": 6.9,
+      "started": 1
+    },
+    "7069": {
+      "rostered": 4.7,
+      "started": 3.2
+    },
+    "7083": {
+      "rostered": 1.3,
+      "started": 0.1
+    },
+    "7090": {
+      "rostered": 2.2,
+      "started": 0.2
+    },
+    "7113": {
+      "rostered": 10.8,
+      "started": 3.8
+    },
+    "7117": {
+      "rostered": 1.3
+    },
+    "7136": {
+      "rostered": 25.6,
+      "started": 18.2
+    },
+    "7346": {
+      "rostered": 2.7,
+      "started": 0.4
+    },
+    "7523": {
+      "rostered": 93.8,
+      "started": 73.9
+    },
+    "7525": {
+      "rostered": 92.5,
+      "started": 9.9
+    },
+    "7526": {
+      "rostered": 86.7,
+      "started": 25.3
+    },
+    "7527": {
+      "rostered": 1.5,
+      "started": 0
+    },
+    "7528": {
+      "rostered": 3.1,
+      "started": 0.2
+    },
+    "7543": {
+      "rostered": 81.6,
+      "started": 9.2
+    },
+    "7547": {
+      "rostered": 99.2,
+      "started": 98.1
+    },
+    "7553": {
+      "rostered": 71.4,
+      "started": 43.4
+    },
+    "7561": {
+      "rostered": 7.6,
+      "started": 1.1
+    },
+    "7562": {
+      "rostered": 12.7,
+      "started": 4.2
+    },
+    "7564": {
+      "rostered": 99.3,
+      "started": 98.1
+    },
+    "7567": {
+      "rostered": 45.7,
+      "started": 8.2
+    },
+    "7569": {
+      "rostered": 98.4,
+      "started": 90.9
+    },
+    "7571": {
+      "rostered": 8.3,
       "started": 1.6
     },
+    "7588": {
+      "rostered": 98.8,
+      "started": 96.8
+    },
+    "7591": {
+      "rostered": 1.3,
+      "started": 0
+    },
+    "7594": {
+      "rostered": 97.2,
+      "started": 92
+    },
+    "7600": {
+      "rostered": 42.8,
+      "started": 21
+    },
+    "7611": {
+      "rostered": 90,
+      "started": 31.4
+    },
+    "7626": {
+      "rostered": 4.8,
+      "started": 2.2
+    },
+    "7627": {
+      "rostered": 67.7,
+      "started": 55
+    },
+    "7633": {
+      "rostered": 1.9,
+      "started": 0.9
+    },
+    "7635": {
+      "rostered": 6.3,
+      "started": 2.1
+    },
+    "7637": {
+      "rostered": 1.3,
+      "started": 0.4
+    },
+    "7640": {
+      "rostered": 43.6,
+      "started": 5.3
+    },
+    "7641": {
+      "rostered": 8.8,
+      "started": 2.9
+    },
+    "7647": {
+      "rostered": 8.1,
+      "started": 5.8
+    },
+    "7648": {
+      "rostered": 74.4,
+      "started": 62.8
+    },
+    "7649": {
+      "rostered": 1.1,
+      "started": 0.1
+    },
+    "7659": {
+      "rostered": 14.3,
+      "started": 8.6
+    },
+    "7666": {
+      "rostered": 6.2,
+      "started": 3.8
+    },
+    "7667": {
+      "rostered": 2.3,
+      "started": 0.9
+    },
+    "7669": {
+      "rostered": 1.6,
+      "started": 0.4
+    },
+    "7672": {
+      "rostered": 72.3,
+      "started": 64.3
+    },
+    "7677": {
+      "rostered": 4.9,
+      "started": 1.9
+    },
+    "7679": {
+      "rostered": 1.3,
+      "started": 0.7
+    },
+    "7696": {
+      "rostered": 2.7,
+      "started": 1.5
+    },
+    "7715": {
+      "rostered": 7.5,
+      "started": 4.9
+    },
+    "7726": {
+      "rostered": 16.2,
+      "started": 10.6
+    },
+    "7765": {
+      "rostered": 2.5,
+      "started": 0.7
+    },
+    "7782": {
+      "rostered": 3.5,
+      "started": 1.9
+    },
     "7811": {
-      "rostered": 20,
-      "started": 5.2
+      "rostered": 18.2,
+      "started": 5
     },
     "7819": {
-      "rostered": 1.1,
+      "rostered": 1.2,
       "started": 0.5
     },
     "7828": {
       "rostered": 1,
-      "started": 0.3
+      "started": 0.2
     },
     "7839": {
-      "rostered": 69.9,
-      "started": 65.1
+      "rostered": 74,
+      "started": 69.4
     },
     "7841": {
-      "rostered": 46.2,
-      "started": 36.3
+      "rostered": 44.2,
+      "started": 34.5
     },
     "7921": {
-      "rostered": 9.8,
-      "started": 6.3
+      "rostered": 9.6,
+      "started": 6
     },
     "8110": {
-      "rostered": 45.4,
-      "started": 14.7
+      "rostered": 41.2,
+      "started": 11
     },
     "8111": {
-      "rostered": 7.3,
-      "started": 1.6
+      "rostered": 6.9,
+      "started": 1.2
     },
     "8112": {
-      "rostered": 98.4,
-      "started": 97.1
+      "rostered": 98.7,
+      "started": 96.2
     },
     "8116": {
-      "rostered": 1,
-      "started": 0.3
+      "rostered": 3.7,
+      "started": 1
     },
     "8119": {
-      "rostered": 6,
-      "started": 2.2
+      "rostered": 5.4,
+      "started": 1.9
     },
     "8121": {
-      "rostered": 42.6,
-      "started": 2.2
+      "rostered": 40.8,
+      "started": 1.7
     },
     "8122": {
-      "rostered": 12.8,
-      "started": 1.4
+      "rostered": 14.4,
+      "started": 3
     },
     "8126": {
-      "rostered": 65,
-      "started": 18.2
+      "rostered": 67.8,
+      "started": 27.7
     },
     "8129": {
-      "rostered": 10.9,
+      "rostered": 8.6,
       "started": 0.7
     },
     "8130": {
-      "rostered": 98.8,
-      "started": 98.7
-    },
-    "8131": {
-      "rostered": 94.2,
-      "started": 72.4
-    },
-    "8132": {
-      "rostered": 85.3,
-      "started": 60.1
-    },
-    "8134": {
-      "rostered": 63.4,
-      "started": 30.5
-    },
-    "8135": {
-      "rostered": 7.4,
-      "started": 0.4
-    },
-    "8136": {
-      "rostered": 75.9,
-      "started": 47
-    },
-    "8137": {
-      "rostered": 97.1,
-      "started": 53
-    },
-    "8138": {
-      "rostered": 98.7,
-      "started": 96
-    },
-    "8142": {
-      "rostered": 47.1,
-      "started": 2.1
-    },
-    "8144": {
-      "rostered": 98.3,
-      "started": 90.8
-    },
-    "8146": {
-      "rostered": 96.2,
-      "started": 43.1
-    },
-    "8148": {
-      "rostered": 93.4,
-      "started": 81.3
-    },
-    "8150": {
-      "rostered": 98.4,
-      "started": 98.1
-    },
-    "8151": {
       "rostered": 99.2,
       "started": 98.4
     },
+    "8131": {
+      "rostered": 94.7,
+      "started": 76.7
+    },
+    "8132": {
+      "rostered": 83.5,
+      "started": 54.9
+    },
+    "8134": {
+      "rostered": 65.9,
+      "started": 35.2
+    },
+    "8135": {
+      "rostered": 5.7,
+      "started": 0.6
+    },
+    "8136": {
+      "rostered": 75.6,
+      "started": 47.2
+    },
+    "8137": {
+      "rostered": 97.3,
+      "started": 63.9
+    },
+    "8138": {
+      "rostered": 99.1,
+      "started": 96.2
+    },
+    "8142": {
+      "rostered": 45.2,
+      "started": 1.8
+    },
+    "8144": {
+      "rostered": 98.6,
+      "started": 91.8
+    },
+    "8146": {
+      "rostered": 96.4,
+      "started": 59.9
+    },
+    "8148": {
+      "rostered": 93.6,
+      "started": 81
+    },
+    "8150": {
+      "rostered": 98.9,
+      "started": 97.6
+    },
+    "8151": {
+      "rostered": 99.3,
+      "started": 98.5
+    },
     "8154": {
-      "rostered": 25.4,
-      "started": 3.2
+      "rostered": 23.1,
+      "started": 2.8
     },
     "8155": {
-      "rostered": 93.6,
-      "started": 58
+      "rostered": 94,
+      "started": 67.6
     },
     "8161": {
-      "rostered": 33.4,
-      "started": 17.5
+      "rostered": 20.7,
+      "started": 6.2
     },
     "8167": {
-      "rostered": 97.9,
-      "started": 93.3
+      "rostered": 98,
+      "started": 93.6
     },
     "8172": {
-      "rostered": 10.2,
-      "started": 4.4
+      "rostered": 7.4,
+      "started": 2.6
     },
     "8180": {
-      "rostered": 6.8,
-      "started": 0.9
+      "rostered": 6.6,
+      "started": 0.8
     },
     "8183": {
-      "rostered": 97.1,
-      "started": 78.7
+      "rostered": 97.3,
+      "started": 80
     },
     "8188": {
-      "rostered": 1.6,
+      "rostered": 1.7,
       "started": 0.1
     },
     "8205": {
-      "rostered": 9.3,
-      "started": 0.2
+      "rostered": 9,
+      "started": 0.1
     },
     "8207": {
-      "rostered": 1.9,
-      "started": 0.3
+      "rostered": 1.5,
+      "started": 0.2
     },
     "8210": {
-      "rostered": 19.5,
-      "started": 6.7
+      "rostered": 21.1,
+      "started": 8.5
     },
     "8228": {
-      "rostered": 96,
-      "started": 52
+      "rostered": 96.8,
+      "started": 71.2
     },
     "8259": {
-      "rostered": 29,
-      "started": 21
+      "rostered": 28.4,
+      "started": 21.2
     },
     "8265": {
       "rostered": 9.6,
-      "started": 5
+      "started": 4.9
     },
     "8266": {
-      "rostered": 36.4,
-      "started": 26.1
+      "rostered": 35.7,
+      "started": 25
     },
     "8267": {
-      "rostered": 89.2,
-      "started": 82.8
+      "rostered": 88.2,
+      "started": 81
     },
     "8269": {
-      "rostered": 2,
-      "started": 0.7
+      "rostered": 2.7,
+      "started": 1.2
     },
     "8270": {
-      "rostered": 1.4,
-      "started": 0.8
-    },
-    "8275": {
       "rostered": 1.1,
       "started": 0.5
     },
-    "8278": {
-      "rostered": 1.1,
-      "started": 0.3
-    },
-    "8280": {
-      "rostered": 42.7,
-      "started": 28.7
-    },
-    "8286": {
-      "rostered": 3.1,
-      "started": 1.6
-    },
-    "8289": {
-      "rostered": 76.9,
-      "started": 66.4
-    },
-    "8290": {
-      "rostered": 1.1,
-      "started": 0.3
-    },
-    "8294": {
-      "rostered": 2,
+    "8275": {
+      "rostered": 1.3,
       "started": 0.8
     },
+    "8278": {
+      "rostered": 1.3,
+      "started": 0.1
+    },
+    "8280": {
+      "rostered": 41.7,
+      "started": 22
+    },
+    "8286": {
+      "rostered": 2.9,
+      "started": 1.9
+    },
+    "8289": {
+      "rostered": 77.3,
+      "started": 66.7
+    },
+    "8290": {
+      "rostered": 1.3,
+      "started": 0.5
+    },
+    "8294": {
+      "rostered": 2.3,
+      "started": 0.9
+    },
     "8308": {
-      "rostered": 1.9,
-      "started": 0.7
+      "rostered": 2.1,
+      "started": 1.2
     },
     "8311": {
-      "rostered": 33.9,
-      "started": 25.1
+      "rostered": 34.5,
+      "started": 25.7
     },
     "8314": {
-      "rostered": 6.3,
-      "started": 2.2
+      "rostered": 6.5,
+      "started": 3.5
     },
     "8323": {
-      "rostered": 9.2,
-      "started": 2
-    },
-    "8329": {
-      "rostered": 75,
-      "started": 62.7
-    },
-    "8330": {
-      "rostered": 37.3,
-      "started": 31.9
-    },
-    "8333": {
-      "rostered": 4,
-      "started": 0.3
-    },
-    "8339": {
-      "rostered": 78.6,
-      "started": 63.5
-    },
-    "8343": {
-      "rostered": 29.9,
-      "started": 22.1
-    },
-    "8348": {
-      "rostered": 2.7,
-      "started": 0.3
-    },
-    "8349": {
-      "rostered": 1.3,
-      "started": 0.3
-    },
-    "8355": {
-      "rostered": 4.7,
-      "started": 1.3
-    },
-    "8359": {
-      "rostered": 6.5,
+      "rostered": 9.6,
       "started": 4.4
     },
-    "8362": {
+    "8329": {
+      "rostered": 74.3,
+      "started": 63.5
+    },
+    "8330": {
+      "rostered": 37.5,
+      "started": 32.3
+    },
+    "8333": {
+      "rostered": 4.6,
+      "started": 1.2
+    },
+    "8334": {
+      "rostered": 1.4,
+      "started": 0.7
+    },
+    "8339": {
+      "rostered": 73.5,
+      "started": 58
+    },
+    "8343": {
+      "rostered": 27.2,
+      "started": 21.2
+    },
+    "8348": {
+      "rostered": 3.3,
+      "started": 0.1
+    },
+    "8349": {
       "rostered": 1.7,
-      "started": 0.2
+      "started": 0.8
+    },
+    "8355": {
+      "rostered": 5.7,
+      "started": 2.5
+    },
+    "8359": {
+      "rostered": 7.2,
+      "started": 4.9
+    },
+    "8362": {
+      "rostered": 1.9,
+      "started": 0.3
+    },
+    "8363": {
+      "rostered": 1.2,
+      "started": 0.1
     },
     "8364": {
-      "rostered": 6.1,
-      "started": 2.4
+      "rostered": 6.5,
+      "started": 2.3
     },
     "8365": {
-      "rostered": 6.3,
-      "started": 2.4
+      "rostered": 4.7,
+      "started": 1.4
     },
     "8367": {
-      "rostered": 1.3,
-      "started": 0.6
-    },
-    "8383": {
-      "rostered": 1,
+      "rostered": 1.5,
       "started": 0.4
     },
     "8384": {
-      "rostered": 2.1,
-      "started": 0.8
+      "rostered": 2.4,
+      "started": 0.6
     },
     "8385": {
-      "rostered": 21.4,
-      "started": 17.3
+      "rostered": 24.6,
+      "started": 20.4
     },
     "8392": {
-      "rostered": 31,
-      "started": 18.2
+      "rostered": 29.5,
+      "started": 18
     },
     "8395": {
-      "rostered": 19.7,
-      "started": 17.1
+      "rostered": 18.7,
+      "started": 16.3
     },
     "8396": {
-      "rostered": 4.2,
-      "started": 2.2
+      "rostered": 4.7,
+      "started": 2.8
+    },
+    "8398": {
+      "rostered": 1.3,
+      "started": 0.4
+    },
+    "8400": {
+      "rostered": 1,
+      "started": 0.3
     },
     "8406": {
-      "rostered": 4.9,
-      "started": 0.9
+      "rostered": 5.6,
+      "started": 1.8
     },
     "8408": {
-      "rostered": 71.1,
-      "started": 24.1
+      "rostered": 68.6,
+      "started": 24.4
     },
     "8476": {
-      "rostered": 2.4,
+      "rostered": 2.3,
       "started": 1.3
     },
     "8487": {
-      "rostered": 1.3,
-      "started": 0.5
+      "rostered": 1.1,
+      "started": 0.6
     },
     "8659": {
-      "rostered": 44.5,
-      "started": 32.9
+      "rostered": 44.8,
+      "started": 34.1
     },
     "8676": {
-      "rostered": 18.9,
-      "started": 1.7
+      "rostered": 17.5,
+      "started": 2
     },
     "8680": {
-      "rostered": 2.8,
-      "started": 1.3
+      "rostered": 3.4,
+      "started": 1.7
     },
     "8698": {
       "rostered": 2.2,
       "started": 0.1
     },
     "8752": {
-      "rostered": 1.4,
-      "started": 0.3
+      "rostered": 1.9,
+      "started": 0.8
     },
     "8800": {
       "rostered": 1.7,
       "started": 0
     },
     "8838": {
-      "rostered": 1.5,
-      "started": 0.4
+      "rostered": 1.9,
+      "started": 0.7
     },
     "8917": {
-      "rostered": 1.3,
-      "started": 0.1
+      "rostered": 1.2,
+      "started": 0.2
     },
     "9221": {
-      "rostered": 98.8,
+      "rostered": 99.3,
       "started": 98.7
     },
     "9224": {
-      "rostered": 97.8,
-      "started": 93
+      "rostered": 97.9,
+      "started": 91.6
     },
     "9225": {
-      "rostered": 12.2,
+      "rostered": 11.9,
       "started": 0.3
     },
     "9226": {
-      "rostered": 29.2,
-      "started": 8.3
+      "rostered": 28.2,
+      "started": 7.2
     },
     "9228": {
-      "rostered": 71.6,
-      "started": 35.2
+      "rostered": 78.6,
+      "started": 45.3
     },
     "9229": {
-      "rostered": 1.7,
+      "rostered": 1.5,
       "started": 0
     },
     "9230": {
-      "rostered": 4.2,
-      "started": 0.7
+      "rostered": 3.5,
+      "started": 0.5
     },
     "9479": {
-      "rostered": 5.3,
-      "started": 0.9
+      "rostered": 6.5,
+      "started": 2.1
     },
     "9480": {
-      "rostered": 66.9,
-      "started": 36.4
+      "rostered": 65.5,
+      "started": 37.1
     },
     "9482": {
-      "rostered": 27.9,
-      "started": 9.5
+      "rostered": 24.1,
+      "started": 7.7
     },
     "9484": {
-      "rostered": 94.4,
-      "started": 83
+      "rostered": 93.9,
+      "started": 80
     },
     "9486": {
-      "rostered": 12.6,
-      "started": 1
+      "rostered": 11.2,
+      "started": 0.6
     },
     "9487": {
-      "rostered": 96.1,
-      "started": 86.9
+      "rostered": 96.4,
+      "started": 87.6
     },
     "9488": {
-      "rostered": 98.6,
-      "started": 99.3
+      "rostered": 99.3,
+      "started": 99.2
     },
     "9493": {
-      "rostered": 99.2,
-      "started": 65.5
+      "rostered": 98.8,
+      "started": 38.4
     },
     "9494": {
-      "rostered": 2.2,
+      "rostered": 2.1,
       "started": 0.3
     },
     "9500": {
-      "rostered": 75.1,
-      "started": 37.1
+      "rostered": 78,
+      "started": 33.9
     },
     "9501": {
-      "rostered": 44.3,
-      "started": 24.9
+      "rostered": 52.2,
+      "started": 30.6
     },
     "9502": {
-      "rostered": 29.4,
-      "started": 7.4
+      "rostered": 62.6,
+      "started": 14.8
     },
     "9504": {
-      "rostered": 6.3,
-      "started": 1
+      "rostered": 7.3,
+      "started": 1.1
     },
     "9506": {
       "rostered": 2.4,
-      "started": 0.2
+      "started": 0.1
     },
     "9508": {
-      "rostered": 17.9,
-      "started": 1
+      "rostered": 16,
+      "started": 1.4
     },
     "9509": {
-      "rostered": 99.2,
+      "rostered": 99.3,
       "started": 99.2
     },
     "9511": {
-      "rostered": 18.1,
-      "started": 3.3
+      "rostered": 16.2,
+      "started": 3
     },
     "9753": {
-      "rostered": 76,
-      "started": 46.1
+      "rostered": 81.9,
+      "started": 58.5
     },
     "9754": {
       "rostered": 20.9,
-      "started": 6
+      "started": 5.8
     },
     "9756": {
-      "rostered": 65.4,
-      "started": 26.9
+      "rostered": 66.6,
+      "started": 28.3
     },
     "9757": {
-      "rostered": 21.2,
-      "started": 2.9
+      "rostered": 15.6,
+      "started": 1.8
     },
     "9758": {
-      "rostered": 72.7,
-      "started": 36.4
+      "rostered": 78.6,
+      "started": 41.6
     },
     "9997": {
-      "rostered": 97.7,
-      "started": 89.7
+      "rostered": 98,
+      "started": 91.1
     },
     "10213": {
-      "rostered": 77.2,
-      "started": 40.2
+      "rostered": 74.1,
+      "started": 36.3
     },
     "10218": {
-      "rostered": 2.6,
+      "rostered": 2.8,
       "started": 0.7
     },
     "10219": {
-      "rostered": 38.2,
-      "started": 8.7
+      "rostered": 37.2,
+      "started": 9.3
     },
     "10222": {
-      "rostered": 20.9,
-      "started": 1.6
+      "rostered": 19.9,
+      "started": 1.3
     },
     "10226": {
-      "rostered": 1.1,
+      "rostered": 1.2,
       "started": 0.1
     },
     "10229": {
-      "rostered": 95.9,
-      "started": 87.4
+      "rostered": 96.2,
+      "started": 87.3
     },
     "10232": {
-      "rostered": 76,
-      "started": 41
+      "rostered": 55.3,
+      "started": 22.7
     },
     "10235": {
-      "rostered": 11.2,
-      "started": 2.1
+      "rostered": 9.9,
+      "started": 1.5
     },
     "10236": {
-      "rostered": 88.3,
-      "started": 58.7
+      "rostered": 87.9,
+      "started": 59.6
     },
     "10859": {
       "rostered": 96.4,
-      "started": 88.1
+      "started": 87.1
     },
     "10873": {
-      "rostered": 1.7,
-      "started": 0.7
+      "rostered": 2.1,
+      "started": 0.6
     },
     "10878": {
-      "rostered": 1.7,
-      "started": 0.8
+      "rostered": 2,
+      "started": 1.3
     },
     "10879": {
-      "rostered": 1.7,
-      "started": 0.5
+      "rostered": 1.9,
+      "started": 0.4
     },
     "10880": {
-      "rostered": 49.3,
-      "started": 15.7
+      "rostered": 48,
+      "started": 15.1
     },
     "10881": {
-      "rostered": 9.2,
-      "started": 4.5
+      "rostered": 10,
+      "started": 5.1
     },
     "10883": {
-      "rostered": 2.6,
-      "started": 1
+      "rostered": 2.8,
+      "started": 1.1
     },
     "10885": {
-      "rostered": 9.8,
+      "rostered": 9.2,
       "started": 5.6
     },
     "10888": {
-      "rostered": 17.5,
-      "started": 9.7
+      "rostered": 17.3,
+      "started": 7.9
     },
     "10891": {
-      "rostered": 19.8,
-      "started": 13.6
+      "rostered": 20.6,
+      "started": 14.6
     },
     "10892": {
-      "rostered": 82.2,
-      "started": 68
+      "rostered": 82.1,
+      "started": 68.5
     },
-    "10898": {
-      "rostered": 35.9,
-      "started": 22.7
-    },
-    "10905": {
-      "rostered": 16.2,
-      "started": 8.5
-    },
-    "10913": {
-      "rostered": 1.2,
+    "10897": {
+      "rostered": 1.1,
       "started": 0.3
     },
+    "10898": {
+      "rostered": 31.1,
+      "started": 20.6
+    },
+    "10903": {
+      "rostered": 1.3,
+      "started": 0.3
+    },
+    "10905": {
+      "rostered": 14.6,
+      "started": 8
+    },
+    "10913": {
+      "rostered": 1.7,
+      "started": 0.6
+    },
     "10914": {
-      "rostered": 19.4,
-      "started": 11.4
+      "rostered": 18,
+      "started": 8.4
     },
     "10916": {
-      "rostered": 4.2,
-      "started": 0.5
+      "rostered": 6.1,
+      "started": 0.8
     },
     "10917": {
-      "rostered": 50.2,
-      "started": 40.4
+      "rostered": 48.9,
+      "started": 38.3
     },
     "10921": {
       "rostered": 8.3,
-      "started": 1.6
+      "started": 1.5
     },
     "10923": {
       "rostered": 5,
-      "started": 3.3
+      "started": 3.5
     },
     "10927": {
-      "rostered": 23.8,
-      "started": 18.4
+      "rostered": 21.2,
+      "started": 17
     },
     "10930": {
-      "rostered": 1.3,
-      "started": 0.3
+      "rostered": 2.1,
+      "started": 0.6
     },
     "10933": {
       "rostered": 5.5,
-      "started": 1
+      "started": 1.5
     },
     "10935": {
-      "rostered": 6.4,
-      "started": 3.7
+      "rostered": 6.6,
+      "started": 4.1
     },
     "10936": {
-      "rostered": 2.6,
-      "started": 1.4
+      "rostered": 2.7,
+      "started": 1.8
     },
     "10940": {
-      "rostered": 7.9,
-      "started": 1.6
+      "rostered": 8.4,
+      "started": 3.3
     },
     "10944": {
-      "rostered": 1.3,
-      "started": 0.3
+      "rostered": 1.2,
+      "started": 0.2
     },
     "10947": {
-      "rostered": 18,
-      "started": 10.8
+      "rostered": 18.2,
+      "started": 11.6
     },
     "10949": {
-      "rostered": 21,
-      "started": 11.8
+      "rostered": 20.4,
+      "started": 11.6
     },
     "10955": {
-      "rostered": 12.6,
-      "started": 10.9
+      "rostered": 11,
+      "started": 9.5
     },
     "10970": {
-      "rostered": 5.2,
-      "started": 1.4
+      "rostered": 5.1,
+      "started": 2
     },
     "10974": {
-      "rostered": 1.3,
+      "rostered": 2.1,
       "started": 0.7
     },
     "10980": {
-      "rostered": 2.2,
+      "rostered": 2.5,
       "started": 0.5
     },
     "11017": {
-      "rostered": 6.5,
-      "started": 3
+      "rostered": 6.1,
+      "started": 2.8
     },
     "11086": {
-      "rostered": 1.9,
-      "started": 0.3
+      "rostered": 1.7,
+      "started": 0.2
     },
     "11199": {
+      "rostered": 1,
+      "started": 0.2
+    },
+    "11233": {
       "rostered": 1,
       "started": 0.3
     },
     "11261": {
-      "rostered": 2.3,
-      "started": 2.1
+      "rostered": 3.3,
+      "started": 3
     },
     "11328": {
-      "rostered": 1.6,
-      "started": 0.7
+      "rostered": 2,
+      "started": 0.8
     },
     "11352": {
-      "rostered": 1.9,
-      "started": 0.9
+      "rostered": 2.8,
+      "started": 2.1
     },
     "11370": {
-      "rostered": 2,
-      "started": 0.2
+      "rostered": 2.1,
+      "started": 0.1
     },
     "11435": {
-      "rostered": 29.3,
-      "started": 4.3
+      "rostered": 22.3,
+      "started": 3.4
     },
     "11439": {
-      "rostered": 2,
+      "rostered": 1.8,
       "started": 0.3
     },
     "11470": {
-      "rostered": 9.7,
-      "started": 4.6
+      "rostered": 9.8,
+      "started": 6.1
     },
     "11533": {
-      "rostered": 97,
-      "started": 95.7
+      "rostered": 96.7,
+      "started": 95.3
     },
     "11539": {
-      "rostered": 63,
-      "started": 56.6
+      "rostered": 70.8,
+      "started": 64
     },
     "11557": {
-      "rostered": 8.9,
-      "started": 2.2
+      "rostered": 6.5,
+      "started": 0.9
     },
     "11559": {
-      "rostered": 24.9,
-      "started": 11.7
+      "rostered": 23.7,
+      "started": 11
     },
     "11560": {
-      "rostered": 92.8,
-      "started": 43.4
+      "rostered": 92.2,
+      "started": 24.8
     },
     "11563": {
-      "rostered": 60.1,
-      "started": 21
+      "rostered": 58.2,
+      "started": 13.8
     },
     "11564": {
-      "rostered": 97.8,
-      "started": 87.8
+      "rostered": 97.9,
+      "started": 88.4
     },
     "11565": {
-      "rostered": 20.8,
-      "started": 10.2
+      "rostered": 22.5,
+      "started": 11.9
     },
     "11566": {
-      "rostered": 88.1,
-      "started": 59.4
+      "rostered": 87.8,
+      "started": 58.8
     },
     "11571": {
       "rostered": 1.7,
-      "started": 0.4
+      "started": 0.3
     },
     "11575": {
-      "rostered": 4.6,
+      "rostered": 4.1,
       "started": 0.3
     },
     "11576": {
-      "rostered": 86.6,
-      "started": 48.2
+      "rostered": 83.6,
+      "started": 39
     },
     "11577": {
-      "rostered": 3.7,
-      "started": 0.2
+      "rostered": 3.5,
+      "started": 0.1
     },
     "11579": {
-      "rostered": 11.2,
-      "started": 4.6
+      "rostered": 38.8,
+      "started": 18.3
     },
     "11581": {
-      "rostered": 25.8,
-      "started": 4.3
+      "rostered": 23.9,
+      "started": 3.9
     },
     "11583": {
-      "rostered": 31.7,
-      "started": 1.5
+      "rostered": 31.2,
+      "started": 1.3
     },
     "11584": {
       "rostered": 97.7,
-      "started": 57
+      "started": 34.5
     },
     "11586": {
-      "rostered": 80.7,
-      "started": 48.9
+      "rostered": 84.3,
+      "started": 57.8
     },
     "11589": {
       "rostered": 1.7,
       "started": 0.2
+    },
+    "11593": {
+      "rostered": 1.2,
+      "started": 0.6
     },
     "11597": {
       "rostered": 2.2,
       "started": 0.3
     },
     "11603": {
-      "rostered": 17,
-      "started": 6.5
+      "rostered": 17.1,
+      "started": 6.8
     },
     "11604": {
-      "rostered": 99,
-      "started": 98.2
+      "rostered": 99.2,
+      "started": 98
     },
     "11608": {
       "rostered": 1,
       "started": 0.3
     },
     "11610": {
-      "rostered": 63.7,
-      "started": 36.6
+      "rostered": 59.2,
+      "started": 31.8
     },
     "11618": {
-      "rostered": 5.3,
+      "rostered": 5.1,
       "started": 0.2
     },
     "11620": {
-      "rostered": 86.3,
-      "started": 37.2
+      "rostered": 86.2,
+      "started": 22.9
     },
     "11624": {
-      "rostered": 70.1,
-      "started": 27.9
+      "rostered": 65.7,
+      "started": 20.3
     },
     "11625": {
-      "rostered": 60,
-      "started": 23.3
+      "rostered": 49.4,
+      "started": 17.5
     },
     "11627": {
       "rostered": 2.4,
       "started": 0.2
     },
     "11628": {
-      "rostered": 58.3,
-      "started": 10.7
+      "rostered": 50.7,
+      "started": 9.5
     },
     "11630": {
-      "rostered": 12,
+      "rostered": 12.2,
       "started": 0.2
     },
     "11631": {
-      "rostered": 39.1,
-      "started": 7.6
+      "rostered": 35,
+      "started": 7.1
     },
     "11632": {
-      "rostered": 98.1,
-      "started": 91.3
+      "rostered": 98.6,
+      "started": 92.2
     },
     "11635": {
-      "rostered": 89,
-      "started": 58.1
+      "rostered": 86.3,
+      "started": 51.3
     },
     "11637": {
-      "rostered": 43.1,
-      "started": 10.2
+      "rostered": 40.3,
+      "started": 11.6
     },
     "11638": {
-      "rostered": 1.9,
+      "rostered": 2.1,
       "started": 0.6
     },
     "11643": {
-      "rostered": 3.8,
+      "rostered": 3.3,
       "started": 0.3
     },
     "11646": {
-      "rostered": 91.4,
-      "started": 71.2
+      "rostered": 91.1,
+      "started": 72.6
     },
     "11647": {
-      "rostered": 20.4,
-      "started": 5.8
+      "rostered": 17.6,
+      "started": 5.3
+    },
+    "11653": {
+      "rostered": 1.1,
+      "started": 0.9
     },
     "11655": {
-      "rostered": 17.7,
-      "started": 0.8
+      "rostered": 16.5,
+      "started": 0.7
     },
     "11656": {
-      "rostered": 3.5,
-      "started": 1.4
+      "rostered": 3.1,
+      "started": 1.3
     },
     "11662": {
-      "rostered": 2.6,
-      "started": 1.1
+      "rostered": 2.4,
+      "started": 1.2
     },
     "11663": {
-      "rostered": 3.6,
-      "started": 1.7
+      "rostered": 4.6,
+      "started": 2.2
     },
     "11665": {
-      "rostered": 30.9,
-      "started": 20.5
+      "rostered": 31.8,
+      "started": 21.4
     },
     "11667": {
-      "rostered": 38.6,
-      "started": 28.3
+      "rostered": 36.7,
+      "started": 26.7
     },
     "11668": {
-      "rostered": 6.4,
-      "started": 4
+      "rostered": 6.2,
+      "started": 3.9
     },
     "11669": {
-      "rostered": 16.3,
-      "started": 10.6
+      "rostered": 15.6,
+      "started": 9.8
     },
     "11674": {
-      "rostered": 3.1,
-      "started": 1.1
+      "rostered": 4.7,
+      "started": 1.6
     },
     "11675": {
-      "rostered": 4.4,
-      "started": 2
+      "rostered": 3.4,
+      "started": 2.2
     },
     "11676": {
-      "rostered": 1.6,
+      "rostered": 2,
       "started": 0.7
     },
     "11678": {
-      "rostered": 39.4,
-      "started": 26.5
+      "rostered": 35.5,
+      "started": 19
     },
     "11682": {
-      "rostered": 19.5,
-      "started": 13.5
+      "rostered": 20.2,
+      "started": 15.1
     },
     "11685": {
-      "rostered": 20.1,
-      "started": 13.5
+      "rostered": 18.9,
+      "started": 12.6
     },
     "11686": {
-      "rostered": 1.7,
-      "started": 0.7
+      "rostered": 1.8,
+      "started": 1.3
     },
     "11687": {
-      "rostered": 25.7,
-      "started": 9.6
+      "rostered": 25.9,
+      "started": 9.4
     },
     "11703": {
       "rostered": 4.3,
-      "started": 1.1
+      "started": 1
     },
     "11705": {
-      "rostered": 31.1,
-      "started": 21.9
+      "rostered": 27.6,
+      "started": 14.8
     },
     "11710": {
-      "rostered": 2.1,
-      "started": 0.7
-    },
-    "11712": {
-      "rostered": 1.6,
-      "started": 0.6
+      "rostered": 2.7,
+      "started": 1
     },
     "11724": {
-      "rostered": 2.2,
-      "started": 0.3
+      "rostered": 2.3,
+      "started": 0.4
     },
     "11726": {
-      "rostered": 1.7,
-      "started": 0.6
+      "rostered": 2.3,
+      "started": 1.3
     },
     "11727": {
-      "rostered": 25.8,
-      "started": 10.1
+      "rostered": 25.5,
+      "started": 13.8
     },
     "11729": {
-      "rostered": 3.7,
+      "rostered": 3.1,
       "started": 0.4
     },
     "11731": {
-      "rostered": 12.2,
-      "started": 6.7
+      "rostered": 10,
+      "started": 5.3
     },
     "11734": {
+      "rostered": 1.3,
+      "started": 0.2
+    },
+    "11739": {
+      "rostered": 62.7,
+      "started": 56.4
+    },
+    "11742": {
+      "rostered": 13,
+      "started": 5.2
+    },
+    "11752": {
       "rostered": 1.1,
       "started": 0.3
     },
-    "11739": {
-      "rostered": 60.7,
-      "started": 54.4
-    },
-    "11742": {
-      "rostered": 12.3,
-      "started": 4.1
-    },
-    "11752": {
-      "rostered": 1.5,
-      "started": 0.9
-    },
     "11760": {
-      "rostered": 22.3,
-      "started": 13.7
+      "rostered": 20.4,
+      "started": 9.4
     },
     "11783": {
-      "rostered": 54.1,
-      "started": 27.6
+      "rostered": 52,
+      "started": 25
     },
     "11786": {
-      "rostered": 72.4,
-      "started": 64.1
+      "rostered": 77.3,
+      "started": 69.3
     },
     "11792": {
-      "rostered": 87.3,
-      "started": 83
+      "rostered": 85.8,
+      "started": 81.2
     },
     "11819": {
-      "rostered": 2.7,
-      "started": 1.6
+      "rostered": 2.3,
+      "started": 1.3
     },
     "11834": {
-      "rostered": 60.5,
+      "rostered": 53.6,
       "started": 14.1
     },
     "11842": {
-      "rostered": 1.1,
-      "started": 0.1
+      "rostered": 1
     },
     "12015": {
-      "rostered": 6.8,
-      "started": 5.4
+      "rostered": 6.6,
+      "started": 5.3
     },
     "12048": {
-      "rostered": 4.6,
-      "started": 1
+      "rostered": 4,
+      "started": 0.8
     },
     "12140": {
-      "rostered": 1.9,
-      "started": 0.5
+      "rostered": 2.3,
+      "started": 0.6
     },
     "12185": {
-      "rostered": 82.6,
-      "started": 80.7
+      "rostered": 87.3,
+      "started": 84.8
     },
     "12455": {
-      "rostered": 1.3,
+      "rostered": 1.2,
       "started": 0.1
     },
     "12457": {
-      "rostered": 3.6,
+      "rostered": 2.9,
       "started": 0.2
     },
     "12467": {
-      "rostered": 1.7,
+      "rostered": 1.6,
       "started": 0.1
     },
     "12469": {
-      "rostered": 35.6,
-      "started": 13
+      "rostered": 34.2,
+      "started": 12
     },
     "12472": {
       "rostered": 1,
       "started": 0.1
     },
     "12474": {
-      "rostered": 81.1,
-      "started": 49.8
+      "rostered": 78.5,
+      "started": 44.4
     },
     "12476": {
-      "rostered": 1.5,
+      "rostered": 1.4,
       "started": 0.1
     },
     "12481": {
-      "rostered": 92,
-      "started": 33.9
+      "rostered": 92.8,
+      "started": 54.4
     },
     "12482": {
-      "rostered": 1.8,
-      "started": 0.5
+      "rostered": 1.6,
+      "started": 0.4
     },
     "12483": {
-      "rostered": 1.9,
+      "rostered": 1.8,
       "started": 0.1
     },
     "12484": {
       "rostered": 3.4,
-      "started": 0.3
-    },
-    "12485": {
-      "rostered": 1.1,
       "started": 0.2
     },
+    "12485": {
+      "rostered": 1,
+      "started": 0.1
+    },
     "12487": {
-      "rostered": 22.3,
-      "started": 0.6
+      "rostered": 20.9,
+      "started": 0.4
     },
     "12489": {
-      "rostered": 70.6,
-      "started": 8.3
+      "rostered": 68.2,
+      "started": 7.6
     },
     "12490": {
-      "rostered": 94.5,
-      "started": 86.5
+      "rostered": 95.2,
+      "started": 87.7
     },
     "12491": {
-      "rostered": 10.3,
-      "started": 5.1
+      "rostered": 59.5,
+      "started": 31.9
     },
     "12492": {
-      "rostered": 7.6,
-      "started": 0.5
+      "rostered": 11.5,
+      "started": 0.4
     },
     "12493": {
-      "rostered": 13.1,
-      "started": 4.7
+      "rostered": 12.5,
+      "started": 4.4
+    },
+    "12494": {
+      "rostered": 3.4,
+      "started": 1.7
     },
     "12495": {
-      "rostered": 88.1,
-      "started": 78
+      "rostered": 88.6,
+      "started": 79.2
     },
     "12497": {
-      "rostered": 2.7,
+      "rostered": 2.6,
       "started": 0.4
     },
     "12498": {
-      "rostered": 10.2,
-      "started": 2.6
+      "rostered": 8.7,
+      "started": 2.5
     },
     "12499": {
-      "rostered": 5.5,
-      "started": 0.5
-    },
-    "12501": {
-      "rostered": 95.5,
-      "started": 87
-    },
-    "12502": {
-      "rostered": 4.1,
-      "started": 0.4
-    },
-    "12504": {
-      "rostered": 4.2,
+      "rostered": 4.9,
       "started": 0.7
     },
+    "12501": {
+      "rostered": 96,
+      "started": 87.5
+    },
+    "12502": {
+      "rostered": 4.2,
+      "started": 0.5
+    },
+    "12504": {
+      "rostered": 19.1,
+      "started": 4.5
+    },
     "12506": {
-      "rostered": 90.2,
-      "started": 77.7
+      "rostered": 90.5,
+      "started": 76.8
     },
     "12507": {
-      "rostered": 87.3,
-      "started": 44.1
+      "rostered": 84.6,
+      "started": 42
     },
     "12508": {
-      "rostered": 18.1,
-      "started": 4.2
+      "rostered": 18.2,
+      "started": 3.9
     },
     "12509": {
-      "rostered": 6,
-      "started": 0.9
+      "rostered": 5.6,
+      "started": 0.7
     },
     "12512": {
-      "rostered": 91.5,
-      "started": 74.8
+      "rostered": 91.1,
+      "started": 72.3
     },
     "12514": {
-      "rostered": 91.9,
-      "started": 31.3
+      "rostered": 90.8,
+      "started": 20.6
     },
     "12517": {
-      "rostered": 94,
-      "started": 59.2
+      "rostered": 93.3,
+      "started": 35.5
     },
     "12518": {
-      "rostered": 95,
-      "started": 83.8
+      "rostered": 95.1,
+      "started": 83.9
     },
     "12519": {
       "rostered": 95.1,
-      "started": 49.4
+      "started": 29.9
     },
     "12521": {
-      "rostered": 1.2,
-      "started": 0
+      "rostered": 1.1,
+      "started": 0.1
     },
     "12522": {
-      "rostered": 11.9,
-      "started": 2.6
+      "rostered": 12.6,
+      "started": 3.6
     },
     "12524": {
-      "rostered": 6.9,
-      "started": 1.9
+      "rostered": 6.6,
+      "started": 1.2
     },
     "12526": {
-      "rostered": 97.1,
-      "started": 90
+      "rostered": 97.3,
+      "started": 90.9
     },
     "12527": {
-      "rostered": 97.6,
-      "started": 89.8
+      "rostered": 97.9,
+      "started": 87.9
     },
     "12529": {
-      "rostered": 59.8,
-      "started": 11.3
+      "rostered": 57.5,
+      "started": 10.2
     },
     "12530": {
-      "rostered": 13.2,
-      "started": 3.7
+      "rostered": 11.8,
+      "started": 3.4
     },
     "12533": {
-      "rostered": 50.9,
-      "started": 2.6
+      "rostered": 50.5,
+      "started": 2.1
     },
     "12534": {
-      "rostered": 71.1,
-      "started": 7
+      "rostered": 69.3,
+      "started": 5.8
     },
     "12535": {
-      "rostered": 4.5,
+      "rostered": 4.3,
       "started": 0.5
     },
     "12536": {
-      "rostered": 7.8,
-      "started": 0.3
+      "rostered": 7.1,
+      "started": 0.2
     },
     "12540": {
-      "rostered": 3.4,
-      "started": 0.4
+      "rostered": 3.1,
+      "started": 0.5
     },
     "12542": {
-      "rostered": 3.9,
+      "rostered": 3.7,
       "started": 1.1
     },
     "12544": {
@@ -2219,391 +2268,407 @@
       "started": 0.1
     },
     "12545": {
-      "rostered": 69.3,
-      "started": 30.1
+      "rostered": 72.4,
+      "started": 35.5
     },
     "12547": {
-      "rostered": 4,
-      "started": 0.9
+      "rostered": 3.5,
+      "started": 0.8
     },
     "12556": {
-      "rostered": 25,
-      "started": 17.9
+      "rostered": 20.2,
+      "started": 14.4
     },
     "12566": {
-      "rostered": 13.3,
-      "started": 4
+      "rostered": 11.2,
+      "started": 3.1
     },
     "12567": {
-      "rostered": 30.6,
-      "started": 24
+      "rostered": 30.8,
+      "started": 23.6
     },
     "12568": {
-      "rostered": 1.4,
-      "started": 0.3
+      "rostered": 1.5,
+      "started": 0.1
     },
     "12571": {
-      "rostered": 2.2,
-      "started": 0.6
-    },
-    "12573": {
-      "rostered": 8.3,
-      "started": 4.2
-    },
-    "12574": {
-      "rostered": 27.7,
-      "started": 14.9
-    },
-    "12578": {
-      "rostered": 79.1,
-      "started": 70.9
-    },
-    "12585": {
-      "rostered": 2.6,
-      "started": 0.7
-    },
-    "12588": {
-      "rostered": 4,
+      "rostered": 2.5,
       "started": 0.9
     },
+    "12573": {
+      "rostered": 7.5,
+      "started": 4.5
+    },
+    "12574": {
+      "rostered": 27.6,
+      "started": 15.1
+    },
+    "12578": {
+      "rostered": 79.4,
+      "started": 70.5
+    },
+    "12585": {
+      "rostered": 3.1,
+      "started": 0.4
+    },
+    "12588": {
+      "rostered": 4.9,
+      "started": 2.2
+    },
     "12591": {
-      "rostered": 34.3,
-      "started": 27.4
+      "rostered": 31.7,
+      "started": 24.6
     },
     "12597": {
-      "rostered": 38.5,
-      "started": 30.6
+      "rostered": 37,
+      "started": 29.3
     },
     "12602": {
       "rostered": 1.1,
-      "started": 0.3
+      "started": 0.1
     },
     "12604": {
-      "rostered": 1.4,
-      "started": 0.5
+      "rostered": 1.5,
+      "started": 0.2
     },
     "12605": {
-      "rostered": 9.2,
-      "started": 5.3
+      "rostered": 7.3,
+      "started": 2.3
     },
     "12614": {
       "rostered": 1.5,
-      "started": 0.9
+      "started": 0.5
     },
     "12617": {
-      "rostered": 62.5,
-      "started": 50.9
+      "rostered": 63.9,
+      "started": 51.9
     },
     "12619": {
-      "rostered": 3.6,
-      "started": 2
+      "rostered": 3.9,
+      "started": 2.4
     },
     "12622": {
-      "rostered": 2.2,
-      "started": 1.4
+      "rostered": 2.3,
+      "started": 1.6
+    },
+    "12631": {
+      "rostered": 1.1,
+      "started": 0.3
     },
     "12634": {
-      "rostered": 4.6,
-      "started": 1.8
+      "rostered": 10.4,
+      "started": 3
     },
     "12640": {
-      "rostered": 3.1,
-      "started": 0.8
+      "rostered": 2.5,
+      "started": 0.9
     },
     "12646": {
-      "rostered": 17,
-      "started": 11.2
+      "rostered": 18.2,
+      "started": 13.2
     },
     "12648": {
-      "rostered": 2.7,
+      "rostered": 2.3,
       "started": 0.3
     },
     "12652": {
-      "rostered": 2.1,
-      "started": 0.6
+      "rostered": 1.9,
+      "started": 1.3
     },
     "12654": {
-      "rostered": 1.2,
+      "rostered": 1.8,
+      "started": 0.8
+    },
+    "12668": {
+      "rostered": 1.1,
       "started": 0.5
     },
     "12711": {
-      "rostered": 19.7,
-      "started": 12.1
+      "rostered": 16.4,
+      "started": 9.1
     },
     "12713": {
-      "rostered": 11.8,
-      "started": 10.8
+      "rostered": 11.4,
+      "started": 10.5
     },
     "12718": {
-      "rostered": 9.2,
-      "started": 2.6
+      "rostered": 35.8,
+      "started": 12.9
     },
     "12961": {
-      "rostered": 2.2,
-      "started": 1.9
+      "rostered": 3,
+      "started": 2.4
     },
     "12978": {
-      "rostered": 14.5,
-      "started": 9.6
+      "rostered": 14.2,
+      "started": 10.2
     },
     "13150": {
-      "rostered": 19.4,
-      "started": 5.5
+      "rostered": 16.3,
+      "started": 3.6
     },
     "13264": {
-      "rostered": 2.6,
-      "started": 0.6
+      "rostered": 2.5,
+      "started": 0.7
     },
     "13268": {
-      "rostered": 2.1,
+      "rostered": 1.9,
       "started": 0.1
     },
     "13269": {
-      "rostered": 10.3,
-      "started": 1.9
+      "rostered": 25.7,
+      "started": 5.9
     },
-    "13272": {
-      "rostered": 2.5,
+    "13270": {
+      "rostered": 1.5,
       "started": 0.2
     },
+    "13272": {
+      "rostered": 5.4,
+      "started": 1.2
+    },
     "13274": {
-      "rostered": 67.8,
-      "started": 21.5
+      "rostered": 69.2,
+      "started": 31.2
     },
     "13275": {
       "rostered": 2,
       "started": 0.1
     },
     "13276": {
-      "rostered": 79.3,
-      "started": 47.8
+      "rostered": 78.6,
+      "started": 44.3
     },
     "13278": {
       "rostered": 1.3,
       "started": 0.1
     },
     "13279": {
-      "rostered": 86.7,
-      "started": 25
+      "rostered": 87.7,
+      "started": 38.1
     },
     "13281": {
-      "rostered": 65.6,
-      "started": 15.7
+      "rostered": 66.3,
+      "started": 16
     },
     "13285": {
-      "rostered": 11.6,
-      "started": 2.3
+      "rostered": 10.9,
+      "started": 2.2
     },
     "13286": {
-      "rostered": 73.3,
-      "started": 33.9
+      "rostered": 73.7,
+      "started": 34.8
     },
     "13287": {
-      "rostered": 86.2,
-      "started": 13.6
+      "rostered": 84.1,
+      "started": 11.5
     },
     "13288": {
-      "rostered": 4.4,
+      "rostered": 4,
       "started": 0.2
     },
     "13293": {
-      "rostered": 20.3,
-      "started": 2.5
+      "rostered": 18.2,
+      "started": 2.4
     },
     "13294": {
-      "rostered": 61.8,
-      "started": 15.5
+      "rostered": 58.8,
+      "started": 10.2
     },
     "13296": {
-      "rostered": 50.4,
-      "started": 22.2
+      "rostered": 50.8,
+      "started": 21.1
+    },
+    "13297": {
+      "rostered": 4.6,
+      "started": 0.7
     },
     "13298": {
-      "rostered": 75.8,
-      "started": 45.4
+      "rostered": 78.1,
+      "started": 50.3
     },
     "13301": {
-      "rostered": 41.7,
-      "started": 14.7
+      "rostered": 38.6,
+      "started": 13
     },
     "13302": {
       "rostered": 1,
       "started": 0
     },
     "13305": {
-      "rostered": 49.7,
-      "started": 9.7
+      "rostered": 39.6,
+      "started": 6.8
     },
     "13311": {
-      "rostered": 6.4,
-      "started": 1
+      "rostered": 5.5,
+      "started": 0.8
     },
     "13317": {
-      "rostered": 5.1,
-      "started": 0.5
+      "rostered": 4.2,
+      "started": 0.4
     },
     "13320": {
-      "rostered": 4.4,
+      "rostered": 4.1,
       "started": 0.2
     },
     "13330": {
-      "rostered": 19.9,
-      "started": 4.1
+      "rostered": 18.7,
+      "started": 3.8
+    },
+    "13333": {
+      "rostered": 1.6,
+      "started": 0.3
     },
     "13337": {
-      "rostered": 44.8,
-      "started": 9.7
+      "rostered": 44.6,
+      "started": 9.8
     },
     "13340": {
-      "rostered": 15.4,
-      "started": 7.7
+      "rostered": 14.8,
+      "started": 6.4
     },
     "13341": {
-      "rostered": 8.5,
-      "started": 3.5
+      "rostered": 7.2,
+      "started": 2.9
     },
     "13345": {
-      "rostered": 87.6,
-      "started": 31.4
+      "rostered": 87.8,
+      "started": 13.5
     },
     "13346": {
-      "rostered": 77.2,
-      "started": 44.9
+      "rostered": 78.9,
+      "started": 47.4
     },
     "13347": {
-      "rostered": 2.2,
+      "rostered": 2.1,
       "started": 0.1
     },
     "13349": {
-      "rostered": 3.1,
+      "rostered": 2.9,
       "started": 0.2
     },
-    "13350": {
-      "rostered": 1.2,
-      "started": 0.4
-    },
-    "13353": {
-      "rostered": 1,
-      "started": 0
-    },
     "13359": {
-      "rostered": 2,
-      "started": 0.5
+      "rostered": 2.5,
+      "started": 0.7
     },
     "13360": {
-      "rostered": 6.1,
-      "started": 2.4
+      "rostered": 5.5,
+      "started": 2.5
+    },
+    "13362": {
+      "rostered": 1,
+      "started": 0.3
     },
     "13363": {
-      "rostered": 35.2,
-      "started": 24.7
+      "rostered": 42,
+      "started": 31.9
     },
     "13364": {
-      "rostered": 3.9,
-      "started": 0.8
+      "rostered": 3.6,
+      "started": 0.9
     },
     "13365": {
-      "rostered": 23.2,
-      "started": 9.5
-    },
-    "13366": {
-      "rostered": 1,
-      "started": 0.1
+      "rostered": 23.3,
+      "started": 11.7
     },
     "13368": {
-      "rostered": 5.6,
-      "started": 2
+      "rostered": 5.4,
+      "started": 2.5
     },
     "13369": {
-      "rostered": 2.8,
-      "started": 1.6
+      "rostered": 3.1,
+      "started": 1.7
     },
     "13370": {
-      "rostered": 1.5,
-      "started": 0.5
+      "rostered": 2.1,
+      "started": 0.7
     },
     "13371": {
-      "rostered": 51.9,
-      "started": 38.1
+      "rostered": 44.1,
+      "started": 24.8
     },
     "13372": {
-      "rostered": 1.1,
+      "rostered": 1.4,
       "started": 0.4
     },
     "13374": {
-      "rostered": 1.3,
-      "started": 0.2
+      "rostered": 1.5,
+      "started": 0.4
     },
     "13375": {
-      "rostered": 62.4,
-      "started": 47.3
+      "rostered": 62.7,
+      "started": 46.6
     },
     "13376": {
-      "rostered": 58.8,
-      "started": 47.6
+      "rostered": 62.1,
+      "started": 49.1
     },
     "13377": {
-      "rostered": 61.3,
-      "started": 50.5
+      "rostered": 69.7,
+      "started": 57.4
     },
     "13379": {
-      "rostered": 34.1,
-      "started": 18
+      "rostered": 26,
+      "started": 8.2
     },
     "13381": {
-      "rostered": 13.2,
-      "started": 9.2
+      "rostered": 11.9,
+      "started": 8.3
+    },
+    "13382": {
+      "rostered": 1,
+      "started": 0.3
     },
     "13384": {
-      "rostered": 9,
-      "started": 3.6
+      "rostered": 8.4,
+      "started": 3.5
     },
     "13385": {
-      "rostered": 8.4,
+      "rostered": 7.5,
       "started": 2.4
     },
     "13387": {
-      "rostered": 1.4,
+      "rostered": 1.7,
       "started": 0.2
     },
     "13388": {
-      "rostered": 9.8,
-      "started": 4
+      "rostered": 9.6,
+      "started": 5
     },
     "13389": {
-      "rostered": 3.4,
-      "started": 0.9
+      "rostered": 4,
+      "started": 1
     },
     "13390": {
-      "rostered": 3.2,
-      "started": 1.1
+      "rostered": 3.3,
+      "started": 0.8
     },
     "13391": {
-      "rostered": 1.5,
-      "started": 0.4
+      "rostered": 2,
+      "started": 0.6
     },
     "13395": {
       "rostered": 6.9,
       "started": 2.1
     },
     "13397": {
-      "rostered": 1.3,
-      "started": 0.4
-    },
-    "13398": {
-      "rostered": 1.7,
+      "rostered": 1.9,
       "started": 0.7
     },
+    "13398": {
+      "rostered": 2.1,
+      "started": 0.9
+    },
     "13402": {
-      "rostered": 1.6,
+      "rostered": 1.5,
       "started": 0.1
     },
     "13405": {
-      "rostered": 2.9,
+      "rostered": 2.8,
       "started": 0.2
     },
     "13406": {
-      "rostered": 3.6,
+      "rostered": 3.3,
       "started": 0.9
     },
     "13411": {
@@ -2611,184 +2676,196 @@
       "started": 0.1
     },
     "13413": {
-      "rostered": 5.1,
+      "rostered": 4.6,
       "started": 0.5
     },
     "13414": {
-      "rostered": 42.4,
-      "started": 5.3
+      "rostered": 40.7,
+      "started": 5.1
     },
     "13417": {
-      "rostered": 22.6,
+      "rostered": 22.3,
       "started": 0.3
     },
     "13421": {
-      "rostered": 4,
-      "started": 1.1
+      "rostered": 3.8,
+      "started": 1.2
     },
     "13424": {
-      "rostered": 44.5,
-      "started": 5.7
+      "rostered": 32.1,
+      "started": 4.4
     },
     "13425": {
-      "rostered": 1.1,
+      "rostered": 1,
       "started": 0.1
     },
     "13453": {
-      "rostered": 41.4,
-      "started": 32.6
+      "rostered": 41.7,
+      "started": 34.1
     },
     "13457": {
-      "rostered": 1.8,
-      "started": 1
+      "rostered": 1.7,
+      "started": 0.9
+    },
+    "13458": {
+      "rostered": 1.5,
+      "started": 0.7
     },
     "13482": {
-      "rostered": 11.6,
-      "started": 8.5
+      "rostered": 11.3,
+      "started": 8.3
     },
     "13488": {
-      "rostered": 1.5,
+      "rostered": 1.7,
       "started": 0.3
     },
     "13508": {
-      "rostered": 1.7,
-      "started": 0.7
+      "rostered": 1.1,
+      "started": 0.6
+    },
+    "13517": {
+      "rostered": 1.1,
+      "started": 0.5
     },
     "13545": {
-      "rostered": 29.8,
-      "started": 25.9
+      "rostered": 29.1,
+      "started": 25.1
     },
     "13555": {
       "rostered": 1.2,
-      "started": 0.6
+      "started": 0.8
     },
     "13833": {
-      "rostered": 3.3,
-      "started": 2.5
+      "rostered": 15.3,
+      "started": 13.5
     },
     "13968": {
-      "rostered": 16.5,
-      "started": 14.6
+      "rostered": 14,
+      "started": 12.2
     },
     "HOU": {
-      "rostered": 88.9,
-      "started": 77.3
+      "rostered": 89.8,
+      "started": 78.6
     },
     "NE": {
-      "rostered": 62.3,
-      "started": 52.5
+      "rostered": 53.2,
+      "started": 44.2
     },
     "BAL": {
-      "rostered": 39.5,
-      "started": 33
+      "rostered": 71.1,
+      "started": 60.8
     },
     "PIT": {
-      "rostered": 66.8,
-      "started": 24
+      "rostered": 66.6,
+      "started": 30
     },
     "IND": {
-      "rostered": 5.7,
-      "started": 4.1
+      "rostered": 25.5,
+      "started": 22.3
     },
     "SEA": {
-      "rostered": 96.2,
-      "started": 92.7
+      "rostered": 96.6,
+      "started": 93.1
     },
     "LV": {
-      "rostered": 8.6,
-      "started": 5.5
+      "rostered": 8,
+      "started": 5.3
     },
     "NYJ": {
-      "rostered": 6.2,
-      "started": 4.2
-    },
-    "DAL": {
-      "rostered": 12.3,
-      "started": 9.9
-    },
-    "WAS": {
-      "rostered": 15,
-      "started": 10.3
-    },
-    "LAC": {
-      "rostered": 4.9,
+      "rostered": 5.3,
       "started": 3.4
     },
+    "DAL": {
+      "rostered": 9.9,
+      "started": 7.5
+    },
+    "WAS": {
+      "rostered": 15.6,
+      "started": 11.5
+    },
+    "LAC": {
+      "rostered": 4.7,
+      "started": 3.2
+    },
     "TB": {
-      "rostered": 34.6,
-      "started": 22.1
+      "rostered": 32.5,
+      "started": 12.5
     },
     "CLE": {
-      "rostered": 31.2,
-      "started": 25.6
+      "rostered": 27.6,
+      "started": 22.2
     },
     "ATL": {
-      "rostered": 3.8,
-      "started": 2.7
+      "rostered": 3.1,
+      "started": 2.1
     },
     "CAR": {
-      "rostered": 6.9,
-      "started": 5.1
+      "rostered": 6.7,
+      "started": 5
     },
     "JAX": {
-      "rostered": 84.7,
-      "started": 79.9
+      "rostered": 91.1,
+      "started": 85.5
     },
     "LAR": {
-      "rostered": 81.5,
-      "started": 74.8
+      "rostered": 89.9,
+      "started": 83.4
     },
     "NO": {
-      "rostered": 36.1,
-      "started": 32.9
+      "rostered": 23.6,
+      "started": 20.9
     },
     "GB": {
-      "rostered": 23.3,
-      "started": 19.6
+      "rostered": 56.1,
+      "started": 47.9
+    },
+    "MIA": {
+      "rostered": 2.3,
+      "started": 1.9
     },
     "DET": {
-      "rostered": 41.3,
-      "started": 35
+      "rostered": 31.5,
+      "started": 25.8
     },
     "BUF": {
-      "rostered": 17.5,
-      "started": 14.3
+      "rostered": 32.4,
+      "started": 27.2
     },
     "PHI": {
-      "rostered": 33.3,
-      "started": 28.6
+      "rostered": 29.6,
+      "started": 23
     },
     "SF": {
-      "rostered": 41.3,
-      "started": 30.7
+      "rostered": 39.9,
+      "started": 28.6
     },
     "NYG": {
-      "rostered": 25,
-      "started": 22.8
+      "rostered": 22.9,
+      "started": 20.7
     },
     "TEN": {
-      "rostered": 1.9,
+      "rostered": 1.8,
       "started": 0.8
     },
     "CHI": {
-      "rostered": 58.7,
-      "started": 44.8
+      "rostered": 38.5,
+      "started": 17.9
     },
     "CIN": {
-      "rostered": 52.4,
-      "started": 43.3
+      "rostered": 43.1,
+      "started": 35
     },
     "DEN": {
-      "rostered": 85.5,
-      "started": 69.9
+      "rostered": 73.2,
+      "started": 41.4
     },
     "KC": {
-      "rostered": 72.7,
-      "started": 66.6
+      "rostered": 65.3,
+      "started": 58.5
     },
     "MIN": {
       "rostered": 88.6,
-      "started": 67.9
+      "started": 68.9
     }
   }
 }
