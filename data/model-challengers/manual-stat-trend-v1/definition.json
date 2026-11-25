@@ -1,24 +1,18 @@
 {
   "source": "The Fantasy Arsenal locked manual stat-trend tuner",
-  "generated_at": "2026-10-25T06:16:12.621Z",
+  "generated_at": "2026-10-25T23:10:41.702Z",
   "version": "manual-stat-trend-v1",
   "model_type": "projection_experiment_suite",
-  "settings_sha256": "5dbc84720ce23015292a50f846e63b3ee3b42e61410ec5dfe1a910d53b70f6b8",
+  "settings_sha256": "475f634e59afb7593a58077e1d6d55dbe3e8c9cf4c435ef38845578874a80b80",
   "base_calibration_sha256": "87290e4339b9ad37e9098abb98fffdca2299d495e52d3b9df20607bfc46eb971",
-  "implementation_sha256": "f43f7c51adaf0f6ee829702401f5429fff0ebe62754f0a87923b52da931c1e02",
-  "regime_implementation_sha256": "00bdfde2505bc6fa99a310a580bf09b054688337f61090f9013676a5bf016dbb",
+  "implementation_sha256": "52f0d0116faf8fed0038bf74bf7d1f753aacfb197a335388db9e20fba5c5eeca",
   "forward_test_required_weeks": 4,
   "minimum_forward_player_games": 600,
   "site_exposed": false,
   "arms": [
     "incumbent",
-    "in_season_adaptation",
     "manual_stat_trend",
-    "combined_adaptation_manual",
-    "dynamic_rest_of_season",
-    "dynamic_ros_in_season_adaptation",
-    "dynamic_ros_manual_stat_trend",
-    "dynamic_ros_combined"
+    "combined_adaptation_manual"
   ],
   "group_minimum_ppr": 1,
   "settings_by_position": {
@@ -85,74 +79,8 @@
       }
     }
   },
-  "dynamic_rest_of_season": {
-    "version": "dynamic-rest-of-season-v1",
-    "minimum_games": 2,
-    "purpose": "Replace a stale fixed full-season budget with a progressively updated per-game stat expectation while heavily regressing touchdowns.",
-    "settings_by_position": {
-      "QB": {
-        "enabled": true,
-        "application_strength": 0.8,
-        "volume_prior_games": 5,
-        "efficiency_prior_games": 16,
-        "touchdown_prior_games": 28,
-        "volume_strength": 0.55,
-        "efficiency_strength": 0.25,
-        "touchdown_strength": 0.12,
-        "maximum_volume_shift": 0.3,
-        "maximum_efficiency_rate_shift": 0.12,
-        "maximum_touchdown_rate_shift": 0.12,
-        "maximum_total_shift": 0.5
-      },
-      "RB": {
-        "enabled": true,
-        "application_strength": 0.8,
-        "volume_prior_games": 4,
-        "efficiency_prior_games": 16,
-        "touchdown_prior_games": 28,
-        "volume_strength": 0.7,
-        "efficiency_strength": 0.3,
-        "touchdown_strength": 0.12,
-        "maximum_volume_shift": 0.4,
-        "maximum_efficiency_rate_shift": 0.14,
-        "maximum_touchdown_rate_shift": 0.12,
-        "maximum_total_shift": 0.65
-      },
-      "WR": {
-        "enabled": true,
-        "application_strength": 0.8,
-        "volume_prior_games": 4,
-        "efficiency_prior_games": 16,
-        "touchdown_prior_games": 28,
-        "volume_strength": 0.75,
-        "efficiency_strength": 0.35,
-        "touchdown_strength": 0.12,
-        "maximum_volume_shift": 0.4,
-        "maximum_efficiency_rate_shift": 0.16,
-        "maximum_touchdown_rate_shift": 0.12,
-        "maximum_total_shift": 0.75
-      },
-      "TE": {
-        "enabled": true,
-        "application_strength": 0.8,
-        "volume_prior_games": 4,
-        "efficiency_prior_games": 16,
-        "touchdown_prior_games": 28,
-        "volume_strength": 0.7,
-        "efficiency_strength": 0.3,
-        "touchdown_strength": 0.12,
-        "maximum_volume_shift": 0.4,
-        "maximum_efficiency_rate_shift": 0.14,
-        "maximum_touchdown_rate_shift": 0.12,
-        "maximum_total_shift": 0.65
-      },
-      "K": {
-        "enabled": false
-      }
-    }
-  },
   "manual_stat_trend": {
-    "locked_at": "2026-10-25T06:16:12.621Z",
+    "locked_at": "2026-10-25T23:10:41.702Z",
     "settings": {
       "_instructions": [
         "Edit this file, save it, then run: npm run tune",
@@ -524,7 +452,7 @@
     ],
     "baseline_season": 2026,
     "baseline_source": "earliest exact immutable pre-kickoff Safe stat line available for each player",
-    "baseline_player_count": 599,
+    "baseline_player_count": 603,
     "baseline_by_player": {
       "19": {
         "week": 1,
@@ -1637,6 +1565,15 @@
           "xpm": 2.524,
           "xpa": 2.591,
           "kick_pts": 7.802
+        }
+      },
+      "5374": {
+        "week": 6,
+        "stat_line": {
+          "rec_tgt": 0.109,
+          "rec": 0.07,
+          "rec_yd": 0.84,
+          "rec_td": 0.003
         }
       },
       "5409": {
@@ -2906,6 +2843,15 @@
           "rec_yd": 3.954,
           "rec_td": 0.067,
           "fum_lost": 0.001
+        }
+      },
+      "7865": {
+        "week": 6,
+        "stat_line": {
+          "rec_tgt": 0.066,
+          "rec": 0.043,
+          "rec_yd": 0.924,
+          "rec_td": 0.005
         }
       },
       "7891": {
@@ -4371,6 +4317,15 @@
           "kick_pts": 6.162
         }
       },
+      "10994": {
+        "week": 6,
+        "stat_line": {
+          "rec_tgt": 0.229,
+          "rec": 0.179,
+          "rec_yd": 0.794,
+          "rec_td": 0.013
+        }
+      },
       "11034": {
         "week": 1,
         "stat_line": {
@@ -4863,6 +4818,17 @@
           "rec_yd": 9.263,
           "rec_td": 0.045,
           "fum_lost": 0.055
+        }
+      },
+      "11582": {
+        "week": 6,
+        "stat_line": {
+          "rush_att": 2.255,
+          "rush_yd": 7.174,
+          "rec_tgt": 0.443,
+          "rec": 0.274,
+          "rec_yd": 1.107,
+          "fum_lost": 0.079
         }
       },
       "11583": {
@@ -7296,5 +7262,5 @@
     "only_pre_kickoff_snapshots_are_eligible": true,
     "promotion_is_automatic": false
   },
-  "definition_sha256": "1c7524804ea79fe55add8324291be89e7eb621860018634c071d2adcbe33e9ed"
+  "definition_sha256": "62ea9cf0946c8b557dc157ad6a34fa1d2fae7d6952b4793993d7f722c6c90b3c"
 }

@@ -1,5 +1,3 @@
-import { applyRegimeAwareCombined } from "./regimeAwareCombined.mjs";
-
 const finite = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -238,6 +236,84 @@ function dynamicRestOfSeasonAnchor(player, definition) {
       field_factors: fieldFactors,
     },
   };
+}
+
+function hybridBlend(original, corrected, weight) {
+  return Object.fromEntries(["ppr", "half", "std"].map((format) => {
+    const base = finite(original?.[format]);
+    return [format, round(base + (finite(corrected?.[format], base) - base) * clamp(weight, 0, 1), 3)];
+  }));
+}
+
+function sustainableBreakout(player, definition, dynamicContext) {
+  const baseline = definition.manual_stat_trend?.baseline_by_player?.[String(player.player_id)]?.stat_line;
+  const frozen = player.forecast?.stat_line || {};
+  const actual = player.actual_stat_line || {};
+  const fields = adaptationFields[player.position];
+  const games = finite(player.completed_games);
+  if (!baseline || !fields || games < 4 || isUnavailableForPlay(player))
+    return { confirmed: false, reason: "insufficient_breakout_evidence" };
+  const opportunity = (line) => fields.volume.reduce((sum, field) => sum + finite(line?.[field]), 0);
+  const baselineOpportunity = opportunity(baseline);
+  const actualAverage = Object.fromEntries(Object.entries(actual).map(([field, value]) => [field, finite(value) / Math.max(1, games)]));
+  const opportunityRatio = baselineOpportunity > 0 ? opportunity(actualAverage) / baselineOpportunity : 1;
+  const nonTouchdownScore = (line) => scoreStatLine({ ...line, pass_td: 0, rush_td: 0, rec_td: 0 }, "ppr");
+  const baselineNonTd = nonTouchdownScore(baseline);
+  const nonTouchdownRatio = baselineNonTd > 0 ? nonTouchdownScore(actualAverage) / baselineNonTd : 1;
+  const baselinePoints = scoreStatLine(baseline, "ppr");
+  const frozenPoints = scoreStatLine(frozen, "ppr");
+  const anchorSuppression = baselinePoints > 0 ? 1 - frozenPoints / baselinePoints : 0;
+  const features = player.learned_role?.features || {};
+  const snapShare = Number(features.snap_share);
+  const snapTrend = Number(features.snap_trend);
+  const snapConfirmed = Number.isFinite(snapShare)
+    ? snapShare >= 0.65 && (!Number.isFinite(snapTrend) || snapTrend >= -0.1)
+    : finite(player.depth_chart_order, 99) <= 1;
+  const confirmed =
+    dynamicContext?.factor > 1.02 &&
+    opportunityRatio >= 1.2 &&
+    nonTouchdownRatio >= 1.15 &&
+    anchorSuppression >= 0.1 &&
+    snapConfirmed;
+  return {
+    confirmed,
+    reason: confirmed ? "sustainable_role_breakout" : "ordinary_upward_adjustment",
+    opportunity_ratio: round(opportunityRatio, 5),
+    non_touchdown_ratio: round(nonTouchdownRatio, 5),
+    anchor_suppression: round(anchorSuppression, 5),
+    snap_share: Number.isFinite(snapShare) ? round(snapShare, 5) : null,
+    snap_trend: Number.isFinite(snapTrend) ? round(snapTrend, 5) : null,
+  };
+}
+
+function hybridCandidates(player, definition, original, corrected, dynamicContext) {
+  const factor = finite(dynamicContext?.factor, 1);
+  const downward = factor < 0.98;
+  const upward = factor > 1.02;
+  const breakout = sustainableBreakout(player, definition, dynamicContext);
+  const weight = (upWeight, positionSelective = false, breakoutAware = false) => {
+    if (positionSelective && !new Set(["QB", "WR"]).has(player.position)) return 0;
+    if (downward) return 1;
+    if (!upward) return 0;
+    if (breakoutAware && breakout.confirmed) return 0.75;
+    return upWeight;
+  };
+  const definitions = {
+    hybrid_mae_conservative: weight(0),
+    hybrid_balanced: weight(0.4),
+    hybrid_position_selective: weight(0.4, true),
+    hybrid_breakout_aware: weight(0.4, false, true),
+  };
+  return Object.fromEntries(Object.entries(definitions).map(([name, blendWeight]) => [name, {
+    projections: hybridBlend(original, corrected, blendWeight),
+    context: {
+      triggered: blendWeight > 0 && Math.abs(factor - 1) > 0.02,
+      blend_weight: blendWeight,
+      direction: downward ? "down" : upward ? "up" : "deadband",
+      reason: breakout.confirmed && blendWeight === 0.75 ? breakout.reason : downward ? "downward_correction" : upward ? "bounded_upward_correction" : "deadband",
+      ...breakout,
+    },
+  }]));
 }
 
 function adaptCurrentSeasonRole(player, settings = {}) {
@@ -606,7 +682,7 @@ export function buildProjectionShadowArms(players, definition) {
     }
   }
 
-  return players.map((player) => {
+  const modeledPlayers = players.map((player) => {
     const key = player.player_id || `${player.name}|${player.position}`;
     const incumbent = { ...(player.forecast?.projections || {}) };
     const teamFactor = teamVolume.get(key) || 1;
@@ -643,45 +719,6 @@ export function buildProjectionShadowArms(players, definition) {
           )
         : manualTrend.projections
       : null;
-    const dynamicRos = dynamicRestOfSeasonAnchor(player, definition);
-    const correctedPlayer = {
-      ...player,
-      forecast: {
-        ...player.forecast,
-        projections: dynamicRos.projections,
-        stat_line: dynamicRos.stat_line,
-      },
-    };
-    const correctedAdaptation = adaptationForCombination
-      ? adaptCurrentSeasonRole(correctedPlayer, {
-          ...(definition.in_season_adaptation || {}),
-          ...(definition.in_season_adaptation?.arms?.in_season_adaptation || {}),
-          ...(definition.in_season_adaptation?.arms?.in_season_adaptation?.settings_by_position?.[player.position] || {}),
-        })
-      : null;
-    const correctedManual = definition.manual_stat_trend
-      ? manualStatTrendProjection(correctedPlayer, definition, teamFactor)
-      : null;
-    const correctedCombined = correctedManual && correctedAdaptation
-      ? combinePositions.has(player.position)
-        ? combineProjectionDeltas(
-            dynamicRos.projections,
-            correctedAdaptation.projections,
-            correctedManual.projections,
-            finite(definition.manual_stat_trend?.settings?.positions?.[player.position]?.max_total_move_pct, 0.4),
-          )
-        : correctedManual.projections
-      : null;
-    const regimeAwareCombined = combinedAdaptationManual && manualTrend && adaptationForCombination && definition.regime_aware_combined
-      ? applyRegimeAwareCombined({
-          player,
-          incumbent,
-          manual: manualTrend.projections,
-          adaptation: adaptationForCombination.projections,
-          combined: combinedAdaptationManual,
-          calibration: definition.regime_aware_combined,
-        })
-      : null;
     return {
       ...player,
       forecast_arms: {
@@ -697,11 +734,6 @@ export function buildProjectionShadowArms(players, definition) {
         ),
         ...(manualTrend ? { manual_stat_trend: manualTrend.projections } : {}),
         ...(combinedAdaptationManual ? { combined_adaptation_manual: combinedAdaptationManual } : {}),
-        ...(definition.dynamic_rest_of_season ? { dynamic_rest_of_season: dynamicRos.projections } : {}),
-        ...(correctedAdaptation ? { dynamic_ros_in_season_adaptation: correctedAdaptation.projections } : {}),
-        ...(correctedManual ? { dynamic_ros_manual_stat_trend: correctedManual.projections } : {}),
-        ...(correctedCombined ? { dynamic_ros_combined: correctedCombined } : {}),
-        ...(regimeAwareCombined ? { regime_aware_combined: regimeAwareCombined.projections } : {}),
       },
       shadow_context: {
         team_volume_factor: round(teamFactor, 5),
@@ -721,12 +753,17 @@ export function buildProjectionShadowArms(players, definition) {
               : "manual-only passthrough where stacking did not improve retrospective accuracy",
           },
         } : {}),
-        ...(definition.dynamic_rest_of_season ? { dynamic_rest_of_season: dynamicRos.context } : {}),
-        ...(correctedAdaptation ? { dynamic_ros_in_season_adaptation: correctedAdaptation.context } : {}),
-        ...(correctedManual ? { dynamic_ros_manual_stat_trend: correctedManual.context } : {}),
-        ...(correctedCombined ? { dynamic_ros_combined: { triggered: dynamicRos.context.triggered || correctedManual.context.triggered || correctedAdaptation.context.triggered } } : {}),
-        ...(regimeAwareCombined ? { regime_aware_combined: regimeAwareCombined.context } : {}),
       },
     };
   });
+  const enabledArms = Array.isArray(definition.arms) ? new Set(definition.arms) : null;
+  return modeledPlayers.map((player) => ({
+    ...player,
+    forecast_arms: enabledArms
+      ? Object.fromEntries(Object.entries(player.forecast_arms || {}).filter(([arm]) => enabledArms.has(arm)))
+      : player.forecast_arms,
+    shadow_context: enabledArms
+      ? Object.fromEntries(Object.entries(player.shadow_context || {}).filter(([arm]) => enabledArms.has(arm)))
+      : player.shadow_context,
+  }));
 }

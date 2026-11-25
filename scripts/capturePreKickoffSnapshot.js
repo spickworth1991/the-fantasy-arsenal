@@ -84,7 +84,6 @@ console.log(
 );
 const calibrationFile = path.join(root, "public", "stats", "projections", "model-calibration.json");
 const shadowImplementationFile = path.join(root, "scripts", "lib", "projectionShadowArms.mjs");
-const regimeImplementationFile = path.join(root, "scripts", "lib", "regimeAwareCombined.mjs");
 const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
   const definition = readJson(candidate.definition);
   if (!definition) {
@@ -105,10 +104,6 @@ const eligibleShadowCandidates = shadowCandidates.filter((candidate) => {
   }
   if (definition.implementation_sha256 && (!fs.existsSync(shadowImplementationFile) || !frozenTextHashMatches(shadowImplementationFile, definition.implementation_sha256))) {
     console.warn(`Skipping shadow '${candidate.name}': its implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
-    return false;
-  }
-  if (definition.regime_implementation_sha256 && (!fs.existsSync(regimeImplementationFile) || !frozenTextHashMatches(regimeImplementationFile, definition.regime_implementation_sha256))) {
-    console.warn(`Skipping shadow '${candidate.name}': its regime-aware implementation changed after the definition was frozen. Freeze and audit a new definition before resuming this arm.`);
     return false;
   }
   return true;
@@ -147,5 +142,8 @@ for (const candidate of eligibleShadowCandidates) {
   if (evaluationResult.status !== 0)
     console.warn(`Shadow '${candidate.name}' was captured, but its report failed to refresh. The frozen snapshot remains available for a later evaluation.`);
 }
+const positionLabCapture = runStep("capturePositionModelLab.mjs", [`--season=${season}`]);
+if (positionLabCapture.status !== 0)
+  console.warn("The incumbent snapshot completed, but the private Position Model Lab snapshot failed. Published projections were not affected.");
 if (shadowCandidates.length && !eligibleShadowCandidates.length)
   console.warn("No frozen shadow definition matched the current model inputs. Incumbent pre-kickoff capture completed without shadow data.");

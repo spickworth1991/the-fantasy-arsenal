@@ -13,7 +13,7 @@ const challengers = fs.existsSync(challengerRoot)
       if (!fs.existsSync(definitionFile)) return [];
       try {
         const definition = JSON.parse(fs.readFileSync(definitionFile, "utf8"));
-        return definition.local_only === true ? [] : [entry.name];
+        return definition.local_only === true ? [] : [{ name: entry.name, modelType: definition.model_type }];
       } catch {
         console.warn(`Skipping '${entry.name}': definition.json is unreadable.`);
         return [];
@@ -28,7 +28,9 @@ if (!challengers.length) {
 
 let failed = false;
 for (const challenger of challengers) {
-  const args = ["--no-warnings", path.join(root, "scripts", "evaluateProjectionChallenger.js"), `--challenger=${challenger}`];
+  const evaluator = challenger.modelType === "private_position_model_lab" ? "evaluatePositionModelLab.mjs" : "evaluateProjectionChallenger.js";
+  const args = ["--no-warnings", path.join(root, "scripts", evaluator)];
+  if (evaluator === "evaluateProjectionChallenger.js") args.push(`--challenger=${challenger.name}`);
   if (seasonArgument) args.push(seasonArgument);
   const result = spawnSync(process.execPath, args, { cwd: root, stdio: "inherit" });
   if (result.status !== 0) failed = true;

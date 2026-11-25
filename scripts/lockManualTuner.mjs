@@ -9,10 +9,8 @@ const settingsFile = path.join(root, "data", "model-tuning", "stat-trend-setting
 const lockFile = path.join(root, "scripts", "_stat_backtests", "replays", "manual-stat-tune", "locked-candidate.json");
 const challengerDirectory = path.join(root, "data", "model-challengers", "manual-stat-trend-v1");
 const definitionFile = path.join(challengerDirectory, "definition.json");
-const regimeCalibrationFile = path.join(challengerDirectory, "regime-calibration.json");
 const calibrationFile = path.join(root, "public", "stats", "projections", "model-calibration.json");
 const implementationFile = path.join(root, "scripts", "lib", "projectionShadowArms.mjs");
-const regimeImplementationFile = path.join(root, "scripts", "lib", "regimeAwareCombined.mjs");
 const settingsText = fs.readFileSync(settingsFile, "utf8");
 const season = new Date().getUTCFullYear();
 const accuracyDirectory = path.join(root, "public", "stats", "projections", String(season), "accuracy-results");
@@ -44,10 +42,6 @@ fs.mkdirSync(path.dirname(lockFile), { recursive: true });
 fs.writeFileSync(lockFile, JSON.stringify(document, null, 2));
 const settings = document.settings;
 const teamVolume = settings.team_volume_reconciliation || {};
-const regimeCalibration = fs.existsSync(regimeCalibrationFile)
-  ? JSON.parse(fs.readFileSync(regimeCalibrationFile, "utf8"))
-  : null;
-const regimeEnabled = regimeCalibration?.eligible_for_forward_test === true;
 const definition = {
   source: "The Fantasy Arsenal locked manual stat-trend tuner",
   generated_at: document.locked_at,
@@ -56,20 +50,13 @@ const definition = {
   settings_sha256: document.settings_sha256,
   base_calibration_sha256: canonicalFileSha256(calibrationFile),
   implementation_sha256: canonicalFileSha256(implementationFile),
-  regime_implementation_sha256: canonicalFileSha256(regimeImplementationFile),
   forward_test_required_weeks: 4,
   minimum_forward_player_games: 600,
   site_exposed: false,
   arms: [
     "incumbent",
-    "in_season_adaptation",
     "manual_stat_trend",
     "combined_adaptation_manual",
-    "dynamic_rest_of_season",
-    "dynamic_ros_in_season_adaptation",
-    "dynamic_ros_manual_stat_trend",
-    "dynamic_ros_combined",
-    ...(regimeEnabled ? ["regime_aware_combined"] : []),
   ],
   group_minimum_ppr: 1,
   settings_by_position: Object.fromEntries(
@@ -92,18 +79,6 @@ const definition = {
       },
     },
   },
-  dynamic_rest_of_season: {
-    version: "dynamic-rest-of-season-v1",
-    minimum_games: 2,
-    purpose: "Replace a stale fixed full-season budget with a progressively updated per-game stat expectation while heavily regressing touchdowns.",
-    settings_by_position: {
-      QB: { enabled: true, application_strength: 0.8, volume_prior_games: 5, efficiency_prior_games: 16, touchdown_prior_games: 28, volume_strength: 0.55, efficiency_strength: 0.25, touchdown_strength: 0.12, maximum_volume_shift: 0.3, maximum_efficiency_rate_shift: 0.12, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.5 },
-      RB: { enabled: true, application_strength: 0.8, volume_prior_games: 4, efficiency_prior_games: 16, touchdown_prior_games: 28, volume_strength: 0.7, efficiency_strength: 0.3, touchdown_strength: 0.12, maximum_volume_shift: 0.4, maximum_efficiency_rate_shift: 0.14, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.65 },
-      WR: { enabled: true, application_strength: 0.8, volume_prior_games: 4, efficiency_prior_games: 16, touchdown_prior_games: 28, volume_strength: 0.75, efficiency_strength: 0.35, touchdown_strength: 0.12, maximum_volume_shift: 0.4, maximum_efficiency_rate_shift: 0.16, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.75 },
-      TE: { enabled: true, application_strength: 0.8, volume_prior_games: 4, efficiency_prior_games: 16, touchdown_prior_games: 28, volume_strength: 0.7, efficiency_strength: 0.3, touchdown_strength: 0.12, maximum_volume_shift: 0.4, maximum_efficiency_rate_shift: 0.14, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.65 },
-      K: { enabled: false },
-    },
-  },
   manual_stat_trend: {
     locked_at: document.locked_at,
     settings,
@@ -113,13 +88,6 @@ const definition = {
     baseline_player_count: Object.keys(baselineByPlayer).length,
     baseline_by_player: baselineByPlayer,
   },
-  ...(regimeEnabled ? {
-    regime_aware_combined: {
-      ...regimeCalibration,
-      calibration_source: path.relative(root, regimeCalibrationFile),
-      calibration_sha256: canonicalFileSha256(regimeCalibrationFile),
-    },
-  } : {}),
   rules: {
     immutable_player_baseline: true,
     current_week_safe_line_is_adjusted: true,
@@ -137,7 +105,5 @@ console.log(`Settings SHA-256: ${document.settings_sha256}`);
 console.log(`Local lock: ${lockFile}`);
 console.log(`Automatic shadow definition: ${definitionFile}`);
 console.log(`Frozen player baselines: ${definition.manual_stat_trend.baseline_player_count}`);
-console.log(regimeEnabled
-  ? "Regime-aware combined passed its development gate and is locked as the fourth shadow arm."
-  : "Regime-aware combined is not eligible; the original and dynamic-ROS challenger arms are locked without it.");
+console.log("Active shadow arms: Arsenal Safe, Manual Stat Trend, and Original Combined.");
 console.log("Arsenal Safe remains unchanged; this challenger is capture-only until explicit promotion.");

@@ -174,11 +174,7 @@ const armDecisions = Object.fromEntries(
     .filter((arm) => arm !== "incumbent")
     .map((arm) => {
       const armMetrics = metricsByArm[arm];
-      const comparisonArm = arm === "regime_aware_combined" && metricsByArm.combined_adaptation_manual
-        ? "combined_adaptation_manual"
-        : arm.startsWith("dynamic_ros_") && metricsByArm.dynamic_rest_of_season
-          ? "dynamic_rest_of_season"
-          : "incumbent";
+      const comparisonArm = "incumbent";
       const comparisonMetrics = metricsByArm[comparisonArm];
       const maeImprovement = comparisonMetrics && armMetrics
         ? round(comparisonMetrics.mae - armMetrics.mae)
@@ -221,15 +217,11 @@ const armDecisions = Object.fromEntries(
           Math.max(0.001, affectedIncumbent.rmse)
         : null;
       const usesRoleRedistribution = ["role_redistribution", "combined"].includes(arm);
-      const isRegimeAware = arm === "regime_aware_combined";
       const pointGate = arm === "role_redistribution"
         ? affectedMaeChangeRate <= -0.01 && affectedRmseChangeRate <= 0.01
-        : isRegimeAware
-          ? maeImprovementRate >= 0.005 && rmseChangeRate <= 0.0025 && biasAbsoluteChange <= 0.1
-          : maeImprovementRate >= 0.01 && rmseChangeRate <= 0.01;
+        : maeImprovementRate >= 0.01 && rmseChangeRate <= 0.01;
       const passed =
         eligible &&
-        (!isRegimeAware || pairs.length >= requiredForwardPlayerGames) &&
         pointGate &&
         positionRegressions.length === 0 &&
         (!usesRoleRedistribution ||
@@ -310,10 +302,6 @@ const report = {
         : "keep_incumbent",
   gate: {
     minimum_mae_improvement_rate: 0.01,
-    regime_minimum_mae_improvement_rate_vs_combined: 0.005,
-    regime_maximum_rmse_deterioration_rate: 0.0025,
-    regime_maximum_absolute_bias_deterioration: 0.1,
-    regime_minimum_paired_games: requiredForwardPlayerGames,
     maximum_rmse_deterioration_rate: 0.01,
     maximum_position_mae_deterioration_rate: 0.03,
     minimum_position_sample: 200,

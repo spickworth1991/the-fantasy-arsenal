@@ -1,0 +1,1325 @@
+{
+  "challenger": "position-model-lab-v1",
+  "definition_sha256": "685d68a76948ecc069f87f168249af482b17477c74e90fabd40c8869df75feee",
+  "model_bundle_sha256": "28338b6001695e140ca7be2b7b81664b9b034e450aa2beec5c2573e2c4f51d73",
+  "generated_at": "2026-10-26T00:07:58.110Z",
+  "season": 2026,
+  "week": 7,
+  "site_exposed": false,
+  "players": [
+    {
+      "player_id": "11533",
+      "name": "Brandon Aubrey",
+      "team": "DAL",
+      "position": "K",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 10.135,
+        "manual_stat_trend": 10.135,
+        "original_combined": 10.135,
+        "bias_calibrated_manual": 10.135,
+        "residual_corrected_combined": 7.6013,
+        "k_opportunity_ridge": 6.0363,
+        "k_opportunity_ridge_calibrated": 7.5911,
+        "k_opportunity_boosted": 11.3817,
+        "k_opportunity_boosted_calibrated": 12.2142
+      }
+    },
+    {
+      "player_id": "2747",
+      "name": "Jason Myers",
+      "team": "SEA",
+      "position": "K",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 8.531,
+        "manual_stat_trend": 8.531,
+        "original_combined": 8.531,
+        "bias_calibrated_manual": 8.531,
+        "residual_corrected_combined": 6.3983,
+        "k_opportunity_ridge": 7.2625,
+        "k_opportunity_ridge_calibrated": 8.8173,
+        "k_opportunity_boosted": 9.5804,
+        "k_opportunity_boosted_calibrated": 10.4129
+      }
+    },
+    {
+      "player_id": "4227",
+      "name": "Harrison Butker",
+      "team": "KC",
+      "position": "K",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 7.222,
+        "manual_stat_trend": 7.222,
+        "original_combined": 7.222,
+        "bias_calibrated_manual": 7.222,
+        "residual_corrected_combined": 5.4165,
+        "k_opportunity_ridge": 7.4489,
+        "k_opportunity_ridge_calibrated": 9.0037,
+        "k_opportunity_boosted": 8.1104,
+        "k_opportunity_boosted_calibrated": 8.9429
+      }
+    },
+    {
+      "player_id": "4195",
+      "name": "Jake Elliott",
+      "team": "PHI",
+      "position": "K",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 6.895,
+        "manual_stat_trend": 6.895,
+        "original_combined": 6.895,
+        "bias_calibrated_manual": 6.895,
+        "residual_corrected_combined": 5.8764,
+        "k_opportunity_ridge": 8.3076,
+        "k_opportunity_ridge_calibrated": 9.8624,
+        "k_opportunity_boosted": 7.7432,
+        "k_opportunity_boosted_calibrated": 8.5757
+      }
+    },
+    {
+      "player_id": "3294",
+      "name": "Dak Prescott",
+      "team": "DAL",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 18.982,
+        "manual_stat_trend": 19.081,
+        "original_combined": 19.831,
+        "bias_calibrated_manual": 19.9126,
+        "residual_corrected_combined": 18.1058,
+        "qb_component_ridge": 9.6487,
+        "qb_component_ridge_calibrated": 10.4919,
+        "qb_component_boosted": 17.8447,
+        "qb_component_boosted_calibrated": 18.3459
+      }
+    },
+    {
+      "player_id": "4046",
+      "name": "Patrick Mahomes",
+      "team": "KC",
+      "position": "QB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 17.843,
+        "manual_stat_trend": 17.234,
+        "original_combined": 16.853,
+        "bias_calibrated_manual": 18.0656,
+        "residual_corrected_combined": 15.0033,
+        "qb_component_ridge": 9.5905,
+        "qb_component_ridge_calibrated": 10.4337,
+        "qb_component_boosted": 16.4248,
+        "qb_component_boosted_calibrated": 16.9261
+      }
+    },
+    {
+      "player_id": "4943",
+      "name": "Sam Darnold",
+      "team": "SEA",
+      "position": "QB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 17.014,
+        "manual_stat_trend": 15.421,
+        "original_combined": 14.139,
+        "bias_calibrated_manual": 14.1902,
+        "residual_corrected_combined": 13.3467,
+        "qb_component_ridge": 9.8594,
+        "qb_component_ridge_calibrated": 10.7026,
+        "qb_component_boosted": 16.132,
+        "qb_component_boosted_calibrated": 16.6332
+      }
+    },
+    {
+      "player_id": "6904",
+      "name": "Jalen Hurts",
+      "team": "PHI",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "qb_component_ridge": 0,
+        "qb_component_ridge_calibrated": 0.8432,
+        "qb_component_boosted": 0,
+        "qb_component_boosted_calibrated": 0.5012
+      }
+    },
+    {
+      "player_id": "9230",
+      "name": "Tanner McKee",
+      "team": "PHI",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.064,
+        "manual_stat_trend": 0.089,
+        "original_combined": 0.094,
+        "bias_calibrated_manual": 0.0987,
+        "residual_corrected_combined": 0.1175,
+        "qb_component_ridge": 0.032,
+        "qb_component_ridge_calibrated": 0.8752,
+        "qb_component_boosted": 0.0992,
+        "qb_component_boosted_calibrated": 0.6004
+      }
+    },
+    {
+      "player_id": "7591",
+      "name": "Justin Fields",
+      "team": "KC",
+      "position": "QB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.8,
+        "manual_stat_trend": 0.935,
+        "original_combined": 0.935,
+        "bias_calibrated_manual": 1.1688,
+        "residual_corrected_combined": 1.1688,
+        "qb_component_ridge": 1.3625,
+        "qb_component_ridge_calibrated": 2.2058,
+        "qb_component_boosted": 2.4051,
+        "qb_component_boosted_calibrated": 2.9063
+      }
+    },
+    {
+      "player_id": "5854",
+      "name": "Drew Lock",
+      "team": "SEA",
+      "position": "QB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.086,
+        "manual_stat_trend": 1.599,
+        "original_combined": 1.738,
+        "bias_calibrated_manual": 1.6087,
+        "residual_corrected_combined": 2.1725,
+        "qb_component_ridge": 0.543,
+        "qb_component_ridge_calibrated": 1.3862,
+        "qb_component_boosted": 1.6318,
+        "qb_component_boosted_calibrated": 2.133
+      }
+    },
+    {
+      "player_id": "8162",
+      "name": "Sam Howell",
+      "team": "DAL",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.635,
+        "manual_stat_trend": 0.313,
+        "original_combined": 0.313,
+        "bias_calibrated_manual": 0.3912,
+        "residual_corrected_combined": 0.3912,
+        "qb_component_ridge": 0.3175,
+        "qb_component_ridge_calibrated": 1.1607,
+        "qb_component_boosted": 0.868,
+        "qb_component_boosted_calibrated": 1.3692
+      }
+    },
+    {
+      "player_id": "11557",
+      "name": "Joe Milton",
+      "team": "PHI",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.454,
+        "manual_stat_trend": 0.22,
+        "original_combined": 0.22,
+        "bias_calibrated_manual": 0.275,
+        "residual_corrected_combined": 0.165,
+        "qb_component_ridge": 0.227,
+        "qb_component_ridge_calibrated": 1.0702,
+        "qb_component_boosted": 0.7037,
+        "qb_component_boosted_calibrated": 1.2049
+      }
+    },
+    {
+      "player_id": "13335",
+      "name": "Cole Payton",
+      "team": "PHI",
+      "position": "QB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.624,
+        "manual_stat_trend": 0.624,
+        "original_combined": 0.624,
+        "bias_calibrated_manual": 0.78,
+        "residual_corrected_combined": 0.468,
+        "qb_component_ridge": 0.312,
+        "qb_component_ridge_calibrated": 1.1552,
+        "qb_component_boosted": 0.9672,
+        "qb_component_boosted_calibrated": 1.4684
+      }
+    },
+    {
+      "player_id": "12510",
+      "name": "Jalen Milroe",
+      "team": "SEA",
+      "position": "QB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0.389,
+        "manual_stat_trend": 0.199,
+        "original_combined": 0.199,
+        "bias_calibrated_manual": 0.2488,
+        "residual_corrected_combined": 0.1492,
+        "qb_component_ridge": 0.1945,
+        "qb_component_ridge_calibrated": 1.0377,
+        "qb_component_boosted": 0.6029,
+        "qb_component_boosted_calibrated": 1.1042
+      }
+    },
+    {
+      "player_id": "8151",
+      "name": "Kenneth Walker III",
+      "team": "KC",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 12.028,
+        "manual_stat_trend": 13.638,
+        "original_combined": 15.932,
+        "bias_calibrated_manual": 14.5599,
+        "residual_corrected_combined": 19.915,
+        "rb_opportunity_ridge": 18.6434,
+        "rb_opportunity_ridge_calibrated": 19.0958,
+        "rb_opportunity_boosted": 12.026,
+        "rb_opportunity_boosted_calibrated": 12.085
+      }
+    },
+    {
+      "player_id": "7588",
+      "name": "Javonte Williams",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 11.655,
+        "manual_stat_trend": 11.064,
+        "original_combined": 11.245,
+        "bias_calibrated_manual": 11.9859,
+        "residual_corrected_combined": 14.0562,
+        "rb_opportunity_ridge": 13.6981,
+        "rb_opportunity_ridge_calibrated": 14.1505,
+        "rb_opportunity_boosted": 13.7295,
+        "rb_opportunity_boosted_calibrated": 13.7885
+      }
+    },
+    {
+      "player_id": "4866",
+      "name": "Saquon Barkley",
+      "team": "PHI",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 17.847,
+        "manual_stat_trend": 12.702,
+        "original_combined": 10.708,
+        "bias_calibrated_manual": 14.1551,
+        "residual_corrected_combined": 13.385,
+        "rb_opportunity_ridge": 16.2702,
+        "rb_opportunity_ridge_calibrated": 16.7226,
+        "rb_opportunity_boosted": 13.8017,
+        "rb_opportunity_boosted_calibrated": 13.8607
+      }
+    },
+    {
+      "player_id": "13286",
+      "name": "Jadarian Price",
+      "team": "SEA",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "9753",
+      "name": "Zach Charbonnet",
+      "team": "SEA",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "11435",
+      "name": "Emanuel Wilson",
+      "team": "SEA",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.671,
+        "manual_stat_trend": 1.954,
+        "original_combined": 2.339,
+        "bias_calibrated_manual": 2.2469,
+        "residual_corrected_combined": 2.9238,
+        "rb_opportunity_ridge": 2.5901,
+        "rb_opportunity_ridge_calibrated": 3.0425,
+        "rb_opportunity_boosted": 2.418,
+        "rb_opportunity_boosted_calibrated": 2.477
+      }
+    },
+    {
+      "player_id": "13337",
+      "name": "Emmett Johnson",
+      "team": "KC",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 3.443,
+        "manual_stat_trend": 3.704,
+        "original_combined": 3.876,
+        "bias_calibrated_manual": 3.771,
+        "residual_corrected_combined": 4.845,
+        "rb_opportunity_ridge": 5.3367,
+        "rb_opportunity_ridge_calibrated": 5.7891,
+        "rb_opportunity_boosted": 4.1303,
+        "rb_opportunity_boosted_calibrated": 4.1894
+      }
+    },
+    {
+      "player_id": "12048",
+      "name": "George Holani",
+      "team": "SEA",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 3.155,
+        "manual_stat_trend": 3.537,
+        "original_combined": 3.874,
+        "bias_calibrated_manual": 3.8299,
+        "residual_corrected_combined": 4.8425,
+        "rb_opportunity_ridge": 3.6111,
+        "rb_opportunity_ridge_calibrated": 4.0636,
+        "rb_opportunity_boosted": 3.7915,
+        "rb_opportunity_boosted_calibrated": 3.8505
+      }
+    },
+    {
+      "player_id": "9225",
+      "name": "Tank Bigsby",
+      "team": "PHI",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "8129",
+      "name": "Dameon Pierce",
+      "team": "PHI",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 2.698,
+        "manual_stat_trend": 3.114,
+        "original_combined": 3.184,
+        "bias_calibrated_manual": 3.4069,
+        "residual_corrected_combined": 3.98,
+        "rb_opportunity_ridge": 4.1819,
+        "rb_opportunity_ridge_calibrated": 4.6343,
+        "rb_opportunity_boosted": 3.5584,
+        "rb_opportunity_boosted_calibrated": 3.6174
+      }
+    },
+    {
+      "player_id": "8800",
+      "name": "Malik Davis",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "12455",
+      "name": "Brashard Smith",
+      "team": "KC",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "11199",
+      "name": "Emari Demercado",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 3.521,
+        "manual_stat_trend": 2.297,
+        "original_combined": 2.113,
+        "bias_calibrated_manual": 2.364,
+        "residual_corrected_combined": 2.6412,
+        "rb_opportunity_ridge": 5.2166,
+        "rb_opportunity_ridge_calibrated": 5.6691,
+        "rb_opportunity_boosted": 4.0974,
+        "rb_opportunity_boosted_calibrated": 4.1564
+      }
+    },
+    {
+      "player_id": "8207",
+      "name": "Tyler Goodson",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 1.826,
+        "manual_stat_trend": 2.012,
+        "original_combined": 1.769,
+        "bias_calibrated_manual": 2.079,
+        "residual_corrected_combined": 2.2112,
+        "rb_opportunity_ridge": 2.8303,
+        "rb_opportunity_ridge_calibrated": 3.2827,
+        "rb_opportunity_boosted": 2.2215,
+        "rb_opportunity_boosted_calibrated": 2.2805
+      }
+    },
+    {
+      "player_id": "11510",
+      "name": "Hunter Luepke",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 2.207,
+        "manual_stat_trend": 1.663,
+        "original_combined": 1.633,
+        "bias_calibrated_manual": 1.73,
+        "residual_corrected_combined": 1.9651,
+        "rb_opportunity_ridge": 3.4208,
+        "rb_opportunity_ridge_calibrated": 3.8733,
+        "rb_opportunity_boosted": 2.8409,
+        "rb_opportunity_boosted_calibrated": 2.8999
+      }
+    },
+    {
+      "player_id": "9227",
+      "name": "Israel Abanikanda",
+      "team": "DAL",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 1.768,
+        "manual_stat_trend": 1.219,
+        "original_combined": 1.219,
+        "bias_calibrated_manual": 1.5238,
+        "residual_corrected_combined": 1.5238,
+        "rb_opportunity_ridge": 2.7404,
+        "rb_opportunity_ridge_calibrated": 3.1928,
+        "rb_opportunity_boosted": 2.3775,
+        "rb_opportunity_boosted_calibrated": 2.4365
+      }
+    },
+    {
+      "player_id": "11577",
+      "name": "Will Shipley",
+      "team": "PHI",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "rb_opportunity_ridge": 0,
+        "rb_opportunity_ridge_calibrated": 0.4524,
+        "rb_opportunity_boosted": 0,
+        "rb_opportunity_boosted_calibrated": 0.059
+      }
+    },
+    {
+      "player_id": "12457",
+      "name": "Jaydon Blue",
+      "team": "PHI",
+      "position": "RB",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.812,
+        "manual_stat_trend": 0.487,
+        "original_combined": 0.487,
+        "bias_calibrated_manual": 0.6088,
+        "residual_corrected_combined": 0.6088,
+        "rb_opportunity_ridge": 1.2586,
+        "rb_opportunity_ridge_calibrated": 1.711,
+        "rb_opportunity_boosted": 1.2586,
+        "rb_opportunity_boosted_calibrated": 1.3176
+      }
+    },
+    {
+      "player_id": "8223",
+      "name": "Velus Jones Jr.",
+      "team": "SEA",
+      "position": "RB",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0.151,
+        "manual_stat_trend": 0.102,
+        "original_combined": 0.101,
+        "bias_calibrated_manual": 0.1275,
+        "residual_corrected_combined": 0.1073,
+        "rb_opportunity_ridge": 0.2341,
+        "rb_opportunity_ridge_calibrated": 0.6865,
+        "rb_opportunity_boosted": 0.2341,
+        "rb_opportunity_boosted_calibrated": 0.2931
+      }
+    },
+    {
+      "player_id": "1466",
+      "name": "Travis Kelce",
+      "team": "KC",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 10.959,
+        "manual_stat_trend": 10.316,
+        "original_combined": 10.316,
+        "bias_calibrated_manual": 10.177,
+        "residual_corrected_combined": 7.737,
+        "te_role_mixture_ridge": 6.6313,
+        "te_role_mixture_ridge_calibrated": 7.0005,
+        "te_role_mixture_boosted": 10.8578,
+        "te_role_mixture_boosted_calibrated": 11.0321
+      }
+    },
+    {
+      "player_id": "5022",
+      "name": "Dallas Goedert",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 13.368,
+        "manual_stat_trend": 11.723,
+        "original_combined": 11.723,
+        "bias_calibrated_manual": 11.584,
+        "residual_corrected_combined": 8.7923,
+        "te_role_mixture_ridge": 8.8791,
+        "te_role_mixture_ridge_calibrated": 9.2483,
+        "te_role_mixture_boosted": 13.2156,
+        "te_role_mixture_boosted_calibrated": 13.3898
+      }
+    },
+    {
+      "player_id": "8110",
+      "name": "Jake Ferguson",
+      "team": "DAL",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 10.463,
+        "manual_stat_trend": 8.988,
+        "original_combined": 8.988,
+        "bias_calibrated_manual": 10.2261,
+        "residual_corrected_combined": 6.741,
+        "te_role_mixture_ridge": 6.0756,
+        "te_role_mixture_ridge_calibrated": 6.4449,
+        "te_role_mixture_boosted": 10.4846,
+        "te_role_mixture_boosted_calibrated": 10.6588
+      }
+    },
+    {
+      "player_id": "11603",
+      "name": "AJ Barner",
+      "team": "SEA",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 7.769,
+        "manual_stat_trend": 7.307,
+        "original_combined": 7.307,
+        "bias_calibrated_manual": 8.3346,
+        "residual_corrected_combined": 5.4802,
+        "te_role_mixture_ridge": 4.8524,
+        "te_role_mixture_ridge_calibrated": 5.2216,
+        "te_role_mixture_boosted": 7.8161,
+        "te_role_mixture_boosted_calibrated": 7.9903
+      }
+    },
+    {
+      "player_id": "7828",
+      "name": "Noah Gray",
+      "team": "KC",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 3.502,
+        "manual_stat_trend": 3.257,
+        "original_combined": 3.257,
+        "bias_calibrated_manual": 2.8973,
+        "residual_corrected_combined": 2.4428,
+        "te_role_mixture_ridge": 2.4634,
+        "te_role_mixture_ridge_calibrated": 2.8327,
+        "te_role_mixture_boosted": 4.4635,
+        "te_role_mixture_boosted_calibrated": 4.6377
+      }
+    },
+    {
+      "player_id": "11593",
+      "name": "Brevyn Spann-Ford",
+      "team": "DAL",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 1.272,
+        "manual_stat_trend": 1.252,
+        "original_combined": 1.252,
+        "bias_calibrated_manual": 1.4727,
+        "residual_corrected_combined": 0.939,
+        "te_role_mixture_ridge": 0.7778,
+        "te_role_mixture_ridge_calibrated": 1.1471,
+        "te_role_mixture_boosted": 1.7547,
+        "te_role_mixture_boosted_calibrated": 1.929
+      }
+    },
+    {
+      "player_id": "10871",
+      "name": "Luke Schoonmaker",
+      "team": "DAL",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 2.409,
+        "manual_stat_trend": 2.065,
+        "original_combined": 2.065,
+        "bias_calibrated_manual": 1.7053,
+        "residual_corrected_combined": 1.5488,
+        "te_role_mixture_ridge": 1.3001,
+        "te_role_mixture_ridge_calibrated": 1.6693,
+        "te_role_mixture_boosted": 3.1998,
+        "te_role_mixture_boosted_calibrated": 3.374
+      }
+    },
+    {
+      "player_id": "12521",
+      "name": "Elijah Arroyo",
+      "team": "SEA",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "te_role_mixture_ridge": 0,
+        "te_role_mixture_ridge_calibrated": 0.3692,
+        "te_role_mixture_boosted": 0,
+        "te_role_mixture_boosted_calibrated": 0.1742
+      }
+    },
+    {
+      "player_id": "4189",
+      "name": "Eric Saubert",
+      "team": "SEA",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.565,
+        "manual_stat_trend": 1.368,
+        "original_combined": 1.368,
+        "bias_calibrated_manual": 1.026,
+        "residual_corrected_combined": 1.026,
+        "te_role_mixture_ridge": 0.9744,
+        "te_role_mixture_ridge_calibrated": 1.3436,
+        "te_role_mixture_boosted": 2.0947,
+        "te_role_mixture_boosted_calibrated": 2.2689
+      }
+    },
+    {
+      "player_id": "13349",
+      "name": "Eli Stowers",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "te_role_mixture_ridge": 0,
+        "te_role_mixture_ridge_calibrated": 0.3692,
+        "te_role_mixture_boosted": 0,
+        "te_role_mixture_boosted_calibrated": 0.1742
+      }
+    },
+    {
+      "player_id": "11595",
+      "name": "Jared Wiley",
+      "team": "KC",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0.96,
+        "manual_stat_trend": 0.96,
+        "original_combined": 0.96,
+        "bias_calibrated_manual": 0.72,
+        "residual_corrected_combined": 0.72,
+        "te_role_mixture_ridge": 0.6403,
+        "te_role_mixture_ridge_calibrated": 1.0095,
+        "te_role_mixture_boosted": 1.3305,
+        "te_role_mixture_boosted_calibrated": 1.5047
+      }
+    },
+    {
+      "player_id": "1339",
+      "name": "Zach Ertz",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.802,
+        "manual_stat_trend": 0.671,
+        "original_combined": 0.671,
+        "bias_calibrated_manual": 0.8388,
+        "residual_corrected_combined": 0.8388,
+        "te_role_mixture_ridge": 0.8645,
+        "te_role_mixture_ridge_calibrated": 1.2338,
+        "te_role_mixture_boosted": 1.2431,
+        "te_role_mixture_boosted_calibrated": 1.4173
+      }
+    },
+    {
+      "player_id": "4314",
+      "name": "Johnny Mundt",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 1.014,
+        "manual_stat_trend": 0.999,
+        "original_combined": 0.999,
+        "bias_calibrated_manual": 1.2197,
+        "residual_corrected_combined": 1.1179,
+        "te_role_mixture_ridge": 0.8642,
+        "te_role_mixture_ridge_calibrated": 1.2334,
+        "te_role_mixture_boosted": 1.5717,
+        "te_role_mixture_boosted_calibrated": 1.7459
+      }
+    },
+    {
+      "player_id": "8177",
+      "name": "Grant Calcaterra",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "te_role_mixture_ridge": 0,
+        "te_role_mixture_ridge_calibrated": 0.3692,
+        "te_role_mixture_boosted": 0,
+        "te_role_mixture_boosted_calibrated": 0.1742
+      }
+    },
+    {
+      "player_id": "11304",
+      "name": "E.J. Jenkins",
+      "team": "PHI",
+      "position": "TE",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.056,
+        "manual_stat_trend": 0.043,
+        "original_combined": 0.043,
+        "bias_calibrated_manual": 0.0537,
+        "residual_corrected_combined": 0.0537,
+        "te_role_mixture_ridge": 0.028,
+        "te_role_mixture_ridge_calibrated": 0.3972,
+        "te_role_mixture_boosted": 0.0868,
+        "te_role_mixture_boosted_calibrated": 0.261
+      }
+    },
+    {
+      "player_id": "12817",
+      "name": "Jake Briningstool",
+      "team": "KC",
+      "position": "TE",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0.317,
+        "manual_stat_trend": 0.322,
+        "original_combined": 0.322,
+        "bias_calibrated_manual": 0.2415,
+        "residual_corrected_combined": 0.4025,
+        "te_role_mixture_ridge": 0.4914,
+        "te_role_mixture_ridge_calibrated": 0.8606,
+        "te_role_mixture_boosted": 0.4914,
+        "te_role_mixture_boosted_calibrated": 0.6656
+      }
+    },
+    {
+      "player_id": "9488",
+      "name": "Jaxon Smith-Njigba",
+      "team": "SEA",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 15.772,
+        "manual_stat_trend": 17.005,
+        "original_combined": 17.005,
+        "bias_calibrated_manual": 16.7372,
+        "residual_corrected_combined": 21.2562,
+        "wr_usage_ridge": 24.4466,
+        "wr_usage_ridge_calibrated": 24.7834,
+        "wr_usage_boosted": 16.1789,
+        "wr_usage_boosted_calibrated": 16.365
+      }
+    },
+    {
+      "player_id": "6786",
+      "name": "CeeDee Lamb",
+      "team": "DAL",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 15.19,
+        "manual_stat_trend": 15.644,
+        "original_combined": 15.644,
+        "bias_calibrated_manual": 15.3762,
+        "residual_corrected_combined": 19.555,
+        "wr_usage_ridge": 23.5445,
+        "wr_usage_ridge_calibrated": 23.8813,
+        "wr_usage_boosted": 15.1409,
+        "wr_usage_boosted_calibrated": 15.3271
+      }
+    },
+    {
+      "player_id": "8137",
+      "name": "George Pickens",
+      "team": "DAL",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 14.051,
+        "manual_stat_trend": 13.65,
+        "original_combined": 13.65,
+        "bias_calibrated_manual": 12.6041,
+        "residual_corrected_combined": 17.0625,
+        "wr_usage_ridge": 21.7791,
+        "wr_usage_ridge_calibrated": 22.1159,
+        "wr_usage_boosted": 14.066,
+        "wr_usage_boosted_calibrated": 14.2521
+      }
+    },
+    {
+      "player_id": "7525",
+      "name": "DeVonta Smith",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "wr_usage_ridge": 0,
+        "wr_usage_ridge_calibrated": 0.3368,
+        "wr_usage_boosted": 0,
+        "wr_usage_boosted_calibrated": 0.1862
+      }
+    },
+    {
+      "player_id": "10229",
+      "name": "Rashee Rice",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "wr_usage_ridge": 0,
+        "wr_usage_ridge_calibrated": 0.3368,
+        "wr_usage_boosted": 0,
+        "wr_usage_boosted_calibrated": 0.1862
+      }
+    },
+    {
+      "player_id": "11624",
+      "name": "Xavier Worthy",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 9.807,
+        "manual_stat_trend": 9.514,
+        "original_combined": 9.514,
+        "bias_calibrated_manual": 10.1921,
+        "residual_corrected_combined": 11.8925,
+        "wr_usage_ridge": 15.2009,
+        "wr_usage_ridge_calibrated": 15.5377,
+        "wr_usage_boosted": 9.5121,
+        "wr_usage_boosted_calibrated": 9.6983
+      }
+    },
+    {
+      "player_id": "11783",
+      "name": "Ryan Flournoy",
+      "team": "DAL",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 4.239,
+        "manual_stat_trend": 4.941,
+        "original_combined": 4.941,
+        "bias_calibrated_manual": 5.2582,
+        "residual_corrected_combined": 6.1762,
+        "wr_usage_ridge": 6.5705,
+        "wr_usage_ridge_calibrated": 6.9073,
+        "wr_usage_boosted": 4.3751,
+        "wr_usage_boosted_calibrated": 4.5612
+      }
+    },
+    {
+      "player_id": "13294",
+      "name": "Makai Lemon",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 8.892,
+        "manual_stat_trend": 8.456,
+        "original_combined": 8.456,
+        "bias_calibrated_manual": 9.1341,
+        "residual_corrected_combined": 10.57,
+        "wr_usage_ridge": 13.7826,
+        "wr_usage_ridge_calibrated": 14.1194,
+        "wr_usage_boosted": 9.2974,
+        "wr_usage_boosted_calibrated": 9.4835
+      }
+    },
+    {
+      "player_id": "8676",
+      "name": "Rashid Shaheed",
+      "team": "SEA",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 8.161,
+        "manual_stat_trend": 7.804,
+        "original_combined": 7.804,
+        "bias_calibrated_manual": 8.4887,
+        "residual_corrected_combined": 9.755,
+        "wr_usage_ridge": 12.6495,
+        "wr_usage_ridge_calibrated": 12.9864,
+        "wr_usage_boosted": 7.2157,
+        "wr_usage_boosted_calibrated": 7.4018
+      }
+    },
+    {
+      "player_id": "4039",
+      "name": "Cooper Kupp",
+      "team": "SEA",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 7.265,
+        "manual_stat_trend": 7.211,
+        "original_combined": 7.211,
+        "bias_calibrated_manual": 7.8957,
+        "residual_corrected_combined": 9.0137,
+        "wr_usage_ridge": 11.2607,
+        "wr_usage_ridge_calibrated": 11.5976,
+        "wr_usage_boosted": 6.054,
+        "wr_usage_boosted_calibrated": 6.2401
+      }
+    },
+    {
+      "player_id": "9486",
+      "name": "Dontayvion Wicks",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "wr_usage_ridge": 0,
+        "wr_usage_ridge_calibrated": 0.3368,
+        "wr_usage_boosted": 0,
+        "wr_usage_boosted_calibrated": 0.1862
+      }
+    },
+    {
+      "player_id": "8188",
+      "name": "Tyquan Thornton",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "wr_usage_ridge": 0,
+        "wr_usage_ridge_calibrated": 0.3368,
+        "wr_usage_boosted": 0,
+        "wr_usage_boosted_calibrated": 0.1862
+      }
+    },
+    {
+      "player_id": "8917",
+      "name": "KaVontae Turpin",
+      "team": "DAL",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0,
+        "manual_stat_trend": 0,
+        "original_combined": 0,
+        "bias_calibrated_manual": 0,
+        "residual_corrected_combined": 0,
+        "wr_usage_ridge": 0,
+        "wr_usage_ridge_calibrated": 0.3368,
+        "wr_usage_boosted": 0,
+        "wr_usage_boosted_calibrated": 0.1862
+      }
+    },
+    {
+      "player_id": "12497",
+      "name": "Tory Horton",
+      "team": "SEA",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 3.228,
+        "manual_stat_trend": 3.1,
+        "original_combined": 3.1,
+        "bias_calibrated_manual": 2.7882,
+        "residual_corrected_combined": 3.875,
+        "wr_usage_ridge": 5.0034,
+        "wr_usage_ridge_calibrated": 5.3402,
+        "wr_usage_boosted": 2.6303,
+        "wr_usage_boosted_calibrated": 2.8165
+      }
+    },
+    {
+      "player_id": "5848",
+      "name": "Marquise Brown",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 5.34,
+        "manual_stat_trend": 3.742,
+        "original_combined": 3.742,
+        "bias_calibrated_manual": 3.4302,
+        "residual_corrected_combined": 4.6775,
+        "wr_usage_ridge": 8.277,
+        "wr_usage_ridge_calibrated": 8.6138,
+        "wr_usage_boosted": 4.5402,
+        "wr_usage_boosted_calibrated": 4.7264
+      }
+    },
+    {
+      "player_id": "12505",
+      "name": "Jalen Royals",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.21,
+        "manual_stat_trend": 1.475,
+        "original_combined": 1.475,
+        "bias_calibrated_manual": 1.7922,
+        "residual_corrected_combined": 1.8438,
+        "wr_usage_ridge": 1.8755,
+        "wr_usage_ridge_calibrated": 2.2123,
+        "wr_usage_boosted": 1.3914,
+        "wr_usage_boosted_calibrated": 1.5776
+      }
+    },
+    {
+      "player_id": "13150",
+      "name": "Darius Cooper",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.187,
+        "manual_stat_trend": 0.223,
+        "original_combined": 0.223,
+        "bias_calibrated_manual": 0.2787,
+        "residual_corrected_combined": 0.2787,
+        "wr_usage_ridge": 0.2898,
+        "wr_usage_ridge_calibrated": 0.6267,
+        "wr_usage_boosted": 0.2898,
+        "wr_usage_boosted_calibrated": 0.476
+      }
+    },
+    {
+      "player_id": "12863",
+      "name": "Andrew Armstrong",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 1.38,
+        "manual_stat_trend": 1.38,
+        "original_combined": 1.38,
+        "bias_calibrated_manual": 1.0682,
+        "residual_corrected_combined": 1.725,
+        "wr_usage_ridge": 2.139,
+        "wr_usage_ridge_calibrated": 2.4758,
+        "wr_usage_boosted": 1.4402,
+        "wr_usage_boosted_calibrated": 1.6264
+      }
+    },
+    {
+      "player_id": "13413",
+      "name": "Cyrus Allen",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 2.334,
+        "manual_stat_trend": 2.13,
+        "original_combined": 2.13,
+        "bias_calibrated_manual": 1.8182,
+        "residual_corrected_combined": 2.6625,
+        "wr_usage_ridge": 3.6177,
+        "wr_usage_ridge_calibrated": 3.9545,
+        "wr_usage_boosted": 2.5201,
+        "wr_usage_boosted_calibrated": 2.7063
+      }
+    },
+    {
+      "player_id": "10225",
+      "name": "Jonathan Mingo",
+      "team": "DAL",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 1.261,
+        "manual_stat_trend": 1.246,
+        "original_combined": 1.246,
+        "bias_calibrated_manual": 0.9345,
+        "residual_corrected_combined": 1.5575,
+        "wr_usage_ridge": 1.9546,
+        "wr_usage_ridge_calibrated": 2.2914,
+        "wr_usage_boosted": 1.0525,
+        "wr_usage_boosted_calibrated": 1.2387
+      }
+    },
+    {
+      "player_id": "7596",
+      "name": "Elijah Moore",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.533,
+        "manual_stat_trend": 0.501,
+        "original_combined": 0.501,
+        "bias_calibrated_manual": 0.3758,
+        "residual_corrected_combined": 0.6262,
+        "wr_usage_ridge": 0.8262,
+        "wr_usage_ridge_calibrated": 1.163,
+        "wr_usage_boosted": 0.3993,
+        "wr_usage_boosted_calibrated": 0.5855
+      }
+    },
+    {
+      "player_id": "11320",
+      "name": "Nikko Remigio",
+      "team": "KC",
+      "position": "WR",
+      "kickoff": "2026-10-26T00:20Z",
+      "forecast_arms": {
+        "safe": 0.617,
+        "manual_stat_trend": 0.447,
+        "original_combined": 0.447,
+        "bias_calibrated_manual": 0.3352,
+        "residual_corrected_combined": 0.5587,
+        "wr_usage_ridge": 0.9564,
+        "wr_usage_ridge_calibrated": 1.2932,
+        "wr_usage_boosted": 0.4658,
+        "wr_usage_boosted_calibrated": 0.652
+      }
+    },
+    {
+      "player_id": "8414",
+      "name": "Britain Covey",
+      "team": "PHI",
+      "position": "WR",
+      "kickoff": "2026-10-27T00:15Z",
+      "forecast_arms": {
+        "safe": 0.288,
+        "manual_stat_trend": 0.202,
+        "original_combined": 0.202,
+        "bias_calibrated_manual": 0.1515,
+        "residual_corrected_combined": 0.2525,
+        "wr_usage_ridge": 0.4464,
+        "wr_usage_ridge_calibrated": 0.7832,
+        "wr_usage_boosted": 0.3588,
+        "wr_usage_boosted_calibrated": 0.545
+      }
+    }
+  ]
+}

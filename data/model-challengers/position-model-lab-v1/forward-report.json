@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-10-29T03:19:16.435Z",
+  "season": 2026,
+  "definition_sha256": "4736c01bbc460a72ace808b367a4a5c2e368ae51ea48ebbf5a0ac9faf9d236e5",
+  "model_bundle_sha256": "e9dc3f7bc4d31320c90e4ef0cd2f6a73b0fefced112de6b3dc8579a212ba9a02",
+  "fully_final_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "evaluated_weeks": [],
+  "paired_player_games": 0,
+  "rejected_stale_definition_snapshots": 3,
+  "by_position": {
+    "QB": {},
+    "RB": {},
+    "WR": {},
+    "TE": {},
+    "K": {}
+  }
+}

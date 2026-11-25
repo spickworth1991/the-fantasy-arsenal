@@ -30,12 +30,6 @@ const definition = {
       adaptive_balanced: { application_strength: 0.8 },
     },
   },
-  dynamic_rest_of_season: {
-    minimum_games: 2,
-    settings_by_position: {
-      QB: { enabled: true, application_strength: 0.8, volume_prior_games: 4, efficiency_prior_games: 12, touchdown_prior_games: 24, volume_strength: 0.6, efficiency_strength: 0.3, touchdown_strength: 0.12, maximum_volume_shift: 0.35, maximum_efficiency_rate_shift: 0.15, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.6 },
-    },
-  },
 };
 
 const forecast = ({
@@ -271,13 +265,8 @@ assert.equal(
 
 const manualTrendQuarterback = buildProjectionShadowArms([quarterback], {
   model_type: "projection_experiment_suite",
+  arms: ["incumbent", "manual_stat_trend", "combined_adaptation_manual"],
   settings_by_position: { QB: { share_strength: 0, pace_strength: 0 } },
-  dynamic_rest_of_season: {
-    minimum_games: 2,
-    settings_by_position: {
-      QB: { enabled: true, application_strength: 0.8, volume_prior_games: 4, efficiency_prior_games: 12, touchdown_prior_games: 24, volume_strength: 0.6, efficiency_strength: 0.3, touchdown_strength: 0.12, maximum_volume_shift: 0.35, maximum_efficiency_rate_shift: 0.15, maximum_touchdown_rate_shift: 0.12, maximum_total_shift: 0.6 },
-    },
-  },
   in_season_adaptation: {
     minimum_games: 3,
     arms: {
@@ -307,41 +296,12 @@ const manualTrendQuarterback = buildProjectionShadowArms([quarterback], {
       },
     },
   },
-  regime_aware_combined: {
-    feature_version: "fixture-v1",
-    by_position: {
-      QB: {
-        enabled: true,
-        features: ["completed_games", "arm_agreement"],
-        means: { completed_games: 3, arm_agreement: 0 },
-        scales: { completed_games: 2, arm_agreement: 1 },
-        intercept: -0.02,
-        coefficients: [0, 0],
-        strength: 1,
-        maximum_residual_shift: 0.1,
-        maximum_total_shift: 0.4,
-        disagreement_shrink: 0.25,
-      },
-    },
-  },
 })[0];
 assert.ok(manualTrendQuarterback.forecast_arms.manual_stat_trend.ppr > 10);
 assert.equal(manualTrendQuarterback.shadow_context.manual_stat_trend.triggered, true);
 assert.ok(Number.isFinite(manualTrendQuarterback.forecast_arms.combined_adaptation_manual.ppr));
-assert.ok(Number.isFinite(manualTrendQuarterback.forecast_arms.dynamic_rest_of_season.ppr));
-assert.ok(Number.isFinite(manualTrendQuarterback.forecast_arms.dynamic_ros_in_season_adaptation.ppr));
-assert.ok(Number.isFinite(manualTrendQuarterback.forecast_arms.dynamic_ros_manual_stat_trend.ppr));
-assert.ok(Number.isFinite(manualTrendQuarterback.forecast_arms.dynamic_ros_combined.ppr));
 assert.equal(manualTrendQuarterback.shadow_context.combined_adaptation_manual.triggered, true);
-assert.ok(
-  manualTrendQuarterback.forecast_arms.regime_aware_combined.ppr <
-    manualTrendQuarterback.forecast_arms.combined_adaptation_manual.ppr,
-);
-assert.equal(
-  manualTrendQuarterback.shadow_context.regime_aware_combined.feature_version,
-  "fixture-v1",
-);
 
 console.log(
-  `Projection shadow-arm tests: PASS (${result.length} fixture players, ${affected.length} affected recipients, QB/manual/regime adaptation verified).`,
+  `Projection shadow-arm tests: PASS (${result.length} fixture players, ${affected.length} affected recipients, Manual Stat Trend and Original Combined verified).`,
 );
