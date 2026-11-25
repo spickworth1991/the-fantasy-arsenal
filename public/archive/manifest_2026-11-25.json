@@ -1,0 +1,170 @@
+{
+  "date": "2026-11-25",
+  "created_at": "2026-11-25T05:09:17.054Z",
+  "season": 2026,
+  "compression": "gzip",
+  "partial_update": false,
+  "stale_sources": [],
+  "files": [
+    {
+      "source": "fantasycalc_cache.json",
+      "file": "fantasycalc_cache_2026-11-25.json.gz",
+      "bytes": 204601,
+      "source_updated_at": null,
+      "source_sha256": "2837d00a0c04b0ca6c4be0f2fc99df79953332815bd64d34483e8ecd53cf5756",
+      "archive_sha256": "32457b35d7ef383c80e24996cba0ecf266dad603dd61f63a5fb31bfce8946942"
+    },
+    {
+      "source": "dynastyprocess_cache.json",
+      "file": "dynastyprocess_cache_2026-11-25.json.gz",
+      "bytes": 12139,
+      "source_updated_at": null,
+      "source_sha256": "a75205f8d48c0c1669974bd4f2a4fdb25de752a2c6daf54bc9e8b33cc0d94017",
+      "archive_sha256": "3d8255a65e20b27b8ac06def238c9277df56bc5283cd0bb676f4cb58c8ac01c1"
+    },
+    {
+      "source": "ktc_cache.json",
+      "file": "ktc_cache_2026-11-25.json.gz",
+      "bytes": 18352,
+      "source_updated_at": "2026-11-25T05:07:02.233Z",
+      "source_sha256": "992a36ba3bde6c67480344c5b9bbf5cf835a436ef6ec02927baa1debf3177f11",
+      "archive_sha256": "909f501c793d08c4f5a6ea2250642edcf93a04a35b1254c72c5425359df4e7b7"
+    },
+    {
+      "source": "fantasynav_cache.json",
+      "file": "fantasynav_cache_2026-11-25.json.gz",
+      "bytes": 40389,
+      "source_updated_at": null,
+      "source_sha256": "30bca940d1772f6989ba4969a65e9d182157d8552029255fcfeeac185dc9ecee",
+      "archive_sha256": "5653a650e3bb5d3fea764e67ef8ea70bc08f74b4c7e7780d149afd8f838b6583"
+    },
+    {
+      "source": "fantasypros_cache.json",
+      "file": "fantasypros_cache_2026-11-25.json.gz",
+      "bytes": 12493,
+      "source_updated_at": "2026-11-25T05:07:03.830Z",
+      "source_sha256": "48ffed8a45ff1d2affd9218362f759124069e34cb55200da0807fa89d15e4c91",
+      "archive_sha256": "d292b5149eb5887ee07ace8a9c7e3eeafcb99a1b394baab9a3b41b35c52909b1"
+    },
+    {
+      "source": "fantasypros_ecr_cache.json",
+      "file": "fantasypros_ecr_cache_2026-11-25.json.gz",
+      "bytes": 255869,
+      "source_updated_at": "2026-11-25T05:07:03.921Z",
+      "source_sha256": "fac6819bbc35967cf64c6d801253babc6b79160905c6518c2badadb2596b4634",
+      "archive_sha256": "7b589ed8945f85049e4e3a96657662f331c59f61ab1d7f030407b114c5b35776"
+    },
+    {
+      "source": "idynastyp_cache.json",
+      "file": "idynastyp_cache_2026-11-25.json.gz",
+      "bytes": 21374,
+      "source_updated_at": null,
+      "source_sha256": "d674c7a97052ee0455e8d92ab7fa8deaaf080e311ae57a0d4c7ed1b922e91a50",
+      "archive_sha256": "92f966d8ae04b5e5bf187d058827ab7fdc37bc895b961628f6fc04570c14bd7a"
+    },
+    {
+      "source": "idpshow_cache.json",
+      "file": "idpshow_cache_2026-11-25.json.gz",
+      "bytes": 30993,
+      "source_updated_at": "2026-11-25T05:07:59.908Z",
+      "source_sha256": "039ed8edb287a29cd3a7dafac8b186e71c1e0130b3cbaf77cd089e6f0cd3435e",
+      "archive_sha256": "93914b6d4378c714eb474e4deac5279fdfa70f9336d1eef09e216c4cfc0aa4cd"
+    },
+    {
+      "source": "stickypicky_cache.json",
+      "file": "stickypicky_cache_2026-11-25.json.gz",
+      "bytes": 81888,
+      "source_updated_at": null,
+      "source_sha256": "1eb673f42dbff39cc5e9d1833c126d8870cda1ee7edf5f5bc571190515ea01ba",
+      "archive_sha256": "60dde8e1b6b8cd79bf4643b06ad82eac8e69c055a36b192f8cc1070a78f3f0a9"
+    },
+    {
+      "source": "projections_2026.json",
+      "file": "projections_2026_2026-11-25.json.gz",
+      "bytes": 11705,
+      "source_updated_at": "2026-11-25T05:08:00.506Z",
+      "source_sha256": "ba01df30cb6d7f4549d4a2ff0a42509eb50d805665dee27a7140d5f678367c6b",
+      "archive_sha256": "b518a93386f531406db0fddfe039b747bc49a4b41c2e715568473c8bc33285b2"
+    },
+    {
+      "source": "projections_espn_2026.json",
+      "file": "projections_espn_2026_2026-11-25.json.gz",
+      "bytes": 32358,
+      "source_updated_at": "2026-11-25T05:08:24.153Z",
+      "source_sha256": "d31777d81b720de8a94b18f6f54944f2c4d311edaac0c693db6999825e009d2c",
+      "archive_sha256": "12e3375b160e2cd5a83626576a56163f53173365653bf11714170ff6b340db2a"
+    },
+    {
+      "source": "projections_cbs_2026.json",
+      "file": "projections_cbs_2026_2026-11-25.json.gz",
+      "bytes": 21222,
+      "source_updated_at": "2026-11-25T05:08:44.205Z",
+      "source_sha256": "2d519b7f4e22c90adb67ebfe957a6fc3f6a9b592da3f4a9d950059e260fcc019",
+      "archive_sha256": "f21eb5db109c4ed9f2a2aeca7be5cf4dd89869cd8b9aff4b579b55fa60508d2d"
+    },
+    {
+      "source": "projections_cbs_weekly_2026.json",
+      "file": "projections_cbs_weekly_2026_2026-11-25.json.gz",
+      "bytes": 11662,
+      "source_updated_at": "2026-11-25T05:08:44.209Z",
+      "source_sha256": "72ffddb32403aa5a6c73821f7b86d4d602d9a9225e381affd261473e61e25836",
+      "archive_sha256": "9bafce4066ba766e8a6453ec00e11fd816fe1d6c8b9e43a7edaca4d05cfa6c67"
+    },
+    {
+      "source": "projections_sleeper_2026.json",
+      "file": "projections_sleeper_2026_2026-11-25.json.gz",
+      "bytes": 611413,
+      "source_updated_at": "2026-11-25T05:08:02.255Z",
+      "source_sha256": "5c2f0a392ede3a09e587fbe85d191d073e5b0a218ebf307e58ceefefbbda310a",
+      "archive_sha256": "15323dd7c2a7099115b240eed086e434f3fcf8561d1c3bc84c7b3863aaf19cd9"
+    },
+    {
+      "source": "projections_fantasysharks_2026.json",
+      "file": "projections_fantasysharks_2026_2026-11-25.json.gz",
+      "bytes": 51374,
+      "source_updated_at": "2026-11-25T05:08:19.814Z",
+      "source_sha256": "46314aab0fd50073f0567716e7b2bbd4f2049eac9bfbed5a816bc5585ac6f5c2",
+      "archive_sha256": "a24710a8a6d29da3d6aa68907b203618a9b5ea25df8da9872c8ec5783cd1e856"
+    },
+    {
+      "source": "projections_draftsharks_2026.json",
+      "file": "projections_draftsharks_2026_2026-11-25.json.gz",
+      "bytes": 51498,
+      "source_updated_at": "2026-11-25T05:08:20.601Z",
+      "source_sha256": "54cfd04f7bb708e7e5cf1501e3058682aebb269e4d9c29379ff904d34479e5f5",
+      "archive_sha256": "75700dfed82c30038d39ff83e4666e4baee7324e2c767323f917b3e8be9d0efd"
+    },
+    {
+      "source": "projections_fantasypros_2026.json",
+      "file": "projections_fantasypros_2026_2026-11-25.json.gz",
+      "bytes": 51082,
+      "source_updated_at": "2026-11-25T05:08:21.054Z",
+      "source_sha256": "68a6834adc5ca6d12c6e913c37d02088ef34520524a4b00c79c787630dcfe057",
+      "archive_sha256": "a71491bbd2812136d37a5316123a2d239793082230e45e18ff2637e08604883a"
+    },
+    {
+      "source": "projections_thefantasyarsenal_2026.json",
+      "file": "projections_thefantasyarsenal_2026_2026-11-25.json.gz",
+      "bytes": 150069,
+      "source_updated_at": "2026-11-25T05:09:15.499Z",
+      "source_sha256": "55bbee558863194e4046682d007e8ebc33f3e026aee4863ed173c22827a8a915",
+      "archive_sha256": "e82f0944388ee6aad3040820bd23364058cb227df818b7bbfdf65f9ca42238d7"
+    },
+    {
+      "source": "projections_thefantasyarsenal_model_2026.json",
+      "file": "projections_thefantasyarsenal_model_2026_2026-11-25.json.gz",
+      "bytes": 427799,
+      "source_updated_at": "2026-11-25T05:09:13.266Z",
+      "source_sha256": "de01a1609d876371147cf56ef469e07d79caad27d76ca0db2c541db822d6a3a3",
+      "archive_sha256": "f3d918b3352cee2d6c4dff717a30b4076d4a5b8591a645eb5a03efe60372b075"
+    },
+    {
+      "source": "consensus-anchor.json",
+      "file": "consensus-anchor_2026-11-25.json.gz",
+      "bytes": 135893,
+      "source_updated_at": "2026-11-25T05:08:44.816Z",
+      "source_sha256": "448b317a5ca7f3862676f35a94fa839c45836260c1961e1ca8f7388e45f9ac94",
+      "archive_sha256": "232e3ec20effb6c4dec02665c166d6cc97b1696433fbcc6d9d5189c90e6dff0c"
+    }
+  ]
+}
